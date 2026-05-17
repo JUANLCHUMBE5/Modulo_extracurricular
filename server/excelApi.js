@@ -67,6 +67,113 @@ app.post("/api/db/reset", async (_req, res) => {
   }
 });
 
+app.get("/api/modulo", async (_req, res) => {
+  try {
+    res.json(await getDb());
+  } catch {
+    res.status(500).json({ message: "No se pudo leer el modulo extracurricular." });
+  }
+});
+
+app.get("/api/programas", async (_req, res) => {
+  try {
+    const db = await getDb();
+    res.json(db.programas || []);
+  } catch {
+    res.status(500).json({ message: "No se pudieron listar los programas." });
+  }
+});
+
+app.get("/api/categorias", async (_req, res) => {
+  try {
+    const db = await getDb();
+    res.json(db.categorias || []);
+  } catch {
+    res.status(500).json({ message: "No se pudieron listar las categorias." });
+  }
+});
+
+app.get("/api/estudiantes", async (_req, res) => {
+  try {
+    const db = await getDb();
+    res.json(Object.values(db.estudiantes || {}));
+  } catch {
+    res.status(500).json({ message: "No se pudieron listar los estudiantes." });
+  }
+});
+
+app.get("/api/estudiantes/:dni", async (req, res) => {
+  try {
+    const db = await getDb();
+    const dni = limpiarDni(req.params.dni);
+    const estudiante = db.estudiantes?.[dni];
+    if (!estudiante) return res.status(404).json({ message: "Estudiante no encontrado." });
+    return res.json(estudiante);
+  } catch {
+    return res.status(500).json({ message: "No se pudo consultar el estudiante." });
+  }
+});
+
+app.get("/api/inscripciones", async (_req, res) => {
+  try {
+    const db = await getDb();
+    res.json(db.inscripciones || []);
+  } catch {
+    res.status(500).json({ message: "No se pudieron listar las inscripciones." });
+  }
+});
+
+app.get("/api/documentos", async (_req, res) => {
+  try {
+    const db = await getDb();
+    res.json(db.documentosGenerados || []);
+  } catch {
+    res.status(500).json({ message: "No se pudieron listar los documentos." });
+  }
+});
+
+app.get("/api/pagos", async (_req, res) => {
+  try {
+    const db = await getDb();
+    res.json(db.pagos || []);
+  } catch {
+    res.status(500).json({ message: "No se pudieron listar los pagos." });
+  }
+});
+
+app.get("/api/usuarios", async (_req, res) => {
+  try {
+    const db = await getDb();
+    res.json(db.usuarios || []);
+  } catch {
+    res.status(500).json({ message: "No se pudieron listar los usuarios." });
+  }
+});
+
+app.get("/api/padres/:dni/resumen", async (req, res) => {
+  try {
+    const db = await getDb();
+    const dni = limpiarDni(req.params.dni);
+    const estudiante = db.estudiantes?.[dni];
+    if (!estudiante) return res.status(404).json({ message: "Estudiante no encontrado." });
+
+    const inscripciones = (db.inscripciones || []).filter((item) =>
+      item.dniEstudiante === dni || item.codigoEstudiante === estudiante.codigoEstudiante
+    );
+    const pagos = (db.pagos || []).filter((item) =>
+      item.dniEstudiante === dni || inscripciones.some((inscripcion) => inscripcion.id === item.inscripcionId)
+    );
+    const documentos = (db.documentosGenerados || []).filter((item) =>
+      item.dniEstudiante === dni || normalizarComparacion(item.alumno) === normalizarComparacion(estudiante.nombres)
+    );
+    const invitaciones = obtenerInvitacionesAlumno(db, dni);
+
+    return res.json({ estudiante, invitaciones, inscripciones, pagos, documentos });
+  } catch {
+    return res.status(500).json({ message: "No se pudo consultar el resumen del padre." });
+  }
+});
+
 app.post("/api/coordinacion/cargas/preview", upload.single("archivo"), async (req, res) => {
   try {
     const periodo = normalizarPeriodo(req.body.periodo);
@@ -380,6 +487,27 @@ function claveAlumno(alumno) {
   if (alumno.dni) return `dni:${alumno.dni}`;
   const nombre = `${alumno.nombres || ""} ${alumno.apellidos || ""}`.trim().toLowerCase();
   return nombre ? `nombre:${nombre}:${alumno.grado}:${alumno.seccion}` : "";
+}
+
+function obtenerInvitacionesAlumno(db, dni) {
+  return (db.programas || []).flatMap((programa) => {
+    const invitados = db.invitadosPorPrograma?.[programa.id] || [];
+    return invitados
+      .filter((invitado) => limpiarDni(invitado.dni) === dni)
+      .map((invitado) => ({
+        ...invitado,
+        programaId: programa.id,
+        programa: programa.nombre,
+        periodo: programa.periodo,
+        horario: programa.horario,
+        costo: programa.costo,
+        estadoPrograma: programa.estado,
+      }));
+  });
+}
+
+function limpiarDni(valor) {
+  return String(valor || "").replace(/\D/g, "");
 }
 
 function limpiarTexto(valor) {

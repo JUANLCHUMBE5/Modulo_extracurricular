@@ -1,4 +1,4 @@
-import { mockDb, syncMockDbFromStorage } from "./localDbClient";
+import { apiDb, syncApiDb } from "./dbApi";
 
 const delay = (ms = 650) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -29,14 +29,14 @@ export const loginPersonal = async (username, password) => {
 export const loginPadre = async (dni, fechaNacimiento) => {
   // Temporal: reemplazar por POST /api/padres/login cuando exista el backend real.
   await delay();
-  await syncMockDbFromStorage();
+  await syncApiDb();
 
   const dniLimpio = String(dni || "").replace(/\D/g, "");
   if (!/^\d{8}$/.test(dniLimpio)) {
     return { success: false, message: "El DNI debe tener 8 numeros." };
   }
 
-  const estudiante = mockDb.estudiantes[dniLimpio];
+  const estudiante = apiDb.estudiantes[dniLimpio];
   if (!estudiante || estudiante.fechaNacimiento !== fechaNacimiento) {
     return { success: false, message: "DNI o fecha de nacimiento incorrectos." };
   }

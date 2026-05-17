@@ -1,5 +1,5 @@
-// BASE LOCAL SOLO PARA PROTOTIPO.
-// No usar como base de datos real.
+// BASE LOCAL PARA DESARROLLO.
+// La fuente principal es server/db.json mediante /api/db.
 // En producción será reemplazada por la API del sistema principal.
 
 const STORAGE_KEY = "san_rafael_mock_database_v1";
@@ -156,8 +156,12 @@ export const mockDb = loadDatabase();
 
 export async function saveMockDb() {
   if (typeof window === "undefined") return;
+  const db = await persistirApiLocal(mockDb);
+  Object.keys(mockDb).forEach((key) => {
+    delete mockDb[key];
+  });
+  Object.assign(mockDb, mergeWithDefaults(db || mockDb, structuredCloneSafe(initialData)));
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mockDb));
-  persistirApiLocal(mockDb);
   window.dispatchEvent(new CustomEvent("mock-db-updated"));
 }
 
@@ -208,9 +212,8 @@ export function nextMockId(key) {
 
 async function leerApiLocal() {
   try {
-    const response = await fetch(`${obtenerApiBase()}/api/db`);
-    if (!response.ok) return null;
-    return await response.json();
+    const { localDbApi } = await import("./apiClient.js");
+    return await localDbApi.getDatabase();
   } catch {
     return null;
   }
@@ -218,18 +221,12 @@ async function leerApiLocal() {
 
 async function persistirApiLocal(data) {
   try {
-    await fetch(`${obtenerApiBase()}/api/db`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
+    const { localDbApi } = await import("./apiClient.js");
+    return await localDbApi.saveDatabase(data);
   } catch {
-    // Si la API local no esta levantada, el prototipo sigue funcionando con localStorage.
+    // Si la API local no esta levantada, se conserva un respaldo temporal en localStorage.
+    return data;
   }
-}
-
-function obtenerApiBase() {
-  return import.meta.env.VITE_LOCAL_API_URL || "";
 }
 
 function loadDatabase() {

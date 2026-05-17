@@ -1,4 +1,4 @@
-function Campo({ label, value, onChange, placeholder, inputMode }) {
+function Campo({ label, value, onChange, placeholder, inputMode, disabled = false }) {
   return (
     <label className="padres-field">
       <span>{label}</span>
@@ -7,6 +7,7 @@ function Campo({ label, value, onChange, placeholder, inputMode }) {
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         inputMode={inputMode}
+        disabled={disabled}
       />
     </label>
   );

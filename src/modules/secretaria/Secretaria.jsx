@@ -511,7 +511,13 @@ function Secretaria({ onLogout }) {
         <header className="secretaria-topbar">
           <div className="secretaria-topbar-brand">
             <div>
+              <span className="secretaria-topbar-badge">Secretaria academica</span>
               <h1>Inscripcion extracurricular</h1>
+              <p></p>
+            </div>
+            <div className="secretaria-topbar-status" aria-label="Estado del modulo">
+              <CheckCircle2 size={18} />
+              <span>Modulo activo</span>
             </div>
           </div>
         </header>
@@ -524,6 +530,7 @@ function Secretaria({ onLogout }) {
               </span>
               <div>
                 <h2>Buscar estudiante</h2>
+                <p>Ingrese DNI o nombre para iniciar la atencion.</p>
               </div>
             </div>
 
@@ -593,7 +600,17 @@ function Secretaria({ onLogout }) {
               </MantineAlert>
             ) : null}
 
-           
+            {!estudiante && !mensaje && !resultadosNombre.length ? (
+              <div className="secretaria-search-empty">
+                <div className="secretaria-search-empty-icon">
+                  <Search size={28} />
+                </div>
+                <div>
+                  <strong>Lista para iniciar</strong>
+                  <span>Seleccione el periodo y busque al estudiante para continuar con el registro.</span>
+                </div>
+              </div>
+            ) : null}
 
             {estudiante ? (
               <section className="secretaria-student-panel">

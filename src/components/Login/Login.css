@@ -60,7 +60,7 @@
 
 .login-heading h2 {
   margin: 0;
-  color: #172331;
+  color: #111111;
   font-size: 25px;
   line-height: 1.15;
   font-weight: 900;
@@ -69,7 +69,7 @@
 .login-heading p {
   max-width: 270px;
   margin: 8px auto 0;
-  color: #5c6674;
+  color: #111111;
   font-size: 12px;
   line-height: 1.35;
 }
@@ -94,14 +94,14 @@
 
 .login-mode-switch button.is-active {
   color: #ffffff;
-  border-color: #17453f;
-  background: #17453f;
+  border-color: #449d44;
+  background: #449d44;
 }
 
 .login-page-padre .login-mode-switch button.is-active {
-  border-color: #4f8fd8;
+  border-color: #f97316;
   color: #ffffff;
-  background: #4f8fd8;
+  background: #f97316;
 }
 
 .login-mode-switch button:disabled {
@@ -144,14 +144,14 @@
 
 .login-form .mantine-Input-input:focus,
 .login-form .mantine-Input-input:focus-within {
-  border-color: #17453f;
-  box-shadow: 0 0 0 3px rgba(23, 69, 63, 0.12);
+  border-color: #449d44;
+  box-shadow: 0 0 0 3px rgba(68, 157, 68, 0.14);
 }
 
 .login-page-padre .login-form .mantine-Input-input:focus,
 .login-page-padre .login-form .mantine-Input-input:focus-within {
-  border-color: #4f8fd8;
-  box-shadow: 0 0 0 3px rgba(79, 143, 216, 0.16);
+  border-color: #f97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.16);
 }
 
 .login-form .mantine-Input-section {
@@ -174,19 +174,19 @@
 }
 
 .login-submit-personal:not(:disabled) {
-  background: #17453f;
+  background: #449d44;
 }
 
 .login-submit-personal:hover:not(:disabled) {
-  background: #10342f;
+  background: #367f36;
 }
 
 .login-submit-padre:not(:disabled) {
-  background: #4f8fd8;
+  background: #f97316;
 }
 
 .login-submit-padre:hover:not(:disabled) {
-  background: #3c78bc;
+  background: #ea580c;
 }
 
 .login-submit:disabled {

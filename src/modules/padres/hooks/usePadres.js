@@ -31,8 +31,8 @@ function usePadres(user) {
     apoderado: "",
     telefono: "",
     correo: "",
-    medioEnvio: "WhatsApp",
     acepta: false,
+    enviarPdfCorreo: false,
   });
 
   const cargarResumen = useCallback(async ({ silencioso = false } = {}) => {
@@ -56,7 +56,7 @@ function usePadres(user) {
         apoderado: inscripcion?.apoderado || estudiante.apoderado || actual.apoderado,
         telefono: inscripcion?.telefono || estudiante.telefonoApoderado || actual.telefono,
         correo: inscripcion?.correo || estudiante.correoApoderado || actual.correo,
-        medioEnvio: inscripcion?.medioEnvio || estudiante.medioEnvio || actual.medioEnvio || "WhatsApp",
+        enviarPdfCorreo: Boolean(inscripcion?.enviarPdfCorreo ?? estudiante.enviarPdfCorreo ?? actual.enviarPdfCorreo),
       }));
 
       if (silencioso) {
@@ -102,6 +102,7 @@ function usePadres(user) {
   const inscripcion = resumen?.inscripcionActual;
   const invitacion = resumen?.invitacionActual;
   const programa = inscripcion || invitacion;
+  const apoderadoBloqueado = Boolean(inscripcion?.apoderado || estudiante?.apoderado);
   const tipoReforzamiento = useMemo(() => obtenerTipoReforzamiento(programa), [programa]);
   const nombreCorto = obtenerNombreCorto(estudiante?.nombres);
   const iniciales = obtenerIniciales(estudiante?.nombres);
@@ -109,8 +110,10 @@ function usePadres(user) {
   const siguientePaso = obtenerSiguientePaso({ programa, inscripcion });
   const mostrarCatalogoProgramas = !programa;
   const programasDisponibles = useMemo(
-    () => programasCoordinacion.filter((item) => item.registrable),
-    [programasCoordinacion]
+    () => programasCoordinacion
+      .map((item) => prepararProgramaParaGrado(item, estudiante?.grado))
+      .filter((item) => item.registrable && item.disponibleParaGrado),
+    [programasCoordinacion, estudiante?.grado]
   );
 
   useEffect(() => {
@@ -121,7 +124,7 @@ function usePadres(user) {
   async function guardarDatos(event) {
     event.preventDefault();
     if (!form.apoderado.trim()) return avisar("Ingrese el nombre del padre o apoderado.");
-    if (!/^\d{9}$/.test(form.telefono.trim())) return avisar("Ingrese un telefono WhatsApp valido de 9 numeros.");
+    if (!/^\d{9}$/.test(form.telefono.trim())) return avisar("Ingrese un telefono de contacto valido de 9 numeros.");
     if (form.correo.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo.trim())) {
       return avisar("Ingrese un correo valido o deje el campo vacio.");
     }
@@ -144,9 +147,23 @@ function usePadres(user) {
   }
 
   async function solicitarInscripcionPadres(programaId = "") {
-    if (!form.apoderado.trim()) return avisar("Ingrese el nombre del padre o apoderado.");
-    if (!/^\d{9}$/.test(form.telefono.trim())) return avisar("Ingrese un telefono WhatsApp valido de 9 numeros.");
-    if (!form.acepta) return avisar("Confirme que los datos son correctos antes de solicitar el registro.");
+    if (!form.apoderado.trim()) {
+      avisar("Ingrese el nombre del padre o apoderado.");
+      return false;
+    }
+    if (!/^\d{9}$/.test(form.telefono.trim())) {
+      avisar("Ingrese un telefono de contacto valido de 9 numeros.");
+      return false;
+    }
+    if (!form.acepta) {
+      avisar("Confirme que los datos son correctos antes de solicitar el registro.");
+      return false;
+    }
+    if (!programaId && invitacion && !inscripcion && !infoProgramaAceptada) {
+      setInfoProgramaAbierta(true);
+      avisar("Revise y acepte el comunicado del programa antes de registrar la inscripcion.");
+      return false;
+    }
 
     setGuardando(true);
     if (programaId) setProgramaSeleccionadoId(programaId);
@@ -158,8 +175,10 @@ function usePadres(user) {
         message: "Inscripcion registrada como pendiente de pago. Acerquese a Caja para validar el pago.",
       });
       await cargarResumen({ silencioso: true });
+      return true;
     } catch (err) {
       avisar(err.message || "No se pudo registrar la inscripcion.");
+      return false;
     } finally {
       setGuardando(false);
     }
@@ -170,7 +189,13 @@ function usePadres(user) {
   }
 
   function actualizar(campo, valor) {
-    setForm((actual) => ({ ...actual, [campo]: valor }));
+    setForm((actual) => {
+      const siguiente = { ...actual, [campo]: valor };
+      if (campo === "correo" && !String(valor || "").trim()) {
+        siguiente.enviarPdfCorreo = false;
+      }
+      return siguiente;
+    });
   }
 
   function preguntar(texto) {
@@ -195,8 +220,14 @@ function usePadres(user) {
     setInfoProgramaAbierta(true);
   }
 
-  function continuarPago() {
-    if (!infoProgramaAceptada) return avisar("Debe aceptar que leyo la informacion del programa antes de continuar con el pago.");
+  async function continuarPago() {
+    if (!infoProgramaAceptada) return avisar("Debe aceptar que leyo la informacion del programa antes de continuar.");
+    if (invitacion && !inscripcion) {
+      const registrado = await solicitarInscripcionPadres();
+      if (registrado) setInfoProgramaAbierta(false);
+      return;
+    }
+
     setInfoProgramaAbierta(false);
     consultarRafael("Monto a pagar");
   }
@@ -215,6 +246,7 @@ function usePadres(user) {
     estudiante,
     form,
     guardando,
+    apoderadoBloqueado,
     infoProgramaAbierta,
     infoProgramaAceptada,
     iniciales,
@@ -302,6 +334,79 @@ function inferirSexoDemo(nombre) {
   if (["camila", "lucia", "maria", "rosa", "claudia", "patricia", "ana"].includes(primerNombre)) return "mujer";
   if (["juan", "mateo", "jose", "carlos"].includes(primerNombre)) return "hombre";
   return "";
+}
+
+function prepararProgramaParaGrado(programa, gradoEstudiante) {
+  const horarioDelGrado = resolverHorarioCatalogoPorGrado(programa, gradoEstudiante);
+  const disponibleParaGrado = programaDisponibleCatalogoParaGrado(programa, gradoEstudiante, horarioDelGrado);
+
+  return {
+    ...programa,
+    horario: disponibleParaGrado ? (horarioDelGrado || programa.horario) : "",
+    disponibleParaGrado,
+  };
+}
+
+function programaDisponibleCatalogoParaGrado(programa, gradoEstudiante, horarioDelGrado = "") {
+  if (!programa?.requiereGradoCompatible) return true;
+  if (Array.isArray(programa.horariosPorGrupo) && programa.horariosPorGrupo.length > 0) {
+    return Boolean(horarioDelGrado);
+  }
+
+  const gradosAplicables = Array.isArray(programa.gradosAplicables) ? programa.gradosAplicables : [];
+  if (!gradosAplicables.length) return true;
+
+  const gradoNormalizado = descomponerGradoCatalogo(gradoEstudiante);
+  if (!gradoNormalizado.numero) return false;
+
+  return gradosAplicables.some((grado) => coincideGradoCatalogo(grado, gradoNormalizado));
+}
+
+function resolverHorarioCatalogoPorGrado(programa, gradoEstudiante = "") {
+  const grupos = programa?.horariosPorGrupo || [];
+  if (!Array.isArray(grupos) || grupos.length === 0) return "";
+
+  const gradoNormalizado = descomponerGradoCatalogo(gradoEstudiante);
+  if (!gradoNormalizado.numero) return "";
+
+  let gradoDelTurno = "";
+  const grupo = grupos.find((item) => {
+    gradoDelTurno = (item.grados || []).find((grado) => coincideGradoCatalogo(grado, gradoNormalizado)) || "";
+    return Boolean(gradoDelTurno);
+  });
+
+  if (!grupo) return "";
+  const grado = formatearGradoCatalogo(gradoDelTurno || gradoEstudiante);
+  const aula = grupo.aula ? ` - Aula ${grupo.aula}` : "";
+  return `${grado ? `${grado}: ` : ""}${grupo.dia} almuerzo ${grupo.almuerzoInicio || "14:20"}-${grupo.almuerzoFin || "15:10"}, clase ${grupo.horaInicio || ""}-${grupo.horaFin || ""}${aula}`;
+}
+
+function coincideGradoCatalogo(gradoGrupo, gradoEstudiante) {
+  const grupo = descomponerGradoCatalogo(gradoGrupo);
+  if (!grupo.numero || !gradoEstudiante?.numero) return false;
+  if (grupo.numero !== gradoEstudiante.numero) return false;
+  return !grupo.nivel || !gradoEstudiante.nivel || grupo.nivel === gradoEstudiante.nivel;
+}
+
+function formatearGradoCatalogo(valor) {
+  const [nivel, grado] = String(valor || "").split(":");
+  if (!nivel || !grado) return valor;
+  return `${nivel} ${grado}`;
+}
+
+function descomponerGradoCatalogo(valor) {
+  const texto = normalizarTexto(valor).replace(":", " ");
+  const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
+  const numero = texto.match(/\d+/)?.[0] || "";
+  return { nivel, numero };
+}
+
+function normalizarTexto(texto) {
+  return String(texto || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function obtenerSiguientePaso({ programa, inscripcion }) {

@@ -560,8 +560,9 @@ function normalizarDelimitadoresPlantilla(zip, datos) {
 
 function crearMapaVariablesDocumento(estudiante, inscripcion) {
   const costo = `S/ ${Number(inscripcion.costo || 0).toFixed(2)}`;
-  const fechaInicio = formatearFechaValor(inscripcion.fechaInicio);
-  const fechaFin = formatearFechaValor(inscripcion.fechaFin);
+  const fechaInicio = formatearFechaInicioRango(inscripcion.fechaInicio, inscripcion.fechaFin);
+  const fechaFin = formatearFechaFinRango(inscripcion.fechaInicio, inscripcion.fechaFin);
+  const rangoFechas = formatearRangoFechasLetras(inscripcion.fechaInicio, inscripcion.fechaFin);
   const duracion = calcularDuracionTexto(inscripcion.fechaInicio, inscripcion.fechaFin);
   const alumno = inscripcion.nombresEstudiante || estudiante?.nombres || "";
   const apoderado = inscripcion.apoderado || "";
@@ -587,6 +588,8 @@ function crearMapaVariablesDocumento(estudiante, inscripcion) {
     CICLO: estudiante?.periodo || obtenerNombrePeriodo(inscripcion.periodo),
     INI: fechaInicio,
     FIN: fechaFin,
+    RANGO: rangoFechas,
+    VIGENCIA: rangoFechas,
     DUR: duracion,
     N1: niveles[0] || gradoSeccion,
     N2: niveles[1] || "",
@@ -655,6 +658,9 @@ function crearMapaVariablesDocumento(estudiante, inscripcion) {
     fecha_inicio: fechaInicio,
     fin: fechaFin,
     fecha_fin: fechaFin,
+    rango: rangoFechas,
+    rango_fechas: rangoFechas,
+    vigencia: rangoFechas,
     duracion,
     duración: duracion,
     fecha: fechaActual,
@@ -712,6 +718,54 @@ function formatearFechaFicha(fecha) {
 
 function formatearFechaValor(valor) {
   return formatearFechaPeru(valor);
+}
+
+function formatearFechaInicioRango(inicio, fin) {
+  const fechaInicio = normalizarFecha(inicio);
+  const fechaFin = normalizarFecha(fin);
+  if (!fechaInicio) return "";
+
+  const mismoAnio = fechaFin && fechaInicio.getFullYear() === fechaFin.getFullYear();
+  return formatearFechaLetras(fechaInicio, { incluirAnio: !mismoAnio });
+}
+
+function formatearFechaFinRango(inicio, fin) {
+  const fechaInicio = normalizarFecha(inicio);
+  const fechaFin = normalizarFecha(fin);
+  if (!fechaFin) return "";
+
+  const mismoAnio = fechaInicio && fechaInicio.getFullYear() === fechaFin.getFullYear();
+  return formatearFechaLetras(fechaFin, { incluirAnio: true, usarDeAnio: mismoAnio });
+}
+
+function formatearRangoFechasLetras(inicio, fin) {
+  const fechaInicio = normalizarFecha(inicio);
+  const fechaFin = normalizarFecha(fin);
+  if (!fechaInicio && !fechaFin) return "";
+  if (!fechaInicio) return formatearFechaLetras(fechaFin, { incluirAnio: true });
+  if (!fechaFin) return formatearFechaLetras(fechaInicio, { incluirAnio: true });
+  return `del ${formatearFechaInicioRango(inicio, fin)} al ${formatearFechaFinRango(inicio, fin)}`;
+}
+
+function formatearFechaLetras(fecha, { incluirAnio = true, usarDeAnio = true } = {}) {
+  if (!fecha) return "";
+  const meses = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+  ];
+  const base = `${fecha.getDate()} de ${meses[fecha.getMonth()]}`;
+  if (!incluirAnio) return base;
+  return `${base}${usarDeAnio ? " de" : ""} ${fecha.getFullYear()}`;
 }
 
 function extraerDiasHorario(horario) {
@@ -835,7 +889,7 @@ function crearHtmlImpresionInvitacion(documento) {
         <style>
           @page { size: A4; margin: 18mm; }
           * { box-sizing: border-box; }
-          body { margin: 0; color: #253244; font-family: Arial, sans-serif; background: #fff; }
+          body { margin: 0; color: #253244; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #fff; }
           main { width: 100%; }
           header { display: grid; justify-items: center; gap: 6px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #cbd5df; text-align: center; }
           h3 { margin: 0; font-size: 16px; letter-spacing: 0; }
@@ -1094,7 +1148,7 @@ function crearHtmlImpresionFicha(ficha) {
         <style>
           @page { size: A4; margin: 18mm; }
           * { box-sizing: border-box; }
-          body { margin: 0; color: #253244; font-family: Arial, sans-serif; background: #fff; }
+          body { margin: 0; color: #253244; font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #fff; }
           main { width: 100%; }
           header { display: grid; justify-items: center; gap: 6px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #cbd5df; text-align: center; }
           h3 { margin: 0; font-size: 16px; letter-spacing: 0; }

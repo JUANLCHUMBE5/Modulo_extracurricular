@@ -1,20 +1,20 @@
-import { mockDb, saveMockDb, syncMockDbFromStorage } from "../../../services/localDbClient";
+import { apiDb, saveApiDb, syncApiDb } from "../../../services/dbApi";
 import { fechaActualIso, obtenerVentanaInscripcion } from "../../../services/dateService";
 
 const delay = (ms = 350) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function obtenerResumenPadre(dni) {
   await delay();
-  await syncMockDbFromStorage();
+  await syncApiDb();
 
   const dniLimpio = String(dni || "").replace(/\D/g, "");
-  const estudiante = mockDb.estudiantes[dniLimpio] || null;
+  const estudiante = apiDb.estudiantes[dniLimpio] || null;
 
   if (!estudiante) {
     throw new Error("No se encontró información del estudiante.");
   }
 
-  const invitaciones = obtenerInvitaciones(dniLimpio);
+  const invitaciones = obtenerInvitaciones(dniLimpio, estudiante);
   const inscripciones = obtenerInscripciones(estudiante, dniLimpio);
   const pagos = obtenerPagos(dniLimpio, inscripciones);
   const documentos = obtenerDocumentos(dniLimpio, estudiante);
@@ -35,45 +35,46 @@ export async function obtenerResumenPadre(dni) {
 
 export async function guardarDatosApoderadoPadres(dni, datos) {
   await delay(300);
-  await syncMockDbFromStorage();
+  await syncApiDb();
 
   const dniLimpio = String(dni || "").replace(/\D/g, "");
-  const estudiante = mockDb.estudiantes[dniLimpio];
+  const estudiante = apiDb.estudiantes[dniLimpio];
   if (!estudiante) throw new Error("No se encontró información del estudiante.");
 
-  estudiante.apoderado = limpiarTexto(datos.apoderado);
+  const apoderadoRegistrado = limpiarTexto(estudiante.apoderado);
+  estudiante.apoderado = apoderadoRegistrado || limpiarTexto(datos.apoderado);
   estudiante.telefonoApoderado = limpiarTexto(datos.telefono);
   estudiante.correoApoderado = limpiarTexto(datos.correo);
-  estudiante.medioEnvio = limpiarTexto(datos.medioEnvio);
+  estudiante.enviarPdfCorreo = Boolean(datos.enviarPdfCorreo && estudiante.correoApoderado);
 
-  mockDb.inscripciones = mockDb.inscripciones.map((inscripcion) => {
+  apiDb.inscripciones = apiDb.inscripciones.map((inscripcion) => {
     if (inscripcion.dniEstudiante !== dniLimpio) return inscripcion;
     return {
       ...inscripcion,
       apoderado: estudiante.apoderado,
       telefono: estudiante.telefonoApoderado,
       correo: estudiante.correoApoderado,
-      medioEnvio: estudiante.medioEnvio,
+      enviarPdfCorreo: estudiante.enviarPdfCorreo,
     };
   });
 
-  saveMockDb();
+  await saveApiDb();
   return estudiante;
 }
 
 export async function registrarInscripcionPadres(dni, datos, programaId = "") {
   await delay(400);
-  await syncMockDbFromStorage();
+  await syncApiDb();
 
   const dniLimpio = String(dni || "").replace(/\D/g, "");
-  const estudiante = mockDb.estudiantes[dniLimpio];
+  const estudiante = apiDb.estudiantes[dniLimpio];
   if (!estudiante) throw new Error("No se encontró información del estudiante.");
 
-  const invitacion = obtenerInvitaciones(dniLimpio)[0];
+  const invitacion = obtenerInvitaciones(dniLimpio, estudiante)[0];
   const programaSeleccionadoId = programaId || invitacion?.programaId;
   if (!programaSeleccionadoId) throw new Error("Seleccione un curso disponible para registrar.");
 
-  const programa = mockDb.programas.find((item) => item.id === programaSeleccionadoId);
+  const programa = apiDb.programas.find((item) => item.id === programaSeleccionadoId);
   if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
   if (programa.estado !== "Habilitado") throw new Error("El programa no está habilitado.");
 
@@ -86,7 +87,11 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
     throw new Error("El programa no tiene cupos disponibles.");
   }
 
-  const duplicada = mockDb.inscripciones.some((item) =>
+  if (!programaDisponibleParaGrado(programa, estudiante.grado)) {
+    throw new Error("El programa no esta disponible para el grado del estudiante.");
+  }
+
+  const duplicada = apiDb.inscripciones.some((item) =>
     item.programaId === programa.id &&
     item.estadoInscripcion !== "Anulada" &&
     item.dniEstudiante === dniLimpio
@@ -122,7 +127,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
     apoderado: limpiarTexto(datos.apoderado || estudiante.apoderado),
     telefono: limpiarTexto(datos.telefono || estudiante.telefonoApoderado),
     correo: limpiarTexto(datos.correo || estudiante.correoApoderado),
-    medioEnvio: limpiarTexto(datos.medioEnvio || estudiante.medioEnvio || "WhatsApp"),
+    enviarPdfCorreo: Boolean(datos.enviarPdfCorreo && limpiarTexto(datos.correo || estudiante.correoApoderado)),
     observacion: invitacion ? "Registro solicitado desde portal de padres." : "Registro libre solicitado desde portal de padres.",
     estadoInscripcion: "Pendiente de pago",
     estadoPago: "Pendiente",
@@ -130,20 +135,23 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
     fechaRegistro: fechaActualIso(),
   };
 
-  mockDb.inscripciones.push(registro);
+  apiDb.inscripciones.push(registro);
   programa.cuposOcupados = Number(programa.cuposOcupados || 0) + 1;
-  saveMockDb();
+  await saveApiDb();
   return registro;
 }
 
-function obtenerInvitaciones(dni) {
+function obtenerInvitaciones(dni, estudiante = null) {
   const resultado = [];
 
-  mockDb.programas.forEach((programa) => {
-    const invitados = mockDb.invitadosPorPrograma[programa.id] || [];
+  apiDb.programas.forEach((programa) => {
+    const invitados = apiDb.invitadosPorPrograma[programa.id] || [];
     invitados
       .filter((invitado) => invitado.dni === dni)
       .forEach((invitado) => {
+        const gradoEstudiante = estudiante?.grado || invitado.grado;
+        if (!programaDisponibleParaGrado(programa, gradoEstudiante)) return;
+
         resultado.push({
           id: `${programa.id}-${invitado.dni || invitado.codigoEstudiante || invitado.nombres}`,
           programaId: programa.id,
@@ -178,7 +186,7 @@ function obtenerInscripciones(estudiante, dni) {
     estudiante.nombres ? `nombre:${normalizarTexto(estudiante.nombres)}` : "",
   ].filter(Boolean));
 
-  return [...mockDb.inscripciones]
+  return [...apiDb.inscripciones]
     .filter((inscripcion) => {
       const clavesInscripcion = [
         inscripcion.dniEstudiante ? `dni:${inscripcion.dniEstudiante}` : "",
@@ -189,19 +197,20 @@ function obtenerInscripciones(estudiante, dni) {
       return clavesInscripcion.some((clave) => claves.has(clave));
     })
     .map(sincronizarInscripcionConPrograma)
+    .filter((inscripcion) => inscripcion.estadoInscripcion !== "Requiere revision")
     .sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0));
 }
 
 function obtenerPagos(dni, inscripciones) {
   const idsInscripcion = new Set(inscripciones.map((item) => item.id));
-  return [...(mockDb.pagos || [])]
+  return [...(apiDb.pagos || [])]
     .filter((pago) => pago.dniEstudiante === dni || idsInscripcion.has(pago.inscripcionId))
     .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
 }
 
 function obtenerDocumentos(dni, estudiante) {
   const nombre = normalizarTexto(estudiante.nombres);
-  return [...(mockDb.documentosGenerados || [])]
+  return [...(apiDb.documentosGenerados || [])]
     .filter((documento) =>
       documento.dniEstudiante === dni ||
       normalizarTexto(documento.alumno) === nombre
@@ -210,13 +219,25 @@ function obtenerDocumentos(dni, estudiante) {
 }
 
 function sincronizarInscripcionConPrograma(inscripcion) {
-  const programa = mockDb.programas.find((item) =>
+  const programa = apiDb.programas.find((item) =>
     item.id === inscripcion.programaId ||
     normalizarTexto(item.nombre) === normalizarTexto(inscripcion.programa)
   );
 
   if (!programa) {
     return normalizarInscripcion(inscripcion);
+  }
+
+  if (!programaDisponibleParaGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado)) {
+    return normalizarInscripcion({
+      ...inscripcion,
+      estadoInscripcion: "Requiere revision",
+      estadoPago: inscripcion.estadoPago || "Pendiente",
+      costo: 0,
+      horario: "Programa no disponible para este grado",
+      estadoPrograma: programa.estado || "",
+      programa: programa.nombre || inscripcion.programa,
+    });
   }
 
   return normalizarInscripcion({
@@ -290,6 +311,20 @@ function tieneHorariosPorGrupo(programa) {
   return Array.isArray(programa?.horariosPorGrupo) && programa.horariosPorGrupo.length > 0;
 }
 
+function programaDisponibleParaGrado(programa, gradoAlumno = "") {
+  if (tieneHorariosPorGrupo(programa)) {
+    return Boolean(resolverHorarioPorGrado(programa, gradoAlumno));
+  }
+
+  const gradosAplicables = Array.isArray(programa?.gradosAplicables) ? programa.gradosAplicables : [];
+  if (!gradosAplicables.length) return true;
+
+  const gradoNormalizado = descomponerGrado(gradoAlumno);
+  if (!gradoNormalizado.numero) return false;
+
+  return gradosAplicables.some((grado) => coincideGrado(grado, gradoNormalizado));
+}
+
 function calcularEstadoGeneral(inscripcion, invitacion) {
   if (inscripcion) {
     if (String(inscripcion.estadoPago || "").toLowerCase().includes("pag")) {
@@ -330,18 +365,23 @@ function limpiarTexto(texto) {
 
 export async function obtenerProgramasCoordinacion() {
   await delay(300);
-  await syncMockDbFromStorage();
-  return mockDb.programas.map((programa) => {
+  await syncApiDb();
+  return apiDb.programas.map((programa) => {
     const cupos = Number(programa.cupos || 0);
     const cuposOcupados = Number(programa.cuposOcupados || 0);
     const cuposDisponibles = Math.max(0, cupos - cuposOcupados);
     const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio);
+    const requiereGradoCompatible = tieneHorariosPorGrupo(programa) ||
+      (Array.isArray(programa.gradosAplicables) && programa.gradosAplicables.length > 0);
 
     return {
       id: programa.id,
       nombre: programa.nombre,
       categoria: programa.categoria,
       horario: programa.horario || "Por confirmar",
+      horariosPorGrupo: programa.horariosPorGrupo || [],
+      gradosAplicables: programa.gradosAplicables || [],
+      requiereGradoCompatible,
       periodo: normalizarPeriodoTexto(programa.periodo),
       estado: programa.estado || "Habilitado",
       cupos,

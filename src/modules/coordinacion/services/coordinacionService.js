@@ -1,4 +1,4 @@
-import { mockDb, nextMockId, saveMockDb, syncMockDbFromStorage } from "../../../services/localDbClient";
+import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
 import { fechaActualInput, fechaActualIso, normalizarFecha } from "../../../services/dateService";
 
 const delay = (ms = 600) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -6,62 +6,62 @@ const obtenerApiBase = () => import.meta.env.VITE_LOCAL_API_URL || "";
 
 export async function listarCategorias() {
   await delay(300);
-  await syncMockDbFromStorage();
-  return [...mockDb.categorias];
+  await syncApiDb();
+  return [...apiDb.categorias];
 }
 
 export async function crearCategoria(nombre) {
   await delay(300);
-  if (mockDb.categorias.includes(nombre)) throw new Error("La categoría ya existe.");
-  mockDb.categorias.push(nombre);
-  saveMockDb();
+  if (apiDb.categorias.includes(nombre)) throw new Error("La categoría ya existe.");
+  apiDb.categorias.push(nombre);
+  await saveApiDb();
   return nombre;
 }
 
 export async function eliminarCategoria(nombre) {
   await delay(300);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   const categoria = String(nombre || "").trim();
   if (!categoria) throw new Error("Seleccione una categoría para quitar.");
 
-  const estaEnUso = mockDb.programas.some((programa) =>
+  const estaEnUso = apiDb.programas.some((programa) =>
     String(programa.categoria || "").toLowerCase() === categoria.toLowerCase()
   );
   if (estaEnUso) {
     throw new Error("No se puede quitar una categoría que ya está usada por programas registrados.");
   }
 
-  mockDb.categorias = mockDb.categorias.filter((item) =>
+  apiDb.categorias = apiDb.categorias.filter((item) =>
     String(item).toLowerCase() !== categoria.toLowerCase()
   );
-  saveMockDb();
+  await saveApiDb();
   return categoria;
 }
 
 export async function listarProgramas() {
   await delay(400);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   normalizarPeriodosGuardados();
   finalizarProgramasVencidos();
-  return mockDb.programas.map(conCuposDisponibles);
+  return apiDb.programas.map(conCuposDisponibles);
 }
 
 export async function obtenerPrograma(id) {
   await delay(300);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   normalizarPeriodosGuardados();
   finalizarProgramasVencidos();
-  const programa = mockDb.programas.find((item) => item.id === id);
+  const programa = apiDb.programas.find((item) => item.id === id);
   if (!programa) throw new Error("Programa no encontrado.");
   return conCuposDisponibles(programa);
 }
 
 export async function crearPrograma(datos) {
   await delay(700);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   finalizarProgramasVencidos();
   validarDatosPrograma(datos);
-  const correlativo = nextMockId("nextProgramaId");
+  const correlativo = nextApiId("nextProgramaId");
   const nuevo = {
     id: `PROG-${String(correlativo).padStart(3, "0")}`,
     cuposOcupados: 0,
@@ -80,14 +80,14 @@ export async function crearPrograma(datos) {
     concesionarios: datos.concesionarios || "",
   };
 
-  mockDb.programas.push(nuevo);
-  saveMockDb();
+  apiDb.programas.push(nuevo);
+  await saveApiDb();
   return conCuposDisponibles(nuevo);
 }
 
 export async function crearProgramaDesdeDocumento(datos) {
   await delay(700);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   finalizarProgramasVencidos();
 
   if (!String(datos.nombre || "").trim()) throw new Error("Ingrese el nombre del programa.");
@@ -95,12 +95,12 @@ export async function crearProgramaDesdeDocumento(datos) {
     throw new Error("Suba un Word apto con variables antes de guardar.");
   }
 
-  const correlativo = nextMockId("nextProgramaId");
+  const correlativo = nextApiId("nextProgramaId");
   const nuevo = {
     ...datos,
     id: `PROG-${String(correlativo).padStart(3, "0")}`,
     periodo: normalizarPeriodo(datos.periodo || "escolar"),
-    categoria: datos.categoria || mockDb.categorias[0] || "General",
+    categoria: datos.categoria || apiDb.categorias[0] || "General",
     grupo: datos.grupo || "Por definir",
     horario: datos.horario || "Por definir",
     gradosAplicables: Array.isArray(datos.gradosAplicables) && datos.gradosAplicables.length
@@ -126,21 +126,21 @@ export async function crearProgramaDesdeDocumento(datos) {
     creadoDesdeDocumento: true,
   };
 
-  mockDb.programas.push(nuevo);
-  saveMockDb();
+  apiDb.programas.push(nuevo);
+  await saveApiDb();
   return conCuposDisponibles(nuevo);
 }
 
 export async function editarPrograma(id, datos) {
   await delay(700);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   finalizarProgramasVencidos();
   validarDatosPrograma(datos);
-  const index = mockDb.programas.findIndex((item) => item.id === id);
+  const index = apiDb.programas.findIndex((item) => item.id === id);
   if (index === -1) throw new Error("Programa no encontrado.");
 
-  mockDb.programas[index] = {
-    ...mockDb.programas[index],
+  apiDb.programas[index] = {
+    ...apiDb.programas[index],
     ...datos,
     id,
     periodo: normalizarPeriodo(datos.periodo),
@@ -156,16 +156,16 @@ export async function editarPrograma(id, datos) {
     concesionarios: datos.concesionarios || "",
   };
 
-  saveMockDb();
-  return conCuposDisponibles(mockDb.programas[index]);
+  await saveApiDb();
+  return conCuposDisponibles(apiDb.programas[index]);
 }
 
 export async function cambiarEstadoPrograma(id, nuevoEstado) {
   await delay(400);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   normalizarPeriodosGuardados();
   finalizarProgramasVencidos();
-  const programa = mockDb.programas.find((item) => item.id === id);
+  const programa = apiDb.programas.find((item) => item.id === id);
   if (!programa) throw new Error("Programa no encontrado.");
   if (programa.estado === "Finalizado") {
     throw new Error("El programa ya finalizó. Cree un nuevo ciclo para continuar.");
@@ -173,43 +173,43 @@ export async function cambiarEstadoPrograma(id, nuevoEstado) {
   if (nuevoEstado === "Habilitado" && programaVencido(programa)) {
     programa.estado = "Finalizado";
     programa.finalizadoAutomaticamenteEn = programa.finalizadoAutomaticamenteEn || fechaActualIso();
-    saveMockDb();
+    await saveApiDb();
     throw new Error("El programa ya cumplió su fecha fin. Cree un nuevo ciclo para continuar.");
   }
   programa.estado = nuevoEstado;
-  saveMockDb();
+  await saveApiDb();
   return conCuposDisponibles(programa);
 }
 
 export async function eliminarPrograma(id) {
   await delay(400);
-  await syncMockDbFromStorage();
-  const index = mockDb.programas.findIndex((item) => item.id === id);
+  await syncApiDb();
+  const index = apiDb.programas.findIndex((item) => item.id === id);
   if (index === -1) throw new Error("Programa no encontrado.");
 
-  mockDb.programas.splice(index, 1);
-  delete mockDb.invitadosPorPrograma[id];
-  saveMockDb();
+  apiDb.programas.splice(index, 1);
+  delete apiDb.invitadosPorPrograma[id];
+  await saveApiDb();
   return true;
 }
 
 export async function listarInvitados(programaId) {
   await delay(400);
-  await syncMockDbFromStorage();
-  return [...(mockDb.invitadosPorPrograma[programaId] || [])];
+  await syncApiDb();
+  return [...(apiDb.invitadosPorPrograma[programaId] || [])];
 }
 
 export async function buscarInvitacionPorDniPeriodo(dni, periodo) {
   await delay(250);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   normalizarPeriodosGuardados();
   finalizarProgramasVencidos();
-  const programasPeriodo = mockDb.programas.filter((programa) =>
+  const programasPeriodo = apiDb.programas.filter((programa) =>
     normalizarPeriodo(programa.periodo) === normalizarPeriodo(periodo)
   );
 
   for (const programa of programasPeriodo) {
-    const invitado = (mockDb.invitadosPorPrograma[programa.id] || [])
+    const invitado = (apiDb.invitadosPorPrograma[programa.id] || [])
       .find((alumno) =>
         alumno.dni === dni &&
         normalizarPeriodo(alumno.periodo || programa.periodo) === normalizarPeriodo(periodo)
@@ -229,24 +229,24 @@ export async function buscarInvitacionPorDniPeriodo(dni, periodo) {
 
 export async function importarInvitados(programaId, lista) {
   await delay(800);
-  const existentes = mockDb.invitadosPorPrograma[programaId] || [];
+  const existentes = apiDb.invitadosPorPrograma[programaId] || [];
   const dniExistentes = new Set(existentes.map((item) => item.dni));
   const nuevos = lista.filter((item) => !dniExistentes.has(item.dni));
   const duplicados = lista.length - nuevos.length;
-  const programa = mockDb.programas.find((item) => item.id === programaId);
-  mockDb.invitadosPorPrograma[programaId] = [
+  const programa = apiDb.programas.find((item) => item.id === programaId);
+  apiDb.invitadosPorPrograma[programaId] = [
     ...existentes,
     ...nuevos.map((item) => ({
       ...item,
       periodo: item.periodo || normalizarPeriodo(programa?.periodo),
     })),
   ];
-  saveMockDb();
+  await saveApiDb();
   return { importados: nuevos.length, duplicados };
 }
 
 export async function previsualizarCargaAlumnos({ periodo, archivoNombre, archivo }) {
-  await syncMockDbFromStorage();
+  await syncApiDb();
   normalizarPeriodosGuardados();
 
   if (!archivo) throw new Error("Seleccione un archivo Excel.");
@@ -255,8 +255,8 @@ export async function previsualizarCargaAlumnos({ periodo, archivoNombre, archiv
   const formData = new FormData();
   formData.append("periodo", periodo);
   formData.append("archivo", archivo);
-  formData.append("programas", JSON.stringify(mockDb.programas));
-  formData.append("existentes", JSON.stringify(mockDb.invitadosPorPrograma));
+  formData.append("programas", JSON.stringify(apiDb.programas));
+  formData.append("existentes", JSON.stringify(apiDb.invitadosPorPrograma));
 
   const response = await fetch(`${obtenerApiBase()}/api/coordinacion/cargas/preview`, {
     method: "POST",
@@ -358,13 +358,13 @@ function claveRegistroPreview(registro) {
 
 export async function confirmarCargaAlumnos(preview) {
   await delay(600);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   const validos = preview.registros.filter((item) => item.estado === "Valido");
 
   validos.forEach((item) => {
     if (!item.programaId) return;
-    const existentes = mockDb.invitadosPorPrograma[item.programaId] || [];
-    mockDb.invitadosPorPrograma[item.programaId] = [
+    const existentes = apiDb.invitadosPorPrograma[item.programaId] || [];
+    apiDb.invitadosPorPrograma[item.programaId] = [
       ...existentes,
       {
         codigoEstudiante: item.codigoEstudiante || "",
@@ -381,7 +381,7 @@ export async function confirmarCargaAlumnos(preview) {
     ];
   });
 
-  saveMockDb();
+  await saveApiDb();
   return {
     importados: validos.length,
     total: preview.resumen?.total || validos.length,
@@ -392,23 +392,23 @@ export async function confirmarCargaAlumnos(preview) {
 
 export async function obtenerActividadPrograma(programaId) {
   await delay(200);
-  await syncMockDbFromStorage();
-  const alumnos = mockDb.invitadosPorPrograma[programaId]?.length || 0;
-  const inscripciones = mockDb.inscripciones.filter((item) => item.programaId === programaId).length;
-  const documentos = (mockDb.documentosGenerados || []).filter((item) => item.programaId === programaId).length;
+  await syncApiDb();
+  const alumnos = apiDb.invitadosPorPrograma[programaId]?.length || 0;
+  const inscripciones = apiDb.inscripciones.filter((item) => item.programaId === programaId).length;
+  const documentos = (apiDb.documentosGenerados || []).filter((item) => item.programaId === programaId).length;
   return { alumnos, inscripciones, documentos, tieneActividad: alumnos + inscripciones + documentos > 0 };
 }
 
 export async function obtenerErroresCarga(cargaId) {
   await delay(250);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   return [];
 }
 
 export async function obtenerListaAsistencia(programaId) {
   await delay(500);
-  await syncMockDbFromStorage();
-  const invitados = mockDb.invitadosPorPrograma[programaId] || [];
+  await syncApiDb();
+  const invitados = apiDb.invitadosPorPrograma[programaId] || [];
   return invitados.map((estudiante) => ({
     ...estudiante,
     asistencia: Array.from({ length: 5 }, (_, index) => ({
@@ -449,14 +449,14 @@ function validarDatosPrograma(datos) {
 
 function normalizarPeriodosGuardados() {
   let cambio = false;
-  mockDb.programas.forEach((programa) => {
+  apiDb.programas.forEach((programa) => {
     const normalizado = normalizarPeriodo(programa.periodo);
     if (programa.periodo !== normalizado) {
       programa.periodo = normalizado;
       cambio = true;
     }
   });
-  if (cambio) saveMockDb();
+  if (cambio) saveApiDb();
 }
 
 function finalizarProgramasVencidos() {
@@ -464,14 +464,14 @@ function finalizarProgramasVencidos() {
   if (!hoy) return;
 
   let cambio = false;
-  mockDb.programas.forEach((programa) => {
+  apiDb.programas.forEach((programa) => {
     if (!debeFinalizarPorFecha(programa, hoy)) return;
     programa.estado = "Finalizado";
     programa.finalizadoAutomaticamenteEn = programa.finalizadoAutomaticamenteEn || fechaActualIso();
     cambio = true;
   });
 
-  if (cambio) saveMockDb();
+  if (cambio) saveApiDb();
 }
 
 function debeFinalizarPorFecha(programa, hoy) {

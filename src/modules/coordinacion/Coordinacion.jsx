@@ -82,7 +82,8 @@ const vistasNav = [
   { id: "documentos", label: "Plantillas / Documentos", icon: FileText },
 ];
 
-function Coordinacion({ onLogout }) {
+function Coordinacion({ user, onLogout }) {
+  const esProfesor = user?.username === "profe" || user?.name === "Profesor";
   const [vista, setVista] = useState("programas");
   const [programas, setProgramas] = useState([]);
   const [categorias, setCategorias] = useState([]);
@@ -811,7 +812,7 @@ function Coordinacion({ onLogout }) {
   // RENDER
   // ════════════════════════════════════════════════════════════
   return (
-    <div className={`coord-layout ${sidebarAbierta ? "" : "coord-layout-collapsed"}`}>
+    <div className={`coord-layout ${esProfesor ? "coord-layout-profesor" : ""} ${sidebarAbierta ? "" : "coord-layout-collapsed"}`}>
       {/* ── SIDEBAR ── */}
       <aside className="coord-sidebar">
         <button
@@ -826,7 +827,7 @@ function Coordinacion({ onLogout }) {
         <div className="coord-brand"><div className="coord-brand-mark">SR</div>
           <div className="coord-brand-copy"><span>Colegio</span><strong>San Rafael</strong></div>
         </div>
-        <p className="coord-module-label">Módulo Coordinación</p>
+        <p className="coord-module-label">{esProfesor ? "Módulo Profesores" : "Módulo Coordinación"}</p>
         <nav className="coord-nav">
           {vistasNav.map(({ id, label, icon: Icon }) => (
             <button key={id}
@@ -847,7 +848,10 @@ function Coordinacion({ onLogout }) {
         {/* ─── VISTA: GESTIÓN DE PROGRAMAS ─── */}
         {vista === "programas" && (
           <>
-            <header className="coord-topbar"><h1>GESTION DE PROGRAMAS EXTRACURRICULARES</h1></header>
+            <header className="coord-topbar">
+              <span className="coord-topbar-eyebrow">Gestion academica</span>
+              <h1>Programas extracurriculares</h1>
+            </header>
             <section className="coord-workspace coord-workspace-single">
               <article className="coord-card coord-search-card">
                 <div className="coord-card-title">

@@ -1,4 +1,4 @@
-import { mockDb, nextMockId, saveMockDb, syncMockDbFromStorage } from "../../../services/localDbClient";
+import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
 import {
   buscarInvitacionPorDniPeriodo,
   listarProgramas,
@@ -8,10 +8,16 @@ import { fechaActualInput, fechaActualIso, normalizarFecha, obtenerVentanaInscri
 
 export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
   await esperar(350);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   const periodoNormalizado = normalizarPeriodo(periodo);
-  const estudiante = mockDb.estudiantes[dni];
-  const invitacionPeriodo = await buscarInvitacionPorDniPeriodo(dni, periodoNormalizado);
+  const estudiante = apiDb.estudiantes[dni];
+  const invitacionEncontrada = await buscarInvitacionPorDniPeriodo(dni, periodoNormalizado);
+  const invitacionPeriodo = invitacionEncontrada && programaDisponibleParaGrado(
+    invitacionEncontrada.programa,
+    estudiante?.grado || invitacionEncontrada.invitado?.grado
+  )
+    ? invitacionEncontrada
+    : null;
 
   if (!estudiante && invitacionPeriodo) {
     return adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado);
@@ -37,7 +43,7 @@ export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
 
 export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
   await esperar(350);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   const periodoNormalizado = normalizarPeriodo(periodo);
   const termino = normalizarTexto(nombre);
   if (termino.length < 3) return [];
@@ -45,12 +51,12 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
   const resultados = [];
   const vistos = new Set();
 
-  Object.values(mockDb.estudiantes).forEach((estudiante) => {
+  Object.values(apiDb.estudiantes).forEach((estudiante) => {
     const textoBusqueda = normalizarTexto(`${estudiante.nombres} ${estudiante.codigoEstudiante || ""}`);
     if (!textoBusqueda.includes(termino)) return;
 
     vistos.add(claveAlumno(estudiante));
-    const invitacion = buscarInvitacionEnMemoria(estudiante.dni, periodoNormalizado);
+    const invitacion = buscarInvitacionEnMemoria(estudiante.dni, periodoNormalizado, estudiante.grado);
     resultados.push(invitacion
       ? adaptarEstudianteBase(estudiante, periodoNormalizado, invitacion)
       : {
@@ -65,15 +71,16 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
         });
   });
 
-  mockDb.programas
+  apiDb.programas
     .filter((programa) => normalizarPeriodo(programa.periodo) === periodoNormalizado)
     .forEach((programa) => {
-      (mockDb.invitadosPorPrograma[programa.id] || []).forEach((invitado) => {
+      (apiDb.invitadosPorPrograma[programa.id] || []).forEach((invitado) => {
         const clave = claveAlumno(invitado);
         if (vistos.has(clave)) return;
 
         const textoBusqueda = normalizarTexto(`${invitado.nombres} ${invitado.codigoEstudiante || ""}`);
         if (!textoBusqueda.includes(termino)) return;
+        if (!programaDisponibleParaGrado(programa, invitado.grado)) return;
 
         vistos.add(clave);
         resultados.push(adaptarInvitadoComoEstudiante({
@@ -107,10 +114,10 @@ export async function obtenerProgramaPorId(programaId, periodo) {
 
 export async function registrarInscripcion(payload) {
   await esperar(500);
-  await syncMockDbFromStorage();
+  await syncApiDb();
   finalizarProgramasVencidos();
 
-  const programa = mockDb.programas.find((item) => item.id === payload.programaId);
+  const programa = apiDb.programas.find((item) => item.id === payload.programaId);
   if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
   if (programa.estado !== "Habilitado") {
     throw new Error("No se puede registrar la inscripción porque el programa no está habilitado.");
@@ -120,12 +127,12 @@ export async function registrarInscripcion(payload) {
   }
   validarVentanaInscripcionRegular(programa, payload);
   const horarioResuelto = resolverHorarioPorGrado(programa, payload.gradoEstudiante);
-  if (tieneHorariosPorGrupo(programa) && !horarioResuelto) {
-    throw new Error("El grado del alumno no tiene horario configurado en este programa. Coordinación debe revisar los turnos.");
+  if (!programaDisponibleParaGrado(programa, payload.gradoEstudiante)) {
+    throw new Error("El programa no esta disponible para el grado del alumno. Coordinacion debe revisar los grados habilitados.");
   }
 
   const clavesPayload = clavesAlumnoInscripcion(payload);
-  const duplicada = mockDb.inscripciones.some((item) =>
+  const duplicada = apiDb.inscripciones.some((item) =>
     item.programaId === payload.programaId &&
     item.estadoInscripcion !== "Anulada" &&
     clavesAlumnoInscripcion(item).some((clave) => clavesPayload.includes(clave))
@@ -155,16 +162,16 @@ export async function registrarInscripcion(payload) {
     requiereUniforme: Boolean(programa.requiereUniforme),
   };
 
-  mockDb.inscripciones.push(registro);
+  apiDb.inscripciones.push(registro);
   programa.cuposOcupados = Number(programa.cuposOcupados || 0) + 1;
 
-  const estudiante = mockDb.estudiantes[payload.dniEstudiante];
+  const estudiante = apiDb.estudiantes[payload.dniEstudiante];
   if (estudiante) {
     estudiante.apoderado = payload.apoderado;
     estudiante.telefonoApoderado = payload.telefono;
   }
 
-  saveMockDb();
+  await saveApiDb();
   return registro;
 }
 
@@ -175,10 +182,10 @@ export async function registrarDocumentoGenerado({
   tipoDocumento = "Comunicado personalizado",
 }) {
   await esperar(250);
-  await syncMockDbFromStorage();
+  await syncApiDb();
 
   const documento = {
-    id: `DOC-${String(nextMockId("nextDocumentoId")).padStart(3, "0")}`,
+    id: `DOC-${String(nextApiId("nextDocumentoId")).padStart(3, "0")}`,
     alumno: inscripcion.nombresEstudiante || estudiante?.nombres || "",
     dniEstudiante: inscripcion.dniEstudiante || estudiante?.dni || "",
     programa: inscripcion.programa,
@@ -189,20 +196,20 @@ export async function registrarDocumentoGenerado({
     plantilla: inscripcion.plantilla || "",
   };
 
-  mockDb.documentosGenerados.unshift(documento);
-  saveMockDb();
+  apiDb.documentosGenerados.unshift(documento);
+  await saveApiDb();
   return documento;
 }
 
 export async function buscarInscripcionEstudiante(estudiante, periodo = "escolar") {
   await esperar(200);
-  await syncMockDbFromStorage();
+  await syncApiDb();
 
   const periodoNormalizado = normalizarPeriodo(periodo);
   const clavesEstudiante = clavesAlumnoInscripcion(estudiante);
   if (!clavesEstudiante.length) return null;
 
-  const inscripciones = [...mockDb.inscripciones]
+  const inscripciones = [...apiDb.inscripciones]
     .reverse()
     .filter((item) =>
     item.estadoInscripcion !== "Anulada" &&
@@ -223,11 +230,12 @@ function esperar(ms) {
 function sincronizarInscripcionConProgramaActual(inscripcion) {
   if (!inscripcion) return null;
 
-  const programa = mockDb.programas.find((item) =>
+  const programa = apiDb.programas.find((item) =>
     item.id === inscripcion.programaId ||
     normalizarTexto(item.nombre) === normalizarTexto(inscripcion.programa)
   );
   if (!programa) return inscripcion;
+  if (!programaDisponibleParaGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado)) return null;
 
   return {
     ...inscripcion,
@@ -332,14 +340,14 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
   };
 }
 
-function buscarInvitacionEnMemoria(dni, periodo) {
+function buscarInvitacionEnMemoria(dni, periodo, gradoAlumno = "") {
   if (!dni) return null;
   const periodoNormalizado = normalizarPeriodo(periodo);
 
-  for (const programa of mockDb.programas) {
+  for (const programa of apiDb.programas) {
     if (normalizarPeriodo(programa.periodo) !== periodoNormalizado) continue;
-    const invitado = (mockDb.invitadosPorPrograma[programa.id] || []).find((item) => item.dni === dni);
-    if (invitado) return { programaId: programa.id, programa, invitado };
+    const invitado = (apiDb.invitadosPorPrograma[programa.id] || []).find((item) => item.dni === dni);
+    if (invitado && programaDisponibleParaGrado(programa, gradoAlumno || invitado.grado)) return { programaId: programa.id, programa, invitado };
   }
 
   return null;
@@ -380,6 +388,20 @@ function tieneHorariosPorGrupo(programa) {
   return Array.isArray(programa?.horariosPorGrupo) && programa.horariosPorGrupo.length > 0;
 }
 
+function programaDisponibleParaGrado(programa, gradoAlumno = "") {
+  if (tieneHorariosPorGrupo(programa)) {
+    return Boolean(resolverHorarioPorGrado(programa, gradoAlumno));
+  }
+
+  const gradosAplicables = Array.isArray(programa?.gradosAplicables) ? programa.gradosAplicables : [];
+  if (!gradosAplicables.length) return true;
+
+  const gradoNormalizado = descomponerGrado(gradoAlumno);
+  if (!gradoNormalizado.numero) return false;
+
+  return gradosAplicables.some((grado) => coincideGrado(grado, gradoNormalizado));
+}
+
 function descomponerGrado(valor) {
   const texto = normalizarTexto(valor).replace(":", " ");
   const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
@@ -396,7 +418,7 @@ function finalizarProgramasVencidos() {
   if (!hoy) return;
 
   let cambio = false;
-  mockDb.programas.forEach((programa) => {
+  apiDb.programas.forEach((programa) => {
     if (programa.estado === "Finalizado") return;
     const fechaFin = normalizarFecha(programa.fechaFin);
     if (!fechaFin || fechaFin >= hoy) return;
@@ -406,7 +428,7 @@ function finalizarProgramasVencidos() {
     cambio = true;
   });
 
-  if (cambio) saveMockDb();
+  if (cambio) saveApiDb();
 }
 
 function validarVentanaInscripcionRegular(programa, payload = {}) {
@@ -428,7 +450,7 @@ function normalizarTexto(texto) {
 
 function obtenerEstadoInscripcionPorPeriodo(dni, periodo) {
   if (!dni) return "No inscrito";
-  const inscripcion = [...mockDb.inscripciones]
+  const inscripcion = [...apiDb.inscripciones]
     .reverse()
     .find((item) =>
       item.dniEstudiante === dni &&
@@ -440,7 +462,7 @@ function obtenerEstadoInscripcionPorPeriodo(dni, periodo) {
 
 function obtenerEstadoPagoPorPeriodo(dni, periodo) {
   if (!dni) return "Sin pago";
-  const inscripcion = [...mockDb.inscripciones]
+  const inscripcion = [...apiDb.inscripciones]
     .reverse()
     .find((item) =>
       item.dniEstudiante === dni &&

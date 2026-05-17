@@ -25,7 +25,7 @@ function App() {
       case "administrador":
         return <Administrador onLogout={handleLogout} />;
       case "coordinacion":
-        return <Coordinacion onLogout={handleLogout} />;
+        return <Coordinacion user={user} onLogout={handleLogout} />;
       case "secretaria":
         return <Secretaria onLogout={handleLogout} />;
       case "padres":

@@ -16,7 +16,6 @@ import AsistentePadres from "./components/AsistentePadres";
 import Campo from "./components/Campo";
 import Dato from "./components/Dato";
 import ProgramaDato from "./components/ProgramaDato";
-import TextoBloque from "./components/TextoBloque";
 import usePadres, { formatearSoles } from "./hooks/usePadres";
 import "./Padres.css";
 
@@ -35,6 +34,7 @@ export default function Padres({ user, onLogout }) {
     estudiante,
     form,
     guardando,
+    apoderadoBloqueado,
     infoProgramaAbierta,
     infoProgramaAceptada,
     iniciales,
@@ -55,6 +55,17 @@ export default function Padres({ user, onLogout }) {
     solicitarInscripcionPadres,
     guardarDatos,
   } = usePadres(user);
+  const comunicadoPadres = prepararComunicadoPadres(programa, estudiante);
+  const invitacionPendiente = Boolean(invitacion && !inscripcion);
+  const montoVisible = Boolean(inscripcion && infoProgramaAceptada);
+  const debeRevisarAntesDePagar = Boolean(inscripcion && !infoProgramaAceptada);
+  const pasoVisible = debeRevisarAntesDePagar
+    ? {
+        titulo: "Informacion pendiente",
+        detalle: "Revise y acepte el comunicado del programa antes de mostrar el monto de pago.",
+      }
+    : siguientePaso;
+
   return (
     <div className="padres-layout">
       <main className="padres-main">
@@ -92,7 +103,6 @@ export default function Padres({ user, onLogout }) {
           <section className="padres-enrollment">
             <article
               className={`padres-hero ${bannerEstudiante ? "padres-hero-with-banner" : ""}`}
-              style={bannerEstudiante ? { "--padres-banner": `url("${bannerEstudiante}")` } : undefined}
             >
               <div className="padres-hero-copy">
                 <span className="padres-eyebrow">Familia San Rafael</span>
@@ -109,6 +119,11 @@ export default function Padres({ user, onLogout }) {
                   </button>
                 </div>
               </div>
+              {bannerEstudiante ? (
+                <div className="padres-hero-art" aria-hidden="true">
+                  <img src={bannerEstudiante} alt="" />
+                </div>
+              ) : null}
             </article>
 
             <section className="padres-left-column">
@@ -118,17 +133,22 @@ export default function Padres({ user, onLogout }) {
                 </div>
                 <div className="padres-payment-status">
                   <span>Estado actual</span>
-                  <h2>{siguientePaso.titulo}</h2>
-                  <p>{siguientePaso.detalle}</p>
+                  <h2>{pasoVisible.titulo}</h2>
+                  <p>{pasoVisible.detalle}</p>
                   <button className="padres-outline-button" type="button" onClick={() => consultarRafael("Que debo hacer ahora")}>
                     Ver detalles del estado
                   </button>
                 </div>
                 <div className="padres-payment-amount">
                   <span>Monto pendiente</span>
-                  <strong>{programa ? formatearSoles(programa.costo) : "S/ 0.00"}</strong>
-                  <button className="padres-orange-button" type="button" onClick={abrirPago}>
-                    <CreditCard size={15} />
+                  <strong>{montoVisible && programa ? formatearSoles(programa.costo) : "S/ 0.00"}</strong>
+                  <button
+                    className="padres-orange-button"
+                    type="button"
+                    disabled={guardando}
+                    onClick={invitacionPendiente && infoProgramaAceptada ? () => solicitarInscripcionPadres() : abrirPago}
+                  >
+                    {guardando ? <Loader2 className="padres-spin" size={15} /> : <CreditCard size={15} />}
                     Pagar ahora
                   </button>
                 </div>
@@ -149,7 +169,7 @@ export default function Padres({ user, onLogout }) {
                     <dl className="padres-program-list">
                       <ProgramaDato icon={<UserRound size={16} />} label="Profesor(a)" value={programa.docente || programa.responsable || "Por definir"} />
                       <ProgramaDato icon={<CreditCard size={16} />} label="Horario" value={programa.horario || "Por confirmar"} />
-                      <ProgramaDato icon={<CalendarDays size={16} />} label="Vigencia" value={`${formatearFechaPeru(programa.fechaInicio, "Por definir")} al ${formatearFechaPeru(programa.fechaFin, "Por definir")}`} />
+                      <ProgramaDato icon={<CalendarDays size={16} />} label="Vigencia" value={formatearRangoFechasPadres(programa.fechaInicio, programa.fechaFin)} />
                       <ProgramaDato icon={<UserRound size={16} />} label="Grupo" value={programa.periodo || "Escolar"} />
                     </dl>
 
@@ -164,7 +184,7 @@ export default function Padres({ user, onLogout }) {
                         onClick={() => setInfoProgramaAbierta(true)}
                       >
                         <Info size={14} />
-                        <span>Informacion</span>
+                        <span>{invitacionPendiente ? "Comunicado" : "Más Informacion"}</span>
                       </button>
                     </div>
                   </div>
@@ -210,7 +230,7 @@ export default function Padres({ user, onLogout }) {
                           </div>
                           <div>
                             <Text size="xs" c="dimmed">Horario</Text>
-                            <Text size="sm" fw={600}>{prog.horario}</Text>
+                            <HorarioProgramaPadres horario={prog.horario} />
                           </div>
                         </Group>
 
@@ -254,7 +274,7 @@ export default function Padres({ user, onLogout }) {
                     <AlertCircle size={32} color="#adb5bd" />
                     <div style={{ textAlign: "center" }}>
                       <Text fw={600} size="sm">Sin cursos disponibles</Text>
-                      <Text c="dimmed" size="sm">No hay cursos habilitados con cupos para registro web en este momento.</Text>
+                      <Text c="dimmed" size="sm">No hay cursos disponibles para el grado del estudiante en este momento.</Text>
                     </div>
                   </Stack>
                 </Center>
@@ -285,32 +305,25 @@ export default function Padres({ user, onLogout }) {
 
                 <div className="padres-form-grid">
                   <Campo
-                    label="N. del padre/apoderado"
+                    label="N. del padre o madre"
                     value={form.apoderado}
                     onChange={(value) => actualizar("apoderado", value)}
                     placeholder="Nombre completo"
+                    disabled={apoderadoBloqueado}
                   />
                   <Campo
-                    label="Telefono WhatsApp"
+                    label="Telefono de contacto"
                     value={form.telefono}
                     onChange={(value) => actualizar("telefono", value.replace(/\D/g, "").slice(0, 9))}
                     placeholder="987654321"
                     inputMode="numeric"
                   />
                   <Campo
-                    label="Correo opcional"
+                    label="Correo para recibir el PDF (Opcional)"
                     value={form.correo}
                     onChange={(value) => actualizar("correo", value)}
                     placeholder="correo@ejemplo.com"
                   />
-                  <label className="padres-field">
-                    <span>Medio de envio</span>
-                    <select value={form.medioEnvio} onChange={(event) => actualizar("medioEnvio", event.target.value)}>
-                      <option value="WhatsApp">WhatsApp</option>
-                      <option value="Correo">Correo</option>
-                      <option value="Presencial">Presencial</option>
-                    </select>
-                  </label>
                 </div>
 
                 <label className="padres-check">
@@ -319,7 +332,19 @@ export default function Padres({ user, onLogout }) {
                     checked={form.acepta}
                     onChange={(event) => actualizar("acepta", event.target.checked)}
                   />
-                  Confirmo que los datos son correctos y acepto recibir informacion del taller por el medio seleccionado.
+                  Confirmo que los datos son correctos.
+                </label>
+
+                <label className="padres-check">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(form.correo.trim()) && form.enviarPdfCorreo}
+                    disabled={!form.correo.trim()}
+                    onChange={(event) => actualizar("enviarPdfCorreo", event.target.checked)}
+                  />
+                  {form.correo.trim()
+                    ? "Enviar al correo cuando el pago sea confirmado."
+                    : "Sin correo registrado: podra descargar el PDF despues del pago."}
                 </label>
 
                 <button className="padres-primary-button" type="submit" disabled={guardando}>
@@ -340,7 +365,7 @@ export default function Padres({ user, onLogout }) {
             <header className="padres-info-modal-head">
               <div>
                 <span>Comunicado para el apoderado</span>
-                <h2 id="padres-info-title">Informacion del programa</h2>
+                <h2 id="padres-info-title">{programa.programa}</h2>
               </div>
               <button type="button" onClick={() => setInfoProgramaAbierta(false)} aria-label="Cerrar informacion">
                 <X size={18} />
@@ -348,47 +373,56 @@ export default function Padres({ user, onLogout }) {
             </header>
 
             <div className="padres-comunicado-box">
-              <div className="padres-comunicado-intro">
-                <strong>{programa.programa}</strong>
-                <TextoBloque texto={programa.comunicado || `Invitacion dirigida a la familia de ${estudiante.nombres}. Revise los datos principales del taller antes de confirmar el pago.`} />
-              </div>
-
-              <div className="padres-comunicado-grid">
-                <Dato label="Estudiante" value={`${estudiante.nombres} - ${estudiante.grado} ${estudiante.seccion}`} />
-                <Dato label="Docente" value={programa.docente || programa.responsable || "Por definir"} />
-                <Dato label="Horario" value={programa.horario || "Por confirmar"} />
-                <Dato label="Vigencia" value={`${formatearFechaPeru(programa.fechaInicio, "Por definir")} al ${formatearFechaPeru(programa.fechaFin, "Por definir")}`} />
-                <Dato label="Costo" value={formatearSoles(programa.costo)} />
-                <Dato label="Estado" value={inscripcion?.estadoInscripcion || (invitacion ? "InvitaciÃ³n pendiente" : "Sin registro")} />
+              <div className="padres-comunicado-letter">
+                <span>Comunicado</span>
+                {comunicadoPadres.fecha ? <p>{comunicadoPadres.fecha}</p> : null}
+                {comunicadoPadres.parrafos.map((parrafo) => (
+                  <p key={parrafo}>{parrafo}</p>
+                ))}
               </div>
 
               <div className="padres-comunicado-section">
-                <strong>Costo</strong>
-                <TextoBloque texto={programa.detalleCosto || `Pago registrado: ${formatearSoles(programa.costo)}.`} />
+                <div className="padres-comunicado-section-title">
+                  <strong>Indicaciones para la familia</strong>
+                  <span>Lo necesario antes de confirmar.</span>
+                </div>
+                <ul className="padres-info-list">
+                  <li>El estudiante debe asistir de forma continua y puntual al horario indicado.</li>
+                  <li>Debe mantener el orden y la disciplina durante el programa.</li>
+                  <li>Debe llevar los materiales solicitados por el docente.</li>
+                  <li>Si lleva almuerzo, la lonchera debe estar rotulada con nombre, grado y seccion.</li>
+                </ul>
               </div>
 
-              <div className="padres-comunicado-section">
-                <strong>Requisitos</strong>
-                <TextoBloque texto={programa.requisitos || "Asistencia continua, puntualidad y materiales solicitados por el docente."} />
-              </div>
-
-              {programa.detalleAlmuerzo ? (
-                <div className="padres-comunicado-section">
+              <div className="padres-comunicado-section padres-lunch-section">
+                <div className="padres-comunicado-section-title">
                   <strong>Almuerzo</strong>
-                  <TextoBloque texto={programa.detalleAlmuerzo} />
+                  <span>Recepcion y concesionarios autorizados.</span>
                 </div>
-              ) : null}
-
-              {programa.concesionarios ? (
-                <div className="padres-comunicado-section">
-                  <strong>Concesionarios autorizados</strong>
-                  <TextoBloque texto={programa.concesionarios} />
+                <p>
+                  El colegio cuenta con un area para recibir almuerzos. Deben dejarse de 01:20 a 01:45 p.m.
+                  La lonchera debe tener una etiqueta grande con nombre del alumno, grado y seccion.
+                </p>
+                <div className="padres-lunch-vendors">
+                  <div>
+                    <span>Cafetin Los Amigos del recreo</span>
+                    <strong>Sra. Rocio</strong>
+                    <p>976280197</p>
+                  </div>
+                  <div>
+                    <span>Cafetin Edith</span>
+                    <strong>Sra. Deysli</strong>
+                    <p>960897529</p>
+                  </div>
                 </div>
-              ) : null}
+                <p>
+                  Estos concesionarios estan autorizados por la institucion y cumplen con los protocolos correspondientes
+                  segun las disposiciones del MINSA.
+                </p>
+              </div>
 
-              <div className="padres-comunicado-section">
-                <strong>Despues del pago</strong>
-                <TextoBloque texto={`Cuando Caja valide o cancele el pago, se enviara el comunicado y la confirmacion al WhatsApp del apoderado: ${form.telefono || "por registrar"}.`} />
+              <div className="padres-comunicado-steps" aria-label="Proceso del programa">
+                
               </div>
             </div>
 
@@ -398,16 +432,20 @@ export default function Padres({ user, onLogout }) {
                 checked={infoProgramaAceptada}
                 onChange={(event) => setInfoProgramaAceptada(event.target.checked)}
               />
-              <span>He leido y acepto la informacion del programa antes de continuar con el pago.</span>
+              <span>
+                {invitacionPendiente
+                  ? "He leido y acepto la informacion del programa antes de registrar la inscripcion."
+                  : "He leido y acepto la informacion del programa antes de continuar con el pago."}
+              </span>
             </label>
 
             <footer className="padres-info-modal-actions">
               <button className="padres-outline-button" type="button" onClick={() => setInfoProgramaAbierta(false)}>
                 Revisar luego
               </button>
-              <button className="padres-orange-button" type="button" onClick={continuarPago} disabled={!infoProgramaAceptada}>
-                <CreditCard size={15} />
-                Continuar al pago
+              <button className="padres-orange-button" type="button" onClick={continuarPago} disabled={!infoProgramaAceptada || guardando}>
+                {guardando ? <Loader2 className="padres-spin" size={15} /> : invitacionPendiente ? <CheckCircle2 size={15} /> : <CreditCard size={15} />}
+                {invitacionPendiente ? "Registrar inscripcion" : "Continuar al pago"}
               </button>
             </footer>
           </section>
@@ -426,5 +464,132 @@ export default function Padres({ user, onLogout }) {
   );
 }
 
+function HorarioProgramaPadres({ horario }) {
+  const datos = dividirHorarioPadres(horario);
+  if (!datos) return <Text size="sm" fw={600}>{horario || "Por confirmar"}</Text>;
 
+  return (
+    <div className="padres-schedule-box">
+      <strong>{datos.grados}</strong>
+      <div className="padres-schedule-pills">
+        <span>{datos.dia}</span>
+        <span>Almuerzo: {datos.almuerzo}</span>
+        <span>Clase: {datos.clase}</span>
+      </div>
+    </div>
+  );
+}
 
+function prepararComunicadoPadres(programa, estudiante) {
+  const titulo = programa?.programa || programa?.nombre || "Comunicado del programa";
+  const fecha = programa?.fechaInicio
+    ? `Carabayllo, ${formatearFechaPeru(programa.fechaInicio, "Por definir")}`
+    : "";
+  const area = obtenerAreaPrograma(programa?.area || titulo);
+  const alumno = estudiante?.nombres || "el estudiante";
+  const textoWord = limpiarComunicadoWord(programa?.comunicado || "", { area, programa: titulo, alumno });
+  const parrafos = textoWord
+    ? textoWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
+    : [`Coordinacion aun no registro un comunicado en la plantilla Word para ${alumno}.`];
+
+  return { titulo, fecha, parrafos };
+}
+
+function formatearRangoFechasPadres(inicio, fin) {
+  const fechaInicio = crearFechaLocal(inicio);
+  const fechaFin = crearFechaLocal(fin);
+  if (!fechaInicio && !fechaFin) return "Por definir";
+  if (!fechaInicio) return formatearFechaLetrasPadres(fechaFin, { incluirAnio: true });
+  if (!fechaFin) return formatearFechaLetrasPadres(fechaInicio, { incluirAnio: true });
+
+  const mismoAnio = fechaInicio.getFullYear() === fechaFin.getFullYear();
+  const inicioTexto = formatearFechaLetrasPadres(fechaInicio, { incluirAnio: !mismoAnio });
+  const finTexto = formatearFechaLetrasPadres(fechaFin, { incluirAnio: true, usarDeAnio: mismoAnio });
+  return `Del ${inicioTexto} al ${finTexto}`;
+}
+
+function formatearFechaLetrasPadres(fecha, { incluirAnio = true, usarDeAnio = true } = {}) {
+  if (!fecha) return "";
+  const meses = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+  ];
+  const base = `${fecha.getDate()} de ${meses[fecha.getMonth()]}`;
+  if (!incluirAnio) return base;
+  return `${base}${usarDeAnio ? " de" : ""} ${fecha.getFullYear()}`;
+}
+
+function crearFechaLocal(valor) {
+  if (!valor) return null;
+  if (valor instanceof Date && !Number.isNaN(valor.getTime())) return valor;
+
+  const texto = String(valor);
+  const partes = texto.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (partes) {
+    const fecha = new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]));
+    return Number.isNaN(fecha.getTime()) ? null : fecha;
+  }
+
+  const fecha = new Date(texto);
+  return Number.isNaN(fecha.getTime()) ? null : fecha;
+}
+
+function dividirHorarioPadres(horario) {
+  const texto = String(horario || "").trim();
+  const partes = texto.match(/^(.+?):\s*([^,]+?)\s+almuerzo\s+([^,]+),\s*clase\s+(.+)$/i);
+  if (!partes) return null;
+  return {
+    grados: partes[1].trim(),
+    dia: partes[2].trim(),
+    almuerzo: partes[3].trim(),
+    clase: partes[4].trim(),
+  };
+}
+
+function obtenerAreaPrograma(valor) {
+  const texto = repararTexto(String(valor || "").trim());
+  if (!texto) return "reforzamiento";
+  const sinClub = texto.replace(/^club\s+de\s+tareas\s*/i, "").trim();
+  return sinClub || texto;
+}
+
+function limpiarComunicadoWord(texto, datos) {
+  return repararTexto(texto)
+    .replace(/\{\{\s*TITULO\s*\}\}/gi, datos.programa)
+    .replace(/\{\{\s*FECHA\s*\}\}/gi, "")
+    .replace(/\{\{\s*AREA\s*\}\}/gi, datos.area)
+    .replace(/\{\{\s*PROG\s*\}\}/gi, datos.programa)
+    .replace(/\barea de\s*,/gi, `area de ${datos.area},`)
+    .replace(/\barea de\s+hemos/gi, `area de ${datos.area}, hemos`)
+    .replace(/\baula\s*,/gi, `aula ${datos.programa},`)
+    .replace(/\baula\s+la cual/gi, `aula ${datos.programa}, la cual`)
+    .replace(/\d{10,}\s*:\s*Del\s+al\s*\./gi, "")
+    .replace(/\s+([,.])/g, "$1")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function repararTexto(texto) {
+  return String(texto || "")
+    .replace(/MatemÃ¡tico/g, "Matematico")
+    .replace(/DirecciÃ³n/g, "Direccion")
+    .replace(/estÃ¡/g, "esta")
+    .replace(/aquÃ­/g, "aqui")
+    .replace(/explicaciÃ³n/g, "explicacion")
+    .replace(/resoluciÃ³n/g, "resolucion")
+    .replace(/Ã¡rea/g, "area")
+    .replace(/distribuciÃ³n/g, "distribucion")
+    .replace(/InstituciÃ³n/g, "Institucion")
+    .replace(/CoordinaciÃ³n/g, "Coordinacion");
+}

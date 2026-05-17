@@ -6,7 +6,7 @@ Sistema web con asistente virtual para automatizar el control de programas extra
 
 ## Objetivo general
 
-Desarrollar modulos independientes en React para la gestion de programas extracurriculares del colegio, de manera que puedan ser integrados al sistema principal. Cada modulo debera trabajar mediante llamadas API, sin conectarse directamente a la base de datos desde el frontend.
+Desarrollar modulos independientes en React para la  del colegio, de manera que puedan ser integrados al sistema principal. Cada modulo debera trabajar mediante llamadas API, sin conectarse directamente a la base de datos desde el frontend.
 
 ## Tecnologias consideradas
 
