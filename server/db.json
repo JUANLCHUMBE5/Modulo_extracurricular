@@ -8,7 +8,7 @@
   ],
   "nextProgramaId": 9,
   "nextCargaId": 1,
-  "nextDocumentoId": 22,
+  "nextDocumentoId": 24,
   "estudiantes": {
     "11112222": {
       "dni": "11112222",
@@ -47,11 +47,12 @@
       "seccion": "C",
       "tipoAlumno": "Alumno interno",
       "fechaNacimiento": "2016-03-08",
-      "estadoInscripcion": "No inscrito",
+      "estadoInscripcion": "Derivado a Caja",
       "apoderado": "PEDRO CATA",
       "telefonoApoderado": "987456321",
       "correoApoderado": "",
-      "medioEnvio": "WhatsApp"
+      "medioEnvio": "WhatsApp",
+      "estadoCaja": "Derivado a Caja"
     }
   },
   "programas": [
@@ -396,10 +397,14 @@
       "correo": "",
       "medioEnvio": "WhatsApp",
       "observacion": "Registro libre solicitado desde portal de padres.",
-      "estadoInscripcion": "Pendiente de pago",
+      "estadoInscripcion": "Derivado a Caja",
       "estadoPago": "Pendiente",
       "origenRegistro": "Portal padres",
-      "fechaRegistro": "2026-05-15T10:13:44-05:00"
+      "fechaRegistro": "2026-05-15T10:13:44-05:00",
+      "seccionEstudiante": "C",
+      "derivadoCaja": true,
+      "estadoCaja": "Derivado a Caja",
+      "fechaDerivacionCaja": "2026-05-19T14:08:34-05:00"
     },
     {
       "id": "INS-892316",
@@ -463,6 +468,28 @@
     }
   ],
   "documentosGenerados": [
+    {
+      "id": "DOC-023",
+      "alumno": "Juan Perez Lopez",
+      "dniEstudiante": "12345678",
+      "programa": "CLUB DE TAREAS MATEMATICA",
+      "programaId": "PROG-007",
+      "fecha": "2026-05-19T14:01:13-05:00",
+      "usuario": "Secretaría",
+      "tipoDocumento": "Comunicado personalizado",
+      "plantilla": "CARTA_CLUB_DE_TAREAS_PLANTILLA_MISMO_FORMATO_V2.docx"
+    },
+    {
+      "id": "DOC-022",
+      "alumno": "Camila Torres Ruiz",
+      "dniEstudiante": "22223333",
+      "programa": "CLUB DE TAREAS MATEMATICA",
+      "programaId": "PROG-007",
+      "fecha": "2026-05-19T13:29:21-05:00",
+      "usuario": "Secretaría",
+      "tipoDocumento": "Comunicado personalizado",
+      "plantilla": "CARTA_CLUB_DE_TAREAS_PLANTILLA_MISMO_FORMATO_V2.docx"
+    },
     {
       "id": "DOC-021",
       "alumno": "Camila Torres Ruiz",

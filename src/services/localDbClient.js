@@ -65,7 +65,7 @@ export const initialData = {
       costo: 70,
       modalidadCobro: "Mensual",
       responsable: "Prof. Ana Torres",
-      tutora: "Srta. Lucia Vega",
+      tutora: "(Srta. Lucia Vega)",
       plantilla: "comunicado-reforzamiento.docx",
       plantillaBase64: "",
       plantillaVariables: ["alumno", "grado", "seccion", "apoderado", "celular"],
@@ -266,7 +266,7 @@ function mergeWithDefaults(stored, defaults) {
     pagos: stored.pagos || defaults.pagos,
     asistencias: stored.asistencias || defaults.asistencias,
     historialCargas: stored.historialCargas || defaults.historialCargas,
-    usuarios: Array.isArray(stored.usuarios) && stored.usuarios.length ? stored.usuarios : defaults.usuarios,
+    usuarios: mergeUsuarios(defaults.usuarios, stored.usuarios || []),
   };
   repararDatosBaseDemo(merged, defaults);
   return merged;
@@ -281,6 +281,23 @@ function mergeEstudiantes(defaults, stored) {
     };
   });
   return estudiantes;
+}
+
+function mergeUsuarios(defaults, stored) {
+  const usuarios = Array.isArray(stored) ? stored : [];
+  const porUsuario = new Map();
+  defaults.forEach((usuario) => {
+    porUsuario.set(String(usuario.usuario || "").toLowerCase(), usuario);
+  });
+  usuarios.forEach((usuario) => {
+    const clave = String(usuario.usuario || "").toLowerCase();
+    if (!clave) return;
+    porUsuario.set(clave, {
+      ...(porUsuario.get(clave) || {}),
+      ...usuario,
+    });
+  });
+  return Array.from(porUsuario.values());
 }
 
 function structuredCloneSafe(value) {

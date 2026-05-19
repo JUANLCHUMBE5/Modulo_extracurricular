@@ -20,7 +20,7 @@ import {
   IconUserPlus as UserPlus,
   IconActivity as Activity,
 } from "@tabler/icons-react";
-import { notifications } from "@mantine/notifications";
+import { toast } from "sonner";
 import {
   listarUsuarios,
   crearUsuario,
@@ -285,11 +285,11 @@ export default function Administrador({ onLogout }) {
   useEffect(() => { cargarDatos(); }, []);
 
   const notify = (message, type = "error") => {
-    notifications.show({
-      color: type === "success" ? "teal" : "red",
-      title: type === "success" ? "✓ Listo" : "⚠ Atención",
-      message,
-    });
+    if (type === "success") {
+      toast.success("Listo", { description: message });
+    } else {
+      toast.error("Atención", { description: message });
+    }
   };
 
   const cargarDatos = async () => {

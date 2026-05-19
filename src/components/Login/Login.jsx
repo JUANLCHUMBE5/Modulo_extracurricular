@@ -6,7 +6,7 @@ import {
   PasswordInput,
   TextInput,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
+import { toast } from "sonner";
 import {
   IconAlertCircle as AlertCircle,
   IconCalendar as Calendar,
@@ -31,10 +31,8 @@ function Login({ onLoginSuccess }) {
 
   function mostrarError(texto) {
     setError(texto);
-    notifications.show({
-      color: loginType === "padre" ? "blue" : "sanrafael",
-      title: "Acceso al sistema",
-      message: texto,
+    toast.error("Acceso al sistema", {
+      description: texto,
     });
   }
 

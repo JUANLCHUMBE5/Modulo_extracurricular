@@ -1409,7 +1409,39 @@
   width: 13px;
   height: 13px;
   margin: 0;
-  accent-color: var(--coord-green);
+  appearance: none;
+  position: relative;
+  flex: 0 0 auto;
+  border: 1px solid #b8c6d4;
+  border-radius: 4px;
+  background: #ffffff;
+  outline: none;
+  box-shadow: none;
+}
+
+.coord-grade-chip input:focus,
+.coord-day-chip input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.coord-grade-chip input:checked,
+.coord-day-chip input:checked {
+  border-color: #2f8f7a;
+  background: #2f8f7a;
+}
+
+.coord-grade-chip input:checked::after,
+.coord-day-chip input:checked::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 1px;
+  width: 4px;
+  height: 7px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
 }
 
 .coord-grade-chip.is-selected,
@@ -4235,4 +4267,68 @@
   .coord-template-upload-row .coord-upload-actions {
     justify-content: stretch;
   }
+}
+
+/* Keep grade/day checkboxes from inheriting full input field sizing. */
+.coord-program-form .coord-grade-chip input[type="checkbox"],
+.coord-program-form .coord-day-chip input[type="checkbox"] {
+  appearance: none;
+  width: 14px !important;
+  min-width: 14px !important;
+  max-width: 14px !important;
+  height: 14px !important;
+  min-height: 14px !important;
+  max-height: 14px !important;
+  flex: 0 0 14px;
+  margin: 0;
+  padding: 0 !important;
+  border: 1px solid #b8c6d4;
+  border-radius: 4px !important;
+  background: #ffffff;
+  box-shadow: none !important;
+}
+
+.coord-program-form .coord-grade-chip input[type="checkbox"]:checked,
+.coord-program-form .coord-day-chip input[type="checkbox"]:checked {
+  border-color: #2f8f7a;
+  background: #2f8f7a;
+}
+
+.coord-program-form .coord-grade-chip input[type="checkbox"]:checked::after,
+.coord-program-form .coord-day-chip input[type="checkbox"]:checked::after {
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+}
+
+.coord-program-form .coord-grade-options {
+  gap: 6px;
+  padding: 8px 10px;
+}
+
+.coord-program-form .coord-grade-chip {
+  min-height: 28px;
+  gap: 5px;
+  padding: 0 9px;
+  border-radius: 9px;
+}
+
+.coord-program-form .coord-grade-chip input[type="checkbox"] {
+  width: 12px !important;
+  min-width: 12px !important;
+  max-width: 12px !important;
+  height: 12px !important;
+  min-height: 12px !important;
+  max-height: 12px !important;
+  flex-basis: 12px;
+  border-radius: 3px !important;
+}
+
+.coord-program-form .coord-grade-chip input[type="checkbox"]:checked::after {
+  left: 3px;
+  top: 1px;
+  width: 3px;
+  height: 6px;
+  border-width: 0 2px 2px 0;
 }

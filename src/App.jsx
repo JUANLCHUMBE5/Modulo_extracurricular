@@ -5,6 +5,7 @@ import Secretaria from "./modules/secretaria/Secretaria";
 import Administrador from "./modules/administrador/Administrador";
 import Padres from "./modules/padres";
 import Auxiliar from "./modules/auxiliar/Auxiliar";
+import Caja from "./modules/caja/Caja";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -29,6 +30,8 @@ function App() {
         return <Coordinacion user={user} onLogout={handleLogout} />;
       case "secretaria":
         return <Secretaria onLogout={handleLogout} />;
+      case "caja":
+        return <Caja onLogout={handleLogout} />;
       case "padres":
         return <Padres user={user} onLogout={handleLogout} />;
       case "auxiliar":

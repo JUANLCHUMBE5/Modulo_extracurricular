@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from "react";
 import { Alert as MantineAlert } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
+import { toast } from "sonner";
 import {
   IconAlertCircle as AlertCircle,
   IconCalendar as CalendarDays,
@@ -14,6 +14,7 @@ import {
   IconPhone as Phone,
   IconPrinter as Printer,
   IconSearch as Search,
+  IconSend as Send,
   IconUserPlus as UserPlus,
   IconUserCircle as UserRound,
   IconX as X,
@@ -24,6 +25,7 @@ import {
   buscarInscripcionEstudiante,
   listarProgramasPorPeriodo,
   obtenerProgramaPorId,
+  derivarInscripcionCaja,
   registrarInscripcion,
   registrarDocumentoGenerado,
 } from "./services/secretariaService";
@@ -82,15 +84,17 @@ function Secretaria({ onLogout }) {
   const [buscando, setBuscando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [imprimiendoFichaRegistro, setImprimiendoFichaRegistro] = useState(false);
+  const [derivandoCaja, setDerivandoCaja] = useState(false);
   const [resultadosNombre, setResultadosNombre] = useState([]);
 
   function mostrarMensaje(texto, tipo = "error") {
     setMensaje(texto);
-    notifications.show({
-      color: tipo === "success" ? "sanrafael" : "orange",
-      title: tipo === "success" ? "Secretaría" : "Revisar atención",
-      message: texto,
-    });
+    const titulo = tipo === "success" ? "Secretaría" : "Revisar atención";
+    if (tipo === "success") {
+      toast.success(titulo, { description: texto });
+    } else {
+      toast.warning(titulo, { description: texto });
+    }
   }
 
   const programaAsignado = estudiante
@@ -454,10 +458,8 @@ function Secretaria({ onLogout }) {
       setModoRegistro(false);
       setModalExito(true);
       setMensaje("");
-      notifications.show({
-        color: "green",
-        title: "Secretaría",
-        message: "Inscripción registrada correctamente.",
+      toast.success("Secretaría", {
+        description: "Inscripción registrada correctamente.",
       });
     } catch (err) {
       mostrarMensaje(err.message || "No se pudo registrar la inscripcion. Intente actualizar y vuelva a confirmar.");
@@ -511,6 +513,31 @@ function Secretaria({ onLogout }) {
       mostrarMensaje(err.message || "No se pudo preparar la ficha para imprimir.");
     } finally {
       setImprimiendoFichaRegistro(false);
+    }
+  }
+
+  async function derivarACaja() {
+    if (!inscripcion || derivandoCaja) return;
+
+    setDerivandoCaja(true);
+    setMensaje("");
+    try {
+      const inscripcionActualizada = await buscarInscripcionEstudiante(estudiante, periodo);
+      const registroCompleto = await completarInscripcionConProgramaActual(inscripcionActualizada || inscripcion);
+      const derivada = await derivarInscripcionCaja(registroCompleto.id, {
+        ...registroCompleto,
+        dniEstudiante: registroCompleto.dniEstudiante || estudiante?.dni,
+        nombresEstudiante: registroCompleto.nombresEstudiante || estudiante?.nombres,
+        codigoEstudiante: registroCompleto.codigoEstudiante || estudiante?.codigoEstudiante,
+        gradoEstudiante: registroCompleto.gradoEstudiante || estudiante?.grado,
+        seccionEstudiante: registroCompleto.seccionEstudiante || estudiante?.seccion,
+      });
+      setInscripción(derivada);
+      mostrarMensaje("Inscripcion derivada a Caja. Ya puede validarse el pago en el modulo de Caja.", "success");
+    } catch (err) {
+      mostrarMensaje(err.message || "No se pudo derivar la inscripcion a Caja.");
+    } finally {
+      setDerivandoCaja(false);
     }
   }
 
@@ -800,15 +827,32 @@ function Secretaria({ onLogout }) {
                     <span>Registrar inscripcion</span>
                   </button>
                 ) : (
-                  <button
-                    className="secretaria-primary-button"
-                    type="button"
-                    onClick={abrirFichaGenerada}
-                    disabled={imprimiendoFichaRegistro}
-                  >
-                    {imprimiendoFichaRegistro ? <Loader2 className="secretaria-spin" size={17} /> : <Printer size={17} />}
-                    <span>{imprimiendoFichaRegistro ? "Preparando ficha" : "Imprimir ficha de registro"}</span>
-                  </button>
+                  <div className="secretaria-final-actions">
+                    <button
+                      className="secretaria-primary-button"
+                      type="button"
+                      onClick={abrirFichaGenerada}
+                      disabled={imprimiendoFichaRegistro}
+                    >
+                      {imprimiendoFichaRegistro ? <Loader2 className="secretaria-spin" size={17} /> : <Printer size={17} />}
+                      <span>{imprimiendoFichaRegistro ? "Preparando ficha" : "Imprimir ficha de registro"}</span>
+                    </button>
+                    <button
+                      className="secretaria-register-button"
+                      type="button"
+                      onClick={derivarACaja}
+                      disabled={derivandoCaja || inscripcion.derivadoCaja}
+                    >
+                      {derivandoCaja ? <Loader2 className="secretaria-spin" size={17} /> : <Send size={17} />}
+                      <span>
+                        {inscripcion.derivadoCaja
+                          ? "Derivado a Caja"
+                          : derivandoCaja
+                            ? "Derivando"
+                            : "Derivar a Caja"}
+                      </span>
+                    </button>
+                  </div>
                 )}
               </section>
             ) : null}

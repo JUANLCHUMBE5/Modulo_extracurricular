@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { notifications } from "@mantine/notifications";
+import { toast } from "sonner";
 import {
   guardarDatosApoderadoPadres,
   obtenerProgramasCoordinacion,
@@ -60,16 +60,14 @@ function usePadres(user) {
       }));
 
       if (silencioso) {
-        notifications.show({
-          color: "sanrafael",
-          title: "Padres",
-          message: "Informacion actualizada.",
+        toast.success("Padres", {
+          description: "Informacion actualizada.",
         });
       }
     } catch (err) {
       const mensaje = err.message || "No se pudo cargar la informacion del estudiante.";
       setError(mensaje);
-      notifications.show({ color: "orange", title: "Padres", message: mensaje });
+      toast.warning("Padres", { description: mensaje });
     } finally {
       setCargando(false);
     }
@@ -133,10 +131,8 @@ function usePadres(user) {
     setGuardando(true);
     try {
       await guardarDatosApoderadoPadres(user.dni, form);
-      notifications.show({
-        color: "sanrafael",
-        title: "Padres",
-        message: "Datos del apoderado guardados.",
+      toast.success("Padres", {
+        description: "Datos del apoderado guardados.",
       });
       await cargarResumen({ silencioso: true });
     } catch (err) {
@@ -169,10 +165,8 @@ function usePadres(user) {
     if (programaId) setProgramaSeleccionadoId(programaId);
     try {
       await registrarInscripcionPadres(user.dni, form, programaId);
-      notifications.show({
-        color: "sanrafael",
-        title: "Padres",
-        message: "Inscripcion registrada como pendiente de pago. Acerquese a Caja para validar el pago.",
+      toast.success("Padres", {
+        description: "Inscripcion registrada como pendiente de pago. Acerquese a Caja para validar el pago.",
       });
       await cargarResumen({ silencioso: true });
       return true;
@@ -185,7 +179,7 @@ function usePadres(user) {
   }
 
   function avisar(message) {
-    notifications.show({ color: "orange", title: "Revisar datos", message });
+    toast.warning("Revisar datos", { description: message });
   }
 
   function actualizar(campo, valor) {

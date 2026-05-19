@@ -231,6 +231,36 @@ export async function registrarDocumentoGenerado({
   return documento;
 }
 
+export async function derivarInscripcionCaja(inscripcionId, datos = {}) {
+  await esperar(250);
+  await syncApiDb();
+
+  const inscripcion = apiDb.inscripciones.find((item) => item.id === inscripcionId);
+  if (!inscripcion) {
+    throw new Error("No se encontro la inscripcion para derivar a Caja.");
+  }
+
+  const actualizada = {
+    ...inscripcion,
+    ...datos,
+    derivadoCaja: true,
+    estadoCaja: "Derivado a Caja",
+    estadoInscripcion: inscripcion.estadoPago === "Pagado" ? "Pago validado" : "Derivado a Caja",
+    fechaDerivacionCaja: fechaActualIso(),
+  };
+
+  Object.assign(inscripcion, actualizada);
+
+  const estudiante = apiDb.estudiantes[inscripcion.dniEstudiante || datos.dniEstudiante];
+  if (estudiante) {
+    estudiante.estadoInscripcion = inscripcion.estadoInscripcion;
+    estudiante.estadoCaja = inscripcion.estadoCaja;
+  }
+
+  await saveApiDb();
+  return actualizada;
+}
+
 export async function buscarInscripcionEstudiante(estudiante, periodo = "escolar") {
   await esperar(200);
   await syncApiDb();

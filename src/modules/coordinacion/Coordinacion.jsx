@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import JSZip from "jszip";
 import { Alert as MantineAlert, Table, Badge, Group, ActionIcon, Tooltip } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
+import { toast } from "sonner";
 import { jsPDF } from "jspdf";
 import {
   IconAlertCircle as AlertCircle,
@@ -158,11 +158,12 @@ function Coordinacion({ user, onLogout }) {
   function mostrarMsg(texto, tipo = "error") {
     setMensaje(texto);
     setTipoMsg(tipo);
-    notifications.show({
-      color: tipo === "success" ? "sanrafael" : "orange",
-      title: tipo === "success" ? "Coordinación" : "Revisar datos",
-      message: texto,
-    });
+    const titulo = tipo === "success" ? "Coordinación" : "Revisar datos";
+    if (tipo === "success") {
+      toast.success(titulo, { description: texto });
+    } else {
+      toast.warning(titulo, { description: texto });
+    }
     if (tipo === "success") setTimeout(() => setMensaje(""), 4000);
   }
 
@@ -1312,7 +1313,6 @@ function Coordinacion({ user, onLogout }) {
                       <BookOpen size={18} />
                       <div>
                         <h3>Datos generales</h3>
-                        <p>Nombre, periodo, categoría y grupo del programa.</p>
                       </div>
                     </div>
                     <div className="coord-section-grid coord-general-grid">
@@ -1368,7 +1368,6 @@ function Coordinacion({ user, onLogout }) {
                       <CalendarDays size={18} />
                       <div>
                         <h3>Horario y grupos de atención</h3>
-                        <p>Use un horario general o agregue grupos para habilitar otro día con la misma hoja de invitación.</p>
                       </div>
                     </div>
                     <div className="coord-section-grid">
@@ -1484,7 +1483,6 @@ function Coordinacion({ user, onLogout }) {
                       <DollarSign size={18} />
                       <div>
                         <h3>Cupos y cobro</h3>
-                        <p>Control de disponibilidad y costo referencial.</p>
                       </div>
                     </div>
                     <div className="coord-section-grid coord-payment-grid">
@@ -1507,7 +1505,6 @@ function Coordinacion({ user, onLogout }) {
                       <Users size={18} />
                       <div>
                         <h3>Responsables</h3>
-                        <p>Personal a cargo y condiciones del taller.</p>
                       </div>
                     </div>
                     <div className="coord-section-grid">
@@ -1515,7 +1512,7 @@ function Coordinacion({ user, onLogout }) {
                         <input value={form.responsable} onChange={e => actualizarForm("responsable", e.target.value)} placeholder="Prof. Ana Torres" />
                       </div>
                       <div className="coord-field"><label>Tutora / apoyo</label>
-                        <input value={form.tutora} onChange={e => actualizarForm("tutora", e.target.value)} placeholder="Srta. Lucia Vega" />
+                        <input value={form.tutora} onChange={e => actualizarForm("tutora", e.target.value)} placeholder="(Srta. Lucia Vega)" />
                       </div>
                       <div className="coord-field coord-field-full">
                         <label className="coord-check-label">

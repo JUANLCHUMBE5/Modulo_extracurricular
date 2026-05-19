@@ -11,7 +11,7 @@ import {
   IconXboxX as XCircle,
 } from "@tabler/icons-react";
 import { Alert as MantineAlert } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
+import { toast } from "sonner";
 import { validarDni, validarQR, registrarAsistencia } from "./auxiliarService";
 import "./Auxiliar.css";
 
@@ -24,11 +24,11 @@ export default function Auxiliar({ onLogout }) {
   const [observacion, setObservacion] = useState("");
 
   const mostrarMsg = (texto, tipo = "error") => {
-    notifications.show({
-      color: tipo === "success" ? "teal" : "orange",
-      title: tipo === "success" ? "Asistencia" : "Atención",
-      message: texto,
-    });
+    if (tipo === "success") {
+      toast.success("Asistencia", { description: texto });
+    } else {
+      toast.warning("Atención", { description: texto });
+    }
   };
 
   const handleBuscar = async (e) => {
