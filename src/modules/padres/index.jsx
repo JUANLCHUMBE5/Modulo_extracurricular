@@ -1,4 +1,5 @@
 ﻿import { Alert, Group, Stack, Card, Badge, Text, Center, Loader } from "@mantine/core";
+import { useState } from "react";
 import {
   IconAlertCircle as AlertCircle,
   IconBook as BookOpen,
@@ -19,7 +20,10 @@ import ProgramaDato from "./components/ProgramaDato";
 import usePadres, { formatearSoles } from "./hooks/usePadres";
 import "./Padres.css";
 
+const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
+
 export default function Padres({ user, onLogout }) {
+  const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   const {
     abrirPago,
     actualizar,
@@ -71,22 +75,33 @@ export default function Padres({ user, onLogout }) {
       <main className="padres-main">
         <header className="padres-header">
           <div className="padres-brand">
-            <span className="padres-brand-mark">SR</span>
-            <div>
-              <strong>Colegio San Rafael</strong>
-              <p>Portal de Apoderados</p>
-            </div>
+            <img className="padres-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
+           
           </div>
           <div className="padres-header-actions">
             <div className="padres-family-chip">
               <span>Familia de</span>
               <strong>{nombreCorto}</strong>
             </div>
-            <div className="padres-family-avatar">{iniciales}</div>
-            <button className="padres-logout-top" type="button" onClick={onLogout}>
-              <LogOut size={16} />
-              <span>Cerrar sesion</span>
-            </button>
+            <div className="padres-user-menu">
+              <button
+                className="padres-family-avatar"
+                type="button"
+                aria-expanded={menuUsuarioAbierto}
+                aria-label="Abrir menú de usuario"
+                onClick={() => setMenuUsuarioAbierto((abierto) => !abierto)}
+              >
+                {iniciales}
+              </button>
+              {menuUsuarioAbierto ? (
+                <div className="padres-user-dropdown">
+                  <button className="padres-logout-top" type="button" onClick={onLogout}>
+                    <LogOut size={16} />
+                    <span>Cerrar sesion</span>
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </header>
 
