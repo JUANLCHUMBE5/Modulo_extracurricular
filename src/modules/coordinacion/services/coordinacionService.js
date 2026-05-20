@@ -266,7 +266,7 @@ export async function previsualizarCargaAlumnos({ periodo, archivoNombre, archiv
     method: "POST",
     body: formData,
   }).catch(() => {
-    throw new Error("No se pudo conectar con el servidor de Excel. Verifique que la API este ejecutandose con npm.cmd run api.");
+    throw new Error(obtenerMensajeConexionApi());
   });
 
   const data = await response.json().catch(() => ({}));
@@ -604,4 +604,12 @@ function normalizarEncabezado(valor) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[\s/.-]+/g, "_")
     .replace(/_+/g, "_");
+}
+
+function obtenerMensajeConexionApi() {
+  if (import.meta.env.PROD && !obtenerApiBase()) {
+    return "No se pudo conectar con el backend. En la nube falta configurar VITE_API_URL con la URL publica de la API.";
+  }
+
+  return "No se pudo conectar con el servidor. Verifique que la API este ejecutandose.";
 }

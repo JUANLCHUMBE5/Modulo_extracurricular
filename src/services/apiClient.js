@@ -24,6 +24,8 @@ export async function apiRequest(path, options = {}) {
       ...(headers || {}),
     },
     body: isFormData || body == null ? body : JSON.stringify(body),
+  }).catch(() => {
+    throw new ApiError(getConnectionErrorMessage(), { status: 0 });
   });
 
   const contentType = response.headers.get("content-type") || "";
@@ -54,3 +56,11 @@ export const localDbApi = {
   saveDatabase: (data) => apiClient.put("/api/db", data),
   resetDatabase: () => apiClient.post("/api/db/reset"),
 };
+
+function getConnectionErrorMessage() {
+  if (import.meta.env?.PROD && !API_BASE_URL) {
+    return "No se pudo conectar con el backend. En la nube falta configurar VITE_API_URL con la URL publica de la API.";
+  }
+
+  return "No se pudo conectar con el servidor. Verifique que la API este ejecutandose.";
+}
