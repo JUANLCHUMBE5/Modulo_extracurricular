@@ -1,5 +1,8 @@
-
-const API_BASE_URL = import.meta.env?.VITE_LOCAL_API_URL || "";
+const API_BASE_URL = String(
+  import.meta.env?.VITE_API_URL ||
+  import.meta.env?.VITE_LOCAL_API_URL ||
+  ""
+).replace(/\/$/, "");
 
 export class ApiError extends Error {
   constructor(message, { status, data } = {}) {

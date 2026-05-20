@@ -8,7 +8,7 @@ export async function syncApiDb() {
     const db = await localDbApi.getDatabase();
     replaceApiDb(db);
   } catch (error) {
-    if (isPilotDataMode()) {
+    if (requiresApiDataMode()) {
       throw error;
     }
 
@@ -23,7 +23,7 @@ export async function saveApiDb() {
     const db = await localDbApi.saveDatabase(apiDb);
     replaceApiDb(db);
   } catch (error) {
-    if (isPilotDataMode()) {
+    if (requiresApiDataMode()) {
       throw error;
     }
 
@@ -40,7 +40,7 @@ export async function resetApiDb() {
     const db = await localDbApi.resetDatabase();
     replaceApiDb(db);
   } catch (error) {
-    if (isPilotDataMode()) {
+    if (requiresApiDataMode()) {
       throw error;
     }
 
@@ -76,6 +76,6 @@ function dispatchApiDbUpdated() {
   window.dispatchEvent(new CustomEvent("api-db-updated"));
 }
 
-function isPilotDataMode() {
-  return String(import.meta.env?.VITE_DATA_MODE || "").toLowerCase() === "pilot";
+function requiresApiDataMode() {
+  return import.meta.env?.PROD || String(import.meta.env?.VITE_DATA_MODE || "").toLowerCase() === "pilot";
 }

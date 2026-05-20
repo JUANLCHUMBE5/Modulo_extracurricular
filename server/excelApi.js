@@ -1,4 +1,5 @@
 ﻿import cors from "cors";
+import "./loadEnv.js";
 import { execFile } from "child_process";
 import { randomUUID } from "crypto";
 import express from "express";
@@ -12,9 +13,19 @@ import { getDb, getDbSource, resetDb, saveDb } from "./localDb.js";
 
 const app = express();
 const PORT = Number(process.env.EXCEL_API_PORT || 5175);
+const API_HOST = process.env.API_HOST || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_WORD_FILE_SIZE = 25 * 1024 * 1024;
 const execFileAsync = promisify(execFile);
+const allowedOrigins = new Set(
+  [
+    process.env.FRONTEND_URL,
+    process.env.PUBLIC_FRONTEND_URL,
+    ...(process.env.ALLOWED_ORIGINS || "").split(","),
+  ]
+    .map((origin) => String(origin || "").trim().replace(/\/$/, ""))
+    .filter(Boolean)
+);
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -28,7 +39,8 @@ const documentUpload = multer({
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || /^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(origin)) {
+    const cleanOrigin = String(origin || "").replace(/\/$/, "");
+    if (!origin || /^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(cleanOrigin) || allowedOrigins.has(cleanOrigin)) {
       callback(null, true);
       return;
     }
@@ -242,8 +254,8 @@ app.use((error, _req, res, _next) => {
   return res.status(500).json({ message: "No se pudo procesar la solicitud." });
 });
 
-app.listen(PORT, "127.0.0.1", () => {
-  console.log(`Excel API listening on http://127.0.0.1:${PORT}`);
+app.listen(PORT, API_HOST, () => {
+  console.log(`Excel API listening on http://${API_HOST}:${PORT}`);
 });
 
 function validarArchivoExcel(archivo) {
