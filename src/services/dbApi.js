@@ -7,7 +7,11 @@ export async function syncApiDb() {
   try {
     const db = await localDbApi.getDatabase();
     replaceApiDb(db);
-  } catch {
+  } catch (error) {
+    if (isPilotDataMode()) {
+      throw error;
+    }
+
     const db = await syncMockDbFromStorage();
     replaceApiDb(db);
   }
@@ -18,7 +22,11 @@ export async function saveApiDb() {
   try {
     const db = await localDbApi.saveDatabase(apiDb);
     replaceApiDb(db);
-  } catch {
+  } catch (error) {
+    if (isPilotDataMode()) {
+      throw error;
+    }
+
     replaceMockDb(apiDb);
     await saveMockDb();
     replaceApiDb(mockDb);
@@ -31,7 +39,11 @@ export async function resetApiDb() {
   try {
     const db = await localDbApi.resetDatabase();
     replaceApiDb(db);
-  } catch {
+  } catch (error) {
+    if (isPilotDataMode()) {
+      throw error;
+    }
+
     await resetMockDb();
     replaceApiDb(mockDb);
   }
@@ -62,4 +74,8 @@ function replaceMockDb(db) {
 function dispatchApiDbUpdated() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent("api-db-updated"));
+}
+
+function isPilotDataMode() {
+  return String(import.meta.env?.VITE_DATA_MODE || "").toLowerCase() === "pilot";
 }

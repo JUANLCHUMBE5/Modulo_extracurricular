@@ -1,0 +1,223 @@
+/* Mobile parent portal cleanup */
+@media (max-width: 760px) {
+  .padres-main {
+    width: 100%;
+    padding: 0 12px 104px;
+  }
+
+  .padres-header {
+    min-height: auto;
+    margin: 0 -12px 12px;
+    padding: 12px;
+    box-shadow: 0 6px 18px #eef3f7;
+  }
+
+  .padres-brand-mark,
+  .padres-family-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+
+  .padres-brand strong {
+    font-size: 14px;
+  }
+
+  .padres-brand p,
+  .padres-family-chip span {
+    font-size: 11px;
+  }
+
+  .padres-header-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+
+  .padres-logout-top {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .padres-enrollment {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .padres-hero,
+  .padres-hero-with-banner {
+    min-height: auto;
+    padding: 138px 0 12px;
+    margin: 0;
+  }
+
+  .padres-hero-with-banner {
+    background:
+      var(--padres-banner) center top / min(360px, 100%) auto no-repeat,
+      #ffffff;
+  }
+
+  .padres-hero-copy {
+    width: 100%;
+    max-width: none;
+  }
+
+  .padres-eyebrow {
+    font-size: 11px;
+  }
+
+  .padres-hero h2,
+  .padres-hero-with-banner h2 {
+    margin: 5px 0 6px;
+    font-size: 24px;
+    line-height: 1.08;
+  }
+
+  .padres-hero-copy p,
+  .padres-hero-with-banner .padres-hero-copy p {
+    font-size: 13px;
+  }
+
+  .padres-left-column {
+    order: 2;
+    gap: 12px;
+  }
+
+  .padres-student-panel {
+    order: 3;
+    grid-column: auto;
+  }
+
+  .padres-payment-panel,
+  .padres-student-panel,
+  .padres-program-box,
+  .padres-confirm-card {
+    border-radius: 16px;
+    box-shadow: 0 10px 24px #eef3f7;
+  }
+
+  .padres-payment-panel {
+    min-height: auto;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .padres-payment-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+
+  .padres-payment-status h2 {
+    font-size: 19px;
+  }
+
+  .padres-payment-status p {
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+
+  .padres-payment-amount {
+    grid-column: 1 / -1;
+    gap: 9px;
+    padding-top: 12px;
+  }
+
+  .padres-payment-amount strong {
+    font-size: 24px;
+  }
+
+  .padres-orange-button,
+  .padres-outline-button,
+  .padres-primary-button {
+    width: 100%;
+  }
+
+  .padres-program-box,
+  .padres-student-panel {
+    padding: 14px;
+  }
+
+  .padres-program-summary-head {
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .padres-program-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+  }
+
+  .padres-program-main h3 {
+    font-size: 17px;
+  }
+
+  .padres-program-list {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .padres-program-note {
+    min-height: auto;
+    align-items: flex-start;
+    padding: 10px 12px;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .padres-student-head {
+    margin-bottom: 12px;
+  }
+
+  .padres-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+  }
+
+  .padres-student-head h2 {
+    font-size: 17px;
+  }
+
+  .padres-student-panel .padres-data-box {
+    min-height: auto;
+    padding: 10px 0;
+    gap: 10px;
+  }
+
+  .padres-student-panel .padres-data-box strong {
+    max-width: 58%;
+    overflow-wrap: anywhere;
+  }
+
+  .padres-confirm-card {
+    padding: 14px;
+  }
+
+  .padres-confirm-card h3 {
+    font-size: 15px;
+  }
+
+  .padres-confirm-card > p {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .padres-hero,
+  .padres-hero-with-banner {
+    padding-top: 118px;
+  }
+
+  .padres-hero-with-banner {
+    background-size: 320px auto;
+  }
+
+  .padres-hero h2,
+  .padres-hero-with-banner h2 {
+    font-size: 22px;
+  }
+}

@@ -1,0 +1,123 @@
+.padres-layout {
+  min-height: 100vh;
+  color: #172331;
+  background: #ffffff;
+  font-family: var(--font-body);
+}
+
+.padres-layout *,
+.padres-layout button,
+.padres-layout input,
+.padres-layout select {
+  box-sizing: border-box;
+  font-family: var(--font-body);
+}
+
+.padres-main {
+  width: min(980px, 100%);
+  padding: 28px 24px 42px;
+  margin: 0 auto;
+}
+
+.padres-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.padres-header span {
+  color: #176c60;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.padres-header h1 {
+  margin: 3px 0 4px;
+  color: #172331;
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.05;
+  font-weight: 950;
+}
+
+.padres-header p {
+  margin: 0;
+  color: #667085;
+  font-size: 14px;
+}
+
+.padres-header-actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.padres-ghost-button,
+.padres-logout-top,
+.padres-primary-button,
+.padres-outline-button,
+.padres-blue-button,
+.padres-green-button,
+.padres-disabled-button,
+.padres-hero-primary,
+.padres-hero-secondary {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 12px;
+  padding: 0 13px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.padres-ghost-button,
+.padres-outline-button,
+.padres-hero-secondary {
+  border: 1px solid #d8e5e2;
+  color: #176c60;
+  background: #ffffff;
+}
+
+.padres-logout-top,
+.padres-primary-button,
+.padres-green-button,
+.padres-hero-primary {
+  border: 1px solid #23977f;
+  color: #ffffff;
+  background: #23977f;
+  box-shadow: 0 12px 22px rgba(35, 151, 127, 0.18);
+}
+
+.padres-blue-button {
+  border: 1px solid #315f91;
+  color: #ffffff;
+  background: #315f91;
+}
+
+.padres-disabled-button {
+  border: 1px solid #d4dce3;
+  color: #7a8794;
+  background: #e9eef3;
+}
+
+.padres-ghost-button:hover,
+.padres-outline-button:hover,
+.padres-hero-secondary:hover {
+  background: #f0faf7;
+}
+
+.padres-primary-button:disabled {
+  cursor: wait;
+  opacity: 0.74;
+}
+
+.padres-disabled-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.78;
+}

@@ -1,0 +1,338 @@
+/* ── LISTA DE PROGRAMAS ───────────────────────────────── */
+.coord-program-list {
+  display: grid;
+  gap: 12px;
+}
+
+.coord-program-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #dbe5ee;
+  border-radius: 8px;
+  background: #ffffff;
+  animation: coordResult 180ms ease both;
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.coord-program-card:hover {
+  border-color: #b9cbe0;
+  box-shadow: 0 8px 18px rgba(31, 41, 51, 0.08);
+  transform: translateY(-1px);
+}
+
+.coord-program-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.coord-overline {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--coord-green);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.coord-program-header strong {
+  display: block;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.coord-program-title {
+  min-width: 0;
+}
+
+.coord-program-title p {
+  margin: 4px 0 0;
+  color: var(--coord-muted);
+  font-size: 12px;
+}
+
+.coord-program-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.coord-program-highlights span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 5px 9px;
+  border: 1px solid #dce8f4;
+  border-radius: 8px;
+  color: #315f91;
+  background: #f6f9fc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.coord-program-data {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.coord-program-data div {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #e3e8ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.coord-program-data div:nth-child(1),
+.coord-program-data div:nth-child(3),
+.coord-program-data div:nth-child(5),
+.coord-program-data div:nth-child(6) {
+  display: none;
+}
+
+.coord-program-data dt {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 3px;
+  color: var(--coord-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.coord-program-data dd {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--coord-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── BARRA DE CUPOS ───────────────────────────────────── */
+.coord-cupos-bar {
+  display: grid;
+  gap: 4px;
+}
+
+.coord-cupos-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--coord-muted);
+  font-weight: 700;
+}
+
+.coord-bar-bg {
+  height: 6px;
+  border-radius: 99px;
+  background: #e3e8ee;
+  overflow: hidden;
+}
+
+.coord-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--coord-green);
+  transition: width 400ms ease;
+}
+
+/* ── ACCIONES DEL PROGRAMA ────────────────────────────── */
+.coord-program-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--coord-soft-line);
+}
+
+/* ── PILLS ────────────────────────────────────────────── */
+.coord-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 20px;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.coord-pill-success {
+  color: #1f6b55;
+  background: var(--coord-green-soft);
+}
+
+.coord-pill-warning {
+  color: var(--coord-warning);
+  background: var(--coord-warning-soft);
+}
+
+.coord-pill-disabled {
+  color: var(--coord-muted);
+  background: #e3e8ee;
+}
+
+.coord-pill-error {
+  color: #b91c1c;
+  background: var(--coord-red-soft);
+}
+
+.coord-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.coord-upload-grid input[type="file"] {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #cbd5df;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: #ffffff;
+  color: var(--coord-ink);
+  font-size: 13px;
+}
+
+.coord-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.coord-load-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.coord-upload-progress {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid #c9ddd4;
+  border-radius: 10px;
+  background: #f5fbf8;
+}
+
+.coord-upload-progress-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--coord-ink);
+  font-size: 13px;
+}
+
+.coord-upload-progress-header span {
+  color: var(--coord-green);
+  font-weight: 900;
+}
+
+.coord-upload-progress-bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #dce8e4;
+}
+
+.coord-upload-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #23977f, #315f91);
+  transition: width 180ms ease;
+}
+
+.coord-upload-progress p {
+  margin: 0;
+  color: var(--coord-muted);
+  font-size: 12px;
+}
+
+.coord-load-box {
+  padding: 12px;
+  border: 1px solid var(--coord-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.coord-load-box span {
+  display: block;
+  color: var(--coord-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.coord-load-box strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--coord-ink);
+  font-size: 22px;
+}
+
+.coord-load-success {
+  border-color: #c9ddd4;
+  background: #f5fbf8;
+}
+
+.coord-load-error {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.coord-load-warning {
+  border-color: #f6d892;
+  background: #fffaf0;
+}
+
+.coord-history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.coord-history-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--coord-soft-line);
+}
+
+.coord-history-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid var(--coord-soft-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.coord-history-item strong {
+  color: var(--coord-ink);
+  font-size: 13px;
+}
+
+.coord-history-item span,
+.coord-history-item p {
+  margin: 0;
+  color: var(--coord-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}

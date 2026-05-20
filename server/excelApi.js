@@ -8,7 +8,7 @@ import multer from "multer";
 import os from "os";
 import path from "path";
 import { promisify } from "util";
-import { getDb, resetDb, saveDb } from "./localDb.js";
+import { getDb, getDbSource, resetDb, saveDb } from "./localDb.js";
 
 const app = express();
 const PORT = Number(process.env.EXCEL_API_PORT || 5175);
@@ -39,7 +39,7 @@ app.use(cors({
 app.use(express.json({ limit: "30mb" }));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, dbSource: getDbSource() });
 });
 
 app.get("/api/db", async (_req, res) => {

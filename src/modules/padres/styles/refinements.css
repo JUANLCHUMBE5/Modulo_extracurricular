@@ -1,0 +1,491 @@
+/* Parent dashboard refinement */
+.padres-layout {
+  background:
+    linear-gradient(180deg, #f7fbfa 0%, #eef7f4 42%, #f8fbfa 100%);
+}
+
+.padres-main {
+  width: min(1120px, 100%);
+  padding: 24px 24px 46px;
+}
+
+.padres-header {
+  margin-bottom: 12px;
+}
+
+.padres-header h1 {
+  font-size: clamp(25px, 2.7vw, 34px);
+}
+
+.padres-header p {
+  max-width: 560px;
+}
+
+.padres-enrollment {
+  grid-template-columns: minmax(0, 0.98fr) minmax(340px, 0.82fr);
+  gap: 14px;
+}
+
+.padres-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.74fr);
+  gap: 14px;
+  padding: 18px;
+  border-radius: 22px;
+}
+
+.padres-hero::after {
+  display: none;
+}
+
+.padres-hero h2 {
+  margin: 6px 0;
+  font-size: clamp(24px, 2.6vw, 31px);
+}
+
+.padres-hero-copy p {
+  max-width: 480px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.padres-hero-actions {
+  margin-top: 14px;
+}
+
+.padres-hero-card {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  padding: 14px;
+  border-radius: 18px;
+}
+
+.padres-child-token {
+  width: 50px;
+  height: 50px;
+  border-radius: 15px;
+  font-size: 18px;
+}
+
+.padres-hero-status {
+  min-width: 0;
+}
+
+.padres-hero-status strong {
+  font-size: 17px;
+}
+
+.padres-hero-status p {
+  font-size: 12px;
+}
+
+.padres-hero-metrics {
+  grid-column: 1 / -1;
+  grid-template-columns: 1.2fr 0.8fr;
+}
+
+.padres-rafael-mini {
+  grid-column: 1 / -1;
+  min-height: 40px;
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 14px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.padres-rafael-mini:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.padres-status-strip {
+  gap: 8px;
+}
+
+.padres-status-strip .padres-data-box {
+  min-height: 54px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.padres-panel {
+  padding: 18px;
+  border-radius: 20px;
+}
+
+.padres-program-panel {
+  order: 3;
+}
+
+.padres-student-panel {
+  order: 4;
+}
+
+.padres-program-box,
+.padres-confirm-card {
+  border-radius: 18px;
+}
+
+.padres-program-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.padres-program-actions button {
+  min-width: 0;
+}
+
+.padres-assistant-fab {
+  min-height: 46px;
+  border-radius: 999px;
+  padding: 0 18px;
+}
+
+@media (max-width: 980px) {
+  .padres-enrollment,
+  .padres-hero,
+  .padres-hero-card {
+    grid-template-columns: 1fr;
+  }
+
+  .padres-main {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+}
+
+@media (max-width: 760px) {
+  .padres-main {
+    padding: 16px 14px 112px;
+  }
+
+  .padres-hero {
+    padding: 16px;
+  }
+
+  .padres-status-strip,
+  .padres-info-grid,
+  .padres-form-grid,
+  .padres-program-actions,
+  .padres-hero-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .padres-hero-with-banner {
+    background:
+      linear-gradient(180deg, #ffffff 0%, rgba(255, 255, 255, 0.96) 54%, rgba(255, 255, 255, 0.76) 100%),
+      var(--padres-banner) right top / 78% auto no-repeat,
+      #ffffff;
+  }
+}
+
+/* Warm family-facing palette */
+.padres-layout {
+  background:
+    radial-gradient(circle at 8% 10%, rgba(49, 95, 145, 0.13), transparent 28%),
+    radial-gradient(circle at 92% 18%, rgba(255, 176, 67, 0.24), transparent 30%),
+    linear-gradient(180deg, #f8fbff 0%, #fff8ed 46%, #f6fbf8 100%);
+}
+
+.padres-header span {
+  color: #315f91;
+}
+
+.padres-header h1 {
+  color: #16304f;
+}
+
+.padres-hero {
+  border-color: rgba(49, 95, 145, 0.18);
+  background:
+    linear-gradient(135deg, rgba(28, 78, 128, 0.96) 0%, rgba(80, 86, 170, 0.9) 54%, rgba(236, 126, 63, 0.9) 100%),
+    #315f91;
+  box-shadow: 0 24px 60px rgba(49, 95, 145, 0.22);
+}
+
+.padres-eyebrow {
+  color: #ffe6b0;
+}
+
+.padres-hero-primary {
+  color: #244f88;
+  background: #ffffff;
+  border-color: #ffffff;
+}
+
+.padres-hero-secondary,
+.padres-rafael-mini {
+  border-color: rgba(255, 255, 255, 0.38);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.padres-child-token {
+  color: #315f91;
+  background: #fff5dc;
+}
+
+.padres-hero-metrics div:first-child {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.padres-hero-metrics div:last-child {
+  background: rgba(255, 176, 67, 0.24);
+}
+
+.padres-panel,
+.padres-status-strip .padres-data-box {
+  border-color: rgba(49, 95, 145, 0.14);
+  box-shadow: 0 16px 36px rgba(49, 95, 145, 0.1);
+}
+
+.padres-status-strip .padres-data-box:nth-child(1) {
+  background: #eef5ff;
+}
+
+.padres-status-strip .padres-data-box:nth-child(2) {
+  background: #edf9f3;
+}
+
+.padres-status-strip .padres-data-box:nth-child(3) {
+  background: #fff4df;
+}
+
+.padres-status-strip .padres-data-box:nth-child(4) {
+  background: #f2efff;
+}
+
+.padres-avatar,
+.padres-title-icon {
+  color: #315f91;
+  background: #eef5ff;
+}
+
+.padres-program-main span,
+.padres-state-pill,
+.padres-payment-chip {
+  color: #176c60;
+  background: #e4f8ee;
+}
+
+.padres-program-box {
+  border-color: #d7e5f7;
+  background: linear-gradient(180deg, #fbfdff 0%, #f5f9ff 100%);
+}
+
+.padres-next-step {
+  border-color: #ffd49a;
+  color: #8c520f;
+  background: #fff5df;
+}
+
+.padres-primary-button,
+.padres-green-button {
+  border-color: #1fa971;
+  background: #1fa971;
+  box-shadow: 0 12px 22px rgba(31, 169, 113, 0.18);
+}
+
+.padres-blue-button {
+  border-color: #315f91;
+  background: #315f91;
+  box-shadow: 0 12px 22px rgba(49, 95, 145, 0.18);
+}
+
+.padres-outline-button,
+.padres-ghost-button {
+  border-color: #b9cbed;
+  color: #315f91;
+  background: #ffffff;
+}
+
+.padres-outline-button:hover,
+.padres-ghost-button:hover {
+  border-color: #315f91;
+  color: #244f88;
+  background: #eef5ff;
+}
+
+.padres-disabled-button {
+  border-color: #f4bd72;
+  color: #8c520f;
+  background: #fff3dc;
+}
+
+.padres-logout-top {
+  border-color: #315f91;
+  background: #315f91;
+  box-shadow: 0 12px 22px rgba(49, 95, 145, 0.16);
+}
+
+.padres-assistant header,
+.padres-assistant-form button,
+.padres-assistant-fab {
+  background: linear-gradient(135deg, #315f91 0%, #6b5bd6 55%, #f28c38 100%);
+}
+
+.padres-bot-avatar {
+  background: #315f91;
+}
+
+.padres-chat-padre p {
+  background: linear-gradient(135deg, #315f91 0%, #6b5bd6 100%);
+}
+
+.padres-assistant-shortcuts button {
+  border-color: #d7e5f7;
+  color: #315f91;
+  background: #f7fbff;
+}
+
+.padres-assistant-shortcuts button:hover {
+  border-color: #f28c38;
+  color: #8c520f;
+  background: #fff4df;
+}
+
+/* Solid-color parent palette */
+.padres-layout {
+  background: #ffffff;
+}
+
+.padres-hero {
+  border-color: #d8e5f3;
+  background: #315f91;
+  box-shadow: 0 18px 42px rgba(49, 95, 145, 0.16);
+}
+
+.padres-hero-with-banner {
+  min-height: 250px;
+  align-items: center;
+  background:
+    linear-gradient(90deg, #ffffff 0%, #ffffff 42%, rgba(255, 255, 255, 0.82) 56%, rgba(255, 255, 255, 0.2) 100%),
+    var(--padres-banner) right center / contain no-repeat,
+    #ffffff;
+  color: #172331;
+}
+
+.padres-hero-with-banner .padres-eyebrow {
+  color: #176c60;
+}
+
+.padres-hero-with-banner h2 {
+  color: #172331;
+}
+
+.padres-hero-with-banner .padres-hero-copy p {
+  color: #667085;
+}
+
+.padres-hero-with-banner .padres-hero-card {
+  background: #ffffff;
+  border-color: #dbe7e4;
+  box-shadow: 0 18px 42px rgba(49, 95, 145, 0.12);
+}
+
+.padres-hero-with-banner .padres-hero-status span,
+.padres-hero-with-banner .padres-hero-metrics span {
+  color: #667085;
+}
+
+.padres-hero-with-banner .padres-hero-status strong,
+.padres-hero-with-banner .padres-hero-metrics strong {
+  color: #172331;
+}
+
+.padres-hero-with-banner .padres-hero-status p {
+  color: #667085;
+}
+
+.padres-hero-with-banner .padres-hero-metrics div:first-child {
+  background: #eef5ff;
+}
+
+.padres-hero-with-banner .padres-hero-metrics div:last-child {
+  background: #fff4df;
+}
+
+.padres-hero-with-banner .padres-rafael-mini {
+  color: #315f91;
+  background: #eef5ff;
+  border-color: #d8e5f3;
+}
+
+.padres-eyebrow {
+  color: #ffe2aa;
+}
+
+.padres-hero-card {
+  background: #244f78;
+  border-color: #4d78a7;
+  backdrop-filter: none;
+}
+
+.padres-hero-metrics div:first-child {
+  background: #3f73a9;
+}
+
+.padres-hero-metrics div:last-child {
+  background: #d9822b;
+}
+
+.padres-hero-secondary,
+.padres-rafael-mini {
+  background: #3f73a9;
+  border-color: #6f98c3;
+}
+
+.padres-hero-secondary:hover,
+.padres-rafael-mini:hover {
+  background: #4f82b8;
+}
+
+.padres-panel,
+.padres-status-strip .padres-data-box,
+.padres-confirm-card {
+  background: #ffffff;
+}
+
+.padres-status-strip .padres-data-box:nth-child(1) {
+  border-left: 5px solid #315f91;
+}
+
+.padres-status-strip .padres-data-box:nth-child(2) {
+  border-left: 5px solid #23977f;
+}
+
+.padres-status-strip .padres-data-box:nth-child(3) {
+  border-left: 5px solid #d9822b;
+}
+
+.padres-status-strip .padres-data-box:nth-child(4) {
+  border-left: 5px solid #6b5bd6;
+}
+
+.padres-program-box {
+  background: #ffffff;
+  border-color: #d8e5f3;
+}
+
+.padres-next-step {
+  background: #fff7e8;
+}
+
+.padres-assistant header,
+.padres-assistant-form button,
+.padres-assistant-fab {
+  background: #315f91;
+}
+
+.padres-chat-padre p {
+  background: #315f91;
+}
+
+.padres-child-token,
+.padres-avatar {
+  overflow: hidden;
+}

@@ -1,0 +1,273 @@
+/* Paleta alternativa: azul institucional con acentos calidos */
+.coord-layout {
+  --coord-ink: #000000;
+  --coord-muted: #667085;
+  --coord-line: #dfe6ef;
+  --coord-soft-line: #edf2f7;
+  --coord-panel: #ffffff;
+  --coord-bg: #f4f7fb;
+  --coord-sidebar: #173f3a;
+  --coord-sidebar-soft: #214d47;
+  --coord-green: #3f6fbd;
+  --coord-green-soft: #edf4ff;
+  --coord-blue: #3f6fbd;
+  --coord-blue-soft: #edf4ff;
+  --coord-warning: #a76516;
+  --coord-warning-soft: #fff5e3;
+  --coord-cream: #ffffff;
+  --coord-warm-line: #dfe6ef;
+  --coord-red: #c84848;
+  --coord-red-soft: #fff0f0;
+  background:
+    radial-gradient(circle at 88% 8%, rgba(63, 111, 189, 0.09), transparent 28%),
+    linear-gradient(180deg, #fbfcff 0%, var(--coord-bg) 100%);
+}
+
+.coord-topbar h1,
+.coord-card-title h2,
+.coord-process-card h2,
+.coord-section-heading h3,
+.coord-program-preview h3,
+.coord-table th,
+.mantine-Table-th,
+.coord-table td,
+.mantine-Table-td,
+.coord-field label,
+.coord-form select,
+.coord-input-wrap input,
+.coord-program-form input,
+.coord-program-form select,
+.coord-program-form textarea,
+.coord-readonly-field {
+  color: #000000;
+}
+
+.coord-table td strong,
+.mantine-Table-td strong {
+  color: #000000;
+}
+
+.coord-sidebar {
+  background: #173f3a;
+}
+
+.coord-brand-mark {
+  color: #1f6b5f;
+  background: #eef9f5;
+}
+
+.coord-brand span,
+.coord-module-label {
+  color: #c6ddd8;
+}
+
+.coord-nav-item,
+.coord-logout {
+  color: #e7f2ef;
+}
+
+.coord-nav-item-active {
+  color: #ffffff;
+  background: #2f8f7a;
+  box-shadow: inset 4px 0 0 rgba(255, 255, 255, 0.35);
+}
+
+.coord-title-icon,
+.coord-modal-icon,
+.coord-section-heading > svg {
+  color: #3f6fbd;
+  background: #edf4ff;
+}
+
+.coord-register-button,
+.coord-mini-btn {
+  border-color: #2f8f7a;
+  background: #2f8f7a;
+}
+
+.coord-register-button:hover,
+.coord-mini-btn:hover {
+  background: #277c69;
+}
+
+.coord-primary-button {
+  border-color: #2c4774;
+  background: #2c4774;
+}
+
+.coord-primary-button:hover {
+  background: #243b61;
+}
+
+.coord-input-wrap:focus-within,
+.coord-inline-field input:focus,
+.coord-program-form input:focus,
+.coord-program-form select:focus,
+.coord-program-form textarea:focus {
+  border-color: #3f6fbd;
+  box-shadow: 0 0 0 3px rgba(63, 111, 189, 0.13);
+}
+
+.coord-secondary-button:hover,
+.coord-template-autofill:hover,
+.coord-modal-close:hover {
+  border-color: #3f6fbd;
+  color: #2c4774;
+  background: #f3f7ff;
+}
+
+.coord-pill,
+.coord-template-var.is-ok {
+  border-color: #d8e5fb;
+  color: #315f9f;
+  background: #edf4ff;
+}
+
+.coord-upload-progress {
+  border-color: #d8e5fb;
+  background: #f4f8ff;
+}
+
+.coord-upload-progress-bar span,
+.coord-bar-fill {
+  background: #3f6fbd;
+}
+
+.coord-load-success {
+  border-color: #d8e5fb;
+  background: #f4f8ff;
+}
+
+.coord-summary-green span,
+.coord-template-var.is-ok {
+  color: #315f9f;
+  background: #edf4ff;
+}
+
+.coord-check-option input[type="checkbox"],
+.coord-checkbox-row input[type="checkbox"] {
+  accent-color: #3f6fbd;
+}
+
+.coord-layout.coord-layout-collapsed {
+  grid-template-columns: 74px 1fr;
+}
+
+.coord-layout.coord-layout-collapsed .coord-sidebar {
+  padding: 20px 12px;
+}
+
+.coord-layout.coord-layout-collapsed .coord-brand {
+  justify-content: center;
+  padding: 8px;
+}
+
+.coord-layout.coord-layout-collapsed .coord-brand-copy,
+.coord-layout.coord-layout-collapsed .coord-module-label,
+.coord-layout.coord-layout-collapsed .coord-nav-item span,
+.coord-layout.coord-layout-collapsed .coord-nav-arrow,
+.coord-layout.coord-layout-collapsed .coord-logout span {
+  display: none;
+}
+
+.coord-layout.coord-layout-collapsed .coord-nav-item,
+.coord-layout.coord-layout-collapsed .coord-logout {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding: 0;
+}
+
+.coord-sidebar > .coord-logout {
+  margin-top: auto;
+}
+
+.coord-layout.coord-layout-collapsed .coord-sidebar-toggle svg {
+  transform: rotate(180deg);
+}
+
+.coord-layout.coord-layout-collapsed .coord-brand-mark {
+  width: 38px;
+  height: 38px;
+}
+
+.coord-layout.coord-layout-collapsed .coord-nav {
+  margin-top: 24px;
+}
+
+.coord-layout.coord-layout-collapsed .coord-nav-item,
+.coord-layout.coord-layout-collapsed .coord-logout {
+  width: 48px;
+  min-height: 48px;
+  border-radius: 14px;
+}
+
+.coord-layout-profesor {
+  --coord-sidebar: #2f6f2f;
+  --coord-sidebar-soft: #397f39;
+  --coord-green: #449d44;
+  --coord-green-soft: #eaf7ea;
+}
+
+.coord-layout-profesor .coord-sidebar {
+  background: #2f6f2f;
+}
+
+.coord-layout-profesor .coord-brand-mark {
+  color: #2f6f2f;
+  background: #eef8ee;
+}
+
+.coord-layout-profesor .coord-nav-item-active,
+.coord-layout-profesor .coord-register-button,
+.coord-layout-profesor .coord-mini-btn {
+  border-color: #449d44;
+  background: #449d44;
+}
+
+.coord-layout-profesor .coord-register-button:hover,
+.coord-layout-profesor .coord-mini-btn:hover {
+  background: #367f36;
+}
+
+.coord-layout-profesor .coord-title-icon,
+.coord-layout-profesor .coord-modal-icon,
+.coord-layout-profesor .coord-section-heading > svg {
+  color: #449d44;
+  background: #eaf7ea;
+}
+
+.coord-layout-profesor .coord-primary-button {
+  border-color: #449d44;
+  background: #449d44;
+}
+
+.coord-layout-profesor .coord-primary-button:hover {
+  background: #367f36;
+}
+
+.coord-layout-profesor .coord-input-wrap:focus-within,
+.coord-layout-profesor .coord-inline-field input:focus,
+.coord-layout-profesor .coord-program-form input:focus,
+.coord-layout-profesor .coord-program-form select:focus,
+.coord-layout-profesor .coord-program-form textarea:focus {
+  border-color: #449d44;
+  box-shadow: 0 0 0 3px rgba(68, 157, 68, 0.14);
+}
+
+.coord-layout-profesor .coord-secondary-button:hover,
+.coord-layout-profesor .coord-template-autofill:hover,
+.coord-layout-profesor .coord-modal-close:hover {
+  border-color: #449d44;
+  color: #2f6f2f;
+  background: #f0faf0;
+}
+
+.coord-layout-profesor .coord-upload-progress-bar span,
+.coord-layout-profesor .coord-bar-fill {
+  background: #449d44;
+}
+
+.coord-layout-profesor .coord-check-option input[type="checkbox"],
+.coord-layout-profesor .coord-checkbox-row input[type="checkbox"] {
+  accent-color: #449d44;
+}

@@ -2,24 +2,46 @@ import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { initialData } from "../src/services/localDbClient.js";
+import {
+  getSupabaseDb,
+  isSupabasePilotEnabled,
+  resetSupabaseDb,
+  saveSupabaseDb,
+} from "./supabaseDb.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, "db.json");
 
 export async function getDb() {
+  if (isSupabasePilotEnabled()) {
+    return getSupabaseDb();
+  }
+
   await ensureDb();
   const raw = await fs.readFile(DB_PATH, "utf8");
   return JSON.parse(raw);
 }
 
 export async function saveDb(data) {
+  if (isSupabasePilotEnabled()) {
+    return saveSupabaseDb(data);
+  }
+
   const db = mergeWithDefaults(data || {}, clone(initialData));
   await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2), "utf8");
   return db;
 }
 
 export async function resetDb() {
+  if (isSupabasePilotEnabled()) {
+    return resetSupabaseDb();
+  }
+
   return saveDb(clone(initialData));
+}
+
+export function getDbSource() {
+  return isSupabasePilotEnabled() ? "supabase-pilot" : "local-json";
 }
 
 async function ensureDb() {
