@@ -252,14 +252,24 @@ function Coordinacion({ user, onLogout }) {
     };
     try {
       if (modoEditar) {
-        const programaActualizado = await editarPrograma(form.id, datosGuardar);
+        await editarPrograma(form.id, datosGuardar);
         mostrarMsg("Programa actualizado correctamente.", "success");
         setProgramas((actuales) =>
-          actuales.map((programa) =>
-            programa.id === form.id ? programaActualizado : programa
-          )
+          actuales.map((programa) => {
+            if (programa.id !== form.id) return programa;
+            return {
+              ...programa,
+              ...datosGuardar,
+              id: form.id,
+              periodo: normalizarPeriodoVista(datosGuardar.periodo),
+              cupos: Number(datosGuardar.cupos),
+              costo: Number(datosGuardar.costo),
+              cuposOcupados: programa.cuposOcupados || 0,
+              cuposDisponibles: Number(datosGuardar.cupos) - Number(programa.cuposOcupados || 0),
+              estado: programa.estado || "Habilitado",
+            };
+          })
         );
-        setForm(datosProgramaAFormulario(programaActualizado));
         setShowModal(true);
       } else {
         await crearPrograma(datosGuardar);
