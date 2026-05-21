@@ -272,10 +272,12 @@ function Coordinacion({ user, onLogout }) {
         );
         setShowModal(true);
       } else {
-        await crearPrograma(datosGuardar);
+        const nuevoPrograma = await crearPrograma(datosGuardar);
         mostrarMsg("Programa creado correctamente.", "success");
-        await cargarDatos();
-        setShowModal(false);
+        setProgramas((actuales) => [...actuales, nuevoPrograma]);
+        setModoEditar(true);
+        setForm(datosProgramaAFormulario(nuevoPrograma));
+        setShowModal(true);
       }
     } catch (err) {
       mostrarMsg(err.message);
@@ -863,6 +865,7 @@ function Coordinacion({ user, onLogout }) {
         <nav className="coord-nav">
           {vistasNav.map(({ id, label, icon: Icon }) => (
             <button key={id}
+              type="button"
               className={`coord-nav-item ${vista === id ? "coord-nav-item-active" : ""}`}
               onClick={() => { setVista(id); setMensaje(""); }}
               title={label}>
@@ -870,7 +873,7 @@ function Coordinacion({ user, onLogout }) {
             </button>
           ))}
         </nav>
-        <button className="coord-logout" onClick={onLogout} title="Cerrar sesión">
+        <button className="coord-logout" type="button" onClick={onLogout} title="Cerrar sesión">
           <LogOut size={18} /><span>Cerrar sesion</span>
         </button>
       </aside>
@@ -1306,7 +1309,7 @@ function Coordinacion({ user, onLogout }) {
                     <p>Complete la configuracion del taller antes de habilitarlo.</p>
                   </div>
                 </div>
-                <button className="coord-modal-close" onClick={() => setShowModal(false)}><X size={20} /></button>
+                <button className="coord-modal-close" type="button" onClick={() => setShowModal(false)}><X size={20} /></button>
               </div>
               <form className="coord-program-form" id="form-programa" onSubmit={guardar}>
                 <div className="coord-program-form-main">
@@ -1545,7 +1548,7 @@ function Coordinacion({ user, onLogout }) {
             <div className="coord-modal" onClick={e => e.stopPropagation()}>
               <div className="coord-modal-header">
                 <h2>Invitados – {progSeleccionado?.nombre}</h2>
-                <button className="coord-modal-close" onClick={() => setShowInvitados(false)}><X size={20} /></button>
+                <button className="coord-modal-close" type="button" onClick={() => setShowInvitados(false)}><X size={20} /></button>
               </div>
               <div className="coord-modal-body">
                 <div className="coord-invitados-actions">

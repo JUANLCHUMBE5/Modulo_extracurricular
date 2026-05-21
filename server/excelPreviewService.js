@@ -91,11 +91,23 @@ function obtenerEncabezados(hoja) {
 
 function validarColumnasObligatorias(encabezados) {
   const disponibles = new Set(encabezados.map((item) => item.nombre));
-  const obligatorias = esFormatoCargaCambridge(disponibles) && !esFormatoCargaGeneral(disponibles)
-    ? ["dni", "alumno", "grado", "seccion", "seleccion", "nivel_cambridge"]
-    : ["dni", "nombres", "apellidos", "grado", "seccion", "curso_programa"];
+  const formatoEstandar = esFormatoEstandar(disponibles);
+  const obligatorias = formatoEstandar
+    ? ["dni", "alumno", "nivel_educativo", "grado", "seccion", "curso_programa"]
+    : esFormatoCargaCambridge(disponibles) && !esFormatoCargaGeneral(disponibles)
+      ? ["dni", "alumno", "grado", "seccion", "seleccion", "nivel_cambridge"]
+      : ["dni", "nombres", "apellidos", "grado", "seccion", "curso_programa"];
   const faltantes = obligatorias.filter((columna) => !disponibles.has(columna));
   if (faltantes.length) lanzar(`Faltan columnas obligatorias: ${faltantes.join(", ")}.`);
+}
+
+function esFormatoEstandar(disponibles) {
+  return disponibles.has("dni") &&
+    disponibles.has("alumno") &&
+    disponibles.has("nivel_educativo") &&
+    disponibles.has("grado") &&
+    disponibles.has("seccion") &&
+    disponibles.has("curso_programa");
 }
 
 function esFormatoCargaGeneral(disponibles) {
@@ -145,11 +157,14 @@ function validarRegistros({ filas, programasPeriodo, existentes }) {
 function normalizarFila(fila) {
   const alumno = separarAlumnoCompleto(fila.alumno);
   const nivelCambridge = limpiarTexto(fila.nivel_cambridge);
+  const nombres = limpiarTexto(fila.nombres) || alumno.nombres;
+  const apellidos = limpiarTexto(fila.apellidos) || alumno.apellidos;
   return {
     codigoEstudiante: limpiarTexto(fila.codigo_estudiante),
     dni: limpiarTexto(fila.dni),
-    nombres: limpiarTexto(fila.nombres) || alumno.nombres,
-    apellidos: limpiarTexto(fila.apellidos) || alumno.apellidos,
+    alumno: limpiarTexto(fila.alumno) || `${nombres} ${apellidos}`.trim(),
+    nombres,
+    apellidos,
     nivelEducativo: limpiarTexto(fila.nivel_educativo),
     grado: limpiarTexto(fila.grado),
     seccion: limpiarTexto(fila.seccion).toUpperCase(),
@@ -164,8 +179,7 @@ function normalizarFila(fila) {
 function validarFilaCarga(fila, programaDetectado) {
   const errores = [];
   if (fila.dni && !/^\d{8}$/.test(fila.dni)) errores.push("DNI invalido. Debe tener 8 digitos.");
-  if (!textoSeguro(fila.nombres)) errores.push("Falta nombre.");
-  if (!textoSeguro(fila.apellidos)) errores.push("Falta apellido.");
+  if (!textoSeguro(fila.alumno || `${fila.nombres} ${fila.apellidos}`)) errores.push("Falta alumno.");
   if (!textoSeguro(fila.grado)) errores.push("Falta grado.");
   if (!textoSeguro(fila.seccion)) errores.push("Falta seccion.");
   if (!textoSeguro(fila.curso) && !textoSeguro(fila.nivelCambridge)) errores.push("Falta curso o nivel Cambridge.");

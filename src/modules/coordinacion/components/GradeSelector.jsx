@@ -1,9 +1,28 @@
+import { useState } from "react";
+
 function GradeSelector({ niveles, seleccionados, onToggle }) {
+  const [nivelesAbiertos, setNivelesAbiertos] = useState(() =>
+    new Set(niveles.map(({ nivel }) => nivel).filter((nivel) => nivel === "Primaria"))
+  );
+
+  function alternarNivel(event, nivel) {
+    event.preventDefault();
+    setNivelesAbiertos((actuales) => {
+      const siguientes = new Set(actuales);
+      if (siguientes.has(nivel)) {
+        siguientes.delete(nivel);
+      } else {
+        siguientes.add(nivel);
+      }
+      return siguientes;
+    });
+  }
+
   return (
     <div className="coord-grade-selector">
       {niveles.map(({ nivel, grados }) => (
-        <details className="coord-grade-group" key={nivel} open={nivel === "Primaria"}>
-          <summary>
+        <details className="coord-grade-group" key={nivel} open={nivelesAbiertos.has(nivel)}>
+          <summary onClick={(event) => alternarNivel(event, nivel)}>
             <span>{nivel}</span>
             <strong>{seleccionados.filter((item) => item.startsWith(`${nivel}:`)).length}</strong>
           </summary>
