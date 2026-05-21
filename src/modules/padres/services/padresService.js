@@ -115,7 +115,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
     detalleAlmuerzo: programa.detalleAlmuerzo || "",
     concesionarios: programa.concesionarios || "",
     plantilla: programa.plantilla || "",
-    plantillaBase64: programa.plantillaBase64 || "",
+    plantillaBase64: "",
     plantillaVariables: programa.plantillaVariables || [],
     requiereUniforme: Boolean(programa.requiereUniforme),
     dniEstudiante: dniLimpio,

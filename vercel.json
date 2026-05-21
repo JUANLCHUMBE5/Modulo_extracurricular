@@ -9,6 +9,10 @@
       "destination": "/api/db"
     },
     {
+      "source": "/api/coordinacion/cargas/preview",
+      "destination": "/api/coordinacion/cargas/preview"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

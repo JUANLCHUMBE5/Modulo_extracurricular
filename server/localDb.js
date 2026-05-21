@@ -3,6 +3,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { initialData } from "../src/services/localDbClient.js";
 import {
+  getOfficialDb,
+  isOfficialApiEnabled,
+  resetOfficialDb,
+  saveOfficialDb,
+} from "./officialApiDb.js";
+import {
   getSupabaseDb,
   isSupabasePilotEnabled,
   resetSupabaseDb,
@@ -13,6 +19,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, "db.json");
 
 export async function getDb() {
+  if (isOfficialApiEnabled()) {
+    return getOfficialDb();
+  }
+
   if (isSupabasePilotEnabled()) {
     return getSupabaseDb();
   }
@@ -23,6 +33,10 @@ export async function getDb() {
 }
 
 export async function saveDb(data) {
+  if (isOfficialApiEnabled()) {
+    return saveOfficialDb(data);
+  }
+
   if (isSupabasePilotEnabled()) {
     return saveSupabaseDb(data);
   }
@@ -33,6 +47,10 @@ export async function saveDb(data) {
 }
 
 export async function resetDb() {
+  if (isOfficialApiEnabled()) {
+    return resetOfficialDb();
+  }
+
   if (isSupabasePilotEnabled()) {
     return resetSupabaseDb();
   }
@@ -41,6 +59,7 @@ export async function resetDb() {
 }
 
 export function getDbSource() {
+  if (isOfficialApiEnabled()) return "official-api";
   return isSupabasePilotEnabled() ? "supabase-pilot" : "local-json";
 }
 

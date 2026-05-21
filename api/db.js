@@ -1,8 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
 import { initialData } from "../src/services/localDbClient.js";
+import {
+  getSupabaseTablesDb,
+  isSupabaseTablesEnabled,
+  resetSupabaseTablesDb,
+  saveSupabaseTablesDb,
+} from "../server/supabaseTableDb.js";
 
 const DEFAULT_ROW_ID = "modulo-extracurricular";
 const DEFAULT_TABLE = "modulo_pilot_database";
+const DEFAULT_OFFICIAL_DB_PATH = "/api/modulo-extracurricular";
 
 export default async function handler(req, res) {
   setJsonHeaders(res);
@@ -14,12 +21,12 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === "GET") {
-      res.status(200).json(await getSupabaseDb());
+      res.status(200).json(await getDb());
       return;
     }
 
     if (req.method === "PUT") {
-      res.status(200).json(await saveSupabaseDb(req.body));
+      res.status(200).json(await saveDb(req.body));
       return;
     }
 
@@ -31,8 +38,22 @@ export default async function handler(req, res) {
   }
 }
 
+export async function getDb() {
+  return isOfficialApiMode() ? getOfficialDb() : getSupabaseDb();
+}
+
+export async function saveDb(data) {
+  return isOfficialApiMode() ? saveOfficialDb(data) : saveSupabaseDb(data);
+}
+
+export async function resetDb() {
+  return isOfficialApiMode() ? resetOfficialDb() : resetSupabaseDb();
+}
+
 export async function getSupabaseDb() {
   const { client, table, rowId } = getSupabaseConfig();
+  if (isSupabaseTablesEnabled()) return getSupabaseTablesDb(client);
+
   const { data, error } = await client
     .from(table)
     .select("data")
@@ -47,6 +68,8 @@ export async function getSupabaseDb() {
 
 export async function saveSupabaseDb(data) {
   const { client, table, rowId } = getSupabaseConfig();
+  if (isSupabaseTablesEnabled()) return saveSupabaseTablesDb(client, data);
+
   const db = mergeWithDefaults(data || {}, clone(initialData));
   const { error } = await client
     .from(table)
@@ -61,11 +84,101 @@ export async function saveSupabaseDb(data) {
 }
 
 export async function resetSupabaseDb() {
+  if (isSupabaseTablesEnabled()) {
+    const { client } = getSupabaseConfig();
+    return resetSupabaseTablesDb(client);
+  }
+
   return saveSupabaseDb(clone(initialData));
 }
 
 export function setJsonHeaders(res) {
   res.setHeader("Content-Type", "application/json");
+}
+
+function isOfficialApiMode() {
+  return String(process.env.DATA_MODE || "").toLowerCase() === "production";
+}
+
+async function getOfficialDb() {
+  const data = unwrapOfficialData(await officialRequest(getOfficialPath(), { method: "GET" }));
+  return mergeWithDefaults(data || {}, clone(initialData));
+}
+
+async function saveOfficialDb(data) {
+  const db = mergeWithDefaults(data || {}, clone(initialData));
+  const saved = await officialRequest(getOfficialPath(), {
+    method: "PUT",
+    body: db,
+  });
+
+  return mergeWithDefaults(unwrapOfficialData(saved) || db, clone(initialData));
+}
+
+async function resetOfficialDb() {
+  const resetPath = process.env.OFFICIAL_API_RESET_PATH;
+
+  if (!resetPath) {
+    throw new Error("La API oficial no tiene ruta de reinicio configurada.");
+  }
+
+  const data = unwrapOfficialData(await officialRequest(resetPath, { method: "POST" }));
+  return mergeWithDefaults(data || {}, clone(initialData));
+}
+
+async function officialRequest(path, options = {}) {
+  const baseUrl = String(process.env.OFFICIAL_API_BASE_URL || "").replace(/\/$/, "");
+
+  if (!baseUrl) {
+    throw new Error("Falta OFFICIAL_API_BASE_URL para el modo production.");
+  }
+
+  const response = await fetch(`${baseUrl}${normalizePath(path)}`, {
+    method: options.method || "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...getOfficialAuthHeaders(),
+    },
+    body: options.body == null ? undefined : JSON.stringify(options.body),
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const data = contentType.includes("application/json")
+    ? await response.json().catch(() => null)
+    : await response.text().catch(() => "");
+
+  if (!response.ok) {
+    throw new Error(data?.message || `La API oficial respondio con estado ${response.status}.`);
+  }
+
+  return data;
+}
+
+function getOfficialAuthHeaders() {
+  const headers = {};
+  const token = process.env.OFFICIAL_API_TOKEN;
+  const apiKey = process.env.OFFICIAL_API_KEY;
+
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (apiKey) headers["X-API-Key"] = apiKey;
+
+  return headers;
+}
+
+function getOfficialPath() {
+  return process.env.OFFICIAL_API_DB_PATH || DEFAULT_OFFICIAL_DB_PATH;
+}
+
+function normalizePath(path) {
+  return String(path || DEFAULT_OFFICIAL_DB_PATH).startsWith("/") ? path : `/${path}`;
+}
+
+function unwrapOfficialData(payload) {
+  if (payload && typeof payload === "object" && payload.data && !payload.programas && !payload.estudiantes) {
+    return payload.data;
+  }
+
+  return payload;
 }
 
 function getSupabaseConfig() {
@@ -102,6 +215,10 @@ function mergeWithDefaults(stored, defaults) {
     asistencias: stored.asistencias || defaults.asistencias,
     historialCargas: stored.historialCargas || defaults.historialCargas,
     usuarios: stored.usuarios || defaults.usuarios,
+    plantillasPorPrograma: {
+      ...(defaults.plantillasPorPrograma || {}),
+      ...(stored.plantillasPorPrograma || {}),
+    },
   };
 }
 

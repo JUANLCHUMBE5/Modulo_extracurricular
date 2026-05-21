@@ -1,4 +1,4 @@
-import { resetSupabaseDb, setJsonHeaders } from "../db.js";
+import { resetDb, setJsonHeaders } from "../db.js";
 
 export default async function handler(req, res) {
   setJsonHeaders(res);
@@ -14,10 +14,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    res.status(200).json(await resetSupabaseDb());
+    res.status(200).json(await resetDb());
   } catch (error) {
     res.status(500).json({
-      message: error?.message || "No se pudo reiniciar Supabase.",
+      message: error?.message || "No se pudo reiniciar la base de datos.",
     });
   }
 }

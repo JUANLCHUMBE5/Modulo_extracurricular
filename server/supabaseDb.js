@@ -1,6 +1,12 @@
 import "./loadEnv.js";
 import { createClient } from "@supabase/supabase-js";
 import { initialData } from "../src/services/localDbClient.js";
+import {
+  getSupabaseTablesDb,
+  isSupabaseTablesEnabled,
+  resetSupabaseTablesDb,
+  saveSupabaseTablesDb,
+} from "./supabaseTableDb.js";
 
 const DEFAULT_ROW_ID = "modulo-extracurricular";
 const DEFAULT_TABLE = "modulo_pilot_database";
@@ -14,6 +20,8 @@ export function isSupabasePilotEnabled() {
 
 export async function getSupabaseDb() {
   const { client, table, rowId } = getSupabaseConfig();
+  if (isSupabaseTablesEnabled()) return getSupabaseTablesDb(client);
+
   const { data, error } = await client
     .from(table)
     .select("data")
@@ -28,6 +36,8 @@ export async function getSupabaseDb() {
 
 export async function saveSupabaseDb(data) {
   const { client, table, rowId } = getSupabaseConfig();
+  if (isSupabaseTablesEnabled()) return saveSupabaseTablesDb(client, data);
+
   const db = mergeWithDefaults(data || {}, clone(initialData));
   const { error } = await client
     .from(table)
@@ -42,6 +52,11 @@ export async function saveSupabaseDb(data) {
 }
 
 export async function resetSupabaseDb() {
+  if (isSupabaseTablesEnabled()) {
+    const { client } = getSupabaseConfig();
+    return resetSupabaseTablesDb(client);
+  }
+
   return saveSupabaseDb(clone(initialData));
 }
 
@@ -83,6 +98,10 @@ function mergeWithDefaults(stored, defaults) {
     asistencias: stored.asistencias || defaults.asistencias,
     historialCargas: stored.historialCargas || defaults.historialCargas,
     usuarios: stored.usuarios || defaults.usuarios,
+    plantillasPorPrograma: {
+      ...(defaults.plantillasPorPrograma || {}),
+      ...(stored.plantillasPorPrograma || {}),
+    },
   };
 }
 

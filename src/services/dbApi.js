@@ -20,7 +20,7 @@ export async function syncApiDb() {
 
 export async function saveApiDb() {
   try {
-    const db = await localDbApi.saveDatabase(apiDb);
+    const db = await localDbApi.saveDatabase(prepareDbForStorage(apiDb));
     replaceApiDb(db);
   } catch (error) {
     if (requiresApiDataMode()) {
@@ -58,10 +58,11 @@ export function nextApiId(key) {
 }
 
 function replaceApiDb(db) {
+  const hydratedDb = hydrateDbTemplates(db || {});
   Object.keys(apiDb).forEach((key) => {
     delete apiDb[key];
   });
-  Object.assign(apiDb, db || {});
+  Object.assign(apiDb, hydratedDb);
 }
 
 function replaceMockDb(db) {
@@ -74,6 +75,63 @@ function replaceMockDb(db) {
 function dispatchApiDbUpdated() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent("api-db-updated"));
+}
+
+function hydrateDbTemplates(db) {
+  const templates = db.plantillasPorPrograma || {};
+  const programas = Array.isArray(db.programas)
+    ? db.programas.map((programa) => {
+        const plantilla = templates[programa.id];
+        if (!plantilla) return programa;
+
+        return {
+          ...programa,
+          plantilla: programa.plantilla || plantilla.plantilla || "",
+          plantillaBase64: programa.plantillaBase64 || plantilla.plantillaBase64 || "",
+          plantillaVariables: programa.plantillaVariables || plantilla.plantillaVariables || [],
+          plantillaActualizadaEn: programa.plantillaActualizadaEn || plantilla.plantillaActualizadaEn || "",
+        };
+      })
+    : db.programas;
+
+  return {
+    ...db,
+    programas,
+  };
+}
+
+function prepareDbForStorage(db) {
+  const stored = JSON.parse(JSON.stringify(db || {}));
+  const templates = { ...(stored.plantillasPorPrograma || {}) };
+
+  stored.programas = Array.isArray(stored.programas)
+    ? stored.programas.map((programa) => {
+        if (programa.id && programa.plantillaBase64) {
+          templates[programa.id] = {
+            plantilla: programa.plantilla || "",
+            plantillaBase64: programa.plantillaBase64,
+            plantillaVariables: programa.plantillaVariables || [],
+            plantillaActualizadaEn: programa.plantillaActualizadaEn || "",
+          };
+        }
+
+        return {
+          ...programa,
+          plantillaBase64: "",
+        };
+      })
+    : stored.programas;
+
+  stored.inscripciones = Array.isArray(stored.inscripciones)
+    ? stored.inscripciones.map((inscripcion) => {
+        const cleaned = { ...inscripcion };
+        delete cleaned.plantillaBase64;
+        return cleaned;
+      })
+    : stored.inscripciones;
+
+  stored.plantillasPorPrograma = templates;
+  return stored;
 }
 
 function requiresApiDataMode() {

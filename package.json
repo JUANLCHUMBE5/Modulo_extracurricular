@@ -5,10 +5,15 @@
   "type": "module",
   "scripts": {
     "api": "node server/excelApi.js",
+    "api:local": "node server/excelApi.js",
     "db:push-supabase-pilot": "node server/scripts/pushSupabasePilot.js",
+    "db:push-supabase-tables": "node server/scripts/pushSupabaseTables.js",
     "dev": "vite",
+    "dev:local": "vite",
     "start": "node server/excelApi.js",
     "build": "vite build",
+    "build:local": "vite build",
+    "vercel:ignore-build": "node scripts/vercel-ignore-build.js",
     "preview": "vite preview"
   },
   "dependencies": {

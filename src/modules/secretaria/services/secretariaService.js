@@ -162,7 +162,7 @@ export async function registrarInscripcion(payload) {
     horariosPorGrupo: programa.horariosPorGrupo || [],
     requisitos: programa.requisitos || "",
     plantilla: programa.plantilla || "",
-    plantillaBase64: programa.plantillaBase64 || "",
+    plantillaBase64: "",
     plantillaVariables: programa.plantillaVariables || [],
     seleccion: payload.seleccion || "",
     nivelCambridge: payload.nivelCambridge || "",
@@ -296,7 +296,13 @@ function sincronizarInscripcionConProgramaActual(inscripcion) {
     item.id === inscripcion.programaId ||
     normalizarTexto(item.nombre) === normalizarTexto(inscripcion.programa)
   );
-  if (!programa) return inscripcion;
+  if (!programa) {
+    return {
+      ...inscripcion,
+      plantillaBase64: obtenerPlantillaBase64(inscripcion, null),
+      plantillaVariables: obtenerPlantillaVariables(inscripcion, null),
+    };
+  }
   if (!programaDisponibleParaGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado)) return null;
 
   return {
@@ -312,10 +318,20 @@ function sincronizarInscripcionConProgramaActual(inscripcion) {
     horariosPorGrupo: programa.horariosPorGrupo || inscripcion.horariosPorGrupo || [],
     requisitos: programa.requisitos || inscripcion.requisitos || "",
     plantilla: programa.plantilla || inscripcion.plantilla || "",
-    plantillaBase64: programa.plantillaBase64 || inscripcion.plantillaBase64 || "",
-    plantillaVariables: programa.plantillaVariables || inscripcion.plantillaVariables || [],
+    plantillaBase64: obtenerPlantillaBase64(inscripcion, programa),
+    plantillaVariables: obtenerPlantillaVariables(inscripcion, programa),
     requiereUniforme: Boolean(programa.requiereUniforme),
   };
+}
+
+function obtenerPlantillaBase64(inscripcion, programa) {
+  const plantillaGuardada = apiDb.plantillasPorPrograma?.[programa?.id || inscripcion?.programaId] || null;
+  return programa?.plantillaBase64 || plantillaGuardada?.plantillaBase64 || inscripcion?.plantillaBase64 || "";
+}
+
+function obtenerPlantillaVariables(inscripcion, programa) {
+  const plantillaGuardada = apiDb.plantillasPorPrograma?.[programa?.id || inscripcion?.programaId] || null;
+  return programa?.plantillaVariables || plantillaGuardada?.plantillaVariables || inscripcion?.plantillaVariables || [];
 }
 
 function adaptarProgramaCoordinacion(programa) {
