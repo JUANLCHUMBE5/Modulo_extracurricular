@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/db/reset",
+      "destination": "/api/db/reset"
+    },
+    {
+      "source": "/api/db",
+      "destination": "/api/db"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
