@@ -252,10 +252,15 @@ function Coordinacion({ user, onLogout }) {
     };
     try {
       if (modoEditar) {
-        await editarPrograma(form.id, datosGuardar);
+        const programaActualizado = await editarPrograma(form.id, datosGuardar);
         mostrarMsg("Programa actualizado correctamente.", "success");
-        await cargarDatos();
-        setForm(datosProgramaAFormulario(datosGuardar));
+        setProgramas((actuales) =>
+          actuales.map((programa) =>
+            programa.id === form.id ? programaActualizado : programa
+          )
+        );
+        setForm(datosProgramaAFormulario(programaActualizado));
+        setShowModal(true);
       } else {
         await crearPrograma(datosGuardar);
         mostrarMsg("Programa creado correctamente.", "success");
