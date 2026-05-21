@@ -514,7 +514,7 @@ function prepararVistaDocxParaImpresion(contenedor) {
   const paginas = Array.from(contenedor?.querySelectorAll(".docx") || []);
   if (!paginas.length) return;
 
-  const paginasConContenido = paginas.filter(paginaTieneContenidoDocx);
+  const paginasConContenido = compactarPaginasDocx(contenedor, paginas.filter(paginaTieneContenidoDocx));
   paginas
     .filter((pagina) => !paginasConContenido.includes(pagina))
     .forEach((pagina) => pagina.remove());
@@ -530,6 +530,23 @@ function prepararVistaDocxParaImpresion(contenedor) {
   });
 
   normalizarMarcasAguaDocx(contenedor);
+}
+
+function compactarPaginasDocx(_contenedor, paginasConContenido) {
+  if (paginasConContenido.length <= 1) return paginasConContenido;
+
+  const paginaPrincipal = paginasConContenido[0];
+  const contenidoPrincipal = paginaPrincipal.querySelector("article") || paginaPrincipal;
+
+  paginasConContenido.slice(1).forEach((paginaExtra) => {
+    const contenidoExtra = paginaExtra.querySelector("article") || paginaExtra;
+    Array.from(contenidoExtra.childNodes).forEach((nodo) => {
+      contenidoPrincipal.appendChild(nodo);
+    });
+    paginaExtra.remove();
+  });
+
+  return [paginaPrincipal];
 }
 
 function ajustarDocxAUnaPagina(pagina, contenido) {
