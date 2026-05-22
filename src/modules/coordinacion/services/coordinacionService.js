@@ -82,6 +82,7 @@ export async function crearPrograma(datos) {
     detalleCosto: datos.detalleCosto || "",
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
+    invitacionMasiva: Boolean(datos.invitacionMasiva),
   };
 
   apiDb.programas.push(nuevo);
@@ -127,6 +128,7 @@ export async function crearProgramaDesdeDocumento(datos) {
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
     requiereUniforme: Boolean(datos.requiereUniforme),
+    invitacionMasiva: Boolean(datos.invitacionMasiva),
     creadoDesdeDocumento: true,
   };
 
@@ -158,6 +160,7 @@ export async function editarPrograma(id, datos) {
     detalleCosto: datos.detalleCosto || "",
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
+    invitacionMasiva: Boolean(datos.invitacionMasiva),
   };
 
   await saveApiDb();

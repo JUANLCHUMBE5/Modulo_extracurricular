@@ -340,6 +340,26 @@
   grid-column: span 8;
 }
 
+.secretaria-registration-modal .secretaria-program-cost-row {
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+}
+
+.secretaria-registration-modal .secretaria-program-cost-row .secretaria-field {
+  grid-column: auto;
+}
+
+.secretaria-registration-modal .secretaria-registration-contact {
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+
+.secretaria-registration-modal .secretaria-registration-contact .secretaria-registration-section-head {
+  grid-column: 1 / -1;
+}
+
+.secretaria-registration-modal .secretaria-registration-contact .secretaria-field {
+  grid-column: auto;
+}
+
 .secretaria-registration-modal .secretaria-age-field input {
   max-width: 88px;
 }
@@ -504,8 +524,15 @@
   .secretaria-registration-modal .secretaria-field,
   .secretaria-registration-modal .secretaria-field-short,
   .secretaria-registration-modal .secretaria-field-medium,
-  .secretaria-registration-modal .secretaria-field-wide {
+  .secretaria-registration-modal .secretaria-field-wide,
+  .secretaria-registration-modal .secretaria-program-cost-row .secretaria-field,
+  .secretaria-registration-modal .secretaria-registration-contact .secretaria-field {
     grid-column: 1 / -1;
+  }
+
+  .secretaria-registration-modal .secretaria-program-cost-row,
+  .secretaria-registration-modal .secretaria-registration-contact {
+    grid-template-columns: 1fr;
   }
 
   .secretaria-registration-modal .secretaria-age-field input {

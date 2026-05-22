@@ -113,8 +113,8 @@ function Secretaria({ onLogout }) {
   const nombreProgramaAMostrar = estudiante?.tieneInvitacion 
     ? estudiante.programaNombre 
     : (programaSeleccionado?.nombre || "");
-
-  const programaParaRegistro = programaSeleccionado || programaAsignado || (estudiante?.tieneInvitacion ? {
+  const registroAdicional = Boolean(inscripcion);
+  const programaAsignadoInvitacion = estudiante?.tieneInvitacion ? {
     id: estudiante.programaAsignado,
     nombre: estudiante.programaNombre,
     horario: estudiante.programaHorario,
@@ -131,7 +131,17 @@ function Secretaria({ onLogout }) {
     plantillaBase64: estudiante.plantillaBase64,
     plantillaVariables: estudiante.plantillaVariables,
     requiereUniforme: estudiante.requiereUniforme,
-  } : null);
+  } : null;
+  const programasParaSelector = programaAsignadoInvitacion && !registroAdicional
+    ? [
+        programaAsignadoInvitacion,
+        ...programas.filter((programa) => programa.id !== programaAsignadoInvitacion.id),
+      ]
+    : programas;
+  const mostrarSelectorPrograma = periodo === "verano" || !estudiante?.tieneInvitacion || registroAdicional || programas.length > 0;
+
+  const programaParaRegistro = programaSeleccionado || programaAsignado || programaAsignadoInvitacion;
+  const inscripcionMasivaSeleccionada = Boolean(programaParaRegistro?.invitacionMasiva);
   const horarioResumenRegistro = resumirHorarioSecretaria(programaParaRegistro?.horario || "");
 
   useEffect(() => {
@@ -146,17 +156,20 @@ function Secretaria({ onLogout }) {
 
   useEffect(() => {
     async function refrescarDesdeBase() {
-      const programasActualizados = await listarProgramasPorPeriodo(periodo);
-      setProgramas(programasActualizados);
-
       if (validarDni(dni)) {
         const encontrado = await buscarEstudiantePorDni(dni, periodo);
         if (encontrado) {
           setEstudiante(encontrado);
           const registro = await buscarInscripcionEstudiante(encontrado, periodo);
           setInscripción(registro);
+          const programasActualizados = await listarProgramasPorPeriodo(periodo, encontrado.grado || "");
+          setProgramas(filtrarProgramasSinCruce(programasActualizados, registro));
+          return;
         }
       }
+
+      const programasActualizados = await listarProgramasPorPeriodo(periodo);
+      setProgramas(programasActualizados);
     }
 
     window.addEventListener("mock-db-updated", refrescarDesdeBase);
@@ -168,10 +181,11 @@ function Secretaria({ onLogout }) {
     };
   }, [periodo, dni]);
 
-  async function cargarProgramasDelPeriodo() {
-    const programasActualizados = await listarProgramasPorPeriodo(periodo);
-    setProgramas(programasActualizados);
-    return programasActualizados;
+  async function cargarProgramasDelPeriodo(gradoAlumno = estudiante?.grado || "") {
+    const programasActualizados = await listarProgramasPorPeriodo(periodo, gradoAlumno);
+    const programasSinCruce = filtrarProgramasSinCruce(programasActualizados, inscripcion);
+    setProgramas(programasSinCruce);
+    return programasSinCruce;
   }
 
   async function buscarEstudiante(event) {
@@ -183,9 +197,8 @@ function Secretaria({ onLogout }) {
     setInscripción(null);
     setModoRegistro(false);
     setResultadosNombre([]);
-    await cargarProgramasDelPeriodo();
-
     if (!validarDni(dni)) {
+      await cargarProgramasDelPeriodo();
       if (dni.trim().length >= 3) {
         setBuscando(true);
         const resultados = await buscarEstudiantesPorNombre(dni, periodo);
@@ -264,6 +277,9 @@ function Secretaria({ onLogout }) {
   async function aplicarEstudianteEncontrado(encontrado) {
     setResultadosNombre([]);
     const registroExistente = await buscarInscripcionEstudiante(encontrado, periodo);
+    const programasCompatiblesBase = await listarProgramasPorPeriodo(periodo, encontrado.grado || "");
+    const programasCompatibles = filtrarProgramasSinCruce(programasCompatiblesBase, registroExistente);
+    setProgramas(programasCompatibles);
     const estadoRegistro = registroExistente?.estadoInscripción || registroExistente?.estadoInscripcion;
     setEstudiante({
       ...encontrado,
@@ -281,6 +297,10 @@ function Secretaria({ onLogout }) {
       tallaUniforme: registroExistente?.tallaUniforme ?? "",
       observacion: registroExistente?.observacion ?? "",
     });
+    if (!encontrado.tieneInvitacion && periodo === "escolar" && programasCompatibles.length === 0) {
+      setMensaje("No hay programas de invitación masiva disponibles para el grado del estudiante.");
+      return;
+    }
     setMensaje("");
   }
 
@@ -344,7 +364,8 @@ function Secretaria({ onLogout }) {
       }
     }
 
-    const requiereSeleccionPrograma = periodo === "verano" || !estudiante.tieneInvitacion;
+    const seleccionoProgramaDistinto = Boolean(formulario.programa && formulario.programa !== estudiante.programaAsignado);
+    const requiereSeleccionPrograma = periodo === "verano" || !estudiante.tieneInvitacion || registroAdicional || seleccionoProgramaDistinto;
     const programaIdRegistro = requiereSeleccionPrograma
       ? formulario.programa
       : estudiante.programaAsignado;
@@ -365,7 +386,7 @@ function Secretaria({ onLogout }) {
       return;
     }
 
-    if (periodo === "escolar" && !estudiante.tieneInvitacion && !validarTextoSeguro(formulario.observacion)) {
+    if (periodo === "escolar" && !estudiante.tieneInvitacion && !inscripcionMasivaSeleccionada && !validarTextoSeguro(formulario.observacion)) {
       mostrarMensaje("La inscripcion excepcional requiere una observacion obligatoria.");
       return;
     }
@@ -420,7 +441,7 @@ function Secretaria({ onLogout }) {
           estudiante.esExterno
             ? (formulario.tipoAlumnoVerano === "Alumno externo" ? "Verano externo" : "Verano interno")
             :
-          periodo === "escolar" && !estudiante.tieneInvitacion
+          periodo === "escolar" && !estudiante.tieneInvitacion && !programaActualizado.invitacionMasiva
             ? "Excepcional"
             : "Regular",
         programa: programaActualizado.nombre,
@@ -474,18 +495,22 @@ function Secretaria({ onLogout }) {
   }
 
   async function abrirRegistro() {
-    const programasActualizados = await cargarProgramasDelPeriodo();
-    const programaExiste = programasActualizados.some((programa) =>
-      programa.id === estudiante?.programaAsignado
-    );
-    if (estudiante?.tieneInvitacion && !programaExiste) {
+    const programasActualizados = await cargarProgramasDelPeriodo(estudiante?.grado || "");
+    const programaAsignadoActual = estudiante?.tieneInvitacion && !registroAdicional
+      ? await obtenerProgramaPorId(estudiante.programaAsignado, periodo).catch(() => null)
+      : null;
+
+    if (estudiante?.tieneInvitacion && !registroAdicional && !programaAsignadoActual) {
       mostrarMensaje("El programa asignado por Coordinación no está habilitado o no tiene cupos disponibles.");
       return;
     }
     const primerProgramaPeriodo = programasActualizados[0]?.id || "";
+    const debeEscogerEntreInvitacionYMasiva = Boolean(programaAsignadoActual && programasActualizados.length > 0);
     setFormulario((actual) => ({
       ...actual,
-      programa: estudiante?.tieneInvitacion && programaExiste
+      programa: debeEscogerEntreInvitacionYMasiva
+        ? ""
+        : programaAsignadoActual
         ? estudiante.programaAsignado
         : actual.programa || primerProgramaPeriodo,
       colegioProcedencia: actual.colegioProcedencia || (estudiante?.esExterno ? "" : "Colegio San Rafael"),
@@ -504,14 +529,16 @@ function Secretaria({ onLogout }) {
     try {
       const inscripcionActualizada = await buscarInscripcionEstudiante(estudiante, periodo);
       const fichaRegistro = await completarInscripcionConProgramaActual(inscripcionActualizada || inscripcion);
-      if (!fichaRegistro.plantillaBase64) {
-        throw new Error("No encuentro el archivo Word de este programa. Vuelva a subir la plantilla en Coordinación.");
-      }
-      setInscripción(fichaRegistro);
-      await registrarDocumentoGenerado({
+      const documento = await registrarDocumentoGenerado({
         estudiante,
         inscripcion: fichaRegistro,
-        tipoDocumento: fichaRegistro.plantilla ? "Comunicado personalizado" : "Ficha personalizada",
+        tipoDocumento: fichaRegistro.plantillaBase64 ? "Comunicado personalizado" : "Ficha automática de inscripción",
+      });
+      setInscripción({
+        ...fichaRegistro,
+        fichaGenerada: true,
+        documentoGenerado: true,
+        ultimoDocumentoGeneradoId: documento.id,
       });
       await imprimirInscripcionDirecta(estudiante, fichaRegistro);
     } catch (err) {
@@ -521,8 +548,35 @@ function Secretaria({ onLogout }) {
     }
   }
 
+  function filtrarProgramasSinCruce(listaProgramas, registroExistente) {
+    if (!registroExistente) return listaProgramas;
+    const diasRegistro = extraerDiasHorarioSecretaria(registroExistente.horario);
+    if (!diasRegistro.size) return listaProgramas;
+    return listaProgramas.filter((programa) => !intersectaDiasSecretaria(diasRegistro, extraerDiasHorarioSecretaria(programa.horario)));
+  }
+
+  function intersectaDiasSecretaria(a, b) {
+    for (const dia of a) {
+      if (b.has(dia)) return true;
+    }
+    return false;
+  }
+
+  function extraerDiasHorarioSecretaria(horario = "") {
+    const texto = String(horario || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+    const dias = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
+    return new Set(dias.filter((dia) => texto.includes(dia)));
+  }
+
   async function derivarACaja() {
     if (!inscripcion || derivandoCaja) return;
+    if (!inscripcion.fichaGenerada && !inscripcion.documentoGenerado) {
+      mostrarMensaje("Primero imprima o genere la ficha de inscripción antes de derivar a Caja.");
+      return;
+    }
 
     setDerivandoCaja(true);
     setMensaje("");
@@ -807,7 +861,12 @@ function Secretaria({ onLogout }) {
 
                 <div className="secretaria-info-box">
                   <CheckCircle2 size={19} />
-                  {inscripcion ? (
+                  {inscripcion && programas.length > 0 ? (
+                    <p>
+                      El estudiante ya tiene una inscripción. Secretaría puede registrar
+                      un curso adicional de invitación masiva si aplica a su grado y no cruza con su horario.
+                    </p>
+                  ) : inscripcion ? (
                     <p>
                       Inscripcion registrada. Derivar a Caja para validar el pago.
                     </p>
@@ -816,22 +875,27 @@ function Secretaria({ onLogout }) {
                       El estudiante tiene invitación registrada. Secretaria solo
                       podrá inscribirlo en el programa asignado por Coordinación.
                     </p>
+                  ) : programas.length > 0 ? (
+                    <p>
+                      No tiene invitación individual. Secretaría puede registrarlo
+                      en los programas marcados por Coordinación como invitación masiva.
+                    </p>
                   ) : (
                     <p>
-                      No tiene invitación registrada. En año escolar solo procede
-                      como inscripcion excepcional con observacion obligatoria.
+                      No tiene invitación registrada. Coordinación debe habilitar una
+                      invitación masiva o registrar una invitación individual.
                     </p>
                   )}
                 </div>
 
-                {!inscripcion ? (
+                {!inscripcion || programas.length > 0 ? (
                   <button
                     className="secretaria-register-button"
                     type="button"
                     onClick={abrirRegistro}
                   >
                     <ClipboardCheck size={17} />
-                    <span>Registrar inscripcion</span>
+                    <span>{inscripcion ? "Registrar curso adicional" : "Registrar inscripcion"}</span>
                   </button>
                 ) : (
                   <div className="secretaria-final-actions">
@@ -994,23 +1058,23 @@ function Secretaria({ onLogout }) {
                     <span>Datos necesarios para confirmar la inscripción</span>
                   </div>
 
-                {(periodo === "verano" || !estudiante.tieneInvitacion) ? (
+                {mostrarSelectorPrograma ? (
                   <div className="secretaria-field secretaria-program-select-field">
                     <label htmlFor="programa">Programa o taller</label>
                     <select
                       id="programa"
                       value={formulario.programa}
-                      disabled={programas.length === 0}
+                      disabled={programasParaSelector.length === 0}
                       onChange={(event) =>
                         actualizarFormulario("programa", event.target.value)
                       }
                     >
                       <option value="">
-                        {programas.length ? "Seleccione programa" : "No hay programas habilitados"}
+                        {programasParaSelector.length ? "Seleccione programa" : "No hay programas con invitación masiva para este grado"}
                       </option>
-                      {programas.map((programa) => (
+                      {programasParaSelector.map((programa) => (
                         <option key={programa.id} value={programa.id}>
-                          {programa.nombre}
+                          {programa.nombre}{programa.horario ? ` - ${programa.horario}` : ""}
                         </option>
                       ))}
                     </select>
@@ -1026,7 +1090,7 @@ function Secretaria({ onLogout }) {
                     radius="md"
                     icon={<AlertCircle size={18} />}
                   >
-                    Coordinación debe registrar y habilitar un programa para este periodo antes de inscribir.
+                    Coordinación debe registrar y habilitar un programa con invitación masiva para el grado del estudiante.
                   </MantineAlert>
                 ) : null}
 

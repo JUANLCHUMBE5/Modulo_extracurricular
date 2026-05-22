@@ -1,52 +1,65 @@
 import { useState } from "react";
 
-function GradeSelector({ niveles, seleccionados, onToggle }) {
-  const [nivelesAbiertos, setNivelesAbiertos] = useState(() =>
-    new Set(niveles.map(({ nivel }) => nivel).filter((nivel) => nivel === "Primaria"))
-  );
+function normalizarSeleccion(seleccionados) {
+  if (!Array.isArray(seleccionados)) return [];
+  return seleccionados
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+}
 
-  function alternarNivel(event, nivel) {
-    event.preventDefault();
+function GradeSelector({ niveles, seleccionados, onToggle }) {
+  const nivelesSeguros = Array.isArray(niveles) ? niveles : [];
+  const seleccionadosSeguros = normalizarSeleccion(seleccionados);
+  const [nivelesAbiertos, setNivelesAbiertos] = useState(["Primaria"]);
+
+  function alternarNivel(nivel) {
     setNivelesAbiertos((actuales) => {
-      const siguientes = new Set(actuales);
-      if (siguientes.has(nivel)) {
-        siguientes.delete(nivel);
-      } else {
-        siguientes.add(nivel);
+      if (actuales.includes(nivel)) {
+        return actuales.filter((item) => item !== nivel);
       }
-      return siguientes;
+      return [...actuales, nivel];
     });
   }
 
   return (
     <div className="coord-grade-selector">
-      {niveles.map(({ nivel, grados }) => (
-        <details className="coord-grade-group" key={nivel} open={nivelesAbiertos.has(nivel)}>
-          <summary onClick={(event) => alternarNivel(event, nivel)}>
+      {nivelesSeguros.map(({ nivel, grados }) => {
+        const abierto = nivelesAbiertos.includes(nivel);
+        return (
+        <div className={`coord-grade-group ${abierto ? "is-open" : ""}`} key={nivel}>
+          <button
+            type="button"
+            className="coord-grade-summary"
+            onClick={() => alternarNivel(nivel)}
+          >
             <span>{nivel}</span>
-            <strong>{seleccionados.filter((item) => item.startsWith(`${nivel}:`)).length}</strong>
-          </summary>
-          <div className="coord-grade-options">
-            {grados.map((grado) => {
+            <strong>{seleccionadosSeguros.filter((item) => item.startsWith(`${nivel}:`)).length}</strong>
+          </button>
+          {abierto ? (
+            <div className="coord-grade-options">
+            {(Array.isArray(grados) ? grados : []).map((grado) => {
               const valor = `${nivel}:${grado}`;
-              const seleccionado = seleccionados.includes(valor);
+              const seleccionado = seleccionadosSeguros.includes(valor);
               return (
                 <label
                   className={`coord-grade-chip ${seleccionado ? "is-selected" : ""}`}
                   key={valor}
+                  onClick={(event) => event.stopPropagation()}
                 >
                   <input
                     type="checkbox"
                     checked={seleccionado}
-                    onChange={() => onToggle(valor)}
+                    onChange={() => onToggle?.(valor)}
                   />
                   <span>{etiquetaGradoCorta(grado)}</span>
                 </label>
               );
             })}
-          </div>
-        </details>
-      ))}
+            </div>
+          ) : null}
+        </div>
+        );
+      })}
     </div>
   );
 }

@@ -66,7 +66,7 @@ const formInicial = {
   responsable: "", tutora: "", plantilla: "", plantillaBase64: "", plantillaVariables: [],
   plantillaValidada: false, plantillaActualizadaEn: "", requisitos: "",
   comunicado: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
-  requiereUniforme: false,
+  requiereUniforme: false, invitacionMasiva: false,
 };
 
 const horarioGrupoInicial = {
@@ -84,6 +84,24 @@ const vistasNav = [
   { id: "carga", label: "Carga Excel", icon: Upload },
   { id: "documentos", label: "Plantillas / Documentos", icon: FileText },
 ];
+
+function normalizarListaGrados(lista) {
+  if (!Array.isArray(lista)) return [];
+  return lista
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+}
+
+function normalizarListaTexto(lista) {
+  if (!Array.isArray(lista)) return [];
+  return lista
+    .map((item) => String(item || "").trim())
+    .filter(Boolean);
+}
+
+function etiquetaGradoCorta(grado) {
+  return String(grado || "").replace(/\s*aÃ±os?/i, "").trim();
+}
 
 function Coordinacion({ user, onLogout }) {
   const esProfesor = user?.username === "profe" || user?.name === "Profesor";
@@ -175,13 +193,13 @@ function Coordinacion({ user, onLogout }) {
     return {
       nombre: prog.nombre, periodo: normalizarPeriodoVista(prog.periodo), categoria: prog.categoria,
       grupo: prog.grupo, horario: prog.horario, fechaInicio: prog.fechaInicio,
-      gradosAplicables: prog.gradosAplicables || [],
-      dias: prog.dias || [],
+      gradosAplicables: normalizarListaGrados(prog.gradosAplicables),
+      dias: normalizarListaTexto(prog.dias),
       horaInicio: prog.horaInicio || "",
       horaFin: prog.horaFin || "",
       almuerzoInicio: prog.almuerzoInicio || "",
       almuerzoFin: prog.almuerzoFin || "",
-      horariosPorGrupo: prog.horariosPorGrupo || [],
+      horariosPorGrupo: normalizarHorariosPorGrupo(prog.horariosPorGrupo),
       fechaFin: prog.fechaFin, cupos: String(prog.cupos), costo: String(prog.costo),
       modalidadCobro: prog.modalidadCobro, responsable: prog.responsable,
       tutora: prog.tutora, plantilla: prog.plantilla || "",
@@ -194,7 +212,9 @@ function Coordinacion({ user, onLogout }) {
       detalleCosto: prog.detalleCosto || "",
       detalleAlmuerzo: prog.detalleAlmuerzo || "",
       concesionarios: prog.concesionarios || "",
-      requiereUniforme: prog.requiereUniforme, id: prog.id,
+      requiereUniforme: Boolean(prog.requiereUniforme),
+      invitacionMasiva: Boolean(prog.invitacionMasiva),
+      id: prog.id,
     };
   }
 
@@ -216,9 +236,10 @@ function Coordinacion({ user, onLogout }) {
     if (!form.categoria) return mostrarMsg("Seleccione una categoría.");
     const gruposHorario = normalizarHorariosPorGrupo(form.horariosPorGrupo);
     const gradosFinales = obtenerGradosFinales(form.gradosAplicables, gruposHorario);
+    const diasFinales = normalizarListaTexto(form.dias);
     if (gradosFinales.length === 0) return mostrarMsg("Seleccione al menos un grado aplicable.");
     if (gruposHorario.length === 0) {
-      if (form.dias.length === 0) return mostrarMsg("Seleccione los días del programa.");
+      if (diasFinales.length === 0) return mostrarMsg("Seleccione los días del programa.");
       if (!form.horaInicio || !form.horaFin) return mostrarMsg("Seleccione hora de inicio y fin del programa.");
       if (form.horaInicio >= form.horaFin) return mostrarMsg("La hora de inicio debe ser menor a la hora de fin.");
       if ((form.almuerzoInicio && !form.almuerzoFin) || (!form.almuerzoInicio && form.almuerzoFin)) {
@@ -244,11 +265,12 @@ function Coordinacion({ user, onLogout }) {
       ...form,
       costo: Number(form.costo).toFixed(2),
       gradosAplicables: gradosFinales,
+      dias: diasFinales,
       horariosPorGrupo: gruposHorario,
       grupo: resumenGrados(gradosFinales),
       horario: gruposHorario.length
         ? resumenHorariosPorGrupo(gruposHorario)
-        : resumenHorario(form.dias, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin),
+        : resumenHorario(diasFinales, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin),
     };
     try {
       if (modoEditar) {
@@ -649,18 +671,18 @@ function Coordinacion({ user, onLogout }) {
   function toggleGrado(valor) {
     setForm(f => ({
       ...f,
-      gradosAplicables: f.gradosAplicables.includes(valor)
-        ? f.gradosAplicables.filter(item => item !== valor)
-        : [...f.gradosAplicables, valor],
+      gradosAplicables: normalizarListaGrados(f.gradosAplicables).includes(valor)
+        ? normalizarListaGrados(f.gradosAplicables).filter(item => item !== valor)
+        : [...normalizarListaGrados(f.gradosAplicables), valor],
     }));
   }
 
   function toggleDia(valor) {
     setForm(f => ({
       ...f,
-      dias: f.dias.includes(valor)
-        ? f.dias.filter(item => item !== valor)
-        : [...f.dias, valor],
+      dias: normalizarListaTexto(f.dias).includes(valor)
+        ? normalizarListaTexto(f.dias).filter(item => item !== valor)
+        : [...normalizarListaTexto(f.dias), valor],
     }));
   }
 
@@ -668,7 +690,7 @@ function Coordinacion({ user, onLogout }) {
     setForm((actual) => ({
       ...actual,
       horariosPorGrupo: [
-        ...actual.horariosPorGrupo,
+        ...(Array.isArray(actual.horariosPorGrupo) ? actual.horariosPorGrupo : []),
         { ...horarioGrupoInicial, id: `grupo-${Date.now()}` },
       ],
     }));
@@ -677,14 +699,14 @@ function Coordinacion({ user, onLogout }) {
   function quitarGrupoHorario(index) {
     setForm((actual) => ({
       ...actual,
-      horariosPorGrupo: actual.horariosPorGrupo.filter((_, itemIndex) => itemIndex !== index),
+      horariosPorGrupo: (Array.isArray(actual.horariosPorGrupo) ? actual.horariosPorGrupo : []).filter((_, itemIndex) => itemIndex !== index),
     }));
   }
 
   function actualizarGrupoHorario(index, campo, valor) {
     setForm((actual) => ({
       ...actual,
-      horariosPorGrupo: actual.horariosPorGrupo.map((grupo, itemIndex) =>
+      horariosPorGrupo: (Array.isArray(actual.horariosPorGrupo) ? actual.horariosPorGrupo : []).map((grupo, itemIndex) =>
         itemIndex === index ? { ...grupo, [campo]: valor } : grupo
       ),
     }));
@@ -693,9 +715,9 @@ function Coordinacion({ user, onLogout }) {
   function toggleGradoGrupo(index, valor) {
     setForm((actual) => ({
       ...actual,
-      horariosPorGrupo: actual.horariosPorGrupo.map((grupo, itemIndex) => {
+      horariosPorGrupo: (Array.isArray(actual.horariosPorGrupo) ? actual.horariosPorGrupo : []).map((grupo, itemIndex) => {
         if (itemIndex !== index) return grupo;
-        const grados = grupo.grados || [];
+        const grados = normalizarListaGrados(grupo.grados);
         return {
           ...grupo,
           grados: grados.includes(valor)
@@ -707,10 +729,11 @@ function Coordinacion({ user, onLogout }) {
   }
 
   function resumenGrados(grados) {
-    if (!grados.length) return "";
+    const gradosSeguros = normalizarListaGrados(grados);
+    if (!gradosSeguros.length) return "";
     return nivelesGrados
       .map(({ nivel }) => {
-        const items = grados
+        const items = gradosSeguros
           .filter(item => item.startsWith(`${nivel}:`))
           .map(item => etiquetaGradoCorta(item.split(":")[1]));
         return items.length ? `${nivel}: ${items.join(", ")}` : "";
@@ -720,18 +743,19 @@ function Coordinacion({ user, onLogout }) {
   }
 
   function resumenHorario(dias, inicio, fin, almuerzoInicio = "", almuerzoFin = "") {
-    if (!dias.length || !inicio || !fin) return "";
+    const diasSeguros = normalizarListaTexto(dias);
+    if (!diasSeguros.length || !inicio || !fin) return "";
     const clase = `${formatearHora12(inicio)} - ${formatearHora12(fin)}`;
     const almuerzo = almuerzoInicio && almuerzoFin
       ? ` · almuerzo ${formatearHora12(almuerzoInicio)} - ${formatearHora12(almuerzoFin)}`
       : "";
-    return `${dias.join(", ")} clase ${clase}${almuerzo}`;
+    return `${diasSeguros.join(", ")} clase ${clase}${almuerzo}`;
   }
 
   function normalizarHorariosPorGrupo(grupos) {
-    return (grupos || []).map((grupo, index) => ({
+    return (Array.isArray(grupos) ? grupos : []).map((grupo, index) => ({
       id: grupo.id || `grupo-${index + 1}`,
-      grados: grupo.grados || [],
+      grados: normalizarListaGrados(grupo.grados),
       dia: grupo.dia || "",
       almuerzoInicio: grupo.almuerzoInicio || "14:20",
       almuerzoFin: grupo.almuerzoFin || "15:10",
@@ -745,8 +769,8 @@ function Coordinacion({ user, onLogout }) {
 
   function obtenerGradosFinales(gradosBase, gruposHorario) {
     return [...new Set([
-      ...(gradosBase || []),
-      ...gruposHorario.flatMap((grupo) => grupo.grados || []),
+      ...normalizarListaGrados(gradosBase),
+      ...(Array.isArray(gruposHorario) ? gruposHorario : []).flatMap((grupo) => normalizarListaGrados(grupo.grados)),
     ])];
   }
 
@@ -845,6 +869,10 @@ function Coordinacion({ user, onLogout }) {
   // ════════════════════════════════════════════════════════════
   // RENDER
   // ════════════════════════════════════════════════════════════
+  const formGradosAplicables = normalizarListaGrados(form.gradosAplicables);
+  const formDias = normalizarListaTexto(form.dias);
+  const formHorariosPorGrupo = Array.isArray(form.horariosPorGrupo) ? form.horariosPorGrupo : [];
+
   return (
     <div className={`coord-layout ${esProfesor ? "coord-layout-profesor" : ""} ${sidebarAbierta ? "" : "coord-layout-collapsed"}`}>
       {/* ── SIDEBAR ── */}
@@ -1356,12 +1384,12 @@ function Coordinacion({ user, onLogout }) {
                         <label>Grados aplicables *</label>
                         <GradeSelector
                           niveles={nivelesGrados}
-                          seleccionados={form.gradosAplicables}
+                          seleccionados={formGradosAplicables}
                           onToggle={toggleGrado}
                         />
                         <p className="coord-field-hint">
-                          {form.gradosAplicables.length
-                            ? resumenGrados(form.gradosAplicables)
+                          {formGradosAplicables.length
+                            ? resumenGrados(formGradosAplicables)
                             : "Seleccione nivel y grados del programa."}
                         </p>
                       </div>
@@ -1381,12 +1409,12 @@ function Coordinacion({ user, onLogout }) {
                         <div className="coord-day-list">
                           {diasSemana.map(dia => (
                             <label
-                              className={`coord-day-chip ${form.dias.includes(dia) ? "is-selected" : ""}`}
+                              className={`coord-day-chip ${formDias.includes(dia) ? "is-selected" : ""}`}
                               key={dia}
                             >
                               <input
                                 type="checkbox"
-                                checked={form.dias.includes(dia)}
+                                checked={formDias.includes(dia)}
                                 onChange={() => toggleDia(dia)}
                               />
                               {dia}
@@ -1416,7 +1444,7 @@ function Coordinacion({ user, onLogout }) {
                       </div>
                       <div className="coord-field coord-field-full">
                         <p className="coord-field-hint">
-                          Horario general: {resumenHorario(form.dias, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin) || "Opcional si registra grupos por día."}
+                          Horario general: {resumenHorario(formDias, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin) || "Opcional si registra grupos por día."}
                         </p>
                       </div>
                       <div className="coord-field coord-field-full">
@@ -1430,9 +1458,9 @@ function Coordinacion({ user, onLogout }) {
                             Añadir día para otros grados
                           </button>
                         </div>
-                        {form.horariosPorGrupo.length ? (
+                        {formHorariosPorGrupo.length ? (
                           <div className="coord-group-schedule-list">
-                            {form.horariosPorGrupo.map((grupo, index) => (
+                            {formHorariosPorGrupo.map((grupo, index) => (
                               <div className="coord-group-schedule" key={grupo.id || index}>
                                 <div className="coord-group-schedule-title">
                                   <strong>Grupo {index + 1}</strong>
@@ -1477,7 +1505,7 @@ function Coordinacion({ user, onLogout }) {
                             ))}
                           </div>
                         ) : (
-                          <p className="coord-field-hint">Si todos los grados van el mismo día, puede usar solo el horario general.</p>
+                          <p className="coord-field-hint"></p>
                         )}
                       </div>
                     </div>
@@ -1501,6 +1529,15 @@ function Coordinacion({ user, onLogout }) {
                         <select value={form.modalidadCobro} onChange={e => actualizarForm("modalidadCobro", e.target.value)}>
                           <option value="Mensual">Cuota mensual</option><option value="Unico">Pago unico</option>
                         </select>
+                      </div>
+                      <div className="coord-field coord-field-full">
+                        <label className="coord-check-label coord-check-label-stacked">
+                          <span>
+                            <input type="checkbox" checked={form.invitacionMasiva} onChange={e => actualizarForm("invitacionMasiva", e.target.checked)} />
+                            Invitación masiva en Padres
+                          </span>
+                          <small>El curso aparecerá en el portal de padres para todos los alumnos de los grados seleccionados, sin cargar Excel de invitados.</small>
+                        </label>
                       </div>
                     </div>
                   </section>

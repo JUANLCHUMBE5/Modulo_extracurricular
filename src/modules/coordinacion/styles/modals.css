@@ -364,8 +364,11 @@
   background: #ffffff;
 }
 
-.coord-grade-group summary {
+.coord-grade-group summary,
+.coord-grade-summary {
   min-height: 38px;
+  width: 100%;
+  border: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -383,17 +386,20 @@
   display: none;
 }
 
-.coord-grade-group summary::after {
+.coord-grade-group summary::after,
+.coord-grade-summary::after {
   content: "+";
   color: var(--coord-green);
   font-weight: 900;
 }
 
-.coord-grade-group[open] summary::after {
+.coord-grade-group[open] summary::after,
+.coord-grade-group.is-open .coord-grade-summary::after {
   content: "-";
 }
 
-.coord-grade-group summary strong {
+.coord-grade-group summary strong,
+.coord-grade-summary strong {
   margin-left: auto;
   min-width: 22px;
   min-height: 22px;
@@ -897,4 +903,27 @@
   height: 14px;
   padding: 0;
   accent-color: var(--coord-green);
+}
+
+.coord-check-label-stacked {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid #d8e7df;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #f5fbf8;
+}
+
+.coord-check-label-stacked span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coord-check-label-stacked small {
+  color: var(--coord-muted);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
 }

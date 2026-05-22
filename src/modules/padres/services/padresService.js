@@ -70,13 +70,19 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
   const estudiante = apiDb.estudiantes[dniLimpio];
   if (!estudiante) throw new Error("No se encontró información del estudiante.");
 
-  const invitacion = obtenerInvitaciones(dniLimpio, estudiante)[0];
-  const programaSeleccionadoId = programaId || invitacion?.programaId;
+  const invitaciones = obtenerInvitaciones(dniLimpio, estudiante);
+  const invitacionPrincipal = invitaciones[0] || null;
+  const programaSeleccionadoId = programaId || invitacionPrincipal?.programaId;
   if (!programaSeleccionadoId) throw new Error("Seleccione un curso disponible para registrar.");
+  const invitacion = invitaciones.find((item) => item.programaId === programaSeleccionadoId) || null;
 
   const programa = apiDb.programas.find((item) => item.id === programaSeleccionadoId);
   if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
   if (programa.estado !== "Habilitado") throw new Error("El programa no está habilitado.");
+
+  if (!invitacion && !programa.invitacionMasiva) {
+    throw new Error("Este programa requiere invitacion de Coordinacion.");
+  }
 
   const ventana = obtenerVentanaInscripcion(programa.fechaInicio);
   if (!ventana.permitida) {
@@ -98,12 +104,15 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
   );
   if (duplicada) throw new Error("El estudiante ya tiene una inscripción registrada en este programa.");
 
+  const horarioRegistro = invitacion?.horario || resolverHorarioPorGrado(programa, estudiante.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar";
+  validarCruceHorarioPadres(dniLimpio, programa.id, programa.periodo, horarioRegistro);
+
   const registro = {
     id: `INS-${Date.now().toString().slice(-6)}`,
     programaId: programa.id,
     periodo: programa.periodo,
     programa: programa.nombre,
-    horario: invitacion?.horario || resolverHorarioPorGrado(programa, estudiante.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar",
+    horario: horarioRegistro,
     docente: programa.responsable || programa.docente || "No definido",
     costo: Number(programa.costo ?? 0),
     modalidadCobro: programa.modalidadCobro || "",
@@ -359,6 +368,43 @@ function descomponerGrado(valor) {
   return { nivel, numero };
 }
 
+function validarCruceHorarioPadres(dni, programaId, periodo, horarioNuevo = "") {
+  const diasNuevo = extraerDiasHorario(horarioNuevo);
+  if (!diasNuevo.size) return;
+
+  const periodoNormalizado = normalizarPeriodoTexto(periodo);
+  const cruce = apiDb.inscripciones
+    .map((item) => ({
+      item,
+      diasCruzados: obtenerDiasCruzados(diasNuevo, extraerDiasHorario(item.horario)),
+    }))
+    .find(({ item, diasCruzados }) =>
+      item.estadoInscripcion !== "Anulada" &&
+      item.programaId !== programaId &&
+      item.dniEstudiante === dni &&
+      normalizarPeriodoTexto(item.periodo) === periodoNormalizado &&
+      diasCruzados.length > 0
+    );
+
+  if (cruce) {
+    throw new Error(`El estudiante ya tiene una inscripcion con cruce de dia (${cruce.diasCruzados.join(", ")}) en ${cruce.item.programa || "otro programa"}.`);
+  }
+}
+
+function obtenerDiasCruzados(a, b) {
+  const dias = [];
+  for (const dia of a) {
+    if (b.has(dia)) dias.push(dia);
+  }
+  return dias;
+}
+
+function extraerDiasHorario(horario = "") {
+  const texto = normalizarTexto(horario);
+  const dias = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
+  return new Set(dias.filter((dia) => texto.includes(dia)));
+}
+
 function limpiarTexto(texto) {
   return String(texto || "").trim().replace(/\s+/g, " ");
 }
@@ -381,6 +427,7 @@ export async function obtenerProgramasCoordinacion() {
       horario: programa.horario || "Por confirmar",
       horariosPorGrupo: programa.horariosPorGrupo || [],
       gradosAplicables: programa.gradosAplicables || [],
+      invitacionMasiva: Boolean(programa.invitacionMasiva),
       requiereGradoCompatible,
       periodo: normalizarPeriodoTexto(programa.periodo),
       estado: programa.estado || "Habilitado",
@@ -392,7 +439,7 @@ export async function obtenerProgramasCoordinacion() {
       fechaInicio: programa.fechaInicio || "",
       fechaFin: programa.fechaFin || "",
       ventanaInscripcion,
-      registrable: programa.estado === "Habilitado" && cuposDisponibles > 0 && ventanaInscripcion.permitida,
+      registrable: Boolean(programa.invitacionMasiva) && programa.estado === "Habilitado" && cuposDisponibles > 0 && ventanaInscripcion.permitida,
     };
   });
 }

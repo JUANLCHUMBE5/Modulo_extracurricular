@@ -94,14 +94,16 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
   return resultados.slice(0, 8);
 }
 
-export async function listarProgramasPorPeriodo(periodo) {
+export async function listarProgramasPorPeriodo(periodo, gradoAlumno = "") {
   const programas = await listarProgramas();
   const periodoNormalizado = normalizarPeriodo(periodo);
   return programas
     .filter((programa) =>
       normalizarPeriodo(programa.periodo) === periodoNormalizado &&
       programa.estado === "Habilitado" &&
-      Number(programa.cuposDisponibles ?? 0) > 0
+      Number(programa.cuposDisponibles ?? 0) > 0 &&
+      (periodoNormalizado === "verano" || programa.invitacionMasiva) &&
+      (!gradoAlumno || programaDisponibleParaGrado(programa, gradoAlumno))
     )
     .map(adaptarProgramaCoordinacion);
 }
@@ -144,6 +146,8 @@ export async function registrarInscripcion(payload) {
   );
 
   if (duplicada) throw new Error("El alumno ya tiene una inscripción registrada en este programa.");
+
+  validarCruceHorarioAlumno(payload, horarioResuelto || programa.horario);
 
   const registro = {
     id: `INS-${Date.now().toString().slice(-6)}`,
@@ -229,6 +233,12 @@ export async function registrarDocumentoGenerado({
   };
 
   apiDb.documentosGenerados.unshift(documento);
+  const registro = apiDb.inscripciones.find((item) => item.id === inscripcion.id);
+  if (registro) {
+    registro.documentoGenerado = true;
+    registro.ultimoDocumentoGeneradoId = documento.id;
+    registro.ultimoDocumentoGeneradoEn = documento.fecha;
+  }
   await saveApiDb();
   return documento;
 }
@@ -342,6 +352,8 @@ function adaptarProgramaCoordinacion(programa) {
     nombre: programa.nombre,
     periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
     horario: resolverHorarioPorGrado(programa) || programa.horario,
+    horariosPorGrupo: programa.horariosPorGrupo || [],
+    gradosAplicables: programa.gradosAplicables || [],
     docente: programa.responsable || programa.docente || "No definido",
     costo: Number(programa.costo ?? 0),
     cupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
@@ -356,6 +368,7 @@ function adaptarProgramaCoordinacion(programa) {
     plantillaBase64: programa.plantillaBase64 || "",
     plantillaVariables: programa.plantillaVariables || [],
     plantillaValidada: Boolean(programa.plantillaValidada),
+    invitacionMasiva: Boolean(programa.invitacionMasiva),
     estado: programa.estado,
   };
 }
@@ -559,6 +572,45 @@ function clavesAlumnoInscripcion(alumno) {
   const nombre = normalizarTexto(alumno.nombresEstudiante || alumno.nombres);
   if (nombre) claves.push(`nombre:${nombre}`);
   return claves;
+}
+
+function validarCruceHorarioAlumno(payload, horarioNuevo = "") {
+  const diasNuevo = extraerDiasHorario(horarioNuevo);
+  if (!diasNuevo.size) return;
+
+  const clavesPayload = clavesAlumnoInscripcion(payload);
+  const periodoPayload = normalizarPeriodo(payload.periodo);
+  const cruce = apiDb.inscripciones
+    .map((item) => ({
+      item,
+      diasExistentes: extraerDiasHorario(item.horario),
+      diasCruzados: obtenerDiasCruzados(diasNuevo, extraerDiasHorario(item.horario)),
+    }))
+    .find(({ item, diasCruzados }) =>
+      item.estadoInscripcion !== "Anulada" &&
+      item.programaId !== payload.programaId &&
+      normalizarPeriodo(item.periodo) === periodoPayload &&
+      clavesAlumnoInscripcion(item).some((clave) => clavesPayload.includes(clave)) &&
+      diasCruzados.length > 0
+    );
+
+  if (cruce) {
+    throw new Error(`El alumno ya tiene una inscripcion con cruce de dia (${cruce.diasCruzados.join(", ")}) en ${cruce.item.programa || "otro programa"}.`);
+  }
+}
+
+function obtenerDiasCruzados(a, b) {
+  const dias = [];
+  for (const dia of a) {
+    if (b.has(dia)) dias.push(dia);
+  }
+  return dias;
+}
+
+function extraerDiasHorario(horario = "") {
+  const texto = normalizarTexto(horario);
+  const dias = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
+  return new Set(dias.filter((dia) => texto.includes(dia)));
 }
 
 function claveAlumno(alumno) {

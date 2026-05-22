@@ -310,7 +310,7 @@ async function crearDocumentoInvitacion(estudiante, inscripcion) {
   return {
     titulo: inscripcion.plantilla
       ? "Ficha de invitación personalizada"
-      : "Ficha de invitación al programa extracurricular",
+      : "Ficha automática de inscripción al programa extracurricular",
     lineas,
     html,
     usaPlantilla: Boolean(html),

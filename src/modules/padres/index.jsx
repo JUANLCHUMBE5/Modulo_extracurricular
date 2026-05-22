@@ -217,8 +217,12 @@ export default function Padres({ user, onLogout }) {
             <article className="padres-panel padres-programs-coordination-panel">
               <div className="padres-section-title">
                 <div>
-                  <h2>Cursos disponibles para solicitar</h2>
-                  <p>Estos programas se muestran solo cuando el estudiante no tiene una invitacion asignada.</p>
+                  <h2>{programa ? "Cursos adicionales disponibles" : "Cursos disponibles para solicitar"}</h2>
+                  <p>
+                    {programa
+                      ? "Estos programas pueden solicitarse además del curso ya registrado, siempre que apliquen al grado del estudiante."
+                      : "Estos programas se muestran cuando Coordinación habilita invitación masiva para el grado del estudiante."}
+                  </p>
                 </div>
               </div>
 

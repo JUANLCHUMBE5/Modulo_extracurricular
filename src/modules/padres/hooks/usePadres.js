@@ -99,6 +99,7 @@ function usePadres(user) {
   const estudiante = resumen?.estudiante;
   const inscripcion = resumen?.inscripcionActual;
   const invitacion = resumen?.invitacionActual;
+  const inscripciones = Array.isArray(resumen?.inscripciones) ? resumen.inscripciones : [];
   const programa = inscripcion || invitacion;
   const apoderadoBloqueado = Boolean(inscripcion?.apoderado || estudiante?.apoderado);
   const tipoReforzamiento = useMemo(() => obtenerTipoReforzamiento(programa), [programa]);
@@ -106,12 +107,17 @@ function usePadres(user) {
   const iniciales = obtenerIniciales(estudiante?.nombres);
   const bannerEstudiante = obtenerBannerEstudiante(estudiante);
   const siguientePaso = obtenerSiguientePaso({ programa, inscripcion });
-  const mostrarCatalogoProgramas = !programa;
+  const programasYaRegistrados = useMemo(
+    () => new Set(inscripciones.map((item) => item.programaId).filter(Boolean)),
+    [inscripciones]
+  );
+  const mostrarCatalogoProgramas = Boolean(estudiante);
   const programasDisponibles = useMemo(
     () => programasCoordinacion
+      .filter((item) => !programasYaRegistrados.has(item.id))
       .map((item) => prepararProgramaParaGrado(item, estudiante?.grado))
-      .filter((item) => item.registrable && item.disponibleParaGrado),
-    [programasCoordinacion, estudiante?.grado]
+      .filter((item) => item.registrable && item.disponibleParaGrado && !tieneCruceHorarioCatalogo(item, inscripciones)),
+    [programasCoordinacion, programasYaRegistrados, estudiante?.grado, inscripciones]
   );
 
   useEffect(() => {
@@ -391,6 +397,29 @@ function prepararProgramaParaGrado(programa, gradoEstudiante) {
     horario: disponibleParaGrado ? (horarioDelGrado || programa.horario) : "",
     disponibleParaGrado,
   };
+}
+
+function tieneCruceHorarioCatalogo(programa, inscripciones = []) {
+  const diasPrograma = extraerDiasHorarioCatalogo(programa.horario);
+  if (!diasPrograma.size) return false;
+
+  return inscripciones.some((inscripcion) =>
+    inscripcion.estadoInscripcion !== "Anulada" &&
+    intersectaDiasCatalogo(diasPrograma, extraerDiasHorarioCatalogo(inscripcion.horario))
+  );
+}
+
+function intersectaDiasCatalogo(a, b) {
+  for (const dia of a) {
+    if (b.has(dia)) return true;
+  }
+  return false;
+}
+
+function extraerDiasHorarioCatalogo(horario = "") {
+  const texto = normalizarTexto(horario);
+  const dias = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
+  return new Set(dias.filter((dia) => texto.includes(dia)));
 }
 
 function programaDisponibleCatalogoParaGrado(programa, gradoEstudiante, horarioDelGrado = "") {
