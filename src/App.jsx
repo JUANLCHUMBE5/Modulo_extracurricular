@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Login from "./components/Login/Login";
 import Coordinacion from "./modules/coordinacion/Coordinacion";
 import Secretaria from "./modules/secretaria/Secretaria";
@@ -6,7 +6,8 @@ import Administrador from "./modules/administrador/Administrador";
 import Padres from "./modules/padres";
 import Auxiliar from "./modules/auxiliar/Auxiliar";
 import Caja from "./modules/caja/Caja";
-import { hasPermission } from "./modules/administrador/models/usuarioModel";
+import { apiDb, syncApiDb } from "./services/dbApi";
+import { normalizeUser } from "./modules/administrador/models/usuarioModel";
 import {
   IconBook as BookOpen,
   IconChartBar as ChartBar,
@@ -14,6 +15,8 @@ import {
   IconFileText as FileText,
   IconUpload as Upload,
 } from "@tabler/icons-react";
+
+const Direccion = React.lazy(() => import("./modules/direccion/Direccion"));
 
 const moduleLabels = {
   administrador: "Administrador",
@@ -26,12 +29,16 @@ const moduleLabels = {
 };
 
 const moduleAccessRules = {
+  direccion: [
+    "direccion.resumen.ver",
+    "reportes.ver",
+    "reportes.exportar",
+  ],
   coordinacion: [
     "programas.crear",
     "programas.editar",
     "grupos.crear",
     "grupos.editar",
-    "alumnos.historial.ver",
   ],
   caja: [
     "pagos.ver",
@@ -59,12 +66,39 @@ const moduleShortcutGroups = [
   },
 ];
 
+const rolesSistema = {
+  Administrador: "administrador",
+  Secretaria: "secretaria",
+  Caja: "caja",
+  Coordinacion: "coordinacion",
+  Auxiliar: "auxiliar",
+  Direccion: "direccion",
+};
+
+function userHasAssignedPermission(user, permission) {
+  if (!user) return false;
+  if (user.estado && user.estado !== "Activo") return false;
+  if (user.role === "administrador") return true;
+  const permisos = Array.isArray(user.permisos)
+    ? user.permisos
+    : Array.isArray(user.permissions)
+      ? user.permissions
+      : [];
+  return permisos.includes(permission);
+}
+
+function samePermissions(a = [], b = []) {
+  if (a.length !== b.length) return false;
+  const permisos = new Set(a);
+  return b.every((permission) => permisos.has(permission));
+}
+
 function getAvailableModules(user) {
   if (!user) return [];
 
   const modules = new Set([user.role]);
   Object.entries(moduleAccessRules).forEach(([moduleId, permissions]) => {
-    if (permissions.some((permission) => hasPermission(user, permission))) {
+    if (permissions.some((permission) => userHasAssignedPermission(user, permission))) {
       modules.add(moduleId);
     }
   });
@@ -80,7 +114,7 @@ function ModuleSwitcher({ activeShortcutId, availableModules, currentRole, onSel
     .map((group) => ({
       ...group,
       items: group.items.filter((item) =>
-        !item.permissions?.length || item.permissions.some((permission) => hasPermission(user, permission))
+        !item.permissions?.length || item.permissions.some((permission) => userHasAssignedPermission(user, permission))
       ),
     }))
     .filter((group) => group.items.length > 0);
@@ -148,6 +182,60 @@ function App() {
     }
   }, [activeModule, availableModules, delegatedModule, user]);
 
+  useEffect(() => {
+    if (!user?.username || user.role === "padres") return;
+
+    const actualizarUsuarioActivo = async () => {
+      try {
+        await syncApiDb();
+        const usuario = (apiDb.usuarios || []).find((item) =>
+          String(item.usuario || "").trim().toLowerCase() === String(user.username || "").trim().toLowerCase()
+        );
+        if (!usuario) return;
+
+        const normalizado = normalizeUser(usuario);
+        setUser((actual) => {
+          if (!actual) return actual;
+          const role = rolesSistema[normalizado.rol] || String(normalizado.rol || "").toLowerCase();
+          if (
+            actual.role === role &&
+            actual.name === normalizado.nombre &&
+            actual.estado === normalizado.estado &&
+            samePermissions(actual.permisos || actual.permissions || [], normalizado.permisos)
+          ) {
+            return actual;
+          }
+          return {
+            ...actual,
+            role,
+            name: normalizado.nombre,
+            estado: normalizado.estado,
+            permisos: normalizado.permisos,
+            permissions: normalizado.permisos,
+          };
+        });
+      } catch {
+        // Si la API no responde, se conserva la sesion actual.
+      }
+    };
+
+    actualizarUsuarioActivo();
+    const intervaloPermisos = window.setInterval(actualizarUsuarioActivo, 8000);
+    window.addEventListener("api-db-updated", actualizarUsuarioActivo);
+    window.addEventListener("mock-db-updated", actualizarUsuarioActivo);
+    window.addEventListener("storage", actualizarUsuarioActivo);
+    window.addEventListener("focus", actualizarUsuarioActivo);
+    document.addEventListener("visibilitychange", actualizarUsuarioActivo);
+    return () => {
+      window.clearInterval(intervaloPermisos);
+      window.removeEventListener("api-db-updated", actualizarUsuarioActivo);
+      window.removeEventListener("mock-db-updated", actualizarUsuarioActivo);
+      window.removeEventListener("storage", actualizarUsuarioActivo);
+      window.removeEventListener("focus", actualizarUsuarioActivo);
+      document.removeEventListener("visibilitychange", actualizarUsuarioActivo);
+    };
+  }, [user?.role, user?.username]);
+
   if (!user) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
@@ -178,7 +266,7 @@ function App() {
       }
     })() : null;
 
-    const moduleSwitcher = (
+    const moduleSwitcher = availableModules.length > 1 ? (
       <ModuleSwitcher
         activeShortcutId={delegatedModule?.id || ""}
         availableModules={availableModules}
@@ -186,7 +274,7 @@ function App() {
         onSelectShortcut={setDelegatedModule}
         user={user}
       />
-    );
+    ) : null;
 
     switch (activeModule || user.role) {
       case "administrador":
@@ -225,6 +313,12 @@ function App() {
         return <Padres user={user} onLogout={handleLogout} />;
       case "auxiliar":
         return <Auxiliar onLogout={handleLogout} />;
+      case "direccion":
+        return (
+          <Suspense fallback={<div className="module-placeholder">Cargando Direccion...</div>}>
+            <Direccion onLogout={handleLogout} user={user} />
+          </Suspense>
+        );
       default:
         return (
           <div className="module-placeholder">

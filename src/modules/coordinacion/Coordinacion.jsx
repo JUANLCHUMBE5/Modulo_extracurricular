@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from "react";
-import { Alert as MantineAlert, Table, Badge, Group, ActionIcon, Tooltip } from "@mantine/core";
+import { Alert as MantineAlert, Badge, Group, ActionIcon, Tooltip } from "@mantine/core";
 import { toast } from "sonner";
 import {
   IconAlertCircle as AlertCircle,
@@ -37,7 +37,6 @@ import {
   previsualizarCargaAlumnosMasiva, confirmarCargaAlumnos, obtenerActividadPrograma,
 } from "./services/coordinacionService";
 import { fechaActualIso } from "../../services/dateService";
-import { hasPermission } from "../administrador/models/usuarioModel";
 import GradeSelector from "./components/GradeSelector";
 import { HorarioTabla, GradosTabla, VigenciaTabla, CuposTabla } from "./components/ProgramTableCells";
 import SummaryBox from "./components/SummaryBox";
@@ -81,10 +80,25 @@ const horarioGrupoInicial = {
 };
 
 const vistasNav = [
-  { id: "programas", label: "Gestion de Programas", icon: BookOpen },
-  { id: "carga", label: "Carga Excel", icon: Upload },
-  { id: "documentos", label: "Plantillas / Documentos", icon: FileText },
+  { id: "programas", label: "Gestion de Programas", icon: BookOpen, permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"] },
+  { id: "carga", label: "Carga Excel", icon: Upload, permissions: ["grupos.crear", "grupos.editar"] },
+  { id: "documentos", label: "Plantillas / Documentos", icon: FileText, permissions: ["programas.crear", "programas.editar"] },
 ];
+
+function tienePermisoAsignado(user, permiso) {
+  if (!user) return false;
+  if (user.role === "administrador") return true;
+  const permisos = Array.isArray(user.permisos)
+    ? user.permisos
+    : Array.isArray(user.permissions)
+      ? user.permissions
+      : [];
+  return permisos.includes(permiso);
+}
+
+function puedeVerVista(user, vista) {
+  return !vista.permissions?.length || vista.permissions.some((permiso) => tienePermisoAsignado(user, permiso));
+}
 
 function normalizarListaGrados(lista) {
   if (!Array.isArray(lista)) return [];
@@ -149,11 +163,19 @@ function Coordinacion({
   const [cargandoPreview, setCargandoPreview] = useState(false);
   const [progresoCarga, setProgresoCarga] = useState(null);
   const [confirmandoCarga, setConfirmandoCarga] = useState(false);
-  const puedeCrearProgramas = hasPermission(user, "programas.crear");
-  const puedeEditarProgramas = hasPermission(user, "programas.editar");
-  const puedeVerAlumnos = hasPermission(user, "alumnos.historial.ver");
-  const puedeCargarAlumnos = hasPermission(user, "grupos.crear") || hasPermission(user, "grupos.editar");
+  const puedeCrearProgramas = tienePermisoAsignado(user, "programas.crear");
+  const puedeEditarProgramas = tienePermisoAsignado(user, "programas.editar");
+  const puedeCrearGrupos = tienePermisoAsignado(user, "grupos.crear");
+  const puedeEditarGrupos = tienePermisoAsignado(user, "grupos.editar");
+  const puedeVerAlumnos = tienePermisoAsignado(user, "alumnos.historial.ver");
+  const puedeCargarAlumnos = puedeCrearGrupos || puedeEditarGrupos;
+  const puedeGestionarGruposFormulario = modoEditar ? puedeEditarGrupos : puedeCrearGrupos;
   const tieneAccionesPrograma = puedeEditarProgramas || puedeVerAlumnos;
+  const vistasDisponibles = vistasNav.filter((item) => puedeVerVista(user, item));
+  const vistaActualDisponible = vistasDisponibles.some((item) => item.id === vista);
+  const puedeVerProgramasVista = vistasDisponibles.some((item) => item.id === "programas");
+  const puedeVerCargaVista = vistasDisponibles.some((item) => item.id === "carga");
+  const puedeVerDocumentosVista = vistasDisponibles.some((item) => item.id === "documentos");
 
   useEffect(() => { cargarDatos(); }, []);
 
@@ -162,6 +184,12 @@ function Coordinacion({
     setVista(initialView);
     setMensaje("");
   }, [embedded, initialView]);
+
+  useEffect(() => {
+    if (vistaActualDisponible || vistasDisponibles.length === 0) return;
+    setVista(vistasDisponibles[0].id);
+    setMensaje("");
+  }, [vistaActualDisponible, vistasDisponibles, vista]);
 
   async function cargarDatos() {
     setCargando(true);
@@ -930,7 +958,7 @@ function Coordinacion({
         </div>
         <p className="coord-module-label">{esProfesor ? "Módulo Profesores" : "Módulo Coordinación"}</p>
         <nav className="coord-nav">
-          {vistasNav.map(({ id, label, icon: Icon }) => (
+          {vistasDisponibles.map(({ id, label, icon: Icon }) => (
             <button key={id}
               type="button"
               className={`coord-nav-item ${!delegatedContent && vista === id ? "coord-nav-item-active" : ""}`}
@@ -958,7 +986,7 @@ function Coordinacion({
         ) : (
           <>
         {/* ─── VISTA: GESTIÓN DE PROGRAMAS ─── */}
-        {vista === "programas" && (
+        {vista === "programas" && puedeVerProgramasVista && (
           <>
             <header className="coord-topbar">
               <span className="coord-topbar-eyebrow">Gestion academica</span>
@@ -1008,96 +1036,98 @@ function Coordinacion({
                 ) : programasFiltrados.length === 0 ? (
                   <div className="coord-empty"><AlertCircle size={18} /><p>No se encontraron programas.</p></div>
                 ) : (
-                  <div className="coord-table-responsive">
-                    <Table striped highlightOnHover>
-                      <Table.Thead>
-                          <Table.Tr>
-                            <Table.Th>Programa / taller</Table.Th>
-                            <Table.Th>Categoría</Table.Th>
-                            <Table.Th>Grados</Table.Th>
-                            <Table.Th>Días y horario</Table.Th>
-                            <Table.Th>Vigencia</Table.Th>
-                            <Table.Th>Cupos</Table.Th>
-                            <Table.Th>Costo</Table.Th>
-                            <Table.Th>Estado</Table.Th>
-                            {tieneAccionesPrograma ? <Table.Th>Acciones</Table.Th> : null}
-                          </Table.Tr>
-                      </Table.Thead>
-                      <Table.Tbody>
-                        {programasFiltrados.map(prog => (
-                          <Table.Tr
-                            key={prog.id}
-                            className={`coord-program-row coord-program-row-${String(prog.estado || "").toLowerCase()}`}
-                          >
-                            <Table.Td data-label="Programa / taller">
-                              <div className="coord-program-name">{prog.nombre}</div>
-                              <span className="coord-program-subline">{prog.id || "Sin código"}</span>
-                              <span className="coord-program-tutor">Tutor: {prog.responsable || "No asignado"}</span>
-                            </Table.Td>
-                            <Table.Td data-label="Categoría">{prog.categoria}</Table.Td>
-                            <Table.Td data-label="Grados"><GradosTabla programa={prog} /></Table.Td>
-                            <Table.Td data-label="Días y horario">
+                  <div className="coord-program-card-list">
+                    {programasFiltrados.map(prog => (
+                      <article
+                        key={prog.id}
+                        className={`coord-program-card-item coord-program-card-${String(prog.estado || "").toLowerCase()}`}
+                      >
+                        <div className="coord-program-card-body">
+                          <div className="coord-program-card-header">
+                            <div className="coord-program-card-title">
+                              <h3>{prog.nombre}</h3>
+                              <div className="coord-program-card-meta">
+                                <span>{prog.id || "Sin código"}</span>
+                                <span>{prog.categoria || "Sin categoría"}</span>
+                                <span>Tutor: {prog.responsable || "No asignado"}</span>
+                              </div>
+                            </div>
+                            <Badge
+                              color={prog.estado === "Habilitado" ? "blue" : prog.estado === "Deshabilitado" ? "gray" : "yellow"}
+                              variant="light"
+                              size="sm"
+                            >
+                              {prog.estado}
+                            </Badge>
+                          </div>
+
+                          <div className="coord-program-card-grid">
+                            <div className="coord-program-card-detail">
+                              <span>Grados</span>
+                              <GradosTabla programa={prog} />
+                            </div>
+                            <div className="coord-program-card-detail coord-program-card-schedule">
+                              <span>Días y horario</span>
                               <HorarioTabla programa={prog} />
-                            </Table.Td>
-                            <Table.Td data-label="Vigencia"><VigenciaTabla inicio={prog.fechaInicio} fin={prog.fechaFin} /></Table.Td>
-                            <Table.Td data-label="Cupos">
+                            </div>
+                            <div className="coord-program-card-detail">
+                              <span>Vigencia</span>
+                              <VigenciaTabla inicio={prog.fechaInicio} fin={prog.fechaFin} />
+                            </div>
+                            <div className="coord-program-card-detail">
+                              <span>Cupos</span>
                               <CuposTabla programa={prog} />
-                            </Table.Td>
-                            <Table.Td data-label="Costo">{formatearSoles(prog.costo)}</Table.Td>
-                            <Table.Td data-label="Estado">
-                              <Badge
-                                color={prog.estado === "Habilitado" ? "blue" : prog.estado === "Deshabilitado" ? "gray" : "yellow"}
-                                variant="light"
-                                size="sm"
-                              >
-                                {prog.estado}
-                              </Badge>
-                            </Table.Td>
-                            {tieneAccionesPrograma ? (
-                              <Table.Td data-label="Acciones">
-                                <Group gap={4}>
-                                  {puedeEditarProgramas ? (
-                                    <Tooltip label="Editar">
-                                      <ActionIcon size="xs" color="blue" variant="light" onClick={() => abrirEditar(prog)}>
-                                        <Edit3 size={14} />
-                                      </ActionIcon>
-                                    </Tooltip>
-                                  ) : null}
-                                  {puedeVerAlumnos ? (
-                                    <Tooltip label="Ver alumnos">
-                                      <ActionIcon size="xs" color="blue" variant="light" onClick={() => verInvitados(prog)}>
-                                        <Eye size={14} />
-                                      </ActionIcon>
-                                    </Tooltip>
-                                  ) : null}
-                                  {puedeEditarProgramas && prog.estado !== "Finalizado" && (
-                                    <Tooltip label={prog.estado === "Habilitado" ? "Deshabilitar" : "Habilitar"}>
-                                      <ActionIcon size="xs" color="blue" variant="light" onClick={() => toggleEstado(prog)}>
-                                        {prog.estado === "Habilitado" ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                                      </ActionIcon>
-                                    </Tooltip>
-                                  )}
-                                  {puedeEditarProgramas && prog.estado !== "Finalizado" && (
-                                    <Tooltip label="Finalizar">
-                                      <ActionIcon size="xs" color="blue" variant="light" onClick={() => finalizarPrograma(prog)}>
-                                        <CheckCircle2 size={14} />
-                                      </ActionIcon>
-                                    </Tooltip>
-                                  )}
-                                  {puedeEditarProgramas ? (
-                                    <Tooltip label="Eliminar">
-                                      <ActionIcon size="xs" color="red" variant="light" onClick={() => eliminarCurso(prog)}>
-                                        <Trash2 size={14} />
-                                      </ActionIcon>
-                                    </Tooltip>
-                                  ) : null}
-                                </Group>
-                              </Table.Td>
-                            ) : null}
-                          </Table.Tr>
-                        ))}
-                      </Table.Tbody>
-                    </Table>
+                            </div>
+                            <div className="coord-program-card-detail coord-program-card-cost">
+                              <span>Costo</span>
+                              <strong>{formatearSoles(prog.costo)}</strong>
+                            </div>
+                          </div>
+                        </div>
+
+                        {tieneAccionesPrograma ? (
+                          <div className="coord-program-card-actions" aria-label={`Acciones de ${prog.nombre}`}>
+                            <Group gap={6} justify="flex-end">
+                              {puedeEditarProgramas ? (
+                                <Tooltip label="Editar">
+                                  <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => abrirEditar(prog)}>
+                                    <Edit3 size={15} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              ) : null}
+                              {puedeVerAlumnos ? (
+                                <Tooltip label="Ver alumnos">
+                                  <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => verInvitados(prog)}>
+                                    <Eye size={15} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              ) : null}
+                              {puedeEditarProgramas && prog.estado !== "Finalizado" && (
+                                <Tooltip label={prog.estado === "Habilitado" ? "Deshabilitar" : "Habilitar"}>
+                                  <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => toggleEstado(prog)}>
+                                    {prog.estado === "Habilitado" ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
+                                  </ActionIcon>
+                                </Tooltip>
+                              )}
+                              {puedeEditarProgramas && prog.estado !== "Finalizado" && (
+                                <Tooltip label="Finalizar">
+                                  <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => finalizarPrograma(prog)}>
+                                    <CheckCircle2 size={15} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              )}
+                              {puedeEditarProgramas ? (
+                                <Tooltip label="Eliminar">
+                                  <ActionIcon size="sm" color="red" variant="subtle" onClick={() => eliminarCurso(prog)}>
+                                    <Trash2 size={15} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              ) : null}
+                            </Group>
+                          </div>
+                        ) : null}
+                      </article>
+                    ))}
                   </div>
                 )}
               </article>
@@ -1107,7 +1137,7 @@ function Coordinacion({
           </>
         )}
 
-        {vista === "carga" && (
+        {vista === "carga" && puedeVerCargaVista && (
           <>
             <header className="coord-topbar"><h1>CARGA MASIVA DE ALUMNOS DESDE EXCEL</h1></header>
             <section className="coord-workspace coord-workspace-single coord-workspace-upload">
@@ -1244,7 +1274,7 @@ function Coordinacion({
           </>
         )}
 
-        {vista === "documentos" && (
+        {vista === "documentos" && puedeVerDocumentosVista && (
           <>
             <header className="coord-topbar"><h1>PLANTILLAS Y DOCUMENTOS</h1></header>
             <section className="coord-workspace coord-workspace-single">
@@ -1506,67 +1536,69 @@ function Coordinacion({
                           Horario general: {resumenHorario(formDias, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin) || "Opcional si registra grupos por día."}
                         </p>
                       </div>
-                      <div className="coord-field coord-field-full">
-                        <div className="coord-group-schedule-head">
-                          <div>
-                            <strong>Turnos del mismo curso</strong>
-                            <p>Separe los grados por día sin crear otro curso. Ejemplo: 4to, 5to y 1ro secundaria el jueves; 6to grado el viernes.</p>
+                      {puedeGestionarGruposFormulario ? (
+                        <div className="coord-field coord-field-full">
+                          <div className="coord-group-schedule-head">
+                            <div>
+                              <strong>Turnos del mismo curso</strong>
+                              <p>Separe los grados por día sin crear otro curso. Ejemplo: 4to, 5to y 1ro secundaria el jueves; 6to grado el viernes.</p>
+                            </div>
+                            <button type="button" className="coord-template-autofill" onClick={agregarGrupoHorario}>
+                              <Plus size={14} />
+                              Añadir día para otros grados
+                            </button>
                           </div>
-                          <button type="button" className="coord-template-autofill" onClick={agregarGrupoHorario}>
-                            <Plus size={14} />
-                            Añadir día para otros grados
-                          </button>
+                          {formHorariosPorGrupo.length ? (
+                            <div className="coord-group-schedule-list">
+                              {formHorariosPorGrupo.map((grupo, index) => (
+                                <div className="coord-group-schedule" key={grupo.id || index}>
+                                  <div className="coord-group-schedule-title">
+                                    <strong>Grupo {index + 1}</strong>
+                                    <button type="button" onClick={() => quitarGrupoHorario(index)} aria-label="Quitar grupo">
+                                      <X size={14} />
+                                    </button>
+                                  </div>
+                                  <GradeSelector
+                                    niveles={nivelesGrados}
+                                    seleccionados={grupo.grados || []}
+                                    onToggle={(valor) => toggleGradoGrupo(index, valor)}
+                                  />
+                                  <div className="coord-group-schedule-grid">
+                                    <div className="coord-field">
+                                      <label>Día</label>
+                                      <select value={grupo.dia || ""} onChange={(event) => actualizarGrupoHorario(index, "dia", event.target.value)}>
+                                        {diasSemana.map((dia) => <option key={dia} value={dia}>{dia}</option>)}
+                                      </select>
+                                    </div>
+                                    <div className="coord-field">
+                                      <label>Aula</label>
+                                      <input value={grupo.aula || ""} onChange={(event) => actualizarGrupoHorario(index, "aula", event.target.value)} placeholder="Ej: A-204" />
+                                    </div>
+                                    <div className="coord-field">
+                                      <label>Almuerzo inicio</label>
+                                      <input type="time" value={grupo.almuerzoInicio || "14:20"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoInicio", event.target.value)} />
+                                    </div>
+                                    <div className="coord-field">
+                                      <label>Almuerzo fin</label>
+                                      <input type="time" value={grupo.almuerzoFin || "15:10"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoFin", event.target.value)} />
+                                    </div>
+                                    <div className="coord-field">
+                                      <label>Clase inicio</label>
+                                      <input type="time" value={grupo.horaInicio || "15:20"} onChange={(event) => actualizarGrupoHorario(index, "horaInicio", event.target.value)} />
+                                    </div>
+                                    <div className="coord-field">
+                                      <label>Clase fin</label>
+                                      <input type="time" value={grupo.horaFin || "17:20"} onChange={(event) => actualizarGrupoHorario(index, "horaFin", event.target.value)} />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="coord-field-hint"></p>
+                          )}
                         </div>
-                        {formHorariosPorGrupo.length ? (
-                          <div className="coord-group-schedule-list">
-                            {formHorariosPorGrupo.map((grupo, index) => (
-                              <div className="coord-group-schedule" key={grupo.id || index}>
-                                <div className="coord-group-schedule-title">
-                                  <strong>Grupo {index + 1}</strong>
-                                  <button type="button" onClick={() => quitarGrupoHorario(index)} aria-label="Quitar grupo">
-                                    <X size={14} />
-                                  </button>
-                                </div>
-                                <GradeSelector
-                                  niveles={nivelesGrados}
-                                  seleccionados={grupo.grados || []}
-                                  onToggle={(valor) => toggleGradoGrupo(index, valor)}
-                                />
-                                <div className="coord-group-schedule-grid">
-                                  <div className="coord-field">
-                                    <label>Día</label>
-                                    <select value={grupo.dia || ""} onChange={(event) => actualizarGrupoHorario(index, "dia", event.target.value)}>
-                                      {diasSemana.map((dia) => <option key={dia} value={dia}>{dia}</option>)}
-                                    </select>
-                                  </div>
-                                  <div className="coord-field">
-                                    <label>Aula</label>
-                                    <input value={grupo.aula || ""} onChange={(event) => actualizarGrupoHorario(index, "aula", event.target.value)} placeholder="Ej: A-204" />
-                                  </div>
-                                  <div className="coord-field">
-                                    <label>Almuerzo inicio</label>
-                                    <input type="time" value={grupo.almuerzoInicio || "14:20"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoInicio", event.target.value)} />
-                                  </div>
-                                  <div className="coord-field">
-                                    <label>Almuerzo fin</label>
-                                    <input type="time" value={grupo.almuerzoFin || "15:10"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoFin", event.target.value)} />
-                                  </div>
-                                  <div className="coord-field">
-                                    <label>Clase inicio</label>
-                                    <input type="time" value={grupo.horaInicio || "15:20"} onChange={(event) => actualizarGrupoHorario(index, "horaInicio", event.target.value)} />
-                                  </div>
-                                  <div className="coord-field">
-                                    <label>Clase fin</label>
-                                    <input type="time" value={grupo.horaFin || "17:20"} onChange={(event) => actualizarGrupoHorario(index, "horaFin", event.target.value)} />
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="coord-field-hint"></p>
-                        )}
-                      </div>
+                      ) : null}
                     </div>
                   </section>
 

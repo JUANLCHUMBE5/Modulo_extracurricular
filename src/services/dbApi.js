@@ -75,6 +75,11 @@ function replaceMockDb(db) {
 function dispatchApiDbUpdated() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent("api-db-updated"));
+  try {
+    window.localStorage.setItem("san_rafael_db_updated_at", String(Date.now()));
+  } catch {
+    // Si el navegador bloquea localStorage, el evento de la pestaña actual sigue funcionando.
+  }
 }
 
 function hydrateDbTemplates(db) {

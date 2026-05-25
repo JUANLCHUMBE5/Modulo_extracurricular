@@ -63,6 +63,7 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
           ...estudiante,
     periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
     estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
+    estadoInscripción: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
           estadoPago: obtenerEstadoPagoPorPeriodo(estudiante.dni, periodoNormalizado),
           origenRegistro: "Base general de estudiantes",
           tieneInvitacion: false,
@@ -374,11 +375,12 @@ function adaptarProgramaCoordinacion(programa) {
 }
 
 function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo) {
-  const { programa } = invitacionPeriodo;
+  const { programa, invitado = {} } = invitacionPeriodo;
   return {
     ...estudiante,
     periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
     estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
+    estadoInscripción: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
     estadoPago: obtenerEstadoPagoPorPeriodo(estudiante.dni, periodoNormalizado),
     origenRegistro: "Base general de estudiantes + carga Excel de Coordinación",
     tieneInvitacion: true,

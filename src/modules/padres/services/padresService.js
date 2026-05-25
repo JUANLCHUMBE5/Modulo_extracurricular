@@ -154,10 +154,39 @@ function obtenerInvitaciones(dni, estudiante = null) {
   const resultado = [];
 
   apiDb.programas.forEach((programa) => {
+    if (
+      programa.invitacionMasiva &&
+      programa.estado === "Habilitado" &&
+      programaDisponibleParaGrado(programa, estudiante?.grado || "")
+    ) {
+      resultado.push({
+        id: `${programa.id}-masiva-${dni}`,
+        programaId: programa.id,
+        programa: programa.nombre,
+        periodo: normalizarPeriodoTexto(programa.periodo),
+        horario: resolverHorarioPorGrado(programa, estudiante?.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar",
+        responsable: programa.responsable || programa.docente || "Responsable por definir",
+        costo: Number(programa.costo || 0),
+        modalidadCobro: programa.modalidadCobro || "No definido",
+        requisitos: programa.requisitos || "Sin requisitos adicionales",
+        comunicado: programa.comunicado || "",
+        detalleCosto: programa.detalleCosto || "",
+        detalleAlmuerzo: programa.detalleAlmuerzo || "",
+        concesionarios: programa.concesionarios || "",
+        requiereUniforme: Boolean(programa.requiereUniforme),
+        estadoPrograma: programa.estado || "No definido",
+        estadoInvitacion: "Invitacion masiva",
+        fechaInicio: programa.fechaInicio || "",
+        fechaFin: programa.fechaFin || "",
+        ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio),
+      });
+    }
+
     const invitados = apiDb.invitadosPorPrograma[programa.id] || [];
     invitados
       .filter((invitado) => invitado.dni === dni)
       .forEach((invitado) => {
+        if (resultado.some((item) => item.programaId === programa.id)) return;
         const gradoEstudiante = estudiante?.grado || invitado.grado;
         if (!programaDisponibleParaGrado(programa, gradoEstudiante)) return;
 

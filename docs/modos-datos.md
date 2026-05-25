@@ -18,8 +18,8 @@ VITE_LOCAL_API_URL=http://127.0.0.1:5175
 Comandos:
 
 ```bash
-npm.cmd run api:local
-npm.cmd run dev:local
+corepack pnpm run api:local
+corepack pnpm run dev:local
 ```
 
 Tambien puedes usar el archivo de arranque en Windows:
@@ -55,7 +55,7 @@ Antes del primer uso, ejecutar en Supabase el SQL de `docs/supabase-piloto.sql`.
 Para copiar la base local actual al piloto:
 
 ```bash
-DATA_MODE=pilot npm.cmd run db:push-supabase-pilot
+$env:DATA_MODE="pilot"; corepack pnpm run db:push-supabase-pilot
 ```
 
 ### Piloto por tablas
@@ -71,7 +71,7 @@ docs/supabase-tablas-piloto.sql
 2. Migrar la base local a tablas:
 
 ```bash
-npm.cmd run db:push-supabase-tables
+corepack pnpm run db:push-supabase-tables
 ```
 
 3. Cuando las tablas ya tengan datos, cambiar en Vercel:
@@ -85,7 +85,7 @@ Con ese modo, `/api/db` arma la base desde tablas como `programas`, `inscripcion
 Para cuidar el plan gratuito de Vercel, configura en Vercel:
 
 ```bash
-npm run vercel:ignore-build
+corepack pnpm run vercel:ignore-build
 ```
 
 Ruta en Vercel: `Project Settings > Git > Ignored Build Step`.

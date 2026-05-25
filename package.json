@@ -2,6 +2,7 @@
   "name": "modulo-extracurricular",
   "private": true,
   "version": "0.1.0",
+  "packageManager": "pnpm@11.3.0",
   "type": "module",
   "scripts": {
     "api": "node server/excelApi.js",
@@ -17,15 +18,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@mantine/core": "^9.1.1",
-    "@mantine/dates": "^9.1.1",
-    "@mantine/hooks": "^9.1.1",
+    "@mantine/charts": "^9.2.1",
+    "@mantine/core": "^9.2.1",
+    "@mantine/dates": "^9.2.1",
+    "@mantine/hooks": "^9.2.1",
     "@supabase/supabase-js": "^2.106.1",
     "@tabler/icons-react": "^3.44.0",
     "@tailwindcss/vite": "^4.3.0",
     "@vitejs/plugin-react": "latest",
     "cors": "^2.8.6",
-    "date-fns": "^4.1.0",
+    "date-fns": "^4.3.0",
     "docx-preview": "^0.3.7",
     "docxtemplater": "^3.68.7",
     "exceljs": "^4.4.0",

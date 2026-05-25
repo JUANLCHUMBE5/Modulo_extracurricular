@@ -1,0 +1,876 @@
+/* Mobile flow redesign for Padres */
+.padres-portal-flow {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(255, 237, 213, 0.78), transparent 32%),
+    linear-gradient(180deg, #fffaf5 0%, #f8fbfa 54%, #ffffff 100%);
+}
+
+.padres-flow-main {
+  width: min(1040px, 100%);
+  padding: 0 clamp(14px, 3vw, 28px) 88px;
+}
+
+.padres-flow-header {
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  min-height: 58px;
+  margin: 0 0 10px;
+  padding: 7px 0;
+  align-items: center;
+  border-bottom: 1px solid #f0e2d5;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 12px 28px rgba(154, 78, 17, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+.padres-flow-header .padres-brand {
+  gap: 10px;
+}
+
+.padres-flow-header .padres-brand-logo {
+  width: 96px;
+  height: 38px;
+}
+
+.padres-flow-header .padres-brand strong {
+  color: #172331;
+  font-size: 14px;
+}
+
+.padres-flow-header .padres-brand p {
+  color: #8a5a18;
+  font-size: 12px;
+}
+
+.padres-flow-header .padres-family-avatar {
+  color: #b84f0d;
+  background: #fff2e3;
+  box-shadow: inset 0 0 0 1px #ffd7ad;
+}
+
+.padres-flow-shell {
+  display: grid;
+  gap: 10px;
+}
+
+.padres-flow-student-card,
+.padres-flow-panel,
+.padres-flow-stepper {
+  border: 1px solid #efdfce;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 28px rgba(145, 75, 16, 0.06);
+}
+
+.padres-flow-student-card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.58fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 110px;
+  border-radius: 16px;
+  padding: 12px 18px;
+  background:
+    linear-gradient(135deg, #fff2e3 0%, #ffffff 48%, #ecfdf3 100%);
+}
+
+.padres-flow-student-card::after {
+  content: "";
+  position: absolute;
+  right: -40px;
+  top: -60px;
+  width: 170px;
+  height: 170px;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.12);
+}
+
+.padres-flow-student-copy,
+.padres-flow-student-meta {
+  position: relative;
+  z-index: 1;
+}
+
+.padres-flow-student-copy {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.padres-flow-avatar {
+  width: 50px;
+  height: 50px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 5px solid rgba(255, 255, 255, 0.85);
+  border-radius: 999px;
+  color: #ffffff;
+  background: #d86716;
+  font-size: 18px;
+  font-weight: 850;
+  box-shadow: 0 8px 18px rgba(216, 103, 22, 0.14);
+}
+
+.padres-flow-student-copy span {
+  display: block;
+  color: #b84f0d;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.padres-flow-student-copy h1 {
+  margin: 2px 0;
+  color: #172331;
+  font-size: clamp(21px, 3vw, 28px);
+  line-height: 1.08;
+  font-weight: 850;
+}
+
+.padres-flow-student-copy p {
+  margin: 0;
+  color: #607086;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.padres-flow-student-meta {
+  align-self: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.padres-flow-student-art-wrap {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  height: 94px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.padres-flow-student-art {
+  position: relative;
+  width: min(100%, 420px);
+  height: 102px;
+  object-fit: contain;
+  object-position: right bottom;
+  opacity: 0.94;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 14px rgba(145, 75, 16, 0.09));
+}
+
+.padres-flow-stepper {
+  position: sticky;
+  top: 68px;
+  z-index: 24;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  border-radius: 14px;
+  padding: 5px;
+}
+
+.padres-flow-step {
+  min-width: 0;
+  min-height: 42px;
+  border: 0;
+  border-radius: 11px;
+  padding: 5px 8px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #607086;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.padres-flow-step:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.padres-flow-step.is-active {
+  color: #b84f0d;
+  background: #fff6ed;
+  box-shadow: inset 0 0 0 1px #f6cda6;
+}
+
+.padres-flow-step.is-done {
+  color: #12705d;
+  background: #eefbf6;
+}
+
+.padres-flow-step-icon {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: inherit;
+  background: #ffffff;
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+
+.padres-flow-step strong,
+.padres-flow-step small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.padres-flow-step strong {
+  color: inherit;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.padres-flow-step small {
+  margin-top: 1px;
+  color: #7d8a9a;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.padres-flow-content {
+  display: grid;
+  gap: 10px;
+}
+
+.padres-flow-home-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.padres-flow-panel {
+  border-radius: 16px;
+  padding: 13px 18px;
+}
+
+.padres-flow-program-card,
+.padres-flow-step-panel,
+.padres-flow-payment-step {
+  display: grid;
+  gap: 12px;
+}
+
+.padres-flow-program-head {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.padres-flow-program-icon,
+.padres-flow-status-icon,
+.padres-flow-info-icon {
+  display: grid;
+  place-items: center;
+  color: #b84f0d;
+  background: #fff2e3;
+}
+
+.padres-flow-program-icon,
+.padres-flow-status-icon {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ffd7ad;
+  border-radius: 13px;
+}
+
+.padres-flow-program-head h2,
+.padres-flow-section-title h2,
+.padres-flow-status-card h2,
+.padres-flow-empty-program h2 {
+  margin: 0;
+  color: #102035;
+  font-weight: 850;
+  line-height: 1.12;
+}
+
+.padres-flow-program-head h2 {
+  margin-top: 4px;
+  font-size: clamp(20px, 2.35vw, 26px);
+}
+
+.padres-flow-section-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.padres-flow-section-title h2 {
+  margin-top: 8px;
+  font-size: clamp(20px, 2.5vw, 26px);
+}
+
+.padres-flow-section-title p,
+.padres-flow-status-card p,
+.padres-flow-empty-program p,
+.padres-flow-payment-box p,
+.padres-flow-empty-inline p,
+.padres-flow-catalog p {
+  margin: 6px 0 0;
+  color: #607086;
+  font-size: 13px;
+  line-height: 1.48;
+}
+
+.padres-flow-program-grid,
+.padres-flow-course-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.padres-flow-info-tile {
+  min-width: 0;
+  min-height: 54px;
+  border: 1px solid #e7edf2;
+  border-radius: 13px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  background: #fbfefd;
+}
+
+.padres-flow-info-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 11px;
+}
+
+.padres-flow-info-tile > div {
+  min-width: 0;
+}
+
+.padres-flow-info-tile span {
+  display: block;
+  color: #7d8a9a;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.padres-flow-info-tile strong,
+.padres-flow-info-tile .mantine-Text-root {
+  display: block;
+  margin-top: 4px;
+  color: #172331;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.26;
+}
+
+.padres-flow-program-note {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.padres-flow-program-note > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.padres-flow-link-button,
+.padres-flow-primary-button,
+.padres-flow-secondary-button {
+  min-height: 40px;
+  border-radius: 11px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.padres-flow-primary-button,
+.padres-flow-link-button {
+  border: 1px solid #d86716;
+  color: #ffffff;
+  background: #d86716;
+  box-shadow: 0 8px 18px rgba(216, 103, 22, 0.14);
+}
+
+.padres-flow-primary-button:hover,
+.padres-flow-link-button:hover {
+  background: #bd550f;
+}
+
+.padres-flow-primary-button:disabled {
+  border-color: #f7cfa7;
+  color: #fff7ed;
+  background: #f6a467;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.padres-flow-secondary-button {
+  border: 1px solid #f2c28d;
+  color: #9a4d13;
+  background: #ffffff;
+}
+
+.padres-flow-secondary-button:hover {
+  background: #fff7ef;
+}
+
+.padres-flow-status-card {
+  display: grid;
+  align-content: center;
+  gap: 13px;
+  background: #fff7ed;
+  border-color: #ffd7ad;
+}
+
+.padres-flow-status-card > div > span,
+.padres-flow-amount span,
+.padres-flow-payment-box span {
+  color: #8a5a18;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.padres-flow-status-card h2 {
+  margin-top: 6px;
+  font-size: 24px;
+}
+
+.padres-flow-amount {
+  border-top: 1px solid #ffd7ad;
+  padding-top: 12px;
+}
+
+.padres-flow-amount strong,
+.padres-flow-payment-box strong {
+  display: block;
+  margin-top: 7px;
+  color: #d86716;
+  font-size: clamp(30px, 5vw, 46px);
+  font-weight: 850;
+  line-height: 1;
+}
+
+.padres-flow-catalog {
+  display: grid;
+  gap: 14px;
+}
+
+.padres-flow-courses {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.padres-flow-course-card {
+  min-width: 0;
+  border: 1px solid #dce9e5;
+  border-radius: 15px;
+  padding: 13px;
+  display: grid;
+  gap: 11px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(18, 112, 93, 0.06);
+}
+
+.padres-flow-course-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.padres-flow-course-head h3 {
+  margin: 0;
+  color: #102035;
+  font-size: 17px;
+  font-weight: 850;
+  line-height: 1.18;
+}
+
+.padres-flow-course-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.padres-flow-course-grid .padres-flow-info-tile:nth-child(2) {
+  grid-row: span 2;
+}
+
+.padres-flow-badge {
+  min-height: 22px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.padres-flow-badge.is-green {
+  color: #0b6b59;
+  background: #dff8ed;
+}
+
+.padres-flow-badge.is-orange {
+  color: #b84f0d;
+  background: #fff2e3;
+}
+
+.padres-flow-badge.is-blue {
+  color: #315f91;
+  background: #eef5ff;
+}
+
+.padres-flow-letter {
+  border: 1px solid #f1ddc7;
+  border-radius: 14px;
+  padding: 13px;
+  background: #fffaf5;
+}
+
+.padres-flow-letter p {
+  margin: 0;
+  color: #344256;
+  font-size: 13px;
+  line-height: 1.62;
+}
+
+.padres-flow-letter p + p {
+  margin-top: 10px;
+}
+
+.padres-flow-requirements {
+  border: 1px solid #dce9e5;
+  border-radius: 14px;
+  padding: 13px;
+  background: #fbfefd;
+}
+
+.padres-flow-requirements h3 {
+  margin: 0 0 10px;
+  color: #102035;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.padres-flow-requirements ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+  color: #344256;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.padres-flow-requirements li::marker {
+  color: #d86716;
+}
+
+.padres-flow-check {
+  border: 1px solid #ffd7ad;
+  border-radius: 13px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: #172331;
+  background: #fff7ed;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.38;
+}
+
+.padres-flow-check.is-muted {
+  border-color: #e7edf2;
+  background: #fbfefd;
+}
+
+.padres-flow-check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: #d86716;
+  flex: 0 0 auto;
+}
+
+.padres-flow-actions,
+.padres-flow-bottom-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.padres-flow-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.padres-flow-form-grid .padres-field:last-child {
+  grid-column: 1 / -1;
+}
+
+.padres-flow-form-grid .padres-field {
+  gap: 6px;
+}
+
+.padres-flow-form-grid .padres-field span {
+  color: #4f6173;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.padres-flow-form-grid .padres-field input {
+  height: 46px;
+  border-color: #dce6ee;
+  border-radius: 14px;
+  background: #fbfefd;
+}
+
+.padres-flow-form-grid .padres-field input:focus {
+  border-color: #d86716;
+  box-shadow: 0 0 0 3px rgba(216, 103, 22, 0.12);
+}
+
+.padres-flow-payment-box {
+  border: 1px solid #ffd7ad;
+  border-radius: 16px;
+  padding: 16px;
+  background: #fff2e3;
+}
+
+.padres-flow-payment-checks {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.padres-flow-mini-check {
+  min-height: 48px;
+  border: 1px solid #e5eaf0;
+  border-radius: 14px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #7d8a9a;
+  background: #fbfefd;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.padres-flow-mini-check.is-ok {
+  border-color: #b9eadc;
+  color: #0b6b59;
+  background: #effcf8;
+}
+
+.padres-flow-empty-program,
+.padres-flow-empty-inline,
+.padres-flow-inline-loading {
+  min-height: 130px;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  text-align: center;
+  color: #7d8a9a;
+}
+
+.padres-flow-empty-program {
+  grid-template-columns: 38px minmax(0, 1fr);
+  place-items: center start;
+  text-align: left;
+}
+
+.padres-flow-empty-program svg,
+.padres-flow-empty-inline svg {
+  color: #d86716;
+}
+
+.padres-flow-inline-loading {
+  min-height: 120px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.padres-flow-bottom-actions {
+  align-items: center;
+}
+
+.padres-flow-schedule .padres-schedule-box strong,
+.padres-flow-info-tile .padres-schedule-box strong {
+  margin-top: 5px;
+}
+
+.padres-flow-info-tile .padres-schedule-pills {
+  margin-top: 6px;
+}
+
+.padres-flow-info-tile .padres-schedule-pills span {
+  background: #ffffff;
+}
+
+.padres-flow-loading {
+  border-color: #efdfce;
+  background: #ffffff;
+}
+
+@media (max-width: 900px) {
+  .padres-flow-home-grid,
+  .padres-flow-student-card,
+  .padres-flow-courses {
+    grid-template-columns: 1fr;
+  }
+
+  .padres-flow-student-art-wrap {
+    display: none;
+  }
+
+  .padres-flow-student-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .padres-flow-stepper {
+    top: 76px;
+  }
+}
+
+@media (max-width: 680px) {
+  .padres-flow-main {
+    padding-bottom: 92px;
+  }
+
+  .padres-flow-header {
+    min-height: 60px;
+    gap: 8px;
+  }
+
+  .padres-flow-header .padres-brand-logo {
+    width: 86px;
+    height: 36px;
+  }
+
+  .padres-flow-header .padres-brand strong,
+  .padres-flow-header .padres-brand p,
+  .padres-flow-header .padres-family-chip {
+    display: none;
+  }
+
+  .padres-flow-student-card {
+    min-height: auto;
+    border-radius: 16px;
+    padding: 13px;
+  }
+
+  .padres-flow-student-copy {
+    align-items: flex-start;
+  }
+
+  .padres-flow-avatar {
+    width: 50px;
+    height: 50px;
+    border-width: 5px;
+  }
+
+  .padres-flow-student-copy h1 {
+    font-size: 22px;
+  }
+
+  .padres-flow-student-meta,
+  .padres-flow-program-grid,
+  .padres-flow-course-grid,
+  .padres-flow-form-grid,
+  .padres-flow-payment-checks {
+    grid-template-columns: 1fr;
+  }
+
+  .padres-flow-stepper {
+    position: static;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    border-radius: 17px;
+    padding: 6px;
+  }
+
+  .padres-flow-step {
+    min-height: 58px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 7px 4px;
+    text-align: center;
+  }
+
+  .padres-flow-step-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .padres-flow-step small {
+    display: none;
+  }
+
+  .padres-flow-panel {
+    border-radius: 19px;
+    padding: 14px;
+  }
+
+  .padres-flow-program-head {
+    grid-template-columns: 46px minmax(0, 1fr);
+  }
+
+  .padres-flow-program-icon,
+  .padres-flow-status-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+  }
+
+  .padres-flow-program-note,
+  .padres-flow-actions,
+  .padres-flow-bottom-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .padres-flow-link-button,
+  .padres-flow-primary-button,
+  .padres-flow-secondary-button {
+    width: 100%;
+  }
+
+  .padres-flow-course-grid .padres-flow-info-tile:nth-child(2) {
+    grid-row: auto;
+  }
+}

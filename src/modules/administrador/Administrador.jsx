@@ -32,7 +32,7 @@ import {
   ALL_PERMISSIONS,
   PERMISSION_GROUPS,
   ROLES,
-  getDefaultPermissionsByRole,
+  getRequiredPermissionsByRole,
   isSuperAdmin,
   normalizeUser,
 } from "./models/usuarioModel";
@@ -42,7 +42,7 @@ const crearFormInicial = () => ({
   nombre: "",
   usuario: "",
   rol: "Secretaria",
-  permisos: getDefaultPermissionsByRole("Secretaria"),
+  permisos: [],
   contrasena: "",
   estado: "Activo",
 });
@@ -187,16 +187,18 @@ const TablaUsuarios = ({ usuarios, cargando, onEditar, onCambiarEstado, onElimin
 
 // â”€â”€ Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PanelPermisos = ({ form, setForm }) => {
+  const permisosObligatorios = new Set(getRequiredPermissionsByRole(form.rol));
   const permisos = form.rol === "Administrador"
     ? ALL_PERMISSIONS
-    : form.permisos || getDefaultPermissionsByRole(form.rol);
+    : Array.from(new Set([...(form.permisos || []), ...permisosObligatorios]));
   const permisosSeleccionados = new Set(permisos);
   const permisosBloqueados = form.rol === "Administrador" || isSuperAdmin(form);
 
   const alternarPermiso = (permisoId) => {
-    if (permisosBloqueados) return;
+    if (permisosBloqueados || permisosObligatorios.has(permisoId)) return;
     setForm((actual) => {
       const actuales = new Set(actual.permisos || []);
+      getRequiredPermissionsByRole(actual.rol).forEach((permiso) => actuales.add(permiso));
       if (actuales.has(permisoId)) {
         actuales.delete(permisoId);
       } else {
@@ -212,7 +214,7 @@ const PanelPermisos = ({ form, setForm }) => {
         <div>
           <h3 className="m-0 text-sm font-black text-slate-900">Permisos especificos</h3>
           <p className="mt-1 mb-0 text-xs leading-snug text-slate-500">
-            Define que funciones adicionales puede usar este perfil.
+            El rol principal queda protegido; puede agregar funciones de otras areas.
           </p>
         </div>
         <span className="inline-flex min-h-6 shrink-0 items-center rounded-full border border-[#b9e4d9] bg-[#e8f7ef] px-2.5 text-xs font-black text-[#075e50]">
@@ -227,6 +229,8 @@ const PanelPermisos = ({ form, setForm }) => {
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               {group.permissions.map((permission) => {
                 const activo = permisosSeleccionados.has(permission.id);
+                const obligatorio = permisosObligatorios.has(permission.id);
+                const bloqueado = permisosBloqueados || obligatorio;
                 return (
                   <label
                     className={[
@@ -234,7 +238,7 @@ const PanelPermisos = ({ form, setForm }) => {
                       activo
                         ? "border-[#aee0d2] bg-[#eefbf6] text-[#075e50]"
                         : "border-[#dbe3ee] bg-white text-slate-700",
-                      permisosBloqueados ? "cursor-not-allowed opacity-75" : "cursor-pointer",
+                      bloqueado ? "cursor-not-allowed opacity-75" : "cursor-pointer",
                     ].join(" ")}
                     key={permission.id}
                   >
@@ -242,10 +246,10 @@ const PanelPermisos = ({ form, setForm }) => {
                       className="h-4 w-4 shrink-0 accent-[#169b83]"
                       type="checkbox"
                       checked={activo}
-                      disabled={permisosBloqueados}
+                      disabled={bloqueado}
                       onChange={() => alternarPermiso(permission.id)}
                     />
-                    <span>{permission.label}</span>
+                    <span>{permission.label}{obligatorio ? " (rol principal)" : ""}</span>
                   </label>
                 );
               })}
@@ -266,7 +270,7 @@ const ModalUsuario = ({ show, modoEditar, form, setForm, guardar, guardando, cer
     setForm((actual) => ({
       ...actual,
       rol,
-      permisos: getDefaultPermissionsByRole(rol),
+      permisos: rol === "Administrador" ? ALL_PERMISSIONS : getRequiredPermissionsByRole(rol),
     }));
   };
   const labelClass = "text-xs font-extrabold text-slate-600";
@@ -469,7 +473,9 @@ export default function Administrador({ onLogout }) {
         nombre: form.nombre.trim(),
         usuario: form.usuario.trim().toLowerCase(),
         rol: form.rol,
-        permisos: form.rol === "Administrador" ? ALL_PERMISSIONS : form.permisos,
+        permisos: form.rol === "Administrador"
+          ? ALL_PERMISSIONS
+          : Array.from(new Set([...(form.permisos || []), ...getRequiredPermissionsByRole(form.rol)])),
         estado: form.estado,
       };
       if (form.contrasena.trim()) datos.contrasena = form.contrasena.trim();

@@ -148,6 +148,174 @@
   opacity: 1;
 }
 
+.coord-program-card-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.coord-program-card-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 14px 16px;
+  border: 1px solid #e3ebf1;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(31, 41, 51, 0.035);
+  transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.coord-program-card-item:hover {
+  border-color: #c9d8e5;
+  box-shadow: 0 10px 22px rgba(31, 41, 51, 0.055);
+  transform: translateY(-1px);
+}
+
+.coord-program-card-deshabilitado {
+  background: #f8fafc;
+  opacity: 0.76;
+}
+
+.coord-program-card-finalizado {
+  border-color: #ecd8a6;
+  background: #fffaf0;
+}
+
+.coord-program-card-body {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.coord-program-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.coord-program-card-title {
+  min-width: 0;
+}
+
+.coord-program-card-title h3 {
+  margin: 0;
+  max-width: 100%;
+  color: var(--coord-ink);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.coord-program-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  margin-top: 6px;
+  color: #5b6b7c;
+}
+
+.coord-program-card-meta span {
+  min-height: auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.coord-program-card-meta span + span {
+  position: relative;
+}
+
+.coord-program-card-meta span + span::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  margin-right: 10px;
+  border-radius: 999px;
+  background: #c4ced8;
+}
+
+.coord-program-card-grid {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.15fr) minmax(180px, 1.25fr) minmax(120px, 0.85fr) minmax(90px, 0.65fr) minmax(90px, 0.65fr);
+  gap: 0;
+  border-top: 1px solid #eef3f6;
+  padding-top: 10px;
+}
+
+.coord-program-card-detail {
+  min-width: 0;
+  min-height: 54px;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 0 14px;
+  border: 0;
+  border-left: 1px solid #eef3f6;
+  border-radius: 0;
+  background: transparent;
+}
+
+.coord-program-card-detail:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.coord-program-card-detail > span:first-child {
+  color: var(--coord-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.coord-program-card-detail strong,
+.coord-program-card-cost strong {
+  color: var(--coord-ink);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.coord-program-card-detail .coord-table-small-text,
+.coord-program-card-detail .coord-table-schedule,
+.coord-program-card-detail .coord-table-date,
+.coord-program-card-detail .coord-table-cupos {
+  max-width: none;
+  min-width: 0;
+}
+
+.coord-program-card-detail .coord-table-small-text,
+.coord-program-card-detail .coord-table-schedule strong,
+.coord-program-card-detail .coord-table-schedule span,
+.coord-program-card-detail .coord-table-date span,
+.coord-program-card-detail .coord-table-cupos span {
+  font-size: 12px;
+}
+
+.coord-program-card-detail .coord-table-cupos div {
+  width: min(86px, 100%);
+}
+
+.coord-program-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 116px;
+}
+
+.coord-program-card-actions .mantine-ActionIcon-root {
+  border-radius: 8px;
+  background: #f4f8fb;
+}
+
 .coord-asist-ok {
   color: var(--coord-green);
   font-weight: 800;
@@ -164,4 +332,38 @@
   display: flex;
   justify-content: flex-end;
   margin-bottom: 12px;
+}
+
+@media (max-width: 1080px) {
+  .coord-program-card-item {
+    grid-template-columns: 1fr;
+  }
+
+  .coord-program-card-actions {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+
+  .coord-program-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .coord-program-card-item {
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .coord-program-card-header {
+    display: grid;
+  }
+
+  .coord-program-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .coord-program-card-title h3 {
+    font-size: 17px;
+  }
 }

@@ -65,7 +65,7 @@ function usePadres(user) {
         });
       }
     } catch (err) {
-      const mensaje = err.message || "No se pudo cargar la informacion del estudiante.";
+      const mensaje = err.message || "No se pudo cargar la información del estudiante.";
       setError(mensaje);
       toast.warning("Padres", { description: mensaje });
     } finally {
@@ -127,12 +127,22 @@ function usePadres(user) {
 
   async function guardarDatos(event) {
     event.preventDefault();
-    if (!form.apoderado.trim()) return avisar("Ingrese el nombre del padre o apoderado.");
-    if (!/^\d{9}$/.test(form.telefono.trim())) return avisar("Ingrese un telefono de contacto valido de 9 numeros.");
-    if (form.correo.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo.trim())) {
-      return avisar("Ingrese un correo valido o deje el campo vacio.");
+    if (!form.apoderado.trim()) {
+      avisar("Ingrese el nombre del padre o apoderado.");
+      return false;
     }
-    if (!form.acepta) return avisar("Confirme que los datos son correctos.");
+    if (!/^\d{9}$/.test(form.telefono.trim())) {
+      avisar("Ingrese un telefono de contacto valido de 9 numeros.");
+      return false;
+    }
+    if (form.correo.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo.trim())) {
+      avisar("Ingrese un correo valido o deje el campo vacio.");
+      return false;
+    }
+    if (!form.acepta) {
+      avisar("Confirme que los datos son correctos.");
+      return false;
+    }
 
     setGuardando(true);
     try {
@@ -141,8 +151,10 @@ function usePadres(user) {
         description: "Datos del apoderado guardados.",
       });
       await cargarResumen({ silencioso: true });
+      return true;
     } catch (err) {
       avisar(err.message || "No se pudieron guardar los datos.");
+      return false;
     } finally {
       setGuardando(false);
     }
@@ -221,7 +233,7 @@ function usePadres(user) {
   }
 
   async function continuarPago() {
-    if (!infoProgramaAceptada) return avisar("Debe aceptar que leyo la informacion del programa antes de continuar.");
+    if (!infoProgramaAceptada) return avisar("Debe aceptar que leyó la información del programa antes de continuar.");
     if (invitacion && !inscripcion) {
       const registrado = await solicitarInscripcionPadres();
       if (registrado) setInfoProgramaAbierta(false);
@@ -292,7 +304,7 @@ function responderAsistente(pregunta, { estudiante, programa, inscripcion, tipoR
 
   if (coincideConsulta(texto, ["monto", "pagar", "pago", "costo", "precio", "cuanto"])) {
     if (!inscripcion) {
-      return `${nombrePrograma} tiene un costo registrado de ${costo}. Antes de pagar, revisa la informacion del programa y solicita el registro para que quede pendiente de validacion en Caja.`;
+      return `${nombrePrograma} tiene un costo registrado de ${costo}. Antes de pagar, revisa la información del programa y solicita el registro para que quede pendiente de validación en Caja.`;
     }
     return `El monto registrado para ${nombrePrograma} es ${costo}. El pago figura como: ${estadoPago}.`;
   }
@@ -371,7 +383,7 @@ function obtenerBannerEstudiante(estudiante) {
   const sexo = normalizarSexo(estudiante?.sexo || estudiante?.genero || estudiante?.gender) || inferirSexoDemo(estudiante?.nombres);
   if (sexo === "hombre") return "/assets/padres/BANNER%20DE%20HOMBRES.png";
   if (sexo === "mujer") return "/assets/padres/BANNER%20DE%20MUJERES.png";
-  return "";
+  return "/assets/padres/BANNER%20DE%20HOMBRES.png";
 }
 
 function normalizarSexo(valor) {
@@ -384,7 +396,7 @@ function normalizarSexo(valor) {
 function inferirSexoDemo(nombre) {
   const primerNombre = String(nombre || "").trim().split(/\s+/)[0]?.toLowerCase();
   if (["camila", "lucia", "maria", "rosa", "claudia", "patricia", "ana"].includes(primerNombre)) return "mujer";
-  if (["juan", "mateo", "jose", "carlos"].includes(primerNombre)) return "hombre";
+  if (["juan", "mateo", "jose", "carlos", "thiago", "gael", "bruno", "sebastian", "adrian", "nicolas"].includes(primerNombre)) return "hombre";
   return "";
 }
 

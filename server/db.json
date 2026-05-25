@@ -6,7 +6,7 @@
     "Verano",
     "Arte"
   ],
-  "nextProgramaId": 12,
+  "nextProgramaId": 15,
   "nextCargaId": 1,
   "nextDocumentoId": 43,
   "estudiantes": {
@@ -147,35 +147,35 @@
       "invitacionMasiva": false
     },
     {
-      "id": "PROG-011",
-      "cuposOcupados": 2,
-      "estado": "Finalizado",
-      "nombre": "EXPRES MARATO 3",
+      "id": "PROG-012",
+      "cuposOcupados": 0,
+      "estado": "Habilitado",
+      "nombre": "MARATON 3",
       "periodo": "escolar",
       "categoria": "Academico",
-      "grupo": "Secundaria: 1, 2, 3, 4, 5",
-      "horario": "Sábado clase 10:41 AM - 1:46 PM · almuerzo 11:07 AM - 12:09 PM",
+      "grupo": "Secundaria: 1, 3, 2, 4, 5",
+      "horario": "Sábado clase 11:16 AM - 12:16 PM · almuerzo 2:16 PM - 3:16 PM",
       "gradosAplicables": [
         "Secundaria:1",
-        "Secundaria:2",
         "Secundaria:3",
+        "Secundaria:2",
         "Secundaria:4",
         "Secundaria:5"
       ],
       "dias": [
         "Sábado"
       ],
-      "horaInicio": "10:41",
-      "horaFin": "13:46",
-      "almuerzoInicio": "11:07",
-      "almuerzoFin": "12:09",
+      "horaInicio": "11:16",
+      "horaFin": "12:16",
+      "almuerzoInicio": "14:16",
+      "almuerzoFin": "15:16",
       "horariosPorGrupo": [],
-      "fechaInicio": "2026-05-21",
-      "fechaFin": "2026-05-23",
+      "fechaInicio": "2026-05-25",
+      "fechaFin": "2026-05-26",
       "cupos": 20,
       "costo": 50,
       "modalidadCobro": "Unico",
-      "responsable": "ANGELA REYES",
+      "responsable": "ANGELA TORRES",
       "tutora": "",
       "plantilla": "",
       "plantillaBase64": "",
@@ -188,8 +188,93 @@
       "detalleAlmuerzo": "",
       "concesionarios": "",
       "requiereUniforme": false,
-      "invitacionMasiva": true,
-      "finalizadoAutomaticamenteEn": "2026-05-24T17:37:29-05:00"
+      "invitacionMasiva": true
+    },
+    {
+      "id": "PROG-013",
+      "cuposOcupados": 0,
+      "estado": "Habilitado",
+      "nombre": "comuncicaion 1",
+      "periodo": "escolar",
+      "categoria": "Ingles",
+      "grupo": "Primaria: 5, 3, 2, 4",
+      "horario": "Lunes, Miércoles clase 2:27 PM - 4:27 PM",
+      "gradosAplicables": [
+        "Primaria:5",
+        "Primaria:3",
+        "Primaria:2",
+        "Primaria:4"
+      ],
+      "dias": [
+        "Lunes",
+        "Miércoles"
+      ],
+      "horaInicio": "14:27",
+      "horaFin": "16:27",
+      "almuerzoInicio": "",
+      "almuerzoFin": "",
+      "horariosPorGrupo": [],
+      "fechaInicio": "2026-05-26",
+      "fechaFin": "2026-05-26",
+      "cupos": 10,
+      "costo": 10,
+      "modalidadCobro": "Mensual",
+      "responsable": "af",
+      "tutora": "asfasdg",
+      "plantilla": "",
+      "plantillaBase64": "",
+      "plantillaVariables": [],
+      "plantillaValidada": false,
+      "plantillaActualizadaEn": "",
+      "requisitos": "",
+      "comunicado": "",
+      "detalleCosto": "",
+      "detalleAlmuerzo": "",
+      "concesionarios": "",
+      "requiereUniforme": false,
+      "invitacionMasiva": true
+    },
+    {
+      "id": "PROG-014",
+      "cuposOcupados": 0,
+      "estado": "Habilitado",
+      "nombre": "danza",
+      "periodo": "escolar",
+      "categoria": "Arte",
+      "grupo": "Inicial: 5 años / Primaria: 3, 4",
+      "horario": "Martes clase 4:29 PM - 7:29 PM",
+      "gradosAplicables": [
+        "Primaria:3",
+        "Primaria:4",
+        "Inicial:5 años"
+      ],
+      "dias": [
+        "Martes"
+      ],
+      "horaInicio": "16:29",
+      "horaFin": "19:29",
+      "almuerzoInicio": "",
+      "almuerzoFin": "",
+      "horariosPorGrupo": [],
+      "fechaInicio": "2026-05-26",
+      "fechaFin": "2026-05-27",
+      "cupos": 11,
+      "costo": 23,
+      "modalidadCobro": "Unico",
+      "responsable": "fgdg",
+      "tutora": "dg",
+      "plantilla": "",
+      "plantillaBase64": "",
+      "plantillaVariables": [],
+      "plantillaValidada": false,
+      "plantillaActualizadaEn": "",
+      "requisitos": "",
+      "comunicado": "",
+      "detalleCosto": "",
+      "detalleAlmuerzo": "",
+      "concesionarios": "",
+      "requiereUniforme": false,
+      "invitacionMasiva": true
     }
   ],
   "invitadosPorPrograma": {
@@ -508,7 +593,7 @@
       "fechaRegistro": "2026-05-15T08:17:58-05:00",
       "dniEstudiante": "74581236",
       "codigoEstudiante": "1234567",
-      "gradoEstudiante": "4° Primaria",
+      "gradoEstudiante": "4? Primaria",
       "nombresEstudiante": "Rodrigo Alejandro Huamán Flores",
       "tipoInscripción": "Regular",
       "programa": "CLUB DE TAREAS MATEMATICA",
@@ -597,7 +682,7 @@
       "fechaRegistro": "2026-05-15T08:46:33-05:00",
       "dniEstudiante": "70124589",
       "codigoEstudiante": "1234568",
-      "gradoEstudiante": "5° Primaria",
+      "gradoEstudiante": "5? Primaria",
       "nombresEstudiante": "Valeria Camila Quispe Rojas",
       "tipoInscripción": "Regular",
       "programa": "CLUB DE TAREAS MATEMATICA",
@@ -693,8 +778,8 @@
       "requisitos": "",
       "comunicado": "Reciba un cordial saludo de parte de la Comunidad Educativa del Colegio Matemático \"San Rafael\", especialmente de la Dirección General, que está aquí para servirle. Nos dirigimos a usted para informarle que, tras observar que algunos alumnos requieren apoyo en la explicación y resolución de tareas en el área de , hemos decidido apoyar y reforzar el aprendizaje del estudiante. En este sentido, consideramos apropiado invitarlo al aula , la cual ha sido organizada y mejorada en la distribución del tiempo para abordar las tareas dejadas durante la semana. 45462605368000: Del al .",
       "detalleCosto": "COSTO:\n: S/. soles por todo el ciclo.",
-      "detalleAlmuerzo": "ALMUERZO\nCLASES\n\nREQUISITOS:\nAsistencia continua.\nMantener el orden y la disciplina.\nTraer los siguientes materiales:\n01 cartuchera completa con lápiz negro, chequeo rojo, borrador, tajador con depósito, regla, lapiceros, FORMATOS DE TAREA.\nCOSTO:\n: S/. soles por todo el ciclo.\nEL ALMUERZO:\nContamos con un área para la recepción de los almuerzos, donde se deberá dejar bajo el siguiente horario: De\n\nIndicando claramente una etiqueta grande en la lonchera, con NOMBRE DEL ALUMNO, GRADO Y SECCIÓN.\nSi deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\n📞 Cafetín Los Amigos del recreo (Sra. Rocío) 📞 Cafetín Edith (Sra. Deysli)\n976280197 960897529\n2727352119006 que son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde\nde acuerdo a las disposiciones del MINSA.\nAtentamente\n0-6350000ENTREGAR ESTE FORMATO FIRMADO si está conforme, al momento de inscribirse en Administración.",
-      "concesionarios": "Si deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\n📞 Cafetín Los Amigos del recreo (Sra. Rocío) 📞 Cafetín Edith (Sra. Deysli)\n976280197 960897529\n2727352119006 que son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde\nde acuerdo a las disposiciones del MINSA.\nAtentamente\n0-6350000ENTREGAR ESTE FORMATO FIRMADO si está conforme, al momento de inscribirse en Administración.",
+      "detalleAlmuerzo": "ALMUERZO\nCLASES\n\nREQUISITOS:\nAsistencia continua.\nMantener el orden y la disciplina.\nTraer los siguientes materiales:\n01 cartuchera completa con lápiz negro, chequeo rojo, borrador, tajador con depósito, regla, lapiceros, FORMATOS DE TAREA.\nCOSTO:\n: S/. soles por todo el ciclo.\nEL ALMUERZO:\nContamos con un área para la recepción de los almuerzos, donde se deberá dejar bajo el siguiente horario: De\n\nIndicando claramente una etiqueta grande en la lonchera, con NOMBRE DEL ALUMNO, GRADO Y SECCIÓN.\nSi deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\n?? Cafetín Los Amigos del recreo (Sra. Rocío) ?? Cafetín Edith (Sra. Deysli)\n976280197 960897529\n2727352119006 que son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde\nde acuerdo a las disposiciones del MINSA.\nAtentamente\n0-6350000ENTREGAR ESTE FORMATO FIRMADO si est? conforme, al momento de inscribirse en Administración.",
+      "concesionarios": "Si deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\n?? Cafetín Los Amigos del recreo (Sra. Rocío) ?? Cafetín Edith (Sra. Deysli)\n976280197 960897529\n2727352119006 que son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde\nde acuerdo a las disposiciones del MINSA.\nAtentamente\n0-6350000ENTREGAR ESTE FORMATO FIRMADO si est? conforme, al momento de inscribirse en Administración.",
       "plantilla": "CARTA_CLUB_DE_TAREAS_PLANTILLA_MISMO_FORMATO_V2.docx",
       "plantillaVariables": [
         "n_com",
@@ -756,8 +841,8 @@
       "requisitos": "",
       "comunicado": "Reciba un cordial saludo de parte de la Comunidad Educativa del Colegio Matemático \"San Rafael\", especialmente de la Dirección General, que está aquí para servirle. Nos dirigimos a usted para informarle que, tras observar que algunos alumnos requieren apoyo en la explicación y resolución de tareas en el área de , hemos decidido apoyar y reforzar el aprendizaje del estudiante. En este sentido, consideramos apropiado invitarlo al aula , la cual ha sido organizada y mejorada en la distribución del tiempo para abordar las tareas dejadas durante la semana. 45462605368000: Del al .",
       "detalleCosto": "COSTO:\n: S/. soles por todo el ciclo.",
-      "detalleAlmuerzo": "ALMUERZO\nCLASES\n\nREQUISITOS:\nAsistencia continua.\nMantener el orden y la disciplina.\nTraer los siguientes materiales:\n01 cartuchera completa con lápiz negro, chequeo rojo, borrador, tajador con depósito, regla, lapiceros, FORMATOS DE TAREA.\nCOSTO:\n: S/. soles por todo el ciclo.\nEL ALMUERZO:\nContamos con un área para la recepción de los almuerzos, donde se deberá dejar bajo el siguiente horario: De\n\nIndicando claramente una etiqueta grande en la lonchera, con NOMBRE DEL ALUMNO, GRADO Y SECCIÓN.\nSi deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\n📞 Cafetín Los Amigos del recreo (Sra. Rocío) 📞 Cafetín Edith (Sra. Deysli)\n976280197 960897529\n2727352119006 que son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde\nde acuerdo a las disposiciones del MINSA.\nAtentamente\n0-6350000ENTREGAR ESTE FORMATO FIRMADO si está conforme, al momento de inscribirse en Administración.",
-      "concesionarios": "Si deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\n📞 Cafetín Los Amigos del recreo (Sra. Rocío) 📞 Cafetín Edith (Sra. Deysli)\n976280197 960897529\n2727352119006 que son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde\nde acuerdo a las disposiciones del MINSA.\nAtentamente\n0-6350000ENTREGAR ESTE FORMATO FIRMADO si está conforme, al momento de inscribirse en Administración.",
+      "detalleAlmuerzo": "ALMUERZO\nCLASES\n\nREQUISITOS:\nAsistencia continua.\nMantener el orden y la disciplina.\nTraer los siguientes materiales:\n01 cartuchera completa con lápiz negro, chequeo rojo, borrador, tajador con depósito, regla, lapiceros, FORMATOS DE TAREA.\nCOSTO:\n: S/. soles por todo el ciclo.\nEL ALMUERZO:\nContamos con un área para la recepción de los almuerzos, donde se deberá dejar bajo el siguiente horario: De\n\nIndicando claramente una etiqueta grande en la lonchera, con NOMBRE DEL ALUMNO, GRADO Y SECCIÓN.\nSi deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\n?? Cafetín Los Amigos del recreo (Sra. Rocío) ?? Cafetín Edith (Sra. Deysli)\n976280197 960897529\n2727352119006 que son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde\nde acuerdo a las disposiciones del MINSA.\nAtentamente\n0-6350000ENTREGAR ESTE FORMATO FIRMADO si est? conforme, al momento de inscribirse en Administración.",
+      "concesionarios": "Si deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\n?? Cafetín Los Amigos del recreo (Sra. Rocío) ?? Cafetín Edith (Sra. Deysli)\n976280197 960897529\n2727352119006 que son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde\nde acuerdo a las disposiciones del MINSA.\nAtentamente\n0-6350000ENTREGAR ESTE FORMATO FIRMADO si est? conforme, al momento de inscribirse en Administración.",
       "plantilla": "CARTA_CLUB_DE_TAREAS_PLANTILLA_MISMO_FORMATO_V2.docx",
       "plantillaVariables": [
         "n_com",
@@ -1449,7 +1534,12 @@
       "usuario": "caja",
       "rol": "Caja",
       "estado": "Activo",
-      "contrasena": "1234"
+      "contrasena": "1234",
+      "permisos": [
+        "pagos.ver",
+        "pagos.registrar",
+        "pagos.editar"
+      ]
     },
     {
       "id": "4",
@@ -1457,7 +1547,14 @@
       "usuario": "coordinacion",
       "rol": "Coordinacion",
       "estado": "Activo",
-      "contrasena": "1234"
+      "contrasena": "1234",
+      "permisos": [
+        "programas.crear",
+        "programas.editar",
+        "grupos.crear",
+        "grupos.editar",
+        "alumnos.historial.ver"
+      ]
     },
     {
       "id": "5",
@@ -1465,7 +1562,10 @@
       "usuario": "aux",
       "rol": "Auxiliar",
       "estado": "Activo",
-      "contrasena": "1234"
+      "contrasena": "1234",
+      "permisos": [
+        "alumnos.historial.ver"
+      ]
     },
     {
       "id": "6",
@@ -1473,7 +1573,13 @@
       "usuario": "dir",
       "rol": "Direccion",
       "estado": "Activo",
-      "contrasena": "1234"
+      "contrasena": "1234",
+      "permisos": [
+        "presupuesto.ver",
+        "direccion.resumen.ver",
+        "reportes.ver",
+        "reportes.exportar"
+      ]
     },
     {
       "id": "7",
@@ -1481,7 +1587,16 @@
       "usuario": "profe",
       "rol": "Coordinacion",
       "estado": "Activo",
-      "contrasena": "1234"
+      "contrasena": "1234",
+      "permisos": [
+        "programas.crear",
+        "programas.editar",
+        "grupos.crear",
+        "grupos.editar",
+        "alumnos.historial.ver",
+        "presupuesto.ver",
+        "reportes.ver"
+      ]
     }
   ],
   "plantillasPorPrograma": {

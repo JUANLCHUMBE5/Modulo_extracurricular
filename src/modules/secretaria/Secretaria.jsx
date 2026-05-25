@@ -197,47 +197,58 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     setInscripción(null);
     setModoRegistro(false);
     setResultadosNombre([]);
-    if (!validarDni(dni)) {
-      await cargarProgramasDelPeriodo();
-      if (dni.trim().length >= 3) {
-        setBuscando(true);
-        const resultados = await buscarEstudiantesPorNombre(dni, periodo);
-        setBuscando(false);
+    const busqueda = String(dni || "").trim();
+    const dniLimpio = busqueda.replace(/\D/g, "");
 
-        if (resultados.length === 1) {
-          await aplicarEstudianteEncontrado(resultados[0]);
-          return;
+    try {
+      if (!validarDni(dniLimpio)) {
+        await cargarProgramasDelPeriodo();
+        if (busqueda.length >= 3) {
+          setBuscando(true);
+          const resultados = await buscarEstudiantesPorNombre(busqueda, periodo);
+          setBuscando(false);
+
+          if (resultados.length === 1) {
+            await aplicarEstudianteEncontrado(resultados[0]);
+            return;
+          }
+
+          if (resultados.length > 1) {
+            setEstudiante(null);
+            setResultadosNombre(resultados);
+            setMensaje("Seleccione el estudiante encontrado por nombre.");
+            return;
+          }
         }
 
-        if (resultados.length > 1) {
-          setEstudiante(null);
-          setResultadosNombre(resultados);
-          setMensaje("Seleccione el estudiante encontrado por nombre.");
-          return;
-        }
-      }
-
-      setEstudiante(null);
-      setMensaje("Ingrese un DNI válido de 8 números o al menos 3 letras del nombre.");
-      return;
-    }
-
-    setBuscando(true);
-    const encontrado = await buscarEstudiantePorDni(dni, periodo);
-    setBuscando(false);
-
-    if (!encontrado) {
-      if (periodo !== "verano") {
         setEstudiante(null);
-        setMensaje("No se encontro al estudiante. El alumno externo solo puede registrarse en ciclo verano.");
+        setMensaje("Ingrese un DNI válido de 8 números o al menos 3 letras del nombre.");
         return;
       }
 
-      await abrirRegistroAlumnoExterno(dni);
-      return;
-    }
+      setBuscando(true);
+      const encontrado = await buscarEstudiantePorDni(dniLimpio, periodo);
+      setBuscando(false);
 
-    await aplicarEstudianteEncontrado(encontrado);
+      if (!encontrado) {
+        if (periodo !== "verano") {
+          setEstudiante(null);
+          setMensaje("No se encontro al estudiante. El alumno externo solo puede registrarse en ciclo verano.");
+          return;
+        }
+
+        await abrirRegistroAlumnoExterno(dniLimpio);
+        return;
+      }
+
+      setDni(dniLimpio);
+      await aplicarEstudianteEncontrado(encontrado);
+    } catch (error) {
+      setEstudiante(null);
+      setMensaje(error.message || "No se pudo consultar el estudiante. Verifique la conexion con la base local.");
+    } finally {
+      setBuscando(false);
+    }
   }
 
   async function abrirRegistroAlumnoExterno(dniSugerido = "") {
@@ -283,7 +294,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     const estadoRegistro = registroExistente?.estadoInscripción || registroExistente?.estadoInscripcion;
     setEstudiante({
       ...encontrado,
-      estadoInscripción: estadoRegistro || encontrado.estadoInscripción,
+      estadoInscripcion: estadoRegistro || encontrado.estadoInscripcion || encontrado.estadoInscripción || "No inscrito",
+      estadoInscripción: estadoRegistro || encontrado.estadoInscripcion || encontrado.estadoInscripción || "No inscrito",
       estadoPago: registroExistente?.estadoPago || encontrado.estadoPago,
     });
     setInscripción(registroExistente);

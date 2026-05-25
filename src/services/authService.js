@@ -38,6 +38,7 @@ export const loginPersonal = async (username, password) => {
         username: usuario.usuario,
         role: rolesSistema[usuario.rol] || String(usuario.rol || "").toLowerCase(),
         name: usuario.nombre,
+        estado: usuario.estado,
         permisos: usuarioConPermisos.permisos,
         permissions: usuarioConPermisos.permisos,
       },

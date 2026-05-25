@@ -56,17 +56,13 @@ export const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((group) =>
 
 export const SUPER_ADMIN_USERNAME = "admin";
 
-export const DEFAULT_PERMISSIONS_BY_ROLE = {
+export const REQUIRED_PERMISSIONS_BY_ROLE = {
   Administrador: ALL_PERMISSIONS,
-  Secretaria: [
-    "alumnos.historial.ver",
-    "programas.editar",
-    "reportes.ver",
-  ],
+  Secretaria: [],
   Caja: [
     "pagos.ver",
     "pagos.registrar",
-    "reportes.ver",
+    "pagos.editar",
   ],
   Coordinacion: [
     "programas.crear",
@@ -74,8 +70,6 @@ export const DEFAULT_PERMISSIONS_BY_ROLE = {
     "grupos.crear",
     "grupos.editar",
     "alumnos.historial.ver",
-    "presupuesto.ver",
-    "reportes.ver",
   ],
   Auxiliar: [
     "alumnos.historial.ver",
@@ -83,9 +77,21 @@ export const DEFAULT_PERMISSIONS_BY_ROLE = {
   Direccion: [
     "presupuesto.ver",
     "direccion.resumen.ver",
-    "alumnos.historial.ver",
     "reportes.ver",
     "reportes.exportar",
+  ],
+};
+
+export const DEFAULT_PERMISSIONS_BY_ROLE = {
+  ...REQUIRED_PERMISSIONS_BY_ROLE,
+  Coordinacion: [
+    ...REQUIRED_PERMISSIONS_BY_ROLE.Coordinacion,
+    "presupuesto.ver",
+    "reportes.ver",
+  ],
+  Caja: [
+    ...REQUIRED_PERMISSIONS_BY_ROLE.Caja,
+    "reportes.ver",
   ],
 };
 
@@ -93,6 +99,10 @@ const PERMISSION_SET = new Set(ALL_PERMISSIONS);
 
 export function getDefaultPermissionsByRole(rol) {
   return [...(DEFAULT_PERMISSIONS_BY_ROLE[rol] || [])];
+}
+
+export function getRequiredPermissionsByRole(rol) {
+  return [...(REQUIRED_PERMISSIONS_BY_ROLE[rol] || [])];
 }
 
 export function normalizePermissions(permisos = []) {
@@ -103,11 +113,15 @@ export function normalizePermissions(permisos = []) {
 
 export function normalizeUser(usuario = {}) {
   const rol = ROLES.includes(usuario.rol) ? usuario.rol : "Secretaria";
-  const permisos = usuario.rol === "Administrador" || rol === "Administrador"
+  const permisosBase = usuario.rol === "Administrador" || rol === "Administrador"
     ? ALL_PERMISSIONS
     : Array.isArray(usuario.permisos)
       ? usuario.permisos
       : getDefaultPermissionsByRole(rol);
+  const permisos = [
+    ...permisosBase,
+    ...getRequiredPermissionsByRole(rol),
+  ];
 
   return {
     ...usuario,
