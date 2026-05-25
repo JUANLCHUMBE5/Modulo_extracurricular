@@ -77,7 +77,7 @@ function normalizarComparacion(valor) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function Secretaria({ onLogout }) {
+function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, onLogout }) {
   const [periodo, setPeriodo] = useState("escolar");
   const [dni, setDni] = useState("");
   const [mensaje, setMensaje] = useState("");
@@ -636,6 +636,8 @@ function Secretaria({ onLogout }) {
     };
   }
 
+  const mostrarVistaDelegada = Boolean(delegatedContent);
+
   return (
     <div className="secretaria-layout">
       <aside className="secretaria-sidebar">
@@ -647,11 +649,21 @@ function Secretaria({ onLogout }) {
         </div>
 
         <nav className="secretaria-nav" aria-label="Menu del modulo secretaria">
-          <button className="secretaria-nav-item secretaria-nav-item-active" type="button">
+          <button
+            className={`secretaria-nav-item ${!mostrarVistaDelegada ? "secretaria-nav-item-active" : ""}`}
+            type="button"
+            onClick={onClearDelegatedModule}
+          >
             <Search size={18} />
             <span>Inscripción presencial</span>
           </button>
         </nav>
+
+        {moduleSwitcher ? (
+          <div className="pt-3">
+            {moduleSwitcher}
+          </div>
+        ) : null}
 
         <div className="secretaria-sidebar-footer">
           <button className="secretaria-logout" onClick={onLogout}>
@@ -662,6 +674,10 @@ function Secretaria({ onLogout }) {
       </aside>
 
       <main className="secretaria-main">
+        {mostrarVistaDelegada ? (
+          delegatedContent
+        ) : (
+          <>
         <section className="secretaria-workspace secretaria-workspace-system">
           <article className="secretaria-card secretaria-search-card">
             <div className="secretaria-card-title">
@@ -1238,6 +1254,8 @@ function Secretaria({ onLogout }) {
           </div>
         ) : null}
 
+          </>
+        )}
       </main>
     </div>
   );

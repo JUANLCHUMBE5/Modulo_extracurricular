@@ -1,76 +1,6 @@
 /* src/modules/auxiliar/Auxiliar.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-.auxiliar-layout {
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  min-height: 100vh;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 5vh;
-}
-
-.auxiliar-main {
-  width: 100%;
-  max-width: 720px;
-  padding: 0 20px 40px;
-}
-
-.auxiliar-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(10px);
-  padding: 20px 25px;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255,255,255,0.8);
-}
-
-.auxiliar-topbar-copy span {
-  font-size: 0.75rem;
-  color: #3b82f6;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-weight: 700;
-  display: block;
-  margin-bottom: 4px;
-}
-
-.auxiliar-topbar-copy h1 {
-  margin: 0;
-  font-size: 1.6rem;
-  color: #0f172a;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.auxiliar-secondary-button {
-  background: white;
-  color: #475569;
-  border: 1px solid #cbd5e1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-}
-
-.auxiliar-secondary-button:hover {
-  background: #f8fafc;
-  border-color: #94a3b8;
-  color: #1e293b;
-  transform: translateY(-1px);
-}
-
 .auxiliar-card {
   background: #ffffff;
   border: 1px solid rgba(226, 232, 240, 0.8);
@@ -336,9 +266,6 @@
 
 /* Responsive adjustments */
 @media (max-width: 640px) {
-  .auxiliar-main { padding: 0 16px 24px; }
-  .auxiliar-topbar { flex-direction: column; gap: 16px; align-items: flex-start; }
-  .auxiliar-topbar-copy h1 { font-size: 1.4rem; }
   .auxiliar-input-group { flex-direction: column; }
   .auxiliar-primary-button { width: 100%; }
   .auxiliar-info-grid { grid-template-columns: 1fr; }

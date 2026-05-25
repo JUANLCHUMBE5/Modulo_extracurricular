@@ -37,6 +37,7 @@ import {
   previsualizarCargaAlumnosMasiva, confirmarCargaAlumnos, obtenerActividadPrograma,
 } from "./services/coordinacionService";
 import { fechaActualIso } from "../../services/dateService";
+import { hasPermission } from "../administrador/models/usuarioModel";
 import GradeSelector from "./components/GradeSelector";
 import { HorarioTabla, GradosTabla, VigenciaTabla, CuposTabla } from "./components/ProgramTableCells";
 import SummaryBox from "./components/SummaryBox";
@@ -103,9 +104,17 @@ function etiquetaGradoCorta(grado) {
   return String(grado || "").replace(/\s*aÃ±os?/i, "").trim();
 }
 
-function Coordinacion({ user, onLogout }) {
+function Coordinacion({
+  delegatedContent,
+  embedded = false,
+  initialView = "programas",
+  moduleSwitcher,
+  onClearDelegatedModule,
+  user,
+  onLogout,
+}) {
   const esProfesor = user?.username === "profe" || user?.name === "Profesor";
-  const [vista, setVista] = useState("programas");
+  const [vista, setVista] = useState(initialView || "programas");
   const [programas, setProgramas] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -140,8 +149,19 @@ function Coordinacion({ user, onLogout }) {
   const [cargandoPreview, setCargandoPreview] = useState(false);
   const [progresoCarga, setProgresoCarga] = useState(null);
   const [confirmandoCarga, setConfirmandoCarga] = useState(false);
+  const puedeCrearProgramas = hasPermission(user, "programas.crear");
+  const puedeEditarProgramas = hasPermission(user, "programas.editar");
+  const puedeVerAlumnos = hasPermission(user, "alumnos.historial.ver");
+  const puedeCargarAlumnos = hasPermission(user, "grupos.crear") || hasPermission(user, "grupos.editar");
+  const tieneAccionesPrograma = puedeEditarProgramas || puedeVerAlumnos;
 
   useEffect(() => { cargarDatos(); }, []);
+
+  useEffect(() => {
+    if (!embedded || !initialView) return;
+    setVista(initialView);
+    setMensaje("");
+  }, [embedded, initialView]);
 
   async function cargarDatos() {
     setCargando(true);
@@ -180,6 +200,7 @@ function Coordinacion({ user, onLogout }) {
 
   // ── Abrir modal crear ──
   function abrirCrear() {
+    if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas.");
     setForm(formInicial);
     setModoEditar(false);
     setProgramaDocsId("");
@@ -220,6 +241,7 @@ function Coordinacion({ user, onLogout }) {
 
   // ── Abrir modal editar ──
   function abrirEditar(prog) {
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar programas.");
     setForm(datosProgramaAFormulario(prog));
     setModoEditar(true);
     setProgramaDocsId("");
@@ -232,6 +254,8 @@ function Coordinacion({ user, onLogout }) {
   // ── Validar y guardar ──
   async function guardar(e) {
     e.preventDefault();
+    if (!modoEditar && !puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas.");
+    if (modoEditar && !puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar programas.");
     if (!form.nombre.trim()) return mostrarMsg("El nombre del programa es obligatorio.");
     if (!form.categoria) return mostrarMsg("Seleccione una categoría.");
     const gruposHorario = normalizarHorariosPorGrupo(form.horariosPorGrupo);
@@ -309,6 +333,7 @@ function Coordinacion({ user, onLogout }) {
 
   // ── Cambiar estado ──
   async function toggleEstado(prog) {
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para cambiar el estado de programas.");
     const nuevo = prog.estado === "Habilitado" ? "Deshabilitado" : "Habilitado";
     await cambiarEstadoPrograma(prog.id, nuevo);
     mostrarMsg(`Programa ${nuevo.toLowerCase()}.`, "success");
@@ -316,6 +341,7 @@ function Coordinacion({ user, onLogout }) {
   }
 
   async function finalizarPrograma(prog) {
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para finalizar programas.");
     const confirmado = window.confirm(`Finalizar ${prog.nombre}? Secretaria ya no podrá registrar nuevas inscripciones.`);
     if (!confirmado) return;
 
@@ -326,6 +352,7 @@ function Coordinacion({ user, onLogout }) {
 
   // ── Ver invitados ──
   async function eliminarCurso(prog) {
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para eliminar programas.");
     const confirmado = window.confirm(`Eliminar ${prog.nombre}? Tambien se retirara su lista de invitados cargada.`);
     if (!confirmado) return;
 
@@ -339,6 +366,7 @@ function Coordinacion({ user, onLogout }) {
   }
 
   async function verInvitados(prog) {
+    if (!puedeVerAlumnos) return mostrarMsg("No tiene permiso para ver alumnos.");
     setProgSeleccionado(prog);
     const lista = await listarInvitados(prog.id);
     setInvitados(lista);
@@ -357,6 +385,7 @@ function Coordinacion({ user, onLogout }) {
   }
 
   function abrirDocumentosPrograma(prog) {
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar documentos del programa.");
     setForm(datosProgramaAFormulario(prog));
     setModoEditar(true);
     setProgramaDocsId(prog.id);
@@ -366,6 +395,7 @@ function Coordinacion({ user, onLogout }) {
   }
 
   async function guardarDocumentoComoPrograma() {
+    if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas desde documentos.");
     if (!form.plantillaBase64) return mostrarMsg("Primero suba el documento Word.");
     if (!form.plantillaValidada) return mostrarMsg("El Word debe tener variables editables antes de guardarlo.");
     if (!form.nombre.trim()) return mostrarMsg("Ingrese el nombre del programa.");
@@ -389,6 +419,7 @@ function Coordinacion({ user, onLogout }) {
   }
 
   async function guardarDocumentosPrograma() {
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar documentos del programa.");
     if (!form.id) return mostrarMsg("Seleccione un programa para gestionar sus documentos.");
     if (form.plantilla && !form.plantillaValidada) return mostrarMsg("La plantilla Word debe estar validada antes de guardar.");
 
@@ -418,6 +449,7 @@ function Coordinacion({ user, onLogout }) {
   }
 
   async function quitarCategoria() {
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar categorías.");
     if (!catAEliminar) return mostrarMsg("Seleccione una categoría para quitar.");
     const confirmado = window.confirm(`Quitar la categoría "${catAEliminar}"?`);
     if (!confirmado) return;
@@ -455,6 +487,8 @@ function Coordinacion({ user, onLogout }) {
   }
 
   async function seleccionarPlantilla(event) {
+    if (modoEditar && !puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar plantillas.");
+    if (!modoEditar && !puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear plantillas.");
     const archivo = event.target.files?.[0];
     if (!archivo) return;
 
@@ -557,6 +591,7 @@ function Coordinacion({ user, onLogout }) {
   }
 
   async function quitarPlantilla() {
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para eliminar plantillas.");
     if (vista === "documentos" && form.id && form.plantilla) {
       const confirmado = window.confirm(`¿Está seguro que desea eliminar esta plantilla?\n\n${form.plantilla}`);
       if (!confirmado) return;
@@ -601,6 +636,7 @@ function Coordinacion({ user, onLogout }) {
   }
 
   async function eliminarPlantillaHistorial(programa) {
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para eliminar plantillas.");
     const confirmado = window.confirm(`¿Está seguro que desea eliminar esta plantilla?\n\n${programa.plantilla}`);
     if (!confirmado) return;
 
@@ -789,6 +825,7 @@ function Coordinacion({ user, onLogout }) {
   }
 
   async function generarPreviewExcel() {
+    if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para cargar alumnos.");
     setMensaje("");
     setPreviewCarga(null);
     setProgresoCarga(null);
@@ -839,6 +876,7 @@ function Coordinacion({ user, onLogout }) {
   }
 
   async function confirmarCargaExcel() {
+    if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para confirmar cargas de alumnos.");
     if (!previewCarga || previewCarga.resumen.validos === 0) {
       return mostrarMsg("No hay registros válidos para confirmar.");
     }
@@ -874,8 +912,9 @@ function Coordinacion({ user, onLogout }) {
   const formHorariosPorGrupo = Array.isArray(form.horariosPorGrupo) ? form.horariosPorGrupo : [];
 
   return (
-    <div className={`coord-layout ${esProfesor ? "coord-layout-profesor" : ""} ${sidebarAbierta ? "" : "coord-layout-collapsed"}`}>
+    <div className={embedded ? "coord-embedded" : `coord-layout ${esProfesor ? "coord-layout-profesor" : ""} ${sidebarAbierta ? "" : "coord-layout-collapsed"}`}>
       {/* ── SIDEBAR ── */}
+      {!embedded ? (
       <aside className="coord-sidebar">
         <button
           className="coord-sidebar-toggle"
@@ -894,20 +933,30 @@ function Coordinacion({ user, onLogout }) {
           {vistasNav.map(({ id, label, icon: Icon }) => (
             <button key={id}
               type="button"
-              className={`coord-nav-item ${vista === id ? "coord-nav-item-active" : ""}`}
-              onClick={() => { setVista(id); setMensaje(""); }}
+              className={`coord-nav-item ${!delegatedContent && vista === id ? "coord-nav-item-active" : ""}`}
+              onClick={() => { onClearDelegatedModule?.(); setVista(id); setMensaje(""); }}
               title={label}>
               <Icon size={18} /><span>{label}</span><ChevronRight className="coord-nav-arrow" size={16} />
             </button>
           ))}
         </nav>
+        {moduleSwitcher ? (
+          <div className="pt-3">
+            {moduleSwitcher}
+          </div>
+        ) : null}
         <button className="coord-logout" type="button" onClick={onLogout} title="Cerrar sesión">
           <LogOut size={18} /><span>Cerrar sesion</span>
         </button>
       </aside>
+      ) : null}
 
       {/* ── MAIN ── */}
-      <main className="coord-main">
+      <main className={embedded ? "coord-main coord-main-embedded" : "coord-main"}>
+        {delegatedContent ? (
+          delegatedContent
+        ) : (
+          <>
         {/* ─── VISTA: GESTIÓN DE PROGRAMAS ─── */}
         {vista === "programas" && (
           <>
@@ -934,9 +983,11 @@ function Coordinacion({ user, onLogout }) {
                       </select>
                     </div>
 
-                    <button className="coord-register-button" type="button" onClick={abrirCrear}>
-                      <Plus size={17} /><span>Nuevo programa</span>
-                    </button>
+                    {puedeCrearProgramas ? (
+                      <button className="coord-register-button" type="button" onClick={abrirCrear}>
+                        <Plus size={17} /><span>Nuevo programa</span>
+                      </button>
+                    ) : null}
 
                   </div>
                 </div>
@@ -969,7 +1020,7 @@ function Coordinacion({ user, onLogout }) {
                             <Table.Th>Cupos</Table.Th>
                             <Table.Th>Costo</Table.Th>
                             <Table.Th>Estado</Table.Th>
-                            <Table.Th>Acciones</Table.Th>
+                            {tieneAccionesPrograma ? <Table.Th>Acciones</Table.Th> : null}
                           </Table.Tr>
                       </Table.Thead>
                       <Table.Tbody>
@@ -1002,39 +1053,47 @@ function Coordinacion({ user, onLogout }) {
                                 {prog.estado}
                               </Badge>
                             </Table.Td>
-                            <Table.Td data-label="Acciones">
-                              <Group gap={4}>
-                                <Tooltip label="Editar">
-                                  <ActionIcon size="xs" color="blue" variant="light" onClick={() => abrirEditar(prog)}>
-                                    <Edit3 size={14} />
-                                  </ActionIcon>
-                                </Tooltip>
-                                <Tooltip label="Ver alumnos">
-                                  <ActionIcon size="xs" color="blue" variant="light" onClick={() => verInvitados(prog)}>
-                                    <Eye size={14} />
-                                  </ActionIcon>
-                                </Tooltip>
-                                {prog.estado !== "Finalizado" && (
-                                  <Tooltip label={prog.estado === "Habilitado" ? "Deshabilitar" : "Habilitar"}>
-                                    <ActionIcon size="xs" color="blue" variant="light" onClick={() => toggleEstado(prog)}>
-                                      {prog.estado === "Habilitado" ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                                    </ActionIcon>
-                                  </Tooltip>
-                                )}
-                                {prog.estado !== "Finalizado" && (
-                                  <Tooltip label="Finalizar">
-                                    <ActionIcon size="xs" color="blue" variant="light" onClick={() => finalizarPrograma(prog)}>
-                                      <CheckCircle2 size={14} />
-                                    </ActionIcon>
-                                  </Tooltip>
-                                )}
-                                <Tooltip label="Eliminar">
-                                  <ActionIcon size="xs" color="red" variant="light" onClick={() => eliminarCurso(prog)}>
-                                    <Trash2 size={14} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              </Group>
-                            </Table.Td>
+                            {tieneAccionesPrograma ? (
+                              <Table.Td data-label="Acciones">
+                                <Group gap={4}>
+                                  {puedeEditarProgramas ? (
+                                    <Tooltip label="Editar">
+                                      <ActionIcon size="xs" color="blue" variant="light" onClick={() => abrirEditar(prog)}>
+                                        <Edit3 size={14} />
+                                      </ActionIcon>
+                                    </Tooltip>
+                                  ) : null}
+                                  {puedeVerAlumnos ? (
+                                    <Tooltip label="Ver alumnos">
+                                      <ActionIcon size="xs" color="blue" variant="light" onClick={() => verInvitados(prog)}>
+                                        <Eye size={14} />
+                                      </ActionIcon>
+                                    </Tooltip>
+                                  ) : null}
+                                  {puedeEditarProgramas && prog.estado !== "Finalizado" && (
+                                    <Tooltip label={prog.estado === "Habilitado" ? "Deshabilitar" : "Habilitar"}>
+                                      <ActionIcon size="xs" color="blue" variant="light" onClick={() => toggleEstado(prog)}>
+                                        {prog.estado === "Habilitado" ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                                      </ActionIcon>
+                                    </Tooltip>
+                                  )}
+                                  {puedeEditarProgramas && prog.estado !== "Finalizado" && (
+                                    <Tooltip label="Finalizar">
+                                      <ActionIcon size="xs" color="blue" variant="light" onClick={() => finalizarPrograma(prog)}>
+                                        <CheckCircle2 size={14} />
+                                      </ActionIcon>
+                                    </Tooltip>
+                                  )}
+                                  {puedeEditarProgramas ? (
+                                    <Tooltip label="Eliminar">
+                                      <ActionIcon size="xs" color="red" variant="light" onClick={() => eliminarCurso(prog)}>
+                                        <Trash2 size={14} />
+                                      </ActionIcon>
+                                    </Tooltip>
+                                  ) : null}
+                                </Group>
+                              </Table.Td>
+                            ) : null}
                           </Table.Tr>
                         ))}
                       </Table.Tbody>
@@ -1622,6 +1681,8 @@ function Coordinacion({ user, onLogout }) {
               </div>
             </div>
           </div>
+        )}
+          </>
         )}
       </main>
     </div>

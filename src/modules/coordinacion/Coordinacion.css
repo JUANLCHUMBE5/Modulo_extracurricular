@@ -14,3 +14,28 @@
 @import "./styles/responsive-guards.css";
 @import "./styles/professional-finish.css";
 @import "./styles/checkboxes.css";
+
+.coord-embedded {
+  width: 100%;
+  min-width: 0;
+  color: var(--coord-ink);
+  background: transparent;
+  font-family: var(--font-body);
+}
+
+.coord-embedded *,
+.coord-embedded button,
+.coord-embedded input,
+.coord-embedded select,
+.coord-embedded textarea {
+  box-sizing: border-box;
+  font-family: var(--font-body);
+}
+
+.coord-main-embedded {
+  width: min(1040px, 100%);
+  min-width: 0;
+  margin: 0 auto;
+  padding: 0 !important;
+  overflow: visible;
+}

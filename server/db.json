@@ -149,7 +149,7 @@
     {
       "id": "PROG-011",
       "cuposOcupados": 2,
-      "estado": "Habilitado",
+      "estado": "Finalizado",
       "nombre": "EXPRES MARATO 3",
       "periodo": "escolar",
       "categoria": "Academico",
@@ -188,7 +188,8 @@
       "detalleAlmuerzo": "",
       "concesionarios": "",
       "requiereUniforme": false,
-      "invitacionMasiva": true
+      "invitacionMasiva": true,
+      "finalizadoAutomaticamenteEn": "2026-05-24T17:37:29-05:00"
     }
   ],
   "invitadosPorPrograma": {
@@ -1413,7 +1414,25 @@
       "usuario": "admin",
       "rol": "Administrador",
       "estado": "Activo",
-      "contrasena": "1234"
+      "contrasena": "1234",
+      "permisos": [
+        "usuarios.crear",
+        "usuarios.editar",
+        "usuarios.estado",
+        "usuarios.resetear",
+        "programas.crear",
+        "programas.editar",
+        "grupos.crear",
+        "grupos.editar",
+        "alumnos.historial.ver",
+        "presupuesto.ver",
+        "direccion.resumen.ver",
+        "reportes.ver",
+        "reportes.exportar",
+        "pagos.ver",
+        "pagos.registrar",
+        "pagos.editar"
+      ]
     },
     {
       "id": "2",
@@ -1421,7 +1440,8 @@
       "usuario": "secretaria",
       "rol": "Secretaria",
       "estado": "Activo",
-      "contrasena": "1234"
+      "contrasena": "1234",
+      "permisos": []
     },
     {
       "id": "3",
@@ -1462,14 +1482,6 @@
       "rol": "Coordinacion",
       "estado": "Activo",
       "contrasena": "1234"
-    },
-    {
-      "id": "USR-1779284424171",
-      "estado": "Inactivo",
-      "nombre": "carlos",
-      "usuario": "carlos234",
-      "rol": "Secretaria",
-      "contrasena": "carlos234"
     }
   ],
   "plantillasPorPrograma": {

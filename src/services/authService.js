@@ -1,4 +1,5 @@
 import { apiDb, syncApiDb } from "./dbApi";
+import { normalizeUser } from "../modules/administrador/models/usuarioModel";
 
 const delay = (ms = 650) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -30,12 +31,15 @@ export const loginPersonal = async (username, password) => {
   const contrasenaGuardada = String(usuario?.contrasena || "1234");
 
   if (usuario && usuario.estado !== "Inactivo" && String(password) === contrasenaGuardada) {
+    const usuarioConPermisos = normalizeUser(usuario);
     return {
       success: true,
       user: {
         username: usuario.usuario,
         role: rolesSistema[usuario.rol] || String(usuario.rol || "").toLowerCase(),
         name: usuario.nombre,
+        permisos: usuarioConPermisos.permisos,
+        permissions: usuarioConPermisos.permisos,
       },
     };
   }

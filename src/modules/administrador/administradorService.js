@@ -1,4 +1,5 @@
 import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../services/dbApi";
+import { ALL_PERMISSIONS, isSuperAdmin } from "./models/usuarioModel";
 
 const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -33,6 +34,15 @@ export async function editarUsuario(id, datos) {
   
   const index = apiDb.usuarios.findIndex((item) => item.id === id);
   if (index === -1) throw new Error("Usuario no encontrado.");
+  if (isSuperAdmin(apiDb.usuarios[index])) {
+    datos = {
+      ...datos,
+      usuario: "admin",
+      rol: "Administrador",
+      estado: "Activo",
+      permisos: ALL_PERMISSIONS,
+    };
+  }
 
   // Validar si el nuevo username ya existe en OTRO usuario
   const existe = apiDb.usuarios.some(u => u.id !== id && u.usuario.toLowerCase() === datos.usuario.toLowerCase());
@@ -53,6 +63,9 @@ export async function cambiarEstadoUsuario(id, nuevoEstado) {
   
   const usuario = apiDb.usuarios.find((item) => item.id === id);
   if (!usuario) throw new Error("Usuario no encontrado.");
+  if (isSuperAdmin(usuario) && nuevoEstado !== "Activo") {
+    throw new Error("El super administrador no se puede desactivar.");
+  }
   
   // Evitar desactivar al unico administrador (opcional, pero buena practica)
   if (nuevoEstado === "Inactivo" && usuario.rol === "Administrador") {
@@ -77,4 +90,29 @@ export async function resetearContrasenaUsuario(id) {
   usuario.contrasena = "123456";
   await saveApiDb();
   return usuario;
+}
+
+export async function eliminarUsuario(id) {
+  await delay(400);
+  await syncApiDb();
+
+  const index = apiDb.usuarios.findIndex((item) => item.id === id);
+  if (index === -1) throw new Error("Usuario no encontrado.");
+
+  const usuario = apiDb.usuarios[index];
+  if (isSuperAdmin(usuario)) {
+    throw new Error("El super administrador no se puede eliminar.");
+  }
+  if (usuario.rol === "Administrador" && usuario.estado === "Activo") {
+    const adminsActivos = apiDb.usuarios.filter((item) =>
+      item.rol === "Administrador" && item.estado === "Activo"
+    );
+    if (adminsActivos.length <= 1) {
+      throw new Error("No puede eliminar al unico administrador activo.");
+    }
+  }
+
+  const [eliminado] = apiDb.usuarios.splice(index, 1);
+  await saveApiDb();
+  return eliminado;
 }

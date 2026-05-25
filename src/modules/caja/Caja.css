@@ -86,6 +86,17 @@
   padding: 16px 0 32px;
 }
 
+.caja-page-embedded {
+  display: block;
+  min-height: auto;
+  background: transparent;
+}
+
+.caja-main-embedded {
+  width: min(1040px, 100%);
+  padding: 0 0 32px;
+}
+
 .caja-header {
   display: flex;
   align-items: flex-end;
@@ -122,96 +133,9 @@
   width: 170px;
 }
 
-.caja-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.caja-summary-card {
-  min-height: 88px;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border: 1px solid #d8e5e1;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.caja-summary-card span,
-.caja-summary-card small {
-  display: block;
-  color: #667085;
-  font-size: 13px;
-  font-weight: 750;
-}
-
-.caja-summary-card strong {
-  display: block;
-  margin: 4px 0;
-  color: #101828;
-  font-size: 22px;
-  font-weight: 950;
-}
-
-.caja-summary-card svg {
-  width: 34px;
-  height: 34px;
-  padding: 7px;
-  border-radius: 8px;
-}
-
-.caja-summary-card[data-tone="success"] svg {
-  color: #057a55;
-  background: #e8f7ef;
-}
-
-.caja-summary-card[data-tone="warning"] svg {
-  color: #b54708;
-  background: #fff4e5;
-}
-
-.caja-summary-card[data-tone="danger"] svg {
-  color: #b42318;
-  background: #fff0ef;
-}
-
 .caja-report-layout {
   display: grid;
   gap: 10px;
-}
-
-.caja-report-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.caja-report-grid article {
-  min-height: 72px;
-  padding: 11px 16px;
-  border: 1px solid #d8e5e1;
-  border-radius: 8px;
-  background: #ffffff;
-}
-
-.caja-report-grid span,
-.caja-report-grid small {
-  display: block;
-  color: #667085;
-  font-size: 13px;
-  font-weight: 750;
-}
-
-.caja-report-grid strong {
-  display: block;
-  margin: 4px 0;
-  color: #101828;
-  font-size: 22px;
-  font-weight: 950;
 }
 
 .caja-report-filters {
@@ -399,17 +323,6 @@
 
 .caja-modal-body {
   padding-top: 16px;
-}
-
-.caja-alert {
-  margin-bottom: 12px;
-  padding: 9px 12px;
-  border: 1px solid #f8c7c1;
-  border-radius: 8px;
-  color: #b42318;
-  background: #fff0ef;
-  font-size: 13px;
-  font-weight: 850;
 }
 
 .caja-form {
@@ -608,14 +521,6 @@
   .caja-panel-header {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .caja-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .caja-report-grid {
-    grid-template-columns: 1fr;
   }
 
   .caja-report-filters {

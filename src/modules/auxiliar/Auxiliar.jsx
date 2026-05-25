@@ -78,14 +78,18 @@ export default function Auxiliar({ onLogout }) {
   };
 
   return (
-    <div className="auxiliar-layout">
-      <main className="auxiliar-main">
-        <header className="auxiliar-topbar">
-          <div className="auxiliar-topbar-copy">
-            <span>Panel de Auxiliar</span>
-            <h1>Control de Ingreso y Asistencia</h1>
+    <div className="flex min-h-screen items-start justify-center bg-gradient-to-br from-slate-50 to-slate-200 pt-[5vh] font-['Inter',system-ui,-apple-system,sans-serif]">
+      <main className="w-full max-w-[720px] px-5 pb-10 max-sm:px-4 max-sm:pb-6">
+        <header className="mb-8 flex items-center justify-between rounded-2xl border border-white/80 bg-white/70 px-6 py-5 shadow-sm backdrop-blur-md max-sm:flex-col max-sm:items-start max-sm:gap-4">
+          <div>
+            <span className="mb-1 block text-xs font-bold uppercase tracking-[0.1em] text-blue-500">Panel de Auxiliar</span>
+            <h1 className="m-0 text-[1.6rem] font-bold text-slate-900 max-sm:text-[1.4rem]">Control de Ingreso y Asistencia</h1>
           </div>
-          <button className="auxiliar-secondary-button" type="button" onClick={onLogout}>
+          <button
+            className="flex items-center gap-2 rounded-[10px] border border-slate-300 bg-white px-[18px] py-2.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:-translate-y-px hover:border-slate-400 hover:bg-slate-50 hover:text-slate-800"
+            type="button"
+            onClick={onLogout}
+          >
             <LogOut size={16} /> Cerrar sesión
           </button>
         </header>

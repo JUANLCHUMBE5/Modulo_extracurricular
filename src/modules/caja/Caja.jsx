@@ -60,6 +60,10 @@ const tiposReporte = [
 ];
 
 const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
+const alertClass = "mb-3 rounded-lg border border-[#f8c7c1] bg-[#fff0ef] px-3 py-2 text-[13px] font-extrabold text-[#b42318]";
+const reportCardClass = "min-h-[72px] rounded-lg border border-[#d8e5e1] bg-white px-4 py-3";
+const reportLabelClass = "block text-[13px] font-bold text-slate-500";
+const reportValueClass = "my-1 block text-[22px] font-black text-slate-900";
 
 function formatearSoles(valor) {
   return `S/ ${Number(valor || 0).toFixed(2)}`;
@@ -105,17 +109,24 @@ function ResumenCaja({ resumen }) {
   ];
 
   return (
-    <section className="caja-summary" aria-label="Resumen de caja">
+    <section className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-3" aria-label="Resumen de caja">
       {items.map((item) => {
         const Icon = item.icon;
+        const iconClass = {
+          success: "bg-[#e8f7ef] text-[#057a55]",
+          warning: "bg-[#fff4e5] text-[#b54708]",
+          danger: "bg-[#fff0ef] text-[#b42318]",
+        }[item.tone] || "bg-slate-100 text-slate-600";
         return (
-          <article className="caja-summary-card" data-tone={item.tone} key={item.label}>
+          <article className="flex min-h-[88px] items-start justify-between gap-3 rounded-lg border border-[#d8e5e1] bg-white px-4 py-3.5" key={item.label}>
             <div>
-              <span>{item.label}</span>
-              <strong>{formatearSoles(item.value)}</strong>
-              <small>{item.detail}</small>
+              <span className={reportLabelClass}>{item.label}</span>
+              <strong className={reportValueClass}>{formatearSoles(item.value)}</strong>
+              <small className={reportLabelClass}>{item.detail}</small>
             </div>
-            <Icon size={22} />
+            <span className={`grid h-[34px] w-[34px] shrink-0 place-items-center rounded-lg ${iconClass}`}>
+              <Icon size={20} />
+            </span>
           </article>
         );
       })}
@@ -431,8 +442,15 @@ function ReporteTabla({ filas }) {
   );
 }
 
-export default function Caja({ onLogout }) {
-  const [vista, setVista] = useState("pagos");
+export default function Caja({
+  delegatedContent,
+  embedded = false,
+  initialView = "pagos",
+  moduleSwitcher,
+  onClearDelegatedModule,
+  onLogout,
+}) {
+  const [vista, setVista] = useState(initialView || "pagos");
   const [periodo, setPeriodo] = useState("escolar");
   const [formulario, setFormulario] = useState(formularioInicial);
   const [pagos, setPagos] = useState([]);
@@ -496,6 +514,11 @@ export default function Caja({ onLogout }) {
       cantidadPendiente: pendientes.length,
     };
   }, [reporteCaja]);
+
+  useEffect(() => {
+    if (!embedded || !initialView) return;
+    setVista(initialView);
+  }, [embedded, initialView]);
 
   async function cargarDatos() {
     setCargando(true);
@@ -715,26 +738,37 @@ export default function Caja({ onLogout }) {
   }
 
   return (
-    <main className="caja-page">
+    <main className={embedded ? "caja-page caja-page-embedded" : "caja-page"}>
+      {!embedded ? (
       <aside className="caja-sidebar">
         <div className="caja-brand" aria-label="Colegio San Rafael">
           <img className="caja-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
         </div>
         <p className="caja-module-label">Modulo Caja</p>
         <nav className="caja-nav" aria-label="Modulo de caja">
-          <button className={vista === "pagos" ? "is-active" : ""} onClick={() => setVista("pagos")} type="button">
+          <button className={!delegatedContent && vista === "pagos" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("pagos"); }} type="button">
             <Receipt size={17} /> Realizar pago
           </button>
-          <button className={vista === "reportes" ? "is-active" : ""} onClick={() => setVista("reportes")} type="button">
+          <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button">
             <ChartBar size={17} /> Reporte de pagos
           </button>
         </nav>
+        {moduleSwitcher ? (
+          <div className="pt-3">
+            {moduleSwitcher}
+          </div>
+        ) : null}
         <button className="caja-logout" onClick={onLogout} type="button">
           <LogOut size={17} /> Cerrar sesion
         </button>
       </aside>
+      ) : null}
 
-      <section className="caja-main">
+      <section className={embedded ? "caja-main caja-main-embedded" : "caja-main"}>
+        {delegatedContent ? (
+          delegatedContent
+        ) : (
+          <>
         <header className="caja-header">
           <div>
             <h1>{vista === "pagos" ? "Gestion de pagos" : "Reporte de pagos"}</h1>
@@ -761,7 +795,7 @@ export default function Caja({ onLogout }) {
         {vista === "pagos" ? (
           <>
             <section className="caja-payment-workspace">
-              {mensaje ? <div className="caja-alert">{mensaje}</div> : null}
+              {mensaje ? <div className={alertClass}>{mensaje}</div> : null}
               <CajaFields
                 buscando={buscando}
                 dni={dni}
@@ -786,21 +820,21 @@ export default function Caja({ onLogout }) {
           </>
         ) : (
           <section className="caja-report-layout">
-            <div className="caja-report-grid">
-              <article>
-                <span>Total filtrado</span>
-                <strong>{formatearSoles(reporte.totalVisible)}</strong>
-                <small>{reporteCaja.length} registros</small>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+              <article className={reportCardClass}>
+                <span className={reportLabelClass}>Total filtrado</span>
+                <strong className={reportValueClass}>{formatearSoles(reporte.totalVisible)}</strong>
+                <small className={reportLabelClass}>{reporteCaja.length} registros</small>
               </article>
-              <article>
-                <span>Pagado</span>
-                <strong>{formatearSoles(reporte.totalPagado)}</strong>
-                <small>{reporte.cantidadPagada} pagos validados</small>
+              <article className={reportCardClass}>
+                <span className={reportLabelClass}>Pagado</span>
+                <strong className={reportValueClass}>{formatearSoles(reporte.totalPagado)}</strong>
+                <small className={reportLabelClass}>{reporte.cantidadPagada} pagos validados</small>
               </article>
-              <article>
-                <span>Pendiente</span>
-                <strong>{formatearSoles(reporte.totalPendiente)}</strong>
-                <small>{reporte.cantidadPendiente} pagos por cobrar</small>
+              <article className={reportCardClass}>
+                <span className={reportLabelClass}>Pendiente</span>
+                <strong className={reportValueClass}>{formatearSoles(reporte.totalPendiente)}</strong>
+                <small className={reportLabelClass}>{reporte.cantidadPendiente} pagos por cobrar</small>
               </article>
             </div>
             <ReporteFiltros
@@ -820,6 +854,8 @@ export default function Caja({ onLogout }) {
             </section>
           </section>
         )}
+          </>
+        )}
       </section>
 
       <Modal
@@ -830,7 +866,7 @@ export default function Caja({ onLogout }) {
         size="xl"
         title={modoEdicion ? "Editar pago" : "Registrar pago"}
       >
-        {mensaje ? <div className="caja-alert">{mensaje}</div> : null}
+        {mensaje ? <div className={alertClass}>{mensaje}</div> : null}
         <CajaFields
           buscando={buscando}
           dni={dni}
