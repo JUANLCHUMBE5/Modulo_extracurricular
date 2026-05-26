@@ -75,6 +75,53 @@ const rolesSistema = {
   Direccion: "direccion",
 };
 
+const SESSION_STORAGE_KEY = "modulo_extracurricular_session";
+const MODULE_STORAGE_KEY = "modulo_extracurricular_active_module";
+const DELEGATED_STORAGE_KEY = "modulo_extracurricular_delegated_module";
+
+function readStorageJson(key, fallback = null) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function readStorageValue(key, fallback = "") {
+  try {
+    return window.localStorage.getItem(key) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStorageJson(key, value) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // La sesion sigue viva en memoria aunque el navegador bloquee localStorage.
+  }
+}
+
+function writeStorageValue(key, value) {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // La sesion sigue viva en memoria aunque el navegador bloquee localStorage.
+  }
+}
+
+function removeStoredSession() {
+  try {
+    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    window.localStorage.removeItem(MODULE_STORAGE_KEY);
+    window.localStorage.removeItem(DELEGATED_STORAGE_KEY);
+  } catch {
+    // No hay nada mas que limpiar si el navegador bloquea localStorage.
+  }
+}
+
 function userHasAssignedPermission(user, permission) {
   if (!user) return false;
   if (user.estado && user.estado !== "Activo") return false;
@@ -154,9 +201,9 @@ function ModuleSwitcher({ activeShortcutId, availableModules, currentRole, onSel
 }
 
 function App() {
-  const [user, setUser] = useState(null);
-  const [activeModule, setActiveModule] = useState("");
-  const [delegatedModule, setDelegatedModule] = useState(null);
+  const [user, setUser] = useState(() => readStorageJson(SESSION_STORAGE_KEY, null));
+  const [activeModule, setActiveModule] = useState(() => readStorageValue(MODULE_STORAGE_KEY, ""));
+  const [delegatedModule, setDelegatedModule] = useState(() => readStorageJson(DELEGATED_STORAGE_KEY, null));
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
@@ -168,9 +215,39 @@ function App() {
     setUser(null);
     setActiveModule("");
     setDelegatedModule(null);
+    removeStoredSession();
   };
 
   const availableModules = useMemo(() => getAvailableModules(user), [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    writeStorageJson(SESSION_STORAGE_KEY, user);
+  }, [user]);
+
+  useEffect(() => {
+    if (!user || !activeModule) return;
+    writeStorageValue(MODULE_STORAGE_KEY, activeModule);
+  }, [activeModule, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (delegatedModule) {
+      writeStorageJson(DELEGATED_STORAGE_KEY, {
+        id: delegatedModule.id,
+        label: delegatedModule.label,
+        module: delegatedModule.module,
+        view: delegatedModule.view,
+      });
+      return;
+    }
+
+    try {
+      window.localStorage.removeItem(DELEGATED_STORAGE_KEY);
+    } catch {
+      // Sin localStorage, basta con limpiar el estado en memoria.
+    }
+  }, [delegatedModule, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -235,6 +312,18 @@ function App() {
       document.removeEventListener("visibilitychange", actualizarUsuarioActivo);
     };
   }, [user?.role, user?.username]);
+
+  useEffect(() => {
+    const actualizarSesionEntrePestanas = (event) => {
+      if (event.key !== SESSION_STORAGE_KEY || event.newValue) return;
+      setUser(null);
+      setActiveModule("");
+      setDelegatedModule(null);
+    };
+
+    window.addEventListener("storage", actualizarSesionEntrePestanas);
+    return () => window.removeEventListener("storage", actualizarSesionEntrePestanas);
+  }, []);
 
   if (!user) {
     return <Login onLoginSuccess={handleLoginSuccess} />;

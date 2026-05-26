@@ -99,6 +99,65 @@
   gap: 12px;
 }
 
+.coord-modal-verano .coord-modal-icon,
+.coord-modal-verano .coord-section-heading > svg {
+  color: #0f766e;
+  background: #e5faf5;
+}
+
+.coord-summer-form-note,
+.coord-summer-payment-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #b9e2d8;
+  border-radius: 10px;
+  padding: 11px 12px;
+  color: #0f3d37;
+  background: #f1fbf8;
+}
+
+.coord-summer-form-note svg,
+.coord-summer-payment-note svg {
+  flex: 0 0 auto;
+  color: #0f766e;
+}
+
+.coord-summer-form-note div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.coord-summer-form-note strong {
+  color: #063b35;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.coord-summer-form-note span,
+.coord-summer-payment-note span {
+  color: #28554f;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.coord-age-range-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.coord-age-range-row .coord-field-hint {
+  grid-column: 1 / -1;
+}
+
+.coord-modal-verano .coord-form-section {
+  border-color: #d4e9e4;
+  background: #fbfefc;
+}
+
 .coord-form-section {
   border: 1px solid var(--coord-line);
   border-radius: 8px;

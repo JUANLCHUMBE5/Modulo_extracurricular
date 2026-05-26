@@ -59,14 +59,14 @@ import "./Coordinacion.css";
 
 const formInicial = {
   nombre: "", periodo: "escolar", categoria: "", grupo: "", horario: "",
-  gradosAplicables: [], dias: [], horaInicio: "", horaFin: "",
+  gradosAplicables: [], edadMinima: "", edadMaxima: "", fechaNacimientoDesde: "", fechaNacimientoHasta: "", dias: [], horaInicio: "", horaFin: "",
   almuerzoInicio: "", almuerzoFin: "",
   horariosPorGrupo: [],
   fechaInicio: "", fechaFin: "", cupos: "", costo: "", modalidadCobro: "Mensual",
   responsable: "", tutora: "", plantilla: "", plantillaBase64: "", plantillaVariables: [],
   plantillaValidada: false, plantillaActualizadaEn: "", requisitos: "",
   comunicado: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
-  requiereUniforme: false, invitacionMasiva: false,
+  requiereUniforme: false, requiereIndumentaria: false, invitacionMasiva: false,
 };
 
 const horarioGrupoInicial = {
@@ -112,6 +112,40 @@ function normalizarListaTexto(lista) {
   return lista
     .map((item) => String(item || "").trim())
     .filter(Boolean);
+}
+
+function normalizarTextoBusqueda(valor) {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function esProgramaDeportivo(nombre = "", categoria = "") {
+  const texto = normalizarTextoBusqueda(`${nombre} ${categoria}`);
+  return /\b(deport|voley|volley|futbol|futsal|fulbito|football|soccer)\b/.test(texto);
+}
+
+function calcularEdadDesdeFecha(fechaTexto) {
+  if (!fechaTexto) return "";
+  const fecha = new Date(fechaTexto);
+  if (Number.isNaN(fecha.getTime())) return "";
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - fecha.getFullYear();
+  const mes = hoy.getMonth() - fecha.getMonth();
+  if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) edad -= 1;
+  return edad > 0 ? edad : "";
+}
+
+function calcularRangoEdades(desde, hasta) {
+  const edadDesde = calcularEdadDesdeFecha(desde);
+  const edadHasta = calcularEdadDesdeFecha(hasta);
+  if (!edadDesde || !edadHasta) return { edadMinima: "", edadMaxima: "" };
+  return {
+    edadMinima: Math.min(edadDesde, edadHasta),
+    edadMaxima: Math.max(edadDesde, edadHasta),
+  };
 }
 
 function etiquetaGradoCorta(grado) {
@@ -243,6 +277,10 @@ function Coordinacion({
       nombre: prog.nombre, periodo: normalizarPeriodoVista(prog.periodo), categoria: prog.categoria,
       grupo: prog.grupo, horario: prog.horario, fechaInicio: prog.fechaInicio,
       gradosAplicables: normalizarListaGrados(prog.gradosAplicables),
+      edadMinima: prog.edadMinima || "",
+      edadMaxima: prog.edadMaxima || "",
+      fechaNacimientoDesde: prog.fechaNacimientoDesde || "",
+      fechaNacimientoHasta: prog.fechaNacimientoHasta || "",
       dias: normalizarListaTexto(prog.dias),
       horaInicio: prog.horaInicio || "",
       horaFin: prog.horaFin || "",
@@ -261,7 +299,8 @@ function Coordinacion({
       detalleCosto: prog.detalleCosto || "",
       detalleAlmuerzo: prog.detalleAlmuerzo || "",
       concesionarios: prog.concesionarios || "",
-      requiereUniforme: Boolean(prog.requiereUniforme),
+      requiereUniforme: false,
+      requiereIndumentaria: Boolean(prog.requiereIndumentaria),
       invitacionMasiva: Boolean(prog.invitacionMasiva),
       id: prog.id,
     };
@@ -286,10 +325,14 @@ function Coordinacion({
     if (modoEditar && !puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar programas.");
     if (!form.nombre.trim()) return mostrarMsg("El nombre del programa es obligatorio.");
     if (!form.categoria) return mostrarMsg("Seleccione una categoría.");
-    const gruposHorario = normalizarHorariosPorGrupo(form.horariosPorGrupo);
-    const gradosFinales = obtenerGradosFinales(form.gradosAplicables, gruposHorario);
+    const esVeranoGuardar = normalizarPeriodoVista(form.periodo) === "verano";
+    const gruposHorario = esVeranoGuardar ? [] : normalizarHorariosPorGrupo(form.horariosPorGrupo);
+    const gradosFinales = esVeranoGuardar ? [] : obtenerGradosFinales(form.gradosAplicables, gruposHorario);
     const diasFinales = normalizarListaTexto(form.dias);
-    if (gradosFinales.length === 0) return mostrarMsg("Seleccione al menos un grado aplicable.");
+    if (!esVeranoGuardar && gradosFinales.length === 0) return mostrarMsg("Seleccione al menos un grado aplicable.");
+    if (esVeranoGuardar && (!form.edadMinima || !form.edadMaxima || Number(form.edadMinima) > Number(form.edadMaxima))) {
+      return mostrarMsg("Seleccione un rango de edades válido para ciclo verano.");
+    }
     if (gruposHorario.length === 0) {
       if (diasFinales.length === 0) return mostrarMsg("Seleccione los días del programa.");
       if (!form.horaInicio || !form.horaFin) return mostrarMsg("Seleccione hora de inicio y fin del programa.");
@@ -317,9 +360,15 @@ function Coordinacion({
       ...form,
       costo: Number(form.costo).toFixed(2),
       gradosAplicables: gradosFinales,
+      edadMinima: esVeranoGuardar ? Number(form.edadMinima) : "",
+      edadMaxima: esVeranoGuardar ? Number(form.edadMaxima) : "",
+      fechaNacimientoDesde: "",
+      fechaNacimientoHasta: "",
       dias: diasFinales,
       horariosPorGrupo: gruposHorario,
-      grupo: resumenGrados(gradosFinales),
+      grupo: esVeranoGuardar ? `Edades ${form.edadMinima} a ${form.edadMaxima} años` : resumenGrados(gradosFinales),
+      requiereUniforme: false,
+      requiereIndumentaria: Boolean(form.requiereIndumentaria),
       horario: gruposHorario.length
         ? resumenHorariosPorGrupo(gruposHorario)
         : resumenHorario(diasFinales, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin),
@@ -496,6 +545,22 @@ function Coordinacion({
 
   function actualizarForm(campo, valor) {
     setForm(f => ({ ...f, [campo]: valor }));
+  }
+
+  function actualizarNombrePrograma(valor) {
+    setForm((actual) => ({
+      ...actual,
+      nombre: valor,
+      requiereIndumentaria: esProgramaDeportivo(valor, actual.categoria) ? true : actual.requiereIndumentaria,
+    }));
+  }
+
+  function actualizarCategoriaPrograma(valor) {
+    setForm((actual) => ({
+      ...actual,
+      categoria: valor,
+      requiereIndumentaria: esProgramaDeportivo(actual.nombre, valor) ? true : actual.requiereIndumentaria,
+    }));
   }
 
   function actualizarCosto(valor) {
@@ -729,7 +794,25 @@ function Coordinacion({
   }
 
   function cambiarPeriodoFormulario(valor) {
-    setForm(f => ({ ...f, periodo: normalizarPeriodoVista(valor) }));
+    const periodoNormalizado = normalizarPeriodoVista(valor);
+    setForm(f => ({
+      ...f,
+      periodo: periodoNormalizado,
+      modalidadCobro: periodoNormalizado === "verano" ? "Unico" : f.modalidadCobro,
+      invitacionMasiva: periodoNormalizado === "verano" ? false : f.invitacionMasiva,
+    }));
+  }
+
+  function actualizarFechaNacimientoVerano(campo, valor) {
+    setForm((actual) => {
+      const siguiente = { ...actual, [campo]: valor };
+      const rango = calcularRangoEdades(siguiente.fechaNacimientoDesde, siguiente.fechaNacimientoHasta);
+      return {
+        ...siguiente,
+        edadMinima: rango.edadMinima,
+        edadMaxima: rango.edadMaxima,
+      };
+    });
   }
 
   function toggleGrado(valor) {
@@ -938,6 +1021,8 @@ function Coordinacion({
   const formGradosAplicables = normalizarListaGrados(form.gradosAplicables);
   const formDias = normalizarListaTexto(form.dias);
   const formHorariosPorGrupo = Array.isArray(form.horariosPorGrupo) ? form.horariosPorGrupo : [];
+  const esFormularioVerano = normalizarPeriodoVista(form.periodo) === "verano";
+  const mostrarIndumentariaDeportiva = esProgramaDeportivo(form.nombre, form.categoria);
 
   return (
     <div className={embedded ? "coord-embedded" : `coord-layout ${esProfesor ? "coord-layout-profesor" : ""} ${sidebarAbierta ? "" : "coord-layout-collapsed"}`}>
@@ -1417,29 +1502,42 @@ function Coordinacion({
         {/* ─── MODAL: CREAR / EDITAR PROGRAMA ─── */}
         {showModal && (
           <div className="coord-modal-overlay">
-            <div className="coord-modal" onClick={e => e.stopPropagation()}>
+            <div className={`coord-modal ${esFormularioVerano ? "coord-modal-verano" : ""}`} onClick={e => e.stopPropagation()}>
               <div className="coord-modal-header">
                 <div className="coord-modal-title">
                   <span className="coord-modal-icon"><Plus size={20} /></span>
                   <div>
-                    <h2>{modoEditar ? "Editar programa" : "Registrar programa"}</h2>
-                    <p>Complete la configuracion del taller antes de habilitarlo.</p>
+                    <h2>{esFormularioVerano ? (modoEditar ? "Editar programa de verano" : "Registrar programa de verano") : (modoEditar ? "Editar programa" : "Registrar programa")}</h2>
+                    <p>
+                      {esFormularioVerano
+                        ? "Configure el programa para que Secretaría pueda registrar alumnos internos o externos en ciclo verano."
+                        : "Complete la configuracion del taller antes de habilitarlo."}
+                    </p>
                   </div>
                 </div>
                 <button className="coord-modal-close" type="button" onClick={() => setShowModal(false)}><X size={20} /></button>
               </div>
               <form className="coord-program-form" id="form-programa" onSubmit={guardar}>
                 <div className="coord-program-form-main">
+                  {esFormularioVerano ? (
+                    <div className="coord-summer-form-note">
+                      <CalendarDays size={18} />
+                      <div>
+                        <strong>Ciclo verano</strong>
+                        <span>Este programa aparecerá en Secretaría para inscribir alumnos del colegio o externos. No necesita invitación masiva.</span>
+                      </div>
+                    </div>
+                  ) : null}
                   <section className="coord-form-section">
                     <div className="coord-section-heading">
                       <BookOpen size={18} />
                       <div>
-                        <h3>Datos generales</h3>
+                        <h3>{esFormularioVerano ? "Datos del programa de verano" : "Datos generales"}</h3>
                       </div>
                     </div>
                     <div className="coord-section-grid coord-general-grid">
-                      <div className="coord-field coord-program-name-field"><label>Nombre del programa *</label>
-                        <input value={form.nombre} onChange={e => actualizarForm("nombre", e.target.value)} placeholder="Ej: Reforzamiento y nivelacion" />
+                      <div className="coord-field coord-program-name-field"><label>{esFormularioVerano ? "Nombre del programa de verano *" : "Nombre del programa *"}</label>
+                        <input value={form.nombre} onChange={e => actualizarNombrePrograma(e.target.value)} placeholder={esFormularioVerano ? "Ej: Verano creativo 2026" : "Ej: Reforzamiento y nivelacion"} />
                       </div>
                       <div className="coord-field"><label>Periodo *</label>
                         <select value={normalizarPeriodoVista(form.periodo)} onChange={e => cambiarPeriodoFormulario(e.target.value)}>
@@ -1447,7 +1545,7 @@ function Coordinacion({
                         </select>
                       </div>
                       <div className="coord-field coord-category-main"><label>Categoría *</label>
-                        <select value={form.categoria} onChange={e => actualizarForm("categoria", e.target.value)}>
+                        <select value={form.categoria} onChange={e => actualizarCategoriaPrograma(e.target.value)}>
                           <option value="">Seleccione</option>
                           {categorias.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
@@ -1469,19 +1567,47 @@ function Coordinacion({
                           <button type="button" className="coord-mini-btn coord-mini-danger-btn" onClick={quitarCategoria}><Trash2 size={14} /></button>
                         </div>
                       </div>
-                      <div className="coord-field coord-field-full">
-                        <label>Grados aplicables *</label>
-                        <GradeSelector
-                          niveles={nivelesGrados}
-                          seleccionados={formGradosAplicables}
-                          onToggle={toggleGrado}
-                        />
-                        <p className="coord-field-hint">
-                          {formGradosAplicables.length
-                            ? resumenGrados(formGradosAplicables)
-                            : "Seleccione nivel y grados del programa."}
-                        </p>
-                      </div>
+                      {esFormularioVerano ? (
+                        <div className="coord-age-range-row coord-field-full">
+                          <div className="coord-field">
+                            <label>Desde edad *</label>
+                            <select value={form.edadMinima} onChange={e => actualizarForm("edadMinima", e.target.value)}>
+                              <option value="">Seleccione</option>
+                              {Array.from({ length: 13 }, (_, index) => String(index + 5)).map((edad) => (
+                                <option key={edad} value={edad}>{edad} años</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="coord-field">
+                            <label>Hasta edad *</label>
+                            <select value={form.edadMaxima} onChange={e => actualizarForm("edadMaxima", e.target.value)}>
+                              <option value="">Seleccione</option>
+                              {Array.from({ length: 13 }, (_, index) => String(index + 5)).map((edad) => (
+                                <option key={edad} value={edad}>{edad} años</option>
+                              ))}
+                            </select>
+                          </div>
+                          <p className="coord-field-hint">
+                            {form.edadMinima && form.edadMaxima
+                              ? `Secretaría validará alumnos de ${form.edadMinima} a ${form.edadMaxima} años.`
+                              : "Seleccione el rango de edad permitido para este programa de verano."}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="coord-field coord-field-full">
+                          <label>Grados aplicables *</label>
+                          <GradeSelector
+                            niveles={nivelesGrados}
+                            seleccionados={formGradosAplicables}
+                            onToggle={toggleGrado}
+                          />
+                          <p className="coord-field-hint">
+                            {formGradosAplicables.length
+                              ? resumenGrados(formGradosAplicables)
+                              : "Seleccione nivel y grados del programa."}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </section>
 
@@ -1489,12 +1615,12 @@ function Coordinacion({
                     <div className="coord-section-heading">
                       <CalendarDays size={18} />
                       <div>
-                        <h3>Horario y grupos de atención</h3>
+                        <h3>{esFormularioVerano ? "Fechas y turno de verano" : "Horario y grupos de atención"}</h3>
                       </div>
                     </div>
                     <div className="coord-section-grid">
                       <div className="coord-field coord-field-full">
-                        <label>Dias del programa / taller *</label>
+                        <label>{esFormularioVerano ? "Días de atención *" : "Dias del programa / taller *"}</label>
                         <div className="coord-day-list">
                           {diasSemana.map(dia => (
                             <label
@@ -1536,16 +1662,20 @@ function Coordinacion({
                           Horario general: {resumenHorario(formDias, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin) || "Opcional si registra grupos por día."}
                         </p>
                       </div>
-                      {puedeGestionarGruposFormulario ? (
+                      {puedeGestionarGruposFormulario && !esFormularioVerano ? (
                         <div className="coord-field coord-field-full">
                           <div className="coord-group-schedule-head">
                             <div>
-                              <strong>Turnos del mismo curso</strong>
-                              <p>Separe los grados por día sin crear otro curso. Ejemplo: 4to, 5to y 1ro secundaria el jueves; 6to grado el viernes.</p>
+                              <strong>{esFormularioVerano ? "Turnos de verano" : "Turnos del mismo curso"}</strong>
+                              <p>
+                                {esFormularioVerano
+                                  ? "Use turnos si Secretaría debe ofrecer horarios distintos por grado o grupo."
+                                  : "Separe los grados por día sin crear otro curso. Ejemplo: 4to, 5to y 1ro secundaria el jueves; 6to grado el viernes."}
+                              </p>
                             </div>
                             <button type="button" className="coord-template-autofill" onClick={agregarGrupoHorario}>
                               <Plus size={14} />
-                              Añadir día para otros grados
+                              {esFormularioVerano ? "Añadir turno" : "Añadir día para otros grados"}
                             </button>
                           </div>
                           {formHorariosPorGrupo.length ? (
@@ -1606,7 +1736,7 @@ function Coordinacion({
                     <div className="coord-section-heading">
                       <DollarSign size={18} />
                       <div>
-                        <h3>Cupos y cobro</h3>
+                        <h3>{esFormularioVerano ? "Vacantes y pago de verano" : "Cupos y cobro"}</h3>
                       </div>
                     </div>
                     <div className="coord-section-grid coord-payment-grid">
@@ -1617,11 +1747,12 @@ function Coordinacion({
                         <input inputMode="decimal" value={form.costo} onChange={e => actualizarCosto(e.target.value)} onBlur={formatearCostoFormulario} placeholder="70.00" />
                       </div>
                       <div className="coord-field"><label>Modalidad de cobro</label>
-                        <select value={form.modalidadCobro} onChange={e => actualizarForm("modalidadCobro", e.target.value)}>
+                        <select value={form.modalidadCobro} onChange={e => actualizarForm("modalidadCobro", e.target.value)} disabled={esFormularioVerano}>
                           <option value="Mensual">Cuota mensual</option><option value="Unico">Pago unico</option>
                         </select>
                       </div>
-                      <div className="coord-field coord-field-full">
+                      {!esFormularioVerano ? (
+                        <div className="coord-field coord-field-full">
                         <label className="coord-check-label coord-check-label-stacked">
                           <span>
                             <input type="checkbox" checked={form.invitacionMasiva} onChange={e => actualizarForm("invitacionMasiva", e.target.checked)} />
@@ -1630,8 +1761,41 @@ function Coordinacion({
                           <small>El curso aparecerá en el portal de padres para todos los alumnos de los grados seleccionados, sin cargar Excel de invitados.</small>
                         </label>
                       </div>
+                      ) : (
+                        <div className="coord-summer-payment-note coord-field-full">
+                          <CheckCircle2 size={16} />
+                          <span>Secretaría verá este programa como opción de ciclo verano y registrará el tipo de alumno al momento de la inscripción.</span>
+                        </div>
+                      )}
                     </div>
                   </section>
+
+                  {mostrarIndumentariaDeportiva ? (
+                    <section className="coord-form-section coord-sports-kit-section">
+                      <div className="coord-section-heading">
+                        <Users size={18} />
+                        <div>
+                          <h3>Indumentaria deportiva</h3>
+                          <p>Para programas deportivos como vóley o fútbol, Secretaría puede registrar tallas por alumno.</p>
+                        </div>
+                      </div>
+                      <div className="coord-section-grid">
+                        <div className="coord-field coord-field-full">
+                          <label className="coord-check-label coord-check-label-stacked">
+                            <span>
+                              <input
+                                type="checkbox"
+                                checked={Boolean(form.requiereIndumentaria)}
+                                onChange={e => actualizarForm("requiereIndumentaria", e.target.checked)}
+                              />
+                              Pedir talla de polo y short en Secretaría
+                            </span>
+                            <small>Al registrar al alumno, Secretaría seleccionará la talla correspondiente para cada prenda.</small>
+                          </label>
+                        </div>
+                      </div>
+                    </section>
+                  ) : null}
 
                   <section className="coord-form-section">
                     <div className="coord-section-heading">
@@ -1646,12 +1810,6 @@ function Coordinacion({
                       </div>
                       <div className="coord-field"><label>Tutora / apoyo</label>
                         <input value={form.tutora} onChange={e => actualizarForm("tutora", e.target.value)} placeholder="(Srta. Lucia Vega)" />
-                      </div>
-                      <div className="coord-field coord-field-full">
-                        <label className="coord-check-label">
-                          <input type="checkbox" checked={form.requiereUniforme} onChange={e => actualizarForm("requiereUniforme", e.target.checked)} />
-                          Requiere uniforme para el taller
-                        </label>
                       </div>
                     </div>
                   </section>

@@ -74,6 +74,10 @@ export async function crearPrograma(datos) {
     periodo: normalizarPeriodo(datos.periodo),
     cupos: Number(datos.cupos),
     costo: Number(Number(datos.costo).toFixed(2)),
+    edadMinima: datos.edadMinima || "",
+    edadMaxima: datos.edadMaxima || "",
+    fechaNacimientoDesde: datos.fechaNacimientoDesde || "",
+    fechaNacimientoHasta: datos.fechaNacimientoHasta || "",
     plantillaBase64: datos.plantillaBase64 || "",
     plantillaVariables: datos.plantillaVariables || [],
     plantillaValidada: Boolean(datos.plantillaValidada),
@@ -83,6 +87,7 @@ export async function crearPrograma(datos) {
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
     invitacionMasiva: Boolean(datos.invitacionMasiva),
+    requiereIndumentaria: Boolean(datos.requiereIndumentaria),
   };
 
   apiDb.programas.push(nuevo);
@@ -111,6 +116,10 @@ export async function crearProgramaDesdeDocumento(datos) {
     gradosAplicables: Array.isArray(datos.gradosAplicables) && datos.gradosAplicables.length
       ? datos.gradosAplicables
       : ["3 años", "4 años", "5 años", "1", "2", "3", "4", "5", "6"],
+    edadMinima: datos.edadMinima || "",
+    edadMaxima: datos.edadMaxima || "",
+    fechaNacimientoDesde: datos.fechaNacimientoDesde || "",
+    fechaNacimientoHasta: datos.fechaNacimientoHasta || "",
     dias: Array.isArray(datos.dias) ? datos.dias : [],
     horariosPorGrupo: Array.isArray(datos.horariosPorGrupo) ? datos.horariosPorGrupo : [],
     fechaInicio: datos.fechaInicio || fechaActualInput(),
@@ -128,6 +137,7 @@ export async function crearProgramaDesdeDocumento(datos) {
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
     requiereUniforme: Boolean(datos.requiereUniforme),
+    requiereIndumentaria: Boolean(datos.requiereIndumentaria),
     invitacionMasiva: Boolean(datos.invitacionMasiva),
     creadoDesdeDocumento: true,
   };
@@ -152,6 +162,10 @@ export async function editarPrograma(id, datos) {
     periodo: normalizarPeriodo(datos.periodo),
     cupos: Number(datos.cupos),
     costo: Number(Number(datos.costo).toFixed(2)),
+    edadMinima: datos.edadMinima || "",
+    edadMaxima: datos.edadMaxima || "",
+    fechaNacimientoDesde: datos.fechaNacimientoDesde || "",
+    fechaNacimientoHasta: datos.fechaNacimientoHasta || "",
     plantillaBase64: datos.plantillaBase64 || "",
     plantillaVariables: datos.plantillaVariables || [],
     plantillaValidada: Boolean(datos.plantillaValidada),
@@ -161,6 +175,7 @@ export async function editarPrograma(id, datos) {
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
     invitacionMasiva: Boolean(datos.invitacionMasiva),
+    requiereIndumentaria: Boolean(datos.requiereIndumentaria),
   };
 
   await saveApiDb();
@@ -455,8 +470,16 @@ function validarDatosPrograma(datos) {
   if (!String(datos.nombre || "").trim()) throw new Error("El nombre del programa es obligatorio.");
   if (!String(datos.periodo || "").trim()) throw new Error("El periodo del programa es obligatorio.");
   if (!String(datos.categoria || "").trim()) throw new Error("La categoría del programa es obligatoria.");
-  if (!Array.isArray(datos.gradosAplicables) || datos.gradosAplicables.length === 0) {
+  const esVerano = normalizarPeriodo(datos.periodo) === "verano";
+  if (!esVerano && (!Array.isArray(datos.gradosAplicables) || datos.gradosAplicables.length === 0)) {
     throw new Error("Seleccione al menos un grado aplicable.");
+  }
+  if (esVerano) {
+    const edadMinima = Number(datos.edadMinima);
+    const edadMaxima = Number(datos.edadMaxima);
+    if (!Number.isFinite(edadMinima) || !Number.isFinite(edadMaxima) || edadMinima <= 0 || edadMaxima <= 0 || edadMinima > edadMaxima) {
+      throw new Error("Ingrese un rango de edades valido para ciclo verano.");
+    }
   }
   if (!String(datos.horario || "").trim()) throw new Error("El horario del programa es obligatorio.");
   if (!Number.isFinite(Number(datos.cupos)) || Number(datos.cupos) <= 0) {

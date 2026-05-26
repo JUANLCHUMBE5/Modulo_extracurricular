@@ -32,6 +32,8 @@ const formularioInicial = {
   estudianteNombre: "",
   programaId: "",
   programaNombre: "",
+  periodo: "",
+  tipoAlumno: "",
   monto: "",
   concepto: "Inscripcion",
   formaPago: "Efectivo",
@@ -153,6 +155,7 @@ function CajaFields({
   const datosLectura = [
     ["DNI", formulario.estudianteDni || "Sin DNI"],
     ["Estudiante", formulario.estudianteNombre || "Sin estudiante"],
+    ["Tipo de alumno", formulario.tipoAlumno || "No definido"],
     ["Programa", formulario.programaNombre || "Sin programa"],
     ["Monto", formatearSoles(formulario.monto)],
     ["Concepto", formulario.concepto || "Inscripcion"],
@@ -247,11 +250,12 @@ function CajaPanelHeader({
         <p>{registros} registros visibles{cargando ? " - Actualizando" : ""}</p>
       </div>
       <div className="caja-filters">
+        <span className="caja-filter-label">Filtro de consulta</span>
         <div className="caja-search">
           <Search size={17} />
           <input
             onChange={(event) => setBusqueda(event.currentTarget.value)}
-            placeholder="Buscar DNI, estudiante o programa"
+            placeholder="Consultar por DNI, estudiante o programa"
             value={busqueda}
           />
         </div>
@@ -566,7 +570,7 @@ export default function Caja({
 
     setBuscando(true);
     try {
-      const encontrado = await obtenerEstudiantePorDni(dni, periodo);
+      const encontrado = await obtenerEstudiantePorDni(dni);
       if (!encontrado) {
         setEstudiante(null);
         setMensaje("No se encontro un estudiante con ese DNI.");
@@ -588,6 +592,8 @@ export default function Caja({
         estudianteNombre: inscripcion?.nombresEstudiante || nombre,
         programaId: inscripcion?.programaId || encontrado.programaAsignado || actual.programaId || "",
         programaNombre: inscripcion?.programa || encontrado.programaNombre || actual.programaNombre || "",
+        periodo: inscripcion?.periodo || encontrado.periodo || actual.periodo || "",
+        tipoAlumno: inscripcion?.tipoAlumno || encontrado.tipoAlumno || (inscripcion?.esExterno ? "Alumno externo" : "Alumno interno"),
         monto: inscripcion?.costo ? String(inscripcion.costo) : encontrado.programaCosto ? String(encontrado.programaCosto) : actual.monto,
       }));
     } catch (error) {
@@ -608,7 +614,7 @@ export default function Caja({
     setMensaje("");
     const payload = {
       ...formulario,
-      periodo,
+      periodo: formulario.periodo || periodo,
       concepto: "Inscripcion",
       estado: "completado",
       observaciones: "",
@@ -750,7 +756,7 @@ export default function Caja({
             <Receipt size={17} /> Realizar pago
           </button>
           <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button">
-            <ChartBar size={17} /> Reporte de pagos
+            <ChartBar size={17} /> Consulta de pagos
           </button>
         </nav>
         {moduleSwitcher ? (
@@ -769,9 +775,12 @@ export default function Caja({
           delegatedContent
         ) : (
           <>
+        {vista === "reportes" ? (
         <header className="caja-header">
           <div>
-            <h1>{vista === "pagos" ? "Gestion de pagos" : "Reporte de pagos"}</h1>
+            <span>Control y exportacion</span>
+            <h1>Consulta de pagos realizados</h1>
+            <p>Consulte pagos, pendientes y descargas de Caja.</p>
           </div>
           <div className="caja-header-actions">
             <Select
@@ -784,13 +793,12 @@ export default function Caja({
               onChange={(valor) => setPeriodo(valor || "escolar")}
               value={periodo}
             />
-            {vista === "reportes" ? (
-              <Button leftSection={<Download size={17} />} onClick={descargarReporte}>
-                Descargar CSV
-              </Button>
-            ) : null}
+            <Button leftSection={<Download size={17} />} onClick={descargarReporte}>
+              Descargar CSV
+            </Button>
           </div>
         </header>
+        ) : null}
 
         {vista === "pagos" ? (
           <>

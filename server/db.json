@@ -144,7 +144,7 @@
       "cuposOcupados": 2,
       "estado": "Habilitado",
       "creadoDesdeDocumento": true,
-      "invitacionMasiva": false
+      "invitacionMasiva": true
     },
     {
       "id": "PROG-012",
@@ -197,17 +197,22 @@
       "nombre": "comuncicaion 1",
       "periodo": "escolar",
       "categoria": "Ingles",
-      "grupo": "Primaria: 5, 3, 2, 4",
-      "horario": "Lunes, Miércoles clase 2:27 PM - 4:27 PM",
+      "grupo": "Primaria: 5, 3, 2, 4 / Secundaria: 1, 2, 3, 4, 5",
+      "horario": "Lunes, Sábado clase 2:27 PM - 4:27 PM",
       "gradosAplicables": [
         "Primaria:5",
         "Primaria:3",
         "Primaria:2",
-        "Primaria:4"
+        "Primaria:4",
+        "Secundaria:1",
+        "Secundaria:2",
+        "Secundaria:3",
+        "Secundaria:4",
+        "Secundaria:5"
       ],
       "dias": [
         "Lunes",
-        "Miércoles"
+        "Sábado"
       ],
       "horaInicio": "14:27",
       "horaFin": "16:27",
@@ -241,15 +246,20 @@
       "nombre": "danza",
       "periodo": "escolar",
       "categoria": "Arte",
-      "grupo": "Inicial: 5 años / Primaria: 3, 4",
-      "horario": "Martes clase 4:29 PM - 7:29 PM",
+      "grupo": "Inicial: 5 años / Primaria: 3, 4 / Secundaria: 1, 2, 3, 4, 5",
+      "horario": "Sábado clase 4:29 PM - 7:29 PM",
       "gradosAplicables": [
         "Primaria:3",
         "Primaria:4",
-        "Inicial:5 años"
+        "Inicial:5 años",
+        "Secundaria:1",
+        "Secundaria:2",
+        "Secundaria:3",
+        "Secundaria:4",
+        "Secundaria:5"
       ],
       "dias": [
-        "Martes"
+        "Sábado"
       ],
       "horaInicio": "16:29",
       "horaFin": "19:29",

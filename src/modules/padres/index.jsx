@@ -1,11 +1,13 @@
 import { Alert } from "@mantine/core";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   IconAlertCircle as AlertCircle,
   IconBook as BookOpen,
   IconCalendar as CalendarDays,
   IconCheck as Check,
   IconCircleCheck as CheckCircle2,
+  IconChevronLeft as ChevronLeft,
+  IconChevronRight as ChevronRight,
   IconClipboardCheck as ClipboardCheck,
   IconCreditCard as CreditCard,
   IconFileText as FileText,
@@ -21,7 +23,7 @@ import AsistentePadres from "./components/AsistentePadres";
 import Campo from "./components/Campo";
 import HorarioProgramaPadres from "./components/HorarioProgramaPadres";
 import usePadres, { formatearSoles } from "./hooks/usePadres";
-import { formatearRangoFechasPadres, prepararComunicadoPadres } from "./utils/padresTextUtils";
+import { dividirHorarioPadres, formatearRangoFechasPadres, prepararComunicadoPadres } from "./utils/padresTextUtils";
 import "./Padres.css";
 
 const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
@@ -103,13 +105,12 @@ function PortalStepper({ pasoActivo, pasoMaximo, onSelect }) {
   );
 }
 
-function StudentHero({ estudiante, iniciales, nombreCorto, bannerEstudiante }) {
+function StudentHero({ estudiante, nombreCorto, bannerEstudiante }) {
   return (
     <section className="padres-flow-student-card">
       <div className="padres-flow-student-copy">
-        <div className="padres-flow-avatar">{iniciales}</div>
         <div>
-          <span>Familia de {nombreCorto}</span>
+          <span>Bienvenido familia de</span>
           <h1>{estudiante?.nombres || nombreCorto}</h1>
           <p>
             {estudiante?.grado || "Grado por registrar"} - Seccion {estudiante?.seccion || "-"}
@@ -147,7 +148,7 @@ function ProgramaPrincipal({ programa, inscripcion, invitacionPendiente, setInfo
         </span>
         <div>
           <PortalBadge tone={inscripcion ? "green" : "orange"}>
-            {inscripcion ? "Registrado" : "Programa asignado"}
+            Invitacion
           </PortalBadge>
           <h2>{programa.programa}</h2>
         </div>
@@ -183,6 +184,48 @@ function CatalogoProgramas({
   setPasoActivo,
   solicitarInscripcionPadres,
 }) {
+  const carruselRef = useRef(null);
+  const carruselActivo = programasDisponibles.length > 3;
+
+  const obtenerPasoCarrusel = () => {
+    const carrusel = carruselRef.current;
+    const tarjeta = carrusel?.querySelector(".padres-flow-course-card");
+    if (!carrusel || !tarjeta) return 0;
+
+    const estilos = window.getComputedStyle(carrusel);
+    const espacio = parseFloat(estilos.columnGap || estilos.gap || "0") || 0;
+    return tarjeta.getBoundingClientRect().width + espacio;
+  };
+
+  useEffect(() => {
+    if (!carruselActivo || cargandoProgramas) return undefined;
+
+    const intervalo = window.setInterval(() => {
+      const carrusel = carruselRef.current;
+      if (!carrusel) return;
+
+      const paso = obtenerPasoCarrusel();
+      if (!paso) return;
+
+      const llegoAlFinal = carrusel.scrollLeft + carrusel.clientWidth >= carrusel.scrollWidth - 12;
+      if (llegoAlFinal) {
+        carrusel.scrollTo({ left: 0, behavior: "smooth" });
+        return;
+      }
+
+      carrusel.scrollBy({ left: paso, behavior: "smooth" });
+    }, 5500);
+
+    return () => window.clearInterval(intervalo);
+  }, [cargandoProgramas, carruselActivo, programasDisponibles.length]);
+
+  const moverCarrusel = (direccion) => {
+    const carrusel = carruselRef.current;
+    if (!carrusel) return;
+    const paso = obtenerPasoCarrusel();
+    carrusel.scrollBy({ left: direccion * (paso || carrusel.clientWidth), behavior: "smooth" });
+  };
+
   if (!mostrarCatalogoProgramas) return null;
   if (!cargandoProgramas && programasDisponibles.length === 0) return null;
 
@@ -190,14 +233,26 @@ function CatalogoProgramas({
     <article className="padres-flow-panel padres-flow-catalog">
       <div className="padres-flow-section-title">
         <div>
-          <PortalBadge tone="orange">Invitacion masiva</PortalBadge>
-          <h2>{programa ? "Cursos adicionales disponibles" : "Cursos disponibles para solicitar"}</h2>
+          <h2 className="padres-flow-catalog-title">
+            <span aria-hidden="true">✦</span>
+            {programa ? "Cursos adicionales disponibles" : "Cursos disponibles para solicitar"}
+          </h2>
           <p>
             {programa
-              ? "Puede registrar otro curso si aplica al grado del estudiante y no cruza con su horario."
+              ? "Puede inscribir a su hijo si aplica a su grado y no cruza el horario."
               : "Coordinacion publica aqui los cursos habilitados para el grado del estudiante."}
           </p>
         </div>
+        {carruselActivo && !cargandoProgramas ? (
+          <div className="padres-flow-carousel-actions" aria-label="Cambiar cursos disponibles">
+            <button type="button" aria-label="Ver cursos anteriores" onClick={() => moverCarrusel(-1)}>
+              <ChevronLeft size={18} />
+            </button>
+            <button type="button" aria-label="Ver cursos siguientes" onClick={() => moverCarrusel(1)}>
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       {cargandoProgramas ? (
@@ -206,31 +261,36 @@ function CatalogoProgramas({
           <span>Cargando cursos disponibles...</span>
         </div>
       ) : programasDisponibles.length > 0 ? (
-        <div className="padres-flow-courses">
+        <div
+          className={`padres-flow-courses${carruselActivo ? " is-carousel" : ""}`}
+          ref={carruselRef}
+        >
           {programasDisponibles.map((prog) => {
             const registrando = guardando && programaSeleccionadoId === prog.id;
+            const sinCupos = Number(prog.cuposDisponibles || 0) <= 0;
             return (
               <article className="padres-flow-course-card" key={prog.id}>
                 <div className="padres-flow-course-head">
-                  <h3>{prog.nombre}</h3>
-                  <PortalBadge tone="green">Disponible</PortalBadge>
+                  <div className="padres-flow-course-name">
+                    <BookOpen size={18} />
+                    <h3>{prog.nombre}</h3>
+                  </div>
+                  <span className="padres-flow-course-category">{prog.categoria || "Curso"}</span>
                 </div>
 
-                <div className="padres-flow-course-grid">
-                  <InfoTile label="Categoria" value={prog.categoria || "N/A"} />
-                  <InfoTile label="Horario">
-                    <HorarioProgramaPadres horario={prog.horario} />
-                  </InfoTile>
-                  <InfoTile label="Cupos" value={`${prog.cuposDisponibles} / ${prog.cupos}`} />
-                  <InfoTile label="Monto" value={formatearSoles(prog.costo)} />
-                  <InfoTile label="Responsable" value={prog.responsable || "Por definir"} />
+                <HorarioCompactoPadres horario={prog.horario} />
+
+                <div className="padres-flow-course-summary">
+                  <span>Cupos: {prog.cuposDisponibles}/{prog.cupos}</span>
+                  <strong>{formatearSoles(prog.costo)}</strong>
                 </div>
 
                 <button
-                  className="padres-flow-primary-button"
+                  className={`padres-flow-primary-button${sinCupos ? " is-empty" : ""}`}
                   type="button"
-                  disabled={registrando}
+                  disabled={registrando || prog.registrado || sinCupos}
                   onClick={() => {
+                    if (prog.registrado || sinCupos) return;
                     if (!datosConfirmados) {
                       setPasoActivo(2);
                       return;
@@ -238,8 +298,8 @@ function CatalogoProgramas({
                     solicitarInscripcionPadres(prog.id);
                   }}
                 >
-                  {registrando ? <Loader2 className="padres-spin" size={16} /> : <CheckCircle2 size={16} />}
-                  {datosConfirmados ? "Registrarse" : "Completar datos"}
+                  {registrando ? <Loader2 className="padres-spin" size={16} /> : null}
+                  {sinCupos ? "Sin cupos" : prog.registrado ? "Registrado" : "Inscribir"}
                 </button>
               </article>
             );
@@ -247,6 +307,31 @@ function CatalogoProgramas({
         </div>
       ) : null}
     </article>
+  );
+}
+
+function HorarioCompactoPadres({ horario }) {
+  const completo = dividirHorarioPadres(horario);
+  const texto = String(horario || "").trim();
+  const simple = !completo ? texto.match(/^(.+?)\s+clase\s+(.+?)(?:\s+almuerzo\s+(.+))?$/i) : null;
+
+  const dia = completo?.dia || simple?.[1]?.trim();
+  const clase = completo?.clase || simple?.[2]?.trim();
+  const almuerzo = completo?.almuerzo || simple?.[3]?.trim();
+
+  if (!dia && !clase) {
+    return (
+      <div className="padres-flow-course-lines">
+        <span><CalendarDays size={14} />{texto || "Horario por confirmar"}</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="padres-flow-course-lines">
+      <span><CalendarDays size={14} />{[dia, clase].filter(Boolean).join(" ")}</span>
+      {almuerzo ? <span><CalendarDays size={14} />Almuerzo {almuerzo}</span> : null}
+    </div>
   );
 }
 
@@ -710,7 +795,6 @@ export default function Padres({ user, onLogout }) {
           <section className="padres-flow-shell">
             <StudentHero
               estudiante={estudiante}
-              iniciales={iniciales}
               nombreCorto={nombreCorto}
               bannerEstudiante={bannerEstudiante}
             />

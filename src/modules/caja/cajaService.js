@@ -130,15 +130,15 @@ export async function obtenerResumenCaja(periodo = "escolar") {
   };
 }
 
-export async function obtenerEstudiantePorDni(dni, periodo = "escolar") {
+export async function obtenerEstudiantePorDni(dni, periodo = "") {
   await esperar(200);
   await syncApiDb();
 
-  const periodoNormalizado = normalizarPeriodo(periodo);
+  const periodoNormalizado = periodo ? normalizarPeriodo(periodo) : "";
   const inscripciones = [...(apiDb.inscripciones || [])]
     .filter((item) =>
       item.dniEstudiante === dni &&
-      normalizarPeriodo(item.periodo || periodoNormalizado) === periodoNormalizado
+      (!periodoNormalizado || normalizarPeriodo(item.periodo || periodoNormalizado) === periodoNormalizado)
     )
     .sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0));
   const inscripcion = inscripciones.find((item) => item.derivadoCaja) || inscripciones[0];

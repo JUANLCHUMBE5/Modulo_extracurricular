@@ -114,10 +114,14 @@ function usePadres(user) {
   const mostrarCatalogoProgramas = Boolean(estudiante);
   const programasDisponibles = useMemo(
     () => programasCoordinacion
-      .filter((item) => !programasYaRegistrados.has(item.id))
       .map((item) => prepararProgramaParaGrado(item, estudiante?.grado))
-      .filter((item) => item.registrable && item.disponibleParaGrado && !tieneCruceHorarioCatalogo(item, inscripciones)),
-    [programasCoordinacion, programasYaRegistrados, estudiante?.grado, inscripciones]
+      .filter((item) => item.id !== programa?.programaId)
+      .filter((item) => item.registrable && item.disponibleParaGrado)
+      .map((item) => ({
+        ...item,
+        registrado: programasYaRegistrados.has(item.id),
+      })),
+    [programa?.programaId, programasCoordinacion, programasYaRegistrados, estudiante?.grado]
   );
 
   useEffect(() => {

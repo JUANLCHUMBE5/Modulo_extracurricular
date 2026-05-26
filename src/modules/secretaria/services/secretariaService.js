@@ -38,6 +38,7 @@ export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
     tieneInvitacion: false,
     programaAsignado: "",
     requiereUniforme: false,
+    requiereIndumentaria: false,
   };
 }
 
@@ -69,6 +70,7 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
           tieneInvitacion: false,
           programaAsignado: "",
           requiereUniforme: false,
+          requiereIndumentaria: false,
         });
   });
 
@@ -95,7 +97,7 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
   return resultados.slice(0, 8);
 }
 
-export async function listarProgramasPorPeriodo(periodo, gradoAlumno = "") {
+export async function listarProgramasPorPeriodo(periodo, gradoAlumno = "", edadAlumno = "") {
   const programas = await listarProgramas();
   const periodoNormalizado = normalizarPeriodo(periodo);
   return programas
@@ -104,9 +106,11 @@ export async function listarProgramasPorPeriodo(periodo, gradoAlumno = "") {
       programa.estado === "Habilitado" &&
       Number(programa.cuposDisponibles ?? 0) > 0 &&
       (periodoNormalizado === "verano" || programa.invitacionMasiva) &&
-      (!gradoAlumno || programaDisponibleParaGrado(programa, gradoAlumno))
+      (periodoNormalizado === "verano"
+        ? programaDisponibleParaEdad(programa, edadAlumno)
+        : (!gradoAlumno || programaDisponibleParaGrado(programa, gradoAlumno)))
     )
-    .map(adaptarProgramaCoordinacion);
+    .map((programa) => adaptarProgramaCoordinacion(programa, gradoAlumno));
 }
 
 export async function obtenerProgramaPorId(programaId, periodo) {
@@ -135,7 +139,17 @@ export async function registrarInscripcion(payload) {
   }
   validarVentanaInscripcionRegular(programa, payload);
   const horarioResuelto = resolverHorarioPorGrado(programa, payload.gradoEstudiante);
-  if (!programaDisponibleParaGrado(programa, payload.gradoEstudiante)) {
+  if (periodoPayload === "verano") {
+    const edadRegistro = Number(payload.edadEstudiante || payload.edadAlumno);
+    const tieneRangoEdad = Number(programa.edadMinima || 0) > 0 || Number(programa.edadMaxima || 0) > 0;
+    if (tieneRangoEdad && (!Number.isFinite(edadRegistro) || edadRegistro <= 0)) {
+      throw new Error("Ingrese la edad del alumno para validar el programa de verano.");
+    }
+    if (!programaDisponibleParaEdad(programa, edadRegistro)) {
+      throw new Error("El programa no esta disponible para la edad del alumno. Coordinacion debe revisar el rango de edades.");
+    }
+  }
+  if (periodoPayload !== "verano" && !programaDisponibleParaGrado(programa, payload.gradoEstudiante)) {
     throw new Error("El programa no esta disponible para el grado del alumno. Coordinacion debe revisar los grados habilitados.");
   }
 
@@ -148,7 +162,9 @@ export async function registrarInscripcion(payload) {
 
   if (duplicada) throw new Error("El alumno ya tiene una inscripción registrada en este programa.");
 
-  validarCruceHorarioAlumno(payload, horarioResuelto || programa.horario);
+  if (!programa.invitacionMasiva) {
+    validarCruceHorarioAlumno(payload, horarioResuelto || programa.horario);
+  }
 
   const registro = {
     id: `INS-${Date.now().toString().slice(-6)}`,
@@ -172,6 +188,7 @@ export async function registrarInscripcion(payload) {
     seleccion: payload.seleccion || "",
     nivelCambridge: payload.nivelCambridge || "",
     requiereUniforme: Boolean(programa.requiereUniforme),
+    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
   };
 
   apiDb.inscripciones.push(registro);
@@ -332,6 +349,7 @@ function sincronizarInscripcionConProgramaActual(inscripcion) {
     plantillaBase64: obtenerPlantillaBase64(inscripcion, programa),
     plantillaVariables: obtenerPlantillaVariables(inscripcion, programa),
     requiereUniforme: Boolean(programa.requiereUniforme),
+    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
   };
 }
 
@@ -345,14 +363,14 @@ function obtenerPlantillaVariables(inscripcion, programa) {
   return programa?.plantillaVariables || plantillaGuardada?.plantillaVariables || inscripcion?.plantillaVariables || [];
 }
 
-function adaptarProgramaCoordinacion(programa) {
+function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
   const periodoNormalizado = normalizarPeriodo(programa.periodo);
   const cuposDisponibles = Math.max(0, Number(programa.cuposDisponibles ?? 0));
   return {
     id: programa.id,
     nombre: programa.nombre,
     periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
-    horario: resolverHorarioPorGrado(programa) || programa.horario,
+    horario: resolverHorarioPorGrado(programa, gradoAlumno) || programa.horario,
     horariosPorGrupo: programa.horariosPorGrupo || [],
     gradosAplicables: programa.gradosAplicables || [],
     docente: programa.responsable || programa.docente || "No definido",
@@ -360,10 +378,15 @@ function adaptarProgramaCoordinacion(programa) {
     cupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
     cuposDisponibles,
     requiereUniforme: Boolean(programa.requiereUniforme),
+    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
     uniforme: programa.requiereUniforme ? "Sí" : "No",
     modalidadCobro: programa.modalidadCobro || "",
     fechaInicio: programa.fechaInicio || "",
     fechaFin: programa.fechaFin || "",
+    edadMinima: programa.edadMinima || "",
+    edadMaxima: programa.edadMaxima || "",
+    fechaNacimientoDesde: programa.fechaNacimientoDesde || "",
+    fechaNacimientoHasta: programa.fechaNacimientoHasta || "",
     requisitos: programa.requisitos || "",
     plantilla: programa.plantilla || "",
     plantillaBase64: programa.plantillaBase64 || "",
@@ -400,6 +423,7 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
     plantillaBase64: programa.plantillaBase64 || "",
     plantillaVariables: programa.plantillaVariables || [],
     requiereUniforme: Boolean(programa.requiereUniforme),
+    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
   };
 }
 
@@ -431,6 +455,7 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
     plantillaBase64: programa.plantillaBase64 || "",
     plantillaVariables: programa.plantillaVariables || [],
     requiereUniforme: Boolean(programa.requiereUniforme),
+    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
     telefonoApoderado: invitado.telefonoApoderado || "",
   };
 }
@@ -484,6 +509,7 @@ function tieneHorariosPorGrupo(programa) {
 }
 
 function programaDisponibleParaGrado(programa, gradoAlumno = "") {
+  if (normalizarPeriodo(programa?.periodo) === "verano") return true;
   if (tieneHorariosPorGrupo(programa)) {
     return Boolean(resolverHorarioPorGrado(programa, gradoAlumno));
   }
@@ -495,6 +521,17 @@ function programaDisponibleParaGrado(programa, gradoAlumno = "") {
   if (!gradoNormalizado.numero) return false;
 
   return gradosAplicables.some((grado) => coincideGrado(grado, gradoNormalizado));
+}
+
+function programaDisponibleParaEdad(programa, edadAlumno = "") {
+  const minimo = Number(programa?.edadMinima || 0);
+  const maximo = Number(programa?.edadMaxima || 0);
+  if (!minimo && !maximo) return true;
+  const edad = Number(edadAlumno);
+  if (!Number.isFinite(edad) || edad <= 0) return true;
+  if (minimo && edad < minimo) return false;
+  if (maximo && edad > maximo) return false;
+  return true;
 }
 
 function descomponerGrado(valor) {

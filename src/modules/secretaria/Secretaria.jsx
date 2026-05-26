@@ -52,6 +52,7 @@ const formularioInicial = {
   dniExterno: "",
   nombresExterno: "",
   edadExterno: "",
+  fechaNacimientoExterno: "",
   domicilioExterno: "",
   sexoExterno: "",
   tipoAlumnoVerano: "Alumno externo",
@@ -63,6 +64,8 @@ const formularioInicial = {
   correo: "",
   medioEnvio: "Impreso",
   tallaUniforme: "",
+  tallaPolo: "",
+  tallaShort: "",
   observacion: "",
   aceptaCondiciones: false,
 };
@@ -75,6 +78,21 @@ function normalizarComparacion(valor) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+}
+
+function calcularEdadSecretaria(estudiante, formulario = {}) {
+  const edadDirecta = Number(formulario.edadExterno || estudiante?.edad || estudiante?.edadEstudiante || "");
+  if (Number.isFinite(edadDirecta) && edadDirecta > 0) return edadDirecta;
+
+  const fecha = formulario.fechaNacimientoExterno || estudiante?.fechaNacimiento;
+  if (!fecha) return "";
+  const nacimiento = new Date(fecha);
+  if (Number.isNaN(nacimiento.getTime())) return "";
+  const hoy = new Date();
+  let edad = hoy.getFullYear() - nacimiento.getFullYear();
+  const mes = hoy.getMonth() - nacimiento.getMonth();
+  if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) edad -= 1;
+  return edad > 0 ? edad : "";
 }
 
 function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, onLogout }) {
@@ -107,6 +125,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     ? programas.find((programa) => programa.id === estudiante.programaAsignado)
     : null;
   const programaSeleccionado = programas.find((programa) => programa.id === formulario.programa);
+  const esCicloVerano = periodo === "verano";
   
   // Si el estudiante tiene invitación, usamos los datos que vienen del servicio para mostrar el nombre
   // Si no tiene invitación, usamos el programa seleccionado en el dropdown
@@ -131,6 +150,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     plantillaBase64: estudiante.plantillaBase64,
     plantillaVariables: estudiante.plantillaVariables,
     requiereUniforme: estudiante.requiereUniforme,
+    requiereIndumentaria: estudiante.requiereIndumentaria,
   } : null;
   const programasParaSelector = programaAsignadoInvitacion && !registroAdicional
     ? [
@@ -138,7 +158,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         ...programas.filter((programa) => programa.id !== programaAsignadoInvitacion.id),
       ]
     : programas;
-  const mostrarSelectorPrograma = periodo === "verano" || !estudiante?.tieneInvitacion || registroAdicional || programas.length > 0;
+  const mostrarSelectorPrograma = esCicloVerano || !estudiante?.tieneInvitacion || registroAdicional || programas.length > 0;
 
   const programaParaRegistro = programaSeleccionado || programaAsignado || programaAsignadoInvitacion;
   const inscripcionMasivaSeleccionada = Boolean(programaParaRegistro?.invitacionMasiva);
@@ -162,8 +182,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
           setEstudiante(encontrado);
           const registro = await buscarInscripcionEstudiante(encontrado, periodo);
           setInscripción(registro);
-          const programasActualizados = await listarProgramasPorPeriodo(periodo, encontrado.grado || "");
-          setProgramas(filtrarProgramasSinCruce(programasActualizados, registro));
+          const programasActualizados = await listarProgramasPorPeriodo(periodo, encontrado.grado || "", calcularEdadSecretaria(encontrado, formularioInicial));
+          setProgramas(programasActualizados);
           return;
         }
       }
@@ -181,11 +201,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     };
   }, [periodo, dni]);
 
-  async function cargarProgramasDelPeriodo(gradoAlumno = estudiante?.grado || "") {
-    const programasActualizados = await listarProgramasPorPeriodo(periodo, gradoAlumno);
-    const programasSinCruce = filtrarProgramasSinCruce(programasActualizados, inscripcion);
-    setProgramas(programasSinCruce);
-    return programasSinCruce;
+  async function cargarProgramasDelPeriodo(gradoAlumno = estudiante?.grado || "", edadAlumno = calcularEdadSecretaria(estudiante, formulario)) {
+    const programasActualizados = await listarProgramasPorPeriodo(periodo, gradoAlumno, edadAlumno);
+    setProgramas(programasActualizados);
+    return programasActualizados;
   }
 
   async function buscarEstudiante(event) {
@@ -288,8 +307,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   async function aplicarEstudianteEncontrado(encontrado) {
     setResultadosNombre([]);
     const registroExistente = await buscarInscripcionEstudiante(encontrado, periodo);
-    const programasCompatiblesBase = await listarProgramasPorPeriodo(periodo, encontrado.grado || "");
-    const programasCompatibles = filtrarProgramasSinCruce(programasCompatiblesBase, registroExistente);
+    const programasCompatiblesBase = await listarProgramasPorPeriodo(periodo, encontrado.grado || "", calcularEdadSecretaria(encontrado, formularioInicial));
+    const programasCompatibles = programasCompatiblesBase;
     setProgramas(programasCompatibles);
     const estadoRegistro = registroExistente?.estadoInscripción || registroExistente?.estadoInscripcion;
     setEstudiante({
@@ -307,7 +326,11 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       correo: registroExistente?.correo ?? "",
       medioEnvio: registroExistente?.medioEnvio ?? "Impreso",
       tallaUniforme: registroExistente?.tallaUniforme ?? "",
+      tallaPolo: registroExistente?.tallaPolo ?? "",
+      tallaShort: registroExistente?.tallaShort ?? "",
       observacion: registroExistente?.observacion ?? "",
+      tipoAlumnoVerano: periodo === "verano" ? "Alumno interno" : formularioInicial.tipoAlumnoVerano,
+      colegioProcedencia: periodo === "verano" ? (registroExistente?.colegioProcedencia || "Colegio San Rafael") : "",
     });
     if (!encontrado.tieneInvitacion && periodo === "escolar" && programasCompatibles.length === 0) {
       setMensaje("No hay programas de invitación masiva disponibles para el grado del estudiante.");
@@ -322,6 +345,14 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     setFormulario((actual) => ({
       ...actual,
       [campo]: valor,
+    }));
+  }
+
+  function actualizarFechaNacimientoExterno(valor) {
+    setFormulario((actual) => ({
+      ...actual,
+      fechaNacimientoExterno: valor,
+      edadExterno: calcularEdadSecretaria(null, { fechaNacimientoExterno: valor }) || "",
     }));
   }
 
@@ -355,7 +386,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         return;
       }
       if (!validarTextoSeguro(formulario.edadExterno) || Number(formulario.edadExterno) <= 0) {
-        mostrarMensaje("Ingrese la edad del estudiante.");
+        mostrarMensaje("Seleccione la fecha de nacimiento del estudiante.");
         return;
       }
       if (!validarTextoSeguro(formulario.domicilioExterno)) {
@@ -423,6 +454,11 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       return;
     }
 
+    if (programaActualizado.requiereIndumentaria && (!formulario.tallaPolo || !formulario.tallaShort)) {
+      mostrarMensaje("Seleccione la talla de polo y short para la indumentaria deportiva.");
+      return;
+    }
+
     if (!formulario.aceptaCondiciones) {
       mostrarMensaje("Debe confirmar que el apoderado acepta las condiciones del programa.");
       return;
@@ -437,6 +473,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       const gradoRegistro = estudiante.esExterno
         ? formulario.gradoExterno.trim()
         : estudiante.grado || "";
+      const edadRegistro = calcularEdadSecretaria(estudiante, formulario);
       const registro = await registrarInscripcion({
         dniEstudiante: dniRegistro,
         codigoEstudiante: estudiante.codigoEstudiante || "",
@@ -445,7 +482,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         nombresEstudiante: nombresRegistro,
         esExterno: estudiante.esExterno && formulario.tipoAlumnoVerano === "Alumno externo",
         esNuevoVerano: Boolean(estudiante.esExterno),
-        edadEstudiante: estudiante.esExterno ? formulario.edadExterno.trim() : "",
+        edadEstudiante: edadRegistro ? String(edadRegistro) : "",
         domicilioEstudiante: estudiante.esExterno ? formulario.domicilioExterno.trim() : "",
         sexoEstudiante: estudiante.esExterno ? formulario.sexoExterno : "",
         tipoAlumno: estudiante.esExterno ? formulario.tipoAlumnoVerano : estudiante.tipoAlumno,
@@ -472,6 +509,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         seleccion: estudiante.seleccion || programaParaRegistro?.seleccion || "",
         nivelCambridge: estudiante.nivelCambridge || programaParaRegistro?.nivelCambridge || "",
         tallaUniforme: formulario.tallaUniforme,
+        tallaPolo: formulario.tallaPolo,
+        tallaShort: formulario.tallaShort,
         observacion: formulario.observacion.trim(),
         origenRegistro: estudiante.esExterno
           ? "Alumno externo de ciclo verano"
@@ -507,7 +546,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   }
 
   async function abrirRegistro() {
-    const programasActualizados = await cargarProgramasDelPeriodo(estudiante?.grado || "");
+    const programasActualizados = await cargarProgramasDelPeriodo(estudiante?.grado || "", calcularEdadSecretaria(estudiante, formulario));
     const programaAsignadoActual = estudiante?.tieneInvitacion && !registroAdicional
       ? await obtenerProgramaPorId(estudiante.programaAsignado, periodo).catch(() => null)
       : null;
@@ -526,6 +565,9 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         ? estudiante.programaAsignado
         : actual.programa || primerProgramaPeriodo,
       colegioProcedencia: actual.colegioProcedencia || (estudiante?.esExterno ? "" : "Colegio San Rafael"),
+      tipoAlumnoVerano: periodo === "verano"
+        ? (estudiante?.esExterno ? "Alumno externo" : "Alumno interno")
+        : actual.tipoAlumnoVerano,
       apoderado: actual.apoderado || estudiante?.apoderado || "",
       telefono: actual.telefono || estudiante?.telefonoApoderado || "",
       aceptaCondiciones: false,
@@ -558,29 +600,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     } finally {
       setImprimiendoFichaRegistro(false);
     }
-  }
-
-  function filtrarProgramasSinCruce(listaProgramas, registroExistente) {
-    if (!registroExistente) return listaProgramas;
-    const diasRegistro = extraerDiasHorarioSecretaria(registroExistente.horario);
-    if (!diasRegistro.size) return listaProgramas;
-    return listaProgramas.filter((programa) => !intersectaDiasSecretaria(diasRegistro, extraerDiasHorarioSecretaria(programa.horario)));
-  }
-
-  function intersectaDiasSecretaria(a, b) {
-    for (const dia of a) {
-      if (b.has(dia)) return true;
-    }
-    return false;
-  }
-
-  function extraerDiasHorarioSecretaria(horario = "") {
-    const texto = String(horario || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase();
-    const dias = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
-    return new Set(dias.filter((dia) => texto.includes(dia)));
   }
 
   async function derivarACaja() {
@@ -643,6 +662,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       plantillaBase64: programaActual.plantillaBase64 || registro.plantillaBase64,
       plantillaVariables: programaActual.plantillaVariables || registro.plantillaVariables || [],
       requiereUniforme: programaActual.requiereUniforme ?? registro.requiereUniforme,
+      requiereIndumentaria: programaActual.requiereIndumentaria ?? registro.requiereIndumentaria,
       seleccion: registro.seleccion || estudiante?.seleccion || "",
       nivelCambridge: registro.nivelCambridge || estudiante?.nivelCambridge || "",
     };
@@ -966,7 +986,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
             onClick={() => setModoRegistro(false)}
           >
             <section
-              className="secretaria-card secretaria-registration-card secretaria-registration-modal"
+              className={`secretaria-card secretaria-registration-card secretaria-registration-modal${esCicloVerano ? " is-summer-registration" : ""}${estudiante.esExterno ? " is-external-registration" : ""}`}
               role="dialog"
               aria-modal="true"
               aria-labelledby="secretaria-registration-title"
@@ -978,8 +998,12 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                     <ClipboardCheck size={21} />
                   </span>
                   <div>
-                    <h2 id="secretaria-registration-title">Registrar inscripcion</h2>
-                    <p>Revise la información enviada por Coordinación antes de confirmar.</p>
+                    <h2 id="secretaria-registration-title">{esCicloVerano ? "Registro ciclo verano" : "Registrar inscripcion"}</h2>
+                    <p>
+                      {esCicloVerano
+                        ? "Complete los datos de verano antes de confirmar la participación."
+                        : "Revise la información enviada por Coordinación antes de confirmar."}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -1013,7 +1037,91 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   </MantineAlert>
                 ) : null}
 
-                {estudiante.esExterno ? (
+                {esCicloVerano ? (
+                  <div className="secretaria-registration-section secretaria-registration-summer secretaria-registration-minor secretaria-field-full">
+                    <div className="secretaria-registration-section-head">
+                      <strong>Datos para ciclo verano</strong>
+                      <span>Información necesaria para Secretaría</span>
+                    </div>
+
+                    <div className="secretaria-field secretaria-field-medium">
+                      <label htmlFor="tipoAlumnoVerano">Tipo de alumno</label>
+                      <select
+                        id="tipoAlumnoVerano"
+                        value={formulario.tipoAlumnoVerano}
+                        onChange={(event) => actualizarFormulario("tipoAlumnoVerano", event.target.value)}
+                      >
+                        <option value="Alumno interno">Alumno del colegio</option>
+                        <option value="Alumno externo">Alumno externo</option>
+                      </select>
+                    </div>
+
+                    <CampoTexto
+                      label="Colegio de procedencia"
+                      className="secretaria-field-wide"
+                      value={formulario.colegioProcedencia}
+                      onChange={(value) => actualizarFormulario("colegioProcedencia", value)}
+                      placeholder="Ej: Colegio San Rafael"
+                    />
+
+                    {estudiante.esExterno ? (
+                      <>
+                        <CampoTexto
+                          label="DNI del alumno"
+                          value={formulario.dniExterno}
+                          onChange={(value) => actualizarFormulario("dniExterno", value.replace(/\D/g, "").slice(0, 8))}
+                          placeholder="DNI de 8 numeros"
+                          maxLength="8"
+                        />
+                        <CampoTexto
+                          label="Nombre y apellidos del estudiante"
+                          value={formulario.nombresExterno}
+                          onChange={(value) => actualizarFormulario("nombresExterno", value)}
+                          placeholder="Nombre completo del estudiante"
+                        />
+                        <CampoTexto
+                          label="Edad"
+                          className="secretaria-field-short secretaria-age-field"
+                          value={formulario.edadExterno}
+                          onChange={(value) => actualizarFormulario("edadExterno", value.replace(/\D/g, "").slice(0, 2))}
+                          placeholder="Ej: 9"
+                          maxLength="2"
+                        />
+                        <CampoTexto
+                          label="Grado"
+                          className="secretaria-field-medium"
+                          value={formulario.gradoExterno}
+                          onChange={(value) => actualizarFormulario("gradoExterno", value)}
+                          placeholder="Ej: 4 Primaria"
+                        />
+                    <div className="secretaria-field secretaria-field-short">
+                      <label htmlFor="sexoExterno">Sexo</label>
+                      <select
+                        id="sexoExterno"
+                        value={formulario.sexoExterno}
+                        onChange={(event) => actualizarFormulario("sexoExterno", event.target.value)}
+                      >
+                        <option value="">Seleccione</option>
+                        <option value="F">Femenino</option>
+                        <option value="M">Masculino</option>
+                      </select>
+                    </div>
+                    <CampoTexto
+                      label="Domicilio"
+                      className="secretaria-field-wide"
+                      value={formulario.domicilioExterno}
+                      onChange={(value) => actualizarFormulario("domicilioExterno", value)}
+                      placeholder="Dirección del estudiante"
+                    />
+                      </>
+                    ) : (
+                    <CampoLectura
+                      label="Alumno"
+                      value={`${estudiante.grado || "Grado no registrado"}${estudiante.seccion ? ` - Sección ${estudiante.seccion}` : ""}`}
+                    />
+                    )}
+                  </div>
+                ) : estudiante.esExterno ? (
                   <div className="secretaria-registration-section secretaria-registration-minor secretaria-field-full">
                     <div className="secretaria-registration-section-head">
                       <strong>Datos del menor</strong>
@@ -1102,7 +1210,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                       </option>
                       {programasParaSelector.map((programa) => (
                         <option key={programa.id} value={programa.id}>
-                          {programa.nombre}{programa.horario ? ` - ${programa.horario}` : ""}
+                          {programa.nombre}
                         </option>
                       ))}
                     </select>
@@ -1132,15 +1240,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   <CampoLectura label="Cupos disponibles" value={formatearCuposSecretaria(programaParaRegistro)} />
                 </div>
                 </div>
-
-                {periodo === "verano" ? (
-                  <CampoTexto
-                    label="Colegio de procedencia"
-                    value={formulario.colegioProcedencia}
-                    onChange={(value) => actualizarFormulario("colegioProcedencia", value)}
-                    placeholder="Ej: Colegio San Rafael"
-                  />
-                ) : null}
 
                 <div className="secretaria-registration-section secretaria-registration-contact secretaria-field-full">
                   <div className="secretaria-registration-section-head">
@@ -1185,9 +1284,56 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   </div>
                 ) : null}
 
+                {programaParaRegistro?.requiereIndumentaria ? (
+                  <>
+                    <div className="secretaria-field">
+                      <label htmlFor="tallaPolo">Talla de polo</label>
+                      <select
+                        id="tallaPolo"
+                        value={formulario.tallaPolo}
+                        onChange={(event) =>
+                          actualizarFormulario("tallaPolo", event.target.value)
+                        }
+                      >
+                        <option value="">Seleccione talla</option>
+                        <option value="6">6</option>
+                        <option value="8">8</option>
+                        <option value="10">10</option>
+                        <option value="12">12</option>
+                        <option value="14">14</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                      </select>
+                    </div>
+                    <div className="secretaria-field">
+                      <label htmlFor="tallaShort">Talla de short</label>
+                      <select
+                        id="tallaShort"
+                        value={formulario.tallaShort}
+                        onChange={(event) =>
+                          actualizarFormulario("tallaShort", event.target.value)
+                        }
+                      >
+                        <option value="">Seleccione talla</option>
+                        <option value="6">6</option>
+                        <option value="8">8</option>
+                        <option value="10">10</option>
+                        <option value="12">12</option>
+                        <option value="14">14</option>
+                        <option value="S">S</option>
+                        <option value="M">M</option>
+                        <option value="L">L</option>
+                        <option value="XL">XL</option>
+                      </select>
+                    </div>
+                  </>
+                ) : null}
+
                 </div>
 
-                <div className="secretaria-field secretaria-field-full">
+                <div className="secretaria-field secretaria-field-full secretaria-registration-observation">
                   <label htmlFor="observacion">Observación</label>
                   <textarea
                     id="observacion"

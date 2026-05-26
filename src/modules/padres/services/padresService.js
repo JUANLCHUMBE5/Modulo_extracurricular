@@ -18,8 +18,8 @@ export async function obtenerResumenPadre(dni) {
   const inscripciones = obtenerInscripciones(estudiante, dniLimpio);
   const pagos = obtenerPagos(dniLimpio, inscripciones);
   const documentos = obtenerDocumentos(dniLimpio, estudiante);
-  const inscripcionActual = inscripciones[0] || null;
-  const invitacionActual = invitaciones[0] || null;
+  const inscripcionActual = inscripciones.find((item) => !esProgramaCortoPadres(item)) || null;
+  const invitacionActual = invitaciones.find((item) => !esProgramaCortoPadres(item)) || null;
 
   return {
     estudiante,
@@ -105,7 +105,9 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
   if (duplicada) throw new Error("El estudiante ya tiene una inscripción registrada en este programa.");
 
   const horarioRegistro = invitacion?.horario || resolverHorarioPorGrado(programa, estudiante.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar";
-  validarCruceHorarioPadres(dniLimpio, programa.id, programa.periodo, horarioRegistro);
+  if (!programa.invitacionMasiva) {
+    validarCruceHorarioPadres(dniLimpio, programa.id, programa.periodo, horarioRegistro);
+  }
 
   const registro = {
     id: `INS-${Date.now().toString().slice(-6)}`,
@@ -237,6 +239,25 @@ function obtenerInscripciones(estudiante, dni) {
     .map(sincronizarInscripcionConPrograma)
     .filter((inscripcion) => inscripcion.estadoInscripcion !== "Requiere revision")
     .sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0));
+}
+
+function esProgramaCortoPadres(programa = {}) {
+  const nombre = normalizarTexto(programa.programa || programa.nombre);
+  if (nombre.includes("expres") || nombre.includes("express") || nombre.includes("maraton")) return true;
+
+  const inicio = crearFechaLocal(programa.fechaInicio);
+  const fin = crearFechaLocal(programa.fechaFin);
+  if (!inicio || !fin) return false;
+
+  const dias = Math.floor((fin.getTime() - inicio.getTime()) / 86400000) + 1;
+  return dias > 0 && dias < 28;
+}
+
+function crearFechaLocal(valor) {
+  if (!valor) return null;
+  const partes = String(valor).split("-").map(Number);
+  if (partes.length !== 3 || partes.some((parte) => Number.isNaN(parte))) return null;
+  return new Date(partes[0], partes[1] - 1, partes[2]);
 }
 
 function obtenerPagos(dni, inscripciones) {

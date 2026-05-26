@@ -50,17 +50,19 @@
 
 .dir-nav button,
 .dir-logout {
+  width: 100%;
   min-height: 42px;
   border: 1px solid #d6e5e1;
   border-radius: 8px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
   gap: 9px;
   padding: 0 12px;
   color: #172331;
   background: #ffffff;
-  font-size: 13px;
-  font-weight: 900;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
 }
 

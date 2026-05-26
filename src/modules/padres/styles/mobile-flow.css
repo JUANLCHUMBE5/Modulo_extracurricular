@@ -97,27 +97,12 @@
 .padres-flow-student-copy {
   display: flex;
   align-items: center;
-  gap: 14px;
   min-width: 0;
-}
-
-.padres-flow-avatar {
-  width: 50px;
-  height: 50px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  border: 5px solid rgba(255, 255, 255, 0.85);
-  border-radius: 999px;
-  color: #ffffff;
-  background: #d86716;
-  font-size: 18px;
-  font-weight: 850;
-  box-shadow: 0 8px 18px rgba(216, 103, 22, 0.14);
 }
 
 .padres-flow-student-copy span {
   display: block;
+  margin-bottom: 4px;
   color: #b84f0d;
   font-size: 10.5px;
   font-weight: 800;
@@ -126,7 +111,7 @@
 }
 
 .padres-flow-student-copy h1 {
-  margin: 2px 0;
+  margin: 0 0 4px;
   color: #172331;
   font-size: clamp(21px, 3vw, 28px);
   line-height: 1.08;
@@ -267,10 +252,15 @@
   gap: 12px;
 }
 
+.padres-flow-program-card {
+  gap: 9px;
+  padding: 11px 14px;
+}
+
 .padres-flow-program-head {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 9px;
   align-items: center;
 }
 
@@ -291,6 +281,12 @@
   border-radius: 13px;
 }
 
+.padres-flow-program-card .padres-flow-program-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+}
+
 .padres-flow-program-head h2,
 .padres-flow-section-title h2,
 .padres-flow-status-card h2,
@@ -302,8 +298,10 @@
 }
 
 .padres-flow-program-head h2 {
-  margin-top: 4px;
-  font-size: clamp(20px, 2.35vw, 26px);
+  margin-top: 2px;
+  font-size: clamp(18px, 2.1vw, 23px);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 .padres-flow-section-title {
@@ -313,8 +311,8 @@
 }
 
 .padres-flow-section-title h2 {
-  margin-top: 8px;
-  font-size: clamp(20px, 2.5vw, 26px);
+  margin-top: 6px;
+  font-size: clamp(19px, 2.25vw, 24px);
 }
 
 .padres-flow-section-title p,
@@ -336,6 +334,10 @@
   gap: 10px;
 }
 
+.padres-flow-program-grid {
+  gap: 8px;
+}
+
 .padres-flow-info-tile {
   min-width: 0;
   min-height: 54px;
@@ -348,11 +350,24 @@
   background: #fbfefd;
 }
 
+.padres-flow-program-grid .padres-flow-info-tile {
+  min-height: 46px;
+  border-radius: 10px;
+  padding: 7px 9px;
+  gap: 8px;
+}
+
 .padres-flow-info-icon {
   width: 28px;
   height: 28px;
   flex: 0 0 auto;
   border-radius: 11px;
+}
+
+.padres-flow-program-grid .padres-flow-info-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 9px;
 }
 
 .padres-flow-info-tile > div {
@@ -377,11 +392,26 @@
   line-height: 1.26;
 }
 
+.padres-flow-program-grid .padres-flow-info-tile span {
+  font-size: 9px;
+}
+
+.padres-flow-program-grid .padres-flow-info-tile strong,
+.padres-flow-program-grid .padres-flow-info-tile .mantine-Text-root {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
 .padres-flow-program-note {
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
+}
+
+.padres-flow-program-card .padres-flow-program-note {
+  margin-top: 1px;
 }
 
 .padres-flow-program-note > div {
@@ -478,46 +508,222 @@
 .padres-flow-catalog {
   display: grid;
   gap: 14px;
+  overflow: hidden;
+  padding: 24px 28px;
+  background: #ffffff;
+}
+
+.padres-flow-catalog .padres-flow-section-title h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.12;
+}
+
+.padres-flow-catalog .padres-flow-section-title p {
+  margin-top: 5px;
+  color: #7a8089;
+  font-size: 13px;
+}
+
+.padres-flow-catalog-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.padres-flow-catalog-title span {
+  color: #ff6a21;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.padres-flow-carousel-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.padres-flow-carousel-actions button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #cfe4de;
+  border-radius: 10px;
+  display: inline-grid;
+  place-items: center;
+  color: #075f55;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(18, 112, 93, 0.08);
+  cursor: pointer;
+}
+
+.padres-flow-carousel-actions button:hover {
+  border-color: #8fdacb;
+  background: #effcf8;
 }
 
 .padres-flow-courses {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.padres-flow-courses.is-carousel {
+  display: flex;
+  grid-template-columns: none;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.padres-flow-courses.is-carousel .padres-flow-course-card {
+  flex: 0 0 calc((100% - 28px) / 3);
+  scroll-snap-align: start;
+}
+
+.padres-flow-courses.is-carousel::-webkit-scrollbar {
+  display: none;
 }
 
 .padres-flow-course-card {
   min-width: 0;
-  border: 1px solid #dce9e5;
-  border-radius: 15px;
-  padding: 13px;
+  min-height: 160px;
+  border: 1px solid #e7e8eb;
+  border-radius: 12px;
+  padding: 15px 16px;
   display: grid;
-  gap: 11px;
-  background: #ffffff;
-  box-shadow: 0 8px 20px rgba(18, 112, 93, 0.06);
+  grid-template-rows: auto auto 1fr auto;
+  gap: 8px;
+  background: #fbfbfc;
+  box-shadow: none;
 }
 
 .padres-flow-course-head {
+  min-height: 24px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+}
+
+.padres-flow-course-name {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.padres-flow-course-name svg {
+  flex: 0 0 auto;
+  color: #ff5f23;
+  stroke-width: 2.2;
 }
 
 .padres-flow-course-head h3 {
   margin: 0;
   color: #102035;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 850;
   line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+.padres-flow-course-category {
+  flex: 0 0 auto;
+  max-width: 42%;
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: #e85a20;
+  background: #ffe8dc;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.padres-flow-course-lines {
+  min-height: 39px;
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  color: #596273;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.padres-flow-course-lines span {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.padres-flow-course-lines svg {
+  flex: 0 0 auto;
+  color: #1d7d70;
+}
+
+.padres-flow-course-summary {
+  align-self: end;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #0f1f31;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.padres-flow-course-summary strong {
+  color: #ff4f1f;
+  font-size: 13px;
+  font-weight: 850;
+  white-space: nowrap;
 }
 
 .padres-flow-course-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.padres-flow-course-grid .padres-flow-info-tile {
+  min-height: 44px;
+  border-radius: 10px;
+  padding: 7px 8px;
 }
 
 .padres-flow-course-grid .padres-flow-info-tile:nth-child(2) {
   grid-row: span 2;
+  min-height: 96px;
+}
+
+.padres-flow-course-grid .padres-flow-info-tile span {
+  font-size: 9px;
+}
+
+.padres-flow-course-grid .padres-flow-info-tile strong,
+.padres-flow-course-grid .padres-flow-info-tile .mantine-Text-root {
+  font-size: 12px;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.padres-flow-course-card .padres-flow-primary-button {
+  min-height: 28px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.padres-flow-course-card .padres-flow-primary-button.is-empty {
+  color: #ff8b6b;
+  border: 2px solid #ff9a76;
+  background: #ffffff;
 }
 
 .padres-flow-badge {
@@ -753,6 +959,14 @@
     grid-template-columns: 1fr;
   }
 
+  .padres-flow-section-title {
+    align-items: flex-start;
+  }
+
+  .padres-flow-courses.is-carousel .padres-flow-course-card {
+    flex-basis: min(86vw, 420px);
+  }
+
   .padres-flow-student-art-wrap {
     display: none;
   }
@@ -795,12 +1009,6 @@
 
   .padres-flow-student-copy {
     align-items: flex-start;
-  }
-
-  .padres-flow-avatar {
-    width: 50px;
-    height: 50px;
-    border-width: 5px;
   }
 
   .padres-flow-student-copy h1 {
