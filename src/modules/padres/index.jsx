@@ -160,6 +160,16 @@ function ProgramaPrincipal({ programa, inscripcion, invitacionPendiente, setInfo
           <HorarioProgramaPadres horario={programa.horario || "Por confirmar"} />
         </InfoTile>
         <InfoTile icon={CalendarDays} label="Vigencia" value={formatearRangoFechasPadres(programa.fechaInicio, programa.fechaFin)} />
+        <InfoTile
+          icon={CalendarDays}
+          label="Duración"
+          value={programa.duracionTaller || "Por definir"}
+        />
+        <InfoTile
+          icon={CalendarDays}
+          label="Aviso"
+          value={programa.ventanaInscripcion?.fechaLimite ? `Hasta ${programa.ventanaInscripcion.fechaLimite}` : "Por definir"}
+        />
         <InfoTile icon={School} label="Grupo" value={programa.periodo || "Escolar"} />
       </div>
 
@@ -282,6 +292,7 @@ function CatalogoProgramas({
 
                 <div className="padres-flow-course-summary">
                   <span>Cupos: {prog.cuposDisponibles}/{prog.cupos}</span>
+                  <span>Aviso: {prog.ventanaInscripcion?.fechaLimite || `${prog.duracionAvisoDias || 7} días`}</span>
                   <strong>{formatearSoles(prog.costo)}</strong>
                 </div>
 

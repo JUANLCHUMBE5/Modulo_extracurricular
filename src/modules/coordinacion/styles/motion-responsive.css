@@ -84,6 +84,7 @@
   }
 
   .coord-compact-schedule-row,
+  .coord-program-window-row,
   .coord-group-schedule-grid {
     grid-template-columns: 1fr;
   }

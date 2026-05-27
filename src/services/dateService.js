@@ -39,19 +39,27 @@ export function calcularDuracionTexto(inicio, fin) {
   return `${meses} mes${meses === 1 ? "" : "es"}`;
 }
 
-export function obtenerVentanaInscripcion(fechaInicio, fechaBase = new Date()) {
+export function normalizarDuracionAvisoDias(valor, respaldo = 2) {
+  const numero = Math.trunc(Number(valor));
+  const dias = Number.isFinite(numero) && numero > 0 ? numero : respaldo;
+  return Math.min(7, Math.max(1, dias));
+}
+
+export function obtenerVentanaInscripcion(fechaInicio, fechaBase = new Date(), duracionAvisoDias = 2) {
   const inicio = normalizarFecha(fechaInicio);
   const hoy = normalizarFecha(fechaBase);
+  const diasAviso = normalizarDuracionAvisoDias(duracionAvisoDias);
   if (!inicio || !hoy) {
     return {
       permitida: true,
       requiereCaja: false,
       fechaLimite: "",
+      duracionAvisoDias: diasAviso,
       mensaje: "",
     };
   }
 
-  const limite = addDays(startOfDay(inicio), 1);
+  const limite = addDays(startOfDay(inicio), diasAviso - 1);
   const fechaActual = startOfDay(hoy);
   const permitida = fechaActual <= limite;
 
@@ -59,9 +67,10 @@ export function obtenerVentanaInscripcion(fechaInicio, fechaBase = new Date()) {
     permitida,
     requiereCaja: !permitida,
     fechaLimite: format(limite, "dd/MM/yyyy", { locale: es }),
+    duracionAvisoDias: diasAviso,
     mensaje: permitida
-      ? "Inscripcion regular habilitada."
-      : "La inscripcion regular cerro. Desde el segundo dia de clases, el padre debe acercarse a Caja para evaluar el registro.",
+      ? `Aviso de inscripcion habilitado hasta el ${format(limite, "dd/MM/yyyy", { locale: es })}.`
+      : "El aviso de inscripcion regular cerro. Derive al padre a Caja para evaluar el registro.",
   };
 }
 

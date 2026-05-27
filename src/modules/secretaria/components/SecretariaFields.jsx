@@ -44,11 +44,30 @@ function DatoHorario({ label, value }) {
   );
 }
 
+const diasSemanaSecretaria = [
+  { valor: "Lunes", patron: /\blunes\b/i },
+  { valor: "Martes", patron: /\bmartes\b/i },
+  { valor: "Miércoles", patron: /\bmi(?:e|é|Ã©)rcoles\b/i },
+  { valor: "Jueves", patron: /\bjueves\b/i },
+  { valor: "Viernes", patron: /\bviernes\b/i },
+  { valor: "Sábado", patron: /\bs(?:a|á|Ã¡)bado\b/i },
+  { valor: "Domingo", patron: /\bdomingo\b/i },
+];
+
+function listarDiasHorario(texto) {
+  return diasSemanaSecretaria
+    .filter((dia) => dia.patron.test(texto))
+    .map((dia) => dia.valor);
+}
+
+function formatearDiasHorario(dias) {
+  if (dias.length <= 2) return dias.join(" y ");
+  return `${dias.slice(0, -1).join(", ")} y ${dias[dias.length - 1]}`;
+}
+
 function resumirHorarioSecretaria(horario) {
   const texto = String(horario || "");
-  const dia = texto.match(/(?:^|:\s*)(Lunes|Martes|Mi[eé]rcoles|Jueves|Viernes|S[aá]bado|Domingo)/i)?.[1]
-    || texto.match(/\b(Lunes|Martes|Mi[eé]rcoles|Jueves|Viernes|S[aá]bado|Domingo)\b/i)?.[1]
-    || "";
+  const dia = formatearDiasHorario(listarDiasHorario(texto));
   const clase = texto.match(/clase\s+([^,·/]+)/i)?.[1]?.trim() || "";
   const almuerzo = texto.match(/almuerzo\s+([^,·/]+)/i)?.[1]?.trim() || "";
   return {

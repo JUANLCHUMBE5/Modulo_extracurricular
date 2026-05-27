@@ -81,7 +81,7 @@ const DELEGATED_STORAGE_KEY = "modulo_extracurricular_delegated_module";
 
 function readStorageJson(key, fallback = null) {
   try {
-    const raw = window.localStorage.getItem(key);
+    const raw = window.sessionStorage.getItem(key);
     return raw ? JSON.parse(raw) : fallback;
   } catch {
     return fallback;
@@ -90,7 +90,7 @@ function readStorageJson(key, fallback = null) {
 
 function readStorageValue(key, fallback = "") {
   try {
-    return window.localStorage.getItem(key) || fallback;
+    return window.sessionStorage.getItem(key) || fallback;
   } catch {
     return fallback;
   }
@@ -98,27 +98,30 @@ function readStorageValue(key, fallback = "") {
 
 function writeStorageJson(key, value) {
   try {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    window.sessionStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // La sesion sigue viva en memoria aunque el navegador bloquee localStorage.
+    // La sesion sigue viva en memoria aunque el navegador bloquee sessionStorage.
   }
 }
 
 function writeStorageValue(key, value) {
   try {
-    window.localStorage.setItem(key, value);
+    window.sessionStorage.setItem(key, value);
   } catch {
-    // La sesion sigue viva en memoria aunque el navegador bloquee localStorage.
+    // La sesion sigue viva en memoria aunque el navegador bloquee sessionStorage.
   }
 }
 
 function removeStoredSession() {
   try {
+    window.sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    window.sessionStorage.removeItem(MODULE_STORAGE_KEY);
+    window.sessionStorage.removeItem(DELEGATED_STORAGE_KEY);
     window.localStorage.removeItem(SESSION_STORAGE_KEY);
     window.localStorage.removeItem(MODULE_STORAGE_KEY);
     window.localStorage.removeItem(DELEGATED_STORAGE_KEY);
   } catch {
-    // No hay nada mas que limpiar si el navegador bloquea localStorage.
+    // No hay nada mas que limpiar si el navegador bloquea storage.
   }
 }
 
@@ -243,9 +246,10 @@ function App() {
     }
 
     try {
+      window.sessionStorage.removeItem(DELEGATED_STORAGE_KEY);
       window.localStorage.removeItem(DELEGATED_STORAGE_KEY);
     } catch {
-      // Sin localStorage, basta con limpiar el estado en memoria.
+      // Sin storage, basta con limpiar el estado en memoria.
     }
   }, [delegatedModule, user]);
 

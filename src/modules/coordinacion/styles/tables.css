@@ -93,6 +93,12 @@
   font-size: 11px;
 }
 
+.coord-table-date small {
+  color: var(--coord-muted);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
 .coord-table-cupos {
   display: grid;
   gap: 5px;

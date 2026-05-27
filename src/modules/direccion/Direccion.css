@@ -214,6 +214,95 @@
   padding: 14px 16px;
 }
 
+.dir-reports-view {
+  display: grid;
+  gap: 14px;
+}
+
+.dir-report-intro,
+.dir-report-card {
+  border: 1px solid #d9e7e3;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 31, 51, 0.05);
+}
+
+.dir-report-intro {
+  min-height: 94px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+}
+
+.dir-report-intro span {
+  display: block;
+  color: #176c60;
+  font-size: 12px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.dir-report-intro h2 {
+  margin: 2px 0;
+  color: #102035;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.dir-report-intro p {
+  margin: 0;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.dir-report-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.dir-report-card {
+  min-height: 128px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+}
+
+.dir-report-card-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #057a55;
+  background: #e8f7ef;
+}
+
+.dir-report-card.is-orange .dir-report-card-icon {
+  color: #c2410c;
+  background: #fff2e3;
+}
+
+.dir-report-card h3 {
+  margin: 0;
+  color: #102035;
+  font-size: 16px;
+  font-weight: 950;
+}
+
+.dir-report-card p {
+  margin: 4px 0 0;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
 .dir-report-actions h2,
 .dir-panel h2 {
   margin: 0;
@@ -342,7 +431,8 @@
   }
 
   .dir-header,
-  .dir-report-actions {
+  .dir-report-actions,
+  .dir-report-intro {
     align-items: stretch;
     flex-direction: column;
   }
@@ -352,7 +442,17 @@
   }
 
   .dir-stats,
-  .dir-charts {
+  .dir-charts,
+  .dir-report-grid {
     grid-template-columns: 1fr;
+  }
+
+  .dir-report-card {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .dir-report-card .mantine-Button-root {
+    grid-column: 1 / -1;
+    width: 100%;
   }
 }

@@ -4,14 +4,23 @@ import {
   listarProgramas,
   obtenerPrograma,
 } from "../../coordinacion/services/coordinacionService";
-import { fechaActualInput, fechaActualIso, normalizarFecha, obtenerVentanaInscripcion } from "../../../services/dateService";
+import {
+  calcularDuracionTexto,
+  fechaActualInput,
+  fechaActualIso,
+  normalizarDuracionAvisoDias,
+  normalizarFecha,
+  obtenerVentanaInscripcion,
+} from "../../../services/dateService";
 
 export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
   await esperar(350);
   await syncApiDb();
   const periodoNormalizado = normalizarPeriodo(periodo);
   const estudiante = apiDb.estudiantes[dni];
-  const invitacionEncontrada = await buscarInvitacionPorDniPeriodo(dni, periodoNormalizado);
+  const invitacionEncontrada = periodoNormalizado === "verano"
+    ? null
+    : await buscarInvitacionPorDniPeriodo(dni, periodoNormalizado);
   const invitacionPeriodo = invitacionEncontrada && programaDisponibleParaGrado(
     invitacionEncontrada.programa,
     estudiante?.grado || invitacionEncontrada.invitado?.grado
@@ -35,6 +44,7 @@ export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
     estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(dni, periodoNormalizado),
     estadoPago: obtenerEstadoPagoPorPeriodo(dni, periodoNormalizado),
     origenRegistro: "Base general de estudiantes",
+    tipoAlumno: periodoNormalizado === "verano" ? "Alumno interno" : estudiante.tipoAlumno,
     tieneInvitacion: false,
     programaAsignado: "",
     requiereUniforme: false,
@@ -57,7 +67,9 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
     if (!textoBusqueda.includes(termino)) return;
 
     vistos.add(claveAlumno(estudiante));
-    const invitacion = buscarInvitacionEnMemoria(estudiante.dni, periodoNormalizado, estudiante.grado);
+    const invitacion = periodoNormalizado === "verano"
+      ? null
+      : buscarInvitacionEnMemoria(estudiante.dni, periodoNormalizado, estudiante.grado);
     resultados.push(invitacion
       ? adaptarEstudianteBase(estudiante, periodoNormalizado, invitacion)
       : {
@@ -67,6 +79,7 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
     estadoInscripción: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
           estadoPago: obtenerEstadoPagoPorPeriodo(estudiante.dni, periodoNormalizado),
           origenRegistro: "Base general de estudiantes",
+          tipoAlumno: periodoNormalizado === "verano" ? "Alumno interno" : estudiante.tipoAlumno,
           tieneInvitacion: false,
           programaAsignado: "",
           requiereUniforme: false,
@@ -74,25 +87,27 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
         });
   });
 
-  apiDb.programas
-    .filter((programa) => normalizarPeriodo(programa.periodo) === periodoNormalizado)
-    .forEach((programa) => {
-      (apiDb.invitadosPorPrograma[programa.id] || []).forEach((invitado) => {
-        const clave = claveAlumno(invitado);
-        if (vistos.has(clave)) return;
+  if (periodoNormalizado !== "verano") {
+    apiDb.programas
+      .filter((programa) => normalizarPeriodo(programa.periodo) === periodoNormalizado)
+      .forEach((programa) => {
+        (apiDb.invitadosPorPrograma[programa.id] || []).forEach((invitado) => {
+          const clave = claveAlumno(invitado);
+          if (vistos.has(clave)) return;
 
-        const textoBusqueda = normalizarTexto(`${invitado.nombres} ${invitado.codigoEstudiante || ""}`);
-        if (!textoBusqueda.includes(termino)) return;
-        if (!programaDisponibleParaGrado(programa, invitado.grado)) return;
+          const textoBusqueda = normalizarTexto(`${invitado.nombres} ${invitado.codigoEstudiante || ""}`);
+          if (!textoBusqueda.includes(termino)) return;
+          if (!programaDisponibleParaGrado(programa, invitado.grado)) return;
 
-        vistos.add(clave);
-        resultados.push(adaptarInvitadoComoEstudiante({
-          programaId: programa.id,
-          programa,
-          invitado,
-        }, periodoNormalizado));
+          vistos.add(clave);
+          resultados.push(adaptarInvitadoComoEstudiante({
+            programaId: programa.id,
+            programa,
+            invitado,
+          }, periodoNormalizado));
+        });
       });
-    });
+  }
 
   return resultados.slice(0, 8);
 }
@@ -179,6 +194,8 @@ export async function registrarInscripcion(payload) {
     modalidadCobro: programa.modalidadCobro || "",
     fechaInicio: programa.fechaInicio || "",
     fechaFin: programa.fechaFin || "",
+    duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+    duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
     gradosAplicables: programa.gradosAplicables || [],
     horariosPorGrupo: programa.horariosPorGrupo || [],
     requisitos: programa.requisitos || "",
@@ -342,6 +359,8 @@ function sincronizarInscripcionConProgramaActual(inscripcion) {
     modalidadCobro: programa.modalidadCobro || inscripcion.modalidadCobro || "",
     fechaInicio: programa.fechaInicio || inscripcion.fechaInicio || "",
     fechaFin: programa.fechaFin || inscripcion.fechaFin || "",
+    duracionTaller: programa.duracionTaller || inscripcion.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+    duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias || inscripcion.duracionAvisoDias, 7),
     gradosAplicables: programa.gradosAplicables || inscripcion.gradosAplicables || [],
     horariosPorGrupo: programa.horariosPorGrupo || inscripcion.horariosPorGrupo || [],
     requisitos: programa.requisitos || inscripcion.requisitos || "",
@@ -383,6 +402,8 @@ function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
     modalidadCobro: programa.modalidadCobro || "",
     fechaInicio: programa.fechaInicio || "",
     fechaFin: programa.fechaFin || "",
+    duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+    duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
     edadMinima: programa.edadMinima || "",
     edadMaxima: programa.edadMaxima || "",
     fechaNacimientoDesde: programa.fechaNacimientoDesde || "",
@@ -417,6 +438,8 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
     programaRequisitos: programa.requisitos || "",
     programaFechaInicio: programa.fechaInicio || "",
     programaFechaFin: programa.fechaFin || "",
+    programaDuracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+    programaDuracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
     seleccion: invitado.seleccion || "",
     nivelCambridge: invitado.nivelCambridge || "",
     plantilla: programa.plantilla || "",
@@ -451,6 +474,8 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
     programaRequisitos: programa.requisitos || "",
     programaFechaInicio: programa.fechaInicio || "",
     programaFechaFin: programa.fechaFin || "",
+    programaDuracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+    programaDuracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
     plantilla: programa.plantilla || "",
     plantillaBase64: programa.plantillaBase64 || "",
     plantillaVariables: programa.plantillaVariables || [],
@@ -566,10 +591,10 @@ function finalizarProgramasVencidos() {
 function validarVentanaInscripcionRegular(programa, payload = {}) {
   if (payload.registroCaja) return;
 
-  const ventana = obtenerVentanaInscripcion(programa.fechaInicio);
+  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias);
   if (ventana.permitida) return;
 
-  throw new Error("La inscripcion regular cerro. Desde el segundo dia de clases, derive al padre a Caja para evaluar y registrar la matricula.");
+  throw new Error("El aviso de inscripcion regular cerro. Derive al padre a Caja para evaluar y registrar la matricula.");
 }
 
 function normalizarTexto(texto) {

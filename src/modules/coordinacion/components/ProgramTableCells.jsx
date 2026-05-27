@@ -1,3 +1,5 @@
+import { calcularDuracionTexto, normalizarDuracionAvisoDias } from "../../../services/dateService";
+
 function HorarioTabla({ programa }) {
   const partes = dividirHorarioTabla(programa?.horario);
   return (
@@ -14,12 +16,16 @@ function GradosTabla({ programa }) {
   return <span className="coord-table-small-text">{grados || "Por definir"}</span>;
 }
 
-function VigenciaTabla({ inicio, fin }) {
+function VigenciaTabla({ inicio, fin, duracion, avisoDias }) {
+  const duracionTexto = duracion || calcularDuracionTexto(inicio, fin);
+  const diasAviso = normalizarDuracionAvisoDias(avisoDias, 7);
   return (
     <div className="coord-table-date">
       <span>{formatearFechaCorta(inicio)}</span>
       <span>al</span>
       <span>{formatearFechaCorta(fin)}</span>
+      {duracionTexto ? <small>{duracionTexto}</small> : null}
+      <small>Aviso {diasAviso} d.</small>
     </div>
   );
 }

@@ -1,5 +1,11 @@
 import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
-import { fechaActualInput, fechaActualIso, normalizarFecha } from "../../../services/dateService";
+import {
+  calcularDuracionTexto,
+  fechaActualInput,
+  fechaActualIso,
+  normalizarDuracionAvisoDias,
+  normalizarFecha,
+} from "../../../services/dateService";
 
 const delay = (ms = 600) => new Promise((resolve) => setTimeout(resolve, ms));
 const obtenerApiBase = () => String(
@@ -78,6 +84,8 @@ export async function crearPrograma(datos) {
     edadMaxima: datos.edadMaxima || "",
     fechaNacimientoDesde: datos.fechaNacimientoDesde || "",
     fechaNacimientoHasta: datos.fechaNacimientoHasta || "",
+    duracionTaller: datos.duracionTaller || calcularDuracionTexto(datos.fechaInicio, datos.fechaFin),
+    duracionAvisoDias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
     plantillaBase64: datos.plantillaBase64 || "",
     plantillaVariables: datos.plantillaVariables || [],
     plantillaValidada: Boolean(datos.plantillaValidada),
@@ -124,6 +132,8 @@ export async function crearProgramaDesdeDocumento(datos) {
     horariosPorGrupo: Array.isArray(datos.horariosPorGrupo) ? datos.horariosPorGrupo : [],
     fechaInicio: datos.fechaInicio || fechaActualInput(),
     fechaFin: datos.fechaFin || fechaActualInput(),
+    duracionTaller: datos.duracionTaller || calcularDuracionTexto(datos.fechaInicio, datos.fechaFin),
+    duracionAvisoDias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
     cupos: Number(datos.cupos) > 0 ? Number(datos.cupos) : 1,
     cuposOcupados: 0,
     costo: Number(datos.costo) > 0 ? Number(Number(datos.costo).toFixed(2)) : 1,
@@ -166,6 +176,8 @@ export async function editarPrograma(id, datos) {
     edadMaxima: datos.edadMaxima || "",
     fechaNacimientoDesde: datos.fechaNacimientoDesde || "",
     fechaNacimientoHasta: datos.fechaNacimientoHasta || "",
+    duracionTaller: datos.duracionTaller || calcularDuracionTexto(datos.fechaInicio, datos.fechaFin),
+    duracionAvisoDias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
     plantillaBase64: datos.plantillaBase64 || "",
     plantillaVariables: datos.plantillaVariables || [],
     plantillaValidada: Boolean(datos.plantillaValidada),
@@ -462,6 +474,8 @@ function conCuposDisponibles(programa) {
   return {
     ...programa,
     periodo: normalizarPeriodo(programa.periodo),
+    duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+    duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
     cuposDisponibles: Number(programa.cupos || 0) - Number(programa.cuposOcupados || 0),
   };
 }
@@ -482,6 +496,10 @@ function validarDatosPrograma(datos) {
     }
   }
   if (!String(datos.horario || "").trim()) throw new Error("El horario del programa es obligatorio.");
+  const duracionAviso = Number(datos.duracionAvisoDias);
+  if (!Number.isInteger(duracionAviso) || duracionAviso < 1 || duracionAviso > 7) {
+    throw new Error("El aviso de inscripcion debe durar entre 1 y 7 dias.");
+  }
   if (!Number.isFinite(Number(datos.cupos)) || Number(datos.cupos) <= 0) {
     throw new Error("Los cupos deben ser un número positivo.");
   }

@@ -47,7 +47,32 @@ function EmptyChart({ text }) {
   return <div className="dir-empty-chart">{text}</div>;
 }
 
+function ReportCard({ description, disabled, label, loading, onClick, tone = "teal" }) {
+  return (
+    <article className={`dir-report-card is-${tone}`}>
+      <div className="dir-report-card-icon">
+        <Download size={21} />
+      </div>
+      <div>
+        <h3>{label}</h3>
+        <p>{description}</p>
+      </div>
+      <Button
+        color={tone === "orange" ? "orange" : "teal"}
+        variant={tone === "orange" ? "filled" : "light"}
+        leftSection={<Download size={17} />}
+        loading={loading}
+        disabled={disabled}
+        onClick={onClick}
+      >
+        Descargar
+      </Button>
+    </article>
+  );
+}
+
 export default function Direccion({ onLogout, user }) {
+  const [vista, setVista] = useState("resumen");
   const [periodo, setPeriodo] = useState("todos");
   const [panel, setPanel] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -102,6 +127,35 @@ export default function Direccion({ onLogout, user }) {
     }
   };
 
+  const reportesDireccion = [
+    {
+      tipo: "resumen",
+      label: "Resumen ejecutivo",
+      description: "Indicadores generales de programas, inscripciones, recaudación y ocupación.",
+    },
+    {
+      tipo: "programas",
+      label: "Programas",
+      description: "Listado de programas con estado, responsable, cupos, inscritos y montos.",
+    },
+    {
+      tipo: "inscripciones",
+      label: "Inscripciones",
+      description: "Detalle de estudiantes inscritos, estado de inscripción, pago, origen y contacto.",
+    },
+    {
+      tipo: "pagos",
+      label: "Pagos",
+      description: "Pagos registrados por estudiante, programa, monto, medio, fecha y estado.",
+    },
+    {
+      tipo: "completo",
+      label: "Reporte completo",
+      description: "Archivo consolidado con resumen, programas, inscripciones y pagos.",
+      tone: "orange",
+    },
+  ];
+
   return (
     <main className="dir-page">
       <aside className="dir-sidebar">
@@ -110,9 +164,13 @@ export default function Direccion({ onLogout, user }) {
           <span>Direccion</span>
         </div>
         <nav className="dir-nav" aria-label="Navegacion de direccion">
-          <button className="is-active" type="button">
+          <button className={vista === "resumen" ? "is-active" : ""} type="button" onClick={() => setVista("resumen")}>
             <ChartBar size={18} />
             <span>Resumen general</span>
+          </button>
+          <button className={vista === "reportes" ? "is-active" : ""} type="button" onClick={() => setVista("reportes")}>
+            <Download size={18} />
+            <span>Reportes</span>
           </button>
         </nav>
         <button className="dir-logout" type="button" onClick={onLogout}>
@@ -125,8 +183,12 @@ export default function Direccion({ onLogout, user }) {
         <header className="dir-header">
           <div>
             <span>Panel institucional</span>
-            <h1>Direccion y reportes</h1>
-            <p>Seguimiento de programas, inscripciones, pagos y capacidad operativa.</p>
+            <h1>{vista === "reportes" ? "Descarga de reportes" : "Direccion y reportes"}</h1>
+            <p>
+              {vista === "reportes"
+                ? "Seleccione el archivo que necesita exportar para revisión institucional."
+                : "Seguimiento de programas, inscripciones, pagos y capacidad operativa."}
+            </p>
           </div>
           <Group gap="xs" wrap="wrap">
             <Select
@@ -156,6 +218,35 @@ export default function Direccion({ onLogout, user }) {
           <section className="dir-loading">
             <Loader color="teal" />
             <p>Cargando informacion de Direccion...</p>
+          </section>
+        ) : vista === "reportes" ? (
+          <section className="dir-reports-view">
+            <article className="dir-report-intro">
+              <div>
+                <span>Exportacion</span>
+                <h2>Reportes disponibles</h2>
+                <p>Los archivos se descargan en Excel y respetan el periodo seleccionado arriba.</p>
+              </div>
+              {!exportarHabilitado ? (
+                <Badge color="orange" variant="light">Sin permiso de exportacion</Badge>
+              ) : (
+                <Badge color="teal" variant="light">Exportacion habilitada</Badge>
+              )}
+            </article>
+
+            <div className="dir-report-grid">
+              {reportesDireccion.map((reporte) => (
+                <ReportCard
+                  key={reporte.tipo}
+                  label={reporte.label}
+                  description={reporte.description}
+                  tone={reporte.tone}
+                  loading={descargando === reporte.tipo}
+                  disabled={!exportarHabilitado}
+                  onClick={() => descargar(reporte.tipo)}
+                />
+              ))}
+            </div>
           </section>
         ) : (
           <>
@@ -187,34 +278,6 @@ export default function Direccion({ onLogout, user }) {
                 detail={`${resumen.ocupados || 0} de ${resumen.cupos || 0} cupos`}
                 tone="purple"
               />
-            </section>
-
-            <section className="dir-report-actions" aria-label="Descarga de reportes">
-              <div>
-                <h2>Descargar reportes</h2>
-                <p>Archivos Excel listos para revision de Direccion.</p>
-              </div>
-              <Group gap="xs" wrap="wrap">
-                {[
-                  ["resumen", "Resumen"],
-                  ["programas", "Programas"],
-                  ["inscripciones", "Inscripciones"],
-                  ["pagos", "Pagos"],
-                  ["completo", "Completo"],
-                ].map(([tipo, label]) => (
-                  <Button
-                    key={tipo}
-                    color={tipo === "completo" ? "orange" : "teal"}
-                    variant={tipo === "completo" ? "filled" : "light"}
-                    leftSection={<Download size={17} />}
-                    loading={descargando === tipo}
-                    disabled={!exportarHabilitado}
-                    onClick={() => descargar(tipo)}
-                  >
-                    {label}
-                  </Button>
-                ))}
-              </Group>
             </section>
 
             <section className="dir-charts">

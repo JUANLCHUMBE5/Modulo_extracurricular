@@ -512,7 +512,7 @@ function obtenerSiguientePaso({ programa, inscripcion }) {
     if (programa?.ventanaInscripcion?.requiereCaja) {
       return {
         titulo: "Registro por Caja",
-        detalle: "La inscripcion web ya cerro. Desde el segundo dia de clases, acerquese a Caja si aun desea matricular al estudiante.",
+        detalle: "El aviso de inscripcion web ya cerro. Acerquese a Caja si aun desea matricular al estudiante.",
       };
     }
 

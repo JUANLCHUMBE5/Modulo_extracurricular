@@ -6,7 +6,7 @@
     "Verano",
     "Arte"
   ],
-  "nextProgramaId": 15,
+  "nextProgramaId": 16,
   "nextCargaId": 1,
   "nextDocumentoId": 43,
   "estudiantes": {
@@ -149,7 +149,7 @@
     {
       "id": "PROG-012",
       "cuposOcupados": 0,
-      "estado": "Habilitado",
+      "estado": "Finalizado",
       "nombre": "MARATON 3",
       "periodo": "escolar",
       "categoria": "Academico",
@@ -188,12 +188,13 @@
       "detalleAlmuerzo": "",
       "concesionarios": "",
       "requiereUniforme": false,
-      "invitacionMasiva": true
+      "invitacionMasiva": true,
+      "finalizadoAutomaticamenteEn": "2026-05-27T07:45:05-05:00"
     },
     {
       "id": "PROG-013",
       "cuposOcupados": 0,
-      "estado": "Habilitado",
+      "estado": "Finalizado",
       "nombre": "comuncicaion 1",
       "periodo": "escolar",
       "categoria": "Ingles",
@@ -237,7 +238,8 @@
       "detalleAlmuerzo": "",
       "concesionarios": "",
       "requiereUniforme": false,
-      "invitacionMasiva": true
+      "invitacionMasiva": true,
+      "finalizadoAutomaticamenteEn": "2026-05-27T07:45:05-05:00"
     },
     {
       "id": "PROG-014",
@@ -285,6 +287,51 @@
       "concesionarios": "",
       "requiereUniforme": false,
       "invitacionMasiva": true
+    },
+    {
+      "id": "PROG-015",
+      "cuposOcupados": 0,
+      "estado": "Habilitado",
+      "nombre": "TALLER INICIAL 3-5",
+      "periodo": "verano",
+      "categoria": "Verano",
+      "grupo": "Edades 5 a 6 años",
+      "horario": "Lunes, Miércoles, Jueves clase 7:20 AM - 12:00 PM",
+      "gradosAplicables": [],
+      "edadMinima": 5,
+      "edadMaxima": 6,
+      "fechaNacimientoDesde": "",
+      "fechaNacimientoHasta": "",
+      "dias": [
+        "Lunes",
+        "Miércoles",
+        "Jueves"
+      ],
+      "horaInicio": "07:20",
+      "horaFin": "12:00",
+      "almuerzoInicio": "",
+      "almuerzoFin": "",
+      "horariosPorGrupo": [],
+      "fechaInicio": "2026-05-31",
+      "fechaFin": "2026-06-05",
+      "cupos": 4,
+      "costo": 50,
+      "modalidadCobro": "Unico",
+      "responsable": "ANGELA TORRES",
+      "tutora": "PATRINA TORRES",
+      "plantilla": "",
+      "plantillaBase64": "",
+      "plantillaVariables": [],
+      "plantillaValidada": false,
+      "plantillaActualizadaEn": "",
+      "requisitos": "",
+      "comunicado": "",
+      "detalleCosto": "",
+      "detalleAlmuerzo": "",
+      "concesionarios": "",
+      "requiereUniforme": false,
+      "requiereIndumentaria": false,
+      "invitacionMasiva": false
     }
   ],
   "invitadosPorPrograma": {

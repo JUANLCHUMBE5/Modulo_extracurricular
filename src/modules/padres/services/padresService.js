@@ -1,5 +1,10 @@
 import { apiDb, saveApiDb, syncApiDb } from "../../../services/dbApi";
-import { fechaActualIso, obtenerVentanaInscripcion } from "../../../services/dateService";
+import {
+  calcularDuracionTexto,
+  fechaActualIso,
+  normalizarDuracionAvisoDias,
+  obtenerVentanaInscripcion,
+} from "../../../services/dateService";
 
 const delay = (ms = 350) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -84,11 +89,8 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
     throw new Error("Este programa requiere invitacion de Coordinacion.");
   }
 
-  const ventana = obtenerVentanaInscripcion(programa.fechaInicio);
-  if (!ventana.permitida) {
-    throw new Error("La inscripción web cerró. Desde el segundo día de clases, acérquese a Caja para evaluar el registro.");
-  }
-
+  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias);
+  if (!ventana.permitida) throw new Error("El aviso de inscripcion web cerro. Acerquese a Caja para evaluar el registro.");
   if (Number(programa.cuposOcupados || 0) >= Number(programa.cupos || 0)) {
     throw new Error("El programa no tiene cupos disponibles.");
   }
@@ -120,6 +122,8 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
     modalidadCobro: programa.modalidadCobro || "",
     fechaInicio: programa.fechaInicio || "",
     fechaFin: programa.fechaFin || "",
+    duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+    duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
     requisitos: programa.requisitos || "",
     comunicado: programa.comunicado || "",
     detalleCosto: programa.detalleCosto || "",
@@ -180,7 +184,9 @@ function obtenerInvitaciones(dni, estudiante = null) {
         estadoInvitacion: "Invitacion masiva",
         fechaInicio: programa.fechaInicio || "",
         fechaFin: programa.fechaFin || "",
-        ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio),
+        duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+        duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+        ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias),
       });
     }
 
@@ -211,7 +217,9 @@ function obtenerInvitaciones(dni, estudiante = null) {
           estadoInvitacion: invitado.estado || "Invitado",
           fechaInicio: programa.fechaInicio || "",
           fechaFin: programa.fechaFin || "",
-          ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio),
+          duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+          duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+          ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias),
         });
       });
   });
@@ -308,6 +316,8 @@ function sincronizarInscripcionConPrograma(inscripcion) {
     modalidadCobro: programa.modalidadCobro || inscripcion.modalidadCobro,
     fechaInicio: programa.fechaInicio || inscripcion.fechaInicio,
     fechaFin: programa.fechaFin || inscripcion.fechaFin,
+    duracionTaller: programa.duracionTaller || inscripcion.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+    duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias || inscripcion.duracionAvisoDias, 7),
     requisitos: programa.requisitos || inscripcion.requisitos,
     comunicado: programa.comunicado || inscripcion.comunicado || "",
     detalleCosto: programa.detalleCosto || inscripcion.detalleCosto || "",
@@ -466,7 +476,8 @@ export async function obtenerProgramasCoordinacion() {
     const cupos = Number(programa.cupos || 0);
     const cuposOcupados = Number(programa.cuposOcupados || 0);
     const cuposDisponibles = Math.max(0, cupos - cuposOcupados);
-    const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio);
+    const duracionAvisoDias = normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7);
+    const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias);
     const requiereGradoCompatible = tieneHorariosPorGrupo(programa) ||
       (Array.isArray(programa.gradosAplicables) && programa.gradosAplicables.length > 0);
 
@@ -488,6 +499,8 @@ export async function obtenerProgramasCoordinacion() {
       responsable: programa.responsable || programa.docente || "Por definir",
       fechaInicio: programa.fechaInicio || "",
       fechaFin: programa.fechaFin || "",
+      duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+      duracionAvisoDias,
       ventanaInscripcion,
       registrable: Boolean(programa.invitacionMasiva) && programa.estado === "Habilitado" && cuposDisponibles > 0 && ventanaInscripcion.permitida,
     };

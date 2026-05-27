@@ -555,6 +555,12 @@
   gap: 10px;
 }
 
+.coord-program-window-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.55fr) minmax(240px, 1fr);
+  gap: 10px;
+}
+
 .coord-group-schedule-head {
   display: flex;
   justify-content: space-between;

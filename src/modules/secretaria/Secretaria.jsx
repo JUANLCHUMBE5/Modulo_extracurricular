@@ -126,14 +126,18 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     : null;
   const programaSeleccionado = programas.find((programa) => programa.id === formulario.programa);
   const esCicloVerano = periodo === "verano";
+  const tieneInvitacionOperativa = !esCicloVerano && Boolean(estudiante?.tieneInvitacion);
+  const tipoAlumnoMostrado = esCicloVerano
+    ? (estudiante?.esExterno ? "Alumno externo" : "Alumno interno")
+    : estudiante?.tipoAlumno;
   
   // Si el estudiante tiene invitación, usamos los datos que vienen del servicio para mostrar el nombre
   // Si no tiene invitación, usamos el programa seleccionado en el dropdown
-  const nombreProgramaAMostrar = estudiante?.tieneInvitacion 
+  const nombreProgramaAMostrar = tieneInvitacionOperativa
     ? estudiante.programaNombre 
     : (programaSeleccionado?.nombre || "");
   const registroAdicional = Boolean(inscripcion);
-  const programaAsignadoInvitacion = estudiante?.tieneInvitacion ? {
+  const programaAsignadoInvitacion = tieneInvitacionOperativa ? {
     id: estudiante.programaAsignado,
     nombre: estudiante.programaNombre,
     horario: estudiante.programaHorario,
@@ -144,6 +148,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     requisitos: estudiante.programaRequisitos,
     fechaInicio: estudiante.programaFechaInicio,
     fechaFin: estudiante.programaFechaFin,
+    duracionTaller: estudiante.programaDuracionTaller,
+    duracionAvisoDias: estudiante.programaDuracionAvisoDias,
     seleccion: estudiante.seleccion,
     nivelCambridge: estudiante.nivelCambridge,
     plantilla: estudiante.plantilla,
@@ -158,11 +164,17 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         ...programas.filter((programa) => programa.id !== programaAsignadoInvitacion.id),
       ]
     : programas;
-  const mostrarSelectorPrograma = esCicloVerano || !estudiante?.tieneInvitacion || registroAdicional || programas.length > 0;
+  const mostrarSelectorPrograma = esCicloVerano || !tieneInvitacionOperativa || registroAdicional || programas.length > 0;
 
   const programaParaRegistro = programaSeleccionado || programaAsignado || programaAsignadoInvitacion;
   const inscripcionMasivaSeleccionada = Boolean(programaParaRegistro?.invitacionMasiva);
-  const horarioResumenRegistro = resumirHorarioSecretaria(programaParaRegistro?.horario || "");
+  const gradoParaHorarioRegistro = estudiante?.esExterno
+    ? formulario.gradoExterno
+    : estudiante?.grado;
+  const horarioTextoRegistro = resolverHorarioPorGradoLocal(programaParaRegistro, gradoParaHorarioRegistro)
+    || programaParaRegistro?.horario
+    || "";
+  const horarioResumenRegistro = resumirHorarioSecretaria(horarioTextoRegistro);
 
   useEffect(() => {
     listarProgramasPorPeriodo(periodo).then(setProgramas);
@@ -397,10 +409,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         mostrarMensaje("Seleccione el sexo del estudiante.");
         return;
       }
-      if (!formulario.tipoAlumnoVerano) {
-        mostrarMensaje("Seleccione si el estudiante es interno o externo.");
-        return;
-      }
       if (!validarTextoSeguro(formulario.gradoExterno)) {
         mostrarMensaje("Ingrese el grado del alumno externo.");
         return;
@@ -474,21 +482,24 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         ? formulario.gradoExterno.trim()
         : estudiante.grado || "";
       const edadRegistro = calcularEdadSecretaria(estudiante, formulario);
+      const tipoAlumnoVeranoAutomatico = estudiante.esExterno ? "Alumno externo" : "Alumno interno";
+      const horarioRegistro = resolverHorarioPorGradoLocal(programaActualizado, gradoRegistro)
+        || programaActualizado.horario;
       const registro = await registrarInscripcion({
         dniEstudiante: dniRegistro,
         codigoEstudiante: estudiante.codigoEstudiante || "",
         gradoEstudiante: gradoRegistro,
         seccionEstudiante: estudiante.esExterno ? "" : estudiante.seccion || "",
         nombresEstudiante: nombresRegistro,
-        esExterno: estudiante.esExterno && formulario.tipoAlumnoVerano === "Alumno externo",
+        esExterno: estudiante.esExterno,
         esNuevoVerano: Boolean(estudiante.esExterno),
         edadEstudiante: edadRegistro ? String(edadRegistro) : "",
         domicilioEstudiante: estudiante.esExterno ? formulario.domicilioExterno.trim() : "",
         sexoEstudiante: estudiante.esExterno ? formulario.sexoExterno : "",
-        tipoAlumno: estudiante.esExterno ? formulario.tipoAlumnoVerano : estudiante.tipoAlumno,
+        tipoAlumno: esCicloVerano ? tipoAlumnoVeranoAutomatico : estudiante.tipoAlumno,
         tipoInscripción:
-          estudiante.esExterno
-            ? (formulario.tipoAlumnoVerano === "Alumno externo" ? "Verano externo" : "Verano interno")
+          esCicloVerano
+            ? (tipoAlumnoVeranoAutomatico === "Alumno externo" ? "Verano externo" : "Verano interno")
             :
           periodo === "escolar" && !estudiante.tieneInvitacion && !programaActualizado.invitacionMasiva
             ? "Excepcional"
@@ -496,7 +507,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         programa: programaActualizado.nombre,
         programaId: programaActualizado.id,
         colegioProcedencia: formulario.colegioProcedencia.trim(),
-        horario: programaActualizado.horario,
+        horario: horarioRegistro,
         docente: programaActualizado.docente,
         costo: programaActualizado.costo,
         cupos: programaActualizado.cupos,
@@ -514,6 +525,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         observacion: formulario.observacion.trim(),
         origenRegistro: estudiante.esExterno
           ? "Alumno externo de ciclo verano"
+          : esCicloVerano
+          ? "Alumno interno de ciclo verano"
           : estudiante.tieneInvitacion
           ? "Alumno invitado por Coordinación"
           : "Registro excepcional por Secretaría",
@@ -547,11 +560,11 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
 
   async function abrirRegistro() {
     const programasActualizados = await cargarProgramasDelPeriodo(estudiante?.grado || "", calcularEdadSecretaria(estudiante, formulario));
-    const programaAsignadoActual = estudiante?.tieneInvitacion && !registroAdicional
+    const programaAsignadoActual = tieneInvitacionOperativa && !registroAdicional
       ? await obtenerProgramaPorId(estudiante.programaAsignado, periodo).catch(() => null)
       : null;
 
-    if (estudiante?.tieneInvitacion && !registroAdicional && !programaAsignadoActual) {
+    if (tieneInvitacionOperativa && !registroAdicional && !programaAsignadoActual) {
       mostrarMensaje("El programa asignado por Coordinación no está habilitado o no tiene cupos disponibles.");
       return;
     }
@@ -657,6 +670,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       modalidadCobro: programaActual.modalidadCobro || registro.modalidadCobro,
       fechaInicio: programaActual.fechaInicio || registro.fechaInicio,
       fechaFin: programaActual.fechaFin || registro.fechaFin,
+      duracionTaller: programaActual.duracionTaller || registro.duracionTaller,
+      duracionAvisoDias: programaActual.duracionAvisoDias || registro.duracionAvisoDias,
       requisitos: programaActual.requisitos || registro.requisitos,
       plantilla: programaActual.plantilla || registro.plantilla,
       plantillaBase64: programaActual.plantillaBase64 || registro.plantillaBase64,
@@ -846,21 +861,23 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   </div>
                   <div className="secretaria-data-compact secretaria-data-identity">
                     <dt>Tipo de alumno</dt>
-                    <dd>{estudiante.tipoAlumno}</dd>
+                    <dd>{tipoAlumnoMostrado}</dd>
                   </div>
                   <div className="secretaria-data-status secretaria-data-process">
                     <dt>Periodo</dt>
                     <dd>{estudiante.periodo}</dd>
                   </div>
-                  <div className="secretaria-data-status secretaria-data-process">
-                    <dt>Invitacion</dt>
-                    <dd>
-                      <span className={`secretaria-pill ${estudiante.tieneInvitacion ? "secretaria-pill-success" : "secretaria-pill-warning"}`}>
-                        <CheckCircle2 size={13} />
-                        {estudiante.tieneInvitacion ? "Registrada" : "Sin invitación"}
-                      </span>
-                    </dd>
-                  </div>
+                  {!esCicloVerano ? (
+                    <div className="secretaria-data-status secretaria-data-process">
+                      <dt>Invitacion</dt>
+                      <dd>
+                        <span className={`secretaria-pill ${tieneInvitacionOperativa ? "secretaria-pill-success" : "secretaria-pill-warning"}`}>
+                          <CheckCircle2 size={13} />
+                          {tieneInvitacionOperativa ? "Registrada" : "Sin invitación"}
+                        </span>
+                      </dd>
+                    </div>
+                  ) : null}
                   <div className="secretaria-data-status secretaria-data-process">
                     <dt>Estado inscripción</dt>
                     <dd>
@@ -874,7 +891,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                     <dd>{estudiante.estadoPago || "Sin pago"}</dd>
                   </div>
                   <div className="secretaria-data-wide secretaria-data-program">
-                    <dt>{estudiante.tieneInvitacion ? "Programa asignado" : "Programa"}</dt>
+                    <dt>{tieneInvitacionOperativa ? "Programa asignado" : esCicloVerano ? "Programa de verano" : "Programa"}</dt>
                     <dd>{nombreProgramaAMostrar || "Se seleccionara al registrar"}</dd>
                   </div>
                   {inscripcion ? (
@@ -918,7 +935,15 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                     <p>
                       Inscripcion registrada. Derivar a Caja para validar el pago.
                     </p>
-                  ) : estudiante.tieneInvitacion ? (
+                  ) : esCicloVerano && programas.length > 0 ? (
+                    <p>
+                      Ciclo verano no usa invitación. Secretaría debe seleccionar el programa de verano al registrar.
+                    </p>
+                  ) : esCicloVerano ? (
+                    <p>
+                      Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
+                    </p>
+                  ) : tieneInvitacionOperativa ? (
                     <p>
                       El estudiante tiene invitación registrada. Secretaria solo
                       podrá inscribirlo en el programa asignado por Coordinación.
@@ -983,7 +1008,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
           <div
             className="secretaria-modal-overlay"
             role="presentation"
-            onClick={() => setModoRegistro(false)}
           >
             <section
               className={`secretaria-card secretaria-registration-card secretaria-registration-modal${esCicloVerano ? " is-summer-registration" : ""}${estudiante.esExterno ? " is-external-registration" : ""}`}
@@ -1016,7 +1040,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                 </button>
               </div>
 
-              <form className="secretaria-registration-form" onSubmit={guardarInscripción}>
+              <form className="secretaria-registration-form secretaria-registration-form-clean" onSubmit={guardarInscripción}>
                 <div className="secretaria-modal-student secretaria-field-full">
                   <p><strong>Nombre y apellido:</strong> {estudiante.nombres}</p>
                   <p><strong>DNI:</strong> {estudiante.dni || "Sin DNI"}</p>
@@ -1038,88 +1062,171 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                 ) : null}
 
                 {esCicloVerano ? (
-                  <div className="secretaria-registration-section secretaria-registration-summer secretaria-registration-minor secretaria-field-full">
-                    <div className="secretaria-registration-section-head">
-                      <strong>Datos para ciclo verano</strong>
-                      <span>Información necesaria para Secretaría</span>
-                    </div>
+                  <div className="secretaria-summer-flow secretaria-field-full">
+                    <section className="secretaria-summer-panel secretaria-summer-student">
+                      <div className="secretaria-registration-section-head secretaria-summer-heading">
+                        <strong>Datos del estudiante</strong>
+                        <span>Información para ciclo verano</span>
+                      </div>
 
-                    <div className="secretaria-field secretaria-field-medium">
-                      <label htmlFor="tipoAlumnoVerano">Tipo de alumno</label>
-                      <select
-                        id="tipoAlumnoVerano"
-                        value={formulario.tipoAlumnoVerano}
-                        onChange={(event) => actualizarFormulario("tipoAlumnoVerano", event.target.value)}
-                      >
-                        <option value="Alumno interno">Alumno del colegio</option>
-                        <option value="Alumno externo">Alumno externo</option>
-                      </select>
-                    </div>
+                      <CampoTexto
+                        label="Colegio de procedencia"
+                        className="secretaria-field-full secretaria-summer-colegio"
+                        value={formulario.colegioProcedencia}
+                        onChange={(value) => actualizarFormulario("colegioProcedencia", value)}
+                        placeholder="Ej: Colegio San Rafael"
+                      />
 
-                    <CampoTexto
-                      label="Colegio de procedencia"
-                      className="secretaria-field-wide"
-                      value={formulario.colegioProcedencia}
-                      onChange={(value) => actualizarFormulario("colegioProcedencia", value)}
-                      placeholder="Ej: Colegio San Rafael"
-                    />
+                      {estudiante.esExterno ? (
+                        <>
+                          <CampoTexto
+                            label="DNI del alumno"
+                            className="secretaria-summer-dni"
+                            value={formulario.dniExterno}
+                            onChange={(value) => actualizarFormulario("dniExterno", value.replace(/\D/g, "").slice(0, 8))}
+                            placeholder="DNI de 8 numeros"
+                            maxLength="8"
+                          />
+                          <CampoTexto
+                            label="Nombre y apellidos del estudiante"
+                            className="secretaria-summer-name"
+                            value={formulario.nombresExterno}
+                            onChange={(value) => actualizarFormulario("nombresExterno", value)}
+                            placeholder="Nombre completo del estudiante"
+                          />
+                          <CampoTexto
+                            label="Edad"
+                            className="secretaria-field-short secretaria-age-field secretaria-summer-age"
+                            value={formulario.edadExterno}
+                            onChange={(value) => actualizarFormulario("edadExterno", value.replace(/\D/g, "").slice(0, 2))}
+                            placeholder="Ej: 9"
+                            maxLength="2"
+                          />
+                          <CampoTexto
+                            label="Grado"
+                            className="secretaria-summer-grade"
+                            value={formulario.gradoExterno}
+                            onChange={(value) => actualizarFormulario("gradoExterno", value)}
+                            placeholder="Ej: 4 Primaria"
+                          />
+                          <div className="secretaria-field secretaria-field-short secretaria-summer-sex">
+                            <label htmlFor="sexoExterno">Sexo</label>
+                            <select
+                              id="sexoExterno"
+                              value={formulario.sexoExterno}
+                              onChange={(event) => actualizarFormulario("sexoExterno", event.target.value)}
+                            >
+                              <option value="">Seleccione</option>
+                              <option value="F">Femenino</option>
+                              <option value="M">Masculino</option>
+                            </select>
+                          </div>
+                          <CampoTexto
+                            label="Domicilio"
+                            className="secretaria-field-full secretaria-summer-address"
+                            value={formulario.domicilioExterno}
+                            onChange={(value) => actualizarFormulario("domicilioExterno", value)}
+                            placeholder="Dirección del estudiante"
+                          />
+                        </>
+                      ) : (
+                        <CampoLectura
+                          label="Alumno"
+                          value={`${estudiante.grado || "Grado no registrado"}${estudiante.seccion ? ` - Sección ${estudiante.seccion}` : ""}`}
+                        />
+                      )}
+                    </section>
 
-                    {estudiante.esExterno ? (
-                      <>
-                        <CampoTexto
-                          label="DNI del alumno"
-                          value={formulario.dniExterno}
-                          onChange={(value) => actualizarFormulario("dniExterno", value.replace(/\D/g, "").slice(0, 8))}
-                          placeholder="DNI de 8 numeros"
-                          maxLength="8"
+                    <section className="secretaria-summer-panel secretaria-summer-program">
+                      <div className="secretaria-registration-section-head secretaria-summer-heading">
+                        <strong>Programa</strong>
+                        <span>Seleccione el taller de verano</span>
+                      </div>
+
+                      <div className="secretaria-field secretaria-field-full secretaria-summer-program-select">
+                        <label htmlFor="programa">Programa o taller</label>
+                        <select
+                          id="programa"
+                          value={formulario.programa}
+                          disabled={programasParaSelector.length === 0}
+                          onChange={(event) =>
+                            actualizarFormulario("programa", event.target.value)
+                          }
+                        >
+                          <option value="">
+                            {programasParaSelector.length ? "Seleccione programa" : "No hay programas de ciclo verano disponibles"}
+                          </option>
+                          {programasParaSelector.map((programa) => (
+                            <option key={programa.id} value={programa.id}>
+                              {programa.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {programas.length === 0 ? (
+                        <MantineAlert
+                          className="secretaria-message secretaria-modal-message secretaria-field-full secretaria-summer-alert"
+                          color="orange"
+                          radius="md"
+                          icon={<AlertCircle size={18} />}
+                        >
+                          Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
+                        </MantineAlert>
+                      ) : programaParaRegistro ? (
+                        <>
+                          <div className="secretaria-schedule-summary secretaria-field-full">
+                            <DatoHorario label="Día" value={horarioResumenRegistro.dia} />
+                            <DatoHorario label="Clase" value={horarioResumenRegistro.clase} />
+                            <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} />
+                          </div>
+                          <div className="secretaria-program-cost-row secretaria-field-full">
+                            <CampoLectura label="Costo referencial" value={`S/ ${Number(programaParaRegistro.costo).toFixed(2)}`} />
+                            <CampoLectura label="Cupos disponibles" value={formatearCuposSecretaria(programaParaRegistro)} />
+                          </div>
+                        </>
+                      ) : null}
+                    </section>
+
+                    <section className="secretaria-summer-panel secretaria-summer-contact">
+                      <div className="secretaria-registration-section-head secretaria-summer-heading">
+                        <strong>Padre o apoderado</strong>
+                        <span>Datos de contacto</span>
+                      </div>
+
+                      <CampoTexto
+                        label="Nombre del padre / apoderado"
+                        className="secretaria-field-full secretaria-summer-parent"
+                        value={formulario.apoderado}
+                        onChange={(value) => actualizarFormulario("apoderado", value)}
+                        placeholder="Nombre completo del apoderado"
+                      />
+
+                      <CampoTexto
+                        label="Teléfono del padre"
+                        className="secretaria-field-full secretaria-summer-phone"
+                        icon={<Phone size={15} />}
+                        value={formulario.telefono}
+                        onChange={(value) =>
+                          actualizarFormulario("telefono", value.replace(/\D/g, ""))
+                        }
+                        placeholder="987654321"
+                        maxLength="9"
+                      />
+
+                      <div className="secretaria-field secretaria-field-full secretaria-registration-observation secretaria-summer-observation">
+                        <label htmlFor="observacion">Observación</label>
+                        <textarea
+                          id="observacion"
+                          rows="3"
+                          placeholder="Observación opcional para el registro"
+                          value={formulario.observacion}
+                          onChange={(event) =>
+                            actualizarFormulario("observacion", event.target.value)
+                          }
                         />
-                        <CampoTexto
-                          label="Nombre y apellidos del estudiante"
-                          value={formulario.nombresExterno}
-                          onChange={(value) => actualizarFormulario("nombresExterno", value)}
-                          placeholder="Nombre completo del estudiante"
-                        />
-                        <CampoTexto
-                          label="Edad"
-                          className="secretaria-field-short secretaria-age-field"
-                          value={formulario.edadExterno}
-                          onChange={(value) => actualizarFormulario("edadExterno", value.replace(/\D/g, "").slice(0, 2))}
-                          placeholder="Ej: 9"
-                          maxLength="2"
-                        />
-                        <CampoTexto
-                          label="Grado"
-                          className="secretaria-field-medium"
-                          value={formulario.gradoExterno}
-                          onChange={(value) => actualizarFormulario("gradoExterno", value)}
-                          placeholder="Ej: 4 Primaria"
-                        />
-                    <div className="secretaria-field secretaria-field-short">
-                      <label htmlFor="sexoExterno">Sexo</label>
-                      <select
-                        id="sexoExterno"
-                        value={formulario.sexoExterno}
-                        onChange={(event) => actualizarFormulario("sexoExterno", event.target.value)}
-                      >
-                        <option value="">Seleccione</option>
-                        <option value="F">Femenino</option>
-                        <option value="M">Masculino</option>
-                      </select>
-                    </div>
-                    <CampoTexto
-                      label="Domicilio"
-                      className="secretaria-field-wide"
-                      value={formulario.domicilioExterno}
-                      onChange={(value) => actualizarFormulario("domicilioExterno", value)}
-                      placeholder="Dirección del estudiante"
-                    />
-                      </>
-                    ) : (
-                    <CampoLectura
-                      label="Alumno"
-                      value={`${estudiante.grado || "Grado no registrado"}${estudiante.seccion ? ` - Sección ${estudiante.seccion}` : ""}`}
-                    />
-                    )}
+                      </div>
+                    </section>
                   </div>
                 ) : estudiante.esExterno ? (
                   <div className="secretaria-registration-section secretaria-registration-minor secretaria-field-full">
@@ -1168,17 +1275,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                         <option value="M">Masculino</option>
                       </select>
                     </div>
-                    <div className="secretaria-field secretaria-field-medium">
-                      <label htmlFor="tipoAlumnoVerano">Interno o externo</label>
-                      <select
-                        id="tipoAlumnoVerano"
-                        value={formulario.tipoAlumnoVerano}
-                        onChange={(event) => actualizarFormulario("tipoAlumnoVerano", event.target.value)}
-                      >
-                        <option value="Alumno externo">Externo</option>
-                        <option value="Alumno interno">Interno</option>
-                      </select>
-                    </div>
                     <CampoTexto
                       label="Grado"
                       value={formulario.gradoExterno}
@@ -1188,6 +1284,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   </div>
                 ) : null}
 
+                {!esCicloVerano ? (
+                <>
                 <div className="secretaria-registration-section secretaria-registration-program secretaria-field-full">
                   <div className="secretaria-registration-section-head">
                     <strong>Programa</strong>
@@ -1206,7 +1304,11 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                       }
                     >
                       <option value="">
-                        {programasParaSelector.length ? "Seleccione programa" : "No hay programas con invitación masiva para este grado"}
+                        {programasParaSelector.length
+                          ? "Seleccione programa"
+                          : esCicloVerano
+                            ? "No hay programas de ciclo verano disponibles"
+                            : "No hay programas con invitación masiva para este grado"}
                       </option>
                       {programasParaSelector.map((programa) => (
                         <option key={programa.id} value={programa.id}>
@@ -1226,7 +1328,9 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                     radius="md"
                     icon={<AlertCircle size={18} />}
                   >
-                    Coordinación debe registrar y habilitar un programa con invitación masiva para el grado del estudiante.
+                    {esCicloVerano
+                      ? "Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante."
+                      : "Coordinación debe registrar y habilitar un programa con invitación masiva para el grado del estudiante."}
                   </MantineAlert>
                 ) : null}
 
@@ -1239,31 +1343,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   <CampoLectura label="Costo referencial" value={programaParaRegistro ? `S/ ${Number(programaParaRegistro.costo).toFixed(2)}` : ""} />
                   <CampoLectura label="Cupos disponibles" value={formatearCuposSecretaria(programaParaRegistro)} />
                 </div>
-                </div>
-
-                <div className="secretaria-registration-section secretaria-registration-contact secretaria-field-full">
-                  <div className="secretaria-registration-section-head">
-                    <strong>Padre o apoderado</strong>
-                    <span>Información de contacto para el registro</span>
-                  </div>
-
-                <CampoTexto
-                  label="Nombre del padre / apoderado"
-                  value={formulario.apoderado}
-                  onChange={(value) => actualizarFormulario("apoderado", value)}
-                  placeholder="Nombre completo del apoderado"
-                />
-
-                <CampoTexto
-                  label="Teléfono del padre"
-                  icon={<Phone size={15} />}
-                  value={formulario.telefono}
-                  onChange={(value) =>
-                    actualizarFormulario("telefono", value.replace(/\D/g, ""))
-                  }
-                  placeholder="987654321"
-                  maxLength="9"
-                />
 
                 {programaParaRegistro?.requiereUniforme ? (
                   <div className="secretaria-field">
@@ -1330,8 +1409,31 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                     </div>
                   </>
                 ) : null}
-
                 </div>
+
+                <div className="secretaria-registration-section secretaria-registration-contact secretaria-field-full">
+                  <div className="secretaria-registration-section-head">
+                    <strong>Padre o apoderado</strong>
+                    <span>Información de contacto para el registro</span>
+                  </div>
+
+                <CampoTexto
+                  label="Nombre del padre / apoderado"
+                  value={formulario.apoderado}
+                  onChange={(value) => actualizarFormulario("apoderado", value)}
+                  placeholder="Nombre completo del apoderado"
+                />
+
+                <CampoTexto
+                  label="Teléfono del padre"
+                  icon={<Phone size={15} />}
+                  value={formulario.telefono}
+                  onChange={(value) =>
+                    actualizarFormulario("telefono", value.replace(/\D/g, ""))
+                  }
+                  placeholder="987654321"
+                  maxLength="9"
+                />
 
                 <div className="secretaria-field secretaria-field-full secretaria-registration-observation">
                   <label htmlFor="observacion">Observación</label>
@@ -1345,6 +1447,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                     }
                   />
                 </div>
+
+                </div>
+                </>
+                ) : null}
 
                 <label className="secretaria-check secretaria-field-full">
                   <input

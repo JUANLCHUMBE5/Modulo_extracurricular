@@ -36,7 +36,7 @@ import {
   listarCategorias, crearCategoria, eliminarCategoria, listarInvitados,
   previsualizarCargaAlumnosMasiva, confirmarCargaAlumnos, obtenerActividadPrograma,
 } from "./services/coordinacionService";
-import { fechaActualIso } from "../../services/dateService";
+import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias } from "../../services/dateService";
 import GradeSelector from "./components/GradeSelector";
 import { HorarioTabla, GradosTabla, VigenciaTabla, CuposTabla } from "./components/ProgramTableCells";
 import SummaryBox from "./components/SummaryBox";
@@ -62,7 +62,7 @@ const formInicial = {
   gradosAplicables: [], edadMinima: "", edadMaxima: "", fechaNacimientoDesde: "", fechaNacimientoHasta: "", dias: [], horaInicio: "", horaFin: "",
   almuerzoInicio: "", almuerzoFin: "",
   horariosPorGrupo: [],
-  fechaInicio: "", fechaFin: "", cupos: "", costo: "", modalidadCobro: "Mensual",
+  fechaInicio: "", fechaFin: "", duracionAvisoDias: "7", cupos: "", costo: "", modalidadCobro: "Mensual",
   responsable: "", tutora: "", plantilla: "", plantillaBase64: "", plantillaVariables: [],
   plantillaValidada: false, plantillaActualizadaEn: "", requisitos: "",
   comunicado: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
@@ -287,7 +287,9 @@ function Coordinacion({
       almuerzoInicio: prog.almuerzoInicio || "",
       almuerzoFin: prog.almuerzoFin || "",
       horariosPorGrupo: normalizarHorariosPorGrupo(prog.horariosPorGrupo),
-      fechaFin: prog.fechaFin, cupos: String(prog.cupos), costo: String(prog.costo),
+      fechaFin: prog.fechaFin,
+      duracionAvisoDias: String(normalizarDuracionAvisoDias(prog.duracionAvisoDias, 7)),
+      cupos: String(prog.cupos), costo: String(prog.costo),
       modalidadCobro: prog.modalidadCobro, responsable: prog.responsable,
       tutora: prog.tutora, plantilla: prog.plantilla || "",
       plantillaBase64: prog.plantillaBase64 || "",
@@ -350,6 +352,10 @@ function Coordinacion({
     if (grupoInvalido) return mostrarMsg("Revise los grupos por día: cada grupo debe tener grados, día y hora válida.");
     if (!form.fechaInicio || !form.fechaFin) return mostrarMsg("Las fechas de inicio y fin son obligatorias.");
     if (form.fechaInicio > form.fechaFin) return mostrarMsg("La fecha de inicio no puede ser mayor a la de fin.");
+    const duracionAvisoDias = normalizarDuracionAvisoDias(form.duracionAvisoDias, 7);
+    if (String(duracionAvisoDias) !== String(form.duracionAvisoDias)) {
+      return mostrarMsg("El aviso de inscripción puede durar de 1 a 7 días como máximo.");
+    }
     if (!form.cupos || Number(form.cupos) <= 0) return mostrarMsg("Los cupos deben ser un número positivo.");
     if (!esCostoValido(form.costo)) return mostrarMsg("Ingrese un costo válido en soles, con máximo dos decimales.");
     if (!form.modalidadCobro) return mostrarMsg("Seleccione la modalidad de cobro.");
@@ -364,6 +370,8 @@ function Coordinacion({
       edadMaxima: esVeranoGuardar ? Number(form.edadMaxima) : "",
       fechaNacimientoDesde: "",
       fechaNacimientoHasta: "",
+      duracionTaller: calcularDuracionTexto(form.fechaInicio, form.fechaFin),
+      duracionAvisoDias,
       dias: diasFinales,
       horariosPorGrupo: gruposHorario,
       grupo: esVeranoGuardar ? `Edades ${form.edadMinima} a ${form.edadMaxima} años` : resumenGrados(gradosFinales),
@@ -1022,6 +1030,7 @@ function Coordinacion({
   const formDias = normalizarListaTexto(form.dias);
   const formHorariosPorGrupo = Array.isArray(form.horariosPorGrupo) ? form.horariosPorGrupo : [];
   const esFormularioVerano = normalizarPeriodoVista(form.periodo) === "verano";
+  const duracionTallerFormulario = calcularDuracionTexto(form.fechaInicio, form.fechaFin);
   const mostrarIndumentariaDeportiva = esProgramaDeportivo(form.nombre, form.categoria);
 
   return (
@@ -1157,7 +1166,12 @@ function Coordinacion({
                             </div>
                             <div className="coord-program-card-detail">
                               <span>Vigencia</span>
-                              <VigenciaTabla inicio={prog.fechaInicio} fin={prog.fechaFin} />
+                              <VigenciaTabla
+                                inicio={prog.fechaInicio}
+                                fin={prog.fechaFin}
+                                duracion={prog.duracionTaller}
+                                avisoDias={prog.duracionAvisoDias}
+                              />
                             </div>
                             <div className="coord-program-card-detail">
                               <span>Cupos</span>
@@ -1510,7 +1524,7 @@ function Coordinacion({
                     <h2>{esFormularioVerano ? (modoEditar ? "Editar programa de verano" : "Registrar programa de verano") : (modoEditar ? "Editar programa" : "Registrar programa")}</h2>
                     <p>
                       {esFormularioVerano
-                        ? "Configure el programa para que Secretaría pueda registrar alumnos internos o externos en ciclo verano."
+                        ? "Complete los datos del programa antes de habilitarlo."
                         : "Complete la configuracion del taller antes de habilitarlo."}
                     </p>
                   </div>
@@ -1519,15 +1533,6 @@ function Coordinacion({
               </div>
               <form className="coord-program-form" id="form-programa" onSubmit={guardar}>
                 <div className="coord-program-form-main">
-                  {esFormularioVerano ? (
-                    <div className="coord-summer-form-note">
-                      <CalendarDays size={18} />
-                      <div>
-                        <strong>Ciclo verano</strong>
-                        <span>Este programa aparecerá en Secretaría para inscribir alumnos del colegio o externos. No necesita invitación masiva.</span>
-                      </div>
-                    </div>
-                  ) : null}
                   <section className="coord-form-section">
                     <div className="coord-section-heading">
                       <BookOpen size={18} />
@@ -1655,6 +1660,26 @@ function Coordinacion({
                         </div>
                         <div className="coord-field"><label>Fecha fin *</label>
                           <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
+                        </div>
+                      </div>
+                      <div className="coord-program-window-row coord-field-full">
+                        <div className="coord-field">
+                          <label>Duración del taller</label>
+                          <div className="coord-readonly-field">
+                            {duracionTallerFormulario || "Seleccione fecha inicio y fin"}
+                          </div>
+                        </div>
+                        <div className="coord-field">
+                          <label>Aviso abierto *</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max="7"
+                            value={form.duracionAvisoDias}
+                            onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
+                            placeholder="Máximo 7 días"
+                          />
+                          <p className="coord-field-hint">Días para inscripción regular desde el inicio del taller. Máximo: primera semana.</p>
                         </div>
                       </div>
                       <div className="coord-field coord-field-full">
