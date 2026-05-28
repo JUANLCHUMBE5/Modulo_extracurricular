@@ -51,6 +51,7 @@ export default function Caja({
   const [dni, setDni] = useState("");
   const [modalAbierto, setModalAbierto] = useState(false);
   const [pagoSeleccionado, setPagoSeleccionado] = useState(null);
+  const [pagoConfirmado, setPagoConfirmado] = useState(null);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [mensaje, setMensaje] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("todos");
@@ -58,7 +59,7 @@ export default function Caja({
   const [reporteCaja, setReporteCaja] = useState([]);
   const [opcionesReporte, setOpcionesReporte] = useState({ programas: [], mediosPago: [] });
   const [filtrosReporte, setFiltrosReporte] = useState({
-    tipoReporte: "pagos_registrados",
+    tipoReporte: "por_cobrar",
     rango: "personalizado",
     desde: "",
     hasta: "",
@@ -148,6 +149,7 @@ export default function Caja({
   async function buscarEstudiante(event) {
     event?.preventDefault();
     setMensaje("");
+    setPagoConfirmado(null);
     if (!validarDni(dni)) {
       setMensaje("Ingrese un DNI valido de 8 digitos.");
       return;
@@ -217,9 +219,9 @@ export default function Caja({
         toast.success("Pago actualizado", { description: "El registro quedo actualizado correctamente." });
         cerrarModal();
       } else {
-        await registrarPago(payload);
-        toast.success("Pago registrado", { description: "El pago quedo guardado en Caja." });
-        limpiarPagoActual();
+        const pago = await registrarPago(payload);
+        setPagoConfirmado(pago);
+        toast.success("Pago aprobado", { description: "El pago quedo confirmado y guardado en Caja." });
       }
       await cargarDatos();
       await cargarReporteCaja();
@@ -243,8 +245,32 @@ export default function Caja({
     limpiarPagoActual();
   }
 
+  function abrirPagoDesdeReporte(fila) {
+    setPagoSeleccionado(null);
+    setPagoConfirmado(null);
+    setFormulario({
+      ...formularioInicial,
+      inscripcionId: fila.inscripcionId || "",
+      estudianteDni: fila.dniEstudiante || "",
+      estudianteNombre: fila.estudiante || "",
+      programaId: fila.programaId || "",
+      programaNombre: fila.programa || "",
+      periodo: fila.periodo || periodo,
+      tipoAlumno: fila.tipoAlumno || "",
+      monto: String(fila.monto || ""),
+      formaPago: "Efectivo",
+      fechaPago: fechaActualInput(),
+    });
+    setDni(fila.dniEstudiante || "");
+    setEstudiante(null);
+    setMensaje("");
+    setModoEdicion(false);
+    setModalAbierto(true);
+  }
+
   function abrirModalEdicion(pago) {
     setPagoSeleccionado(pago);
+    setPagoConfirmado(null);
     setFormulario({
       ...formularioInicial,
       ...pago,
@@ -265,6 +291,7 @@ export default function Caja({
     setModalAbierto(false);
     setModoEdicion(false);
     setPagoSeleccionado(null);
+    setPagoConfirmado(null);
   }
 
   function limpiarPagoActual() {
@@ -274,6 +301,7 @@ export default function Caja({
     setMensaje("");
     setModoEdicion(false);
     setPagoSeleccionado(null);
+    setPagoConfirmado(null);
   }
 
   async function descargarReporte() {
@@ -389,6 +417,17 @@ export default function Caja({
           <>
             <section className="caja-payment-workspace">
               {mensaje ? <div className={alertClass}>{mensaje}</div> : null}
+              {pagoConfirmado ? (
+                <div className="caja-payment-approved" role="status">
+                  <Check size={20} />
+                  <div>
+                    <strong>Pago aprobado</strong>
+                    <span>
+                      {formulario.estudianteNombre} quedo como pagado por {formatearSoles(formulario.monto)}.
+                    </span>
+                  </div>
+                </div>
+              ) : null}
               <CajaFields
                 buscando={buscando}
                 dni={dni}
@@ -427,7 +466,7 @@ export default function Caja({
                   <p>{reporteCaja.length} registros encontrados</p>
                 </div>
               </div>
-              <ReporteTabla filas={reporteCaja} />
+              <ReporteTabla filas={reporteCaja} onPagar={abrirPagoDesdeReporte} />
             </section>
           </section>
         )}
@@ -444,6 +483,17 @@ export default function Caja({
         title={modoEdicion ? "Editar pago" : "Registrar pago"}
       >
         {mensaje ? <div className={alertClass}>{mensaje}</div> : null}
+        {pagoConfirmado ? (
+          <div className="caja-payment-approved" role="status">
+            <Check size={20} />
+            <div>
+              <strong>Pago aprobado</strong>
+              <span>
+                {formulario.estudianteNombre} quedo como pagado por {formatearSoles(formulario.monto)}.
+              </span>
+            </div>
+          </div>
+        ) : null}
         <CajaFields
           buscando={buscando}
           dni={dni}
@@ -458,7 +508,12 @@ export default function Caja({
           <Button onClick={cerrarModal} variant="default">
             Cancelar
           </Button>
-          <Button leftSection={<Check size={17} />} loading={guardando} onClick={guardarPago}>
+          {pagoConfirmado ? (
+            <Button onClick={limpiarPagoActual} variant="default">
+              Nuevo pago
+            </Button>
+          ) : null}
+          <Button leftSection={<Check size={17} />} loading={guardando} onClick={guardarPago} disabled={Boolean(pagoConfirmado)}>
             {modoEdicion ? "Actualizar" : "Registrar"}
           </Button>
         </Group>

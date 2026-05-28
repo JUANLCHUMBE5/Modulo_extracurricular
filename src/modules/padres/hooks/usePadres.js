@@ -5,6 +5,7 @@ import {
   obtenerProgramasCoordinacion,
   obtenerResumenPadre,
   registrarInscripcionPadres,
+  registrarPagoSimuladoPadres,
 } from "../services/padresService";
 
 const mensajesIniciales = [
@@ -27,6 +28,7 @@ function usePadres(user) {
   const [programaSeleccionadoId, setProgramaSeleccionadoId] = useState("");
   const [infoProgramaAbierta, setInfoProgramaAbierta] = useState(false);
   const [infoProgramaAceptada, setInfoProgramaAceptada] = useState(false);
+  const [pagoConfirmado, setPagoConfirmado] = useState(null);
   const [form, setForm] = useState({
     apoderado: "",
     telefono: "",
@@ -127,6 +129,7 @@ function usePadres(user) {
   useEffect(() => {
     setInfoProgramaAceptada(false);
     setInfoProgramaAbierta(false);
+    setPagoConfirmado(null);
   }, [programa?.programaId, programa?.id]);
 
   async function guardarDatos(event) {
@@ -248,6 +251,35 @@ function usePadres(user) {
     consultarRafael("Monto a pagar");
   }
 
+  async function pagarSimuladoPadres(medioPago = "Tarjeta simulada") {
+    if (!inscripcion) {
+      avisar("Primero registre la inscripcion para generar el pago.");
+      return false;
+    }
+    if (esPagoRegistrado(inscripcion.estadoPago)) {
+      avisar("El pago ya figura como registrado.");
+      return true;
+    }
+
+    setGuardando(true);
+    try {
+      const pago = await registrarPagoSimuladoPadres(user.dni, inscripcion.id, medioPago);
+      setPagoConfirmado(pago);
+      toast.success("Pago simulado registrado", {
+        description: pago?.codigoOperacion
+          ? `Operacion ${pago.codigoOperacion}. El estado quedo pagado.`
+          : "El estado quedo pagado.",
+      });
+      await cargarResumen({ silencioso: true });
+      return true;
+    } catch (err) {
+      avisar(err.message || "No se pudo registrar el pago simulado.");
+      return false;
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return {
     abrirPago,
     actualizar,
@@ -272,6 +304,8 @@ function usePadres(user) {
     mostrarCatalogoProgramas,
     nombreCorto,
     preguntar,
+    pagarSimuladoPadres,
+    pagoConfirmado,
     programa,
     programasDisponibles,
     programaSeleccionadoId,
@@ -522,7 +556,7 @@ function obtenerSiguientePaso({ programa, inscripcion }) {
     };
   }
 
-  if (!String(inscripcion.estadoPago || "").toLowerCase().includes("pag")) {
+  if (!esPagoRegistrado(inscripcion.estadoPago)) {
     return {
       titulo: "Pago pendiente",
       detalle: "La inscripcion ya fue registrada. Acerquese a Caja para validar el pago del programa.",
@@ -533,6 +567,12 @@ function obtenerSiguientePaso({ programa, inscripcion }) {
     titulo: "Proceso al dia",
     detalle: "El pago figura como registrado. Revise el horario y conserve la ficha del programa.",
   };
+}
+
+function esPagoRegistrado(valor) {
+  const texto = normalizarTexto(valor);
+  if (texto.includes("pendiente")) return false;
+  return ["pagado", "validado", "completado"].some((estado) => texto.includes(estado));
 }
 
 export { formatearSoles };

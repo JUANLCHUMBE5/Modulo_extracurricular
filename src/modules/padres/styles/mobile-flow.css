@@ -813,6 +813,98 @@
   gap: 10px;
 }
 
+.padres-flow-pay-simulator,
+.padres-flow-pay-success {
+  border: 1px solid #cfe7df;
+  border-radius: 16px;
+  padding: 14px;
+  background: #fbfefd;
+}
+
+.padres-flow-pay-simulator {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.padres-flow-pay-simulator span {
+  display: block;
+  color: #0b6b59;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.padres-flow-pay-simulator strong {
+  display: block;
+  margin-top: 3px;
+  color: #123024;
+  font-size: 24px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.padres-flow-pay-simulator p {
+  margin: 6px 0 0;
+  color: #607083;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.padres-flow-pay-methods {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.padres-flow-pay-methods button {
+  min-height: 36px;
+  border: 1px solid #0f8f7a;
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #ffffff;
+  background: #0f8f7a;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.padres-flow-pay-methods button:disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+}
+
+.padres-flow-pay-success {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  color: #0b6b59;
+  background: #effcf8;
+}
+
+.padres-flow-pay-success strong,
+.padres-flow-pay-success span {
+  display: block;
+}
+
+.padres-flow-pay-success strong {
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.padres-flow-pay-success span {
+  margin-top: 2px;
+  color: #536679;
+  font-size: 12px;
+  font-weight: 750;
+}
+
 .padres-flow-mini-check {
   min-height: 48px;
   border: 1px solid #e5eaf0;
@@ -944,6 +1036,19 @@
   .padres-flow-form-grid,
   .padres-flow-payment-checks {
     grid-template-columns: 1fr;
+  }
+
+  .padres-flow-pay-simulator {
+    grid-template-columns: 1fr;
+  }
+
+  .padres-flow-pay-methods {
+    justify-content: stretch;
+  }
+
+  .padres-flow-pay-methods button {
+    flex: 1 1 100%;
+    justify-content: center;
   }
 
   .padres-flow-stepper {

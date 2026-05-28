@@ -141,23 +141,45 @@ async function analizarZipPlantilla(zip, opciones = {}) {
   const contenido = contenidos.join(" ");
   const textoPlano = contenidos.map(extraerTextoPlanoXml).join("\n");
   const presentes = detectarVariablesPlantilla(contenido, variablesPlantillaAceptadas);
-  const modeloDetectado = modelosPlantilla.find((modelo) =>
+  const modeloCompleto = modelosPlantilla.find((modelo) =>
     modelo.variables.every((variable) => presentes.includes(variable.id))
   );
-  const variablesBase = modeloDetectado?.variables || variablesPlantillaRequeridas;
+  const modeloBase = modeloCompleto || obtenerModeloMasCercano(presentes);
+  const variablesBase = modeloBase?.variables || variablesPlantillaRequeridas;
   const faltantes = variablesBase.filter((variable) => !presentes.includes(variable.id));
+  const flexibleValida = !modeloCompleto && esPlantillaDigitalUtil(presentes);
 
-  if (validarVariables && faltantes.length) {
+  if (validarVariables && faltantes.length && !flexibleValida) {
     throw new Error(`La plantilla no contiene variables requeridas: ${faltantes.map((item) => item.label).join(", ")}.`);
   }
 
   return {
     variablesDetectadas: presentes,
     variablesFaltantes: faltantes.map((item) => item.id),
-    plantillaValida: faltantes.length === 0,
-    plantillaModelo: modeloDetectado?.id || "general",
+    plantillaValida: faltantes.length === 0 || flexibleValida,
+    plantillaModelo: modeloCompleto?.id || (flexibleValida ? `${modeloBase?.id || "general"}-digital` : "general"),
     textoPlano,
   };
+}
+
+function obtenerModeloMasCercano(presentes) {
+  return modelosPlantilla
+    .map((modelo) => ({
+      modelo,
+      total: modelo.variables.filter((variable) => presentes.includes(variable.id)).length,
+    }))
+    .sort((a, b) => b.total - a.total)[0]?.modelo;
+}
+
+function esPlantillaDigitalUtil(presentes) {
+  const tieneAlumno = presentes.includes("alumno") || presentes.includes("alu");
+  const tieneGrado = presentes.includes("gr_sec") || presentes.includes("niv");
+  const tieneContacto = presentes.includes("apod") || presentes.includes("cel");
+  const tienePrograma = presentes.includes("prog") || presentes.includes("ciclo") || presentes.includes("horario");
+  const tieneDetalle = presentes.includes("costo") || presentes.includes("pago") || presentes.includes("ini") || presentes.includes("fin");
+  const minimoOperativo = presentes.length >= 6;
+
+  return minimoOperativo && tieneAlumno && tieneGrado && tieneContacto && tienePrograma && tieneDetalle;
 }
 
 function detectarVariablesPlantilla(contenidoXml, variables) {

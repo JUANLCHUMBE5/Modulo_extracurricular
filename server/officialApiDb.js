@@ -104,6 +104,10 @@ function mergeWithDefaults(stored, defaults) {
     pagos: stored.pagos || defaults.pagos,
     asistencias: stored.asistencias || defaults.asistencias,
     historialCargas: stored.historialCargas || defaults.historialCargas,
+    plantillasPorPrograma: {
+      ...(defaults.plantillasPorPrograma || {}),
+      ...(stored.plantillasPorPrograma || {}),
+    },
     usuarios: stored.usuarios || defaults.usuarios,
   };
 }

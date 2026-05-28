@@ -24,6 +24,7 @@ const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
 export default function Padres({ user, onLogout }) {
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
   const [pasoActivo, setPasoActivo] = useState(0);
+  const [anuncioCerrado, setAnuncioCerrado] = useState(false);
   const {
     abrirPago,
     actualizar,
@@ -48,6 +49,8 @@ export default function Padres({ user, onLogout }) {
     mostrarCatalogoProgramas,
     nombreCorto,
     preguntar,
+    pagarSimuladoPadres,
+    pagoConfirmado,
     programa,
     programasDisponibles,
     programaSeleccionadoId,
@@ -65,6 +68,17 @@ export default function Padres({ user, onLogout }) {
   const debeRevisarAntesDePagar = Boolean(inscripcion && !infoProgramaAceptada);
   const requiereCaja = Boolean(!inscripcion && programa?.ventanaInscripcion?.requiereCaja);
   const tieneCursosDisponibles = programasDisponibles.length > 0;
+  const programaConAnuncio = programa?.anuncioImagen
+    ? programa
+    : programasDisponibles.find((item) => item.anuncioImagen);
+  const anuncioPadres = programaConAnuncio?.anuncioImagen
+    ? {
+        id: programaConAnuncio.programaId || programaConAnuncio.id || programaConAnuncio.programa || programaConAnuncio.nombre,
+        imagen: programaConAnuncio.anuncioImagen,
+        nombre: programaConAnuncio.anuncioImagenNombre || `Anuncio de ${programaConAnuncio.programa || programaConAnuncio.nombre}`,
+        programa: programaConAnuncio.programa || programaConAnuncio.nombre,
+      }
+    : null;
   const datosConfirmados = Boolean(
     form.apoderado.trim() &&
     /^\d{9}$/.test(form.telefono.trim()) &&
@@ -87,6 +101,10 @@ export default function Padres({ user, onLogout }) {
     if (pasoActivo > pasoMaximo) setPasoActivo(pasoMaximo);
   }, [pasoActivo, pasoMaximo]);
 
+  useEffect(() => {
+    setAnuncioCerrado(false);
+  }, [anuncioPadres?.id]);
+
   async function manejarAccionPago() {
     if (!programa) {
       consultarRafael("Que programa tiene disponible mi hijo");
@@ -108,7 +126,7 @@ export default function Padres({ user, onLogout }) {
       await solicitarInscripcionPadres();
       return;
     }
-    abrirPago();
+    await pagarSimuladoPadres();
   }
 
   function renderPaso() {
@@ -148,6 +166,8 @@ export default function Padres({ user, onLogout }) {
           inscripcion={inscripcion}
           invitacionPendiente={invitacionPendiente}
           manejarAccionPago={manejarAccionPago}
+          pagarSimuladoPadres={pagarSimuladoPadres}
+          pagoConfirmado={pagoConfirmado}
           pasoVisible={pasoVisible}
           programa={programa}
           requiereCaja={requiereCaja}
@@ -244,6 +264,15 @@ export default function Padres({ user, onLogout }) {
               nombreCorto={nombreCorto}
               bannerEstudiante={bannerEstudiante}
             />
+
+            {anuncioPadres && !anuncioCerrado ? (
+              <section className="padres-program-announcement" aria-label={`Anuncio de ${anuncioPadres.programa}`}>
+                <img src={anuncioPadres.imagen} alt={anuncioPadres.nombre} />
+                <button type="button" onClick={() => setAnuncioCerrado(true)} aria-label="Cerrar anuncio">
+                  <X size={18} />
+                </button>
+              </section>
+            ) : null}
 
             <StepperProceso pasoActivo={pasoActivo} pasoMaximo={pasoMaximo} onSelect={setPasoActivo} />
 

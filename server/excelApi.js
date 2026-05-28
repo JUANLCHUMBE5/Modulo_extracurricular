@@ -61,7 +61,8 @@ app.get("/api/health", (_req, res) => {
 app.get("/api/db", async (_req, res) => {
   try {
     res.json(await getDb());
-  } catch {
+  } catch (error) {
+    console.error("No se pudo leer la base local:", error);
     res.status(500).json({ message: "No se pudo leer la base local." });
   }
 });
@@ -70,7 +71,8 @@ app.put("/api/db", async (req, res) => {
   try {
     const db = await saveDb(req.body);
     res.json(db);
-  } catch {
+  } catch (error) {
+    console.error("No se pudo guardar la base local:", error);
     res.status(500).json({ message: "No se pudo guardar la base local." });
   }
 });
@@ -78,7 +80,8 @@ app.put("/api/db", async (req, res) => {
 app.post("/api/db/reset", async (_req, res) => {
   try {
     res.json(await resetDb());
-  } catch {
+  } catch (error) {
+    console.error("No se pudo reiniciar la base local:", error);
     res.status(500).json({ message: "No se pudo reiniciar la base local." });
   }
 });

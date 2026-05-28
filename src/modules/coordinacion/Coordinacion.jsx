@@ -12,6 +12,7 @@ import {
   IconEye as Eye,
   IconFileDownload as FileDown,
   IconFileText as FileText,
+  IconPhoto as Photo,
   IconLoader2 as Loader2,
   IconLogout as LogOut,
   IconPlus as Plus,
@@ -27,7 +28,6 @@ import {
   diasSemana,
   LOGO_COLEGIO_SRC,
   nivelesGrados,
-  plantillasVerano,
   variablesPlantillaAceptadas,
   variablesPlantillaRequeridas,
 } from "./constants/coordinacionConstants";
@@ -67,7 +67,10 @@ const formInicial = {
   plantillaValidada: false, plantillaActualizadaEn: "", requisitos: "",
   comunicado: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
   requiereUniforme: false, requiereIndumentaria: false, invitacionMasiva: false,
+  anuncioImagen: "", anuncioImagenNombre: "", anuncioImagenTamano: 0, anuncioImagenComprimida: false,
 };
+
+const ANUNCIO_IMAGEN_MAX_BYTES = 900 * 1024;
 
 const horarioGrupoInicial = {
   grados: [],
@@ -145,6 +148,79 @@ function calcularRangoEdades(desde, hasta) {
   return {
     edadMinima: Math.min(edadDesde, edadHasta),
     edadMaxima: Math.max(edadDesde, edadHasta),
+  };
+}
+
+function formatearPesoArchivo(bytes = 0) {
+  const numero = Number(bytes || 0);
+  if (!numero) return "";
+  if (numero < 1024 * 1024) return `${Math.round(numero / 1024)} KB`;
+  return `${(numero / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function nombreProgramaDesdeArchivo(nombreArchivo = "") {
+  return String(nombreArchivo || "")
+    .replace(/\.[^.]+$/g, "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b(plantilla|digital|variables|word|docx)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (letra) => letra.toUpperCase());
+}
+
+function leerArchivoComoDataUrl(archivo) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error("No se pudo leer la imagen seleccionada."));
+    reader.readAsDataURL(archivo);
+  });
+}
+
+function cargarImagen(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("La imagen seleccionada no se pudo procesar."));
+    image.src = dataUrl;
+  });
+}
+
+function dataUrlABytes(dataUrl = "") {
+  const base64 = String(dataUrl).split(",")[1] || "";
+  return Math.round((base64.length * 3) / 4);
+}
+
+async function comprimirImagenAnuncio(archivo) {
+  const dataUrlOriginal = await leerArchivoComoDataUrl(archivo);
+  if (archivo.size <= ANUNCIO_IMAGEN_MAX_BYTES) {
+    return {
+      dataUrl: dataUrlOriginal,
+      bytes: archivo.size,
+      comprimida: false,
+    };
+  }
+
+  const imagen = await cargarImagen(dataUrlOriginal);
+  const escala = Math.min(1, 1400 / Math.max(imagen.width, imagen.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(imagen.width * escala));
+  canvas.height = Math.max(1, Math.round(imagen.height * escala));
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(imagen, 0, 0, canvas.width, canvas.height);
+
+  let calidad = 0.82;
+  let comprimida = canvas.toDataURL("image/jpeg", calidad);
+  while (dataUrlABytes(comprimida) > ANUNCIO_IMAGEN_MAX_BYTES && calidad > 0.46) {
+    calidad -= 0.08;
+    comprimida = canvas.toDataURL("image/jpeg", calidad);
+  }
+
+  return {
+    dataUrl: comprimida,
+    bytes: dataUrlABytes(comprimida),
+    comprimida: true,
   };
 }
 
@@ -258,7 +334,9 @@ function Coordinacion({
     return coincide && filtra;
   });
   const programaDocs = programas.find((item) => item.id === programaDocsId);
-  const historialPlantillas = programas.filter((programa) => programa.plantilla && programa.plantillaBase64);
+  const historialPlantillas = programas.filter((programa) =>
+    programa.plantilla && (programa.plantillaBase64 || apiDb.plantillasPorPrograma?.[programa.id]?.plantillaBase64)
+  );
 
   // ── Abrir modal crear ──
   function abrirCrear() {
@@ -304,6 +382,10 @@ function Coordinacion({
       requiereUniforme: false,
       requiereIndumentaria: Boolean(prog.requiereIndumentaria),
       invitacionMasiva: Boolean(prog.invitacionMasiva),
+      anuncioImagen: prog.anuncioImagen || "",
+      anuncioImagenNombre: prog.anuncioImagenNombre || "",
+      anuncioImagenTamano: prog.anuncioImagenTamano || 0,
+      anuncioImagenComprimida: Boolean(prog.anuncioImagenComprimida),
       id: prog.id,
     };
   }
@@ -378,6 +460,10 @@ function Coordinacion({
       grupoEtario: esVeranoGuardar ? crearGrupoEtarioVerano(form) : "",
       requiereUniforme: false,
       requiereIndumentaria: Boolean(form.requiereIndumentaria),
+      anuncioImagen: form.invitacionMasiva ? form.anuncioImagen : "",
+      anuncioImagenNombre: form.invitacionMasiva ? form.anuncioImagenNombre : "",
+      anuncioImagenTamano: form.invitacionMasiva ? form.anuncioImagenTamano : 0,
+      anuncioImagenComprimida: form.invitacionMasiva ? Boolean(form.anuncioImagenComprimida) : false,
       horario: gruposHorario.length
         ? resumenHorariosPorGrupo(gruposHorario)
         : resumenHorario(diasFinales, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin),
@@ -484,13 +570,15 @@ function Coordinacion({
     if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas desde documentos.");
     if (!form.plantillaBase64) return mostrarMsg("Primero suba el documento Word.");
     if (!form.plantillaValidada) return mostrarMsg("El Word debe tener variables editables antes de guardarlo.");
-    if (!form.nombre.trim()) return mostrarMsg("Ingrese el nombre del programa.");
+    const nombreDocumento = form.nombre.trim() || nombreProgramaDesdeArchivo(form.plantilla);
+    if (!nombreDocumento) return mostrarMsg("Ingrese el nombre del programa.");
 
     setGuardando(true);
     try {
       const creado = await crearProgramaDesdeDocumento({
         ...form,
-        nombre: form.nombre.trim(),
+        nombre: nombreDocumento,
+        categoria: form.categoria || categorias[0] || "General",
       });
       await cargarDatos();
       setProgramaDocsId("");
@@ -556,21 +644,62 @@ function Coordinacion({
     setForm(f => ({ ...f, [campo]: valor }));
   }
 
-  function aplicarPlantillaVerano(plantilla) {
+  function actualizarInvitacionMasiva(activa) {
     setForm((actual) => ({
       ...actual,
-      periodo: "verano",
-      categoria: categorias.includes(plantilla.categoria) ? plantilla.categoria : actual.categoria,
-      grupoEtario: plantilla.grupoEtario,
-      edadMinima: plantilla.edadMinima,
-      edadMaxima: plantilla.edadMaxima,
-      dias: plantilla.dias,
-      horaInicio: plantilla.horaInicio,
-      horaFin: plantilla.horaFin,
-      almuerzoInicio: "",
-      almuerzoFin: "",
-      modalidadCobro: "Unico",
-      horariosPorGrupo: [],
+      invitacionMasiva: activa,
+      anuncioImagen: activa ? actual.anuncioImagen : "",
+      anuncioImagenNombre: activa ? actual.anuncioImagenNombre : "",
+      anuncioImagenTamano: activa ? actual.anuncioImagenTamano : 0,
+      anuncioImagenComprimida: activa ? actual.anuncioImagenComprimida : false,
+    }));
+  }
+
+  async function seleccionarImagenAnuncio(event) {
+    const archivo = event.target.files?.[0];
+    if (!archivo) return;
+
+    if (!archivo.type.startsWith("image/")) {
+      event.target.value = "";
+      mostrarMsg("Seleccione una imagen valida para el anuncio.");
+      return;
+    }
+
+    if (archivo.size > 8 * 1024 * 1024) {
+      event.target.value = "";
+      mostrarMsg("La imagen no debe superar 8 MB antes de comprimir.");
+      return;
+    }
+
+    try {
+      const resultado = await comprimirImagenAnuncio(archivo);
+      setForm((actual) => ({
+        ...actual,
+        anuncioImagen: resultado.dataUrl,
+        anuncioImagenNombre: archivo.name,
+        anuncioImagenTamano: resultado.bytes,
+        anuncioImagenComprimida: resultado.comprimida,
+      }));
+      mostrarMsg(
+        resultado.comprimida
+          ? "Imagen agregada y comprimida para el portal de padres."
+          : "Imagen agregada para el portal de padres.",
+        "success"
+      );
+    } catch (err) {
+      mostrarMsg(err.message);
+    } finally {
+      event.target.value = "";
+    }
+  }
+
+  function quitarImagenAnuncio() {
+    setForm((actual) => ({
+      ...actual,
+      anuncioImagen: "",
+      anuncioImagenNombre: "",
+      anuncioImagenTamano: 0,
+      anuncioImagenComprimida: false,
     }));
   }
 
@@ -644,6 +773,7 @@ function Coordinacion({
       const plantillaBase64 = await leerArchivoBase64(archivo);
       const datosDetectados = extraerDatosProgramaDesdeWord(textoPlano, archivo.name, categorias);
       const datosAplicables = vista === "documentos" ? filtrarDatosDocumento(datosDetectados) : datosDetectados;
+      const nombreDocumento = datosDetectados.nombre || nombreProgramaDesdeArchivo(archivo.name);
       const totalDetectados = contarDatosDetectados(datosAplicables);
       if (vista === "documentos") {
         setLecturaDocumento({
@@ -656,6 +786,8 @@ function Coordinacion({
       setForm((actual) => ({
         ...actual,
         ...datosAplicables,
+        nombre: actual.nombre || nombreDocumento,
+        categoria: actual.categoria || datosDetectados.categoria || categorias[0] || "",
         plantilla: archivo.name,
         plantillaBase64,
         plantillaVariables: variablesDetectadas,
@@ -1388,22 +1520,8 @@ function Coordinacion({
                             </select>
                           </div>
                           <p className="coord-field-hint">
-                            {form.edadMinima && form.edadMaxima
-                              ? `Secretaría validará alumnos de ${form.edadMinima} a ${form.edadMaxima} años.`
-                              : "Seleccione el rango de edad permitido para este programa de verano."}
+                            Seleccione el rango de edad permitido para este programa de verano.
                           </p>
-                          <div className="coord-upload-actions coord-field-full">
-                            {plantillasVerano.map((plantilla) => (
-                              <button
-                                key={plantilla.id}
-                                type="button"
-                                className="coord-template-autofill"
-                                onClick={() => aplicarPlantillaVerano(plantilla)}
-                              >
-                                {plantilla.label}
-                              </button>
-                            ))}
-                          </div>
                           {form.grupoEtario ? (
                             <p className="coord-field-hint coord-field-full">
                               Grupo etario: {form.grupoEtario}
@@ -1491,13 +1609,7 @@ function Coordinacion({
                             onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
                             placeholder="Máximo 7 días"
                           />
-                          <p className="coord-field-hint">Días para inscripción regular desde el inicio del taller. Máximo: primera semana.</p>
                         </div>
-                      </div>
-                      <div className="coord-field coord-field-full">
-                        <p className="coord-field-hint">
-                          Horario general: {resumenHorario(formDias, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin) || "Opcional si registra grupos por día."}
-                        </p>
                       </div>
                       {puedeGestionarGruposFormulario && !esFormularioVerano ? (
                         <div className="coord-field coord-field-full">
@@ -1592,11 +1704,43 @@ function Coordinacion({
                         <div className="coord-field coord-field-full">
                         <label className="coord-check-label coord-check-label-stacked">
                           <span>
-                            <input type="checkbox" checked={form.invitacionMasiva} onChange={e => actualizarForm("invitacionMasiva", e.target.checked)} />
+                            <input type="checkbox" checked={form.invitacionMasiva} onChange={e => actualizarInvitacionMasiva(e.target.checked)} />
                             Invitación masiva en Padres
                           </span>
                           <small>El curso aparecerá en el portal de padres para todos los alumnos de los grados seleccionados, sin cargar Excel de invitados.</small>
                         </label>
+                        {form.invitacionMasiva ? (
+                          <div className="coord-announcement-image-field">
+                            <div className="coord-announcement-copy">
+                              <Photo size={18} />
+                              <div>
+                                <strong>Imagen de anuncio para Padres</strong>
+                                <p>Se mostrará solo en el portal de padres. Si la imagen es pesada, el sistema la comprimirá para que cargue mejor.</p>
+                              </div>
+                            </div>
+                            {form.anuncioImagen ? (
+                              <div className="coord-announcement-preview">
+                                <img src={form.anuncioImagen} alt="Anuncio para portal de padres" />
+                                <div>
+                                  <strong>{form.anuncioImagenNombre || "Imagen de anuncio"}</strong>
+                                  <span>
+                                    {formatearPesoArchivo(form.anuncioImagenTamano)}
+                                    {form.anuncioImagenComprimida ? " · comprimida" : ""}
+                                  </span>
+                                  <button type="button" onClick={quitarImagenAnuncio}>
+                                    Quitar imagen
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <label className="coord-announcement-upload">
+                                <input type="file" accept="image/*" onChange={seleccionarImagenAnuncio} />
+                                <Upload size={18} />
+                                <span>Agregar imagen</span>
+                              </label>
+                            )}
+                          </div>
+                        ) : null}
                       </div>
                       ) : (
                         <div className="coord-summer-payment-note coord-field-full">

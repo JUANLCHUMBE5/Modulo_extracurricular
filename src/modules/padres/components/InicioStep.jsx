@@ -209,6 +209,13 @@ function CatalogoProgramas({
             const sinCupos = Number(prog.cuposDisponibles || 0) <= 0;
             return (
               <article className="padres-flow-course-card" key={prog.id}>
+                {prog.anuncioImagen ? (
+                  <img
+                    className="padres-flow-course-announcement"
+                    src={prog.anuncioImagen}
+                    alt={prog.anuncioImagenNombre || `Anuncio de ${prog.nombre}`}
+                  />
+                ) : null}
                 <div className="padres-flow-course-head">
                   <div className="padres-flow-course-name">
                     <BookOpen size={18} />

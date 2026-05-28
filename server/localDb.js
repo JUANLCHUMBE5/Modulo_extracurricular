@@ -29,7 +29,7 @@ export async function getDb() {
 
   await ensureDb();
   const raw = await fs.readFile(DB_PATH, "utf8");
-  return JSON.parse(raw);
+  return JSON.parse(stripBom(raw));
 }
 
 export async function saveDb(data) {
@@ -87,10 +87,18 @@ function mergeWithDefaults(stored, defaults) {
     pagos: stored.pagos || defaults.pagos,
     asistencias: stored.asistencias || defaults.asistencias,
     historialCargas: stored.historialCargas || defaults.historialCargas,
+    plantillasPorPrograma: {
+      ...(defaults.plantillasPorPrograma || {}),
+      ...(stored.plantillasPorPrograma || {}),
+    },
     usuarios: stored.usuarios || defaults.usuarios,
   };
 }
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function stripBom(value) {
+  return String(value || "").replace(/^\uFEFF/, "");
 }

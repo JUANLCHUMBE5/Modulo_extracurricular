@@ -129,6 +129,8 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
     detalleCosto: programa.detalleCosto || "",
     detalleAlmuerzo: programa.detalleAlmuerzo || "",
     concesionarios: programa.concesionarios || "",
+    anuncioImagen: programa.anuncioImagen || "",
+    anuncioImagenNombre: programa.anuncioImagenNombre || "",
     plantilla: programa.plantilla || "",
     plantillaBase64: "",
     plantillaVariables: programa.plantillaVariables || [],
@@ -156,6 +158,84 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
   return registro;
 }
 
+export async function registrarPagoSimuladoPadres(dni, inscripcionId, medioPago = "Tarjeta simulada") {
+  await delay(650);
+  await syncApiDb();
+
+  const dniLimpio = String(dni || "").replace(/\D/g, "");
+  if (!dniLimpio) throw new Error("No se encontro el DNI del estudiante.");
+  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
+
+  const inscripcionIndex = (apiDb.inscripciones || []).findIndex((item) =>
+    item.id === inscripcionId &&
+    item.dniEstudiante === dniLimpio &&
+    item.estadoInscripcion !== "Anulada"
+  );
+  if (inscripcionIndex === -1) throw new Error("No se encontro una inscripcion pendiente para pagar.");
+
+  const inscripcion = apiDb.inscripciones[inscripcionIndex];
+  if (esPagoRegistrado(inscripcion.estadoPago)) {
+    return apiDb.pagos.find((pago) => pago.id === inscripcion.pagoId) || null;
+  }
+
+  const pago = {
+    id: generarPagoIdPadres(),
+    inscripcionId: inscripcion.id,
+    dniEstudiante: dniLimpio,
+    estudianteDni: dniLimpio,
+    nombresEstudiante: inscripcion.nombresEstudiante || "",
+    estudianteNombre: inscripcion.nombresEstudiante || "",
+    programaId: inscripcion.programaId || "",
+    programa: inscripcion.programa || "",
+    programaNombre: inscripcion.programa || "",
+    periodo: inscripcion.periodo || "escolar",
+    concepto: "Inscripcion",
+    monto: Number(inscripcion.costo || 0),
+    formaPago: medioPago,
+    medioPago,
+    estado: "completado",
+    fecha: fechaActualIso(),
+    fechaPago: fechaActualIso(),
+    codigoOperacion: generarCodigoOperacion(),
+    origenRegistro: "Portal padres - pago simulado",
+    createdAt: fechaActualIso(),
+  };
+
+  apiDb.pagos.push(pago);
+  apiDb.inscripciones[inscripcionIndex] = {
+    ...inscripcion,
+    estadoPago: "Pagado",
+    estadoInscripcion: "Pago validado",
+    pagoId: pago.id,
+    fechaPago: pago.fechaPago,
+  };
+
+  await saveApiDb();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("mock-db-updated"));
+  }
+  return pago;
+}
+
+function generarPagoIdPadres() {
+  const usados = new Set((apiDb.pagos || []).map((pago) => String(pago.id || "")));
+  let id = `PAG-${Date.now().toString().slice(-8)}`;
+  while (usados.has(id)) {
+    id = `PAG-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 90) + 10}`;
+  }
+  return id;
+}
+
+function generarCodigoOperacion() {
+  return `OP-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90) + 10}`;
+}
+
+function esPagoRegistrado(valor) {
+  const texto = normalizarTexto(valor);
+  if (texto.includes("pendiente")) return false;
+  return ["pagado", "validado", "completado"].some((estado) => texto.includes(estado));
+}
+
 function obtenerInvitaciones(dni, estudiante = null) {
   const resultado = [];
 
@@ -179,6 +259,8 @@ function obtenerInvitaciones(dni, estudiante = null) {
         detalleCosto: programa.detalleCosto || "",
         detalleAlmuerzo: programa.detalleAlmuerzo || "",
         concesionarios: programa.concesionarios || "",
+        anuncioImagen: programa.anuncioImagen || "",
+        anuncioImagenNombre: programa.anuncioImagenNombre || "",
         requiereUniforme: Boolean(programa.requiereUniforme),
         estadoPrograma: programa.estado || "No definido",
         estadoInvitacion: "Invitacion masiva",
@@ -212,6 +294,8 @@ function obtenerInvitaciones(dni, estudiante = null) {
           detalleCosto: programa.detalleCosto || "",
           detalleAlmuerzo: programa.detalleAlmuerzo || "",
           concesionarios: programa.concesionarios || "",
+          anuncioImagen: programa.anuncioImagen || "",
+          anuncioImagenNombre: programa.anuncioImagenNombre || "",
           requiereUniforme: Boolean(programa.requiereUniforme),
           estadoPrograma: programa.estado || "No definido",
           estadoInvitacion: invitado.estado || "Invitado",
@@ -497,6 +581,8 @@ export async function obtenerProgramasCoordinacion() {
       cuposDisponibles,
       costo: Number(programa.costo || 0),
       responsable: programa.responsable || programa.docente || "Por definir",
+      anuncioImagen: programa.anuncioImagen || "",
+      anuncioImagenNombre: programa.anuncioImagenNombre || "",
       fechaInicio: programa.fechaInicio || "",
       fechaFin: programa.fechaFin || "",
       duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),

@@ -95,6 +95,10 @@ export async function crearPrograma(datos) {
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
     invitacionMasiva: Boolean(datos.invitacionMasiva),
+    anuncioImagen: datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
+    anuncioImagenNombre: datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
+    anuncioImagenTamano: datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
+    anuncioImagenComprimida: datos.invitacionMasiva ? Boolean(datos.anuncioImagenComprimida) : false,
     requiereIndumentaria: Boolean(datos.requiereIndumentaria),
   };
 
@@ -149,6 +153,10 @@ export async function crearProgramaDesdeDocumento(datos) {
     requiereUniforme: Boolean(datos.requiereUniforme),
     requiereIndumentaria: Boolean(datos.requiereIndumentaria),
     invitacionMasiva: Boolean(datos.invitacionMasiva),
+    anuncioImagen: datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
+    anuncioImagenNombre: datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
+    anuncioImagenTamano: datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
+    anuncioImagenComprimida: datos.invitacionMasiva ? Boolean(datos.anuncioImagenComprimida) : false,
     creadoDesdeDocumento: true,
   };
 
@@ -187,6 +195,10 @@ export async function editarPrograma(id, datos) {
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
     invitacionMasiva: Boolean(datos.invitacionMasiva),
+    anuncioImagen: datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
+    anuncioImagenNombre: datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
+    anuncioImagenTamano: datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
+    anuncioImagenComprimida: datos.invitacionMasiva ? Boolean(datos.anuncioImagenComprimida) : false,
     requiereIndumentaria: Boolean(datos.requiereIndumentaria),
   };
 

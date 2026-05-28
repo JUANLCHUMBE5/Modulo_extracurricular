@@ -10,6 +10,15 @@ function cn(...items) {
   return items.filter(Boolean).join(" ");
 }
 
+function esPagoRegistrado(valor) {
+  const texto = String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  if (texto.includes("pendiente")) return false;
+  return ["pagado", "validado", "completado"].some((estado) => texto.includes(estado));
+}
+
 export default function PagoStep({
   datosConfirmados,
   guardando,
@@ -17,6 +26,8 @@ export default function PagoStep({
   inscripcion,
   invitacionPendiente,
   manejarAccionPago,
+  pagarSimuladoPadres,
+  pagoConfirmado,
   pasoVisible,
   programa,
   requiereCaja,
@@ -24,17 +35,21 @@ export default function PagoStep({
 }) {
   const monto = programa && (inscripcion || infoProgramaAceptada) ? formatearSoles(programa.costo) : "S/ 0.00";
   const pagoListo = Boolean(programa && infoProgramaAceptada && datosConfirmados);
+  const pagoPagado = esPagoRegistrado(inscripcion?.estadoPago);
+  const puedeSimularPago = Boolean(inscripcion && pagoListo && !pagoPagado && !requiereCaja);
   const textoBoton = !programa
     ? "Consultar disponibilidad"
     : !infoProgramaAceptada
       ? "Revisar comunicado"
       : !datosConfirmados
         ? "Confirmar datos"
+        : pagoPagado
+          ? "Pago registrado"
         : requiereCaja
           ? "Ver indicaciones de Caja"
           : invitacionPendiente
             ? "Registrar inscripcion"
-            : "Ver indicaciones de pago";
+            : "Pagar ahora";
 
   return (
     <article className="padres-flow-panel padres-flow-payment-step">
@@ -50,8 +65,10 @@ export default function PagoStep({
         <span>Monto referencial</span>
         <strong>{monto}</strong>
         <p>
-          {pagoListo
-            ? "Ya puede continuar con el registro o revisar las indicaciones de Caja."
+          {pagoPagado
+            ? "El pago ya figura registrado para este programa."
+            : pagoListo
+              ? "Ya puede continuar con el registro o pagar con la pasarela simulada."
             : "Complete los pasos anteriores para habilitar esta accion."}
         </p>
       </div>
@@ -71,6 +88,41 @@ export default function PagoStep({
         </div>
       </div>
 
+      {puedeSimularPago ? (
+        <section className="padres-flow-pay-simulator" aria-label="Pago simulado">
+          <div>
+            <span>Pasarela simulada</span>
+            <strong>{monto}</strong>
+            <p>Seleccione un medio para registrar el pago como si fuera una operacion real.</p>
+          </div>
+          <div className="padres-flow-pay-methods">
+            {["Tarjeta simulada", "Yape simulado", "Transferencia simulada"].map((medio) => (
+              <button
+                key={medio}
+                type="button"
+                disabled={guardando}
+                onClick={() => pagarSimuladoPadres?.(medio)}
+              >
+                <CreditCard size={15} />
+                {medio.replace(" simulada", "").replace(" simulado", "")}
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : pagoPagado ? (
+        <section className="padres-flow-pay-success">
+          <CheckCircle2 size={18} />
+          <div>
+            <strong>{pagoConfirmado ? "Pago aprobado" : "Pago validado"}</strong>
+            <span>
+              {pagoConfirmado?.codigoOperacion
+                ? `Operacion ${pagoConfirmado.codigoOperacion}. La inscripcion quedo lista y tambien aparecera como pagada en Caja.`
+                : "La inscripcion quedo lista y tambien aparecera como pagada en Caja."}
+            </span>
+          </div>
+        </section>
+      ) : null}
+
       <div className="padres-flow-actions">
         {!infoProgramaAceptada ? (
           <button className="padres-flow-secondary-button" type="button" onClick={() => setPasoActivo(1)}>
@@ -82,8 +134,8 @@ export default function PagoStep({
             Confirmar datos
           </button>
         ) : null}
-        <button className="padres-flow-primary-button" type="button" disabled={guardando} onClick={manejarAccionPago}>
-          {guardando ? <Loader2 className="padres-spin" size={16} /> : <CreditCard size={16} />}
+        <button className="padres-flow-primary-button" type="button" disabled={guardando || pagoPagado} onClick={manejarAccionPago}>
+          {guardando ? <Loader2 className="padres-spin" size={16} /> : pagoPagado ? <CheckCircle2 size={16} /> : <CreditCard size={16} />}
           {textoBoton}
         </button>
       </div>

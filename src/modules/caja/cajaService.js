@@ -1,4 +1,4 @@
-import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../services/dbApi";
+import { apiDb, saveApiDb, syncApiDb } from "../../services/dbApi";
 import { fechaActualIso } from "../../services/dateService";
 
 const esperar = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -12,7 +12,7 @@ export async function listarPagos(periodo = "escolar", filtros = {}) {
   await esperar(400);
   await syncApiDb();
   
-  if (!apiDb.pagos) apiDb.pagos = [];
+  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
   
   const periodoNormalizado = normalizarPeriodo(periodo);
   let pagos = [...apiDb.pagos].filter((p) => normalizarPeriodo(p.periodo || periodoNormalizado) === periodoNormalizado);
@@ -34,14 +34,14 @@ export async function registrarPago(datosPago) {
   await esperar(500);
   await syncApiDb();
   
-  if (!apiDb.pagos) apiDb.pagos = [];
+  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
   
   const dniEstudiante = datosPago.dniEstudiante || datosPago.estudianteDni || "";
   const nombresEstudiante = datosPago.nombresEstudiante || datosPago.estudianteNombre || "";
   const programa = datosPago.programa || datosPago.programaNombre || "";
 
   const pago = {
-    id: nextApiId("pagos"),
+    id: generarPagoId(),
     ...datosPago,
     estudianteDni: datosPago.estudianteDni || dniEstudiante,
     estudianteNombre: datosPago.estudianteNombre || nombresEstudiante,
@@ -64,11 +64,21 @@ export async function registrarPago(datosPago) {
   return pago;
 }
 
+function generarPagoId() {
+  const pagos = Array.isArray(apiDb.pagos) ? apiDb.pagos : [];
+  const usados = new Set(pagos.map((pago) => String(pago.id || "")));
+  let id = `PAG-${Date.now().toString().slice(-8)}`;
+  while (usados.has(id)) {
+    id = `PAG-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 90) + 10}`;
+  }
+  return id;
+}
+
 export async function actualizarPago(pagoId, datosActualizados) {
   await esperar(400);
   await syncApiDb();
   
-  if (!apiDb.pagos) apiDb.pagos = [];
+  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
   
   const index = apiDb.pagos.findIndex((p) => p.id === pagoId);
   if (index === -1) throw new Error("Pago no encontrado.");
@@ -103,7 +113,7 @@ export async function obtenerResumenCaja(periodo = "escolar") {
   await esperar(300);
   await syncApiDb();
   
-  if (!apiDb.pagos) apiDb.pagos = [];
+  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
   
   const periodoNormalizado = normalizarPeriodo(periodo);
   const pagos = apiDb.pagos.filter((p) => normalizarPeriodo(p.periodo || periodoNormalizado) === periodoNormalizado);
@@ -200,7 +210,7 @@ export async function obtenerOpcionesReporteCaja(periodo = "escolar") {
     .sort((a, b) => a.label.localeCompare(b.label));
 
   const medios = new Set(
-    [...(apiDb.pagos || [])]
+    [...(Array.isArray(apiDb.pagos) ? apiDb.pagos : [])]
       .filter((pago) => normalizarPeriodo(pago.periodo || periodoNormalizado) === periodoNormalizado)
       .map((pago) => pago.formaPago || pago.medioPago || "")
       .filter(Boolean)
@@ -217,7 +227,7 @@ export async function generarReporteCaja(filtros = {}) {
   await syncApiDb();
 
   const periodoNormalizado = normalizarPeriodo(filtros.periodo || "escolar");
-  const pagos = [...(apiDb.pagos || [])]
+  const pagos = [...(Array.isArray(apiDb.pagos) ? apiDb.pagos : [])]
     .filter((pago) => normalizarPeriodo(pago.periodo || periodoNormalizado) === periodoNormalizado);
 
   if (filtros.tipoReporte === "pagos_registrados" || filtros.tipoReporte === "pagos_realizados") {
