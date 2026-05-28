@@ -492,59 +492,6 @@
   font-weight: 950;
 }
 
-.padres-comunicado-summary {
-  display: block;
-}
-
-.padres-comunicado-summary > div,
-.padres-comunicado-next > div {
-  border: 1px solid #dbe7e4;
-  border-radius: 12px;
-  padding: 12px;
-  background: #f7fbfa;
-}
-
-.padres-comunicado-summary span,
-.padres-comunicado-next span {
-  display: block;
-  margin-bottom: 4px;
-  color: #607287;
-  font-size: 10px;
-  font-weight: 950;
-  letter-spacing: 0;
-  text-transform: uppercase;
-}
-
-.padres-comunicado-summary strong,
-.padres-comunicado-next strong {
-  display: block;
-  color: #05233d;
-  font-size: 15px;
-  font-weight: 950;
-  line-height: 1.25;
-}
-
-.padres-comunicado-summary p {
-  margin: 0;
-  color: #52627a;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.padres-comunicado-summary > div:last-child {
-  align-content: center;
-}
-
-.padres-comunicado-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.padres-comunicado-grid .padres-data-box {
-  background: #f8fbfb;
-}
-
 .padres-comunicado-section {
   border: 1px solid #dbe7e4;
   border-radius: 10px;
@@ -627,65 +574,6 @@
   color: #f97316;
   font-size: 15px;
   font-weight: 950;
-}
-
-.padres-comunicado-next {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.padres-comunicado-steps {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.padres-comunicado-step {
-  position: relative;
-  border: 1px solid #dbe7e4;
-  border-radius: 12px;
-  padding: 12px 12px 12px 46px;
-  background: #f7fbfa;
-}
-
-.padres-comunicado-step > span {
-  position: absolute;
-  left: 12px;
-  top: 13px;
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  border-radius: 999px;
-  color: #00796b;
-  background: #dff8ef;
-  font-size: 12px;
-  font-weight: 950;
-}
-
-.padres-comunicado-step strong {
-  display: block;
-  color: #05233d;
-  font-size: 14px;
-  font-weight: 950;
-  line-height: 1.25;
-}
-
-.padres-comunicado-step p {
-  margin: 4px 0 0;
-  color: #52627a;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.padres-comunicado-step.is-current {
-  border-color: #91e4d2;
-  background: #effcf8;
-}
-
-.padres-program-details .padres-section-title {
-  margin-bottom: 0;
 }
 
 .padres-modal-backdrop {
@@ -860,13 +748,6 @@
     flex-basis: auto;
   }
 
-  .padres-comunicado-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .padres-comunicado-summary,
-  .padres-comunicado-next,
-  .padres-comunicado-steps,
   .padres-lunch-vendors {
     grid-template-columns: 1fr;
   }

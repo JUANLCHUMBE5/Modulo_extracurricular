@@ -1,22 +1,8 @@
 ﻿import { useEffect, useState } from "react";
-import { Alert as MantineAlert } from "@mantine/core";
 import { toast } from "sonner";
 import {
-  IconAlertCircle as AlertCircle,
-  IconCalendar as CalendarDays,
-  IconCircleCheck as CheckCircle2,
-  IconClipboardCheck as ClipboardCheck,
-  IconFileText as FileText,
-  IconId as IdCard,
-  IconLoader2 as Loader2,
   IconLogout as LogOut,
-  IconPhone as Phone,
-  IconPrinter as Printer,
   IconSearch as Search,
-  IconSend as Send,
-  IconUserPlus as UserPlus,
-  IconUserCircle as UserRound,
-  IconX as X,
 } from "@tabler/icons-react";
 import {
   buscarEstudiantePorDni,
@@ -38,12 +24,11 @@ import {
 } from "../../services/dateService";
 import { resolverHorarioPorGradoLocal } from "./utils/horariosSecretaria";
 import { FichaAceptación, imprimirInscripcionDirecta } from "./components/SecretariaFicha";
+import SecretariaRegistroModal from "./components/SecretariaRegistroModal";
+import SecretariaSearchCard from "./components/SecretariaSearchCard";
+import SecretariaStudentPanel from "./components/SecretariaStudentPanel";
+import SecretariaSuccessModal from "./components/SecretariaSuccessModal";
 import {
-  CampoLectura,
-  CampoTexto,
-  DatoHorario,
-  formatearCuposSecretaria,
-  resumirClaseSecretaria,
   resumirHorarioSecretaria,
 } from "./components/SecretariaFields";
 import "./Secretaria.css";
@@ -95,6 +80,28 @@ function calcularEdadSecretaria(estudiante, formulario = {}) {
   return edad > 0 ? edad : "";
 }
 
+function programaDisponibleParaEdadSecretaria(programa, edadAlumno = "") {
+  const minimo = Number(programa?.edadMinima || 0);
+  const maximo = Number(programa?.edadMaxima || 0);
+  if (!minimo && !maximo) return true;
+  const edad = Number(edadAlumno);
+  if (!Number.isFinite(edad) || edad <= 0) return true;
+  if (minimo && edad < minimo) return false;
+  if (maximo && edad > maximo) return false;
+  return true;
+}
+
+function etiquetaProgramaSecretaria(programa) {
+  const rango = programa?.grupoEtario || programa?.grupo || (
+    programa?.edadMinima && programa?.edadMaxima
+      ? `Edades ${programa.edadMinima} a ${programa.edadMaxima} anios`
+      : ""
+  );
+  return [programa?.nombre, rango, programa?.horario]
+    .filter(Boolean)
+    .join(" - ");
+}
+
 function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, onLogout }) {
   const [periodo, setPeriodo] = useState("escolar");
   const [dni, setDni] = useState("");
@@ -126,6 +133,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     : null;
   const programaSeleccionado = programas.find((programa) => programa.id === formulario.programa);
   const esCicloVerano = periodo === "verano";
+  const edadAlumnoFormulario = calcularEdadSecretaria(estudiante, formulario);
+  const programasCompatiblesFormulario = esCicloVerano
+    ? programas.filter((programa) => programaDisponibleParaEdadSecretaria(programa, edadAlumnoFormulario))
+    : programas;
   const tieneInvitacionOperativa = !esCicloVerano && Boolean(estudiante?.tieneInvitacion);
   const tipoAlumnoMostrado = esCicloVerano
     ? (estudiante?.esExterno ? "Alumno externo" : "Alumno interno")
@@ -140,6 +151,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   const programaAsignadoInvitacion = tieneInvitacionOperativa ? {
     id: estudiante.programaAsignado,
     nombre: estudiante.programaNombre,
+    grupo: estudiante.programaGrupo,
+    grupoEtario: estudiante.programaGrupoEtario,
     horario: estudiante.programaHorario,
     docente: estudiante.programaDocente,
     costo: estudiante.programaCosto,
@@ -161,10 +174,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   const programasParaSelector = programaAsignadoInvitacion && !registroAdicional
     ? [
         programaAsignadoInvitacion,
-        ...programas.filter((programa) => programa.id !== programaAsignadoInvitacion.id),
+        ...programasCompatiblesFormulario.filter((programa) => programa.id !== programaAsignadoInvitacion.id),
       ]
-    : programas;
-  const mostrarSelectorPrograma = esCicloVerano || !tieneInvitacionOperativa || registroAdicional || programas.length > 0;
+    : programasCompatiblesFormulario;
+  const mostrarSelectorPrograma = esCicloVerano || !tieneInvitacionOperativa || registroAdicional || programasCompatiblesFormulario.length > 0;
 
   const programaParaRegistro = programaSeleccionado || programaAsignado || programaAsignadoInvitacion;
   const inscripcionMasivaSeleccionada = Boolean(programaParaRegistro?.invitacionMasiva);
@@ -354,10 +367,20 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
 
 
   function actualizarFormulario(campo, valor) {
-    setFormulario((actual) => ({
-      ...actual,
-      [campo]: valor,
-    }));
+    setFormulario((actual) => {
+      const siguiente = {
+        ...actual,
+        [campo]: valor,
+      };
+      if (periodo === "verano" && campo === "edadExterno") {
+        const compatibles = programas.filter((programa) =>
+          programaDisponibleParaEdadSecretaria(programa, valor)
+        );
+        const programaActualValido = compatibles.some((programa) => programa.id === actual.programa);
+        siguiente.programa = programaActualValido ? actual.programa : compatibles[0]?.id || "";
+      }
+      return siguiente;
+    });
   }
 
   function actualizarFechaNacimientoExterno(valor) {
@@ -726,796 +749,60 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         ) : (
           <>
         <section className="secretaria-workspace secretaria-workspace-system">
-          <article className="secretaria-card secretaria-search-card">
-            <div className="secretaria-card-title">
-              <span className="secretaria-title-icon">
-                <IdCard size={21} />
-              </span>
-              <div>
-                <h2>Buscar estudiante</h2>
-                <p>Ingrese DNI o nombre para iniciar la atencion.</p>
-              </div>
-            </div>
-
-            <form onSubmit={buscarEstudiante} className="secretaria-form secretaria-search-form-compact">
-              <div className="secretaria-field">
-                <label htmlFor="periodo">
-                  <CalendarDays size={15} />
-                  Periodo
-                </label>
-                <select
-                  id="periodo"
-                  value={periodo}
-                  onChange={(event) => setPeriodo(event.target.value)}
-                >
-                  <option value="escolar">Año escolar</option>
-                  <option value="verano">Ciclo verano</option>
-                </select>
-              </div>
-
-              <div className="secretaria-search-row">
-                <div className="secretaria-input-wrap">
-                  <Search size={18} />
-                  <input
-                    aria-label="DNI o nombre del estudiante"
-                    placeholder="Ingrese DNI o nombre del estudiante"
-                    value={dni}
-                    onChange={(event) => setDni(event.target.value)}
-                  />
-                </div>
-                <button
-                  className="secretaria-primary-button"
-                  type="submit"
-                  disabled={buscando}
-                >
-                  {buscando ? (
-                    <Loader2 className="secretaria-spin" size={17} />
-                  ) : (
-                    <Search size={17} />
-                  )}
-                  <span>{buscando ? "Buscando" : "Buscar"}</span>
-                </button>
-                {periodo === "verano" ? (
-                  <button
-                    className="secretaria-secondary-button secretaria-new-summer-student"
-                    type="button"
-                    onClick={() => abrirRegistroAlumnoExterno()}
-                  >
-                    <UserPlus size={17} />
-                    <span>Nuevo estudiante de verano</span>
-                  </button>
-                ) : null}
-
-              </div>
-            </form>
-
-            {resultadosNombre.length ? (
-              <div className="secretaria-name-results">
-                {resultadosNombre.map((item) => (
-                  <button
-                    type="button"
-                    key={`${item.dni || item.codigoEstudiante || item.nombres}-${item.programaAsignado || "base"}`}
-                    onClick={async () => {
-                      setDni(item.dni || item.nombres);
-                      await aplicarEstudianteEncontrado(item);
-                    }}
-                  >
-                    <strong>{item.nombres}</strong>
-                    <span>{item.dni ? `DNI ${item.dni}` : "Sin DNI"} · {item.codigoEstudiante || "Sin código"} · {item.grado} {item.seccion} · {item.programaNombre || "Sin programa"}</span>
-                  </button>
-                ))}
-              </div>
-            ) : null}
-
-            {mensaje ? (
-              <MantineAlert className="secretaria-message" color="orange" radius="md" icon={<AlertCircle size={18} />}>
-                {mensaje}
-              </MantineAlert>
-            ) : null}
-
-            {!estudiante && !mensaje && !resultadosNombre.length ? (
-              <div className="secretaria-search-empty">
-                <div className="secretaria-search-empty-icon">
-                  <Search size={28} />
-                </div>
-                <div>
-                  <strong>Lista para iniciar</strong>
-                  <span>Seleccione el periodo y busque al estudiante para continuar con el registro.</span>
-                </div>
-              </div>
-            ) : null}
-
-            {estudiante ? (
-              <section className="secretaria-student-panel">
-                <div className="secretaria-student-summary">
-                  <div className="secretaria-avatar">
-                    {estudiante.nombres
-                      .split(" ")
-                      .slice(0, 2)
-                      .map((name) => name[0])
-                      .join("")}
-                  </div>
-                  <div>
-                    <span className="secretaria-overline">Estudiante encontrado</span>
-                    <strong>{estudiante.nombres}</strong>
-                    <span>{estudiante.dni ? `DNI ${estudiante.dni}` : "Sin DNI registrado"} · {estudiante.codigoEstudiante || "Sin código"}</span>
-                  </div>
-                  <button className="secretaria-secondary-button secretaria-new-search-button" type="button" onClick={limpiarBusquedaEstudiante}>
-                    <Search size={15} />
-                    Buscar otro estudiante
-                  </button>
-                </div>
-
-                <dl className="secretaria-student-data" aria-label="Datos del estudiante">
-                  <div className="secretaria-data-compact secretaria-data-identity">
-                    <dt>Código</dt>
-                    <dd>{estudiante.codigoEstudiante || "No registrado"}</dd>
-                  </div>
-                  <div className="secretaria-data-compact secretaria-data-identity">
-                    <dt>Grado</dt>
-                    <dd>{estudiante.grado}</dd>
-                  </div>
-                  <div className="secretaria-data-compact secretaria-data-identity">
-                    <dt>Sección</dt>
-                    <dd>{estudiante.seccion}</dd>
-                  </div>
-                  <div className="secretaria-data-compact secretaria-data-identity">
-                    <dt>Tipo de alumno</dt>
-                    <dd>{tipoAlumnoMostrado}</dd>
-                  </div>
-                  <div className="secretaria-data-status secretaria-data-process">
-                    <dt>Periodo</dt>
-                    <dd>{estudiante.periodo}</dd>
-                  </div>
-                  {!esCicloVerano ? (
-                    <div className="secretaria-data-status secretaria-data-process">
-                      <dt>Invitacion</dt>
-                      <dd>
-                        <span className={`secretaria-pill ${tieneInvitacionOperativa ? "secretaria-pill-success" : "secretaria-pill-warning"}`}>
-                          <CheckCircle2 size={13} />
-                          {tieneInvitacionOperativa ? "Registrada" : "Sin invitación"}
-                        </span>
-                      </dd>
-                    </div>
-                  ) : null}
-                  <div className="secretaria-data-status secretaria-data-process">
-                    <dt>Estado inscripción</dt>
-                    <dd>
-                      <span className="secretaria-pill secretaria-pill-info">
-                        {estudiante.estadoInscripción}
-                      </span>
-                    </dd>
-                  </div>
-                  <div className="secretaria-data-status secretaria-data-process">
-                    <dt>Estado pago</dt>
-                    <dd>{estudiante.estadoPago || "Sin pago"}</dd>
-                  </div>
-                  <div className="secretaria-data-wide secretaria-data-program">
-                    <dt>{tieneInvitacionOperativa ? "Programa asignado" : esCicloVerano ? "Programa de verano" : "Programa"}</dt>
-                    <dd>{nombreProgramaAMostrar || "Se seleccionara al registrar"}</dd>
-                  </div>
-                  {inscripcion ? (
-                    <>
-                      <div className="secretaria-data-program">
-                        <dt>Horario</dt>
-                        <dd>{resumirClaseSecretaria(inscripcion.horario)}</dd>
-                      </div>
-                      <div className="secretaria-data-program">
-                        <dt>Costo referencial</dt>
-                        <dd>S/ {Number(inscripcion.costo).toFixed(2)}</dd>
-                      </div>
-                      <div className="secretaria-data-program">
-                        <dt>Uniforme requerido</dt>
-                        <dd>{inscripcion.requiereUniforme ? "Sí" : "No"}</dd>
-                      </div>
-                      <div className="secretaria-data-contact">
-                        <dt>Nombre del padre</dt>
-                        <dd>{inscripcion.apoderado}</dd>
-                      </div>
-                      <div className="secretaria-data-contact">
-                        <dt>Teléfono</dt>
-                        <dd>{inscripcion.telefono}</dd>
-                      </div>
-                      <div className="secretaria-data-contact">
-                        <dt>Estado pago</dt>
-                        <dd>{inscripcion.estadoPago}</dd>
-                      </div>
-                    </>
-                  ) : null}
-                </dl>
-
-                <div className="secretaria-info-box">
-                  <CheckCircle2 size={19} />
-                  {inscripcion && programas.length > 0 ? (
-                    <p>
-                      El estudiante ya tiene una inscripción. Secretaría puede registrar
-                      un curso adicional de invitación masiva si aplica a su grado y no cruza con su horario.
-                    </p>
-                  ) : inscripcion ? (
-                    <p>
-                      Inscripcion registrada. Derivar a Caja para validar el pago.
-                    </p>
-                  ) : esCicloVerano && programas.length > 0 ? (
-                    <p>
-                      Ciclo verano no usa invitación. Secretaría debe seleccionar el programa de verano al registrar.
-                    </p>
-                  ) : esCicloVerano ? (
-                    <p>
-                      Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
-                    </p>
-                  ) : tieneInvitacionOperativa ? (
-                    <p>
-                      El estudiante tiene invitación registrada. Secretaria solo
-                      podrá inscribirlo en el programa asignado por Coordinación.
-                    </p>
-                  ) : programas.length > 0 ? (
-                    <p>
-                      No tiene invitación individual. Secretaría puede registrarlo
-                      en los programas marcados por Coordinación como invitación masiva.
-                    </p>
-                  ) : (
-                    <p>
-                      No tiene invitación registrada. Coordinación debe habilitar una
-                      invitación masiva o registrar una invitación individual.
-                    </p>
-                  )}
-                </div>
-
-                {!inscripcion || programas.length > 0 ? (
-                  <button
-                    className="secretaria-register-button"
-                    type="button"
-                    onClick={abrirRegistro}
-                  >
-                    <ClipboardCheck size={17} />
-                    <span>{inscripcion ? "Registrar curso adicional" : "Registrar inscripcion"}</span>
-                  </button>
-                ) : (
-                  <div className="secretaria-final-actions">
-                    <button
-                      className="secretaria-primary-button"
-                      type="button"
-                      onClick={abrirFichaGenerada}
-                      disabled={imprimiendoFichaRegistro}
-                    >
-                      {imprimiendoFichaRegistro ? <Loader2 className="secretaria-spin" size={17} /> : <Printer size={17} />}
-                      <span>{imprimiendoFichaRegistro ? "Preparando ficha" : "Imprimir ficha de registro"}</span>
-                    </button>
-                    <button
-                      className="secretaria-register-button"
-                      type="button"
-                      onClick={derivarACaja}
-                      disabled={derivandoCaja || inscripcion.derivadoCaja}
-                    >
-                      {derivandoCaja ? <Loader2 className="secretaria-spin" size={17} /> : <Send size={17} />}
-                      <span>
-                        {inscripcion.derivadoCaja
-                          ? "Derivado a Caja"
-                          : derivandoCaja
-                            ? "Derivando"
-                            : "Derivar a Caja"}
-                      </span>
-                    </button>
-                  </div>
-                )}
-              </section>
-            ) : null}
-          </article>
+          <SecretariaSearchCard
+            aplicarEstudianteEncontrado={aplicarEstudianteEncontrado}
+            abrirRegistroAlumnoExterno={abrirRegistroAlumnoExterno}
+            buscando={buscando}
+            buscarEstudiante={buscarEstudiante}
+            dni={dni}
+            estudiante={estudiante}
+            mensaje={mensaje}
+            periodo={periodo}
+            resultadosNombre={resultadosNombre}
+            setDni={setDni}
+            setPeriodo={setPeriodo}
+          >
+            <SecretariaStudentPanel
+              abrirFichaGenerada={abrirFichaGenerada}
+              abrirRegistro={abrirRegistro}
+              derivarACaja={derivarACaja}
+              derivandoCaja={derivandoCaja}
+              esCicloVerano={esCicloVerano}
+              estudiante={estudiante}
+              imprimiendoFichaRegistro={imprimiendoFichaRegistro}
+              inscripcion={inscripcion}
+              limpiarBusquedaEstudiante={limpiarBusquedaEstudiante}
+              nombreProgramaAMostrar={nombreProgramaAMostrar}
+              programas={programas}
+              tieneInvitacionOperativa={tieneInvitacionOperativa}
+              tipoAlumnoMostrado={tipoAlumnoMostrado}
+            />
+          </SecretariaSearchCard>
 
         </section>
 
-        {modoRegistro && estudiante ? (
-          <div
-            className="secretaria-modal-overlay"
-            role="presentation"
-          >
-            <section
-              className={`secretaria-card secretaria-registration-card secretaria-registration-modal${esCicloVerano ? " is-summer-registration" : ""}${estudiante.esExterno ? " is-external-registration" : ""}`}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="secretaria-registration-title"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="secretaria-modal-header">
-                <div className="secretaria-card-title">
-                  <span className="secretaria-title-icon">
-                    <ClipboardCheck size={21} />
-                  </span>
-                  <div>
-                    <h2 id="secretaria-registration-title">{esCicloVerano ? "Registro ciclo verano" : "Registrar inscripcion"}</h2>
-                    <p>
-                      {esCicloVerano
-                        ? "Complete los datos de verano antes de confirmar la participación."
-                        : "Revise la información enviada por Coordinación antes de confirmar."}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  className="secretaria-modal-close"
-                  type="button"
-                  aria-label="Cerrar formulario de inscripcion"
-                  onClick={() => setModoRegistro(false)}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form className="secretaria-registration-form secretaria-registration-form-clean" onSubmit={guardarInscripción}>
-                <div className="secretaria-modal-student secretaria-field-full">
-                  <p><strong>Nombre y apellido:</strong> {estudiante.nombres}</p>
-                  <p><strong>DNI:</strong> {estudiante.dni || "Sin DNI"}</p>
-                  <p><strong>Grado:</strong> {estudiante.grado}</p>
-                  {!estudiante.esExterno ? (
-                    <p><strong>Sección:</strong> {estudiante.seccion || "Sin sección"}</p>
-                  ) : null}
-                </div>
-
-                {mensaje ? (
-                  <MantineAlert
-                    className="secretaria-message secretaria-modal-message secretaria-field-full"
-                    color="orange"
-                    radius="md"
-                    icon={<AlertCircle size={18} />}
-                  >
-                    {mensaje}
-                  </MantineAlert>
-                ) : null}
-
-                {esCicloVerano ? (
-                  <div className="secretaria-summer-flow secretaria-field-full">
-                    <section className="secretaria-summer-panel secretaria-summer-student">
-                      <div className="secretaria-registration-section-head secretaria-summer-heading">
-                        <strong>Datos del estudiante</strong>
-                        <span>Información para ciclo verano</span>
-                      </div>
-
-                      <CampoTexto
-                        label="Colegio de procedencia"
-                        className="secretaria-field-full secretaria-summer-colegio"
-                        value={formulario.colegioProcedencia}
-                        onChange={(value) => actualizarFormulario("colegioProcedencia", value)}
-                        placeholder="Ej: Colegio San Rafael"
-                      />
-
-                      {estudiante.esExterno ? (
-                        <>
-                          <CampoTexto
-                            label="DNI del alumno"
-                            className="secretaria-summer-dni"
-                            value={formulario.dniExterno}
-                            onChange={(value) => actualizarFormulario("dniExterno", value.replace(/\D/g, "").slice(0, 8))}
-                            placeholder="DNI de 8 numeros"
-                            maxLength="8"
-                          />
-                          <CampoTexto
-                            label="Nombre y apellidos del estudiante"
-                            className="secretaria-summer-name"
-                            value={formulario.nombresExterno}
-                            onChange={(value) => actualizarFormulario("nombresExterno", value)}
-                            placeholder="Nombre completo del estudiante"
-                          />
-                          <CampoTexto
-                            label="Edad"
-                            className="secretaria-field-short secretaria-age-field secretaria-summer-age"
-                            value={formulario.edadExterno}
-                            onChange={(value) => actualizarFormulario("edadExterno", value.replace(/\D/g, "").slice(0, 2))}
-                            placeholder="Ej: 9"
-                            maxLength="2"
-                          />
-                          <CampoTexto
-                            label="Grado"
-                            className="secretaria-summer-grade"
-                            value={formulario.gradoExterno}
-                            onChange={(value) => actualizarFormulario("gradoExterno", value)}
-                            placeholder="Ej: 4 Primaria"
-                          />
-                          <div className="secretaria-field secretaria-field-short secretaria-summer-sex">
-                            <label htmlFor="sexoExterno">Sexo</label>
-                            <select
-                              id="sexoExterno"
-                              value={formulario.sexoExterno}
-                              onChange={(event) => actualizarFormulario("sexoExterno", event.target.value)}
-                            >
-                              <option value="">Seleccione</option>
-                              <option value="F">Femenino</option>
-                              <option value="M">Masculino</option>
-                            </select>
-                          </div>
-                          <CampoTexto
-                            label="Domicilio"
-                            className="secretaria-field-full secretaria-summer-address"
-                            value={formulario.domicilioExterno}
-                            onChange={(value) => actualizarFormulario("domicilioExterno", value)}
-                            placeholder="Dirección del estudiante"
-                          />
-                        </>
-                      ) : (
-                        <CampoLectura
-                          label="Alumno"
-                          value={`${estudiante.grado || "Grado no registrado"}${estudiante.seccion ? ` - Sección ${estudiante.seccion}` : ""}`}
-                        />
-                      )}
-                    </section>
-
-                    <section className="secretaria-summer-panel secretaria-summer-program">
-                      <div className="secretaria-registration-section-head secretaria-summer-heading">
-                        <strong>Programa</strong>
-                        <span>Seleccione el taller de verano</span>
-                      </div>
-
-                      <div className="secretaria-field secretaria-field-full secretaria-summer-program-select">
-                        <label htmlFor="programa">Programa o taller</label>
-                        <select
-                          id="programa"
-                          value={formulario.programa}
-                          disabled={programasParaSelector.length === 0}
-                          onChange={(event) =>
-                            actualizarFormulario("programa", event.target.value)
-                          }
-                        >
-                          <option value="">
-                            {programasParaSelector.length ? "Seleccione programa" : "No hay programas de ciclo verano disponibles"}
-                          </option>
-                          {programasParaSelector.map((programa) => (
-                            <option key={programa.id} value={programa.id}>
-                              {programa.nombre}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {programas.length === 0 ? (
-                        <MantineAlert
-                          className="secretaria-message secretaria-modal-message secretaria-field-full secretaria-summer-alert"
-                          color="orange"
-                          radius="md"
-                          icon={<AlertCircle size={18} />}
-                        >
-                          Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
-                        </MantineAlert>
-                      ) : programaParaRegistro ? (
-                        <>
-                          <div className="secretaria-schedule-summary secretaria-field-full">
-                            <DatoHorario label="Día" value={horarioResumenRegistro.dia} />
-                            <DatoHorario label="Clase" value={horarioResumenRegistro.clase} />
-                            <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} />
-                          </div>
-                          <div className="secretaria-program-cost-row secretaria-field-full">
-                            <CampoLectura label="Costo referencial" value={`S/ ${Number(programaParaRegistro.costo).toFixed(2)}`} />
-                            <CampoLectura label="Cupos disponibles" value={formatearCuposSecretaria(programaParaRegistro)} />
-                          </div>
-                        </>
-                      ) : null}
-                    </section>
-
-                    <section className="secretaria-summer-panel secretaria-summer-contact">
-                      <div className="secretaria-registration-section-head secretaria-summer-heading">
-                        <strong>Padre o apoderado</strong>
-                        <span>Datos de contacto</span>
-                      </div>
-
-                      <CampoTexto
-                        label="Nombre del padre / apoderado"
-                        className="secretaria-field-full secretaria-summer-parent"
-                        value={formulario.apoderado}
-                        onChange={(value) => actualizarFormulario("apoderado", value)}
-                        placeholder="Nombre completo del apoderado"
-                      />
-
-                      <CampoTexto
-                        label="Teléfono del padre"
-                        className="secretaria-field-full secretaria-summer-phone"
-                        icon={<Phone size={15} />}
-                        value={formulario.telefono}
-                        onChange={(value) =>
-                          actualizarFormulario("telefono", value.replace(/\D/g, ""))
-                        }
-                        placeholder="987654321"
-                        maxLength="9"
-                      />
-
-                      <div className="secretaria-field secretaria-field-full secretaria-registration-observation secretaria-summer-observation">
-                        <label htmlFor="observacion">Observación</label>
-                        <textarea
-                          id="observacion"
-                          rows="3"
-                          placeholder="Observación opcional para el registro"
-                          value={formulario.observacion}
-                          onChange={(event) =>
-                            actualizarFormulario("observacion", event.target.value)
-                          }
-                        />
-                      </div>
-                    </section>
-                  </div>
-                ) : estudiante.esExterno ? (
-                  <div className="secretaria-registration-section secretaria-registration-minor secretaria-field-full">
-                    <div className="secretaria-registration-section-head">
-                      <strong>Datos del menor</strong>
-                      <span>Solo se registra como alumno externo en ciclo verano</span>
-                    </div>
-
-                    <CampoTexto
-                      label="DNI del alumno"
-                      value={formulario.dniExterno}
-                      onChange={(value) => actualizarFormulario("dniExterno", value.replace(/\D/g, "").slice(0, 8))}
-                      placeholder="DNI de 8 numeros"
-                      maxLength="8"
-                    />
-                    <CampoTexto
-                      label="Nombre y apellidos del estudiante"
-                      value={formulario.nombresExterno}
-                      onChange={(value) => actualizarFormulario("nombresExterno", value)}
-                      placeholder="Nombre completo del estudiante"
-                    />
-                    <CampoTexto
-                      label="Edad"
-                      className="secretaria-field-short secretaria-age-field"
-                      value={formulario.edadExterno}
-                      onChange={(value) => actualizarFormulario("edadExterno", value.replace(/\D/g, "").slice(0, 2))}
-                      placeholder="Ej: 9"
-                      maxLength="2"
-                    />
-                    <CampoTexto
-                      label="Domicilio"
-                      className="secretaria-field-wide"
-                      value={formulario.domicilioExterno}
-                      onChange={(value) => actualizarFormulario("domicilioExterno", value)}
-                      placeholder="Dirección del estudiante"
-                    />
-                    <div className="secretaria-field secretaria-field-short">
-                      <label htmlFor="sexoExterno">Sexo</label>
-                      <select
-                        id="sexoExterno"
-                        value={formulario.sexoExterno}
-                        onChange={(event) => actualizarFormulario("sexoExterno", event.target.value)}
-                      >
-                        <option value="">Seleccione</option>
-                        <option value="F">Femenino</option>
-                        <option value="M">Masculino</option>
-                      </select>
-                    </div>
-                    <CampoTexto
-                      label="Grado"
-                      value={formulario.gradoExterno}
-                      onChange={(value) => actualizarFormulario("gradoExterno", value)}
-                      placeholder="Ej: 4 Primaria"
-                    />
-                  </div>
-                ) : null}
-
-                {!esCicloVerano ? (
-                <>
-                <div className="secretaria-registration-section secretaria-registration-program secretaria-field-full">
-                  <div className="secretaria-registration-section-head">
-                    <strong>Programa</strong>
-                    <span>Datos necesarios para confirmar la inscripción</span>
-                  </div>
-
-                {mostrarSelectorPrograma ? (
-                  <div className="secretaria-field secretaria-program-select-field">
-                    <label htmlFor="programa">Programa o taller</label>
-                    <select
-                      id="programa"
-                      value={formulario.programa}
-                      disabled={programasParaSelector.length === 0}
-                      onChange={(event) =>
-                        actualizarFormulario("programa", event.target.value)
-                      }
-                    >
-                      <option value="">
-                        {programasParaSelector.length
-                          ? "Seleccione programa"
-                          : esCicloVerano
-                            ? "No hay programas de ciclo verano disponibles"
-                            : "No hay programas con invitación masiva para este grado"}
-                      </option>
-                      {programasParaSelector.map((programa) => (
-                        <option key={programa.id} value={programa.id}>
-                          {programa.nombre}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <CampoLectura label="Programa / taller" value={programaParaRegistro?.nombre || estudiante.programaNombre || ""} />
-                )}
-
-                {programas.length === 0 && (periodo === "verano" || !estudiante.tieneInvitacion) ? (
-                  <MantineAlert
-                    className="secretaria-message secretaria-modal-message secretaria-field-full"
-                    color="orange"
-                    radius="md"
-                    icon={<AlertCircle size={18} />}
-                  >
-                    {esCicloVerano
-                      ? "Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante."
-                      : "Coordinación debe registrar y habilitar un programa con invitación masiva para el grado del estudiante."}
-                  </MantineAlert>
-                ) : null}
-
-                <div className="secretaria-schedule-summary secretaria-field-full">
-                  <DatoHorario label="Día" value={horarioResumenRegistro.dia} />
-                  <DatoHorario label="Clase" value={horarioResumenRegistro.clase} />
-                  <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} />
-                </div>
-                <div className="secretaria-program-cost-row secretaria-field-full">
-                  <CampoLectura label="Costo referencial" value={programaParaRegistro ? `S/ ${Number(programaParaRegistro.costo).toFixed(2)}` : ""} />
-                  <CampoLectura label="Cupos disponibles" value={formatearCuposSecretaria(programaParaRegistro)} />
-                </div>
-
-                {programaParaRegistro?.requiereUniforme ? (
-                  <div className="secretaria-field">
-                    <label htmlFor="talla">Talla de uniforme</label>
-                    <select
-                      id="talla"
-                      value={formulario.tallaUniforme}
-                      onChange={(event) =>
-                        actualizarFormulario("tallaUniforme", event.target.value)
-                      }
-                    >
-                      <option value="">Seleccione talla</option>
-                      <option value="S">S</option>
-                      <option value="M">M</option>
-                      <option value="L">L</option>
-                      <option value="XL">XL</option>
-                    </select>
-                  </div>
-                ) : null}
-
-                {programaParaRegistro?.requiereIndumentaria ? (
-                  <>
-                    <div className="secretaria-field">
-                      <label htmlFor="tallaPolo">Talla de polo</label>
-                      <select
-                        id="tallaPolo"
-                        value={formulario.tallaPolo}
-                        onChange={(event) =>
-                          actualizarFormulario("tallaPolo", event.target.value)
-                        }
-                      >
-                        <option value="">Seleccione talla</option>
-                        <option value="6">6</option>
-                        <option value="8">8</option>
-                        <option value="10">10</option>
-                        <option value="12">12</option>
-                        <option value="14">14</option>
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                        <option value="XL">XL</option>
-                      </select>
-                    </div>
-                    <div className="secretaria-field">
-                      <label htmlFor="tallaShort">Talla de short</label>
-                      <select
-                        id="tallaShort"
-                        value={formulario.tallaShort}
-                        onChange={(event) =>
-                          actualizarFormulario("tallaShort", event.target.value)
-                        }
-                      >
-                        <option value="">Seleccione talla</option>
-                        <option value="6">6</option>
-                        <option value="8">8</option>
-                        <option value="10">10</option>
-                        <option value="12">12</option>
-                        <option value="14">14</option>
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                        <option value="XL">XL</option>
-                      </select>
-                    </div>
-                  </>
-                ) : null}
-                </div>
-
-                <div className="secretaria-registration-section secretaria-registration-contact secretaria-field-full">
-                  <div className="secretaria-registration-section-head">
-                    <strong>Padre o apoderado</strong>
-                    <span>Información de contacto para el registro</span>
-                  </div>
-
-                <CampoTexto
-                  label="Nombre del padre / apoderado"
-                  value={formulario.apoderado}
-                  onChange={(value) => actualizarFormulario("apoderado", value)}
-                  placeholder="Nombre completo del apoderado"
-                />
-
-                <CampoTexto
-                  label="Teléfono del padre"
-                  icon={<Phone size={15} />}
-                  value={formulario.telefono}
-                  onChange={(value) =>
-                    actualizarFormulario("telefono", value.replace(/\D/g, ""))
-                  }
-                  placeholder="987654321"
-                  maxLength="9"
-                />
-
-                <div className="secretaria-field secretaria-field-full secretaria-registration-observation">
-                  <label htmlFor="observacion">Observación</label>
-                  <textarea
-                    id="observacion"
-                    rows="3"
-                    placeholder="Observación opcional para el registro"
-                    value={formulario.observacion}
-                    onChange={(event) =>
-                      actualizarFormulario("observacion", event.target.value)
-                    }
-                  />
-                </div>
-
-                </div>
-                </>
-                ) : null}
-
-                <label className="secretaria-check secretaria-field-full">
-                  <input
-                    type="checkbox"
-                    checked={formulario.aceptaCondiciones}
-                    onChange={(event) =>
-                      actualizarFormulario("aceptaCondiciones", event.target.checked)
-                    }
-                  />
-                  <span>El padre/apoderado acepta las condiciones del programa.</span>
-                </label>
-
-                <div className="secretaria-form-actions">
-                  <button
-                    className="secretaria-secondary-button"
-                    type="button"
-                    onClick={() => setModoRegistro(false)}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    className="secretaria-register-button"
-                    type="submit"
-                    disabled={guardando}
-                  >
-                    {guardando ? (
-                      <Loader2 className="secretaria-spin" size={17} />
-                    ) : (
-                      <ClipboardCheck size={17} />
-                    )}
-                    <span>{guardando ? "Guardando" : "Confirmar inscripcion"}</span>
-                  </button>
-                </div>
-              </form>
-            </section>
-          </div>
-        ) : null}
-
-        {modalExito && inscripcion ? (
-          <div className="secretaria-modal-overlay" role="presentation">
-            <section className="secretaria-success-modal" role="dialog" aria-modal="true">
-              <div className="secretaria-success-icon">
-                <CheckCircle2 size={44} />
-              </div>
-              <h2>Inscripción registrada</h2>
-              <p>La inscripcion fue registrada correctamente.</p>
-              <div className="secretaria-success-summary">
-                <p><strong>Estudiante:</strong> {inscripcion.nombresEstudiante}</p>
-                <p><strong>Programa:</strong> {inscripcion.programa}</p>
-                <p><strong>Horario:</strong> {inscripcion.horario}</p>
-                {inscripcion.colegioProcedencia ? (
-                  <p><strong>Colegio:</strong> {inscripcion.colegioProcedencia}</p>
-                ) : null}
-                <p><strong>Padre/apoderado:</strong> {inscripcion.apoderado}</p>
-                <p><strong>Estado:</strong> {inscripcion.estadoInscripción}</p>
-              </div>
-              <button
-                className="secretaria-register-button"
-                type="button"
-                onClick={() => setModalExito(false)}
-              >
-                Aceptar
-              </button>
-            </section>
-          </div>
+        <SecretariaRegistroModal
+          actualizarFormulario={actualizarFormulario}
+          esCicloVerano={esCicloVerano}
+          estudiante={estudiante}
+          formulario={formulario}
+          guardarInscripción={guardarInscripción}
+          guardando={guardando}
+          horarioResumenRegistro={horarioResumenRegistro}
+          etiquetaPrograma={etiquetaProgramaSecretaria}
+          mensaje={mensaje}
+          modoRegistro={modoRegistro}
+          mostrarSelectorPrograma={mostrarSelectorPrograma}
+          programaParaRegistro={programaParaRegistro}
+          programas={programas}
+          programasParaSelector={programasParaSelector}
+          setModoRegistro={setModoRegistro}
+        />
+        {modalExito ? (
+          <SecretariaSuccessModal
+            inscripcion={inscripcion}
+            onClose={() => setModalExito(false)}
+          />
         ) : null}
 
           </>

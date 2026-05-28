@@ -61,6 +61,53 @@ export const nivelesGrados = [
 
 export const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
+export const plantillasVerano = [
+  {
+    id: "inicial",
+    label: "Inicial",
+    categoria: "Verano",
+    grupoEtario: "Inicial: 3, 4 y 5 anios",
+    edadMinima: "3",
+    edadMaxima: "5",
+    dias: ["Lunes", "Martes", "Miércoles", "Jueves"],
+    horaInicio: "08:00",
+    horaFin: "12:00",
+  },
+  {
+    id: "academico",
+    label: "Talleres academicos",
+    categoria: "Academico",
+    grupoEtario: "Talleres: 2do primaria a 4to secundaria (7-16 anios)",
+    edadMinima: "7",
+    edadMaxima: "16",
+    dias: ["Lunes", "Miércoles"],
+    horaInicio: "08:00",
+    horaFin: "12:00",
+  },
+  {
+    id: "deportivo",
+    label: "Talleres deportivos",
+    categoria: "Deportivo",
+    grupoEtario: "Talleres: 2do primaria a 4to secundaria (7-16 anios)",
+    edadMinima: "7",
+    edadMaxima: "16",
+    dias: ["Martes", "Jueves"],
+    horaInicio: "08:00",
+    horaFin: "12:00",
+  },
+  {
+    id: "artistico",
+    label: "Talleres artisticos",
+    categoria: "Arte",
+    grupoEtario: "Talleres: 2do primaria a 4to secundaria (7-16 anios)",
+    edadMinima: "7",
+    edadMaxima: "16",
+    dias: ["Martes", "Jueves"],
+    horaInicio: "08:00",
+    horaFin: "12:00",
+  },
+];
+
 function unirVariablesPlantilla(variables) {
   const vistas = new Map();
   variables.forEach((variable) => {

@@ -27,6 +27,7 @@ import {
   diasSemana,
   LOGO_COLEGIO_SRC,
   nivelesGrados,
+  plantillasVerano,
   variablesPlantillaAceptadas,
   variablesPlantillaRequeridas,
 } from "./constants/coordinacionConstants";
@@ -39,13 +40,12 @@ import {
 import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias } from "../../services/dateService";
 import GradeSelector from "./components/GradeSelector";
 import { HorarioTabla, GradosTabla, VigenciaTabla, CuposTabla } from "./components/ProgramTableCells";
-import SummaryBox from "./components/SummaryBox";
-import TemplateUploadField from "./components/TemplateUploadField";
-import { esCostoValido, formatearHora12, formatearSoles, textoEstadoCarga } from "./utils/coordinacionFormatters";
+import CargaExcelView from "./components/CargaExcelView";
+import DocumentosView from "./components/DocumentosView";
+import { esCostoValido, formatearHora12, formatearSoles } from "./utils/coordinacionFormatters";
 import { descargarListaAlumnosPdf } from "./utils/pdfUtils";
 import {
   contarDatosDetectados,
-  etiquetaCampoDocumento,
   extraerDatosProgramaDesdeWord,
   filtrarDatosDocumento,
   leerArchivoBase64,
@@ -53,12 +53,12 @@ import {
   leerDocumentoWordDesdeBase64,
   leerPlantillaWord,
   leerPlantillaWordDesdeBase64,
-  resumirTextoDocumento,
 } from "./utils/wordTemplateUtils";
 import "./Coordinacion.css";
 
 const formInicial = {
   nombre: "", periodo: "escolar", categoria: "", grupo: "", horario: "",
+  grupoEtario: "",
   gradosAplicables: [], edadMinima: "", edadMaxima: "", fechaNacimientoDesde: "", fechaNacimientoHasta: "", dias: [], horaInicio: "", horaFin: "",
   almuerzoInicio: "", almuerzoFin: "",
   horariosPorGrupo: [],
@@ -275,7 +275,7 @@ function Coordinacion({
   function datosProgramaAFormulario(prog) {
     return {
       nombre: prog.nombre, periodo: normalizarPeriodoVista(prog.periodo), categoria: prog.categoria,
-      grupo: prog.grupo, horario: prog.horario, fechaInicio: prog.fechaInicio,
+      grupo: prog.grupo, grupoEtario: prog.grupoEtario || "", horario: prog.horario, fechaInicio: prog.fechaInicio,
       gradosAplicables: normalizarListaGrados(prog.gradosAplicables),
       edadMinima: prog.edadMinima || "",
       edadMaxima: prog.edadMaxima || "",
@@ -374,7 +374,8 @@ function Coordinacion({
       duracionAvisoDias,
       dias: diasFinales,
       horariosPorGrupo: gruposHorario,
-      grupo: esVeranoGuardar ? `Edades ${form.edadMinima} a ${form.edadMaxima} años` : resumenGrados(gradosFinales),
+      grupo: esVeranoGuardar ? crearGrupoEtarioVerano(form) : resumenGrados(gradosFinales),
+      grupoEtario: esVeranoGuardar ? crearGrupoEtarioVerano(form) : "",
       requiereUniforme: false,
       requiereIndumentaria: Boolean(form.requiereIndumentaria),
       horario: gruposHorario.length
@@ -553,6 +554,32 @@ function Coordinacion({
 
   function actualizarForm(campo, valor) {
     setForm(f => ({ ...f, [campo]: valor }));
+  }
+
+  function aplicarPlantillaVerano(plantilla) {
+    setForm((actual) => ({
+      ...actual,
+      periodo: "verano",
+      categoria: categorias.includes(plantilla.categoria) ? plantilla.categoria : actual.categoria,
+      grupoEtario: plantilla.grupoEtario,
+      edadMinima: plantilla.edadMinima,
+      edadMaxima: plantilla.edadMaxima,
+      dias: plantilla.dias,
+      horaInicio: plantilla.horaInicio,
+      horaFin: plantilla.horaFin,
+      almuerzoInicio: "",
+      almuerzoFin: "",
+      modalidadCobro: "Unico",
+      horariosPorGrupo: [],
+    }));
+  }
+
+  function crearGrupoEtarioVerano(datos) {
+    if (datos.grupoEtario) return datos.grupoEtario;
+    if (datos.edadMinima && datos.edadMaxima) {
+      return `Edades ${datos.edadMinima} a ${datos.edadMaxima} anios`;
+    }
+    return "";
   }
 
   function actualizarNombrePrograma(valor) {
@@ -1237,280 +1264,48 @@ function Coordinacion({
         )}
 
         {vista === "carga" && puedeVerCargaVista && (
-          <>
-            <header className="coord-topbar"><h1>CARGA MASIVA DE ALUMNOS DESDE EXCEL</h1></header>
-            <section className="coord-workspace coord-workspace-single coord-workspace-upload">
-              <article className="coord-card coord-search-card">
-                <div className="coord-card-title">
-                  <span className="coord-title-icon"><Upload size={21} /></span>
-                  <div>
-                    <h2>Importar alumnos invitados - Año escolar</h2>
-                    <p>Suba el Excel con los alumnos invitados del periodo escolar. El sistema reconocerá automáticamente el programa mediante la columna curso_programa.</p>
-                  </div>
-                </div>
-
-                <div className="coord-form">
-                  <div className="coord-upload-grid">
-                    <div className="coord-field">
-                      <label>Periodo</label>
-                      <div className="coord-readonly-field">Año escolar</div>
-                    </div>
-                    <div className="coord-field coord-field-full">
-                      <label>Archivos Excel (.xlsx o .xls) - maximo 6</label>
-                      <input
-                        key={archivoInputKey}
-                        type="file"
-                        accept=".xlsx,.xls"
-                        multiple
-                        onChange={e => {
-                          setArchivosExcel(Array.from(e.target.files || []));
-                          setPreviewCarga(null);
-                          setProgresoCarga(null);
-                          setMensaje("");
-                        }}
-                      />
-                      {archivosExcel.length ? (
-                        <small>{archivosExcel.length} archivo(s) seleccionado(s)</small>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="coord-upload-actions">
-                    <button className="coord-primary-button" type="button" onClick={generarPreviewExcel} disabled={!archivosExcel.length || cargandoPreview}>
-                      {cargandoPreview ? <Loader2 className="coord-spin" size={17} /> : <Eye size={17} />}
-                      <span>{cargandoPreview ? "Validando" : "Vista previa"}</span>
-                    </button>
-                    {(archivosExcel.length > 0 || previewCarga) ? (
-                      <button
-                        className={previewCarga ? "coord-danger-button" : "coord-secondary-button"}
-                        type="button"
-                        onClick={cancelarCargaExcel}
-                        disabled={cargandoPreview || confirmandoCarga}
-                      >
-                        <X size={17} />
-                        <span>Cancelar carga</span>
-                      </button>
-                    ) : null}
-                    <button className="coord-register-button" type="button" onClick={confirmarCargaExcel} disabled={!previewCarga || confirmandoCarga}>
-                      {confirmandoCarga ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
-                      <span>{confirmandoCarga ? "Guardando" : "Guardar carga"}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {mensaje && (
-                  <MantineAlert
-                    className="coord-message"
-                    color={tipoMsg === "success" ? "sanrafael" : "orange"}
-                    radius="md"
-                    icon={tipoMsg === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                  >
-                    {mensaje}
-                  </MantineAlert>
-                )}
-
-                {progresoCarga ? (
-                  <div className="coord-upload-progress" aria-live="polite">
-                    <div className="coord-upload-progress-header">
-                      <strong>
-                        {progresoCarga.estado === "listo"
-                          ? "Vista previa lista"
-                          : progresoCarga.actual > 0
-                            ? `Validando archivo ${progresoCarga.actual} de ${progresoCarga.total}`
-                            : "Preparando validacion"}
-                      </strong>
-                      <span>{progresoCarga.porcentaje}%</span>
-                    </div>
-                    <div className="coord-upload-progress-bar">
-                      <span style={{ width: `${progresoCarga.porcentaje}%` }} />
-                    </div>
-                    {progresoCarga.archivo ? (
-                      <p>{progresoCarga.archivo}</p>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {previewCarga ? (
-                  <>
-                    <div className="coord-load-summary">
-                      <SummaryBox label="Leidos" value={previewCarga.resumen.total} />
-                      <SummaryBox label="Válidos" value={previewCarga.resumen.validos} tone="success" />
-                      <SummaryBox label="Errores" value={previewCarga.resumen.errores} tone="error" />
-                      <SummaryBox label="Duplicados" value={previewCarga.resumen.duplicados} tone="warning" />
-                    </div>
-                    <div className="coord-table-wrap">
-                      <table className="coord-table">
-                        <thead>
-                          <tr>
-                            <th>Alumno</th><th>Grado</th><th>Sección</th><th>Selección</th><th>Curso / nivel</th><th>Estado</th><th>Motivo</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {previewCarga.registros.map(reg => (
-                            <tr key={reg.fila}>
-                              <td>{`${reg.nombres} ${reg.apellidos}`.trim() || "-"}</td>
-                              <td>{reg.grado || "-"}</td>
-                              <td>{reg.seccion || "-"}</td>
-                              <td>{reg.seleccion || "-"}</td>
-                              <td>{reg.curso || reg.nivelCambridge || "-"}</td>
-                              <td><span className={`coord-pill ${reg.estado === "Valido" ? "coord-pill-success" : reg.estado === "Duplicado" ? "coord-pill-warning" : "coord-pill-error"}`}>{textoEstadoCarga(reg.estado)}</span></td>
-                              <td>{reg.errores?.length ? reg.errores.join(" ") : "-"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                ) : (
-                  <div className="coord-empty">
-                    <Upload size={18} />
-                    <p>Suba un Excel con alumnos del programa. Para Cambridge se aceptan columnas como Alumno, Grado, Sección, Selección y Nivel Cambridge.</p>
-                  </div>
-                )}
-
-              </article>
-
-            </section>
-          </>
+          <CargaExcelView
+            archivoInputKey={archivoInputKey}
+            archivosExcel={archivosExcel}
+            cargandoPreview={cargandoPreview}
+            cancelarCargaExcel={cancelarCargaExcel}
+            confirmandoCarga={confirmandoCarga}
+            confirmarCargaExcel={confirmarCargaExcel}
+            generarPreviewExcel={generarPreviewExcel}
+            mensaje={mensaje}
+            previewCarga={previewCarga}
+            progresoCarga={progresoCarga}
+            setArchivosExcel={setArchivosExcel}
+            setMensaje={setMensaje}
+            setPreviewCarga={setPreviewCarga}
+            setProgresoCarga={setProgresoCarga}
+            tipoMsg={tipoMsg}
+          />
         )}
 
         {vista === "documentos" && puedeVerDocumentosVista && (
-          <>
-            <header className="coord-topbar"><h1>PLANTILLAS Y DOCUMENTOS</h1></header>
-            <section className="coord-workspace coord-workspace-single">
-              <article className="coord-card coord-search-card">
-                <div className="coord-card-title">
-                  <span className="coord-title-icon"><FileText size={21} /></span>
-                  <div>
-                    <h2>Plantillas Word por programa</h2>
-                    <p>Suba primero el Word, valide sus variables y guarde el nombre para usarlo luego en Gestión de Programas.</p>
-                  </div>
-                </div>
-
-                {mensaje && (
-                  <MantineAlert
-                    className="coord-message"
-                    color={tipoMsg === "success" ? "sanrafael" : "orange"}
-                    radius="md"
-                    icon={tipoMsg === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                  >
-                    {mensaje}
-                  </MantineAlert>
-                )}
-
-                <div className="coord-template-workspace">
-                  <div className="coord-template-upload-row">
-                    <TemplateUploadField
-                      plantillaInputKey={plantillaInputKey}
-                      form={form}
-                      programas={programas}
-                      variablesPlantillaRequeridas={variablesPlantillaAceptadas}
-                      onSelect={seleccionarPlantilla}
-                      onRemove={quitarPlantilla}
-                      onAutoFill={autocompletarDesdePlantilla}
-                      onUseExisting={usarPlantillaExistente}
-                      modoDocumentos
-                    />
-                    <div className="coord-upload-actions">
-                      <button
-                        className="coord-register-button"
-                        type="button"
-                        onClick={programaDocs ? guardarDocumentosPrograma : guardarDocumentoComoPrograma}
-                        disabled={guardando || !form.plantillaValidada}
-                      >
-                        {guardando ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
-                        <span>{guardando ? "Guardando" : programaDocs ? "Actualizar documento" : "Guardar plantilla"}</span>
-                      </button>
-                      {programaDocs ? (
-                        <button className="coord-secondary-button" type="button" onClick={() => abrirEditar(programaDocs)}>
-                          <Edit3 size={17} />
-                          <span>Editar datos del programa</span>
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                    {form.plantillaValidada ? (
-                      <div className="coord-section-grid">
-                        <div className="coord-field coord-field-full">
-                          <label>Nombre del programa</label>
-                          <input
-                            value={form.nombre}
-                            onChange={(event) => setForm((actual) => ({ ...actual, nombre: event.target.value }))}
-                            placeholder="Ejemplo: Taller de danza primaria"
-                          />
-                        </div>
-                      </div>
-                    ) : null}
-                    {lecturaDocumento ? (
-                      <div className="coord-document-read">
-                        <div className="coord-document-read-head">
-                          <div>
-                            <strong>Documento validado</strong>
-                            <span>{lecturaDocumento.archivo}</span>
-                          </div>
-                          <span>Word apto para completar datos</span>
-                        </div>
-                        <div className="coord-document-detected">
-                          <SummaryBox label="Datos interpretados" value={Object.keys(lecturaDocumento.datos || {}).length} />
-                          <SummaryBox label="Variables listas" value={`${(lecturaDocumento.variables || []).length}/${variablesPlantillaRequeridas.length}`} tone={(lecturaDocumento.variables || []).length ? "success" : "warning"} />
-                        </div>
-                        {Object.keys(lecturaDocumento.datos || {}).length ? (
-                          <dl className="coord-document-fields coord-document-preview-fields">
-                            {Object.entries(lecturaDocumento.datos).map(([campo, valor]) => (
-                              <div key={campo}>
-                                <dt>{etiquetaCampoDocumento(campo)}</dt>
-                                <dd>{resumirTextoDocumento(valor)}</dd>
-                              </div>
-                            ))}
-                          </dl>
-                        ) : (
-                          <p className="coord-process-note">El Word conserva su diseño original; aquí solo se muestran los datos que el sistema pudo interpretar.</p>
-                        )}
-                      </div>
-                    ) : null}
-                    <div className="coord-template-history">
-                      <div className="coord-document-read-head">
-                        <div>
-                          <strong>Historial de plantillas subidas</strong>
-                        
-                        </div>
-                      </div>
-                      {historialPlantillas.length ? (
-                        <div className="coord-template-history-list">
-                          {historialPlantillas.map((programa) => (
-                            <div className="coord-template-history-item" key={programa.id}>
-                              <div className="coord-template-history-main">
-                                <FileText size={17} />
-                                <div>
-                                  <strong>{programa.nombre}</strong>
-                                  <span>{programa.plantilla}</span>
-                                </div>
-                              </div>
-                              <span className={`coord-pill ${programa.plantillaValidada ? "coord-pill-success" : "coord-pill-error"}`}>
-                                {programa.plantillaValidada ? "Validada" : "Pendiente"}
-                              </span>
-                              <button
-                                className="coord-danger-button coord-template-history-delete"
-                                type="button"
-                                onClick={() => eliminarPlantillaHistorial(programa)}
-                                disabled={guardando}
-                              >
-                                <Trash2 size={16} />
-                                <span>Eliminar plantilla</span>
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="coord-empty coord-template-history-empty">
-                          <FileText size={18} />
-                          <p>Aún no hay plantillas guardadas.</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-              </article>
-            </section>
-          </>
+          <DocumentosView
+            abrirEditar={abrirEditar}
+            autocompletarDesdePlantilla={autocompletarDesdePlantilla}
+            eliminarPlantillaHistorial={eliminarPlantillaHistorial}
+            form={form}
+            guardando={guardando}
+            guardarDocumentoComoPrograma={guardarDocumentoComoPrograma}
+            guardarDocumentosPrograma={guardarDocumentosPrograma}
+            historialPlantillas={historialPlantillas}
+            lecturaDocumento={lecturaDocumento}
+            mensaje={mensaje}
+            plantillaInputKey={plantillaInputKey}
+            programaDocs={programaDocs}
+            programas={programas}
+            quitarPlantilla={quitarPlantilla}
+            seleccionarPlantilla={seleccionarPlantilla}
+            setForm={setForm}
+            tipoMsg={tipoMsg}
+            usarPlantillaExistente={usarPlantillaExistente}
+            variablesPlantillaAceptadas={variablesPlantillaAceptadas}
+            variablesPlantillaRequeridas={variablesPlantillaRequeridas}
+          />
         )}
 
         {/* ─── MODAL: CREAR / EDITAR PROGRAMA ─── */}
@@ -1578,7 +1373,7 @@ function Coordinacion({
                             <label>Desde edad *</label>
                             <select value={form.edadMinima} onChange={e => actualizarForm("edadMinima", e.target.value)}>
                               <option value="">Seleccione</option>
-                              {Array.from({ length: 13 }, (_, index) => String(index + 5)).map((edad) => (
+                              {Array.from({ length: 14 }, (_, index) => String(index + 3)).map((edad) => (
                                 <option key={edad} value={edad}>{edad} años</option>
                               ))}
                             </select>
@@ -1587,7 +1382,7 @@ function Coordinacion({
                             <label>Hasta edad *</label>
                             <select value={form.edadMaxima} onChange={e => actualizarForm("edadMaxima", e.target.value)}>
                               <option value="">Seleccione</option>
-                              {Array.from({ length: 13 }, (_, index) => String(index + 5)).map((edad) => (
+                              {Array.from({ length: 14 }, (_, index) => String(index + 3)).map((edad) => (
                                 <option key={edad} value={edad}>{edad} años</option>
                               ))}
                             </select>
@@ -1597,6 +1392,23 @@ function Coordinacion({
                               ? `Secretaría validará alumnos de ${form.edadMinima} a ${form.edadMaxima} años.`
                               : "Seleccione el rango de edad permitido para este programa de verano."}
                           </p>
+                          <div className="coord-upload-actions coord-field-full">
+                            {plantillasVerano.map((plantilla) => (
+                              <button
+                                key={plantilla.id}
+                                type="button"
+                                className="coord-template-autofill"
+                                onClick={() => aplicarPlantillaVerano(plantilla)}
+                              >
+                                {plantilla.label}
+                              </button>
+                            ))}
+                          </div>
+                          {form.grupoEtario ? (
+                            <p className="coord-field-hint coord-field-full">
+                              Grupo etario: {form.grupoEtario}
+                            </p>
+                          ) : null}
                         </div>
                       ) : (
                         <div className="coord-field coord-field-full">

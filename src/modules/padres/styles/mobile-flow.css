@@ -88,8 +88,7 @@
   background: rgba(249, 115, 22, 0.12);
 }
 
-.padres-flow-student-copy,
-.padres-flow-student-meta {
+.padres-flow-student-copy {
   position: relative;
   z-index: 1;
 }
@@ -123,13 +122,6 @@
   color: #607086;
   font-size: 13px;
   font-weight: 700;
-}
-
-.padres-flow-student-meta {
-  align-self: center;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
 }
 
 .padres-flow-student-art-wrap {
@@ -233,13 +225,6 @@
   gap: 10px;
 }
 
-.padres-flow-home-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.65fr);
-  gap: 14px;
-  align-items: stretch;
-}
-
 .padres-flow-panel {
   border-radius: 16px;
   padding: 13px 18px;
@@ -265,7 +250,6 @@
 }
 
 .padres-flow-program-icon,
-.padres-flow-status-icon,
 .padres-flow-info-icon {
   display: grid;
   place-items: center;
@@ -273,8 +257,7 @@
   background: #fff2e3;
 }
 
-.padres-flow-program-icon,
-.padres-flow-status-icon {
+.padres-flow-program-icon {
   width: 40px;
   height: 40px;
   border: 1px solid #ffd7ad;
@@ -289,7 +272,6 @@
 
 .padres-flow-program-head h2,
 .padres-flow-section-title h2,
-.padres-flow-status-card h2,
 .padres-flow-empty-program h2 {
   margin: 0;
   color: #102035;
@@ -316,7 +298,6 @@
 }
 
 .padres-flow-section-title p,
-.padres-flow-status-card p,
 .padres-flow-empty-program p,
 .padres-flow-payment-box p,
 .padres-flow-empty-inline p,
@@ -327,8 +308,7 @@
   line-height: 1.48;
 }
 
-.padres-flow-program-grid,
-.padres-flow-course-grid {
+.padres-flow-program-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
@@ -468,16 +448,6 @@
   background: #fff7ef;
 }
 
-.padres-flow-status-card {
-  display: grid;
-  align-content: center;
-  gap: 13px;
-  background: #fff7ed;
-  border-color: #ffd7ad;
-}
-
-.padres-flow-status-card > div > span,
-.padres-flow-amount span,
 .padres-flow-payment-box span {
   color: #8a5a18;
   font-size: 11px;
@@ -485,17 +455,6 @@
   text-transform: uppercase;
 }
 
-.padres-flow-status-card h2 {
-  margin-top: 6px;
-  font-size: 24px;
-}
-
-.padres-flow-amount {
-  border-top: 1px solid #ffd7ad;
-  padding-top: 12px;
-}
-
-.padres-flow-amount strong,
 .padres-flow-payment-box strong {
   display: block;
   margin-top: 7px;
@@ -682,34 +641,6 @@
   font-size: 13px;
   font-weight: 850;
   white-space: nowrap;
-}
-
-.padres-flow-course-grid {
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
-  gap: 8px;
-  align-items: stretch;
-}
-
-.padres-flow-course-grid .padres-flow-info-tile {
-  min-height: 44px;
-  border-radius: 10px;
-  padding: 7px 8px;
-}
-
-.padres-flow-course-grid .padres-flow-info-tile:nth-child(2) {
-  grid-row: span 2;
-  min-height: 96px;
-}
-
-.padres-flow-course-grid .padres-flow-info-tile span {
-  font-size: 9px;
-}
-
-.padres-flow-course-grid .padres-flow-info-tile strong,
-.padres-flow-course-grid .padres-flow-info-tile .mantine-Text-root {
-  font-size: 12px;
-  line-height: 1.22;
-  overflow-wrap: anywhere;
 }
 
 .padres-flow-course-card .padres-flow-primary-button {
@@ -934,7 +865,6 @@
   align-items: center;
 }
 
-.padres-flow-schedule .padres-schedule-box strong,
 .padres-flow-info-tile .padres-schedule-box strong {
   margin-top: 5px;
 }
@@ -953,7 +883,6 @@
 }
 
 @media (max-width: 900px) {
-  .padres-flow-home-grid,
   .padres-flow-student-card,
   .padres-flow-courses {
     grid-template-columns: 1fr;
@@ -969,10 +898,6 @@
 
   .padres-flow-student-art-wrap {
     display: none;
-  }
-
-  .padres-flow-student-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .padres-flow-stepper {
@@ -1015,9 +940,7 @@
     font-size: 22px;
   }
 
-  .padres-flow-student-meta,
   .padres-flow-program-grid,
-  .padres-flow-course-grid,
   .padres-flow-form-grid,
   .padres-flow-payment-checks {
     grid-template-columns: 1fr;
@@ -1058,8 +981,7 @@
     grid-template-columns: 46px minmax(0, 1fr);
   }
 
-  .padres-flow-program-icon,
-  .padres-flow-status-icon {
+  .padres-flow-program-icon {
     width: 46px;
     height: 46px;
     border-radius: 15px;
@@ -1076,9 +998,5 @@
   .padres-flow-primary-button,
   .padres-flow-secondary-button {
     width: 100%;
-  }
-
-  .padres-flow-course-grid .padres-flow-info-tile:nth-child(2) {
-    grid-row: auto;
   }
 }
