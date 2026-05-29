@@ -34,20 +34,26 @@ function cn(...items) {
 }
 
 export default function StepperProceso({ pasoActivo, pasoMaximo, onSelect }) {
+  const permiteNavegar = typeof onSelect === "function";
+
   return (
     <nav className="padres-flow-stepper" aria-label="Pasos del portal de padres">
       {pasosPortal.map(({ titulo, detalle, icon: Icon }, index) => {
         const activo = pasoActivo === index;
         const completo = index < pasoActivo && index <= pasoMaximo;
         const bloqueado = index > pasoMaximo;
+        const navegable = permiteNavegar && !bloqueado;
 
         return (
           <button
             key={titulo}
             type="button"
-            className={cn("padres-flow-step", activo && "is-active", completo && "is-done")}
+            className={cn("padres-flow-step", activo && "is-active", completo && "is-done", !permiteNavegar && "is-readonly")}
             disabled={bloqueado}
-            onClick={() => onSelect(index)}
+            aria-disabled={!navegable}
+            onClick={() => {
+              if (navegable) onSelect(index);
+            }}
           >
             <span className="padres-flow-step-icon">
               {completo ? <Check size={15} /> : <Icon size={17} />}

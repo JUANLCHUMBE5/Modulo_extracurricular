@@ -15,8 +15,13 @@ export default function DatosApoderadoStep({
   setPasoActivo,
 }) {
   async function manejarGuardarDatos(event) {
-    const guardado = await guardarDatos(event);
-    if (guardado) setPasoActivo(pasoDespuesDeGuardar);
+    event.preventDefault();
+    const resultado = await guardarDatos();
+    if (!resultado) return;
+    const pasoDestino = typeof resultado === "object" && resultado.pasoDestino != null
+      ? resultado.pasoDestino
+      : pasoDespuesDeGuardar;
+    setPasoActivo(pasoDestino);
   }
 
   return (
@@ -81,7 +86,7 @@ export default function DatosApoderadoStep({
         </button>
         <button className="padres-flow-primary-button" type="submit" disabled={guardando}>
           {guardando ? <Loader2 className="padres-spin" size={16} /> : <ClipboardCheck size={16} />}
-          Guardar y continuar
+          Continuar al pago
         </button>
       </div>
     </form>

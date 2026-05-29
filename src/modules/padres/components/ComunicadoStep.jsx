@@ -61,7 +61,7 @@ export default function ComunicadoStep({
       <div className="padres-flow-actions">
         <button className="padres-flow-secondary-button" type="button" onClick={() => setInfoProgramaAbierta(true)}>
           <FileText size={16} />
-          Ver comunicado completo
+          Más información
         </button>
         <button
           className="padres-flow-primary-button"

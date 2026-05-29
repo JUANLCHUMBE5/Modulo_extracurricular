@@ -901,12 +901,7 @@
       "rol": "Secretaria",
       "estado": "Activo",
       "contrasena": "1234",
-      "permisos": [
-        "programas.crear",
-        "programas.editar",
-        "grupos.crear",
-        "grupos.editar"
-      ]
+      "permisos": []
     },
     {
       "id": "3",

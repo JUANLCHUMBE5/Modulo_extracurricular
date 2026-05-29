@@ -5,7 +5,6 @@ import {
   IconCalendar as CalendarDays,
   IconChevronLeft as ChevronLeft,
   IconChevronRight as ChevronRight,
-  IconInfoCircle as Info,
   IconLoader2 as Loader2,
   IconSchool as School,
   IconUserCircle as UserRound,
@@ -31,7 +30,7 @@ function InfoTile({ icon: Icon, label, value, children }) {
   );
 }
 
-function ProgramaPrincipal({ programa, inscripcion, invitacionPendiente, setInfoProgramaAbierta }) {
+function ProgramaPrincipal({ programa, inscripcion, setPasoActivo }) {
   if (!programa) {
     return (
       <article className="padres-flow-panel padres-flow-empty-program">
@@ -78,11 +77,11 @@ function ProgramaPrincipal({ programa, inscripcion, invitacionPendiente, setInfo
       </div>
 
       <div className="padres-flow-program-note">
-        <button className="padres-flow-link-button" type="button" onClick={() => setInfoProgramaAbierta(true)}>
-          <Info size={15} />
-          {invitacionPendiente ? "Comunicado" : "Más información"}
+        <button className="padres-flow-primary-button" type="button" onClick={() => setPasoActivo(1)}>
+          Inscribir
         </button>
       </div>
+
     </article>
   );
 }
@@ -262,12 +261,10 @@ export default function InicioStep({
   datosConfirmados,
   guardando,
   inscripcion,
-  invitacionPendiente,
   mostrarCatalogoProgramas,
   programa,
   programaSeleccionadoId,
   programasDisponibles,
-  setInfoProgramaAbierta,
   setPasoActivo,
   solicitarInscripcionPadres,
 }) {
@@ -276,8 +273,7 @@ export default function InicioStep({
       <ProgramaPrincipal
         programa={programa}
         inscripcion={inscripcion}
-        invitacionPendiente={invitacionPendiente}
-        setInfoProgramaAbierta={setInfoProgramaAbierta}
+        setPasoActivo={setPasoActivo}
       />
 
       <CatalogoProgramas

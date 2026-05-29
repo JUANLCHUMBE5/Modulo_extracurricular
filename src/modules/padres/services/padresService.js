@@ -158,7 +158,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
   return registro;
 }
 
-export async function registrarPagoSimuladoPadres(dni, inscripcionId, medioPago = "Tarjeta simulada") {
+export async function registrarPagoVerificacionPadres(dni, inscripcionId, datosPago = {}) {
   await delay(650);
   await syncApiDb();
 
@@ -174,8 +174,15 @@ export async function registrarPagoSimuladoPadres(dni, inscripcionId, medioPago 
   if (inscripcionIndex === -1) throw new Error("No se encontro una inscripcion pendiente para pagar.");
 
   const inscripcion = apiDb.inscripciones[inscripcionIndex];
-  if (esPagoRegistrado(inscripcion.estadoPago)) {
-    return apiDb.pagos.find((pago) => pago.id === inscripcion.pagoId) || null;
+  const referencia = String(datosPago.referencia || "").trim();
+  const telefono = String(datosPago.telefono || "").replace(/\D/g, "").slice(0, 9);
+  const captura = datosPago.captura || null;
+
+  if (!referencia) {
+    throw new Error("Ingrese el numero de operacion de Yape.");
+  }
+  if (!captura?.base64) {
+    throw new Error("Adjunte la captura del pago para iniciar la verificacion.");
   }
 
   const pago = {
@@ -191,23 +198,31 @@ export async function registrarPagoSimuladoPadres(dni, inscripcionId, medioPago 
     periodo: inscripcion.periodo || "escolar",
     concepto: "Inscripcion",
     monto: Number(inscripcion.costo || 0),
-    formaPago: medioPago,
-    medioPago,
-    estado: "completado",
+    formaPago: "Yape",
+    medioPago: "Yape",
+    estado: "verificando",
+    estadoVerificacion: "pendiente",
+    numeroOperacion: referencia,
+    referenciaPago: referencia,
+    telefonoOperacion: telefono,
+    capturaPagoNombre: captura.nombre || "",
+    capturaPagoTipo: captura.tipo || "",
+    capturaPagoBase64: captura.base64 || "",
     fecha: fechaActualIso(),
-    fechaPago: fechaActualIso(),
-    codigoOperacion: generarCodigoOperacion(),
-    origenRegistro: "Portal padres - pago simulado",
+    fechaPago: "",
+    origenRegistro: "Portal padres - pago por verificar",
     createdAt: fechaActualIso(),
   };
 
   apiDb.pagos.push(pago);
   apiDb.inscripciones[inscripcionIndex] = {
     ...inscripcion,
-    estadoPago: "Pagado",
-    estadoInscripcion: "Pago validado",
+    estadoPago: "Pendiente",
+    estadoInscripcion: "Pago en verificacion",
     pagoId: pago.id,
-    fechaPago: pago.fechaPago,
+    pagoReferencia: referencia,
+    pagoTelefono: telefono,
+    pagoCapturaNombre: captura.nombre || "",
   };
 
   await saveApiDb();
@@ -224,16 +239,6 @@ function generarPagoIdPadres() {
     id = `PAG-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 90) + 10}`;
   }
   return id;
-}
-
-function generarCodigoOperacion() {
-  return `OP-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90) + 10}`;
-}
-
-function esPagoRegistrado(valor) {
-  const texto = normalizarTexto(valor);
-  if (texto.includes("pendiente")) return false;
-  return ["pagado", "validado", "completado"].some((estado) => texto.includes(estado));
 }
 
 function obtenerInvitaciones(dni, estudiante = null) {

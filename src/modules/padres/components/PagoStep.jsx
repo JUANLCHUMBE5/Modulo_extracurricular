@@ -1,22 +1,35 @@
+import { useState } from "react";
 import {
-  IconCircleCheck as CheckCircle2,
+  IconClockHour4 as ClockHour4,
   IconCreditCard as CreditCard,
   IconLoader2 as Loader2,
+  IconPhotoUp as PhotoUp,
 } from "@tabler/icons-react";
 import { formatearSoles } from "../hooks/usePadres";
 import PortalBadge from "./PortalBadge";
 
-function cn(...items) {
-  return items.filter(Boolean).join(" ");
+const PAGO_QR_SRC = "/PAGO_QR.jpg";
+
+function esPagoEnVerificacion(inscripcion, pagoConfirmado) {
+  const estadoInscripcion = normalizarTexto(inscripcion?.estadoInscripcion);
+  const estadoPago = normalizarTexto(pagoConfirmado?.estado || inscripcion?.estadoPago);
+  return estadoInscripcion.includes("verificacion") || estadoPago.includes("verificando");
 }
 
-function esPagoRegistrado(valor) {
-  const texto = String(valor || "")
+function normalizarTexto(valor) {
+  return String(valor || "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
-  if (texto.includes("pendiente")) return false;
-  return ["pagado", "validado", "completado"].some((estado) => texto.includes(estado));
+}
+
+function leerArchivoComoBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("No se pudo leer la captura del pago."));
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function PagoStep({
@@ -24,120 +37,158 @@ export default function PagoStep({
   guardando,
   infoProgramaAceptada,
   inscripcion,
-  invitacionPendiente,
   manejarAccionPago,
-  pagarSimuladoPadres,
   pagoConfirmado,
-  pasoVisible,
   programa,
   requiereCaja,
-  setPasoActivo,
 }) {
+  const [referencia, setReferencia] = useState("");
+  const [telefonoPago, setTelefonoPago] = useState("");
+  const [captura, setCaptura] = useState(null);
+  const [archivoNombre, setArchivoNombre] = useState("");
+  const [errorFormulario, setErrorFormulario] = useState("");
+
   const monto = programa && (inscripcion || infoProgramaAceptada) ? formatearSoles(programa.costo) : "S/ 0.00";
   const pagoListo = Boolean(programa && infoProgramaAceptada && datosConfirmados);
-  const pagoPagado = esPagoRegistrado(inscripcion?.estadoPago);
-  const puedeSimularPago = Boolean(inscripcion && pagoListo && !pagoPagado && !requiereCaja);
-  const textoBoton = !programa
-    ? "Consultar disponibilidad"
-    : !infoProgramaAceptada
-      ? "Revisar comunicado"
-      : !datosConfirmados
-        ? "Confirmar datos"
-        : pagoPagado
-          ? "Pago registrado"
-        : requiereCaja
-          ? "Ver indicaciones de Caja"
-          : invitacionPendiente
-            ? "Registrar inscripcion"
-            : "Pagar ahora";
+  const pagoVerificando = esPagoEnVerificacion(inscripcion, pagoConfirmado);
+  const puedeEnviarVerificacion = Boolean(inscripcion && pagoListo && !pagoVerificando && !requiereCaja);
+  const textoBoton = pagoVerificando
+    ? "Pago pendiente de verificacion"
+    : "Guardar pago";
+
+  async function manejarArchivo(event) {
+    const file = event.target.files?.[0];
+    setErrorFormulario("");
+
+    if (!file) {
+      setCaptura(null);
+      setArchivoNombre("");
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setErrorFormulario("Adjunte una imagen de la captura del pago.");
+      setCaptura(null);
+      setArchivoNombre("");
+      return;
+    }
+
+    const base64 = await leerArchivoComoBase64(file);
+    setCaptura({
+      nombre: file.name,
+      tipo: file.type,
+      base64,
+    });
+    setArchivoNombre(file.name);
+  }
+
+  async function enviarPago(event) {
+    event.preventDefault();
+    setErrorFormulario("");
+
+    if (!puedeEnviarVerificacion) return;
+    if (!referencia.trim()) {
+      setErrorFormulario("Ingrese el numero de operacion de Yape.");
+      return;
+    }
+    if (!captura?.base64) {
+      setErrorFormulario("Adjunte la captura de pantalla del pago.");
+      return;
+    }
+
+    await manejarAccionPago({
+      referencia: referencia.trim(),
+      telefono: telefonoPago.trim(),
+      captura,
+    });
+  }
 
   return (
     <article className="padres-flow-panel padres-flow-payment-step">
       <div className="padres-flow-section-title">
         <div>
-          <PortalBadge tone="orange">Pago y constancia</PortalBadge>
-          <h2>{pasoVisible.titulo}</h2>
-          <p>{pasoVisible.detalle}</p>
+          <PortalBadge tone={pagoVerificando ? "blue" : "orange"}>Pago por Yape</PortalBadge>
+          <h2>{pagoVerificando ? "Pago pendiente de verificacion" : "Registrar pago"}</h2>
+          <p>
+            {pagoVerificando
+              ? "El comprobante fue recibido. Caja validara la operacion y actualizara el estado cuando corresponda."
+              : "Por ahora solo se acepta pago por Yape. Ingrese el numero de operacion y adjunte la captura."}
+          </p>
         </div>
       </div>
 
-      <div className="padres-flow-payment-box">
-        <span>Monto referencial</span>
-        <strong>{monto}</strong>
-        <p>
-          {pagoPagado
-            ? "El pago ya figura registrado para este programa."
-            : pagoListo
-              ? "Ya puede continuar con el registro o pagar con la pasarela simulada."
-            : "Complete los pasos anteriores para habilitar esta accion."}
-        </p>
-      </div>
-
-      <div className="padres-flow-payment-checks">
-        <div className={cn("padres-flow-mini-check", infoProgramaAceptada && "is-ok")}>
-          <CheckCircle2 size={17} />
-          Comunicado aceptado
-        </div>
-        <div className={cn("padres-flow-mini-check", datosConfirmados && "is-ok")}>
-          <CheckCircle2 size={17} />
-          Datos confirmados
-        </div>
-        <div className={cn("padres-flow-mini-check", inscripcion && "is-ok")}>
-          <CheckCircle2 size={17} />
-          {inscripcion ? "Inscripcion registrada" : "Pendiente de registro"}
-        </div>
-      </div>
-
-      {puedeSimularPago ? (
-        <section className="padres-flow-pay-simulator" aria-label="Pago simulado">
-          <div>
-            <span>Pasarela simulada</span>
-            <strong>{monto}</strong>
-            <p>Seleccione un medio para registrar el pago como si fuera una operacion real.</p>
-          </div>
-          <div className="padres-flow-pay-methods">
-            {["Tarjeta simulada", "Yape simulado", "Transferencia simulada"].map((medio) => (
-              <button
-                key={medio}
-                type="button"
-                disabled={guardando}
-                onClick={() => pagarSimuladoPadres?.(medio)}
-              >
-                <CreditCard size={15} />
-                {medio.replace(" simulada", "").replace(" simulado", "")}
-              </button>
-            ))}
-          </div>
+      <div className="padres-flow-payment-layout">
+        <section className="padres-flow-yape-card" aria-label="QR de pago Yape">
+          <span>Metodo aceptado</span>
+          <strong>Yape</strong>
+          <img src={PAGO_QR_SRC} alt="QR de pago Yape del colegio" />
+          <p>Monto a pagar: <b>{monto}</b></p>
         </section>
-      ) : pagoPagado ? (
-        <section className="padres-flow-pay-success">
-          <CheckCircle2 size={18} />
-          <div>
-            <strong>{pagoConfirmado ? "Pago aprobado" : "Pago validado"}</strong>
-            <span>
-              {pagoConfirmado?.codigoOperacion
-                ? `Operacion ${pagoConfirmado.codigoOperacion}. La inscripcion quedo lista y tambien aparecera como pagada en Caja.`
-                : "La inscripcion quedo lista y tambien aparecera como pagada en Caja."}
-            </span>
-          </div>
-        </section>
-      ) : null}
 
-      <div className="padres-flow-actions">
-        {!infoProgramaAceptada ? (
-          <button className="padres-flow-secondary-button" type="button" onClick={() => setPasoActivo(1)}>
-            Revisar comunicado
-          </button>
-        ) : null}
-        {!datosConfirmados ? (
-          <button className="padres-flow-secondary-button" type="button" onClick={() => setPasoActivo(2)}>
-            Confirmar datos
-          </button>
-        ) : null}
-        <button className="padres-flow-primary-button" type="button" disabled={guardando || pagoPagado} onClick={manejarAccionPago}>
-          {guardando ? <Loader2 className="padres-spin" size={16} /> : pagoPagado ? <CheckCircle2 size={16} /> : <CreditCard size={16} />}
-          {textoBoton}
-        </button>
+        <form className="padres-flow-payment-form" onSubmit={enviarPago}>
+          <div className="padres-flow-payment-box">
+            <span>{pagoVerificando ? "Estado" : "Monto"}</span>
+            <strong>{pagoVerificando ? "Pendiente" : monto}</strong>
+            <p>
+              {pagoVerificando
+                ? "El pago queda pendiente hasta que el colegio valide la operacion."
+                : "Despues de pagar, suba la captura y registre el numero de operacion de Yape."}
+            </p>
+          </div>
+
+          {!pagoVerificando ? (
+            <div className="padres-flow-payment-fields">
+              <label>
+                <span>Numero de operacion Yape</span>
+                <input
+                  value={referencia}
+                  onChange={(event) => setReferencia(event.target.value)}
+                  placeholder="Ej: 123456789"
+                  required
+                />
+              </label>
+
+              <label>
+                <span>Telefono usado en Yape</span>
+                <input
+                  inputMode="numeric"
+                  value={telefonoPago}
+                  onChange={(event) => setTelefonoPago(event.target.value.replace(/\D/g, "").slice(0, 9))}
+                  placeholder="Opcional"
+                />
+              </label>
+
+              <label className="padres-flow-upload-box">
+                <PhotoUp size={19} />
+                <span>{archivoNombre || "Subir captura del pago"}</span>
+                <input type="file" accept="image/*" onChange={manejarArchivo} />
+              </label>
+            </div>
+          ) : null}
+
+          {errorFormulario ? <p className="padres-flow-payment-error">{errorFormulario}</p> : null}
+
+          {pagoVerificando ? (
+            <section className="padres-flow-pay-pending">
+              <ClockHour4 size={18} />
+              <div>
+                <strong>Pago pendiente de verificacion</strong>
+                <span>La captura y el numero de operacion ya fueron enviados. Caja confirmara el pago.</span>
+              </div>
+            </section>
+          ) : null}
+
+          <div className="padres-flow-actions">
+            <button
+              className="padres-flow-primary-button"
+              type="submit"
+              disabled={guardando || !puedeEnviarVerificacion}
+            >
+              {guardando ? <Loader2 className="padres-spin" size={16} /> : pagoVerificando ? <ClockHour4 size={16} /> : <CreditCard size={16} />}
+              {textoBoton}
+            </button>
+          </div>
+        </form>
       </div>
     </article>
   );

@@ -4,8 +4,10 @@ import {
   IconAlertCircle as AlertCircle,
   IconCircleCheck as CheckCircle2,
   IconCreditCard as CreditCard,
+  IconEye as Eye,
   IconLoader2 as Loader2,
   IconLogout as LogOut,
+  IconReceipt as Receipt,
   IconX as X,
 } from "@tabler/icons-react";
 import AsistentePadres from "../components/AsistentePadres";
@@ -20,10 +22,69 @@ import { prepararComunicadoPadres } from "../utils/padresTextUtils";
 import "../Padres.css";
 
 const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
+const PASO_PAGO_STORAGE_PREFIX = "padres:pasoPago:";
+
+function obtenerPasoPagoGuardado(dni) {
+  if (typeof window === "undefined" || !dni) return null;
+  return window.sessionStorage.getItem(`${PASO_PAGO_STORAGE_PREFIX}${dni}`) === "3" ? 3 : null;
+}
+
+function guardarPasoPago(dni, paso) {
+  if (typeof window === "undefined" || !dni) return;
+  const key = `${PASO_PAGO_STORAGE_PREFIX}${dni}`;
+  if (paso === 3) {
+    window.sessionStorage.setItem(key, "3");
+    return;
+  }
+  window.sessionStorage.removeItem(key);
+}
+
+function normalizarEstadoPagoPadres(pago = {}) {
+  const texto = String(pago.estado || pago.estadoPago || pago.estadoVerificacion || "").toLowerCase();
+  if (texto.includes("verif") || texto.includes("pend")) return { texto: "Pendiente", clase: "is-pending" };
+  if (texto.includes("pag") || texto.includes("valid") || texto.includes("complet")) return { texto: "Pagado", clase: "is-paid" };
+  if (texto.includes("anul") || texto.includes("rech")) return { texto: "Rechazado", clase: "is-rejected" };
+  return { texto: "Pendiente", clase: "is-pending" };
+}
+
+function formatearMontoPadres(valor) {
+  return `S/ ${Number(valor || 0).toFixed(2)}`;
+}
+
+function formatearPenPadres(valor) {
+  return `PEN ${Number(valor || 0).toFixed(2)}`;
+}
+
+function formatearFechaPagoPadres(valor) {
+  if (!valor) return "Sin fecha";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return "Sin fecha";
+  return new Intl.DateTimeFormat("es-PE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(fecha);
+}
+
+function obtenerImportesPagoPadres(pago = {}) {
+  const monto = Number(pago.monto || 0);
+  const estado = normalizarEstadoPagoPadres(pago);
+  const pagado = estado.clase === "is-paid" ? monto : 0;
+  return {
+    subtotal: monto,
+    pagado,
+    restante: Math.max(0, monto - pagado),
+  };
+}
 
 export default function Padres({ user, onLogout }) {
   const [menuUsuarioAbierto, setMenuUsuarioAbierto] = useState(false);
-  const [pasoActivo, setPasoActivo] = useState(0);
+  const [historialPagosAbierto, setHistorialPagosAbierto] = useState(false);
+  const [pagoDetalle, setPagoDetalle] = useState(null);
+  const pasoPagoGuardado = obtenerPasoPagoGuardado(user?.dni);
+  const [pasoActivo, setPasoActivo] = useState(pasoPagoGuardado ?? 0);
+  const [pasoObjetivo, setPasoObjetivo] = useState(pasoPagoGuardado);
+  const [mantenerPasoPago, setMantenerPasoPago] = useState(pasoPagoGuardado === 3);
   const [anuncioCerrado, setAnuncioCerrado] = useState(false);
   const {
     abrirPago,
@@ -49,8 +110,9 @@ export default function Padres({ user, onLogout }) {
     mostrarCatalogoProgramas,
     nombreCorto,
     preguntar,
-    pagarSimuladoPadres,
+    enviarPagoVerificacionPadres,
     pagoConfirmado,
+    pagos,
     programa,
     programasDisponibles,
     programaSeleccionadoId,
@@ -58,14 +120,12 @@ export default function Padres({ user, onLogout }) {
     setConsulta,
     setInfoProgramaAbierta,
     setInfoProgramaAceptada,
-    siguientePaso,
     solicitarInscripcionPadres,
     guardarDatos,
   } = usePadres(user);
 
   const comunicadoPadres = prepararComunicadoPadres(programa, estudiante);
   const invitacionPendiente = Boolean(invitacion && !inscripcion);
-  const debeRevisarAntesDePagar = Boolean(inscripcion && !infoProgramaAceptada);
   const requiereCaja = Boolean(!inscripcion && programa?.ventanaInscripcion?.requiereCaja);
   const tieneCursosDisponibles = programasDisponibles.length > 0;
   const programaConAnuncio = programa?.anuncioImagen
@@ -84,38 +144,82 @@ export default function Padres({ user, onLogout }) {
     /^\d{9}$/.test(form.telefono.trim()) &&
     form.acepta
   );
-  const pasoVisible = debeRevisarAntesDePagar
-    ? {
-        titulo: "Informacion pendiente",
-        detalle: "Revise y acepte el comunicado del programa para continuar con el proceso.",
-      }
-    : siguientePaso;
+  const pagosOrdenados = [...pagos].sort((a, b) =>
+    new Date(b.fecha || b.createdAt || b.fechaPago || 0) - new Date(a.fecha || a.createdAt || a.fechaPago || 0)
+  );
   const pasoMaximo = useMemo(() => {
+    if (mantenerPasoPago || pasoObjetivo === 3) return 3;
     if (!programa) return tieneCursosDisponibles ? 2 : 0;
     if (!infoProgramaAceptada) return 1;
     if (!datosConfirmados) return 2;
     return 3;
-  }, [datosConfirmados, infoProgramaAceptada, programa, tieneCursosDisponibles]);
+  }, [datosConfirmados, infoProgramaAceptada, mantenerPasoPago, pasoObjetivo, programa, tieneCursosDisponibles]);
 
   useEffect(() => {
+    if (pasoObjetivo != null && pasoActivo !== pasoObjetivo) {
+      setPasoActivo(pasoObjetivo);
+      return;
+    }
     if (pasoActivo > pasoMaximo) setPasoActivo(pasoMaximo);
-  }, [pasoActivo, pasoMaximo]);
+  }, [pasoActivo, pasoMaximo, pasoObjetivo]);
 
   useEffect(() => {
     setAnuncioCerrado(false);
   }, [anuncioPadres?.id]);
 
-  async function manejarAccionPago() {
+  function cambiarPaso(paso) {
+    if (paso === 3) {
+      setMantenerPasoPago(true);
+      setPasoObjetivo(3);
+      guardarPasoPago(user?.dni, 3);
+    } else {
+      setMantenerPasoPago(false);
+      setPasoObjetivo(null);
+      guardarPasoPago(user?.dni, null);
+    }
+    setPasoActivo(paso);
+  }
+
+  async function guardarDatosYEntrarAPago(event) {
+    event?.preventDefault?.();
+    setMantenerPasoPago(true);
+    setPasoObjetivo(3);
+    guardarPasoPago(user?.dni, 3);
+
+    const guardado = await guardarDatos();
+    if (!guardado) {
+      setMantenerPasoPago(false);
+      setPasoObjetivo(null);
+      guardarPasoPago(user?.dni, null);
+      return false;
+    }
+
+    setInfoProgramaAceptada(true);
+    if (invitacionPendiente) {
+      const registrado = await solicitarInscripcionPadres();
+      if (!registrado) {
+        setMantenerPasoPago(false);
+        setPasoObjetivo(null);
+        guardarPasoPago(user?.dni, null);
+        return false;
+      }
+    }
+
+    cambiarPaso(3);
+    return { pasoDestino: 3 };
+  }
+
+  async function manejarAccionPago(datosPago = null) {
     if (!programa) {
       consultarRafael("Que programa tiene disponible mi hijo");
       return;
     }
     if (!infoProgramaAceptada) {
-      setPasoActivo(1);
+      cambiarPaso(1);
       return;
     }
     if (!datosConfirmados) {
-      setPasoActivo(2);
+      cambiarPaso(2);
       return;
     }
     if (requiereCaja) {
@@ -126,7 +230,7 @@ export default function Padres({ user, onLogout }) {
       await solicitarInscripcionPadres();
       return;
     }
-    await pagarSimuladoPadres();
+    await enviarPagoVerificacionPadres(datosPago);
   }
 
   function renderPaso() {
@@ -138,7 +242,7 @@ export default function Padres({ user, onLogout }) {
           programa={programa}
           setInfoProgramaAbierta={setInfoProgramaAbierta}
           setInfoProgramaAceptada={setInfoProgramaAceptada}
-          setPasoActivo={setPasoActivo}
+          setPasoActivo={cambiarPaso}
         />
       );
     }
@@ -150,9 +254,9 @@ export default function Padres({ user, onLogout }) {
           apoderadoBloqueado={apoderadoBloqueado}
           form={form}
           guardando={guardando}
-          guardarDatos={guardarDatos}
+          guardarDatos={guardarDatosYEntrarAPago}
           pasoDespuesDeGuardar={programa ? 3 : 0}
-          setPasoActivo={setPasoActivo}
+          setPasoActivo={cambiarPaso}
         />
       );
     }
@@ -166,12 +270,10 @@ export default function Padres({ user, onLogout }) {
           inscripcion={inscripcion}
           invitacionPendiente={invitacionPendiente}
           manejarAccionPago={manejarAccionPago}
-          pagarSimuladoPadres={pagarSimuladoPadres}
           pagoConfirmado={pagoConfirmado}
-          pasoVisible={pasoVisible}
           programa={programa}
           requiereCaja={requiereCaja}
-          setPasoActivo={setPasoActivo}
+          setPasoActivo={cambiarPaso}
         />
       );
     }
@@ -188,24 +290,9 @@ export default function Padres({ user, onLogout }) {
           programa={programa}
           programaSeleccionadoId={programaSeleccionadoId}
           programasDisponibles={programasDisponibles}
-          setInfoProgramaAbierta={setInfoProgramaAbierta}
-          setPasoActivo={setPasoActivo}
+          setPasoActivo={cambiarPaso}
           solicitarInscripcionPadres={solicitarInscripcionPadres}
         />
-
-        <div className="padres-flow-bottom-actions">
-          <button
-            className="padres-flow-primary-button"
-            type="button"
-            disabled={!programa && !tieneCursosDisponibles}
-            onClick={() => setPasoActivo(programa ? 1 : 2)}
-          >
-            {programa ? "Iniciar proceso" : "Completar datos"}
-          </button>
-          <button className="padres-flow-secondary-button" type="button" onClick={() => consultarRafael("Que debo hacer ahora")}>
-            Consultar ayuda
-          </button>
-        </div>
       </>
     );
   }
@@ -238,6 +325,17 @@ export default function Padres({ user, onLogout }) {
               </button>
               {menuUsuarioAbierto ? (
                 <div className="padres-user-dropdown">
+                  <button
+                    className="padres-menu-action"
+                    type="button"
+                    onClick={() => {
+                      setHistorialPagosAbierto(true);
+                      setMenuUsuarioAbierto(false);
+                    }}
+                  >
+                    <Receipt size={16} />
+                    <span>Historial de pagos</span>
+                  </button>
                   <button className="padres-logout-top" type="button" onClick={onLogout}>
                     <LogOut size={16} />
                     <span>Cerrar sesion</span>
@@ -274,7 +372,7 @@ export default function Padres({ user, onLogout }) {
               </section>
             ) : null}
 
-            <StepperProceso pasoActivo={pasoActivo} pasoMaximo={pasoMaximo} onSelect={setPasoActivo} />
+            <StepperProceso pasoActivo={pasoActivo} pasoMaximo={pasoMaximo} />
 
             <section className="padres-flow-content" aria-live="polite">
               {renderPaso()}
@@ -368,6 +466,132 @@ export default function Padres({ user, onLogout }) {
                 {invitacionPendiente ? "Registrar inscripcion" : "Continuar al pago"}
               </button>
             </footer>
+          </section>
+        </div>
+      ) : null}
+
+      {historialPagosAbierto ? (
+        <div className="padres-modal-backdrop" role="presentation">
+          <section className="padres-history-modal" role="dialog" aria-modal="true" aria-labelledby="padres-history-title">
+            {pagoDetalle ? (
+              <section className="padres-invoice-detail" aria-label="Detalle de la factura">
+                <button className="padres-invoice-close" type="button" onClick={() => setPagoDetalle(null)}>
+                  <X size={15} />
+                  Cerrar detalles de la factura
+                </button>
+                {(() => {
+                  const fecha = formatearFechaPagoPadres(pagoDetalle.fechaPago || pagoDetalle.fecha || pagoDetalle.createdAt);
+                  const estado = normalizarEstadoPagoPadres(pagoDetalle);
+                  const importes = obtenerImportesPagoPadres(pagoDetalle);
+                  const pagado = estado.clase === "is-paid";
+                  const programaPago = pagoDetalle.programa || pagoDetalle.programaNombre || "Programa extracurricular";
+
+                  return (
+                    <>
+                      <h2>{pagado ? `Se pago el ${fecha}` : `Pago enviado el ${fecha}`}</h2>
+
+                      <section className="padres-invoice-section">
+                        <h3>Resumen</h3>
+                        <dl className="padres-invoice-summary">
+                          <div>
+                            <dt>Para</dt>
+                            <dd>{estudiante?.nombres || nombreCorto}</dd>
+                          </div>
+                          <div>
+                            <dt>De</dt>
+                            <dd>Colegio San Rafael</dd>
+                          </div>
+                          <div>
+                            <dt>Factura</dt>
+                            <dd>{pagoDetalle.id || "Sin codigo"}</dd>
+                          </div>
+                          <div>
+                            <dt>Operacion</dt>
+                            <dd>{pagoDetalle.numeroOperacion || pagoDetalle.referenciaPago || "Sin numero"}</dd>
+                          </div>
+                        </dl>
+                      </section>
+
+                      <section className="padres-invoice-section">
+                        <h3>Items</h3>
+                        <div className="padres-invoice-item">
+                          <span>{fecha.toUpperCase()}</span>
+                          <strong>{programaPago}</strong>
+                          <small>Cantidad 1</small>
+                          <b>{formatearPenPadres(pagoDetalle.monto)}</b>
+                        </div>
+
+                        <div className="padres-invoice-line">
+                          <strong>Subtotal</strong>
+                          <b>{formatearPenPadres(importes.subtotal)}</b>
+                        </div>
+                        <div className="padres-invoice-line">
+                          <strong>Estado</strong>
+                          <b>{estado.texto}</b>
+                        </div>
+                        <div className="padres-invoice-line is-total">
+                          <strong>Importe adeudado</strong>
+                          <b>{formatearPenPadres(importes.subtotal)}</b>
+                        </div>
+                        <div className="padres-invoice-line">
+                          <strong>Importe pagado</strong>
+                          <b>{formatearPenPadres(importes.pagado)}</b>
+                        </div>
+                        <div className="padres-invoice-line">
+                          <strong>Importe restante</strong>
+                          <b>{formatearPenPadres(importes.restante)}</b>
+                        </div>
+                      </section>
+                    </>
+                  );
+                })()}
+              </section>
+            ) : (
+              <>
+                <header className="padres-history-head">
+                  <div>
+                    <span>Perfil del padre</span>
+                    <h2 id="padres-history-title">Historial de pagos</h2>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHistorialPagosAbierto(false);
+                      setPagoDetalle(null);
+                    }}
+                    aria-label="Cerrar historial de pagos"
+                  >
+                    <X size={18} />
+                  </button>
+                </header>
+
+                {pagosOrdenados.length ? (
+                  <div className="padres-history-table" role="table" aria-label="Historial de pagos">
+                    {pagosOrdenados.map((pago) => {
+                      const estado = normalizarEstadoPagoPadres(pago);
+                      const fecha = formatearFechaPagoPadres(pago.fechaPago || pago.fecha || pago.createdAt);
+                      return (
+                        <div className="padres-history-row" role="row" key={pago.id || `${fecha}-${pago.monto}`}>
+                          <span>{fecha}</span>
+                          <span>{formatearMontoPadres(pago.monto)}</span>
+                          <strong className={`padres-history-status ${estado.clase}`}>{estado.texto}</strong>
+                          <button type="button" onClick={() => setPagoDetalle(pago)}>
+                            <Eye size={14} />
+                            Ver
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="padres-history-empty">
+                    <Receipt size={28} />
+                    <strong>Sin pagos registrados</strong>
+                    <span>Cuando envie o Caja confirme un pago, aparecera aqui.</span>
+                  </div>
+                )}
+              </>
+            )}
           </section>
         </div>
       ) : null}

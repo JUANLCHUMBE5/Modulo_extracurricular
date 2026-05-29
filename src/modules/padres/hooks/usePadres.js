@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   guardarDatosApoderadoPadres,
   obtenerProgramasCoordinacion,
   obtenerResumenPadre,
   registrarInscripcionPadres,
-  registrarPagoSimuladoPadres,
+  registrarPagoVerificacionPadres,
 } from "../services/padresService";
 
 const mensajesIniciales = [
@@ -102,6 +102,7 @@ function usePadres(user) {
   const inscripcion = resumen?.inscripcionActual;
   const invitacion = resumen?.invitacionActual;
   const inscripciones = Array.isArray(resumen?.inscripciones) ? resumen.inscripciones : [];
+  const pagos = Array.isArray(resumen?.pagos) ? resumen.pagos : [];
   const programa = inscripcion || invitacion;
   const apoderadoBloqueado = Boolean(inscripcion?.apoderado || estudiante?.apoderado);
   const tipoReforzamiento = useMemo(() => obtenerTipoReforzamiento(programa), [programa]);
@@ -126,14 +127,23 @@ function usePadres(user) {
     [programa?.programaId, programasCoordinacion, programasYaRegistrados, estudiante?.grado]
   );
 
+  const programaIdAnteriorRef = useRef(programa?.programaId || programa?.id || null);
+
   useEffect(() => {
-    setInfoProgramaAceptada(false);
-    setInfoProgramaAbierta(false);
-    setPagoConfirmado(null);
+    const programaIdActual = programa?.programaId || programa?.id || null;
+    if (programaIdActual !== programaIdAnteriorRef.current) {
+      const habiaProgramaPrevio = Boolean(programaIdAnteriorRef.current);
+      programaIdAnteriorRef.current = programaIdActual;
+      if (habiaProgramaPrevio) {
+        setInfoProgramaAceptada(false);
+        setInfoProgramaAbierta(false);
+        setPagoConfirmado(null);
+      }
+    }
   }, [programa?.programaId, programa?.id]);
 
   async function guardarDatos(event) {
-    event.preventDefault();
+    event?.preventDefault?.();
     if (!form.apoderado.trim()) {
       avisar("Ingrese el nombre del padre o apoderado.");
       return false;
@@ -196,6 +206,10 @@ function usePadres(user) {
       await cargarResumen({ silencioso: true });
       return true;
     } catch (err) {
+      if (String(err.message || "").toLowerCase().includes("ya tiene una inscrip")) {
+        await cargarResumen({ silencioso: true });
+        return true;
+      }
       avisar(err.message || "No se pudo registrar la inscripcion.");
       return false;
     } finally {
@@ -251,29 +265,23 @@ function usePadres(user) {
     consultarRafael("Monto a pagar");
   }
 
-  async function pagarSimuladoPadres(medioPago = "Tarjeta simulada") {
+  async function enviarPagoVerificacionPadres(datosPago = {}) {
     if (!inscripcion) {
       avisar("Primero registre la inscripcion para generar el pago.");
       return false;
     }
-    if (esPagoRegistrado(inscripcion.estadoPago)) {
-      avisar("El pago ya figura como registrado.");
-      return true;
-    }
 
     setGuardando(true);
     try {
-      const pago = await registrarPagoSimuladoPadres(user.dni, inscripcion.id, medioPago);
+      const pago = await registrarPagoVerificacionPadres(user.dni, inscripcion.id, datosPago);
       setPagoConfirmado(pago);
-      toast.success("Pago simulado registrado", {
-        description: pago?.codigoOperacion
-          ? `Operacion ${pago.codigoOperacion}. El estado quedo pagado.`
-          : "El estado quedo pagado.",
+      toast.success("Pago enviado a verificacion", {
+        description: "El colegio validara la operacion. Por ahora figura como pago en verificacion.",
       });
       await cargarResumen({ silencioso: true });
       return true;
     } catch (err) {
-      avisar(err.message || "No se pudo registrar el pago simulado.");
+      avisar(err.message || "No se pudo enviar el pago a verificacion.");
       return false;
     } finally {
       setGuardando(false);
@@ -304,8 +312,9 @@ function usePadres(user) {
     mostrarCatalogoProgramas,
     nombreCorto,
     preguntar,
-    pagarSimuladoPadres,
+    enviarPagoVerificacionPadres,
     pagoConfirmado,
+    pagos,
     programa,
     programasDisponibles,
     programaSeleccionadoId,
