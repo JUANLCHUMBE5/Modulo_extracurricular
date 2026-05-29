@@ -201,12 +201,20 @@ export async function obtenerOpcionesReporteCaja(periodo = "escolar") {
   await syncApiDb();
 
   const periodoNormalizado = normalizarPeriodo(periodo);
-  const programas = [...(apiDb.programas || [])]
-    .filter((programa) => normalizarPeriodo(programa.periodo || periodoNormalizado) === periodoNormalizado)
-    .map((programa) => ({
-      value: programa.id,
-      label: programa.nombre,
-    }))
+  const programasBase = new Map((apiDb.programas || []).map((programa) => [programa.id, programa]));
+  const programasInscritos = new Map();
+
+  obtenerInscripcionesCaja(periodoNormalizado).forEach((inscripcion) => {
+    const id = inscripcion.programaId || inscripcion.programa || "";
+    if (!id) return;
+    const programa = programasBase.get(inscripcion.programaId) || {};
+    programasInscritos.set(id, {
+      value: id,
+      label: programa.nombre || inscripcion.programa || "Sin programa",
+    });
+  });
+
+  const programas = [...programasInscritos.values()]
     .sort((a, b) => a.label.localeCompare(b.label));
 
   const medios = new Set(
@@ -220,6 +228,77 @@ export async function obtenerOpcionesReporteCaja(periodo = "escolar") {
     programas,
     mediosPago: [...medios].sort().map((medio) => ({ value: medio, label: medio })),
   };
+}
+
+export async function listarBandejaPagosWeb(periodo = "escolar") {
+  await esperar(300);
+  await syncApiDb();
+
+  const periodoNormalizado = normalizarPeriodo(periodo);
+  const pagos = [...(Array.isArray(apiDb.pagos) ? apiDb.pagos : [])]
+    .filter((pago) => normalizarPeriodo(pago.periodo || periodoNormalizado) === periodoNormalizado);
+  const programas = new Map((apiDb.programas || []).map((programa) => [programa.id, programa]));
+
+  return obtenerInscripcionesCaja(periodoNormalizado)
+    .filter((inscripcion) => {
+      const pago = encontrarPagoInscripcion(inscripcion, pagos);
+      return esRegistroWeb(inscripcion.origenRegistro) || esRegistroWeb(pago?.origenRegistro);
+    })
+    .map((inscripcion) => {
+      const pago = encontrarPagoInscripcion(inscripcion, pagos);
+      const programa = programas.get(inscripcion.programaId) || {};
+      const estadoRevision = obtenerEstadoRevisionWeb(inscripcion, pago);
+      return {
+        id: `${inscripcion.id}-${pago?.id || "sin-pago"}`,
+        inscripcionId: inscripcion.id,
+        pagoId: pago?.id || "",
+        dniEstudiante: inscripcion.dniEstudiante || pago?.dniEstudiante || pago?.estudianteDni || "",
+        estudiante: inscripcion.nombresEstudiante || pago?.nombresEstudiante || pago?.estudianteNombre || "",
+        programaId: inscripcion.programaId || pago?.programaId || "",
+        programa: inscripcion.programa || pago?.programa || pago?.programaNombre || programa.nombre || "",
+        grado: inscripcion.gradoEstudiante || inscripcion.grado || "",
+        seccion: inscripcion.seccion || inscripcion.seccionEstudiante || "",
+        apoderado: inscripcion.apoderado || pago?.apoderado || "",
+        telefono: inscripcion.telefono || pago?.telefono || "",
+        telefonoOperacion: pago?.telefonoOperacion || inscripcion.pagoTelefono || "",
+        numeroOperacion: pago?.numeroOperacion || pago?.referenciaPago || inscripcion.pagoReferencia || "",
+        capturaPagoBase64: pago?.capturaPagoBase64 || "",
+        capturaPagoNombre: pago?.capturaPagoNombre || inscripcion.pagoCapturaNombre || "",
+        monto: Number(pago?.monto ?? inscripcion.costo ?? programa.costo ?? 0),
+        formaPago: pago?.formaPago || pago?.medioPago || (pago ? "Yape" : "Sin pago"),
+        estadoRevision,
+        estadoPago: normalizarEstadoPago(pago?.estado || inscripcion.estadoPago),
+        estadoVerificacion: pago?.estadoVerificacion || "",
+        estadoInscripcion: inscripcion.estadoInscripcion || "",
+        observaciones: pago?.observaciones || pago?.observacionVerificacion || "",
+        fechaRegistro: inscripcion.fechaRegistro || "",
+        fechaPago: pago?.fechaPago || pago?.fecha || "",
+        fecha: pago?.fecha || inscripcion.fechaRegistro || "",
+        origen: inscripcion.origenRegistro || pago?.origenRegistro || "Portal padres",
+      };
+    })
+    .sort((a, b) => new Date(b.fecha || b.fechaRegistro || 0) - new Date(a.fecha || a.fechaRegistro || 0));
+}
+
+export async function validarPagoWeb(pagoId, observaciones = "") {
+  return actualizarEstadoPagoWeb(pagoId, {
+    estado: "completado",
+    estadoVerificacion: "validado",
+    estadoInscripcion: "Pago validado",
+    estadoPago: "Pagado",
+    fechaPago: fechaActualIso(),
+    observaciones,
+  });
+}
+
+export async function observarPagoWeb(pagoId, observaciones = "Operacion no coincide con la verificacion.") {
+  return actualizarEstadoPagoWeb(pagoId, {
+    estado: "observado",
+    estadoVerificacion: "observado",
+    estadoInscripcion: "Pago observado",
+    estadoPago: "Pendiente",
+    observaciones,
+  });
 }
 
 export async function generarReporteCaja(filtros = {}) {
@@ -268,6 +347,48 @@ export async function generarReporteCaja(filtros = {}) {
   });
 
   return filtrarReporteCaja(filas, filtros);
+}
+
+async function actualizarEstadoPagoWeb(pagoId, cambios) {
+  await esperar(350);
+  await syncApiDb();
+
+  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
+  const index = apiDb.pagos.findIndex((pago) => pago.id === pagoId);
+  if (index === -1) throw new Error("No se encontro el pago enviado por Padres.");
+
+  const pagoActualizado = {
+    ...apiDb.pagos[index],
+    ...cambios,
+    updatedAt: fechaActualIso(),
+  };
+  apiDb.pagos[index] = pagoActualizado;
+
+  const inscripcionIndex = (apiDb.inscripciones || []).findIndex((inscripcion) =>
+    inscripcion.id === pagoActualizado.inscripcionId ||
+    (
+      inscripcion.dniEstudiante === (pagoActualizado.dniEstudiante || pagoActualizado.estudianteDni) &&
+      (
+        inscripcion.programaId === pagoActualizado.programaId ||
+        normalizarTexto(inscripcion.programa) === normalizarTexto(pagoActualizado.programa || pagoActualizado.programaNombre)
+      )
+    )
+  );
+
+  if (inscripcionIndex !== -1) {
+    apiDb.inscripciones[inscripcionIndex] = {
+      ...apiDb.inscripciones[inscripcionIndex],
+      estadoPago: cambios.estadoPago,
+      estadoInscripcion: cambios.estadoInscripcion,
+      pagoId: pagoActualizado.id,
+      fechaPago: cambios.fechaPago || apiDb.inscripciones[inscripcionIndex].fechaPago || "",
+      pagoObservacionCaja: cambios.observaciones || "",
+    };
+  }
+
+  await saveApiDb();
+  window.dispatchEvent(new Event("mock-db-updated"));
+  return pagoActualizado;
 }
 
 function obtenerInscripcionesCaja(periodoNormalizado) {
@@ -351,9 +472,10 @@ function filtrarReporteCaja(filas, filtros) {
       if (filtros.desde && normalizarFechaReporte(fila.fecha) < filtros.desde) return false;
       if (filtros.hasta && normalizarFechaReporte(fila.fecha) > filtros.hasta) return false;
 
+      if (filtros.tipoReporte === "registro_secretaria") return !esRegistroWeb(fila.origen);
       if (filtros.tipoReporte === "por_cobrar" || filtros.tipoReporte === "pagos_pendientes") return fila.estadoPago === "pendiente";
       if (filtros.tipoReporte === "inscripciones") return fila.fuente === "inscripcion";
-      if (filtros.tipoReporte === "registro_web") return normalizarTexto(fila.origen).includes("portal padres") || normalizarTexto(fila.origen).includes("web");
+      if (filtros.tipoReporte === "registro_web") return esRegistroWeb(fila.origen);
       return true;
     })
     .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));
@@ -362,8 +484,31 @@ function filtrarReporteCaja(filas, filtros) {
 function normalizarEstadoPago(valor) {
   const texto = normalizarTexto(valor);
   if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
+  if (["verificando", "verificacion", "por verificar"].some((item) => texto.includes(item))) return "verificando";
+  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) return "observado";
   if (["cancelado", "anulado"].some((item) => texto.includes(item))) return "anulado";
   return "pendiente";
+}
+
+function obtenerEstadoRevisionWeb(inscripcion, pago) {
+  if (!pago) return "sin_pago";
+  const texto = normalizarTexto([
+    pago.estado,
+    pago.estadoVerificacion,
+    pago.observaciones,
+    inscripcion.estadoInscripcion,
+    inscripcion.estadoPago,
+  ].join(" "));
+
+  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) return "observado";
+  if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
+  if (["verificando", "verificacion", "por verificar"].some((item) => texto.includes(item))) return "verificando";
+  return "pendiente";
+}
+
+function esRegistroWeb(valor) {
+  const texto = normalizarTexto(valor);
+  return texto.includes("portal padres") || texto.includes("web");
 }
 
 function normalizarFechaReporte(valor) {

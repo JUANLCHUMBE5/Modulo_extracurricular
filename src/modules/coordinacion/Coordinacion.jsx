@@ -1715,7 +1715,7 @@ function Coordinacion({
                               <Photo size={18} />
                               <div>
                                 <strong>Imagen de anuncio para Padres</strong>
-                                <p>Se mostrará solo en el portal de padres. Si la imagen es pesada, el sistema la comprimirá para que cargue mejor.</p>
+                                
                               </div>
                             </div>
                             {form.anuncioImagen ? (

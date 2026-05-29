@@ -2,6 +2,22 @@ import ExcelJS from "exceljs";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
+const COLUMNAS_CARGA_EXCEL = new Set([
+  "alumno",
+  "apellidos",
+  "codigo_estudiante",
+  "curso_programa",
+  "dni",
+  "grado",
+  "nivel_cambridge",
+  "nivel_educativo",
+  "nombres",
+  "observacion",
+  "programa",
+  "seccion",
+  "seleccion",
+]);
+
 export async function generarPreviewCargaExcel({ periodo, archivo, programas, existentes }) {
   const periodoNormalizado = normalizarPeriodo(periodo);
   validarArchivoExcel(archivo);
@@ -57,13 +73,14 @@ async function leerExcelSeguro(archivo) {
   if (!hoja) lanzar("El Excel no contiene hojas para validar.");
 
   const { encabezados, filaEncabezado } = obtenerEncabezados(hoja);
-  validarColumnasObligatorias(encabezados);
+  const encabezadosCarga = encabezados.filter((item) => COLUMNAS_CARGA_EXCEL.has(item.nombre));
+  validarColumnasObligatorias(encabezadosCarga);
 
   const filas = [];
   hoja.eachRow((row, rowNumber) => {
     if (rowNumber <= filaEncabezado) return;
     const fila = {};
-    encabezados.forEach(({ nombre, columna }) => {
+    encabezadosCarga.forEach(({ nombre, columna }) => {
       fila[nombre] = limpiarTexto(row.getCell(columna).text);
     });
     if (Object.values(fila).some(Boolean)) filas.push({ filaExcel: rowNumber, ...fila });
@@ -81,7 +98,7 @@ function obtenerEncabezados(hoja) {
     });
 
     const disponibles = new Set(encabezados.map((item) => item.nombre));
-    if (esFormatoCargaGeneral(disponibles) || esFormatoCargaCambridge(disponibles)) {
+    if (esFormatoCargaGeneral(disponibles) || esFormatoCargaCambridge(disponibles) || esFormatoDocenteTalleres(disponibles)) {
       return { encabezados, filaEncabezado: fila };
     }
   }
@@ -92,10 +109,16 @@ function obtenerEncabezados(hoja) {
 function validarColumnasObligatorias(encabezados) {
   const disponibles = new Set(encabezados.map((item) => item.nombre));
   const formatoEstandar = esFormatoEstandar(disponibles);
+  const formatoNombreCompleto = esFormatoNombreCompleto(disponibles);
+  const formatoDocenteTalleres = esFormatoDocenteTalleres(disponibles);
   const obligatorias = formatoEstandar
     ? ["dni", "alumno", "nivel_educativo", "grado", "seccion", "curso_programa"]
     : esFormatoCargaCambridge(disponibles) && !esFormatoCargaGeneral(disponibles)
       ? ["dni", "alumno", "grado", "seccion", "seleccion", "nivel_cambridge"]
+      : formatoDocenteTalleres
+        ? ["alumno", "nivel_educativo", "grado", "seccion", "curso_programa"]
+      : formatoNombreCompleto
+        ? ["dni", "nombres", "grado", "seccion", "curso_programa"]
       : ["dni", "nombres", "apellidos", "grado", "seccion", "curso_programa"];
   const faltantes = obligatorias.filter((columna) => !disponibles.has(columna));
   if (faltantes.length) lanzar(`Faltan columnas obligatorias: ${faltantes.join(", ")}.`);
@@ -112,6 +135,23 @@ function esFormatoEstandar(disponibles) {
 
 function esFormatoCargaGeneral(disponibles) {
   return disponibles.has("dni") && disponibles.has("curso_programa");
+}
+
+function esFormatoDocenteTalleres(disponibles) {
+  return disponibles.has("alumno") &&
+    disponibles.has("nivel_educativo") &&
+    disponibles.has("grado") &&
+    disponibles.has("seccion") &&
+    disponibles.has("curso_programa");
+}
+
+function esFormatoNombreCompleto(disponibles) {
+  return disponibles.has("dni") &&
+    disponibles.has("nombres") &&
+    disponibles.has("grado") &&
+    disponibles.has("seccion") &&
+    disponibles.has("curso_programa") &&
+    !disponibles.has("apellidos");
 }
 
 function esFormatoCargaCambridge(disponibles) {
@@ -261,9 +301,23 @@ function normalizarPeriodo(valor) {
 }
 
 function normalizarEncabezado(valor) {
-  return normalizarComparacion(valor)
-    .replace(/[\s/.-]+/g, "_")
-    .replace(/_+/g, "_");
+  const encabezado = normalizarComparacion(valor)
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  const alias = {
+    apellido: "apellidos",
+    apellidos_y_nombres: "alumno",
+    cod_estudiante: "codigo_estudiante",
+    curso: "curso_programa",
+    curso_taller: "curso_programa",
+    id: "dni",
+    nombre: "nombres",
+    nombres_y_apellidos: "alumno",
+    programa: "curso_programa",
+    taller: "curso_programa",
+  };
+  return alias[encabezado] || encabezado;
 }
 
 function normalizarComparacion(valor) {

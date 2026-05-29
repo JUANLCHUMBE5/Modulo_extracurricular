@@ -41,14 +41,14 @@ export default function StepperProceso({ pasoActivo, pasoMaximo, onSelect }) {
       {pasosPortal.map(({ titulo, detalle, icon: Icon }, index) => {
         const activo = pasoActivo === index;
         const completo = index < pasoActivo && index <= pasoMaximo;
-        const bloqueado = index > pasoMaximo;
-        const navegable = permiteNavegar && !bloqueado;
+        const bloqueado = index > pasoActivo || index > pasoMaximo;
+        const navegable = permiteNavegar && index < pasoActivo && index <= pasoMaximo;
 
         return (
           <button
             key={titulo}
             type="button"
-            className={cn("padres-flow-step", activo && "is-active", completo && "is-done", !permiteNavegar && "is-readonly")}
+            className={cn("padres-flow-step", activo && "is-active", completo && "is-done", !navegable && "is-readonly")}
             disabled={bloqueado}
             aria-disabled={!navegable}
             onClick={() => {

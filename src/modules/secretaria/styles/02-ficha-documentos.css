@@ -101,10 +101,11 @@
   height: auto !important;
   max-height: 76% !important;
   margin: 0 !important;
-  opacity: 0.14 !important;
+  opacity: 0.10 !important;
   transform: translate(-50%, -50%) !important;
   z-index: 0 !important;
   pointer-events: none !important;
+  filter: grayscale(1) contrast(0.85) !important;
   mix-blend-mode: multiply;
 }
 
@@ -117,10 +118,11 @@
   height: auto !important;
   max-height: 72% !important;
   margin: 0 !important;
-  opacity: 0.12 !important;
+  opacity: 0.10 !important;
   transform: translate(-50%, -50%) !important;
   z-index: 0 !important;
   pointer-events: none !important;
+  filter: grayscale(1) contrast(0.85) !important;
   mix-blend-mode: multiply;
 }
 
@@ -135,6 +137,7 @@
 .secretaria-word-document .secretaria-docx-watermark image,
 .secretaria-word-document .secretaria-docx-watermark img {
   opacity: 1 !important;
+  filter: grayscale(1) contrast(0.85) !important;
 }
 
 .secretaria-ficha-paper header {

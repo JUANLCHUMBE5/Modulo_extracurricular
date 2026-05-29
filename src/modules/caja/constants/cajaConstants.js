@@ -29,10 +29,8 @@ export const estadoColors = {
 };
 
 export const tiposReporte = [
-  { value: "pagos_registrados", label: "Pagos registrados en Caja" },
-  { value: "por_cobrar", label: "Por cobrar" },
-  { value: "inscripciones", label: "Inscripciones registradas" },
-  { value: "registro_web", label: "Registro por web / Padres" },
+  { value: "registro_secretaria", label: "Inscritos por Secretaria" },
+  { value: "registro_web", label: "Inscritos por Padres / Web" },
 ];
 
 export const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";

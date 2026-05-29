@@ -59,7 +59,7 @@ export default function Caja({
   const [reporteCaja, setReporteCaja] = useState([]);
   const [opcionesReporte, setOpcionesReporte] = useState({ programas: [], mediosPago: [] });
   const [filtrosReporte, setFiltrosReporte] = useState({
-    tipoReporte: "por_cobrar",
+    tipoReporte: "registro_web",
     rango: "personalizado",
     desde: "",
     hasta: "",
@@ -366,10 +366,10 @@ export default function Caja({
         <p className="caja-module-label">Modulo Caja</p>
         <nav className="caja-nav" aria-label="Modulo de caja">
           <button className={!delegatedContent && vista === "pagos" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("pagos"); }} type="button">
-            <Receipt size={17} /> Realizar pago
+            <Receipt size={17} /> Consultar pagos
           </button>
           <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button">
-            <ChartBar size={17} /> Consulta de pagos
+            <ChartBar size={17} /> Reportes
           </button>
         </nav>
         {moduleSwitcher ? (

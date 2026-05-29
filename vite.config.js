@@ -5,6 +5,9 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   plugins: [tailwindcss(), react()],
   server: {
+    watch: {
+      ignored: ["**/server/db.json"],
+    },
     proxy: {
       "/api": "http://127.0.0.1:5175",
     },

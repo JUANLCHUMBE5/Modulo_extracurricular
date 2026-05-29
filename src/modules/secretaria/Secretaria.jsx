@@ -8,11 +8,11 @@ import {
   buscarEstudiantePorDni,
   buscarEstudiantesPorNombre,
   buscarInscripcionEstudiante,
+  listarInscripcionesEstudiante,
   listarProgramasPorPeriodo,
   obtenerProgramaPorId,
   derivarInscripcionCaja,
   registrarInscripcion,
-  registrarDocumentoGenerado,
 } from "./services/secretariaService";
 import {
   validarDni,
@@ -23,8 +23,9 @@ import {
   formatearFechaPeru,
 } from "../../services/dateService";
 import { resolverHorarioPorGradoLocal } from "./utils/horariosSecretaria";
-import { FichaAceptación, imprimirInscripcionDirecta } from "./components/SecretariaFicha";
+import { imprimirInscripcionDirecta } from "./components/SecretariaFicha";
 import SecretariaRegistroModal from "./components/SecretariaRegistroModal";
+import SecretariaCursoAdicionalModal from "./components/SecretariaCursoAdicionalModal";
 import SecretariaSearchCard from "./components/SecretariaSearchCard";
 import SecretariaStudentPanel from "./components/SecretariaStudentPanel";
 import SecretariaSuccessModal from "./components/SecretariaSuccessModal";
@@ -92,14 +93,7 @@ function programaDisponibleParaEdadSecretaria(programa, edadAlumno = "") {
 }
 
 function etiquetaProgramaSecretaria(programa) {
-  const rango = programa?.grupoEtario || programa?.grupo || (
-    programa?.edadMinima && programa?.edadMaxima
-      ? `Edades ${programa.edadMinima} a ${programa.edadMaxima} anios`
-      : ""
-  );
-  return [programa?.nombre, rango, programa?.horario]
-    .filter(Boolean)
-    .join(" - ");
+  return programa?.nombre || "";
 }
 
 function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, onLogout }) {
@@ -108,6 +102,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   const [mensaje, setMensaje] = useState("");
   const [estudiante, setEstudiante] = useState(null);
   const [inscripcion, setInscripción] = useState(null);
+  const [inscripcionesEstudiante, setInscripcionesEstudiante] = useState([]);
   const [formulario, setFormulario] = useState(formularioInicial);
   const [programas, setProgramas] = useState([]);
   const [modoRegistro, setModoRegistro] = useState(false);
@@ -116,6 +111,9 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   const [guardando, setGuardando] = useState(false);
   const [imprimiendoFichaRegistro, setImprimiendoFichaRegistro] = useState(false);
   const [derivandoCaja, setDerivandoCaja] = useState(false);
+  const [modalCursoAdicional, setModalCursoAdicional] = useState(false);
+  const [cursoAdicionalId, setCursoAdicionalId] = useState("");
+  const [registrandoCursoAdicional, setRegistrandoCursoAdicional] = useState(false);
   const [resultadosNombre, setResultadosNombre] = useState([]);
 
   function mostrarMensaje(texto, tipo = "error") {
@@ -138,6 +136,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     ? programas.filter((programa) => programaDisponibleParaEdadSecretaria(programa, edadAlumnoFormulario))
     : programas;
   const tieneInvitacionOperativa = !esCicloVerano && Boolean(estudiante?.tieneInvitacion);
+  const invitacionSinHorario = tieneInvitacionOperativa && estudiante?.programaDisponible === false;
   const tipoAlumnoMostrado = esCicloVerano
     ? (estudiante?.esExterno ? "Alumno externo" : "Alumno interno")
     : estudiante?.tipoAlumno;
@@ -157,6 +156,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     docente: estudiante.programaDocente,
     costo: estudiante.programaCosto,
     cupos: estudiante.programaCupos,
+    cuposDisponibles: estudiante.programaCuposDisponibles,
     modalidadCobro: estudiante.programaModalidadCobro,
     requisitos: estudiante.programaRequisitos,
     fechaInicio: estudiante.programaFechaInicio,
@@ -178,6 +178,16 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       ]
     : programasCompatiblesFormulario;
   const mostrarSelectorPrograma = esCicloVerano || !tieneInvitacionOperativa || registroAdicional || programasCompatiblesFormulario.length > 0;
+  const clavesProgramasRegistrados = new Set(
+    inscripcionesEstudiante.flatMap((item) => [
+      item.programaId ? `id:${item.programaId}` : "",
+      item.programa ? `nombre:${normalizarComparacion(item.programa)}` : "",
+    ]).filter(Boolean)
+  );
+  const programasCursoAdicional = programasCompatiblesFormulario.filter((programa) =>
+    !clavesProgramasRegistrados.has(`id:${programa.id}`) &&
+    !clavesProgramasRegistrados.has(`nombre:${normalizarComparacion(programa.nombre)}`)
+  );
 
   const programaParaRegistro = programaSeleccionado || programaAsignado || programaAsignadoInvitacion;
   const inscripcionMasivaSeleccionada = Boolean(programaParaRegistro?.invitacionMasiva);
@@ -194,7 +204,9 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     setFormulario(formularioInicial);
     setEstudiante(null);
     setInscripción(null);
+    setInscripcionesEstudiante([]);
     setModoRegistro(false);
+    setModalCursoAdicional(false);
     setModalExito(false);
     setMensaje("");
   }, [periodo]);
@@ -207,6 +219,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
           setEstudiante(encontrado);
           const registro = await buscarInscripcionEstudiante(encontrado, periodo);
           setInscripción(registro);
+          setInscripcionesEstudiante(await listarInscripcionesEstudiante(encontrado, periodo));
           const programasActualizados = await listarProgramasPorPeriodo(periodo, encontrado.grado || "", calcularEdadSecretaria(encontrado, formularioInicial));
           setProgramas(programasActualizados);
           return;
@@ -239,6 +252,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
 
   async function consultarEstudiante() {
     setInscripción(null);
+    setInscripcionesEstudiante([]);
     setModoRegistro(false);
     setResultadosNombre([]);
     const busqueda = String(dni || "").trim();
@@ -332,6 +346,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   async function aplicarEstudianteEncontrado(encontrado) {
     setResultadosNombre([]);
     const registroExistente = await buscarInscripcionEstudiante(encontrado, periodo);
+    const registrosExistentes = await listarInscripcionesEstudiante(encontrado, periodo);
     const programasCompatiblesBase = await listarProgramasPorPeriodo(periodo, encontrado.grado || "", calcularEdadSecretaria(encontrado, formularioInicial));
     const programasCompatibles = programasCompatiblesBase;
     setProgramas(programasCompatibles);
@@ -343,6 +358,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       estadoPago: registroExistente?.estadoPago || encontrado.estadoPago,
     });
     setInscripción(registroExistente);
+    setInscripcionesEstudiante(registrosExistentes);
     setFormulario({
       ...formularioInicial,
       programa: encontrado.tieneInvitacion ? encontrado.programaAsignado : "",
@@ -359,6 +375,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     });
     if (!encontrado.tieneInvitacion && periodo === "escolar" && programasCompatibles.length === 0) {
       setMensaje("No hay programas de invitación masiva disponibles para el grado del estudiante.");
+      return;
+    }
+    if (encontrado.tieneInvitacion && encontrado.programaDisponible === false) {
+      setMensaje("El alumno esta cargado por Coordinacion, pero el programa no tiene horario para su grado. Coordinacion debe agregar el turno antes de inscribir.");
       return;
     }
     setMensaje("");
@@ -396,8 +416,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     setMensaje("");
     setEstudiante(null);
     setInscripción(null);
+    setInscripcionesEstudiante([]);
     setFormulario(formularioInicial);
     setModoRegistro(false);
+    setModalCursoAdicional(false);
     setModalExito(false);
     setResultadosNombre([]);
   }
@@ -556,6 +578,12 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       });
 
       setInscripción(registro);
+      setInscripcionesEstudiante(await listarInscripcionesEstudiante({
+        ...estudiante,
+        dni: dniRegistro,
+        nombres: nombresRegistro,
+        grado: gradoRegistro,
+      }, periodo));
       setEstudiante((actual) =>
         actual ? {
           ...actual,
@@ -582,6 +610,11 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   }
 
   async function abrirRegistro() {
+    if (invitacionSinHorario && !registroAdicional) {
+      mostrarMensaje("El alumno esta cargado por Coordinacion, pero falta configurar un horario para su grado antes de inscribirlo.");
+      return;
+    }
+
     const programasActualizados = await cargarProgramasDelPeriodo(estudiante?.grado || "", calcularEdadSecretaria(estudiante, formulario));
     const programaAsignadoActual = tieneInvitacionOperativa && !registroAdicional
       ? await obtenerProgramaPorId(estudiante.programaAsignado, periodo).catch(() => null)
@@ -611,6 +644,100 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     setModoRegistro(true);
   }
 
+  function abrirCursoAdicional() {
+    if (!inscripcion) {
+      abrirRegistro();
+      return;
+    }
+
+    if (!programasCursoAdicional.length) {
+      mostrarMensaje("El estudiante ya esta inscrito en los cursos disponibles o no hay otro taller habilitado para su grado.");
+      return;
+    }
+
+    setCursoAdicionalId((actual) =>
+      programasCursoAdicional.some((programa) => programa.id === actual)
+        ? actual
+        : programasCursoAdicional[0]?.id || ""
+    );
+    setModalCursoAdicional(true);
+    setMensaje("");
+  }
+
+  async function registrarCursoAdicional(event) {
+    event.preventDefault();
+    if (!estudiante || !inscripcion || registrandoCursoAdicional) return;
+
+    const programaSeleccionadoAdicional = programasCursoAdicional.find((programa) => programa.id === cursoAdicionalId);
+    if (!programaSeleccionadoAdicional) {
+      mostrarMensaje("Seleccione un curso adicional disponible.");
+      return;
+    }
+
+    if (
+      clavesProgramasRegistrados.has(`id:${programaSeleccionadoAdicional.id}`) ||
+      clavesProgramasRegistrados.has(`nombre:${normalizarComparacion(programaSeleccionadoAdicional.nombre)}`)
+    ) {
+      mostrarMensaje("El estudiante ya tiene una inscripcion registrada en este programa.");
+      return;
+    }
+
+    setRegistrandoCursoAdicional(true);
+    setMensaje("");
+    try {
+      const programaActualizado = await obtenerProgramaPorId(programaSeleccionadoAdicional.id, periodo);
+      if (!programaActualizado) {
+        mostrarMensaje("El curso seleccionado ya no esta disponible. Actualice y vuelva a intentar.");
+        return;
+      }
+
+      const gradoRegistro = estudiante.grado || "";
+      const horarioRegistro = resolverHorarioPorGradoLocal(programaActualizado, gradoRegistro)
+        || programaActualizado.horario;
+      const registro = await registrarInscripcion({
+        dniEstudiante: estudiante.dni,
+        codigoEstudiante: estudiante.codigoEstudiante || "",
+        gradoEstudiante: gradoRegistro,
+        seccionEstudiante: estudiante.seccion || "",
+        nombresEstudiante: estudiante.nombres,
+        esExterno: Boolean(estudiante.esExterno),
+        edadEstudiante: calcularEdadSecretaria(estudiante, formulario) ? String(calcularEdadSecretaria(estudiante, formulario)) : "",
+        tipoAlumno: esCicloVerano ? (estudiante.esExterno ? "Alumno externo" : "Alumno interno") : estudiante.tipoAlumno,
+        tipoInscripción: "Curso adicional",
+        programa: programaActualizado.nombre,
+        programaId: programaActualizado.id,
+        colegioProcedencia: inscripcion.colegioProcedencia || (estudiante.esExterno ? "" : "Colegio San Rafael"),
+        horario: horarioRegistro,
+        docente: programaActualizado.docente,
+        costo: programaActualizado.costo,
+        cupos: programaActualizado.cupos,
+        requiereUniforme: programaActualizado.requiereUniforme,
+        periodo,
+        apoderado: inscripcion.apoderado || estudiante.apoderado || formulario.apoderado,
+        telefono: inscripcion.telefono || estudiante.telefonoApoderado || formulario.telefono,
+        correo: inscripcion.correo || "",
+        medioEnvio: inscripcion.medioEnvio || "Impreso",
+        seleccion: estudiante.seleccion || "",
+        nivelCambridge: estudiante.nivelCambridge || "",
+        observacion: "Curso adicional registrado por Secretaria.",
+        origenRegistro: "Curso adicional por Secretaria",
+      });
+
+      setInscripción(registro);
+      setInscripcionesEstudiante(await listarInscripcionesEstudiante(estudiante, periodo));
+      setModalCursoAdicional(false);
+      setCursoAdicionalId("");
+      setModalExito(true);
+      toast.success("Secretaría", {
+        description: "Curso adicional registrado correctamente.",
+      });
+    } catch (err) {
+      mostrarMensaje(err.message || "No se pudo registrar el curso adicional.");
+    } finally {
+      setRegistrandoCursoAdicional(false);
+    }
+  }
+
   async function abrirFichaGenerada() {
     if (!inscripcion || imprimiendoFichaRegistro) return;
 
@@ -619,18 +746,16 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     try {
       const inscripcionActualizada = await buscarInscripcionEstudiante(estudiante, periodo);
       const fichaRegistro = await completarInscripcionConProgramaActual(inscripcionActualizada || inscripcion);
-      const documento = await registrarDocumentoGenerado({
-        estudiante,
-        inscripcion: fichaRegistro,
-        tipoDocumento: fichaRegistro.plantillaBase64 ? "Comunicado personalizado" : "Ficha automática de inscripción",
-      });
-      setInscripción({
+      const fechaDocumento = new Date().toISOString();
+      const fichaCompleta = {
         ...fichaRegistro,
         fichaGenerada: true,
         documentoGenerado: true,
-        ultimoDocumentoGeneradoId: documento.id,
-      });
-      await imprimirInscripcionDirecta(estudiante, fichaRegistro);
+        ultimoDocumentoGeneradoEn: fechaDocumento,
+      };
+      setInscripción(fichaCompleta);
+      setModalExito(false);
+      await imprimirInscripcionDirecta(estudiante, fichaCompleta);
     } catch (err) {
       mostrarMensaje(err.message || "No se pudo preparar la ficha para imprimir.");
     } finally {
@@ -645,11 +770,20 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       return;
     }
 
+    const programaDerivacion = inscripcion.programa || "el taller seleccionado";
+    const confirmarDerivacion = window.confirm(
+      `Se derivara a Caja la inscripcion de ${estudiante?.nombres || "este estudiante"} en ${programaDerivacion}. ¿Desea continuar?`
+    );
+    if (!confirmarDerivacion) return;
+
     setDerivandoCaja(true);
     setMensaje("");
     try {
       const inscripcionActualizada = await buscarInscripcionEstudiante(estudiante, periodo);
-      const registroCompleto = await completarInscripcionConProgramaActual(inscripcionActualizada || inscripcion);
+      const registroCompleto = await completarInscripcionConProgramaActual({
+        ...(inscripcionActualizada || {}),
+        ...inscripcion,
+      });
       const derivada = await derivarInscripcionCaja(registroCompleto.id, {
         ...registroCompleto,
         dniEstudiante: registroCompleto.dniEstudiante || estudiante?.dni,
@@ -659,7 +793,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         seccionEstudiante: registroCompleto.seccionEstudiante || estudiante?.seccion,
       });
       setInscripción(derivada);
-      mostrarMensaje("Inscripcion derivada a Caja. Ya puede validarse el pago en el modulo de Caja.", "success");
+      mostrarMensaje("Derivado exitosamente a Caja.", "success");
     } catch (err) {
       mostrarMensaje(err.message || "No se pudo derivar la inscripcion a Caja.");
     } finally {
@@ -763,14 +897,17 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
             setPeriodo={setPeriodo}
           >
             <SecretariaStudentPanel
+              abrirCursoAdicional={abrirCursoAdicional}
               abrirFichaGenerada={abrirFichaGenerada}
               abrirRegistro={abrirRegistro}
+              cursosAdicionalesDisponibles={programasCursoAdicional.length}
               derivarACaja={derivarACaja}
               derivandoCaja={derivandoCaja}
               esCicloVerano={esCicloVerano}
               estudiante={estudiante}
               imprimiendoFichaRegistro={imprimiendoFichaRegistro}
               inscripcion={inscripcion}
+              invitacionSinHorario={invitacionSinHorario}
               limpiarBusquedaEstudiante={limpiarBusquedaEstudiante}
               nombreProgramaAMostrar={nombreProgramaAMostrar}
               programas={programas}
@@ -798,13 +935,26 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
           programasParaSelector={programasParaSelector}
           setModoRegistro={setModoRegistro}
         />
-        {modalExito ? (
-          <SecretariaSuccessModal
-            inscripcion={inscripcion}
-            onClose={() => setModalExito(false)}
+        {modalCursoAdicional ? (
+          <SecretariaCursoAdicionalModal
+            cursoId={cursoAdicionalId}
+            estudiante={estudiante}
+            guardando={registrandoCursoAdicional}
+            inscripcionActual={inscripcion}
+            onCancel={() => setModalCursoAdicional(false)}
+            onChange={setCursoAdicionalId}
+            onSubmit={registrarCursoAdicional}
+            programas={programasCursoAdicional}
           />
         ) : null}
-
+        {modalExito ? (
+          <SecretariaSuccessModal
+            imprimiendo={imprimiendoFichaRegistro}
+            inscripcion={inscripcion}
+            onClose={() => setModalExito(false)}
+            onPrint={abrirFichaGenerada}
+          />
+        ) : null}
           </>
         )}
       </main>

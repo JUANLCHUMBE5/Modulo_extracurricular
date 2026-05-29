@@ -40,7 +40,7 @@ export default function CajaFields({
           <div className="caja-form-title">
             <Search size={18} />
             <div>
-              <h3>Buscar inscripción</h3>
+              <h3>Buscar estudiante</h3>
             </div>
           </div>
           <form className="caja-search-form" onSubmit={onBuscar}>

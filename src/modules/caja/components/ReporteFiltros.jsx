@@ -12,6 +12,15 @@ export default function ReporteFiltros({ filtros, mediosPago, onChange, programa
         </select>
       </label>
       <label>
+        Programa
+        <select value={filtros.programa} onChange={(event) => onChange("programa", event.currentTarget.value)}>
+          <option value="todos">Todos</option>
+          {programas.map((programa) => (
+            <option key={programa.value} value={programa.value}>{programa.label}</option>
+          ))}
+        </select>
+      </label>
+      <label>
         Fechas
         <select value={filtros.rango} onChange={(event) => onChange("rango", event.currentTarget.value)}>
           <option value="personalizado">Rango personalizado</option>
@@ -35,15 +44,6 @@ export default function ReporteFiltros({ filtros, mediosPago, onChange, programa
           type="date"
           value={filtros.hasta}
         />
-      </label>
-      <label>
-        Programa
-        <select value={filtros.programa} onChange={(event) => onChange("programa", event.currentTarget.value)}>
-          <option value="todos">Todos</option>
-          {programas.map((programa) => (
-            <option key={programa.value} value={programa.value}>{programa.label}</option>
-          ))}
-        </select>
       </label>
       <label>
         Medio de pago

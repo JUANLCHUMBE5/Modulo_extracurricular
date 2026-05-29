@@ -338,6 +338,133 @@
   background: #ffffff;
 }
 
+.coord-workspace-upload .coord-upload-card .coord-card-title {
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid #cde9e0;
+  border-left: 5px solid #22977f;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #eaf8f3 0%, #f7fbff 100%);
+}
+
+.coord-workspace-upload .coord-upload-card .coord-title-icon {
+  color: #ffffff;
+  background: #2f6f9f;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-card-title p {
+  display: block;
+  margin-top: 2px;
+  color: #486174;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-form {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #d5e8e2;
+  border-radius: 10px;
+  background: #f8fcfa;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-upload-grid {
+  grid-template-columns: minmax(130px, 190px) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-field {
+  gap: 3px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-field label {
+  color: #163f52;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-readonly-field,
+.coord-workspace-upload .coord-upload-card .coord-upload-grid input[type="file"] {
+  min-height: 36px;
+  height: 36px;
+  border-color: #bfd9d1;
+  background: #ffffff;
+}
+
+.coord-upload-format-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -2px;
+}
+
+.coord-upload-format-row span {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #c8e8dc;
+  border-radius: 999px;
+  padding: 0 9px;
+  color: #075e50;
+  background: #eaf8f3;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.coord-upload-format-row span:nth-child(2n) {
+  color: #244f83;
+  border-color: #cfe0f5;
+  background: #eef5ff;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-upload-actions {
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-upload-actions button {
+  min-height: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-message {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-color: #ffd6a8;
+  background: #fff4e5;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-empty {
+  min-height: 96px;
+  margin-top: 10px;
+  padding: 18px;
+  border-color: #cde9e0;
+  color: #365466;
+  background:
+    linear-gradient(135deg, rgba(234, 248, 243, 0.95), rgba(238, 245, 255, 0.92));
+}
+
+.coord-workspace-upload .coord-upload-card .coord-empty svg {
+  color: #2f6f9f;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-load-summary {
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-upload-progress {
+  gap: 6px;
+  margin: 8px 0;
+  padding: 9px 10px;
+  border-color: #cde9e0;
+  background: #f2fbf7;
+}
+
 .coord-template-file-button {
   min-height: 30px;
   display: inline-flex;

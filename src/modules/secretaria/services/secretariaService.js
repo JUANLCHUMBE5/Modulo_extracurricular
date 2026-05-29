@@ -18,15 +18,9 @@ export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
   await syncApiDb();
   const periodoNormalizado = normalizarPeriodo(periodo);
   const estudiante = apiDb.estudiantes[dni];
-  const invitacionEncontrada = periodoNormalizado === "verano"
+  const invitacionPeriodo = periodoNormalizado === "verano"
     ? null
     : await buscarInvitacionPorDniPeriodo(dni, periodoNormalizado);
-  const invitacionPeriodo = invitacionEncontrada && programaDisponibleParaGrado(
-    invitacionEncontrada.programa,
-    estudiante?.grado || invitacionEncontrada.invitado?.grado
-  )
-    ? invitacionEncontrada
-    : null;
 
   if (!estudiante && invitacionPeriodo) {
     return adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado);
@@ -97,7 +91,6 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
 
           const textoBusqueda = normalizarTexto(`${invitado.nombres} ${invitado.codigoEstudiante || ""}`);
           if (!textoBusqueda.includes(termino)) return;
-          if (!programaDisponibleParaGrado(programa, invitado.grado)) return;
 
           vistos.add(clave);
           resultados.push(adaptarInvitadoComoEstudiante({
@@ -326,8 +319,30 @@ export async function buscarInscripcionEstudiante(estudiante, periodo = "escolar
       clavesAlumnoInscripcion(item).some((clave) => clavesEstudiante.includes(clave))
     );
 
-  const inscripcion = inscripciones.find((item) => item.programaId === estudiante?.programaAsignado) || inscripciones[0] || null;
+  const pendienteCaja = inscripciones.find((item) =>
+    !item.derivadoCaja &&
+    normalizarEstadoPagoSecretaria(item.estadoPago) !== "pagado"
+  );
+  const inscripcion = pendienteCaja || inscripciones.find((item) => item.programaId === estudiante?.programaAsignado) || inscripciones[0] || null;
   return sincronizarInscripcionConProgramaActual(inscripcion);
+}
+
+export async function listarInscripcionesEstudiante(estudiante, periodo = "escolar") {
+  await esperar(160);
+  await syncApiDb();
+
+  const periodoNormalizado = normalizarPeriodo(periodo);
+  const clavesEstudiante = clavesAlumnoInscripcion(estudiante);
+  if (!clavesEstudiante.length) return [];
+
+  return [...apiDb.inscripciones]
+    .reverse()
+    .filter((item) =>
+      item.estadoInscripcion !== "Anulada" &&
+      normalizarPeriodo(item.periodo) === periodoNormalizado &&
+      clavesAlumnoInscripcion(item).some((clave) => clavesEstudiante.includes(clave))
+    )
+    .map((item) => sincronizarInscripcionConProgramaActual(item) || item);
 }
 
 function esperar(ms) {
@@ -386,9 +401,26 @@ function obtenerPlantillaVariables(inscripcion, programa) {
   return programa?.plantillaVariables || plantillaGuardada?.plantillaVariables || inscripcion?.plantillaVariables || [];
 }
 
+function extraerNumeroCupos(valor) {
+  if (valor === null || valor === undefined || valor === "") return null;
+  const numero = Number(valor);
+  if (Number.isFinite(numero)) return numero;
+  const match = String(valor).match(/\d+/);
+  return match ? Number(match[0]) : null;
+}
+
+function calcularCuposDisponibles(programa) {
+  const disponiblesDirectos = extraerNumeroCupos(programa?.cuposDisponibles);
+  if (disponiblesDirectos !== null) return Math.max(0, disponiblesDirectos);
+  const cupos = extraerNumeroCupos(programa?.cupos);
+  const ocupados = extraerNumeroCupos(programa?.cuposOcupados) || 0;
+  if (cupos !== null) return Math.max(0, cupos - ocupados);
+  return 0;
+}
+
 function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
   const periodoNormalizado = normalizarPeriodo(programa.periodo);
-  const cuposDisponibles = Math.max(0, Number(programa.cuposDisponibles ?? 0));
+  const cuposDisponibles = calcularCuposDisponibles(programa);
   return {
     id: programa.id,
     nombre: programa.nombre,
@@ -426,6 +458,9 @@ function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
 
 function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo) {
   const { programa, invitado = {} } = invitacionPeriodo;
+  const horarioResuelto = resolverHorarioPorGrado(programa, estudiante.grado);
+  const horarioConfigurado = Boolean(horarioResuelto || !tieneHorariosPorGrupo(programa));
+  const cuposDisponibles = calcularCuposDisponibles(programa);
   return {
     ...estudiante,
     periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
@@ -438,10 +473,13 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
     programaNombre: programa.nombre,
     programaGrupo: programa.grupo || "",
     programaGrupoEtario: programa.grupoEtario || programa.grupo || "",
-    programaHorario: resolverHorarioPorGrado(programa, estudiante.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario),
+    programaHorario: horarioResuelto || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario),
+    programaDisponible: programaDisponibleParaGrado(programa, estudiante.grado),
+    programaHorarioConfigurado: horarioConfigurado,
     programaDocente: programa.responsable || programa.docente || "No definido",
     programaCosto: Number(programa.costo ?? 0),
-    programaCupos: Number(programa.cuposDisponibles ?? programa.cupos ?? 0) > 0 ? "Disponible" : "Sin cupos",
+    programaCupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
+    programaCuposDisponibles: cuposDisponibles,
     programaModalidadCobro: programa.modalidadCobro || "",
     programaRequisitos: programa.requisitos || "",
     programaFechaInicio: programa.fechaInicio || "",
@@ -460,6 +498,9 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
 
 function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
   const { programa, invitado } = invitacionPeriodo;
+  const horarioResuelto = resolverHorarioPorGrado(programa, invitado.grado);
+  const horarioConfigurado = Boolean(horarioResuelto || !tieneHorariosPorGrupo(programa));
+  const cuposDisponibles = calcularCuposDisponibles(programa);
   return {
     dni: invitado.dni || "",
     codigoEstudiante: invitado.codigoEstudiante || "",
@@ -476,10 +517,13 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
     programaNombre: programa.nombre,
     programaGrupo: programa.grupo || "",
     programaGrupoEtario: programa.grupoEtario || programa.grupo || "",
-    programaHorario: resolverHorarioPorGrado(programa, invitado.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario),
+    programaHorario: horarioResuelto || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario),
+    programaDisponible: programaDisponibleParaGrado(programa, invitado.grado),
+    programaHorarioConfigurado: horarioConfigurado,
     programaDocente: programa.responsable || programa.docente || "No definido",
     programaCosto: Number(programa.costo ?? 0),
-    programaCupos: Number(programa.cuposDisponibles ?? programa.cupos ?? 0) > 0 ? "Disponible" : "Sin cupos",
+    programaCupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
+    programaCuposDisponibles: cuposDisponibles,
     programaModalidadCobro: programa.modalidadCobro || "",
     programaRequisitos: programa.requisitos || "",
     programaFechaInicio: programa.fechaInicio || "",
@@ -502,7 +546,7 @@ function buscarInvitacionEnMemoria(dni, periodo, gradoAlumno = "") {
   for (const programa of apiDb.programas) {
     if (normalizarPeriodo(programa.periodo) !== periodoNormalizado) continue;
     const invitado = (apiDb.invitadosPorPrograma[programa.id] || []).find((item) => item.dni === dni);
-    if (invitado && programaDisponibleParaGrado(programa, gradoAlumno || invitado.grado)) return { programaId: programa.id, programa, invitado };
+    if (invitado) return { programaId: programa.id, programa, invitado };
   }
 
   return null;
@@ -685,6 +729,14 @@ function extraerDiasHorario(horario = "") {
   const texto = normalizarTexto(horario);
   const dias = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
   return new Set(dias.filter((dia) => texto.includes(dia)));
+}
+
+function normalizarEstadoPagoSecretaria(valor = "") {
+  return String(valor || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
 }
 
 function claveAlumno(alumno) {

@@ -68,7 +68,7 @@ function formatearDiasHorario(dias) {
 function resumirHorarioSecretaria(horario) {
   const texto = String(horario || "");
   const dia = formatearDiasHorario(listarDiasHorario(texto));
-  const clase = texto.match(/clase\s+([^,·/]+)/i)?.[1]?.trim() || "";
+  const clase = formatearRangoHoraSecretaria(texto.match(/clase\s+([^,·/]+)/i)?.[1]?.trim() || "");
   const almuerzo = texto.match(/almuerzo\s+([^,·/]+)/i)?.[1]?.trim() || "";
   return {
     dia,
@@ -80,9 +80,19 @@ function resumirHorarioSecretaria(horario) {
 function resumirClaseSecretaria(horario) {
   const clase = resumirHorarioSecretaria(horario).clase || "";
   if (!clase) return String(horario || "");
-  return clase
+  return formatearRangoHoraSecretaria(clase);
+}
+
+function formatearRangoHoraSecretaria(valor) {
+  return String(valor || "")
     .replace(/\s*-\s*/g, " - ")
-    .replace(/\b(\d{1,2}):(\d{2})\b/g, (_, hora, minuto) => formatearHoraClase(hora, minuto));
+    .replace(/\b(\d{1,2}):(\d{2})(?:\s*(AM|PM))?\b/gi, (_, hora, minuto, periodo) => {
+      if (periodo) return `${Number(hora)}:${minuto} ${periodo.toUpperCase()}`;
+      return formatearHoraClase(hora, minuto);
+    })
+    .replace(/\b(AM|PM)\s+\1\b/gi, "$1")
+    .replace(/\bAM\s+PM\b/gi, "PM")
+    .replace(/\bPM\s+AM\b/gi, "AM");
 }
 
 function formatearHoraClase(horaTexto, minutoTexto) {
@@ -109,5 +119,6 @@ export {
   DatoHorario,
   resumirClaseSecretaria,
   resumirHorarioSecretaria,
+  formatearRangoHoraSecretaria,
   formatearCuposSecretaria,
 };

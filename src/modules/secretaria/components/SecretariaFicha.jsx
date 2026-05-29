@@ -62,13 +62,25 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
 
     if (inscripcion.plantillaBase64 && wordPreviewRef.current) {
       let activo = true;
+      let urlPdfGenerado = "";
       setPdfUrl("");
       setWordPreview({ cargando: true, error: "" });
       wordPreviewRef.current.innerHTML = "";
 
-      generarComunicadoWordBlob({ estudiante, inscripcion, omitirMarcaAguaVista: true })
+      generarComunicadoWordBlob({ estudiante, inscripcion })
         .then(async (blob) => {
           if (!activo || !wordPreviewRef.current) return;
+          try {
+            const pdf = await convertirWordOriginalAPdf(blob);
+            if (!activo) return;
+            urlPdfGenerado = URL.createObjectURL(pdf);
+            setPdfUrl(urlPdfGenerado);
+            setWordPreview({ cargando: false, error: "" });
+            return;
+          } catch {
+            setPdfUrl("");
+          }
+
           wordPreviewRef.current.innerHTML = "";
           await renderAsync(blob, wordPreviewRef.current, null, {
             className: "secretaria-docx-preview",
@@ -102,6 +114,7 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
 
       return () => {
         activo = false;
+        if (urlPdfGenerado) URL.revokeObjectURL(urlPdfGenerado);
       };
     }
 
@@ -118,7 +131,7 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
           prepararVistaDocxParaImpresion(wordPreviewRef.current);
           await imprimirHtmlRenderizado(wordPreviewRef.current.innerHTML);
         } else {
-          const word = await generarComunicadoWordBlob({ estudiante, inscripcion, omitirMarcaAguaVista: true });
+          const word = await generarComunicadoWordBlob({ estudiante, inscripcion });
           try {
             const pdf = await convertirWordOriginalAPdf(word);
             imprimirPdfBlob(pdf);
@@ -177,7 +190,16 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
               </div>
               {wordPreview.cargando ? <p className="secretaria-word-loading">Preparando vista del Word...</p> : null}
               {wordPreview.error ? <p className="secretaria-word-error">{wordPreview.error}</p> : null}
-              <div className="secretaria-word-document" ref={wordPreviewRef} />
+              {pdfUrl ? (
+                <iframe
+                  ref={pdfFrameRef}
+                  className="secretaria-pdf-viewer"
+                  src={pdfUrl}
+                  title="Vista PDF de la ficha de invitación"
+                />
+              ) : (
+                <div className="secretaria-word-document" ref={wordPreviewRef} />
+              )}
             </>
           ) : pdfUrl ? (
             <iframe
@@ -240,7 +262,7 @@ function FichaBloque({ titulo, items }) {
 
 async function imprimirInscripcionDirecta(estudiante, inscripcion) {
   if (inscripcion.plantillaBase64) {
-    const word = await generarComunicadoWordBlob({ estudiante, inscripcion, omitirMarcaAguaVista: true });
+    const word = await generarComunicadoWordBlob({ estudiante, inscripcion });
     try {
       const pdf = await convertirWordOriginalAPdf(word);
       imprimirPdfBlob(pdf);

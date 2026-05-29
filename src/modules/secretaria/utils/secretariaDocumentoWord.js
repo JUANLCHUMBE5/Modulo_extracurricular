@@ -69,11 +69,14 @@ export async function generarComunicadoWordBlob({ estudiante, inscripcion, omiti
     doc.render(datos);
     if (omitirMarcaAguaVista) {
       removerMarcasAguaWord(doc.getZip());
+    } else {
+      suavizarMarcasAguaWord(doc.getZip());
     }
-    return doc.getZip().generate({
+    const blob = doc.getZip().generate({
       type: "blob",
       mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     });
+    return omitirMarcaAguaVista ? blob : await suavizarImagenesMarcaAguaDocx(blob);
   } catch {
     return generarComunicadoWordBlobLegacy({ datos, inscripcion, omitirMarcaAguaVista });
   }
@@ -210,6 +213,58 @@ function quitarBloquesMarcaAguaWord(xml) {
   ));
 }
 
+function suavizarMarcasAguaWord(zip) {
+  Object.keys(zip.files)
+    .filter((name) => /^word\/(document|header|footer)\d*\.xml$/i.test(name))
+    .forEach((name) => {
+      const file = zip.file(name);
+      if (!file) return;
+      const xml = file.asText();
+      const ajustado = suavizarBloquesMarcaAguaWord(xml);
+      if (ajustado !== xml) zip.file(name, ajustado);
+    });
+}
+
+function suavizarBloquesMarcaAguaWord(xml) {
+  return String(xml || "").replace(/<w:pict\b[^>]*>[\s\S]*?<\/w:pict>/gi, (bloque) => {
+    if (!bloque.includes("WordPictureWatermark")) return bloque;
+    return aplicarMarcaAguaSuave(bloque);
+  });
+}
+
+function aplicarMarcaAguaSuave(bloque) {
+  return bloque
+    .replace(/<v:shape\b([^>]*)>/gi, (_match, atributos) => (
+      `<v:shape${asegurarAtributoEstiloVml(atributos, [
+        ["opacity", "0.08"],
+        ["mso-opacity", "8%"],
+      ])}>`
+    ))
+    .replace(/<v:imagedata\b([^>]*?)\/>/gi, (_match, atributos) => {
+      let nuevos = atributos;
+      if (!/\sgrayscale=/i.test(nuevos)) nuevos += ' grayscale="t"';
+      if (!/\sgain=/i.test(nuevos)) nuevos += ' gain="0.35"';
+      if (!/\sblacklevel=/i.test(nuevos)) nuevos += ' blacklevel="0.30"';
+      return `<v:imagedata${nuevos}/>`;
+    });
+}
+
+function asegurarAtributoEstiloVml(atributos, reglas) {
+  const matchStyle = atributos.match(/\sstyle="([^"]*)"/i);
+  if (!matchStyle) {
+    const estilo = reglas.map(([propiedad, valor]) => `${propiedad}:${valor}`).join(";");
+    return `${atributos} style="${estilo}"`;
+  }
+
+  const estiloNuevo = reglas.reduce((actual, [propiedad, valor]) => {
+    const patron = new RegExp(`(^|;)\\s*${escaparRegExp(propiedad)}\\s*:[^;]*`, "i");
+    if (patron.test(actual)) return actual.replace(patron, `$1${propiedad}:${valor}`);
+    return `${actual.replace(/;?\s*$/, "")};${propiedad}:${valor}`;
+  }, matchStyle[1]);
+
+  return atributos.replace(matchStyle[0], ` style="${estiloNuevo}"`);
+}
+
 async function generarComunicadoWordBlobLegacy({ datos, inscripcion, omitirMarcaAguaVista = false }) {
   const zip = await JSZip.loadAsync(base64ToArrayBuffer(inscripcion.plantillaBase64));
   const archivosXml = Object.values(zip.files).filter((file) =>
@@ -219,13 +274,172 @@ async function generarComunicadoWordBlobLegacy({ datos, inscripcion, omitirMarca
   await Promise.all(archivosXml.map(async (file) => {
     const xml = await file.async("text");
     const reemplazado = reemplazarVariablesXml(xml, datos);
-    zip.file(file.name, omitirMarcaAguaVista ? quitarBloquesMarcaAguaWord(reemplazado) : reemplazado);
+    zip.file(file.name, omitirMarcaAguaVista ? quitarBloquesMarcaAguaWord(reemplazado) : suavizarBloquesMarcaAguaWord(reemplazado));
   }));
 
-  return await zip.generateAsync({
+  const blob = await zip.generateAsync({
     type: "blob",
     mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   });
+  return omitirMarcaAguaVista ? blob : await suavizarImagenesMarcaAguaDocx(blob);
+}
+
+async function suavizarImagenesMarcaAguaDocx(blob) {
+  try {
+    const zip = await JSZip.loadAsync(blob);
+    const objetivos = obtenerObjetivosImagenMarcaAgua(zip);
+    if (!objetivos.length) return blob;
+
+    await Promise.all(objetivos.map(async (objetivo) => {
+      const file = zip.file(objetivo.mediaPath);
+      if (!file) return;
+      const imagenOriginal = await file.async("blob");
+      const imagenSuave = await convertirImagenMarcaAgua(imagenOriginal);
+      if (!imagenSuave) return;
+
+      zip.file(objetivo.pngPath, imagenSuave);
+      if (objetivo.relsPath && objetivo.targetOriginal !== objetivo.targetNuevo) {
+        const relsFile = zip.file(objetivo.relsPath);
+        if (relsFile) {
+          const relsXml = await relsFile.async("text");
+          zip.file(objetivo.relsPath, actualizarTargetRelacion(relsXml, objetivo.relId, objetivo.targetNuevo));
+        }
+      }
+    }));
+
+    asegurarContentTypePng(zip);
+    return await zip.generateAsync({
+      type: "blob",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
+  } catch {
+    return blob;
+  }
+}
+
+function obtenerObjetivosImagenMarcaAgua(zip) {
+  const objetivos = [];
+  const vistos = new Set();
+  Object.keys(zip.files)
+    .filter((name) => /^word\/(document|header|footer)\d*\.xml$/i.test(name))
+    .forEach((xmlPath) => {
+      const file = zip.file(xmlPath);
+      if (!file) return;
+      const xml = file.asText();
+      const bloques = xml.match(/<w:pict\b[^>]*>[\s\S]*?<\/w:pict>/gi) || [];
+      const ids = new Set();
+      bloques
+        .filter((bloque) => bloque.includes("WordPictureWatermark"))
+        .forEach((bloque) => {
+          Array.from(bloque.matchAll(/(?:r:id|o:relid)="([^"]+)"/gi))
+            .forEach((match) => ids.add(match[1]));
+        });
+      if (!ids.size) return;
+
+      const relsPath = obtenerRutaRelaciones(xmlPath);
+      const relsFile = zip.file(relsPath);
+      if (!relsFile) return;
+      const relsXml = relsFile.asText();
+      ids.forEach((relId) => {
+        const targetOriginal = obtenerTargetRelacion(relsXml, relId);
+        if (!targetOriginal || /^https?:|^file:/i.test(targetOriginal)) return;
+        const mediaPath = normalizarRutaZip(`${obtenerDirectorio(xmlPath)}/${targetOriginal}`);
+        if (!/^word\/media\//i.test(mediaPath) || !zip.file(mediaPath)) return;
+        const pngPath = mediaPath.replace(/\.[^.\/]+$/i, "-watermark.png");
+        const targetNuevo = calcularTargetRelativo(obtenerDirectorio(xmlPath), pngPath);
+        const clave = `${relsPath}:${relId}:${mediaPath}`;
+        if (vistos.has(clave)) return;
+        vistos.add(clave);
+        objetivos.push({ relsPath, relId, mediaPath, pngPath, targetOriginal, targetNuevo });
+      });
+    });
+  return objetivos;
+}
+
+function obtenerRutaRelaciones(xmlPath) {
+  const directorio = obtenerDirectorio(xmlPath);
+  const archivo = xmlPath.split("/").pop();
+  return `${directorio}/_rels/${archivo}.rels`;
+}
+
+function obtenerTargetRelacion(relsXml, relId) {
+  const patron = new RegExp(`<Relationship\\b[^>]*\\bId="${escaparRegExp(relId)}"[^>]*>`, "i");
+  const match = String(relsXml || "").match(patron);
+  return match?.[0]?.match(/\bTarget="([^"]+)"/i)?.[1] || "";
+}
+
+function actualizarTargetRelacion(relsXml, relId, targetNuevo) {
+  const patron = new RegExp(`(<Relationship\\b[^>]*\\bId="${escaparRegExp(relId)}"[^>]*\\bTarget=")([^"]+)(")`, "i");
+  return String(relsXml || "").replace(patron, `$1${targetNuevo}$3`);
+}
+
+function obtenerDirectorio(ruta) {
+  return String(ruta || "").split("/").slice(0, -1).join("/") || ".";
+}
+
+function normalizarRutaZip(ruta) {
+  const partes = [];
+  String(ruta || "").split("/").forEach((parte) => {
+    if (!parte || parte === ".") return;
+    if (parte === "..") partes.pop();
+    else partes.push(parte);
+  });
+  return partes.join("/");
+}
+
+function calcularTargetRelativo(directorioBase, destino) {
+  const base = normalizarRutaZip(directorioBase);
+  const ruta = normalizarRutaZip(destino);
+  if (ruta.startsWith(`${base}/`)) return ruta.slice(base.length + 1);
+  return ruta;
+}
+
+async function convertirImagenMarcaAgua(blob) {
+  if (typeof Image === "undefined" || typeof document === "undefined") return null;
+  const url = URL.createObjectURL(blob);
+  try {
+    const imagen = await cargarImagen(url);
+    const canvas = document.createElement("canvas");
+    canvas.width = imagen.naturalWidth || imagen.width;
+    canvas.height = imagen.naturalHeight || imagen.height;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx || !canvas.width || !canvas.height) return null;
+
+    ctx.drawImage(imagen, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const gris = Math.round((data[i] * 0.299) + (data[i + 1] * 0.587) + (data[i + 2] * 0.114));
+      data[i] = gris;
+      data[i + 1] = gris;
+      data[i + 2] = gris;
+      data[i + 3] = Math.round(data[i + 3] * 0.08);
+    }
+    ctx.putImageData(imageData, 0, 0);
+    return await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function cargarImagen(url) {
+  return new Promise((resolve, reject) => {
+    const imagen = new Image();
+    imagen.onload = () => resolve(imagen);
+    imagen.onerror = reject;
+    imagen.src = url;
+  });
+}
+
+function asegurarContentTypePng(zip) {
+  const file = zip.file("[Content_Types].xml");
+  if (!file) return;
+  const xml = file.asText();
+  if (/<Default\b[^>]*Extension="png"/i.test(xml)) return;
+  zip.file("[Content_Types].xml", xml.replace(
+    "</Types>",
+    '<Default Extension="png" ContentType="image/png"/></Types>'
+  ));
 }
 
 function normalizarDelimitadoresPlantilla(zip, datos) {

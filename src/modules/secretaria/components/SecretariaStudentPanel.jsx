@@ -10,13 +10,16 @@ import { resumirClaseSecretaria } from "./SecretariaFields";
 
 function SecretariaStudentPanel({
   abrirFichaGenerada,
+  abrirCursoAdicional,
   abrirRegistro,
+  cursosAdicionalesDisponibles = 0,
   derivarACaja,
   derivandoCaja,
   esCicloVerano,
   estudiante,
   imprimiendoFichaRegistro,
   inscripcion,
+  invitacionSinHorario,
   limpiarBusquedaEstudiante,
   nombreProgramaAMostrar,
   programas,
@@ -71,9 +74,9 @@ function SecretariaStudentPanel({
           <div className="secretaria-data-status secretaria-data-process">
             <dt>Invitacion</dt>
             <dd>
-              <span className={`secretaria-pill ${tieneInvitacionOperativa ? "secretaria-pill-success" : "secretaria-pill-warning"}`}>
+              <span className={`secretaria-pill ${tieneInvitacionOperativa && !invitacionSinHorario ? "secretaria-pill-success" : "secretaria-pill-warning"}`}>
                 <CheckCircle2 size={13} />
-                {tieneInvitacionOperativa ? "Registrada" : "Sin invitación"}
+                {invitacionSinHorario ? "Falta horario" : tieneInvitacionOperativa ? "Registrada" : "Sin invitación"}
               </span>
             </dd>
           </div>
@@ -126,14 +129,18 @@ function SecretariaStudentPanel({
 
       <div className="secretaria-info-box">
         <CheckCircle2 size={19} />
-        {inscripcion && programas.length > 0 ? (
+        {inscripcion?.derivadoCaja ? (
           <p>
-            El estudiante ya tiene una inscripción. Secretaría puede registrar
-            un curso adicional de invitación masiva si aplica a su grado y no cruza con su horario.
+            Derivado exitosamente a Caja: {inscripcion.programa || "taller seleccionado"}. Ya puede validarse el pago en el modulo de Caja.
+          </p>
+        ) : inscripcion && programas.length > 0 ? (
+          <p>
+            Taller actual para Caja: {inscripcion.programa || "No definido"}. Secretaría puede registrar
+            un curso adicional si corresponde, cuidando no derivar otro taller por error.
           </p>
         ) : inscripcion ? (
           <p>
-            Inscripcion registrada. Derivar a Caja para validar el pago.
+            Inscripcion registrada para {inscripcion.programa || "este taller"}. Derivar a Caja para validar el pago.
           </p>
         ) : esCicloVerano && programas.length > 0 ? (
           <p>
@@ -142,6 +149,10 @@ function SecretariaStudentPanel({
         ) : esCicloVerano ? (
           <p>
             Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
+          </p>
+        ) : invitacionSinHorario ? (
+          <p>
+            El estudiante si esta cargado por Coordinacion, pero falta configurar un horario para su grado antes de inscribirlo.
           </p>
         ) : tieneInvitacionOperativa ? (
           <p>
@@ -161,14 +172,15 @@ function SecretariaStudentPanel({
         )}
       </div>
 
-      {!inscripcion || programas.length > 0 ? (
+      {!inscripcion ? (
         <button
           className="secretaria-register-button"
           type="button"
           onClick={abrirRegistro}
+          disabled={invitacionSinHorario && !inscripcion}
         >
           <ClipboardCheck size={17} />
-          <span>{inscripcion ? "Registrar curso adicional" : "Registrar inscripcion"}</span>
+          <span>{invitacionSinHorario ? "Falta horario en Coordinacion" : "Registrar inscripcion"}</span>
         </button>
       ) : (
         <div className="secretaria-final-actions">
@@ -190,12 +202,22 @@ function SecretariaStudentPanel({
             {derivandoCaja ? <Loader2 className="secretaria-spin" size={17} /> : <Send size={17} />}
             <span>
               {inscripcion.derivadoCaja
-                ? "Derivado a Caja"
+                ? "Derivado exitosamente"
                 : derivandoCaja
                   ? "Derivando"
-                  : "Derivar a Caja"}
+                : `Derivar: ${inscripcion.programa || "Caja"}`}
             </span>
           </button>
+          {cursosAdicionalesDisponibles > 0 ? (
+            <button
+              className="secretaria-secondary-button"
+              type="button"
+              onClick={abrirCursoAdicional}
+            >
+              <ClipboardCheck size={17} />
+              <span>Registrar curso adicional</span>
+            </button>
+          ) : null}
         </div>
       )}
     </section>

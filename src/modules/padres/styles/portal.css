@@ -144,43 +144,111 @@
   box-shadow: 0 18px 42px #f4eadb;
 }
 
-.padres-program-announcement {
+.padres-announcement-backdrop {
   position: fixed;
-  z-index: 90;
-  top: 86px;
-  left: 50%;
-  width: min(920px, calc(100vw - 32px));
-  max-height: calc(100vh - 118px);
-  margin: 0;
-  overflow: visible;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  transform: translateX(-50%);
-}
-
-.padres-program-announcement img {
-  display: block;
-  width: 100%;
-  max-height: calc(100vh - 118px);
-  object-fit: contain;
-  background: transparent;
-}
-
-.padres-program-announcement button {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 38px;
-  height: 38px;
+  inset: 0;
+  z-index: 120;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(15, 23, 42, 0.14);
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.padres-announcement-modal {
+  width: min(450px, calc(100vw - 28px));
+  max-height: min(92vh, 720px);
+  overflow: hidden;
+  border-radius: 8px;
+  background: #20345f;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.38);
+}
+
+.padres-announcement-head {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px 0 14px;
+  color: #ffffff;
+  background: #20345f;
+}
+
+.padres-announcement-head strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.padres-announcement-head button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
   border-radius: 999px;
-  color: #172331;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14);
+  color: #ffffff;
+  background: transparent;
+  cursor: pointer;
+}
+
+.padres-announcement-head button:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.padres-announcement-body {
+  position: relative;
+  background: #243ea5;
+}
+
+.padres-announcement-body img {
+  display: block;
+  width: 100%;
+  max-height: calc(min(92vh, 720px) - 42px);
+  object-fit: contain;
+  background: #243ea5;
+}
+
+.padres-announcement-arrow {
+  position: absolute;
+  top: 50%;
+  width: 42px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  color: #27a3ff;
+  background: transparent;
+  cursor: default;
+  transform: translateY(-50%);
+}
+
+.padres-announcement-arrow.is-left {
+  left: 4px;
+}
+
+.padres-announcement-arrow.is-right {
+  right: 4px;
+}
+
+.padres-announcement-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.padres-announcement-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.23);
+}
+
+.padres-announcement-dots span.is-active {
+  background: #2db4ff;
 }
 
 .padres-flow-course-announcement {
@@ -786,14 +854,17 @@
     grid-template-columns: 1fr;
   }
 
-  .padres-program-announcement {
-    top: 12px;
-    width: calc(100vw - 20px);
-    max-height: calc(100vh - 24px);
+  .padres-announcement-backdrop {
+    padding: 10px;
   }
 
-  .padres-program-announcement img {
-    max-height: calc(100vh - 24px);
+  .padres-announcement-modal {
+    width: min(450px, calc(100vw - 20px));
+    max-height: calc(100vh - 20px);
+  }
+
+  .padres-announcement-body img {
+    max-height: calc(100vh - 62px);
   }
 
   .padres-program-note {

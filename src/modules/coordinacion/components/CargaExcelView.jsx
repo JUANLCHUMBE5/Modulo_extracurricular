@@ -31,7 +31,7 @@ function CargaExcelView({
     <>
       <header className="coord-topbar"><h1>CARGA MASIVA DE ALUMNOS DESDE EXCEL</h1></header>
       <section className="coord-workspace coord-workspace-single coord-workspace-upload">
-        <article className="coord-card coord-search-card">
+        <article className="coord-card coord-search-card coord-upload-card">
           <div className="coord-card-title">
             <span className="coord-title-icon"><Upload size={21} /></span>
             <div>
@@ -64,6 +64,14 @@ function CargaExcelView({
                   <small>{archivosExcel.length} archivo(s) seleccionado(s)</small>
                 ) : null}
               </div>
+            </div>
+            <div className="coord-upload-format-row" aria-label="Columnas aceptadas">
+              <span>ID</span>
+              <span>CÃ³d. Estudiante</span>
+              <span>Nombres</span>
+              <span>Grado</span>
+              <span>SecciÃ³n</span>
+              <span>Curso/Taller</span>
             </div>
             <div className="coord-upload-actions">
               <button className="coord-primary-button" type="button" onClick={generarPreviewExcel} disabled={!archivosExcel.length || cargandoPreview}>

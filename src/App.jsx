@@ -20,13 +20,15 @@ const Direccion = React.lazy(() => import("./modules/direccion/Direccion"));
 
 const moduleLabels = {
   administrador: "Administrador",
-  coordinacion: "Coordinacion",
-  secretaria: "Secretaria",
+  coordinacion: "Coordinación",
+  secretaria: "Secretaría",
   caja: "Caja",
   auxiliar: "Auxiliar",
   padres: "Padres",
-  direccion: "Direccion",
+  direccion: "Dirección",
 };
+
+const APP_TITLE = "Módulo Extracurricular";
 
 const moduleAccessRules = {
   direccion: [
@@ -262,6 +264,12 @@ function App() {
       setDelegatedModule(null);
     }
   }, [activeModule, availableModules, delegatedModule, user]);
+
+  useEffect(() => {
+    const visibleModule = delegatedModule?.module || activeModule || user?.role;
+    const moduleLabel = moduleLabels[visibleModule];
+    document.title = moduleLabel ? `${moduleLabel} - ${APP_TITLE}` : APP_TITLE;
+  }, [activeModule, delegatedModule, user?.role]);
 
   useEffect(() => {
     if (!user?.username || user.role === "padres") return;

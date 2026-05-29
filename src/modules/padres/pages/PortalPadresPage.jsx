@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   IconAlertCircle as AlertCircle,
+  IconChevronLeft as ChevronLeft,
+  IconChevronRight as ChevronRight,
   IconCircleCheck as CheckCircle2,
   IconCreditCard as CreditCard,
   IconEye as Eye,
@@ -178,6 +180,11 @@ export default function Padres({ user, onLogout }) {
       guardarPasoPago(user?.dni, null);
     }
     setPasoActivo(paso);
+  }
+
+  function volverDesdeStepper(paso) {
+    if (paso >= pasoActivo) return;
+    cambiarPaso(paso);
   }
 
   async function guardarDatosYEntrarAPago(event) {
@@ -363,16 +370,11 @@ export default function Padres({ user, onLogout }) {
               bannerEstudiante={bannerEstudiante}
             />
 
-            {anuncioPadres && !anuncioCerrado ? (
-              <section className="padres-program-announcement" aria-label={`Anuncio de ${anuncioPadres.programa}`}>
-                <img src={anuncioPadres.imagen} alt={anuncioPadres.nombre} />
-                <button type="button" onClick={() => setAnuncioCerrado(true)} aria-label="Cerrar anuncio">
-                  <X size={18} />
-                </button>
-              </section>
-            ) : null}
-
-            <StepperProceso pasoActivo={pasoActivo} pasoMaximo={pasoMaximo} />
+            <StepperProceso
+              onSelect={volverDesdeStepper}
+              pasoActivo={pasoActivo}
+              pasoMaximo={pasoMaximo}
+            />
 
             <section className="padres-flow-content" aria-live="polite">
               {renderPaso()}
@@ -380,6 +382,35 @@ export default function Padres({ user, onLogout }) {
           </section>
         )}
       </main>
+
+      {anuncioPadres && !anuncioCerrado ? (
+        <div className="padres-announcement-backdrop" role="presentation">
+          <section className="padres-announcement-modal" role="dialog" aria-modal="true" aria-label={`Anuncio de ${anuncioPadres.programa}`}>
+            <header className="padres-announcement-head">
+              <strong>Noticias San Rafael</strong>
+              <button type="button" onClick={() => setAnuncioCerrado(true)} aria-label="Cerrar anuncio">
+                <X size={18} />
+              </button>
+            </header>
+            <div className="padres-announcement-body">
+              <img src={anuncioPadres.imagen} alt={anuncioPadres.nombre} />
+              <button className="padres-announcement-arrow is-left" type="button" aria-label="Anuncio anterior">
+                <ChevronLeft size={28} />
+              </button>
+              <button className="padres-announcement-arrow is-right" type="button" aria-label="Anuncio siguiente">
+                <ChevronRight size={28} />
+              </button>
+              <div className="padres-announcement-dots" aria-hidden="true">
+                <span />
+                <span />
+                <span className="is-active" />
+                <span />
+                <span />
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {infoProgramaAbierta && programa ? (
         <div className="padres-modal-backdrop" role="presentation">
