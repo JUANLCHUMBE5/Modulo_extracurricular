@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   IconAlertCircle as AlertCircle,
   IconBook as BookOpen,
@@ -8,6 +8,8 @@ import {
   IconLoader2 as Loader2,
   IconSchool as School,
   IconUserCircle as UserRound,
+  IconX as X,
+  IconSearch as Search,
 } from "@tabler/icons-react";
 import { formatearSoles } from "../hooks/usePadres";
 import { dividirHorarioPadres, formatearRangoFechasPadres } from "../utils/padresTextUtils";
@@ -30,7 +32,7 @@ function InfoTile({ icon: Icon, label, value, children }) {
   );
 }
 
-function ProgramaPrincipal({ programa, inscripcion, setPasoActivo }) {
+function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirProgramaPrincipal }) {
   if (!programa) {
     return (
       <article className="padres-flow-panel padres-flow-empty-program">
@@ -77,7 +79,7 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo }) {
       </div>
 
       <div className="padres-flow-program-note">
-        <button className="padres-flow-primary-button" type="button" onClick={() => setPasoActivo(1)}>
+        <button className="padres-flow-primary-button" type="button" onClick={onInscribirProgramaPrincipal}>
           Inscribir
         </button>
       </div>
@@ -87,8 +89,39 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo }) {
 }
 
 function HorarioCompactoPadres({ horario }) {
-  const completo = dividirHorarioPadres(horario);
   const texto = String(horario || "").trim();
+  if (!texto) {
+    return (
+      <div className="padres-flow-course-schedule">
+        <div className="padres-schedule-empty">
+          <CalendarDays size={14} />
+          <span>Horario por confirmar</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Split by slash to handle multi-day or multi-session schedules
+  const sessions = texto.split("/").map(s => s.trim()).filter(Boolean);
+
+  // If sessions contain colons, it is likely a complex multi-activity schedule
+  const isComplex = sessions.some(s => s.includes(":"));
+
+  if (isComplex) {
+    return (
+      <div className="padres-flow-course-schedule is-simplified" style={{ padding: "10px 12px" }}>
+        <div className="padres-schedule-item" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <CalendarDays size={15} style={{ color: "#0ea5e9" }} />
+          <span style={{ fontWeight: 800, color: "#1e293b", fontSize: "13.5px" }}>Fútbol, Vóley y Básquet</span>
+        </div>
+        <div className="padres-schedule-item-subtitle" style={{ fontSize: "11px", color: "#64748b", fontWeight: 700, paddingLeft: "23px", marginTop: "1px" }}>
+          Para todas las edades (se elige al inscribir)
+        </div>
+      </div>
+    );
+  }
+
+  const completo = dividirHorarioPadres(horario);
   const simple = !completo ? texto.match(/^(.+?)\s+clase\s+(.+?)(?:\s+almuerzo\s+(.+))?$/i) : null;
 
   const dia = completo?.dia || simple?.[1]?.trim();
@@ -97,18 +130,113 @@ function HorarioCompactoPadres({ horario }) {
 
   if (!dia && !clase) {
     return (
-      <div className="padres-flow-course-lines">
-        <span><CalendarDays size={14} />{texto || "Horario por confirmar"}</span>
+      <div className="padres-flow-course-schedule is-simple">
+        <div className="padres-schedule-item">
+          <CalendarDays size={14} />
+          <span>{texto}</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="padres-flow-course-lines">
-      <span><CalendarDays size={14} />{[dia, clase].filter(Boolean).join(" ")}</span>
-      {almuerzo ? <span><CalendarDays size={14} />Almuerzo {almuerzo}</span> : null}
+    <div className="padres-flow-course-schedule is-simple">
+      <div className="padres-schedule-item">
+        <CalendarDays size={14} />
+        <span>{[dia, clase].filter(Boolean).join(" ")}</span>
+      </div>
+      {almuerzo ? (
+        <div className="padres-schedule-item">
+          <CalendarDays size={14} />
+          <span>Almuerzo: {almuerzo}</span>
+        </div>
+      ) : null}
     </div>
   );
+}
+
+function obtenerOpcionesDeGrupo(programa) {
+  if (!programa) return [];
+
+  const categoria = String(programa.categoria || "").toLowerCase();
+  const tieneTalleres = Array.isArray(programa.talleresDeportivos) && programa.talleresDeportivos.length > 0;
+
+  if (categoria !== "deportivo" && !tieneTalleres) {
+    return [];
+  }
+
+  // 1. Si tiene talleresDeportivos (arreglo estructurado)
+  if (tieneTalleres) {
+    const mapGrupos = new Map(); // key: "Vóley (6-9 a.)" -> list of { day, time }
+    programa.talleresDeportivos.forEach((taller) => {
+      const key = `${taller.deporte} (${taller.edadMinima}-${taller.edadMaxima} a.)`;
+      const time = `${taller.horaInicio}-${taller.horaFin}`;
+      if (!mapGrupos.has(key)) {
+        mapGrupos.set(key, []);
+      }
+      mapGrupos.get(key).push({ day: taller.dia, time });
+    });
+    return Array.from(mapGrupos.entries()).map(([nombre, list]) => {
+      const horariosDetallados = list.map(h => `${h.day} ${h.time}`);
+      const horarioCompleto = list.map(h => `${h.day}: ${nombre}: ${h.time}`).join(" / ");
+      return {
+        id: nombre,
+        label: nombre,
+        horariosDetallados,
+        horarioCompleto,
+      };
+    });
+  }
+
+  // 2. Fallback a parsear el texto de horario
+  const texto = String(programa.horario || "").trim();
+  if (!texto) return [];
+
+  const sessions = texto.split("/").map(s => s.trim()).filter(Boolean);
+  const isComplex = sessions.some(s => s.includes(":"));
+  if (!isComplex) return [];
+
+  const mapGrupos = new Map(); // key: "Vóley (6-9 a.)" -> list of { day, time }
+
+  sessions.forEach((session) => {
+    const colonIdx = session.indexOf(":");
+    let day = "";
+    let content = session;
+    if (colonIdx > -1) {
+      const left = session.substring(0, colonIdx).trim();
+      if (!/\d/.test(left)) {
+        day = left;
+        content = session.substring(colonIdx + 1).trim();
+      }
+    }
+
+    const activities = content.split(",").map(a => a.trim()).filter(Boolean);
+    activities.forEach((act) => {
+      const actColonIdx = act.indexOf(":");
+      if (actColonIdx > -1) {
+        const name = act.substring(0, actColonIdx).trim();
+        const time = act.substring(actColonIdx + 1).trim();
+
+        const key = name; // e.g. "Vóley (6-9 a.)"
+        
+        if (!mapGrupos.has(key)) {
+          mapGrupos.set(key, []);
+        }
+        mapGrupos.get(key).push({ day, time });
+      }
+    });
+  });
+
+  return Array.from(mapGrupos.entries()).map(([nombre, list]) => {
+    const horariosDetallados = list.map(h => `${h.day} ${h.time}`);
+    const horarioCompleto = list.map(h => `${h.day}: ${nombre}: ${h.time}`).join(" / ");
+    return {
+      id: nombre,
+      label: nombre,
+      horariosDetallados,
+      horarioCompleto,
+    };
+  });
 }
 
 function CatalogoProgramas({
@@ -121,6 +249,8 @@ function CatalogoProgramas({
   programasDisponibles,
   setPasoActivo,
   solicitarInscripcionPadres,
+  setLightboxImagen,
+  onInscribirCursoAdicional,
 }) {
   const carruselRef = useRef(null);
   const carruselActivo = programasDisponibles.length > 3;
@@ -208,27 +338,34 @@ function CatalogoProgramas({
             const sinCupos = Number(prog.cuposDisponibles || 0) <= 0;
             return (
               <article className="padres-flow-course-card" key={prog.id}>
-                {prog.anuncioImagen ? (
-                  <img
-                    className="padres-flow-course-announcement"
-                    src={prog.anuncioImagen}
-                    alt={prog.anuncioImagenNombre || `Anuncio de ${prog.nombre}`}
-                  />
-                ) : null}
+
                 <div className="padres-flow-course-head">
+                  <div className="padres-flow-course-badge-row">
+                    <span className="padres-flow-course-category">{prog.categoria || "Curso"}</span>
+                  </div>
                   <div className="padres-flow-course-name">
-                    <BookOpen size={18} />
+                    <BookOpen size={16} />
                     <h3>{prog.nombre}</h3>
                   </div>
-                  <span className="padres-flow-course-category">{prog.categoria || "Curso"}</span>
                 </div>
 
                 <HorarioCompactoPadres horario={prog.horario} />
 
-                <div className="padres-flow-course-summary">
-                  <span>Cupos: {prog.cuposDisponibles}/{prog.cupos}</span>
-                  <span>Aviso: {prog.ventanaInscripcion?.fechaLimite || `${prog.duracionAvisoDias || 7} días`}</span>
-                  <strong>{formatearSoles(prog.costo)}</strong>
+                <div className="padres-flow-course-details-grid">
+                  <div className="padres-course-detail-item">
+                    <span className="detail-label">Cupos</span>
+                    <strong className="detail-value">{prog.cuposDisponibles} / {prog.cupos}</strong>
+                  </div>
+                  <div className="padres-course-detail-item">
+                    <span className="detail-label">Límite Aviso</span>
+                    <strong className="detail-value">
+                      {prog.ventanaInscripcion?.fechaLimite || `${prog.duracionAvisoDias || 7} días`}
+                    </strong>
+                  </div>
+                  <div className="padres-course-detail-item is-price">
+                    <span className="detail-label">Inversión</span>
+                    <strong className="detail-value">{formatearSoles(prog.costo)}</strong>
+                  </div>
                 </div>
 
                 <button
@@ -237,11 +374,7 @@ function CatalogoProgramas({
                   disabled={registrando || prog.registrado || sinCupos}
                   onClick={() => {
                     if (prog.registrado || sinCupos) return;
-                    if (!datosConfirmados) {
-                      setPasoActivo(2);
-                      return;
-                    }
-                    solicitarInscripcionPadres(prog.id);
+                    onInscribirCursoAdicional(prog);
                   }}
                 >
                   {registrando ? <Loader2 className="padres-spin" size={16} /> : null}
@@ -267,13 +400,18 @@ export default function InicioStep({
   programasDisponibles,
   setPasoActivo,
   solicitarInscripcionPadres,
+  onInscribirCursoAdicional,
+  onInscribirProgramaPrincipal,
 }) {
+  const [lightboxImagen, setLightboxImagen] = useState(null);
+
   return (
     <>
       <ProgramaPrincipal
         programa={programa}
         inscripcion={inscripcion}
         setPasoActivo={setPasoActivo}
+        onInscribirProgramaPrincipal={onInscribirProgramaPrincipal}
       />
 
       <CatalogoProgramas
@@ -286,7 +424,24 @@ export default function InicioStep({
         programasDisponibles={programasDisponibles}
         setPasoActivo={setPasoActivo}
         solicitarInscripcionPadres={solicitarInscripcionPadres}
+        setLightboxImagen={setLightboxImagen}
+        onInscribirCursoAdicional={onInscribirCursoAdicional}
       />
+
+      {lightboxImagen ? (
+        <div className="padres-lightbox-overlay" onClick={() => setLightboxImagen(null)} role="presentation">
+          <div className="padres-lightbox-container" onClick={(e) => e.stopPropagation()}>
+            <button className="padres-lightbox-close" type="button" onClick={() => setLightboxImagen(null)} aria-label="Cerrar afiche">
+              <X size={20} />
+            </button>
+            <div className="padres-lightbox-body">
+              <img src={lightboxImagen.src} alt={lightboxImagen.alt} className="padres-lightbox-img" />
+            </div>
+            {lightboxImagen.title ? <div className="padres-lightbox-caption">{lightboxImagen.title}</div> : null}
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
+

@@ -177,7 +177,7 @@ function usePadres(user) {
     }
   }
 
-  async function solicitarInscripcionPadres(programaId = "") {
+  async function solicitarInscripcionPadres(programaId = "", horarioPersonalizado = "", tallas = {}) {
     if (!form.apoderado.trim()) {
       avisar("Ingrese el nombre del padre o apoderado.");
       return false;
@@ -199,7 +199,7 @@ function usePadres(user) {
     setGuardando(true);
     if (programaId) setProgramaSeleccionadoId(programaId);
     try {
-      await registrarInscripcionPadres(user.dni, form, programaId);
+      await registrarInscripcionPadres(user.dni, form, programaId, horarioPersonalizado, tallas);
       toast.success("Padres", {
         description: "Inscripcion registrada como pendiente de pago. Acerquese a Caja para validar el pago.",
       });

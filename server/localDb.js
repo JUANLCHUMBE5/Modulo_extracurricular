@@ -76,7 +76,7 @@ function mergeWithDefaults(stored, defaults) {
     ...defaults,
     ...stored,
     categorias: stored.categorias || defaults.categorias,
-    estudiantes: { ...defaults.estudiantes, ...(stored.estudiantes || {}) },
+    estudiantes: stored.estudiantes || defaults.estudiantes,
     programas: stored.programas || defaults.programas,
     invitadosPorPrograma: {
       ...defaults.invitadosPorPrograma,

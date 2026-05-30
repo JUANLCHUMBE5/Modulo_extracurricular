@@ -24,6 +24,7 @@ export default async function handler(req, res) {
       archivo: form.files.archivo,
       programas: parseJsonArray(form.fields.programas),
       existentes: parseJsonObject(form.fields.existentes),
+      estudiantes: parseJsonObject(form.fields.estudiantes),
     });
 
     res.status(200).json(preview);

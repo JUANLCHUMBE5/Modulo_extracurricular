@@ -9,6 +9,7 @@ import multer from "multer";
 import os from "os";
 import path from "path";
 import { promisify } from "util";
+import { generarPreviewCargaExcel } from "./excelPreviewService.js";
 import { getDb, getDbSource, resetDb, saveDb } from "./localDb.js";
 
 const app = express();
@@ -215,30 +216,16 @@ app.post("/api/coordinacion/cargas/preview", upload.single("archivo"), async (re
     const archivo = req.file;
     const programas = parseJsonArray(req.body.programas);
     const existentes = parseJsonObject(req.body.existentes);
+    const estudiantes = parseJsonObject(req.body.estudiantes);
 
-    validarArchivoExcel(archivo);
-
-    const programasPeriodo = programas.filter((programa) =>
-      normalizarPeriodo(programa.periodo) === periodo
-    );
-
-    const filas = await leerExcelSeguro(archivo);
-    const registros = validarRegistros({ filas, programasPeriodo, existentes });
-
-    const resumen = {
-      total: registros.length,
-      validos: registros.filter((item) => item.estado === "Valido").length,
-      errores: registros.filter((item) => item.estado === "Error").length,
-      duplicados: registros.filter((item) => item.estado === "Duplicado").length,
-    };
-
-    res.json({
-      id: `PREVIEW-${Date.now()}`,
+    const preview = await generarPreviewCargaExcel({
       periodo,
-      archivoNombre: renombrarArchivo(archivo.originalname),
-      registros,
-      resumen,
+      archivo,
+      programas,
+      existentes,
+      estudiantes,
     });
+    res.json(preview);
   } catch (error) {
     res.status(400).json({
       message: error.publicMessage || "No se pudo validar el archivo Excel.",

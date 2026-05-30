@@ -67,7 +67,7 @@ export async function guardarDatosApoderadoPadres(dni, datos) {
   return estudiante;
 }
 
-export async function registrarInscripcionPadres(dni, datos, programaId = "") {
+export async function registrarInscripcionPadres(dni, datos, programaId = "", horarioPersonalizado = "", tallas = {}) {
   await delay(400);
   await syncApiDb();
 
@@ -106,7 +106,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
   );
   if (duplicada) throw new Error("El estudiante ya tiene una inscripción registrada en este programa.");
 
-  const horarioRegistro = invitacion?.horario || resolverHorarioPorGrado(programa, estudiante.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar";
+  const horarioRegistro = horarioPersonalizado || invitacion?.horario || resolverHorarioPorGrado(programa, estudiante.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar";
   if (!programa.invitacionMasiva) {
     validarCruceHorarioPadres(dniLimpio, programa.id, programa.periodo, horarioRegistro);
   }
@@ -135,6 +135,12 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "") {
     plantillaBase64: "",
     plantillaVariables: programa.plantillaVariables || [],
     requiereUniforme: Boolean(programa.requiereUniforme),
+    requiereIndumentaria: Boolean(programa.requiereIndumentaria) || String(programa.categoria || "").toLowerCase() === "deportivo",
+    tallaUniforme: tallas.tallaUniforme || "",
+    tallaPolo: tallas.tallaPolo || "",
+    tallaShort: tallas.tallaShort || "",
+    seleccion: invitacion?.seleccion || estudiante.seleccion || "",
+    nivelCambridge: invitacion?.nivelCambridge || estudiante.nivelCambridge || "",
     dniEstudiante: dniLimpio,
     codigoEstudiante: estudiante.codigoEstudiante || "",
     nombresEstudiante: estudiante.nombres,

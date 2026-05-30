@@ -9,6 +9,7 @@ const COLUMNAS_CARGA_EXCEL = new Set([
   "curso_programa",
   "dni",
   "grado",
+  "id",
   "nivel_cambridge",
   "nivel_educativo",
   "nombres",
@@ -18,7 +19,7 @@ const COLUMNAS_CARGA_EXCEL = new Set([
   "seleccion",
 ]);
 
-export async function generarPreviewCargaExcel({ periodo, archivo, programas, existentes }) {
+export async function generarPreviewCargaExcel({ periodo, archivo, programas, existentes, estudiantes }) {
   const periodoNormalizado = normalizarPeriodo(periodo);
   validarArchivoExcel(archivo);
 
@@ -27,7 +28,12 @@ export async function generarPreviewCargaExcel({ periodo, archivo, programas, ex
   );
 
   const filas = await leerExcelSeguro(archivo);
-  const registros = validarRegistros({ filas, programasPeriodo, existentes: existentes || {} });
+  const registros = validarRegistros({
+    filas,
+    programasPeriodo,
+    existentes: existentes || {},
+    estudiantes: estudiantes || {},
+  });
 
   return {
     id: `PREVIEW-${Date.now()}`,
@@ -118,7 +124,7 @@ function validarColumnasObligatorias(encabezados) {
       : formatoDocenteTalleres
         ? ["alumno", "nivel_educativo", "grado", "seccion", "curso_programa"]
       : formatoNombreCompleto
-        ? ["dni", "nombres", "grado", "seccion", "curso_programa"]
+        ? ["nombres", "grado", "seccion", "curso_programa"]
       : ["dni", "nombres", "apellidos", "grado", "seccion", "curso_programa"];
   const faltantes = obligatorias.filter((columna) => !disponibles.has(columna));
   if (faltantes.length) lanzar(`Faltan columnas obligatorias: ${faltantes.join(", ")}.`);
@@ -134,7 +140,8 @@ function esFormatoEstandar(disponibles) {
 }
 
 function esFormatoCargaGeneral(disponibles) {
-  return disponibles.has("dni") && disponibles.has("curso_programa");
+  return disponibles.has("curso_programa") &&
+    (disponibles.has("dni") || disponibles.has("id") || disponibles.has("alumno") || disponibles.has("nombres"));
 }
 
 function esFormatoDocenteTalleres(disponibles) {
@@ -146,8 +153,7 @@ function esFormatoDocenteTalleres(disponibles) {
 }
 
 function esFormatoNombreCompleto(disponibles) {
-  return disponibles.has("dni") &&
-    disponibles.has("nombres") &&
+  return disponibles.has("nombres") &&
     disponibles.has("grado") &&
     disponibles.has("seccion") &&
     disponibles.has("curso_programa") &&
@@ -161,11 +167,12 @@ function esFormatoCargaCambridge(disponibles) {
     disponibles.has("seleccion");
 }
 
-function validarRegistros({ filas, programasPeriodo, existentes }) {
+function validarRegistros({ filas, programasPeriodo, existentes, estudiantes }) {
   const clavesArchivo = new Set();
+  const indiceEstudiantes = crearIndiceEstudiantes(estudiantes);
 
   return filas.map((fila, index) => {
-    const normalizada = normalizarFila(fila);
+    const normalizada = resolverEstudianteBase(normalizarFila(fila), indiceEstudiantes);
     const programaDetectado = detectarProgramaPorCurso(normalizada.curso, programasPeriodo) ||
       (normalizada.nivelCambridge ? detectarProgramaCambridge(programasPeriodo) : null);
     const errores = validarFilaCarga(normalizada, programaDetectado);
@@ -201,6 +208,7 @@ function normalizarFila(fila) {
   const apellidos = limpiarTexto(fila.apellidos) || alumno.apellidos;
   return {
     codigoEstudiante: limpiarTexto(fila.codigo_estudiante),
+    idExcel: limpiarTexto(fila.id),
     dni: limpiarTexto(fila.dni),
     alumno: limpiarTexto(fila.alumno) || `${nombres} ${apellidos}`.trim(),
     nombres,
@@ -269,7 +277,67 @@ function coincideCurso(curso, programa) {
   if (!tokensA.length || !tokensB.length) return false;
 
   const coincidencias = tokensA.filter((token) => tokensB.includes(token)).length;
-  return coincidencias >= Math.min(2, tokensA.length, tokensB.length);
+  if (coincidencias >= Math.min(2, tokensA.length, tokensB.length)) return true;
+
+  return comparteTokenClave(tokensA, tokensB);
+}
+
+function crearIndiceEstudiantes(estudiantes = {}) {
+  const porDni = new Map();
+  const porCodigo = new Map();
+  const porNombre = new Map();
+
+  Object.values(estudiantes || {}).forEach((estudiante) => {
+    if (!estudiante) return;
+    const dni = limpiarTexto(estudiante.dni);
+    const codigo = normalizarComparacion(estudiante.codigoEstudiante);
+    const nombre = normalizarComparacion(estudiante.nombres);
+    if (dni) porDni.set(dni, estudiante);
+    if (codigo) porCodigo.set(codigo, estudiante);
+    if (nombre) {
+      const lista = porNombre.get(nombre) || [];
+      lista.push(estudiante);
+      porNombre.set(nombre, lista);
+    }
+  });
+
+  return { porDni, porCodigo, porNombre };
+}
+
+function resolverEstudianteBase(fila, indice) {
+  const porDni = indice.porDni.get(fila.dni);
+  const porCodigo = indice.porCodigo.get(normalizarComparacion(fila.codigoEstudiante));
+  const coincidenciasNombre = indice.porNombre.get(normalizarComparacion(fila.alumno)) || [];
+  const porNombre = coincidenciasNombre.length === 1 ? coincidenciasNombre[0] : null;
+  const estudiante = porDni || porCodigo || porNombre;
+
+  if (!estudiante) return fila;
+
+  return {
+    ...fila,
+    idOriginalExcel: fila.idExcel,
+    dniOriginalExcel: fila.dni,
+    codigoEstudianteOriginalExcel: fila.codigoEstudiante,
+    dni: estudiante.dni || fila.dni,
+    codigoEstudiante: estudiante.codigoEstudiante || fila.codigoEstudiante,
+    nombres: estudiante.nombres || fila.nombres,
+    apellidos: "",
+    alumno: estudiante.nombres || fila.alumno,
+    grado: estudiante.grado || fila.grado,
+    seccion: estudiante.seccion || fila.seccion,
+    nivelEducativo: estudiante.nivel || fila.nivelEducativo,
+  };
+}
+
+function comparteTokenClave(tokensA, tokensB) {
+  const claves = new Set([
+    "cambridge",
+    "danza",
+    "nivelacion",
+    "reforzamiento",
+    "tareas",
+  ]);
+  return tokensA.some((token) => claves.has(token) && tokensB.includes(token));
 }
 
 function claveAlumno(alumno) {
@@ -311,7 +379,6 @@ function normalizarEncabezado(valor) {
     cod_estudiante: "codigo_estudiante",
     curso: "curso_programa",
     curso_taller: "curso_programa",
-    id: "dni",
     nombre: "nombres",
     nombres_y_apellidos: "alumno",
     programa: "curso_programa",

@@ -251,14 +251,160 @@
   background: #2db4ff;
 }
 
-.padres-flow-course-announcement {
-  display: block;
+/* Container for the course announcement image */
+.padres-flow-course-image-wrapper {
+  position: relative;
   width: 100%;
-  max-height: 180px;
-  margin-bottom: 12px;
-  border-radius: 8px;
+  height: 170px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 10px;
+}
+
+.padres-flow-course-image-wrapper:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.padres-flow-course-image-wrapper .padres-flow-course-announcement {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: contain;
+  margin-bottom: 0;
+  border-radius: 0;
+  background: transparent;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.padres-flow-course-image-wrapper:hover .padres-flow-course-announcement {
+  transform: scale(1.04);
+}
+
+/* Hover overlay on course image */
+.padres-flow-course-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.padres-flow-course-image-wrapper:hover .padres-flow-course-image-overlay {
+  opacity: 1;
+}
+
+.padres-flow-course-image-overlay svg {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+.padres-flow-course-image-overlay span {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Lightbox Modal styles for viewing course posters */
+.padres-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  padding: 20px;
+  animation: padresFadeIn 0.2s ease-out;
+}
+
+.padres-lightbox-container {
+  position: relative;
+  width: min(520px, 100%);
   background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: padresScaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.padres-lightbox-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(15, 23, 42, 0.1);
+  color: #1e293b;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.padres-lightbox-close:hover {
+  background: rgba(15, 23, 42, 0.2);
+  color: #0f172a;
+  transform: rotate(90deg);
+}
+
+.padres-lightbox-body {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  overflow-y: auto;
+}
+
+.padres-lightbox-img {
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.padres-lightbox-caption {
+  padding: 14px 20px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+@keyframes padresFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes padresScaleUp {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 .padres-left-column {

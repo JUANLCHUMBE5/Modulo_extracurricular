@@ -303,6 +303,7 @@ export async function previsualizarCargaAlumnos({ periodo, archivoNombre, archiv
   formData.append("archivo", archivo);
   formData.append("programas", JSON.stringify(prepararProgramasParaPreview(apiDb.programas)));
   formData.append("existentes", JSON.stringify(apiDb.invitadosPorPrograma));
+  formData.append("estudiantes", JSON.stringify(apiDb.estudiantes || {}));
 
   const response = await fetch(`${obtenerApiBase()}/api/coordinacion/cargas/preview`, {
     method: "POST",

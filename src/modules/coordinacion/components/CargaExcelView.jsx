@@ -3,12 +3,19 @@ import {
   IconAlertCircle as AlertCircle,
   IconCircleCheck as CheckCircle2,
   IconEye as Eye,
+  IconFileSpreadsheet as FileSpreadsheet,
+  IconListCheck as ListCheck,
   IconLoader2 as Loader2,
-  IconUpload as Upload,
   IconX as X,
 } from "@tabler/icons-react";
 import SummaryBox from "./SummaryBox";
 import { textoEstadoCarga } from "../utils/coordinacionFormatters";
+
+function obtenerResumenArchivos(archivosExcel = []) {
+  if (!archivosExcel.length) return "Seleccione uno o varios archivos .xlsx o .xls";
+  if (archivosExcel.length === 1) return archivosExcel[0].name;
+  return `${archivosExcel.length} archivos seleccionados`;
+}
 
 function CargaExcelView({
   archivoInputKey,
@@ -32,14 +39,6 @@ function CargaExcelView({
       <header className="coord-topbar"><h1>CARGA MASIVA DE ALUMNOS DESDE EXCEL</h1></header>
       <section className="coord-workspace coord-workspace-single coord-workspace-upload">
         <article className="coord-card coord-search-card coord-upload-card">
-          <div className="coord-card-title">
-            <span className="coord-title-icon"><Upload size={21} /></span>
-            <div>
-              <h2>Importar alumnos invitados - Año escolar</h2>
-              <p>Suba el Excel con los alumnos invitados del periodo escolar. El sistema reconocerá automáticamente el programa mediante la columna curso_programa.</p>
-            </div>
-          </div>
-
           <div className="coord-form">
             <div className="coord-upload-grid">
               <div className="coord-field">
@@ -47,32 +46,33 @@ function CargaExcelView({
                 <div className="coord-readonly-field">Año escolar</div>
               </div>
               <div className="coord-field coord-field-full">
-                <label>Archivos Excel (.xlsx o .xls) - maximo 6</label>
-                <input
-                  key={archivoInputKey}
-                  type="file"
-                  accept=".xlsx,.xls"
-                  multiple
-                  onChange={(event) => {
-                    setArchivosExcel(Array.from(event.target.files || []));
-                    setPreviewCarga(null);
-                    setProgresoCarga(null);
-                    setMensaje("");
-                  }}
-                />
+                <label>Archivo Excel</label>
+                <div className="coord-file-picker">
+                  <input
+                    id="coord-excel-upload"
+                    key={archivoInputKey}
+                    type="file"
+                    accept=".xlsx,.xls"
+                    multiple
+                    onChange={(event) => {
+                      setArchivosExcel(Array.from(event.target.files || []));
+                      setPreviewCarga(null);
+                      setProgresoCarga(null);
+                      setMensaje("");
+                    }}
+                  />
+                  <label htmlFor="coord-excel-upload">
+                    <FileSpreadsheet size={17} />
+                    Elegir Excel
+                  </label>
+                  <span>{obtenerResumenArchivos(archivosExcel)}</span>
+                </div>
                 {archivosExcel.length ? (
-                  <small>{archivosExcel.length} archivo(s) seleccionado(s)</small>
+                  <small>Puede cargar hasta 6 archivos. Tamaño máximo por archivo: 5 MB.</small>
                 ) : null}
               </div>
             </div>
-            <div className="coord-upload-format-row" aria-label="Columnas aceptadas">
-              <span>ID</span>
-              <span>CÃ³d. Estudiante</span>
-              <span>Nombres</span>
-              <span>Grado</span>
-              <span>SecciÃ³n</span>
-              <span>Curso/Taller</span>
-            </div>
+
             <div className="coord-upload-actions">
               <button className="coord-primary-button" type="button" onClick={generarPreviewExcel} disabled={!archivosExcel.length || cargandoPreview}>
                 {cargandoPreview ? <Loader2 className="coord-spin" size={17} /> : <Eye size={17} />}
@@ -115,7 +115,7 @@ function CargaExcelView({
                     ? "Vista previa lista"
                     : progresoCarga.actual > 0
                       ? `Validando archivo ${progresoCarga.actual} de ${progresoCarga.total}`
-                      : "Preparando validacion"}
+                      : "Preparando validación"}
                 </strong>
                 <span>{progresoCarga.porcentaje}%</span>
               </div>
@@ -140,7 +140,7 @@ function CargaExcelView({
                 <table className="coord-table">
                   <thead>
                     <tr>
-                      <th>Alumno</th><th>Grado</th><th>Sección</th><th>Selección</th><th>Curso / nivel</th><th>Estado</th><th>Motivo</th>
+                      <th>Alumno</th><th>Grado</th><th>Sección</th><th>Selección</th><th>Curso / nivel</th><th>Estado</th><th>Detalle</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -161,8 +161,8 @@ function CargaExcelView({
             </>
           ) : (
             <div className="coord-empty">
-              <Upload size={18} />
-              <p>Suba un Excel con alumnos del programa. Para Cambridge se aceptan columnas como Alumno, Grado, Sección, Selección y Nivel Cambridge.</p>
+              <ListCheck size={18} />
+              <p>Seleccione un Excel y presione <b>Vista previa</b>. Todavía no se guarda nada hasta que revise los resultados y confirme la carga.</p>
             </div>
           )}
         </article>

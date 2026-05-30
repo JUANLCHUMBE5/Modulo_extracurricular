@@ -1,4 +1,4 @@
-﻿import { Alert } from "@mantine/core";
+import { Alert } from "@mantine/core";
 import { useEffect, useMemo, useState } from "react";
 import {
   IconAlertCircle as AlertCircle,
@@ -88,6 +88,12 @@ export default function Padres({ user, onLogout }) {
   const [pasoObjetivo, setPasoObjetivo] = useState(pasoPagoGuardado);
   const [mantenerPasoPago, setMantenerPasoPago] = useState(pasoPagoGuardado === 3);
   const [anuncioCerrado, setAnuncioCerrado] = useState(false);
+  const [horarioSeleccionado, setHorarioSeleccionado] = useState("");
+  const [tallaPolo, setTallaPolo] = useState("");
+  const [tallaShort, setTallaShort] = useState("");
+  const [tallaUniforme, setTallaUniforme] = useState("");
+  const [programaAdicional, setProgramaAdicional] = useState(null);
+
   const {
     abrirPago,
     actualizar,
@@ -126,12 +132,14 @@ export default function Padres({ user, onLogout }) {
     guardarDatos,
   } = usePadres(user);
 
-  const comunicadoPadres = prepararComunicadoPadres(programa, estudiante);
+  const programaActual = programaAdicional || programa;
+
+  const comunicadoPadres = prepararComunicadoPadres(programaActual, estudiante);
   const invitacionPendiente = Boolean(invitacion && !inscripcion);
-  const requiereCaja = Boolean(!inscripcion && programa?.ventanaInscripcion?.requiereCaja);
+  const requiereCaja = Boolean(!inscripcion && programaActual?.ventanaInscripcion?.requiereCaja);
   const tieneCursosDisponibles = programasDisponibles.length > 0;
-  const programaConAnuncio = programa?.anuncioImagen
-    ? programa
+  const programaConAnuncio = programaActual?.anuncioImagen
+    ? programaActual
     : programasDisponibles.find((item) => item.anuncioImagen);
   const anuncioPadres = programaConAnuncio?.anuncioImagen
     ? {
@@ -151,11 +159,11 @@ export default function Padres({ user, onLogout }) {
   );
   const pasoMaximo = useMemo(() => {
     if (mantenerPasoPago || pasoObjetivo === 3) return 3;
-    if (!programa) return tieneCursosDisponibles ? 2 : 0;
+    if (!programaActual) return tieneCursosDisponibles ? 2 : 0;
     if (!infoProgramaAceptada) return 1;
     if (!datosConfirmados) return 2;
     return 3;
-  }, [datosConfirmados, infoProgramaAceptada, mantenerPasoPago, pasoObjetivo, programa, tieneCursosDisponibles]);
+  }, [datosConfirmados, infoProgramaAceptada, mantenerPasoPago, pasoObjetivo, programaActual, tieneCursosDisponibles]);
 
   useEffect(() => {
     if (pasoObjetivo != null && pasoActivo !== pasoObjetivo) {
@@ -187,6 +195,26 @@ export default function Padres({ user, onLogout }) {
     cambiarPaso(paso);
   }
 
+  function manejarInscribirProgramaPrincipal() {
+    setProgramaAdicional(null);
+    setHorarioSeleccionado("");
+    setTallaPolo("");
+    setTallaShort("");
+    setTallaUniforme("");
+    setInfoProgramaAceptada(false);
+    cambiarPaso(1);
+  }
+
+  function manejarInscribirCursoAdicional(prog) {
+    setProgramaAdicional(prog);
+    setHorarioSeleccionado("");
+    setTallaPolo("");
+    setTallaShort("");
+    setTallaUniforme("");
+    setInfoProgramaAceptada(String(prog.categoria || "").toLowerCase() === "deportivo");
+    cambiarPaso(1);
+  }
+
   async function guardarDatosYEntrarAPago(event) {
     event?.preventDefault?.();
     setMantenerPasoPago(true);
@@ -202,13 +230,17 @@ export default function Padres({ user, onLogout }) {
     }
 
     setInfoProgramaAceptada(true);
-    if (invitacionPendiente) {
-      const registrado = await solicitarInscripcionPadres();
+    if (invitacionPendiente || programaAdicional) {
+      const progId = programaAdicional?.id;
+      const registrado = await solicitarInscripcionPadres(progId, horarioSeleccionado, { tallaPolo, tallaShort, tallaUniforme });
       if (!registrado) {
         setMantenerPasoPago(false);
         setPasoObjetivo(null);
         guardarPasoPago(user?.dni, null);
         return false;
+      }
+      if (programaAdicional) {
+        setProgramaAdicional(null);
       }
     }
 
@@ -217,7 +249,7 @@ export default function Padres({ user, onLogout }) {
   }
 
   async function manejarAccionPago(datosPago = null) {
-    if (!programa) {
+    if (!programaActual) {
       consultarRafael("Que programa tiene disponible mi hijo");
       return;
     }
@@ -233,8 +265,12 @@ export default function Padres({ user, onLogout }) {
       consultarRafael("Que debo hacer ahora");
       return;
     }
-    if (invitacionPendiente) {
-      await solicitarInscripcionPadres();
+    if (invitacionPendiente || programaAdicional) {
+      const progId = programaAdicional?.id;
+      const registrado = await solicitarInscripcionPadres(progId, horarioSeleccionado, { tallaPolo, tallaShort, tallaUniforme });
+      if (registrado && programaAdicional) {
+        setProgramaAdicional(null);
+      }
       return;
     }
     await enviarPagoVerificacionPadres(datosPago);
@@ -246,10 +282,17 @@ export default function Padres({ user, onLogout }) {
         <ComunicadoStep
           comunicadoPadres={comunicadoPadres}
           infoProgramaAceptada={infoProgramaAceptada}
-          programa={programa}
+          programa={programaActual}
           setInfoProgramaAbierta={setInfoProgramaAbierta}
-          setInfoProgramaAceptada={setInfoProgramaAceptada}
           setPasoActivo={cambiarPaso}
+          horarioSeleccionado={horarioSeleccionado}
+          setHorarioSeleccionado={setHorarioSeleccionado}
+          tallaPolo={tallaPolo}
+          setTallaPolo={setTallaPolo}
+          tallaShort={tallaShort}
+          setTallaShort={setTallaShort}
+          tallaUniforme={tallaUniforme}
+          setTallaUniforme={setTallaUniforme}
         />
       );
     }
@@ -262,7 +305,7 @@ export default function Padres({ user, onLogout }) {
           form={form}
           guardando={guardando}
           guardarDatos={guardarDatosYEntrarAPago}
-          pasoDespuesDeGuardar={programa ? 3 : 0}
+          pasoDespuesDeGuardar={programaActual ? 3 : 0}
           setPasoActivo={cambiarPaso}
         />
       );
@@ -278,7 +321,7 @@ export default function Padres({ user, onLogout }) {
           invitacionPendiente={invitacionPendiente}
           manejarAccionPago={manejarAccionPago}
           pagoConfirmado={pagoConfirmado}
-          programa={programa}
+          programa={programaActual}
           requiereCaja={requiereCaja}
           setPasoActivo={cambiarPaso}
         />
@@ -299,6 +342,8 @@ export default function Padres({ user, onLogout }) {
           programasDisponibles={programasDisponibles}
           setPasoActivo={cambiarPaso}
           solicitarInscripcionPadres={solicitarInscripcionPadres}
+          onInscribirCursoAdicional={manejarInscribirCursoAdicional}
+          onInscribirProgramaPrincipal={manejarInscribirProgramaPrincipal}
         />
       </>
     );
@@ -356,7 +401,7 @@ export default function Padres({ user, onLogout }) {
         {cargando ? (
           <section className="padres-loading padres-flow-loading">
             <Loader2 className="padres-spin" size={30} />
-            <p>Cargando informaciÃ³n del estudiante...</p>
+            <p>Cargando información del estudiante...</p>
           </section>
         ) : error ? (
           <Alert className="padres-alert" color="orange" radius="md" icon={<AlertCircle size={18} />}>
@@ -383,44 +428,15 @@ export default function Padres({ user, onLogout }) {
         )}
       </main>
 
-      {anuncioPadres && !anuncioCerrado ? (
-        <div className="padres-announcement-backdrop" role="presentation">
-          <section className="padres-announcement-modal" role="dialog" aria-modal="true" aria-label={`Anuncio de ${anuncioPadres.programa}`}>
-            <header className="padres-announcement-head">
-              <strong>Noticias San Rafael</strong>
-              <button type="button" onClick={() => setAnuncioCerrado(true)} aria-label="Cerrar anuncio">
-                <X size={18} />
-              </button>
-            </header>
-            <div className="padres-announcement-body">
-              <img src={anuncioPadres.imagen} alt={anuncioPadres.nombre} />
-              <button className="padres-announcement-arrow is-left" type="button" aria-label="Anuncio anterior">
-                <ChevronLeft size={28} />
-              </button>
-              <button className="padres-announcement-arrow is-right" type="button" aria-label="Anuncio siguiente">
-                <ChevronRight size={28} />
-              </button>
-              <div className="padres-announcement-dots" aria-hidden="true">
-                <span />
-                <span />
-                <span className="is-active" />
-                <span />
-                <span />
-              </div>
-            </div>
-          </section>
-        </div>
-      ) : null}
-
-      {infoProgramaAbierta && programa ? (
+      {infoProgramaAbierta && programaActual ? (
         <div className="padres-modal-backdrop" role="presentation">
           <section className="padres-info-modal" role="dialog" aria-modal="true" aria-labelledby="padres-info-title">
             <header className="padres-info-modal-head">
               <div>
                 <span>Comunicado para el apoderado</span>
-                <h2 id="padres-info-title">{programa.programa}</h2>
+                <h2 id="padres-info-title">{programaActual.programa || programaActual.nombre}</h2>
               </div>
-              <button type="button" onClick={() => setInfoProgramaAbierta(false)} aria-label="Cerrar informaciÃ³n">
+              <button type="button" onClick={() => setInfoProgramaAbierta(false)} aria-label="Cerrar información">
                 <X size={18} />
               </button>
             </header>
@@ -440,39 +456,54 @@ export default function Padres({ user, onLogout }) {
                   <span>Lo necesario antes de confirmar.</span>
                 </div>
                 <ul className="padres-info-list">
-                  <li>El estudiante debe asistir de forma continua y puntual al horario indicado.</li>
-                  <li>Debe mantener el orden y la disciplina durante el programa.</li>
-                  <li>Debe llevar los materiales solicitados por el docente.</li>
-                  <li>Si lleva almuerzo, la lonchera debe estar rotulada con nombre, grado y seccion.</li>
+                  {(comunicadoPadres.indicaciones || []).map((indicacion) => (
+                    <li key={indicacion}>{indicacion}</li>
+                  ))}
                 </ul>
               </div>
 
-              <div className="padres-comunicado-section padres-lunch-section">
-                <div className="padres-comunicado-section-title">
-                  <strong>Almuerzo</strong>
-                  <span>Recepcion y concesionarios autorizados.</span>
-                </div>
-                <p>
-                  El colegio cuenta con un area para recibir almuerzos. Deben dejarse de 01:20 a 01:45 p.m.
-                  La lonchera debe tener una etiqueta grande con nombre del alumno, grado y seccion.
-                </p>
-                <div className="padres-lunch-vendors">
-                  <div>
-                    <span>Cafetin Los Amigos del recreo</span>
-                    <strong>Sra. Rocio</strong>
-                    <p>976280197</p>
+              {(comunicadoPadres.detalleFormato || []).map((seccion) => (
+                <div className="padres-comunicado-section" key={seccion.titulo}>
+                  <div className="padres-comunicado-section-title">
+                    <strong>{seccion.titulo}</strong>
+                    <span>Información tomada del formato asignado.</span>
                   </div>
-                  <div>
-                    <span>Cafetin Edith</span>
-                    <strong>Sra. Deysli</strong>
-                    <p>960897529</p>
-                  </div>
+                  <ul className="padres-info-list">
+                    {seccion.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
                 </div>
-                <p>
-                  Estos concesionarios estan autorizados por la institucion y cumplen con los protocolos correspondientes
-                  segun las disposiciones del MINSA.
-                </p>
-              </div>
+              ))}
+
+              {!comunicadoPadres.ocultarAlmuerzo && !comunicadoPadres.tieneAlmuerzoFormato ? (
+                <div className="padres-comunicado-section padres-lunch-section">
+                  <div className="padres-comunicado-section-title">
+                    <strong>Almuerzo</strong>
+                    <span>Recepción y concesionarios autorizados.</span>
+                  </div>
+                  <p>
+                    El colegio cuenta con un área para recibir almuerzos. Deben dejarse de 01:20 a 01:45 p.m.
+                    La lonchera debe tener una etiqueta grande con nombre del alumno, grado y sección.
+                  </p>
+                  <div className="padres-lunch-vendors">
+                    <div>
+                      <span>Cafetín Los Amigos del recreo</span>
+                      <strong>Sra. Rocío</strong>
+                      <p>976280197</p>
+                    </div>
+                    <div>
+                      <span>Cafetín Edith</span>
+                      <strong>Sra. Deysli</strong>
+                      <p>960897529</p>
+                    </div>
+                  </div>
+                  <p>
+                    Estos concesionarios están autorizados por la institución y cumplen con los protocolos correspondientes
+                    según las disposiciones del MINSA.
+                  </p>
+                </div>
+              ) : null}
             </div>
 
             <label className="padres-info-accept">
@@ -483,8 +514,8 @@ export default function Padres({ user, onLogout }) {
               />
               <span>
                 {invitacionPendiente
-                  ? "He leÃ­do y acepto la informaciÃ³n del programa antes de registrar la inscripciÃ³n."
-                  : "He leÃ­do y acepto la informaciÃ³n del programa antes de continuar con el pago."}
+                  ? "He leído y acepto la información del programa antes de registrar la inscripción."
+                  : "He leído y acepto la información del programa antes de continuar con el pago."}
               </span>
             </label>
 

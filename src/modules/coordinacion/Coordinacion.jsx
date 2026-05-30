@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert as MantineAlert, Badge, Group, ActionIcon, Tooltip } from "@mantine/core";
 import { toast } from "sonner";
 import {
@@ -62,6 +62,7 @@ const formInicial = {
   gradosAplicables: [], edadMinima: "", edadMaxima: "", fechaNacimientoDesde: "", fechaNacimientoHasta: "", dias: [], horaInicio: "", horaFin: "",
   almuerzoInicio: "", almuerzoFin: "",
   horariosPorGrupo: [],
+  talleresDeportivos: [],
   fechaInicio: "", fechaFin: "", duracionAvisoDias: "7", cupos: "", costo: "", modalidadCobro: "Mensual",
   responsable: "", tutora: "", plantilla: "", plantillaBase64: "", plantillaVariables: [],
   plantillaValidada: false, plantillaActualizadaEn: "", requisitos: "",
@@ -256,6 +257,15 @@ function Coordinacion({
   const [nuevaCat, setNuevaCat] = useState("");
   const [catAEliminar, setCatAEliminar] = useState("");
   const [plantillaInputKey, setPlantillaInputKey] = useState(0);
+
+  // Estados locales para añadir talleres deportivos
+  const [tallerDepDeporte, setTallerDepDeporte] = useState("Vóley");
+  const [tallerDepCustom, setTallerDepCustom] = useState("");
+  const [tallerDepMinEdad, setTallerDepMinEdad] = useState("6");
+  const [tallerDepMaxEdad, setTallerDepMaxEdad] = useState("9");
+  const [tallerDepDia, setTallerDepDia] = useState("Jueves");
+  const [tallerDepHoraInicio, setTallerDepHoraInicio] = useState("15:50");
+  const [tallerDepHoraFin, setTallerDepHoraFin] = useState("16:50");
   const [programaDocsId, setProgramaDocsId] = useState("");
   const [lecturaDocumento, setLecturaDocumento] = useState(null);
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
@@ -365,6 +375,7 @@ function Coordinacion({
       almuerzoInicio: prog.almuerzoInicio || "",
       almuerzoFin: prog.almuerzoFin || "",
       horariosPorGrupo: normalizarHorariosPorGrupo(prog.horariosPorGrupo),
+      talleresDeportivos: Array.isArray(prog.talleresDeportivos) ? prog.talleresDeportivos : [],
       fechaFin: prog.fechaFin,
       duracionAvisoDias: String(normalizarDuracionAvisoDias(prog.duracionAvisoDias, 7)),
       cupos: String(prog.cupos), costo: String(prog.costo),
@@ -409,15 +420,39 @@ function Coordinacion({
     if (modoEditar && !puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar programas.");
     if (!form.nombre.trim()) return mostrarMsg("El nombre del programa es obligatorio.");
     if (!form.categoria) return mostrarMsg("Seleccione una categoría.");
+    
     const esVeranoGuardar = normalizarPeriodoVista(form.periodo) === "verano";
-    const gruposHorario = esVeranoGuardar ? [] : normalizarHorariosPorGrupo(form.horariosPorGrupo);
-    const gradosFinales = esVeranoGuardar ? [] : obtenerGradosFinales(form.gradosAplicables, gruposHorario);
-    const diasFinales = normalizarListaTexto(form.dias);
-    if (!esVeranoGuardar && gradosFinales.length === 0) return mostrarMsg("Seleccione al menos un grado aplicable.");
+    const esDeportivoGuardar = String(form.categoria).toLowerCase() === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
+    
+    const talleres = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
+    if (esDeportivoGuardar && talleres.length === 0) {
+      return mostrarMsg("Debe agregar al menos un taller deportivo con sus edades y horarios.");
+    }
+
+    const gruposHorario = (esVeranoGuardar || esDeportivoGuardar) ? [] : normalizarHorariosPorGrupo(form.horariosPorGrupo);
+    
+    let gradosFinales = [];
+    if (esDeportivoGuardar) {
+      gradosFinales = obtenerGradosDeportivos(talleres);
+    } else if (!esVeranoGuardar) {
+      gradosFinales = obtenerGradosFinales(form.gradosAplicables, gruposHorario);
+    }
+
+    let diasFinales = [];
+    if (esDeportivoGuardar) {
+      diasFinales = Array.from(new Set(talleres.map(t => t.dia)));
+    } else {
+      diasFinales = normalizarListaTexto(form.dias);
+    }
+
+    if (!esVeranoGuardar && gradosFinales.length === 0) {
+      return mostrarMsg("Seleccione al menos un grado aplicable.");
+    }
     if (esVeranoGuardar && (!form.edadMinima || !form.edadMaxima || Number(form.edadMinima) > Number(form.edadMaxima))) {
       return mostrarMsg("Seleccione un rango de edades válido para ciclo verano.");
     }
-    if (gruposHorario.length === 0) {
+
+    if (!esDeportivoGuardar && gruposHorario.length === 0) {
       if (diasFinales.length === 0) return mostrarMsg("Seleccione los días del programa.");
       if (!form.horaInicio || !form.horaFin) return mostrarMsg("Seleccione hora de inicio y fin del programa.");
       if (form.horaInicio >= form.horaFin) return mostrarMsg("La hora de inicio debe ser menor a la hora de fin.");
@@ -428,10 +463,14 @@ function Coordinacion({
         return mostrarMsg("La hora de inicio del almuerzo debe ser menor a la hora de fin.");
       }
     }
-    const grupoInvalido = gruposHorario.find((grupo) =>
-      grupo.grados.length === 0 || !grupo.dia || !grupo.horaInicio || !grupo.horaFin || grupo.horaInicio >= grupo.horaFin
-    );
-    if (grupoInvalido) return mostrarMsg("Revise los grupos por día: cada grupo debe tener grados, día y hora válida.");
+
+    if (!esDeportivoGuardar) {
+      const grupoInvalido = gruposHorario.find((grupo) =>
+        grupo.grados.length === 0 || !grupo.dia || !grupo.horaInicio || !grupo.horaFin || grupo.horaInicio >= grupo.horaFin
+      );
+      if (grupoInvalido) return mostrarMsg("Revise los grupos por día: cada grupo debe tener grados, día y hora válida.");
+    }
+
     if (!form.fechaInicio || !form.fechaFin) return mostrarMsg("Las fechas de inicio y fin son obligatorias.");
     if (form.fechaInicio > form.fechaFin) return mostrarMsg("La fecha de inicio no puede ser mayor a la de fin.");
     const duracionAvisoDias = normalizarDuracionAvisoDias(form.duracionAvisoDias, 7);
@@ -456,7 +495,11 @@ function Coordinacion({
       duracionAvisoDias,
       dias: diasFinales,
       horariosPorGrupo: gruposHorario,
-      grupo: esVeranoGuardar ? crearGrupoEtarioVerano(form) : resumenGrados(gradosFinales),
+      grupo: esVeranoGuardar
+        ? crearGrupoEtarioVerano(form)
+        : esDeportivoGuardar
+          ? resumenGrupoDeportivo(talleres)
+          : resumenGrados(gradosFinales),
       grupoEtario: esVeranoGuardar ? crearGrupoEtarioVerano(form) : "",
       requiereUniforme: false,
       requiereIndumentaria: Boolean(form.requiereIndumentaria),
@@ -464,9 +507,11 @@ function Coordinacion({
       anuncioImagenNombre: form.invitacionMasiva ? form.anuncioImagenNombre : "",
       anuncioImagenTamano: form.invitacionMasiva ? form.anuncioImagenTamano : 0,
       anuncioImagenComprimida: form.invitacionMasiva ? Boolean(form.anuncioImagenComprimida) : false,
-      horario: gruposHorario.length
-        ? resumenHorariosPorGrupo(gruposHorario)
-        : resumenHorario(diasFinales, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin),
+      horario: esDeportivoGuardar
+        ? resumenHorarioDeportivo(talleres)
+        : gruposHorario.length
+          ? resumenHorariosPorGrupo(gruposHorario)
+          : resumenHorario(diasFinales, form.horaInicio, form.horaFin, form.almuerzoInicio, form.almuerzoFin),
     };
     try {
       if (modoEditar) {
@@ -701,6 +746,104 @@ function Coordinacion({
       anuncioImagenTamano: 0,
       anuncioImagenComprimida: false,
     }));
+  }
+
+  const agregarTallerDeportivo = () => {
+    const deporteFinal = tallerDepDeporte === "Otro" ? tallerDepCustom.trim() : tallerDepDeporte;
+    if (!deporteFinal) {
+      mostrarMsg("Ingrese el nombre del deporte.");
+      return;
+    }
+    const minE = Number(tallerDepMinEdad);
+    const maxE = Number(tallerDepMaxEdad);
+    if (!tallerDepMinEdad || !tallerDepMaxEdad || minE > maxE) {
+      mostrarMsg("Rango de edades inválido.");
+      return;
+    }
+    if (!tallerDepHoraInicio || !tallerDepHoraFin) {
+      mostrarMsg("Ingrese las horas de inicio y fin.");
+      return;
+    }
+    if (tallerDepHoraInicio >= tallerDepHoraFin) {
+      mostrarMsg("La hora de inicio debe ser menor a la hora de fin.");
+      return;
+    }
+
+    const nuevoTaller = {
+      deporte: deporteFinal,
+      edadMinima: minE,
+      edadMaxima: maxE,
+      dia: tallerDepDia,
+      horaInicio: tallerDepHoraInicio,
+      horaFin: tallerDepHoraFin,
+    };
+
+    const listaActual = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
+    setForm(prev => ({
+      ...prev,
+      talleresDeportivos: [...listaActual, nuevoTaller]
+    }));
+
+    setTallerDepCustom("");
+  };
+
+  const quitarTallerDeportivo = (index) => {
+    const listaActual = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
+    setForm(prev => ({
+      ...prev,
+      talleresDeportivos: listaActual.filter((_, idx) => idx !== index)
+    }));
+  };
+
+  function mapAgesToGrades(edadMinima, edadMaxima) {
+    const min = Number(edadMinima || 0);
+    const max = Number(edadMaxima || 0);
+    const grados = [];
+    for (let age = min; age <= max; age++) {
+      if (age === 3) grados.push("Inicial:3 años");
+      else if (age === 4) grados.push("Inicial:4 años");
+      else if (age === 5) grados.push("Inicial:5 años");
+      else if (age >= 6 && age <= 11) {
+        grados.push(`Primaria:${age - 5}`);
+      } else if (age >= 12 && age <= 16) {
+        grados.push(`Secundaria:${age - 11}`);
+      } else if (age >= 17) {
+        grados.push("Secundaria:5");
+      }
+    }
+    return grados;
+  }
+
+  function obtenerGradosDeportivos(talleres) {
+    if (!Array.isArray(talleres)) return [];
+    const sets = new Set();
+    talleres.forEach(t => {
+      const grades = mapAgesToGrades(t.edadMinima, t.edadMaxima);
+      grades.forEach(g => sets.add(g));
+    });
+    return Array.from(sets);
+  }
+
+  function resumenGrupoDeportivo(talleres) {
+    if (!Array.isArray(talleres) || talleres.length === 0) return "Por definir";
+    const uniqueWorkshops = [];
+    talleres.forEach(t => {
+      const label = `${t.deporte} (${t.edadMinima}-${t.edadMaxima} años)`;
+      if (!uniqueWorkshops.includes(label)) {
+        uniqueWorkshops.push(label);
+      }
+    });
+    return uniqueWorkshops.join(" / ");
+  }
+
+  function resumenHorarioDeportivo(talleres) {
+    if (!Array.isArray(talleres) || talleres.length === 0) return "Por definir";
+    const porDia = {};
+    talleres.forEach(t => {
+      if (!porDia[t.dia]) porDia[t.dia] = [];
+      porDia[t.dia].push(`${t.deporte} (${t.edadMinima}-${t.edadMaxima} a.): ${t.horaInicio}-${t.horaFin}`);
+    });
+    return Object.keys(porDia).map(dia => `${dia}: ${porDia[dia].join(", ")}`).join(" / ");
   }
 
   function crearGrupoEtarioVerano(datos) {
@@ -1189,6 +1332,7 @@ function Coordinacion({
   const formDias = normalizarListaTexto(form.dias);
   const formHorariosPorGrupo = Array.isArray(form.horariosPorGrupo) ? form.horariosPorGrupo : [];
   const esFormularioVerano = normalizarPeriodoVista(form.periodo) === "verano";
+  const esDeportivoForm = String(form.categoria).toLowerCase() === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
   const duracionTallerFormulario = calcularDuracionTexto(form.fechaInicio, form.fechaFin);
   const mostrarIndumentariaDeportiva = esProgramaDeportivo(form.nombre, form.categoria);
 
@@ -1528,6 +1672,18 @@ function Coordinacion({
                             </p>
                           ) : null}
                         </div>
+                      ) : esDeportivoForm ? (
+                        <div className="coord-field coord-field-full">
+                          <label>Grados habilitados</label>
+                          <p className="coord-field-hint" style={{ marginTop: "4px" }}>
+                            Los grados escolares aplicables se calculan automáticamente a partir de los rangos de edad de los talleres de abajo.
+                          </p>
+                          {form.talleresDeportivos?.length > 0 && (
+                            <div className="coord-deportivo-grados-summary" style={{ marginTop: "8px", padding: "8px 12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                              <strong>Equivalente en Grados:</strong> <span style={{ color: "#006b5b", fontWeight: 700 }}>{resumenGrados(obtenerGradosDeportivos(form.talleresDeportivos)) || "Sin grados calculados"}</span>
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <div className="coord-field coord-field-full">
                           <label>Grados aplicables *</label>
@@ -1550,41 +1706,45 @@ function Coordinacion({
                     <div className="coord-section-heading">
                       <CalendarDays size={18} />
                       <div>
-                        <h3>{esFormularioVerano ? "Fechas y turno de verano" : "Horario y grupos de atención"}</h3>
+                        <h3>{esFormularioVerano ? "Fechas y turno de verano" : esDeportivoForm ? "Fechas y talleres deportivos" : "Horario y grupos de atención"}</h3>
                       </div>
                     </div>
                     <div className="coord-section-grid">
-                      <div className="coord-field coord-field-full">
-                        <label>{esFormularioVerano ? "Días de atención *" : "Dias del programa / taller *"}</label>
-                        <div className="coord-day-list">
-                          {diasSemana.map(dia => (
-                            <label
-                              className={`coord-day-chip ${formDias.includes(dia) ? "is-selected" : ""}`}
-                              key={dia}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={formDias.includes(dia)}
-                                onChange={() => toggleDia(dia)}
-                              />
-                              {dia}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="coord-compact-schedule-row coord-field-full">
-                        <div className="coord-field"><label>Hora inicio *</label>
-                          <input type="time" value={form.horaInicio} onChange={e => actualizarForm("horaInicio", e.target.value)} />
-                        </div>
-                        <div className="coord-field"><label>Hora fin *</label>
-                          <input type="time" value={form.horaFin} onChange={e => actualizarForm("horaFin", e.target.value)} />
-                        </div>
-                        <div className="coord-field"><label>Almuerzo inicio</label>
-                          <input type="time" value={form.almuerzoInicio} onChange={e => actualizarForm("almuerzoInicio", e.target.value)} />
-                        </div>
-                        <div className="coord-field"><label>Almuerzo fin</label>
-                          <input type="time" value={form.almuerzoFin} onChange={e => actualizarForm("almuerzoFin", e.target.value)} />
-                        </div>
+                      <div className="coord-compact-schedule-row coord-field-full" style={{ gridTemplateColumns: esDeportivoForm ? "1fr 1fr" : undefined }}>
+                        {!esDeportivoForm && (
+                          <>
+                            <div className="coord-field" style={{ gridColumn: "1 / -1" }}>
+                              <label>{esFormularioVerano ? "Días de atención *" : "Dias del programa / taller *"}</label>
+                              <div className="coord-day-list">
+                                {diasSemana.map(dia => (
+                                  <label
+                                    className={`coord-day-chip ${formDias.includes(dia) ? "is-selected" : ""}`}
+                                    key={dia}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={formDias.includes(dia)}
+                                      onChange={() => toggleDia(dia)}
+                                    />
+                                    {dia}
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="coord-field"><label>Hora inicio *</label>
+                              <input type="time" value={form.horaInicio} onChange={e => actualizarForm("horaInicio", e.target.value)} />
+                            </div>
+                            <div className="coord-field"><label>Hora fin *</label>
+                              <input type="time" value={form.horaFin} onChange={e => actualizarForm("horaFin", e.target.value)} />
+                            </div>
+                            <div className="coord-field"><label>Almuerzo inicio</label>
+                              <input type="time" value={form.almuerzoInicio} onChange={e => actualizarForm("almuerzoInicio", e.target.value)} />
+                            </div>
+                            <div className="coord-field"><label>Almuerzo fin</label>
+                              <input type="time" value={form.almuerzoFin} onChange={e => actualizarForm("almuerzoFin", e.target.value)} />
+                            </div>
+                          </>
+                        )}
                         <div className="coord-field"><label>Fecha inicio *</label>
                           <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
                         </div>
@@ -1592,6 +1752,7 @@ function Coordinacion({
                           <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
                         </div>
                       </div>
+                      
                       <div className="coord-program-window-row coord-field-full">
                         <div className="coord-field">
                           <label>Duración del taller</label>
@@ -1611,7 +1772,130 @@ function Coordinacion({
                           />
                         </div>
                       </div>
-                      {puedeGestionarGruposFormulario && !esFormularioVerano ? (
+
+                      {esDeportivoForm && (
+                        <div className="coord-field coord-field-full">
+                          <div className="coord-deportivo-builder-heading" style={{ marginBottom: "14px", borderTop: "1px dashed #e2ece9", paddingTop: "14px" }}>
+                            <strong>Configuración de Deportes por Edades y Horarios</strong>
+                            <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#667085" }}>
+                              Agregue cada taller deportivo detallando la disciplina, edad y horario específico (según el afiche).
+                            </p>
+                          </div>
+                          
+                          <div className="coord-deportivo-fields-row" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
+                            <div className="coord-field">
+                              <label>Deporte *</label>
+                              <select value={tallerDepDeporte} onChange={e => setTallerDepDeporte(e.target.value)}>
+                                <option value="Vóley">Vóley</option>
+                                <option value="Fútbol">Fútbol</option>
+                                <option value="Básquet">Básquet</option>
+                                <option value="Otro">Otro deporte...</option>
+                              </select>
+                              {tallerDepDeporte === "Otro" && (
+                                <input 
+                                  style={{ marginTop: "6px" }}
+                                  placeholder="Escriba el deporte" 
+                                  value={tallerDepCustom} 
+                                  onChange={e => setTallerDepCustom(e.target.value)} 
+                                />
+                              )}
+                            </div>
+                            
+                            <div className="coord-field">
+                              <label>Edad mínima *</label>
+                              <select value={tallerDepMinEdad} onChange={e => setTallerDepMinEdad(e.target.value)}>
+                                {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
+                                  <option key={edad} value={edad}>{edad} años</option>
+                                ))}
+                              </select>
+                            </div>
+                            
+                            <div className="coord-field">
+                              <label>Edad máxima *</label>
+                              <select value={tallerDepMaxEdad} onChange={e => setTallerDepMaxEdad(e.target.value)}>
+                                {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
+                                  <option key={edad} value={edad}>{edad} años</option>
+                                ))}
+                              </select>
+                            </div>
+                            
+                            <div className="coord-field">
+                              <label>Día de atención *</label>
+                              <select value={tallerDepDia} onChange={e => setTallerDepDia(e.target.value)}>
+                                {diasSemana.map(d => (
+                                  <option key={d} value={d}>{d}</option>
+                                ))}
+                              </select>
+                            </div>
+                            
+                            <div className="coord-field">
+                              <label>Clase inicio *</label>
+                              <input type="time" value={tallerDepHoraInicio} onChange={e => setTallerDepHoraInicio(e.target.value)} />
+                            </div>
+                            
+                            <div className="coord-field">
+                              <label>Clase fin *</label>
+                              <input type="time" value={tallerDepHoraFin} onChange={e => setTallerDepHoraFin(e.target.value)} />
+                            </div>
+                            
+                            <div className="coord-field" style={{ display: "flex", alignItems: "flex-end" }}>
+                              <button 
+                                type="button" 
+                                className="coord-template-autofill" 
+                                style={{ width: "100%", height: "38px", display: "flex", justifyContent: "center" }}
+                                onClick={agregarTallerDeportivo}
+                              >
+                                <Plus size={14} /> Añadir taller
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="coord-deportivo-workshops-list">
+                            <strong style={{ display: "block", marginBottom: "8px", fontSize: "13px", color: "#102035" }}>Talleres Agregados:</strong>
+                            {form.talleresDeportivos?.length > 0 ? (
+                              <div style={{ overflowX: "auto" }}>
+                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
+                                  <thead>
+                                    <tr style={{ borderBottom: "2px solid #e2ece9", color: "#475467" }}>
+                                      <th style={{ padding: "8px" }}>Deporte</th>
+                                      <th style={{ padding: "8px" }}>Edades</th>
+                                      <th style={{ padding: "8px" }}>Día y Horario</th>
+                                      <th style={{ padding: "8px", textAlign: "right" }}>Acción</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {form.talleresDeportivos.map((taller, idx) => (
+                                      <tr key={idx} style={{ borderBottom: "1px solid #e2ece9" }}>
+                                        <td style={{ padding: "8px", fontWeight: "bold" }}>{taller.deporte}</td>
+                                        <td style={{ padding: "8px" }}>{taller.edadMinima} a {taller.edadMaxima} años</td>
+                                        <td style={{ padding: "8px" }}>
+                                          <span style={{ background: "#e8f7ef", color: "#006b5b", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: 700, marginRight: "6px" }}>{taller.dia}</span>
+                                          {formatearHora12(taller.horaInicio)} a {formatearHora12(taller.horaFin)}
+                                        </td>
+                                        <td style={{ padding: "8px", textAlign: "right" }}>
+                                          <button 
+                                            type="button" 
+                                            style={{ background: "none", border: "none", color: "#b42318", cursor: "pointer", fontWeight: 700 }}
+                                            onClick={() => quitarTallerDeportivo(idx)}
+                                          >
+                                            Quitar
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <div style={{ padding: "20px", border: "1px dashed #cbd5e1", borderRadius: "8px", color: "#667085", textAlign: "center", background: "#f8fafc" }}>
+                                Aún no se han configurado talleres deportivos. Agregue uno usando el formulario de arriba.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {puedeGestionarGruposFormulario && !esFormularioVerano && !esDeportivoForm ? (
                         <div className="coord-field coord-field-full">
                           <div className="coord-group-schedule-head">
                             <div>

@@ -7,12 +7,30 @@ export function prepararComunicadoPadres(programa, estudiante) {
     : "";
   const area = obtenerAreaPrograma(programa?.area || titulo);
   const alumno = estudiante?.nombres || "el estudiante";
+  const esCambridge = esProgramaCambridgePadres(programa);
   const textoWord = limpiarComunicadoWord(programa?.comunicado || "", { area, programa: titulo, alumno });
   const parrafos = textoWord
     ? textoWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
-    : [`Coordinacion aun no registro un comunicado en la plantilla Word para ${alumno}.`];
+    : esCambridge
+      ? crearComunicadoCambridgePadres(programa, estudiante, titulo)
+      : [`Coordinación aún no registró un comunicado en la plantilla Word para ${alumno}.`];
+  const indicaciones = obtenerIndicacionesProgramaPadres(programa, { esCambridge });
+  const detalleFormato = obtenerDetalleFormatoPadres(programa);
+  const resumenParrafos = resumirComunicadoPadres(parrafos, programa, detalleFormato);
 
-  return { titulo, fecha, parrafos };
+  return {
+    titulo,
+    fecha,
+    parrafos,
+    resumenParrafos,
+    indicaciones,
+    indicacionesResumen: indicaciones.slice(0, 3),
+    detalleFormato,
+    tieneAlmuerzoFormato: detalleFormato.some((seccion) =>
+      ["almuerzo", "concesionarios"].includes(normalizarTextoPadres(seccion.titulo))
+    ),
+    ocultarAlmuerzo: esCambridge && !programa?.detalleAlmuerzo && !programa?.concesionarios,
+  };
 }
 
 export function formatearRangoFechasPadres(inicio, fin) {
@@ -83,6 +101,224 @@ function obtenerAreaPrograma(valor) {
   return sinClub || texto;
 }
 
+export function esProgramaCambridgePadres(programa) {
+  const texto = normalizarTextoPadres([
+    programa?.programa,
+    programa?.nombre,
+    programa?.categoria,
+    programa?.plantilla,
+  ].filter(Boolean).join(" "));
+  return texto.includes("cambridge");
+}
+
+function crearComunicadoCambridgePadres(programa, estudiante, titulo) {
+  const alumno = estudiante?.nombres || "su menor hijo(a)";
+  const aula = [estudiante?.grado, estudiante?.seccion ? `Sección ${estudiante.seccion}` : ""]
+    .filter(Boolean)
+    .join(" - ");
+  const vigencia = formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin);
+  const horario = String(programa?.horario || "").trim() || "Por confirmar";
+  const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
+  const modalidad = programa?.modalidadCobro ? `Modalidad de pago: ${programa.modalidadCobro}.` : "";
+  const nivelCambridge = estudiante?.nivelCambridge ? ` en el nivel ${estudiante.nivelCambridge}` : "";
+
+  return [
+    `En nuestra institución estamos comprometidos con la formación integral de nuestros estudiantes y con una enseñanza sólida del idioma inglés. Por ello, invitamos a ${alumno}${aula ? ` del aula ${aula}` : ""} a participar en ${titulo}${nivelCambridge}.`,
+    "El programa de Preparación Cambridge fortalece las habilidades necesarias para rendir una certificación internacional reconocida y brinda acompañamiento mediante clases especializadas, materiales de preparación y simulacros del examen.",
+    `La vigencia registrada es ${vigencia}. El horario asignado es: ${horario}.`,
+    `El costo registrado para este programa es ${costo}. ${modalidad}`.trim(),
+    "Para completar la inscripción, la familia debe revisar y aceptar esta información antes de confirmar los datos del apoderado y continuar con el pago.",
+  ];
+}
+
+function obtenerIndicacionesProgramaPadres(programa, { esCambridge = false } = {}) {
+  const desdeFormato = [
+    ...extraerIndicacionesDesdeTexto(programa?.requisitos),
+    ...extraerIndicacionesDesdeTexto(programa?.detalleAlmuerzo, { soloSeccion: true }),
+    ...extraerIndicacionesDesdeTexto(programa?.detalleCosto, { soloSeccion: true }),
+    ...extraerIndicacionesDesdeTexto(programa?.comunicado, { soloSeccion: true }),
+  ];
+  const indicaciones = quitarDuplicadosTexto(desdeFormato).slice(0, 6);
+  if (indicaciones.length) return indicaciones;
+
+  if (esCambridge) {
+    return [
+      "Debe revisar y llevar los materiales de preparación Cambridge solicitados por el docente.",
+      "Debe participar en los simulacros y actividades programadas para la certificación.",
+    ];
+  }
+
+  return ["Revise el comunicado del programa y siga las indicaciones registradas por Coordinación."];
+}
+
+function resumirComunicadoPadres(parrafos, programa, detalleFormato) {
+  const resumen = [];
+  const principal = recortarTexto(parrafos.find((parrafo) => parrafo.length > 40) || parrafos[0] || "", 280);
+  if (principal) resumen.push(principal);
+
+  const costo = Number(programa?.costo || 0) > 0 ? ` Costo registrado: S/ ${Number(programa.costo).toFixed(2)}.` : "";
+  const horario = programa?.horario ? ` Horario: ${programa.horario}.` : "";
+  const vigencia = programa?.fechaInicio || programa?.fechaFin
+    ? ` Vigencia: ${formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin)}.`
+    : "";
+  const datosClave = `${vigencia}${horario}${costo}`.trim();
+  if (datosClave) resumen.push(datosClave);
+  if (detalleFormato.length) {
+    resumen.push("Para ver ventajas, materiales, almuerzo y demás condiciones, abra el comunicado completo.");
+  }
+
+  return resumen.length ? resumen : parrafos.slice(0, 2);
+}
+
+function obtenerDetalleFormatoPadres(programa) {
+  const secciones = [
+    ...seccionarTextoFormato(programa?.detalleCosto, "Costo"),
+    ...seccionarTextoFormato(programa?.detalleAlmuerzo, "Detalle del formato"),
+    ...seccionarTextoFormato(programa?.concesionarios, "Concesionarios"),
+  ];
+  return secciones.filter((seccion) => seccion.items.length);
+}
+
+function seccionarTextoFormato(texto, tituloBase) {
+  const lineas = limpiarTextoFormato(texto).split("\n").map((linea) => linea.trim()).filter(Boolean);
+  if (!lineas.length) return [];
+
+  const secciones = [];
+  let actual = { titulo: tituloBase, items: [] };
+
+  lineas.forEach((linea) => {
+    const titulo = detectarTituloDetalle(linea);
+    if (titulo) {
+      if (actual.items.length) secciones.push(actual);
+      actual = { titulo, items: [] };
+      return;
+    }
+    const item = limpiarIndicacion(linea);
+    if (item) actual.items.push(item);
+  });
+
+  if (actual.items.length) secciones.push(actual);
+  return compactarSeccionesDetalle(secciones);
+}
+
+function detectarTituloDetalle(linea) {
+  const normal = normalizarTextoPadres(linea).replace(/[:.]+$/g, "");
+  if (/^ventajas\b/.test(normal)) return "Ventajas";
+  if (/^nota\b/.test(normal)) return "Nota";
+  if (/^requisitos\b/.test(normal)) return "Requisitos";
+  if (/^indicaciones\b/.test(normal)) return "Indicaciones";
+  if (/^materiales\b/.test(normal) || normal.includes("traer los siguientes utiles")) return "Útiles";
+  if (/^el almuerzo\b/.test(normal) || /^almuerzo\b/.test(normal)) return "Almuerzo";
+  if (normal.startsWith("si deseara coordinar")) return "Concesionarios";
+  if (/^costo\b/.test(normal) || /^precio\b/.test(normal)) return "Costo";
+  return "";
+}
+
+function compactarSeccionesDetalle(secciones) {
+  const mapa = new Map();
+  secciones.forEach((seccion) => {
+    const clave = normalizarTextoPadres(seccion.titulo);
+    const previa = mapa.get(clave);
+    if (previa) {
+      previa.items = quitarDuplicadosTexto([...previa.items, ...seccion.items]);
+      return;
+    }
+    mapa.set(clave, {
+      titulo: seccion.titulo,
+      items: quitarDuplicadosTexto(seccion.items),
+    });
+  });
+  return [...mapa.values()];
+}
+
+function extraerIndicacionesDesdeTexto(texto, { soloSeccion = false } = {}) {
+  const lineas = limpiarTextoFormato(texto).split("\n").map((linea) => linea.trim()).filter(Boolean);
+  if (!lineas.length) return [];
+
+  const bloque = soloSeccion ? extraerBloqueIndicaciones(lineas) : lineas;
+  if (!bloque.length) return [];
+
+  return bloque.flatMap(dividirIndicacion).map(limpiarIndicacion).filter(esIndicacionValida);
+}
+
+function extraerBloqueIndicaciones(lineas) {
+  const inicio = lineas.findIndex((linea) =>
+    /^(requisitos|indicaciones|consideraciones|materiales)\s*:?$/i.test(normalizarTextoPadres(linea))
+  );
+  if (inicio === -1) return [];
+
+  const salida = [];
+  for (const linea of lineas.slice(inicio + 1)) {
+    const normal = normalizarTextoPadres(linea).replace(/[:.]+$/g, "");
+    if (/^(costo|el almuerzo|almuerzo|entregar este formato|acepto|datos del alumno|modalidades|atentamente)\b/.test(normal)) {
+      break;
+    }
+    salida.push(linea);
+  }
+  return salida;
+}
+
+function dividirIndicacion(linea) {
+  const texto = String(linea || "").trim();
+  if (texto.includes("\n")) return texto.split("\n");
+  if (/^\d+[.)-]/.test(texto) || /^[*-]/.test(texto)) return [texto];
+  if (texto.length > 90 && /[.;]\s+/.test(texto)) return texto.split(/[.;]\s+/);
+  return [texto];
+}
+
+function limpiarIndicacion(valor) {
+  return String(valor || "")
+    .replace(/^[\s*-]+/, "")
+    .replace(/^\d+[.)-]\s*/, "")
+    .replace(/\{\{[^}]+\}\}/g, "")
+    .replace(/\[\[[^\]]+\]\]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/[.;]$/, "");
+}
+
+function esIndicacionValida(valor) {
+  const texto = String(valor || "").trim();
+  const normal = normalizarTextoPadres(texto);
+  if (texto.length < 4) return false;
+  if (/^(requisitos|indicaciones|consideraciones|materiales|clases|ventajas)$/i.test(normal)) return false;
+  if (/^(costo|pago unico|precio|s\/)/i.test(normal)) return false;
+  if (normal.includes("soles") || normal.includes("s/")) return false;
+  return true;
+}
+
+function quitarDuplicadosTexto(items) {
+  const vistos = new Set();
+  return items.filter((item) => {
+    const clave = normalizarTextoPadres(item);
+    if (!clave || vistos.has(clave)) return false;
+    vistos.add(clave);
+    return true;
+  });
+}
+
+function limpiarTextoFormato(texto) {
+  return repararTexto(texto)
+    .replace(/\r/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function recortarTexto(texto, maximo) {
+  const limpio = String(texto || "").replace(/\s+/g, " ").trim();
+  if (limpio.length <= maximo) return limpio;
+  const corte = limpio.slice(0, maximo).replace(/\s+\S*$/, "").trim();
+  return `${corte}...`;
+}
+
+function normalizarTextoPadres(valor) {
+  return repararTexto(valor)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 function limpiarComunicadoWord(texto, datos) {
   return repararTexto(texto)
     .replace(/\{\{\s*TITULO\s*\}\}/gi, datos.programa)
@@ -100,16 +336,113 @@ function limpiarComunicadoWord(texto, datos) {
     .trim();
 }
 
+/**
+ * Repara texto con doble codificación UTF-8 (mojibake).
+ *
+ * Cuando texto UTF-8 se lee como Windows-1252/Latin-1, cada byte del UTF-8 original
+ * se convierte en un caracter Unicode incorrecto. Esta función revierte ese proceso:
+ * 1. Convierte cada caracter de vuelta a su byte original (usando tabla inversa Win-1252)
+ * 2. Busca secuencias de bytes que formen UTF-8 válido (2, 3 o 4 bytes)
+ * 3. Decodifica esas secuencias al caracter Unicode correcto
+ *
+ * Ejemplos: Ã³ → ó, Ã± → ñ, â€" → –, Ã"N → ÓN, MARRÃ"N → MARRÓN
+ */
 function repararTexto(texto) {
-  return String(texto || "")
-    .replace(/MatemÃ¡tico/g, "Matematico")
-    .replace(/DirecciÃ³n/g, "Direccion")
-    .replace(/estÃ¡/g, "esta")
-    .replace(/aquÃ­/g, "aqui")
-    .replace(/explicaciÃ³n/g, "explicacion")
-    .replace(/resoluciÃ³n/g, "resolucion")
-    .replace(/Ã¡rea/g, "area")
-    .replace(/distribuciÃ³n/g, "distribucion")
-    .replace(/InstituciÃ³n/g, "Institucion")
-    .replace(/CoordinaciÃ³n/g, "Coordinacion");
+  const s = String(texto || "");
+  if (!s || typeof TextDecoder === "undefined") return s;
+
+  // Tabla inversa Windows-1252: mapea code points Unicode → byte original (0x80-0x9F).
+  // Los bytes 0x80-0x9F en Win-1252 se mapean a estos code points Unicode.
+  // Para revertir el mojibake, necesitamos el mapeo inverso.
+  const w1252 = new Map([
+    [0x20AC, 0x80], // €
+    [0x201A, 0x82], // ‚
+    [0x0192, 0x83], // ƒ
+    [0x201E, 0x84], // „
+    [0x2026, 0x85], // …
+    [0x2020, 0x86], // †
+    [0x2021, 0x87], // ‡
+    [0x02C6, 0x88], // ˆ
+    [0x2030, 0x89], // ‰
+    [0x0160, 0x8A], // Š
+    [0x2039, 0x8B], // ‹
+    [0x0152, 0x8C], // Œ
+    [0x017D, 0x8E], // Ž
+    [0x2018, 0x91], // '
+    [0x2019, 0x92], // '
+    [0x201C, 0x93], // "
+    [0x201D, 0x94], // "
+    [0x2022, 0x95], // •
+    [0x2013, 0x96], // –
+    [0x2014, 0x97], // —
+    [0x02DC, 0x98], // ˜
+    [0x2122, 0x99], // ™
+    [0x0161, 0x9A], // š
+    [0x203A, 0x9B], // ›
+    [0x0153, 0x9C], // œ
+    [0x017E, 0x9E], // ž
+    [0x0178, 0x9F], // Ÿ
+  ]);
+
+  function toByte(ch) {
+    const c = ch.codePointAt(0);
+    if (c < 0x100) return c;
+    const b = w1252.get(c);
+    return b !== undefined ? b : -1;
+  }
+
+  const decoder = new TextDecoder("utf-8", { fatal: true });
+  let out = "";
+  let i = 0;
+  const len = s.length;
+
+  while (i < len) {
+    const b0 = toByte(s[i]);
+    let consumed = 0;
+
+    // Intentar secuencia UTF-8 de 4 bytes: F0-F4 (emojis, símbolos especiales)
+    if (b0 >= 0xF0 && b0 <= 0xF4 && i + 3 < len) {
+      const b1 = toByte(s[i + 1]);
+      const b2 = toByte(s[i + 2]);
+      const b3 = toByte(s[i + 3]);
+      if ((b1 & 0xC0) === 0x80 && (b2 & 0xC0) === 0x80 && (b3 & 0xC0) === 0x80) {
+        try {
+          out += decoder.decode(new Uint8Array([b0, b1, b2, b3]));
+          consumed = 4;
+        } catch { /* no es secuencia UTF-8 válida */ }
+      }
+    }
+
+    // Intentar secuencia UTF-8 de 3 bytes: E0-EF (ej: – — " " … emojis de 3 bytes)
+    if (!consumed && b0 >= 0xE0 && b0 <= 0xEF && i + 2 < len) {
+      const b1 = toByte(s[i + 1]);
+      const b2 = toByte(s[i + 2]);
+      if ((b1 & 0xC0) === 0x80 && (b2 & 0xC0) === 0x80) {
+        try {
+          out += decoder.decode(new Uint8Array([b0, b1, b2]));
+          consumed = 3;
+        } catch { /* no es secuencia UTF-8 válida */ }
+      }
+    }
+
+    // Intentar secuencia UTF-8 de 2 bytes: C2-DF (ej: á é í ó ú ñ Á É Í Ó Ú Ñ ° ¡ ¿)
+    if (!consumed && b0 >= 0xC2 && b0 <= 0xDF && i + 1 < len) {
+      const b1 = toByte(s[i + 1]);
+      if ((b1 & 0xC0) === 0x80) {
+        try {
+          out += decoder.decode(new Uint8Array([b0, b1]));
+          consumed = 2;
+        } catch { /* no es secuencia UTF-8 válida */ }
+      }
+    }
+
+    if (consumed) {
+      i += consumed;
+    } else {
+      out += s[i];
+      i++;
+    }
+  }
+
+  return out;
 }

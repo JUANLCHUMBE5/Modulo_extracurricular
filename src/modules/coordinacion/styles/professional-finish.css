@@ -363,16 +363,17 @@
 
 .coord-workspace-upload .coord-upload-card .coord-form {
   display: grid;
-  gap: 8px;
-  padding: 10px;
+  gap: 12px;
+  padding: 14px 12px 12px;
   border: 1px solid #d5e8e2;
   border-radius: 10px;
   background: #f8fcfa;
 }
 
 .coord-workspace-upload .coord-upload-card .coord-upload-grid {
-  grid-template-columns: minmax(130px, 190px) minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: minmax(150px, 240px) minmax(0, 1fr);
+  align-items: end;
+  gap: 10px;
 }
 
 .coord-workspace-upload .coord-upload-card .coord-field {
@@ -391,6 +392,56 @@
   height: 36px;
   border-color: #bfd9d1;
   background: #ffffff;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-upload-grid input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.coord-file-picker {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #bfd9d1;
+  border-radius: 8px;
+  padding: 5px 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.coord-file-picker label {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #9dd8cb;
+  border-radius: 7px;
+  padding: 0 11px;
+  color: #176c60;
+  background: #eaf6f2;
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.coord-file-picker span {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  color: #172331;
+  font-size: 13px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .coord-upload-format-row {
@@ -422,7 +473,7 @@
 .coord-workspace-upload .coord-upload-card .coord-upload-actions {
   justify-content: flex-start;
   gap: 8px;
-  margin-top: 0;
+  margin-top: -2px;
 }
 
 .coord-workspace-upload .coord-upload-card .coord-upload-actions button {

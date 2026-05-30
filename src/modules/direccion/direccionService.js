@@ -249,6 +249,93 @@ function abreviar(valor) {
   return texto.length > 20 ? `${texto.slice(0, 19)}...` : texto;
 }
 
+export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, columnas = [], periodo = "todos" }) {
+  const panel = await obtenerPanelDireccion({ periodo });
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Colegio San Rafael";
+  workbook.created = new Date();
+
+  let rawData = [];
+  if (tipoDatos === "inscripciones") {
+    rawData = panel.reportes.inscripciones;
+  } else if (tipoDatos === "programas") {
+    rawData = panel.reportes.programas;
+  } else if (tipoDatos === "pagos") {
+    rawData = panel.reportes.pagos;
+  }
+
+  let filteredData = [...rawData];
+
+  if (tipoDatos === "inscripciones") {
+    if (filtros.origen && filtros.origen !== "todos") {
+      filteredData = filteredData.filter((item) => {
+        const itemOrigen = String(item.origen || "").toLowerCase();
+        if (filtros.origen === "web") {
+          return itemOrigen.includes("web") || itemOrigen.includes("padres");
+        }
+        if (filtros.origen === "secretaria") {
+          return itemOrigen.includes("sec") || itemOrigen.includes("presencial") || itemOrigen.includes("carga") || itemOrigen.includes("excel") || itemOrigen === "";
+        }
+        return true;
+      });
+    }
+    if (filtros.estadoPago && filtros.estadoPago !== "todos") {
+      filteredData = filteredData.filter((item) => normalizarEstadoPago(item.estadoPago) === filtros.estadoPago);
+    }
+  } else if (tipoDatos === "pagos") {
+    if (filtros.estadoPago && filtros.estadoPago !== "todos") {
+      filteredData = filteredData.filter((item) => normalizarEstadoPago(item.estado) === filtros.estadoPago);
+    }
+  }
+
+  const headersMap = {
+    id: { header: "Código", width: 16 },
+    dni: { header: "DNI", width: 12 },
+    estudiante: { header: "Estudiante", width: 32 },
+    grado: { header: "Grado", width: 18 },
+    programa: { header: "Programa", width: 32 },
+    estadoInscripcion: { header: "Estado Inscripción", width: 20 },
+    estadoPago: { header: "Estado Pago", width: 16 },
+    costo: { header: "Costo", width: 12 },
+    origen: { header: "Origen / Canal", width: 24 },
+    fechaRegistro: { header: "Fecha Registro", width: 22 },
+    apoderado: { header: "Apoderado", width: 24 },
+    telefono: { header: "Teléfono", width: 16 },
+    periodo: { header: "Periodo", width: 14 },
+    estado: { header: "Estado", width: 16 },
+    categoria: { header: "Categoría", width: 18 },
+    responsable: { header: "Responsable", width: 24 },
+    inscritos: { header: "Inscritos", width: 12 },
+    cupos: { header: "Cupos", width: 10 },
+    avance: { header: "Avance %", width: 12 },
+    proyectado: { header: "Proyectado", width: 14 },
+    recaudado: { header: "Recaudado", width: 14 },
+    nombre: { header: "Programa", width: 32 },
+    monto: { header: "Monto", width: 12 },
+    medio: { header: "Medio", width: 18 },
+    fecha: { header: "Fecha", width: 22 },
+  };
+
+  const sheetColumns = columnas.map((colKey) => {
+    const colInfo = headersMap[colKey];
+    return {
+      header: colInfo?.header || colKey,
+      key: colKey,
+      width: colInfo?.width || 16,
+    };
+  });
+
+  agregarHoja(workbook, "Reporte Personalizado", filteredData, sheetColumns);
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  const nombre = `direccion-personalizado-${tipoDatos}-${periodo}.xlsx`;
+  descargarBlob(blob, nombre);
+  return nombre;
+}
+
 function descargarBlob(blob, nombreArchivo) {
   const url = URL.createObjectURL(blob);
   const enlace = document.createElement("a");
