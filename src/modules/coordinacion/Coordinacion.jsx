@@ -1,29 +1,11 @@
 import { useEffect, useState } from "react";
-import ExcelJS from "exceljs";
-import { Alert as MantineAlert, Badge, Group, ActionIcon, Tooltip } from "@mantine/core";
 import { toast } from "sonner";
 import {
-  IconAlertCircle as AlertCircle,
   IconBook as BookOpen,
-  IconCalendar as CalendarDays,
   IconChevronRight as ChevronRight,
-  IconCircleCheck as CheckCircle2,
-  IconCurrencyDollar as DollarSign,
-  IconEdit as Edit3,
-  IconEye as Eye,
-  IconFileDownload as FileDown,
   IconFileText as FileText,
-  IconPhoto as Photo,
-  IconLoader2 as Loader2,
   IconLogout as LogOut,
-  IconPlus as Plus,
-  IconSearch as Search,
-  IconToggleLeft as ToggleLeft,
-  IconToggleRight as ToggleRight,
-  IconTrash as Trash2,
   IconUpload as Upload,
-  IconUsers as Users,
-  IconX as X,
 } from "@tabler/icons-react";
 import {
   diasSemana,
@@ -39,22 +21,41 @@ import {
   previsualizarCargaAlumnosMasiva, confirmarCargaAlumnos, obtenerActividadPrograma,
 } from "./services/coordinacionService";
 import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias } from "../../services/dateService";
-import GradeSelector from "./components/GradeSelector";
-import { HorarioTabla, GradosTabla, VigenciaTabla, CuposTabla } from "./components/ProgramTableCells";
+import AlumnosProgramaModal from "./components/AlumnosProgramaModal";
 import CargaExcelView from "./components/CargaExcelView";
 import DocumentosView from "./components/DocumentosView";
-import { esCostoValido, formatearHora12, formatearSoles } from "./utils/coordinacionFormatters";
+import ProgramaFormModal from "./components/ProgramaFormModal";
+import ProgramasView from "./components/ProgramasView";
+import { esCostoValido } from "./utils/coordinacionFormatters";
+import {
+  calcularRangoEdades,
+  comprimirImagenAnuncio,
+  crearGrupoEtarioVerano,
+  esProgramaDeportivo,
+  nombreProgramaDesdeArchivo,
+  normalizarHorariosPorGrupo,
+  normalizarListaGrados,
+  normalizarListaTexto,
+  normalizarPeriodoVista,
+  obtenerGradosDeportivos,
+  obtenerGradosFinales,
+  resumenGrupoDeportivo,
+  resumenGrados,
+  resumenHorario,
+  resumenHorarioDeportivo,
+  resumenHorariosPorGrupo,
+} from "./utils/coordinacionProgramUtils";
+import { descargarListaAlumnosExcel } from "./utils/excelUtils";
 import { descargarListaAlumnosPdf } from "./utils/pdfUtils";
 import {
   contarDatosDetectados,
   extraerDatosProgramaDesdeWord,
   filtrarDatosDocumento,
   leerArchivoBase64,
-  leerDocumentoWord,
   leerDocumentoWordDesdeBase64,
   leerPlantillaWord,
-  leerPlantillaWordDesdeBase64,
 } from "./utils/wordTemplateUtils";
+import { apiDb } from "../../services/dbApi";
 import "./Coordinacion.css";
 
 const formInicial = {
@@ -71,8 +72,6 @@ const formInicial = {
   requiereUniforme: false, requiereIndumentaria: false, invitacionMasiva: false,
   anuncioImagen: "", anuncioImagenNombre: "", anuncioImagenTamano: 0, anuncioImagenComprimida: false,
 };
-
-const ANUNCIO_IMAGEN_MAX_BYTES = 900 * 1024;
 
 const horarioGrupoInicial = {
   grados: [],
@@ -103,166 +102,6 @@ function tienePermisoAsignado(user, permiso) {
 
 function puedeVerVista(user, vista) {
   return !vista.permissions?.length || vista.permissions.some((permiso) => tienePermisoAsignado(user, permiso));
-}
-
-function normalizarListaGrados(lista) {
-  if (!Array.isArray(lista)) return [];
-  const normalizados = lista
-    .map((item) => {
-      let str = String(item || "").trim();
-      
-      // Limpiar codificación de UTF-8 corrupta para "años" y variantes
-      str = str.replace(/aÃ±os/g, "años")
-               .replace(/aÃ±o/g, "año")
-               .replace(/añ/g, "añ")
-               .replace(/a[Ã±\u00c3\u00b1\u00e1\u00b1]+os/g, "años")
-               .replace(/a±os/g, "años")
-               .replace(/a\?os/g, "años")
-               .replace(/aos/g, "años");
-               
-      if (str.includes(":")) {
-        let [nivel, grado] = str.split(":");
-        nivel = nivel.trim();
-        grado = grado.trim();
-        nivel = nivel.charAt(0).toUpperCase() + nivel.slice(1).toLowerCase();
-        grado = grado.replace(/aÃ±os/g, "años")
-                     .replace(/aÃ±o/g, "año")
-                     .replace(/a[Ã±\u00c3\u00b1\u00e1\u00b1]+os/g, "años")
-                     .replace(/a±os/g, "años")
-                     .replace(/a\?os/g, "años")
-                     .replace(/aos/g, "años");
-        return `${nivel}:${grado}`;
-      }
-      
-      // Si no tiene nivel pero es de inicial (ej. "4 años", "4 aÃ±os")
-      if (str.includes("años") || str.includes("año") || str.includes("anys") || /^\d+\s*años?$/i.test(str)) {
-        const num = str.match(/\d+/)?.[0] || "";
-        if (num) return `Inicial:${num} años`;
-      }
-      
-      return str;
-    })
-    .filter(Boolean);
-    
-  return [...new Set(normalizados)];
-}
-
-function normalizarListaTexto(lista) {
-  if (!Array.isArray(lista)) return [];
-  return lista
-    .map((item) => String(item || "").trim())
-    .filter(Boolean);
-}
-
-function normalizarTextoBusqueda(valor) {
-  return String(valor || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function esProgramaDeportivo(nombre = "", categoria = "") {
-  const texto = normalizarTextoBusqueda(`${nombre} ${categoria}`);
-  return /\b(deport|voley|volley|futbol|futsal|fulbito|football|soccer)\b/.test(texto);
-}
-
-function calcularEdadDesdeFecha(fechaTexto) {
-  if (!fechaTexto) return "";
-  const fecha = new Date(fechaTexto);
-  if (Number.isNaN(fecha.getTime())) return "";
-  const hoy = new Date();
-  let edad = hoy.getFullYear() - fecha.getFullYear();
-  const mes = hoy.getMonth() - fecha.getMonth();
-  if (mes < 0 || (mes === 0 && hoy.getDate() < fecha.getDate())) edad -= 1;
-  return edad > 0 ? edad : "";
-}
-
-function calcularRangoEdades(desde, hasta) {
-  const edadDesde = calcularEdadDesdeFecha(desde);
-  const edadHasta = calcularEdadDesdeFecha(hasta);
-  if (!edadDesde || !edadHasta) return { edadMinima: "", edadMaxima: "" };
-  return {
-    edadMinima: Math.min(edadDesde, edadHasta),
-    edadMaxima: Math.max(edadDesde, edadHasta),
-  };
-}
-
-function formatearPesoArchivo(bytes = 0) {
-  const numero = Number(bytes || 0);
-  if (!numero) return "";
-  if (numero < 1024 * 1024) return `${Math.round(numero / 1024)} KB`;
-  return `${(numero / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function nombreProgramaDesdeArchivo(nombreArchivo = "") {
-  return String(nombreArchivo || "")
-    .replace(/\.[^.]+$/g, "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\b(plantilla|digital|variables|word|docx)\b/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase()
-    .replace(/\b\w/g, (letra) => letra.toUpperCase());
-}
-
-function leerArchivoComoDataUrl(archivo) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error("No se pudo leer la imagen seleccionada."));
-    reader.readAsDataURL(archivo);
-  });
-}
-
-function cargarImagen(dataUrl) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("La imagen seleccionada no se pudo procesar."));
-    image.src = dataUrl;
-  });
-}
-
-function dataUrlABytes(dataUrl = "") {
-  const base64 = String(dataUrl).split(",")[1] || "";
-  return Math.round((base64.length * 3) / 4);
-}
-
-async function comprimirImagenAnuncio(archivo) {
-  const dataUrlOriginal = await leerArchivoComoDataUrl(archivo);
-  if (archivo.size <= ANUNCIO_IMAGEN_MAX_BYTES) {
-    return {
-      dataUrl: dataUrlOriginal,
-      bytes: archivo.size,
-      comprimida: false,
-    };
-  }
-
-  const imagen = await cargarImagen(dataUrlOriginal);
-  const escala = Math.min(1, 1400 / Math.max(imagen.width, imagen.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(imagen.width * escala));
-  canvas.height = Math.max(1, Math.round(imagen.height * escala));
-  const ctx = canvas.getContext("2d");
-  ctx.drawImage(imagen, 0, 0, canvas.width, canvas.height);
-
-  let calidad = 0.82;
-  let comprimida = canvas.toDataURL("image/jpeg", calidad);
-  while (dataUrlABytes(comprimida) > ANUNCIO_IMAGEN_MAX_BYTES && calidad > 0.46) {
-    calidad -= 0.08;
-    comprimida = canvas.toDataURL("image/jpeg", calidad);
-  }
-
-  return {
-    dataUrl: comprimida,
-    bytes: dataUrlABytes(comprimida),
-    comprimida: true,
-  };
-}
-
-function etiquetaGradoCorta(grado) {
-  return String(grado || "").replace(/\s*aÃ±os?/i, "").trim();
 }
 
 function Coordinacion({
@@ -352,13 +191,18 @@ function Coordinacion({
 
   async function cargarDatos() {
     setCargando(true);
-    const [progs, cats] = await Promise.all([
-      listarProgramas(),
-      listarCategorias(),
-    ]);
-    setProgramas(progs);
-    setCategorias(cats);
-    setCargando(false);
+    try {
+      const [progs, cats] = await Promise.all([
+        listarProgramas(),
+        listarCategorias(),
+      ]);
+      setProgramas(progs);
+      setCategorias(cats);
+    } catch (err) {
+      mostrarMsg(err.message || "No se pudieron cargar los datos de Coordinación.");
+    } finally {
+      setCargando(false);
+    }
   }
 
 
@@ -377,8 +221,10 @@ function Coordinacion({
 
   // ── Filtrar programas ──
   const programasFiltrados = programas.filter(p => {
-    const coincide = p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      p.id.toLowerCase().includes(busqueda.toLowerCase());
+    const textoBusqueda = busqueda.trim().toLowerCase();
+    const coincide = !textoBusqueda ||
+      String(p.nombre || "").toLowerCase().includes(textoBusqueda) ||
+      String(p.id || "").toLowerCase().includes(textoBusqueda);
     const filtra = filtroPeriodo === "todos" || normalizarPeriodoVista(p.periodo) === filtroPeriodo;
     return coincide && filtra;
   });
@@ -583,17 +429,22 @@ function Coordinacion({
       }
     } catch (err) {
       mostrarMsg(err.message);
+    } finally {
+      setGuardando(false);
     }
-    setGuardando(false);
   }
 
   // ── Cambiar estado ──
   async function toggleEstado(prog) {
     if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para cambiar el estado de programas.");
     const nuevo = prog.estado === "Habilitado" ? "Deshabilitado" : "Habilitado";
-    await cambiarEstadoPrograma(prog.id, nuevo);
-    mostrarMsg(`Programa ${nuevo.toLowerCase()}.`, "success");
-    await cargarDatos();
+    try {
+      await cambiarEstadoPrograma(prog.id, nuevo);
+      mostrarMsg(`Programa ${nuevo.toLowerCase()}.`, "success");
+      await cargarDatos();
+    } catch (err) {
+      mostrarMsg(err.message || "No se pudo cambiar el estado del programa.");
+    }
   }
 
   async function finalizarPrograma(prog) {
@@ -601,9 +452,13 @@ function Coordinacion({
     const confirmado = window.confirm(`Finalizar ${prog.nombre}? Secretaria ya no podrá registrar nuevas inscripciones.`);
     if (!confirmado) return;
 
-    await cambiarEstadoPrograma(prog.id, "Finalizado");
-    mostrarMsg("Programa finalizado correctamente.", "success");
-    await cargarDatos();
+    try {
+      await cambiarEstadoPrograma(prog.id, "Finalizado");
+      mostrarMsg("Programa finalizado correctamente.", "success");
+      await cargarDatos();
+    } catch (err) {
+      mostrarMsg(err.message || "No se pudo finalizar el programa.");
+    }
   }
 
   // ── Ver invitados ──
@@ -645,7 +500,7 @@ function Coordinacion({
     mostrarMsg("Lista de alumnos descargada en PDF.", "success");
   }
 
-  function exportarAExcel(tipo) {
+  async function exportarAExcel(tipo) {
     if (!progSeleccionado) return;
     const isPre = tipo === "preinscritos";
     const data = isPre ? invitados : matriculados;
@@ -654,73 +509,12 @@ function Coordinacion({
       return;
     }
 
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = "Colegio San Rafael";
-    workbook.created = new Date();
-
-    const sheetName = isPre ? "Alumnos Pre-inscritos" : "Alumnos Matriculados";
-    const worksheet = workbook.addWorksheet(sheetName);
-
-    if (isPre) {
-      worksheet.columns = [
-        { header: "DNI", key: "dni", width: 15 },
-        { header: "Código", key: "codigoEstudiante", width: 15 },
-        { header: "Estudiante", key: "nombres", width: 35 },
-        { header: "Grado", key: "grado", width: 15 },
-        { header: "Sección", key: "seccion", width: 15 },
-        { header: "Observación", key: "observacion", width: 30 }
-      ];
-    } else {
-      worksheet.columns = [
-        { header: "DNI", key: "dni", width: 15 },
-        { header: "Código", key: "codigoEstudiante", width: 15 },
-        { header: "Estudiante", key: "nombres", width: 35 },
-        { header: "Grado", key: "grado", width: 15 },
-        { header: "Sección", key: "seccion", width: 15 },
-        { header: "Estado Inscripción", key: "estadoInscripcion", width: 25 },
-        { header: "Estado Pago", key: "estadoPago", width: 20 },
-        { header: "Canal/Origen", key: "origenRegistro", width: 20 },
-        { header: "Fecha Registro", key: "fechaRegistro", width: 25 }
-      ];
-    }
-
-    worksheet.addRows(data);
-
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    headerRow.fill = {
-      type: "pattern",
-      pattern: "solid",
-      fgColor: { argb: "FF006B5B" }
-    };
-    headerRow.alignment = { vertical: "middle", horizontal: "center" };
-
-    worksheet.eachRow((row) => {
-      row.eachCell((cell) => {
-        cell.border = {
-          top: { style: "thin", color: { argb: "FFE2E8F0" } },
-          left: { style: "thin", color: { argb: "FFE2E8F0" } },
-          bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
-          right: { style: "thin", color: { argb: "FFE2E8F0" } }
-        };
-      });
-    });
-
-    workbook.xlsx.writeBuffer().then((buffer) => {
-      const blob = new Blob([buffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      const fileName = `Alumnos_${isPre ? "Preinscritos" : "Matriculados"}_${progSeleccionado.nombre.replace(/\s+/g, "_")}.xlsx`;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+    try {
+      await descargarListaAlumnosExcel(progSeleccionado, tipo, data);
       mostrarMsg("Archivo Excel descargado.", "success");
-    });
+    } catch (err) {
+      mostrarMsg(err.message || "No se pudo exportar el archivo Excel.");
+    }
   }
 
   function abrirDocumentosPrograma(prog) {
@@ -755,8 +549,9 @@ function Coordinacion({
       mostrarMsg(`Plantilla de ${creado.nombre} guardada en el historial.`, "success");
     } catch (err) {
       mostrarMsg(err.message);
+    } finally {
+      setGuardando(false);
     }
-    setGuardando(false);
   }
 
   async function guardarDocumentosPrograma() {
@@ -771,8 +566,9 @@ function Coordinacion({
       mostrarMsg("Documentos del programa actualizados correctamente.", "success");
     } catch (err) {
       mostrarMsg(err.message);
+    } finally {
+      setGuardando(false);
     }
-    setGuardando(false);
   }
 
   // ── Agregar categoría ──
@@ -916,65 +712,6 @@ function Coordinacion({
       talleresDeportivos: listaActual.filter((_, idx) => idx !== index)
     }));
   };
-
-  function mapAgesToGrades(edadMinima, edadMaxima) {
-    const min = Number(edadMinima || 0);
-    const max = Number(edadMaxima || 0);
-    const grados = [];
-    for (let age = min; age <= max; age++) {
-      if (age === 3) grados.push("Inicial:3 años");
-      else if (age === 4) grados.push("Inicial:4 años");
-      else if (age === 5) grados.push("Inicial:5 años");
-      else if (age >= 6 && age <= 11) {
-        grados.push(`Primaria:${age - 5}`);
-      } else if (age >= 12 && age <= 16) {
-        grados.push(`Secundaria:${age - 11}`);
-      } else if (age >= 17) {
-        grados.push("Secundaria:5");
-      }
-    }
-    return grados;
-  }
-
-  function obtenerGradosDeportivos(talleres) {
-    if (!Array.isArray(talleres)) return [];
-    const sets = new Set();
-    talleres.forEach(t => {
-      const grades = mapAgesToGrades(t.edadMinima, t.edadMaxima);
-      grades.forEach(g => sets.add(g));
-    });
-    return Array.from(sets);
-  }
-
-  function resumenGrupoDeportivo(talleres) {
-    if (!Array.isArray(talleres) || talleres.length === 0) return "Por definir";
-    const uniqueWorkshops = [];
-    talleres.forEach(t => {
-      const label = `${t.deporte} (${t.edadMinima}-${t.edadMaxima} años)`;
-      if (!uniqueWorkshops.includes(label)) {
-        uniqueWorkshops.push(label);
-      }
-    });
-    return uniqueWorkshops.join(" / ");
-  }
-
-  function resumenHorarioDeportivo(talleres) {
-    if (!Array.isArray(talleres) || talleres.length === 0) return "Por definir";
-    const porDia = {};
-    talleres.forEach(t => {
-      if (!porDia[t.dia]) porDia[t.dia] = [];
-      porDia[t.dia].push(`${t.deporte} (${t.edadMinima}-${t.edadMaxima} a.): ${t.horaInicio}-${t.horaFin}`);
-    });
-    return Object.keys(porDia).map(dia => `${dia}: ${porDia[dia].join(", ")}`).join(" / ");
-  }
-
-  function crearGrupoEtarioVerano(datos) {
-    if (datos.grupoEtario) return datos.grupoEtario;
-    if (datos.edadMinima && datos.edadMaxima) {
-      return `Edades ${datos.edadMinima} a ${datos.edadMaxima} anios`;
-    }
-    return "";
-  }
 
   function actualizarNombrePrograma(valor) {
     setForm((actual) => ({
@@ -1156,8 +893,9 @@ function Coordinacion({
       mostrarMsg("Documento eliminado del programa.", "success");
     } catch (err) {
       mostrarMsg(err.message);
+    } finally {
+      setGuardando(false);
     }
-    setGuardando(false);
   }
 
   async function eliminarPlantillaHistorial(programa) {
@@ -1193,8 +931,9 @@ function Coordinacion({
       mostrarMsg("Plantilla eliminada correctamente.", "success");
     } catch (err) {
       mostrarMsg(err.message);
+    } finally {
+      setGuardando(false);
     }
-    setGuardando(false);
   }
 
   async function usarPlantillaExistente(programaId) {
@@ -1322,70 +1061,6 @@ function Coordinacion({
     }));
   }
 
-  function resumenGrados(grados) {
-    const gradosSeguros = normalizarListaGrados(grados);
-    if (!gradosSeguros.length) return "";
-    return nivelesGrados
-      .map(({ nivel }) => {
-        const items = gradosSeguros
-          .filter(item => item.startsWith(`${nivel}:`))
-          .map(item => etiquetaGradoCorta(item.split(":")[1]));
-        return items.length ? `${nivel}: ${items.join(", ")}` : "";
-      })
-      .filter(Boolean)
-      .join(" / ");
-  }
-
-  function resumenHorario(dias, inicio, fin, almuerzoInicio = "", almuerzoFin = "") {
-    const diasSeguros = normalizarListaTexto(dias);
-    if (!diasSeguros.length || !inicio || !fin) return "";
-    const clase = `${formatearHora12(inicio)} - ${formatearHora12(fin)}`;
-    const almuerzo = almuerzoInicio && almuerzoFin
-      ? ` · almuerzo ${formatearHora12(almuerzoInicio)} - ${formatearHora12(almuerzoFin)}`
-      : "";
-    return `${diasSeguros.join(", ")} clase ${clase}${almuerzo}`;
-  }
-
-  function normalizarHorariosPorGrupo(grupos, gradosAplicables = null) {
-    const gradosValidos = gradosAplicables ? new Set(normalizarListaGrados(gradosAplicables)) : null;
-    return (Array.isArray(grupos) ? grupos : []).map((grupo, index) => {
-      const gradosNormalizados = normalizarListaGrados(grupo.grados);
-      const gradosFiltrados = gradosValidos 
-        ? gradosNormalizados.filter(grado => gradosValidos.has(grado))
-        : gradosNormalizados;
-      return {
-        id: grupo.id || `grupo-${index + 1}`,
-        grados: gradosFiltrados,
-        dia: grupo.dia || "",
-        almuerzoInicio: grupo.almuerzoInicio || "14:20",
-        almuerzoFin: grupo.almuerzoFin || "15:10",
-        horaInicio: grupo.horaInicio || "",
-        horaFin: grupo.horaFin || "",
-        aula: String(grupo.aula || "").trim(),
-      };
-    }).filter((grupo) =>
-      grupo.grados.length > 0
-    );
-  }
-
-  function obtenerGradosFinales(gradosBase, gruposHorario) {
-    return normalizarListaGrados(gradosBase);
-  }
-
-  function resumenHorariosPorGrupo(gruposHorario) {
-    return gruposHorario
-      .map((grupo) => {
-        const grados = resumenGrados(grupo.grados);
-        const aula = grupo.aula ? ` · Aula ${grupo.aula}` : "";
-        return `${grados}: ${grupo.dia} almuerzo ${formatearHora12(grupo.almuerzoInicio)}-${formatearHora12(grupo.almuerzoFin)}, clase ${formatearHora12(grupo.horaInicio)}-${formatearHora12(grupo.horaFin)}${aula}`;
-      })
-      .join(" / ");
-  }
-
-  function normalizarPeriodoVista(valor) {
-    return String(valor || "").toLowerCase().includes("verano") ? "verano" : "escolar";
-  }
-
   async function generarPreviewExcel() {
     if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para cargar alumnos.");
     setMensaje("");
@@ -1433,8 +1108,9 @@ function Coordinacion({
     } catch (err) {
       mostrarMsg(err.message || "No se pudo leer el archivo Excel.");
       setProgresoCarga(null);
+    } finally {
+      setCargandoPreview(false);
     }
-    setCargandoPreview(false);
   }
 
   async function confirmarCargaExcel() {
@@ -1454,8 +1130,9 @@ function Coordinacion({
       mostrarMsg("Carga confirmada correctamente.", "success");
     } catch (err) {
       mostrarMsg(err.message);
+    } finally {
+      setConfirmandoCarga(false);
     }
-    setConfirmandoCarga(false);
   }
 
   function cancelarCargaExcel() {
@@ -1523,161 +1200,27 @@ function Coordinacion({
           delegatedContent
         ) : (
           <>
-        {/* ─── VISTA: GESTIÓN DE PROGRAMAS ─── */}
         {vista === "programas" && puedeVerProgramasVista && (
-          <>
-            <header className="coord-topbar">
-              <span className="coord-topbar-eyebrow">Gestion academica</span>
-              <h1>Programas extracurriculares</h1>
-            </header>
-            <section className="coord-workspace coord-workspace-single">
-              <article className="coord-card coord-search-card">
-                <div className="coord-card-title">
-                  <span className="coord-title-icon"><BookOpen size={21} /></span>
-                  <div><h2>Programas registrados</h2>
-                    <p>Consulte, cree o administre programas y talleres.</p></div>
-                </div>
-
-                <div className="coord-form">
-                  <div className="coord-filtros-row">
-                    <div className="coord-field">
-                      <label><CalendarDays size={14} /> Periodo</label>
-                      <select value={filtroPeriodo} onChange={e => setFiltroPeriodo(e.target.value)}>
-                        <option value="todos">Todos</option>
-                        <option value="escolar">Año escolar</option>
-                        <option value="verano">Ciclo verano</option>
-                      </select>
-                    </div>
-
-                    {puedeCrearProgramas ? (
-                      <button className="coord-register-button" type="button" onClick={abrirCrear}>
-                        <Plus size={17} /><span>Nuevo programa</span>
-                      </button>
-                    ) : null}
-
-                  </div>
-                </div>
-
-                {mensaje && (
-                  <MantineAlert
-                    className="coord-message"
-                    color={tipoMsg === "success" ? "sanrafael" : "orange"}
-                    radius="md"
-                    icon={tipoMsg === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-                  >
-                    {mensaje}
-                  </MantineAlert>
-                )}
-
-                {cargando ? (
-                  <div className="coord-loading"><Loader2 className="coord-spin" size={28} /> Cargando programas…</div>
-                ) : programasFiltrados.length === 0 ? (
-                  <div className="coord-empty"><AlertCircle size={18} /><p>No se encontraron programas.</p></div>
-                ) : (
-                  <div className="coord-program-card-list">
-                    {programasFiltrados.map(prog => (
-                      <article
-                        key={prog.id}
-                        className={`coord-program-card-item coord-program-card-${String(prog.estado || "").toLowerCase()}`}
-                      >
-                        <div className="coord-program-card-body">
-                          <div className="coord-program-card-header">
-                            <div className="coord-program-card-title">
-                              <h3>{prog.nombre}</h3>
-                              <div className="coord-program-card-meta">
-                                <span>{prog.id || "Sin código"}</span>
-                                <span>{prog.categoria || "Sin categoría"}</span>
-                                <span>Tutor: {prog.responsable || "No asignado"}</span>
-                              </div>
-                            </div>
-                            <Badge
-                              color={prog.estado === "Habilitado" ? "blue" : prog.estado === "Deshabilitado" ? "gray" : "yellow"}
-                              variant="light"
-                              size="sm"
-                            >
-                              {prog.estado}
-                            </Badge>
-                          </div>
-
-                          <div className="coord-program-card-grid">
-                            <div className="coord-program-card-detail">
-                              <span>Grados</span>
-                              <GradosTabla programa={prog} />
-                            </div>
-                            <div className="coord-program-card-detail coord-program-card-schedule">
-                              <span>Días y horario</span>
-                              <HorarioTabla programa={prog} />
-                            </div>
-                            <div className="coord-program-card-detail">
-                              <span>Vigencia</span>
-                              <VigenciaTabla
-                                inicio={prog.fechaInicio}
-                                fin={prog.fechaFin}
-                                duracion={prog.duracionTaller}
-                                avisoDias={prog.duracionAvisoDias}
-                              />
-                            </div>
-                            <div className="coord-program-card-detail">
-                              <span>Cupos</span>
-                              <CuposTabla programa={prog} />
-                            </div>
-                            <div className="coord-program-card-detail coord-program-card-cost">
-                              <span>Costo</span>
-                              <strong>{formatearSoles(prog.costo)}</strong>
-                            </div>
-                          </div>
-                        </div>
-
-                        {tieneAccionesPrograma ? (
-                          <div className="coord-program-card-actions" aria-label={`Acciones de ${prog.nombre}`}>
-                            <Group gap={6} justify="flex-end">
-                              {puedeEditarProgramas ? (
-                                <Tooltip label="Editar">
-                                  <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => abrirEditar(prog)}>
-                                    <Edit3 size={15} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              ) : null}
-                              {puedeVerAlumnos ? (
-                                <Tooltip label="Ver alumnos">
-                                  <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => verInvitados(prog)}>
-                                    <Eye size={15} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              ) : null}
-                              {puedeEditarProgramas && prog.estado !== "Finalizado" && (
-                                <Tooltip label={prog.estado === "Habilitado" ? "Deshabilitar" : "Habilitar"}>
-                                  <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => toggleEstado(prog)}>
-                                    {prog.estado === "Habilitado" ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
-                                  </ActionIcon>
-                                </Tooltip>
-                              )}
-                              {puedeEditarProgramas && prog.estado !== "Finalizado" && (
-                                <Tooltip label="Finalizar">
-                                  <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => finalizarPrograma(prog)}>
-                                    <CheckCircle2 size={15} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              )}
-                              {puedeEditarProgramas ? (
-                                <Tooltip label="Eliminar">
-                                  <ActionIcon size="sm" color="red" variant="subtle" onClick={() => eliminarCurso(prog)}>
-                                    <Trash2 size={15} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              ) : null}
-                            </Group>
-                          </div>
-                        ) : null}
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </article>
-
-
-            </section>
-          </>
+          <ProgramasView
+            abrirCrear={abrirCrear}
+            abrirEditar={abrirEditar}
+            busqueda={busqueda}
+            cargando={cargando}
+            eliminarCurso={eliminarCurso}
+            filtroPeriodo={filtroPeriodo}
+            finalizarPrograma={finalizarPrograma}
+            mensaje={mensaje}
+            programas={programasFiltrados}
+            puedeCrearProgramas={puedeCrearProgramas}
+            puedeEditarProgramas={puedeEditarProgramas}
+            puedeVerAlumnos={puedeVerAlumnos}
+            setBusqueda={setBusqueda}
+            setFiltroPeriodo={setFiltroPeriodo}
+            tieneAccionesPrograma={tieneAccionesPrograma}
+            tipoMsg={tipoMsg}
+            toggleEstado={toggleEstado}
+            verInvitados={verInvitados}
+          />
         )}
 
         {vista === "carga" && puedeVerCargaVista && (
@@ -1726,767 +1269,76 @@ function Coordinacion({
         )}
 
         {/* ─── MODAL: CREAR / EDITAR PROGRAMA ─── */}
-        {showModal && (
-          <div className="coord-modal-overlay">
-            <div className={`coord-modal ${esFormularioVerano ? "coord-modal-verano" : ""}`} onClick={e => e.stopPropagation()}>
-              <div className="coord-modal-header">
-                <div className="coord-modal-title">
-                  <span className="coord-modal-icon"><Plus size={20} /></span>
-                  <div>
-                    <h2>{esFormularioVerano ? (modoEditar ? "Editar programa de verano" : "Registrar programa de verano") : (modoEditar ? "Editar programa" : "Registrar programa")}</h2>
-                    <p>
-                      {esFormularioVerano
-                        ? "Complete los datos del programa antes de habilitarlo."
-                        : "Complete la configuracion del taller antes de habilitarlo."}
-                    </p>
-                  </div>
-                </div>
-                <button className="coord-modal-close" type="button" onClick={() => setShowModal(false)}><X size={20} /></button>
-              </div>
-              <form className="coord-program-form" id="form-programa" onSubmit={guardar}>
-                <div className="coord-program-form-main">
-                  <section className="coord-form-section">
-                    <div className="coord-section-heading">
-                      <BookOpen size={18} />
-                      <div>
-                        <h3>{esFormularioVerano ? "Datos del programa de verano" : "Datos generales"}</h3>
-                      </div>
-                    </div>
-                    <div className="coord-section-grid coord-general-grid">
-                      <div className="coord-field coord-program-name-field"><label>{esFormularioVerano ? "Nombre del programa de verano *" : "Nombre del programa *"}</label>
-                        <input value={form.nombre} onChange={e => actualizarNombrePrograma(e.target.value)} placeholder={esFormularioVerano ? "Ej: Verano creativo 2026" : "Ej: Reforzamiento y nivelacion"} />
-                      </div>
-                      <div className="coord-field"><label>Periodo *</label>
-                        <select value={normalizarPeriodoVista(form.periodo)} onChange={e => cambiarPeriodoFormulario(e.target.value)}>
-                          <option value="escolar">Año escolar</option><option value="verano">Ciclo verano</option>
-                        </select>
-                      </div>
-                      <div className="coord-field coord-category-field">
-                        <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                          <span>Categoría *</span>
-                          <button
-                            type="button"
-                            className="coord-category-toggle-btn"
-                            onClick={() => setMostrarGestorCategorias(!mostrarGestorCategorias)}
-                          >
-                            {mostrarGestorCategorias ? "Ocultar gestión" : "Gestionar"}
-                          </button>
-                        </label>
-                        <select value={form.categoria} onChange={e => actualizarCategoriaPrograma(e.target.value)}>
-                          <option value="">Seleccione</option>
-                          {categorias.map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                      </div>
+                <ProgramaFormModal
+          actualizarCategoriaPrograma={actualizarCategoriaPrograma}
+          actualizarCosto={actualizarCosto}
+          actualizarForm={actualizarForm}
+          actualizarGrupoHorario={actualizarGrupoHorario}
+          actualizarInvitacionMasiva={actualizarInvitacionMasiva}
+          actualizarNombrePrograma={actualizarNombrePrograma}
+          agregarCategoria={agregarCategoria}
+          agregarGrupoHorario={agregarGrupoHorario}
+          agregarTallerDeportivo={agregarTallerDeportivo}
+          cambiarPeriodoFormulario={cambiarPeriodoFormulario}
+          catAEliminar={catAEliminar}
+          categorias={categorias}
+          diasSemana={diasSemana}
+          duracionTallerFormulario={duracionTallerFormulario}
+          esDeportivoForm={esDeportivoForm}
+          esFormularioVerano={esFormularioVerano}
+          form={form}
+          formDias={formDias}
+          formGradosAplicables={formGradosAplicables}
+          formHorariosPorGrupo={formHorariosPorGrupo}
+          formatearCostoFormulario={formatearCostoFormulario}
+          guardar={guardar}
+          guardando={guardando}
+          mostrarGestorCategorias={mostrarGestorCategorias}
+          mostrarIndumentariaDeportiva={mostrarIndumentariaDeportiva}
+          modoEditar={modoEditar}
+          nivelesGrados={nivelesGrados}
+          nuevaCat={nuevaCat}
+          puedeGestionarGruposFormulario={puedeGestionarGruposFormulario}
+          quitarCategoria={quitarCategoria}
+          quitarGrupoHorario={quitarGrupoHorario}
+          quitarImagenAnuncio={quitarImagenAnuncio}
+          quitarTallerDeportivo={quitarTallerDeportivo}
+          seleccionarImagenAnuncio={seleccionarImagenAnuncio}
+          setCatAEliminar={setCatAEliminar}
+          setMostrarGestorCategorias={setMostrarGestorCategorias}
+          setNuevaCat={setNuevaCat}
+          setShowModal={setShowModal}
+          setTallerDepCustom={setTallerDepCustom}
+          setTallerDepDeporte={setTallerDepDeporte}
+          setTallerDepDia={setTallerDepDia}
+          setTallerDepHoraFin={setTallerDepHoraFin}
+          setTallerDepHoraInicio={setTallerDepHoraInicio}
+          setTallerDepMaxEdad={setTallerDepMaxEdad}
+          setTallerDepMinEdad={setTallerDepMinEdad}
+          show={showModal}
+          tallerDepCustom={tallerDepCustom}
+          tallerDepDeporte={tallerDepDeporte}
+          tallerDepDia={tallerDepDia}
+          tallerDepHoraFin={tallerDepHoraFin}
+          tallerDepHoraInicio={tallerDepHoraInicio}
+          tallerDepMaxEdad={tallerDepMaxEdad}
+          tallerDepMinEdad={tallerDepMinEdad}
+          toggleDia={toggleDia}
+          toggleGrado={toggleGrado}
+          toggleGradoGrupo={toggleGradoGrupo}
+        />
 
-                      {mostrarGestorCategorias ? (
-                        <div className="coord-category-manager-container coord-field-full">
-                          <div className="coord-category-manager-inner">
-                            <div className="coord-field">
-                              <label>Nueva categoría</label>
-                              <div className="coord-inline-field">
-                                <input placeholder="Ej: Arte, verano, alto rendimiento" value={nuevaCat} onChange={e => setNuevaCat(e.target.value)} />
-                                <button type="button" className="coord-mini-btn" onClick={agregarCategoria}><Plus size={14} /></button>
-                              </div>
-                            </div>
-                            <div className="coord-field">
-                              <label>Quitar categoría</label>
-                              <div className="coord-inline-field">
-                                <select value={catAEliminar} onChange={e => setCatAEliminar(e.target.value)}>
-                                  <option value="">Seleccione</option>
-                                  {categorias.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                                <button type="button" className="coord-mini-btn coord-mini-danger-btn" onClick={quitarCategoria}><Trash2 size={14} /></button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : null}
-                      {esFormularioVerano ? (
-                        <div className="coord-age-range-row coord-field-full">
-                          <div className="coord-field">
-                            <label>Desde edad *</label>
-                            <select value={form.edadMinima} onChange={e => actualizarForm("edadMinima", e.target.value)}>
-                              <option value="">Seleccione</option>
-                              {Array.from({ length: 14 }, (_, index) => String(index + 3)).map((edad) => (
-                                <option key={edad} value={edad}>{edad} años</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="coord-field">
-                            <label>Hasta edad *</label>
-                            <select value={form.edadMaxima} onChange={e => actualizarForm("edadMaxima", e.target.value)}>
-                              <option value="">Seleccione</option>
-                              {Array.from({ length: 14 }, (_, index) => String(index + 3)).map((edad) => (
-                                <option key={edad} value={edad}>{edad} años</option>
-                              ))}
-                            </select>
-                          </div>
-                          <p className="coord-field-hint">
-                            Seleccione el rango de edad permitido para este programa de verano.
-                          </p>
-                          {form.grupoEtario ? (
-                            <p className="coord-field-hint coord-field-full">
-                              Grupo etario: {form.grupoEtario}
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : esDeportivoForm ? (
-                        <div className="coord-field coord-field-full">
-                          <label>Grados habilitados</label>
-                          <p className="coord-field-hint" style={{ marginTop: "4px" }}>
-                            Los grados escolares aplicables se calculan automáticamente a partir de los rangos de edad de los talleres de abajo.
-                          </p>
-                          {form.talleresDeportivos?.length > 0 && (
-                            <div className="coord-deportivo-grados-summary" style={{ marginTop: "8px", padding: "8px 12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                              <strong>Equivalente en Grados:</strong> <span style={{ color: "#006b5b", fontWeight: 700 }}>{resumenGrados(obtenerGradosDeportivos(form.talleresDeportivos)) || "Sin grados calculados"}</span>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="coord-field coord-field-full">
-                          <label>Grados aplicables *</label>
-                          <GradeSelector
-                            niveles={nivelesGrados}
-                            seleccionados={formGradosAplicables}
-                            onToggle={toggleGrado}
-                          />
-                          <p className="coord-field-hint">
-                            {formGradosAplicables.length
-                              ? resumenGrados(formGradosAplicables)
-                              : "Seleccione nivel y grados del programa."}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-
-                  <section className="coord-form-section">
-                    <div className="coord-section-heading">
-                      <CalendarDays size={18} />
-                      <div>
-                        <h3>{esFormularioVerano ? "Fechas y turno de verano" : esDeportivoForm ? "Fechas y talleres deportivos" : "Horario y grupos de atención"}</h3>
-                      </div>
-                    </div>
-                    <div className="coord-section-grid">
-                      {esDeportivoForm ?
-                        <div className="coord-deportivo-schedule-dates coord-field-full">
-                          <div className="coord-time-fields-grid">
-                            <div className="coord-field">
-                              <label>Fecha inicio *</label>
-                              <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
-                            </div>
-                            <div className="coord-field">
-                              <label>Fecha fin *</label>
-                              <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
-                            </div>
-                            <div className="coord-field">
-                              <label>Duración del taller</label>
-                              <div className="coord-readonly-field">
-                                {duracionTallerFormulario || "Seleccione fechas"}
-                              </div>
-                            </div>
-                            <div className="coord-field">
-                              <label>Aviso abierto (días) *</label>
-                              <input
-                                type="number"
-                                min="1"
-                                max="7"
-                                value={form.duracionAvisoDias}
-                                onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
-                                placeholder="Máx 7 días"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      :
-                        <div className="coord-schedule-block-grid coord-field-full">
-                          <div className="coord-schedule-block-column">
-                            <h4 className="coord-block-title">Horario de Clases</h4>
-                            <div className="coord-field">
-                              <label>{esFormularioVerano ? "Días de atención *" : "Días del programa / taller *"}</label>
-                              <div className="coord-day-list">
-                                {diasSemana.map(dia => (
-                                  <label
-                                    className={`coord-day-chip ${formDias.includes(dia) ? "is-selected" : ""}`}
-                                    key={dia}
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={formDias.includes(dia)}
-                                      onChange={() => toggleDia(dia)}
-                                    />
-                                    {dia}
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div className="coord-time-fields-grid">
-                              <div className="coord-field">
-                                <label>Hora inicio *</label>
-                                <input type="time" value={form.horaInicio} onChange={e => actualizarForm("horaInicio", e.target.value)} />
-                              </div>
-                              <div className="coord-field">
-                                <label>Hora fin *</label>
-                                <input type="time" value={form.horaFin} onChange={e => actualizarForm("horaFin", e.target.value)} />
-                              </div>
-                              <div className="coord-field">
-                                <label>Almuerzo inicio</label>
-                                <input type="time" value={form.almuerzoInicio} onChange={e => actualizarForm("almuerzoInicio", e.target.value)} />
-                              </div>
-                              <div className="coord-field">
-                                <label>Almuerzo fin</label>
-                                <input type="time" value={form.almuerzoFin} onChange={e => actualizarForm("almuerzoFin", e.target.value)} />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="coord-schedule-block-column">
-                            <h4 className="coord-block-title">Vigencia del Programa</h4>
-                            <div className="coord-vigencia-fields-grid">
-                              <div className="coord-field">
-                                <label>Fecha inicio *</label>
-                                <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
-                              </div>
-                              <div className="coord-field">
-                                <label>Fecha fin *</label>
-                                <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
-                              </div>
-                              <div className="coord-field">
-                                <label>Duración del taller</label>
-                                <div className="coord-readonly-field">
-                                  {duracionTallerFormulario || "Seleccione fechas"}
-                                </div>
-                              </div>
-                              <div className="coord-field">
-                                <label>Aviso abierto (días) *</label>
-                                <input
-                                  type="number"
-                                  min="1"
-                                  max="7"
-                                  value={form.duracionAvisoDias}
-                                  onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
-                                  placeholder="Máx 7 días"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      }
-
-                      {esDeportivoForm && (
-                        <div className="coord-field coord-field-full">
-                          <div className="coord-deportivo-builder-heading" style={{ marginBottom: "14px", borderTop: "1px dashed #e2ece9", paddingTop: "14px" }}>
-                            <strong>Configuración de Deportes por Edades y Horarios</strong>
-                            <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#667085" }}>
-                              Agregue cada taller deportivo detallando la disciplina, edad y horario específico (según el afiche).
-                            </p>
-                          </div>
-                          
-                          <div className="coord-deportivo-fields-row" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
-                            <div className="coord-field">
-                              <label>Deporte *</label>
-                              <select value={tallerDepDeporte} onChange={e => setTallerDepDeporte(e.target.value)}>
-                                <option value="Vóley">Vóley</option>
-                                <option value="Fútbol">Fútbol</option>
-                                <option value="Básquet">Básquet</option>
-                                <option value="Otro">Otro deporte...</option>
-                              </select>
-                              {tallerDepDeporte === "Otro" && (
-                                <input 
-                                  style={{ marginTop: "6px" }}
-                                  placeholder="Escriba el deporte" 
-                                  value={tallerDepCustom} 
-                                  onChange={e => setTallerDepCustom(e.target.value)} 
-                                />
-                              )}
-                            </div>
-                            
-                            <div className="coord-field">
-                              <label>Edad mínima *</label>
-                              <select value={tallerDepMinEdad} onChange={e => setTallerDepMinEdad(e.target.value)}>
-                                {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
-                                  <option key={edad} value={edad}>{edad} años</option>
-                                ))}
-                              </select>
-                            </div>
-                            
-                            <div className="coord-field">
-                              <label>Edad máxima *</label>
-                              <select value={tallerDepMaxEdad} onChange={e => setTallerDepMaxEdad(e.target.value)}>
-                                {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
-                                  <option key={edad} value={edad}>{edad} años</option>
-                                ))}
-                              </select>
-                            </div>
-                            
-                            <div className="coord-field">
-                              <label>Día de atención *</label>
-                              <select value={tallerDepDia} onChange={e => setTallerDepDia(e.target.value)}>
-                                {diasSemana.map(d => (
-                                  <option key={d} value={d}>{d}</option>
-                                ))}
-                              </select>
-                            </div>
-                            
-                            <div className="coord-field">
-                              <label>Clase inicio *</label>
-                              <input type="time" value={tallerDepHoraInicio} onChange={e => setTallerDepHoraInicio(e.target.value)} />
-                            </div>
-                            
-                            <div className="coord-field">
-                              <label>Clase fin *</label>
-                              <input type="time" value={tallerDepHoraFin} onChange={e => setTallerDepHoraFin(e.target.value)} />
-                            </div>
-                            
-                            <div className="coord-field" style={{ display: "flex", alignItems: "flex-end" }}>
-                              <button 
-                                type="button" 
-                                className="coord-template-autofill" 
-                                style={{ width: "100%", height: "38px", display: "flex", justifyContent: "center" }}
-                                onClick={agregarTallerDeportivo}
-                              >
-                                <Plus size={14} /> Añadir taller
-                              </button>
-                            </div>
-                          </div>
-                          
-                          <div className="coord-deportivo-workshops-list">
-                            <strong style={{ display: "block", marginBottom: "8px", fontSize: "13px", color: "#102035" }}>Talleres Agregados:</strong>
-                            {form.talleresDeportivos?.length > 0 ? (
-                              <div style={{ overflowX: "auto" }}>
-                                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
-                                  <thead>
-                                    <tr style={{ borderBottom: "2px solid #e2ece9", color: "#475467" }}>
-                                      <th style={{ padding: "8px" }}>Deporte</th>
-                                      <th style={{ padding: "8px" }}>Edades</th>
-                                      <th style={{ padding: "8px" }}>Día y Horario</th>
-                                      <th style={{ padding: "8px", textAlign: "right" }}>Acción</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {form.talleresDeportivos.map((taller, idx) => (
-                                      <tr key={idx} style={{ borderBottom: "1px solid #e2ece9" }}>
-                                        <td style={{ padding: "8px", fontWeight: "bold" }}>{taller.deporte}</td>
-                                        <td style={{ padding: "8px" }}>{taller.edadMinima} a {taller.edadMaxima} años</td>
-                                        <td style={{ padding: "8px" }}>
-                                          <span style={{ background: "#e8f7ef", color: "#006b5b", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: 700, marginRight: "6px" }}>{taller.dia}</span>
-                                          {formatearHora12(taller.horaInicio)} a {formatearHora12(taller.horaFin)}
-                                        </td>
-                                        <td style={{ padding: "8px", textAlign: "right" }}>
-                                          <button 
-                                            type="button" 
-                                            style={{ background: "none", border: "none", color: "#b42318", cursor: "pointer", fontWeight: 700 }}
-                                            onClick={() => quitarTallerDeportivo(idx)}
-                                          >
-                                            Quitar
-                                          </button>
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            ) : (
-                              <div style={{ padding: "20px", border: "1px dashed #cbd5e1", borderRadius: "8px", color: "#667085", textAlign: "center", background: "#f8fafc" }}>
-                                Aún no se han configurado talleres deportivos. Agregue uno usando el formulario de arriba.
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {puedeGestionarGruposFormulario && !esFormularioVerano && !esDeportivoForm ? (
-                        <div className="coord-field coord-field-full">
-                          <div className="coord-group-schedule-head">
-                            <div>
-                              <strong>{esFormularioVerano ? "Turnos de verano" : "Turnos del mismo curso"}</strong>
-                              <p>
-                                {esFormularioVerano
-                                  ? "Use turnos si Secretaría debe ofrecer horarios distintos por grado o grupo."
-                                  : "Separe los grados por día sin crear otro curso. Ejemplo: 4to, 5to y 1ro secundaria el jueves; 6to grado el viernes."}
-                              </p>
-                            </div>
-                            <button type="button" className="coord-template-autofill" onClick={agregarGrupoHorario}>
-                              <Plus size={14} />
-                              {esFormularioVerano ? "Añadir turno" : "Añadir día para otros grados"}
-                            </button>
-                          </div>
-                          {formHorariosPorGrupo.length ? (
-                            <div className="coord-group-schedule-list">
-                              {formHorariosPorGrupo.map((grupo, index) => (
-                                <div className="coord-group-schedule" key={grupo.id || index}>
-                                  <div className="coord-group-schedule-title">
-                                    <strong>Grupo {index + 1}</strong>
-                                    <button type="button" onClick={() => quitarGrupoHorario(index)} aria-label="Quitar grupo">
-                                      <X size={14} />
-                                    </button>
-                                  </div>
-                                  <GradeSelector
-                                    niveles={nivelesGrados}
-                                    seleccionados={grupo.grados || []}
-                                    onToggle={(valor) => toggleGradoGrupo(index, valor)}
-                                  />
-                                  <div className="coord-group-schedule-grid">
-                                    <div className="coord-field">
-                                      <label>Días del turno *</label>
-                                      <div className="coord-day-list coord-day-list-sm">
-                                        {diasSemana.map((dia) => {
-                                          const diasSeleccionados = String(grupo.dia || "").split(",").map(d => d.trim()).filter(Boolean);
-                                          const isSelected = diasSeleccionados.includes(dia);
-                                          return (
-                                            <label
-                                              className={`coord-day-chip coord-day-chip-sm ${isSelected ? "is-selected" : ""}`}
-                                              key={dia}
-                                            >
-                                              <input
-                                                type="checkbox"
-                                                checked={isSelected}
-                                                onChange={() => {
-                                                  const nuevosDias = isSelected
-                                                    ? diasSeleccionados.filter((d) => d !== dia)
-                                                    : [...diasSeleccionados, dia];
-                                                  const diasOrdenados = diasSemana.filter(d => nuevosDias.includes(d));
-                                                  actualizarGrupoHorario(index, "dia", diasOrdenados.join(", "));
-                                                }}
-                                              />
-                                              <span title={dia}>{dia.substring(0, 2)}</span>
-                                            </label>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                    <div className="coord-field">
-                                      <label>Aula</label>
-                                      <input value={grupo.aula || ""} onChange={(event) => actualizarGrupoHorario(index, "aula", event.target.value)} placeholder="Ej: A-204" />
-                                    </div>
-                                    <div className="coord-field">
-                                      <label>Clase inicio</label>
-                                      <input type="time" value={grupo.horaInicio || "15:20"} onChange={(event) => actualizarGrupoHorario(index, "horaInicio", event.target.value)} />
-                                    </div>
-                                    <div className="coord-field">
-                                      <label>Clase fin</label>
-                                      <input type="time" value={grupo.horaFin || "17:20"} onChange={(event) => actualizarGrupoHorario(index, "horaFin", event.target.value)} />
-                                    </div>
-                                    <div className="coord-field">
-                                      <label>Almuerzo inicio</label>
-                                      <input type="time" value={grupo.almuerzoInicio || "14:20"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoInicio", event.target.value)} />
-                                    </div>
-                                    <div className="coord-field">
-                                      <label>Almuerzo fin</label>
-                                      <input type="time" value={grupo.almuerzoFin || "15:10"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoFin", event.target.value)} />
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="coord-field-hint"></p>
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  </section>
-
-                  <section className="coord-form-section">
-                    <div className="coord-section-heading">
-                      <DollarSign size={18} />
-                      <div>
-                        <h3>{esFormularioVerano ? "Vacantes y pago de verano" : "Cupos y cobro"}</h3>
-                      </div>
-                    </div>
-                    <div className="coord-section-grid coord-payment-grid">
-                      <div className="coord-field"><label>Cupos</label>
-                        <input type="number" min="1" value={form.cupos} onChange={e => actualizarForm("cupos", e.target.value)} placeholder="20" />
-                      </div>
-                      <div className="coord-field"><label>Costo (S/)</label>
-                        <input inputMode="decimal" value={form.costo} onChange={e => actualizarCosto(e.target.value)} onBlur={formatearCostoFormulario} placeholder="70.00" />
-                      </div>
-                      <div className="coord-field"><label>Modalidad de cobro</label>
-                        <select value={form.modalidadCobro} onChange={e => actualizarForm("modalidadCobro", e.target.value)} disabled={esFormularioVerano}>
-                          <option value="Mensual">Cuota mensual</option><option value="Unico">Pago unico</option>
-                        </select>
-                      </div>
-                      {!esFormularioVerano ? (
-                        <div className="coord-field coord-field-full">
-                        <label className="coord-check-label coord-check-label-stacked">
-                          <span>
-                            <input type="checkbox" checked={form.invitacionMasiva} onChange={e => actualizarInvitacionMasiva(e.target.checked)} />
-                            Invitación masiva en Padres
-                          </span>
-                          <small>El curso aparecerá en el portal de padres para todos los alumnos de los grados seleccionados, sin cargar Excel de invitados.</small>
-                        </label>
-                        {form.invitacionMasiva ? (
-                          <div className="coord-announcement-image-field">
-                            <div className="coord-announcement-copy">
-                              <Photo size={18} />
-                              <div>
-                                <strong>Imagen de anuncio para Padres</strong>
-                                
-                              </div>
-                            </div>
-                            {form.anuncioImagen ? (
-                              <div className="coord-announcement-preview">
-                                <img src={form.anuncioImagen} alt="Anuncio para portal de padres" />
-                                <div>
-                                  <strong>{form.anuncioImagenNombre || "Imagen de anuncio"}</strong>
-                                  <span>
-                                    {formatearPesoArchivo(form.anuncioImagenTamano)}
-                                    {form.anuncioImagenComprimida ? " · comprimida" : ""}
-                                  </span>
-                                  <button type="button" onClick={quitarImagenAnuncio}>
-                                    Quitar imagen
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (
-                              <label className="coord-announcement-upload">
-                                <input type="file" accept="image/*" onChange={seleccionarImagenAnuncio} />
-                                <Upload size={18} />
-                                <span>Agregar imagen</span>
-                              </label>
-                            )}
-                          </div>
-                        ) : null}
-                      </div>
-                      ) : (
-                        <div className="coord-summer-payment-note coord-field-full">
-                          <CheckCircle2 size={16} />
-                          <span>Secretaría verá este programa como opción de ciclo verano y registrará el tipo de alumno al momento de la inscripción.</span>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-
-                  {mostrarIndumentariaDeportiva ? (
-                    <section className="coord-form-section coord-sports-kit-section">
-                      <div className="coord-section-heading">
-                        <Users size={18} />
-                        <div>
-                          <h3>Indumentaria deportiva</h3>
-                          <p>Para programas deportivos como vóley o fútbol, Secretaría puede registrar tallas por alumno.</p>
-                        </div>
-                      </div>
-                      <div className="coord-section-grid">
-                        <div className="coord-field coord-field-full">
-                          <label className="coord-check-label coord-check-label-stacked">
-                            <span>
-                              <input
-                                type="checkbox"
-                                checked={Boolean(form.requiereIndumentaria)}
-                                onChange={e => actualizarForm("requiereIndumentaria", e.target.checked)}
-                              />
-                              Pedir talla de polo y short en Secretaría
-                            </span>
-                            <small>Al registrar al alumno, Secretaría seleccionará la talla correspondiente para cada prenda.</small>
-                          </label>
-                        </div>
-                      </div>
-                    </section>
-                  ) : null}
-
-                  <section className="coord-form-section">
-                    <div className="coord-section-heading">
-                      <Users size={18} />
-                      <div>
-                        <h3>Responsables</h3>
-                      </div>
-                    </div>
-                    <div className="coord-section-grid">
-                      <div className="coord-field"><label>Responsable</label>
-                        <input value={form.responsable} onChange={e => actualizarForm("responsable", e.target.value)} placeholder="Prof. Ana Torres" />
-                      </div>
-                      <div className="coord-field"><label>Tutora / apoyo</label>
-                        <input value={form.tutora} onChange={e => actualizarForm("tutora", e.target.value)} placeholder="(Srta. Lucia Vega)" />
-                      </div>
-                    </div>
-                  </section>
-                </div>
-
-              </form>
-
-              <div className="coord-modal-actions">
-                <button type="button" className="coord-secondary-button" onClick={() => setShowModal(false)}>Cancelar</button>
-                <button type="submit" form="form-programa" className="coord-register-button" disabled={guardando}>
-                  {guardando ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
-                  <span>{guardando ? "Guardando" : modoEditar ? "Actualizar" : "Crear programa"}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ─── MODAL: ESTUDIANTES DEL PROGRAMA ─── */}
         {showInvitados && (
-          <div className="coord-modal-overlay" onClick={() => setShowInvitados(false)}>
-            <div className="coord-modal coord-modal-students" onClick={e => e.stopPropagation()}>
-              <div className="coord-modal-header">
-                <h2>Alumnos del programa – {progSeleccionado?.nombre}</h2>
-                <button className="coord-modal-close" type="button" onClick={() => setShowInvitados(false)}><X size={20} /></button>
-              </div>
-              <div className="coord-modal-body">
-                <div className="coord-tabs-header" style={{ display: "flex", gap: "10px", borderBottom: "2px solid #e2ece9", paddingBottom: "10px", marginBottom: "16px" }}>
-                  <button 
-                    type="button" 
-                    className={`coord-tab-btn ${subVistaAlumnos === "preinscritos" ? "is-active" : ""}`}
-                    onClick={() => setSubVistaAlumnos("preinscritos")}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      borderBottom: subVistaAlumnos === "preinscritos" ? "3px solid #006b5b" : "3px solid transparent",
-                      color: subVistaAlumnos === "preinscritos" ? "#006b5b" : "#475467",
-                      fontWeight: 700,
-                      padding: "8px 16px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      transition: "all 0.15s ease"
-                    }}
-                  >
-                    Pre-inscritos (Excel) ({invitados.length})
-                  </button>
-                  <button 
-                    type="button" 
-                    className={`coord-tab-btn ${subVistaAlumnos === "matriculados" ? "is-active" : ""}`}
-                    onClick={() => setSubVistaAlumnos("matriculados")}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      borderBottom: subVistaAlumnos === "matriculados" ? "3px solid #006b5b" : "3px solid transparent",
-                      color: subVistaAlumnos === "matriculados" ? "#006b5b" : "#475467",
-                      fontWeight: 700,
-                      padding: "8px 16px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      transition: "all 0.15s ease"
-                    }}
-                  >
-                    Matriculados (Caja / Padres) ({matriculados.length})
-                  </button>
-                </div>
-
-                <div className="coord-invitados-actions" style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
-                  <button
-                    className="coord-primary-button"
-                    type="button"
-                    onClick={() => descargarPdfAlumnos(subVistaAlumnos)}
-                    disabled={subVistaAlumnos === "preinscritos" ? !invitados.length : !matriculados.length}
-                    style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", minHeight: "38px" }}
-                  >
-                    <FileDown size={15} />
-                    <span>Descargar PDF</span>
-                  </button>
-                  <button
-                    className="coord-template-autofill"
-                    type="button"
-                    onClick={() => exportarAExcel(subVistaAlumnos)}
-                    disabled={subVistaAlumnos === "preinscritos" ? !invitados.length : !matriculados.length}
-                    style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", minHeight: "38px", background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" }}
-                  >
-                    <FileDown size={15} />
-                    <span>Exportar Excel</span>
-                  </button>
-                </div>
-
-                {subVistaAlumnos === "preinscritos" ? (
-                  invitados.length === 0 ? (
-                    <p className="coord-process-note">No hay invitados registrados para este programa.</p>
-                  ) : (
-                    <div className="coord-table-wrap">
-                      <table className="coord-table">
-                        <thead>
-                          <tr>
-                            <th>DNI</th>
-                            <th>Código</th>
-                            <th>Estudiante</th>
-                            <th>Grado</th>
-                            <th>Sección</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {invitados.map((inv, index) => (
-                            <tr key={`${inv.dni || inv.codigoEstudiante || inv.nombres}-${index}`}>
-                              <td>{inv.dni || "Sin DNI"}</td>
-                              <td>{inv.codigoEstudiante || "—"}</td>
-                              <td>{inv.nombres}</td>
-                              <td>{inv.grado}</td>
-                              <td>{inv.seccion}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )
-                ) : (
-                  matriculados.length === 0 ? (
-                    <p className="coord-process-note">No hay alumnos matriculados aún para este programa.</p>
-                  ) : (
-                    <div className="coord-table-wrap">
-                      <table className="coord-table">
-                        <thead>
-                          <tr>
-                            <th>DNI</th>
-                            <th>Código</th>
-                            <th>Estudiante</th>
-                            <th>Grado</th>
-                            <th>Sección</th>
-                            <th>Estado Inscripción</th>
-                            <th>Estado Pago</th>
-                            <th>Canal</th>
-                            <th>Fecha</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {matriculados.map((mat, index) => (
-                            <tr key={`${mat.dni || mat.codigoEstudiante || mat.nombres}-${index}`}>
-                              <td>{mat.dni || "Sin DNI"}</td>
-                              <td>{mat.codigoEstudiante || "—"}</td>
-                              <td><strong>{mat.nombres}</strong></td>
-                              <td>{mat.grado}</td>
-                              <td>{mat.seccion}</td>
-                              <td>
-                                <span style={{
-                                  padding: "2px 6px",
-                                  borderRadius: "4px",
-                                  fontSize: "11px",
-                                  fontWeight: 700,
-                                  background: mat.estadoInscripcion === "Pago validado" ? "#e8f7ef" : "#fef6e7",
-                                  color: mat.estadoInscripcion === "Pago validado" ? "#006b5b" : "#b25e00",
-                                }}>
-                                  {mat.estadoInscripcion}
-                                </span>
-                              </td>
-                              <td>
-                                <span style={{
-                                  padding: "2px 6px",
-                                  borderRadius: "4px",
-                                  fontSize: "11px",
-                                  fontWeight: 700,
-                                  background: mat.estadoPago === "Pagado" ? "#e8f7ef" : "#fdf2f2",
-                                  color: mat.estadoPago === "Pagado" ? "#006b5b" : "#b42318",
-                                }}>
-                                  {mat.estadoPago}
-                                </span>
-                              </td>
-                              <td>
-                                <span style={{ fontSize: "11px", fontWeight: 600, color: "#475467" }}>
-                                  {mat.origenRegistro}
-                                </span>
-                              </td>
-                              <td>
-                                <span style={{ fontSize: "11px", color: "#667085" }}>
-                                  {mat.fechaRegistro ? mat.fechaRegistro.split("T")[0] : "—"}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          </div>
+          <AlumnosProgramaModal
+            descargarPdfAlumnos={descargarPdfAlumnos}
+            exportarAExcel={exportarAExcel}
+            invitados={invitados}
+            matriculados={matriculados}
+            onClose={() => setShowInvitados(false)}
+            programa={progSeleccionado}
+            setSubVistaAlumnos={setSubVistaAlumnos}
+            subVistaAlumnos={subVistaAlumnos}
+          />
         )}
           </>
         )}

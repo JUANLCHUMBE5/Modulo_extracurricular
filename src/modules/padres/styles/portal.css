@@ -918,6 +918,17 @@
   flex: 0 0 auto;
 }
 
+.padres-info-accept input:disabled {
+  cursor: not-allowed;
+}
+
+.padres-info-read-hint {
+  margin: -4px 0 0;
+  color: #9a4b00;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .padres-info-modal-actions {
   display: flex;
   justify-content: flex-end;

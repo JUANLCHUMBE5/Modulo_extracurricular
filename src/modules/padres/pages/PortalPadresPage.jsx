@@ -1,11 +1,8 @@
 import { Alert } from "@mantine/core";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   IconAlertCircle as AlertCircle,
-  IconChevronLeft as ChevronLeft,
-  IconChevronRight as ChevronRight,
   IconCircleCheck as CheckCircle2,
-  IconCreditCard as CreditCard,
   IconEye as Eye,
   IconLoader2 as Loader2,
   IconLogout as LogOut,
@@ -93,9 +90,10 @@ export default function Padres({ user, onLogout }) {
   const [tallaShort, setTallaShort] = useState("");
   const [tallaUniforme, setTallaUniforme] = useState("");
   const [programaAdicional, setProgramaAdicional] = useState(null);
+  const [comunicadoCompletoVisto, setComunicadoCompletoVisto] = useState(false);
+  const comunicadoModalRef = useRef(null);
 
   const {
-    abrirPago,
     actualizar,
     asistenteAbierto,
     bannerEstudiante,
@@ -103,7 +101,6 @@ export default function Padres({ user, onLogout }) {
     cargandoProgramas,
     consulta,
     consultarRafael,
-    continuarPago,
     error,
     estudiante,
     form,
@@ -133,6 +130,9 @@ export default function Padres({ user, onLogout }) {
   } = usePadres(user);
 
   const programaActual = programaAdicional || programa;
+  const programaActualKey = programaActual
+    ? `${programaActual.programaId || programaActual.id || ""}:${programaActual.programa || programaActual.nombre || ""}`
+    : "";
 
   const comunicadoPadres = prepararComunicadoPadres(programaActual, estudiante);
   const invitacionPendiente = Boolean(invitacion && !inscripcion);
@@ -176,6 +176,27 @@ export default function Padres({ user, onLogout }) {
   useEffect(() => {
     setAnuncioCerrado(false);
   }, [anuncioPadres?.id]);
+
+  useEffect(() => {
+    setComunicadoCompletoVisto(false);
+  }, [programaActualKey]);
+
+  useEffect(() => {
+    if (!infoProgramaAbierta) return undefined;
+
+    const revisarLecturaCompleta = () => {
+      const modal = comunicadoModalRef.current;
+      if (!modal) return;
+      const noNecesitaScroll = modal.scrollHeight <= modal.clientHeight + 8;
+      const llegoAlFinal = modal.scrollTop + modal.clientHeight >= modal.scrollHeight - 24;
+      if (noNecesitaScroll || llegoAlFinal) {
+        setComunicadoCompletoVisto(true);
+      }
+    };
+
+    const frame = window.requestAnimationFrame(revisarLecturaCompleta);
+    return () => window.cancelAnimationFrame(frame);
+  }, [infoProgramaAbierta, programaActualKey]);
 
   function cambiarPaso(paso) {
     if (paso === 3) {
@@ -274,6 +295,26 @@ export default function Padres({ user, onLogout }) {
       return;
     }
     await enviarPagoVerificacionPadres(datosPago);
+  }
+
+  function marcarComunicadoVistoSiCorresponde(event) {
+    const modal = event.currentTarget;
+    const llegoAlFinal = modal.scrollTop + modal.clientHeight >= modal.scrollHeight - 24;
+    if (llegoAlFinal) {
+      setComunicadoCompletoVisto(true);
+    }
+  }
+
+  function actualizarAceptacionComunicado(event) {
+    const marcado = event.target.checked;
+    if (marcado && !comunicadoCompletoVisto && !infoProgramaAceptada) return;
+    setInfoProgramaAceptada(marcado);
+  }
+
+  function continuarDesdeComunicado() {
+    if (!infoProgramaAceptada) return;
+    setInfoProgramaAbierta(false);
+    cambiarPaso(2);
   }
 
   function renderPaso() {
@@ -430,7 +471,14 @@ export default function Padres({ user, onLogout }) {
 
       {infoProgramaAbierta && programaActual ? (
         <div className="padres-modal-backdrop" role="presentation">
-          <section className="padres-info-modal" role="dialog" aria-modal="true" aria-labelledby="padres-info-title">
+          <section
+            className="padres-info-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="padres-info-title"
+            ref={comunicadoModalRef}
+            onScroll={marcarComunicadoVistoSiCorresponde}
+          >
             <header className="padres-info-modal-head">
               <div>
                 <span>Comunicado para el apoderado</span>
@@ -510,22 +558,25 @@ export default function Padres({ user, onLogout }) {
               <input
                 type="checkbox"
                 checked={infoProgramaAceptada}
-                onChange={(event) => setInfoProgramaAceptada(event.target.checked)}
+                disabled={!comunicadoCompletoVisto && !infoProgramaAceptada}
+                onChange={actualizarAceptacionComunicado}
               />
               <span>
                 {invitacionPendiente
                   ? "He leído y acepto la información del programa antes de registrar la inscripción."
-                  : "He leído y acepto la información del programa antes de continuar con el pago."}
+                  : "He leído y acepto la información del programa antes de continuar con la matricula."}
               </span>
             </label>
+            {!comunicadoCompletoVisto && !infoProgramaAceptada ? (
+              <p className="padres-info-read-hint">
+                Desplace el comunicado hasta el final para habilitar la aceptacion.
+              </p>
+            ) : null}
 
             <footer className="padres-info-modal-actions">
-              <button className="padres-outline-button" type="button" onClick={() => setInfoProgramaAbierta(false)}>
-                Revisar luego
-              </button>
-              <button className="padres-orange-button" type="button" onClick={continuarPago} disabled={!infoProgramaAceptada || guardando}>
-                {guardando ? <Loader2 className="padres-spin" size={15} /> : invitacionPendiente ? <CheckCircle2 size={15} /> : <CreditCard size={15} />}
-                {invitacionPendiente ? "Registrar inscripcion" : "Continuar al pago"}
+              <button className="padres-orange-button" type="button" onClick={continuarDesdeComunicado} disabled={!infoProgramaAceptada || guardando}>
+                {guardando ? <Loader2 className="padres-spin" size={15} /> : <CheckCircle2 size={15} />}
+                {invitacionPendiente || programaAdicional ? "Continuar con la inscripcion" : "Continuar con la matricula"}
               </button>
             </footer>
           </section>
