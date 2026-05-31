@@ -47,7 +47,7 @@ export function formatearRangoFechasPadres(inicio, fin) {
 }
 
 export function dividirHorarioPadres(horario) {
-  const texto = String(horario || "").trim();
+  const texto = repararTexto(String(horario || "")).trim();
   const partes = texto.match(/^(.+?):\s*([^,]+?)\s+almuerzo\s+([^,]+),\s*clase\s+(.+)$/i);
   if (!partes) return null;
   return {
@@ -117,7 +117,7 @@ function crearComunicadoCambridgePadres(programa, estudiante, titulo) {
     .filter(Boolean)
     .join(" - ");
   const vigencia = formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin);
-  const horario = String(programa?.horario || "").trim() || "Por confirmar";
+  const horario = repararTexto(String(programa?.horario || "").trim()) || "Por confirmar";
   const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
   const modalidad = programa?.modalidadCobro ? `Modalidad de pago: ${programa.modalidadCobro}.` : "";
   const nivelCambridge = estudiante?.nivelCambridge ? ` en el nivel ${estudiante.nivelCambridge}` : "";
@@ -157,7 +157,7 @@ function resumirComunicadoPadres(parrafos, programa, detalleFormato) {
   if (principal) resumen.push(principal);
 
   const costo = Number(programa?.costo || 0) > 0 ? ` Costo registrado: S/ ${Number(programa.costo).toFixed(2)}.` : "";
-  const horario = programa?.horario ? ` Horario: ${programa.horario}.` : "";
+  const horario = programa?.horario ? ` Horario: ${repararTexto(programa.horario)}.` : "";
   const vigencia = programa?.fechaInicio || programa?.fechaFin
     ? ` Vigencia: ${formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin)}.`
     : "";
@@ -176,7 +176,7 @@ function obtenerDetalleFormatoPadres(programa) {
     ...seccionarTextoFormato(programa?.detalleAlmuerzo, "Detalle del formato"),
     ...seccionarTextoFormato(programa?.concesionarios, "Concesionarios"),
   ];
-  return secciones.filter((seccion) => seccion.items.length);
+  return compactarSeccionesDetalle(secciones).filter((seccion) => seccion.items.length);
 }
 
 function seccionarTextoFormato(texto, tituloBase) {
@@ -347,7 +347,7 @@ function limpiarComunicadoWord(texto, datos) {
  *
  * Ejemplos: Ã³ → ó, Ã± → ñ, â€" → –, Ã"N → ÓN, MARRÃ"N → MARRÓN
  */
-function repararTexto(texto) {
+export function repararTexto(texto) {
   const s = String(texto || "");
   if (!s || typeof TextDecoder === "undefined") return s;
 

@@ -12,7 +12,7 @@ import {
   IconSearch as Search,
 } from "@tabler/icons-react";
 import { formatearSoles } from "../hooks/usePadres";
-import { dividirHorarioPadres, formatearRangoFechasPadres } from "../utils/padresTextUtils";
+import { dividirHorarioPadres, formatearRangoFechasPadres, repararTexto } from "../utils/padresTextUtils";
 import HorarioProgramaPadres from "./HorarioProgramaPadres";
 import PortalBadge from "./PortalBadge";
 
@@ -89,7 +89,7 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
 }
 
 function HorarioCompactoPadres({ horario }) {
-  const texto = String(horario || "").trim();
+  const texto = repararTexto(String(horario || "")).trim();
   if (!texto) {
     return (
       <div className="padres-flow-course-schedule">
@@ -121,7 +121,7 @@ function HorarioCompactoPadres({ horario }) {
     );
   }
 
-  const completo = dividirHorarioPadres(horario);
+  const completo = dividirHorarioPadres(texto);
   const simple = !completo ? texto.match(/^(.+?)\s+clase\s+(.+?)(?:\s+almuerzo\s+(.+))?$/i) : null;
 
   const dia = completo?.dia || simple?.[1]?.trim();

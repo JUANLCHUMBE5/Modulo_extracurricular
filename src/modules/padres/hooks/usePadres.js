@@ -7,6 +7,7 @@ import {
   registrarInscripcionPadres,
   registrarPagoVerificacionPadres,
 } from "../services/padresService";
+import { repararTexto } from "../utils/padresTextUtils";
 
 const mensajesIniciales = [
   {
@@ -343,7 +344,7 @@ function responderAsistente(pregunta, { estudiante, programa, inscripcion, tipoR
   const estadoInscripcion = obtenerEstadoInscripcionAsistente({ programa, inscripcion });
   const estadoPago = inscripcion?.estadoPago || "Pendiente de pago";
   const costo = formatearSoles(programa.costo);
-  const horario = programa.horario || "horario por confirmar";
+  const horario = repararTexto(programa.horario) || "horario por confirmar";
 
   if (coincideConsulta(texto, ["estado", "situacion", "proceso", "pendiente"])) {
     return `Estado actual: ${estadoInscripcion}. Pago: ${estadoPago}.`;
@@ -453,7 +454,7 @@ function prepararProgramaParaGrado(programa, gradoEstudiante) {
 
   return {
     ...programa,
-    horario: disponibleParaGrado ? (horarioDelGrado || programa.horario) : "",
+    horario: disponibleParaGrado ? repararTexto(horarioDelGrado || programa.horario) : "",
     disponibleParaGrado,
   };
 }
@@ -536,7 +537,7 @@ function descomponerGradoCatalogo(valor) {
 }
 
 function normalizarTexto(texto) {
-  return String(texto || "")
+  return repararTexto(String(texto || ""))
     .trim()
     .toLowerCase()
     .normalize("NFD")

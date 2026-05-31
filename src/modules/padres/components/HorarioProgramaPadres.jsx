@@ -1,9 +1,9 @@
 import { Text } from "@mantine/core";
-import { dividirHorarioPadres } from "../utils/padresTextUtils";
+import { dividirHorarioPadres, repararTexto } from "../utils/padresTextUtils";
 
 export default function HorarioProgramaPadres({ horario }) {
   const datos = dividirHorarioPadres(horario);
-  if (!datos) return <Text size="sm" fw={600}>{horario || "Por confirmar"}</Text>;
+  if (!datos) return <Text size="sm" fw={600}>{repararTexto(horario) || "Por confirmar"}</Text>;
 
   return (
     <div className="padres-schedule-box">

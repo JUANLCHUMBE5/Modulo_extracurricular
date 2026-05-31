@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ExcelJS from "exceljs";
 import { Alert as MantineAlert, Badge, Group, ActionIcon, Tooltip } from "@mantine/core";
 import { toast } from "sonner";
 import {
@@ -34,7 +35,7 @@ import {
 import {
   listarProgramas, crearPrograma, crearProgramaDesdeDocumento, editarPrograma, cambiarEstadoPrograma,
   eliminarPrograma,
-  listarCategorias, crearCategoria, eliminarCategoria, listarInvitados,
+  listarCategorias, crearCategoria, eliminarCategoria, listarInvitados, listarMatriculados,
   previsualizarCargaAlumnosMasiva, confirmarCargaAlumnos, obtenerActividadPrograma,
 } from "./services/coordinacionService";
 import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias } from "../../services/dateService";
@@ -106,9 +107,44 @@ function puedeVerVista(user, vista) {
 
 function normalizarListaGrados(lista) {
   if (!Array.isArray(lista)) return [];
-  return lista
-    .map((item) => String(item || "").trim())
+  const normalizados = lista
+    .map((item) => {
+      let str = String(item || "").trim();
+      
+      // Limpiar codificación de UTF-8 corrupta para "años" y variantes
+      str = str.replace(/aÃ±os/g, "años")
+               .replace(/aÃ±o/g, "año")
+               .replace(/añ/g, "añ")
+               .replace(/a[Ã±\u00c3\u00b1\u00e1\u00b1]+os/g, "años")
+               .replace(/a±os/g, "años")
+               .replace(/a\?os/g, "años")
+               .replace(/aos/g, "años");
+               
+      if (str.includes(":")) {
+        let [nivel, grado] = str.split(":");
+        nivel = nivel.trim();
+        grado = grado.trim();
+        nivel = nivel.charAt(0).toUpperCase() + nivel.slice(1).toLowerCase();
+        grado = grado.replace(/aÃ±os/g, "años")
+                     .replace(/aÃ±o/g, "año")
+                     .replace(/a[Ã±\u00c3\u00b1\u00e1\u00b1]+os/g, "años")
+                     .replace(/a±os/g, "años")
+                     .replace(/a\?os/g, "años")
+                     .replace(/aos/g, "años");
+        return `${nivel}:${grado}`;
+      }
+      
+      // Si no tiene nivel pero es de inicial (ej. "4 años", "4 aÃ±os")
+      if (str.includes("años") || str.includes("año") || str.includes("anys") || /^\d+\s*años?$/i.test(str)) {
+        const num = str.match(/\d+/)?.[0] || "";
+        if (num) return `Inicial:${num} años`;
+      }
+      
+      return str;
+    })
     .filter(Boolean);
+    
+  return [...new Set(normalizados)];
 }
 
 function normalizarListaTexto(lista) {
@@ -256,6 +292,7 @@ function Coordinacion({
   const [guardando, setGuardando] = useState(false);
   const [nuevaCat, setNuevaCat] = useState("");
   const [catAEliminar, setCatAEliminar] = useState("");
+  const [mostrarGestorCategorias, setMostrarGestorCategorias] = useState(false);
   const [plantillaInputKey, setPlantillaInputKey] = useState(0);
 
   // Estados locales para añadir talleres deportivos
@@ -273,6 +310,8 @@ function Coordinacion({
   // Modal invitados
   const [showInvitados, setShowInvitados] = useState(false);
   const [invitados, setInvitados] = useState([]);
+  const [matriculados, setMatriculados] = useState([]);
+  const [subVistaAlumnos, setSubVistaAlumnos] = useState("preinscritos");
   const [progSeleccionado, setProgSeleccionado] = useState(null);
 
   // Carga Excel
@@ -429,7 +468,7 @@ function Coordinacion({
       return mostrarMsg("Debe agregar al menos un taller deportivo con sus edades y horarios.");
     }
 
-    const gruposHorario = (esVeranoGuardar || esDeportivoGuardar) ? [] : normalizarHorariosPorGrupo(form.horariosPorGrupo);
+    const gruposHorario = (esVeranoGuardar || esDeportivoGuardar) ? [] : normalizarHorariosPorGrupo(form.horariosPorGrupo, form.gradosAplicables);
     
     let gradosFinales = [];
     if (esDeportivoGuardar) {
@@ -516,7 +555,7 @@ function Coordinacion({
     try {
       if (modoEditar) {
         await editarPrograma(form.id, datosGuardar);
-        mostrarMsg("Programa actualizado correctamente.", "success");
+        mostrarMsg("Actualizado exitosamente.", "success");
         setProgramas((actuales) =>
           actuales.map((programa) => {
             if (programa.id !== form.id) return programa;
@@ -533,7 +572,7 @@ function Coordinacion({
             };
           })
         );
-        setShowModal(true);
+        setShowModal(false);
       } else {
         const nuevoPrograma = await crearPrograma(datosGuardar);
         mostrarMsg("Programa creado correctamente.", "success");
@@ -585,20 +624,103 @@ function Coordinacion({
   async function verInvitados(prog) {
     if (!puedeVerAlumnos) return mostrarMsg("No tiene permiso para ver alumnos.");
     setProgSeleccionado(prog);
+    setSubVistaAlumnos("preinscritos");
     const lista = await listarInvitados(prog.id);
+    const listaMatriculados = await listarMatriculados(prog.id);
     setInvitados(lista);
+    setMatriculados(listaMatriculados);
     setShowInvitados(true);
   }
 
-  function descargarPdfInvitados() {
+  function descargarPdfAlumnos(tipo) {
     if (!progSeleccionado) return;
-    if (!invitados.length) {
-      mostrarMsg("No hay alumnos registrados para descargar.");
+    const isPre = tipo === "preinscritos";
+    const lista = isPre ? invitados : matriculados;
+    if (!lista.length) {
+      mostrarMsg("No hay alumnos en esta lista para descargar.", "warning");
       return;
     }
 
-    descargarListaAlumnosPdf(progSeleccionado, invitados);
+    descargarListaAlumnosPdf(progSeleccionado, lista);
     mostrarMsg("Lista de alumnos descargada en PDF.", "success");
+  }
+
+  function exportarAExcel(tipo) {
+    if (!progSeleccionado) return;
+    const isPre = tipo === "preinscritos";
+    const data = isPre ? invitados : matriculados;
+    if (!data.length) {
+      mostrarMsg("No hay datos para exportar.", "warning");
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "Colegio San Rafael";
+    workbook.created = new Date();
+
+    const sheetName = isPre ? "Alumnos Pre-inscritos" : "Alumnos Matriculados";
+    const worksheet = workbook.addWorksheet(sheetName);
+
+    if (isPre) {
+      worksheet.columns = [
+        { header: "DNI", key: "dni", width: 15 },
+        { header: "Código", key: "codigoEstudiante", width: 15 },
+        { header: "Estudiante", key: "nombres", width: 35 },
+        { header: "Grado", key: "grado", width: 15 },
+        { header: "Sección", key: "seccion", width: 15 },
+        { header: "Observación", key: "observacion", width: 30 }
+      ];
+    } else {
+      worksheet.columns = [
+        { header: "DNI", key: "dni", width: 15 },
+        { header: "Código", key: "codigoEstudiante", width: 15 },
+        { header: "Estudiante", key: "nombres", width: 35 },
+        { header: "Grado", key: "grado", width: 15 },
+        { header: "Sección", key: "seccion", width: 15 },
+        { header: "Estado Inscripción", key: "estadoInscripcion", width: 25 },
+        { header: "Estado Pago", key: "estadoPago", width: 20 },
+        { header: "Canal/Origen", key: "origenRegistro", width: 20 },
+        { header: "Fecha Registro", key: "fechaRegistro", width: 25 }
+      ];
+    }
+
+    worksheet.addRows(data);
+
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    headerRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF006B5B" }
+    };
+    headerRow.alignment = { vertical: "middle", horizontal: "center" };
+
+    worksheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin", color: { argb: "FFE2E8F0" } },
+          left: { style: "thin", color: { argb: "FFE2E8F0" } },
+          bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+          right: { style: "thin", color: { argb: "FFE2E8F0" } }
+        };
+      });
+    });
+
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const fileName = `Alumnos_${isPre ? "Preinscritos" : "Matriculados"}_${progSeleccionado.nombre.replace(/\s+/g, "_")}.xlsx`;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      mostrarMsg("Archivo Excel descargado.", "success");
+    });
   }
 
   function abrirDocumentosPrograma(prog) {
@@ -1126,12 +1248,27 @@ function Coordinacion({
   }
 
   function toggleGrado(valor) {
-    setForm(f => ({
-      ...f,
-      gradosAplicables: normalizarListaGrados(f.gradosAplicables).includes(valor)
+    setForm(f => {
+      const yaExiste = normalizarListaGrados(f.gradosAplicables).includes(valor);
+      const nuevosGrados = yaExiste
         ? normalizarListaGrados(f.gradosAplicables).filter(item => item !== valor)
-        : [...normalizarListaGrados(f.gradosAplicables), valor],
-    }));
+        : [...normalizarListaGrados(f.gradosAplicables), valor];
+        
+      // Sincronizar con los grupos de horarios abajo
+      let nuevosGrupos = f.horariosPorGrupo;
+      if (yaExiste && Array.isArray(f.horariosPorGrupo)) {
+        nuevosGrupos = f.horariosPorGrupo.map(grupo => ({
+          ...grupo,
+          grados: normalizarListaGrados(grupo.grados).filter(item => item !== valor)
+        }));
+      }
+      
+      return {
+        ...f,
+        gradosAplicables: nuevosGrados,
+        horariosPorGrupo: nuevosGrupos
+      };
+    });
   }
 
   function toggleDia(valor) {
@@ -1209,26 +1346,30 @@ function Coordinacion({
     return `${diasSeguros.join(", ")} clase ${clase}${almuerzo}`;
   }
 
-  function normalizarHorariosPorGrupo(grupos) {
-    return (Array.isArray(grupos) ? grupos : []).map((grupo, index) => ({
-      id: grupo.id || `grupo-${index + 1}`,
-      grados: normalizarListaGrados(grupo.grados),
-      dia: grupo.dia || "",
-      almuerzoInicio: grupo.almuerzoInicio || "14:20",
-      almuerzoFin: grupo.almuerzoFin || "15:10",
-      horaInicio: grupo.horaInicio || "",
-      horaFin: grupo.horaFin || "",
-      aula: String(grupo.aula || "").trim(),
-    })).filter((grupo) =>
-      grupo.grados.length || grupo.dia || grupo.horaInicio || grupo.horaFin || grupo.aula
+  function normalizarHorariosPorGrupo(grupos, gradosAplicables = null) {
+    const gradosValidos = gradosAplicables ? new Set(normalizarListaGrados(gradosAplicables)) : null;
+    return (Array.isArray(grupos) ? grupos : []).map((grupo, index) => {
+      const gradosNormalizados = normalizarListaGrados(grupo.grados);
+      const gradosFiltrados = gradosValidos 
+        ? gradosNormalizados.filter(grado => gradosValidos.has(grado))
+        : gradosNormalizados;
+      return {
+        id: grupo.id || `grupo-${index + 1}`,
+        grados: gradosFiltrados,
+        dia: grupo.dia || "",
+        almuerzoInicio: grupo.almuerzoInicio || "14:20",
+        almuerzoFin: grupo.almuerzoFin || "15:10",
+        horaInicio: grupo.horaInicio || "",
+        horaFin: grupo.horaFin || "",
+        aula: String(grupo.aula || "").trim(),
+      };
+    }).filter((grupo) =>
+      grupo.grados.length > 0
     );
   }
 
   function obtenerGradosFinales(gradosBase, gruposHorario) {
-    return [...new Set([
-      ...normalizarListaGrados(gradosBase),
-      ...(Array.isArray(gruposHorario) ? gruposHorario : []).flatMap((grupo) => normalizarListaGrados(grupo.grados)),
-    ])];
+    return normalizarListaGrados(gradosBase);
   }
 
   function resumenHorariosPorGrupo(gruposHorario) {
@@ -1620,29 +1761,46 @@ function Coordinacion({
                           <option value="escolar">Año escolar</option><option value="verano">Ciclo verano</option>
                         </select>
                       </div>
-                      <div className="coord-field coord-category-main"><label>Categoría *</label>
+                      <div className="coord-field coord-category-field">
+                        <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                          <span>Categoría *</span>
+                          <button
+                            type="button"
+                            className="coord-category-toggle-btn"
+                            onClick={() => setMostrarGestorCategorias(!mostrarGestorCategorias)}
+                          >
+                            {mostrarGestorCategorias ? "Ocultar gestión" : "Gestionar"}
+                          </button>
+                        </label>
                         <select value={form.categoria} onChange={e => actualizarCategoriaPrograma(e.target.value)}>
                           <option value="">Seleccione</option>
                           {categorias.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                       </div>
-                      <div className="coord-field coord-new-category-field">
-                        <label>Nueva categoría</label>
-                        <div className="coord-inline-field">
-                          <input placeholder="Ej: Arte, verano, alto rendimiento" value={nuevaCat} onChange={e => setNuevaCat(e.target.value)} />
-                          <button type="button" className="coord-mini-btn" onClick={agregarCategoria}><Plus size={14} /></button>
+
+                      {mostrarGestorCategorias ? (
+                        <div className="coord-category-manager-container coord-field-full">
+                          <div className="coord-category-manager-inner">
+                            <div className="coord-field">
+                              <label>Nueva categoría</label>
+                              <div className="coord-inline-field">
+                                <input placeholder="Ej: Arte, verano, alto rendimiento" value={nuevaCat} onChange={e => setNuevaCat(e.target.value)} />
+                                <button type="button" className="coord-mini-btn" onClick={agregarCategoria}><Plus size={14} /></button>
+                              </div>
+                            </div>
+                            <div className="coord-field">
+                              <label>Quitar categoría</label>
+                              <div className="coord-inline-field">
+                                <select value={catAEliminar} onChange={e => setCatAEliminar(e.target.value)}>
+                                  <option value="">Seleccione</option>
+                                  {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+                                </select>
+                                <button type="button" className="coord-mini-btn coord-mini-danger-btn" onClick={quitarCategoria}><Trash2 size={14} /></button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="coord-field coord-remove-category-field">
-                        <label>Quitar categoría</label>
-                        <div className="coord-inline-field">
-                          <select value={catAEliminar} onChange={e => setCatAEliminar(e.target.value)}>
-                            <option value="">Seleccione</option>
-                            {categorias.map(c => <option key={c} value={c}>{c}</option>)}
-                          </select>
-                          <button type="button" className="coord-mini-btn coord-mini-danger-btn" onClick={quitarCategoria}><Trash2 size={14} /></button>
-                        </div>
-                      </div>
+                      ) : null}
                       {esFormularioVerano ? (
                         <div className="coord-age-range-row coord-field-full">
                           <div className="coord-field">
@@ -1710,11 +1868,42 @@ function Coordinacion({
                       </div>
                     </div>
                     <div className="coord-section-grid">
-                      <div className="coord-compact-schedule-row coord-field-full" style={{ gridTemplateColumns: esDeportivoForm ? "1fr 1fr" : undefined }}>
-                        {!esDeportivoForm && (
-                          <>
-                            <div className="coord-field" style={{ gridColumn: "1 / -1" }}>
-                              <label>{esFormularioVerano ? "Días de atención *" : "Dias del programa / taller *"}</label>
+                      {esDeportivoForm ?
+                        <div className="coord-deportivo-schedule-dates coord-field-full">
+                          <div className="coord-time-fields-grid">
+                            <div className="coord-field">
+                              <label>Fecha inicio *</label>
+                              <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
+                            </div>
+                            <div className="coord-field">
+                              <label>Fecha fin *</label>
+                              <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
+                            </div>
+                            <div className="coord-field">
+                              <label>Duración del taller</label>
+                              <div className="coord-readonly-field">
+                                {duracionTallerFormulario || "Seleccione fechas"}
+                              </div>
+                            </div>
+                            <div className="coord-field">
+                              <label>Aviso abierto (días) *</label>
+                              <input
+                                type="number"
+                                min="1"
+                                max="7"
+                                value={form.duracionAvisoDias}
+                                onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
+                                placeholder="Máx 7 días"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      :
+                        <div className="coord-schedule-block-grid coord-field-full">
+                          <div className="coord-schedule-block-column">
+                            <h4 className="coord-block-title">Horario de Clases</h4>
+                            <div className="coord-field">
+                              <label>{esFormularioVerano ? "Días de atención *" : "Días del programa / taller *"}</label>
                               <div className="coord-day-list">
                                 {diasSemana.map(dia => (
                                   <label
@@ -1731,47 +1920,59 @@ function Coordinacion({
                                 ))}
                               </div>
                             </div>
-                            <div className="coord-field"><label>Hora inicio *</label>
-                              <input type="time" value={form.horaInicio} onChange={e => actualizarForm("horaInicio", e.target.value)} />
+                            
+                            <div className="coord-time-fields-grid">
+                              <div className="coord-field">
+                                <label>Hora inicio *</label>
+                                <input type="time" value={form.horaInicio} onChange={e => actualizarForm("horaInicio", e.target.value)} />
+                              </div>
+                              <div className="coord-field">
+                                <label>Hora fin *</label>
+                                <input type="time" value={form.horaFin} onChange={e => actualizarForm("horaFin", e.target.value)} />
+                              </div>
+                              <div className="coord-field">
+                                <label>Almuerzo inicio</label>
+                                <input type="time" value={form.almuerzoInicio} onChange={e => actualizarForm("almuerzoInicio", e.target.value)} />
+                              </div>
+                              <div className="coord-field">
+                                <label>Almuerzo fin</label>
+                                <input type="time" value={form.almuerzoFin} onChange={e => actualizarForm("almuerzoFin", e.target.value)} />
+                              </div>
                             </div>
-                            <div className="coord-field"><label>Hora fin *</label>
-                              <input type="time" value={form.horaFin} onChange={e => actualizarForm("horaFin", e.target.value)} />
+                          </div>
+
+                          <div className="coord-schedule-block-column">
+                            <h4 className="coord-block-title">Vigencia del Programa</h4>
+                            <div className="coord-vigencia-fields-grid">
+                              <div className="coord-field">
+                                <label>Fecha inicio *</label>
+                                <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
+                              </div>
+                              <div className="coord-field">
+                                <label>Fecha fin *</label>
+                                <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
+                              </div>
+                              <div className="coord-field">
+                                <label>Duración del taller</label>
+                                <div className="coord-readonly-field">
+                                  {duracionTallerFormulario || "Seleccione fechas"}
+                                </div>
+                              </div>
+                              <div className="coord-field">
+                                <label>Aviso abierto (días) *</label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="7"
+                                  value={form.duracionAvisoDias}
+                                  onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
+                                  placeholder="Máx 7 días"
+                                />
+                              </div>
                             </div>
-                            <div className="coord-field"><label>Almuerzo inicio</label>
-                              <input type="time" value={form.almuerzoInicio} onChange={e => actualizarForm("almuerzoInicio", e.target.value)} />
-                            </div>
-                            <div className="coord-field"><label>Almuerzo fin</label>
-                              <input type="time" value={form.almuerzoFin} onChange={e => actualizarForm("almuerzoFin", e.target.value)} />
-                            </div>
-                          </>
-                        )}
-                        <div className="coord-field"><label>Fecha inicio *</label>
-                          <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
-                        </div>
-                        <div className="coord-field"><label>Fecha fin *</label>
-                          <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
-                        </div>
-                      </div>
-                      
-                      <div className="coord-program-window-row coord-field-full">
-                        <div className="coord-field">
-                          <label>Duración del taller</label>
-                          <div className="coord-readonly-field">
-                            {duracionTallerFormulario || "Seleccione fecha inicio y fin"}
                           </div>
                         </div>
-                        <div className="coord-field">
-                          <label>Aviso abierto *</label>
-                          <input
-                            type="number"
-                            min="1"
-                            max="7"
-                            value={form.duracionAvisoDias}
-                            onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
-                            placeholder="Máximo 7 días"
-                          />
-                        </div>
-                      </div>
+                      }
 
                       {esDeportivoForm && (
                         <div className="coord-field coord-field-full">
@@ -1928,22 +2129,36 @@ function Coordinacion({
                                   />
                                   <div className="coord-group-schedule-grid">
                                     <div className="coord-field">
-                                      <label>Día</label>
-                                      <select value={grupo.dia || ""} onChange={(event) => actualizarGrupoHorario(index, "dia", event.target.value)}>
-                                        {diasSemana.map((dia) => <option key={dia} value={dia}>{dia}</option>)}
-                                      </select>
+                                      <label>Días del turno *</label>
+                                      <div className="coord-day-list coord-day-list-sm">
+                                        {diasSemana.map((dia) => {
+                                          const diasSeleccionados = String(grupo.dia || "").split(",").map(d => d.trim()).filter(Boolean);
+                                          const isSelected = diasSeleccionados.includes(dia);
+                                          return (
+                                            <label
+                                              className={`coord-day-chip coord-day-chip-sm ${isSelected ? "is-selected" : ""}`}
+                                              key={dia}
+                                            >
+                                              <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={() => {
+                                                  const nuevosDias = isSelected
+                                                    ? diasSeleccionados.filter((d) => d !== dia)
+                                                    : [...diasSeleccionados, dia];
+                                                  const diasOrdenados = diasSemana.filter(d => nuevosDias.includes(d));
+                                                  actualizarGrupoHorario(index, "dia", diasOrdenados.join(", "));
+                                                }}
+                                              />
+                                              <span title={dia}>{dia.substring(0, 2)}</span>
+                                            </label>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
                                     <div className="coord-field">
                                       <label>Aula</label>
                                       <input value={grupo.aula || ""} onChange={(event) => actualizarGrupoHorario(index, "aula", event.target.value)} placeholder="Ej: A-204" />
-                                    </div>
-                                    <div className="coord-field">
-                                      <label>Almuerzo inicio</label>
-                                      <input type="time" value={grupo.almuerzoInicio || "14:20"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoInicio", event.target.value)} />
-                                    </div>
-                                    <div className="coord-field">
-                                      <label>Almuerzo fin</label>
-                                      <input type="time" value={grupo.almuerzoFin || "15:10"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoFin", event.target.value)} />
                                     </div>
                                     <div className="coord-field">
                                       <label>Clase inicio</label>
@@ -1952,6 +2167,14 @@ function Coordinacion({
                                     <div className="coord-field">
                                       <label>Clase fin</label>
                                       <input type="time" value={grupo.horaFin || "17:20"} onChange={(event) => actualizarGrupoHorario(index, "horaFin", event.target.value)} />
+                                    </div>
+                                    <div className="coord-field">
+                                      <label>Almuerzo inicio</label>
+                                      <input type="time" value={grupo.almuerzoInicio || "14:20"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoInicio", event.target.value)} />
+                                    </div>
+                                    <div className="coord-field">
+                                      <label>Almuerzo fin</label>
+                                      <input type="time" value={grupo.almuerzoFin || "15:10"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoFin", event.target.value)} />
                                     </div>
                                   </div>
                                 </div>
@@ -2093,45 +2316,173 @@ function Coordinacion({
           </div>
         )}
 
-        {/* ─── MODAL: INVITADOS ─── */}
+        {/* ─── MODAL: ESTUDIANTES DEL PROGRAMA ─── */}
         {showInvitados && (
           <div className="coord-modal-overlay" onClick={() => setShowInvitados(false)}>
-            <div className="coord-modal" onClick={e => e.stopPropagation()}>
+            <div className="coord-modal coord-modal-students" onClick={e => e.stopPropagation()}>
               <div className="coord-modal-header">
-                <h2>Invitados – {progSeleccionado?.nombre}</h2>
+                <h2>Alumnos del programa – {progSeleccionado?.nombre}</h2>
                 <button className="coord-modal-close" type="button" onClick={() => setShowInvitados(false)}><X size={20} /></button>
               </div>
               <div className="coord-modal-body">
-                <div className="coord-invitados-actions">
+                <div className="coord-tabs-header" style={{ display: "flex", gap: "10px", borderBottom: "2px solid #e2ece9", paddingBottom: "10px", marginBottom: "16px" }}>
+                  <button 
+                    type="button" 
+                    className={`coord-tab-btn ${subVistaAlumnos === "preinscritos" ? "is-active" : ""}`}
+                    onClick={() => setSubVistaAlumnos("preinscritos")}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      borderBottom: subVistaAlumnos === "preinscritos" ? "3px solid #006b5b" : "3px solid transparent",
+                      color: subVistaAlumnos === "preinscritos" ? "#006b5b" : "#475467",
+                      fontWeight: 700,
+                      padding: "8px 16px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      transition: "all 0.15s ease"
+                    }}
+                  >
+                    Pre-inscritos (Excel) ({invitados.length})
+                  </button>
+                  <button 
+                    type="button" 
+                    className={`coord-tab-btn ${subVistaAlumnos === "matriculados" ? "is-active" : ""}`}
+                    onClick={() => setSubVistaAlumnos("matriculados")}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      borderBottom: subVistaAlumnos === "matriculados" ? "3px solid #006b5b" : "3px solid transparent",
+                      color: subVistaAlumnos === "matriculados" ? "#006b5b" : "#475467",
+                      fontWeight: 700,
+                      padding: "8px 16px",
+                      cursor: "pointer",
+                      fontSize: "14px",
+                      transition: "all 0.15s ease"
+                    }}
+                  >
+                    Matriculados (Caja / Padres) ({matriculados.length})
+                  </button>
+                </div>
+
+                <div className="coord-invitados-actions" style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
                   <button
                     className="coord-primary-button"
                     type="button"
-                    onClick={descargarPdfInvitados}
-                    disabled={!invitados.length}
+                    onClick={() => descargarPdfAlumnos(subVistaAlumnos)}
+                    disabled={subVistaAlumnos === "preinscritos" ? !invitados.length : !matriculados.length}
+                    style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", minHeight: "38px" }}
                   >
                     <FileDown size={15} />
                     <span>Descargar PDF</span>
                   </button>
+                  <button
+                    className="coord-template-autofill"
+                    type="button"
+                    onClick={() => exportarAExcel(subVistaAlumnos)}
+                    disabled={subVistaAlumnos === "preinscritos" ? !invitados.length : !matriculados.length}
+                    style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", minHeight: "38px", background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" }}
+                  >
+                    <FileDown size={15} />
+                    <span>Exportar Excel</span>
+                  </button>
                 </div>
-                {invitados.length === 0 ? (
-                  <p className="coord-process-note">No hay invitados registrados para este programa.</p>
-                ) : (
-                  <div className="coord-table-wrap">
-                    <table className="coord-table">
-                      <thead><tr><th>DNI</th><th>Código</th><th>Estudiante</th><th>Grado</th><th>Sección</th></tr></thead>
-                      <tbody>
-                        {invitados.map((inv, index) => (
-                          <tr key={`${inv.dni || inv.codigoEstudiante || inv.nombres}-${index}`}>
-                            <td>{inv.dni || "Sin DNI"}</td>
-                            <td>{inv.codigoEstudiante || "—"}</td>
-                            <td>{inv.nombres}</td>
-                            <td>{inv.grado}</td>
-                            <td>{inv.seccion}</td>
+
+                {subVistaAlumnos === "preinscritos" ? (
+                  invitados.length === 0 ? (
+                    <p className="coord-process-note">No hay invitados registrados para este programa.</p>
+                  ) : (
+                    <div className="coord-table-wrap">
+                      <table className="coord-table">
+                        <thead>
+                          <tr>
+                            <th>DNI</th>
+                            <th>Código</th>
+                            <th>Estudiante</th>
+                            <th>Grado</th>
+                            <th>Sección</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {invitados.map((inv, index) => (
+                            <tr key={`${inv.dni || inv.codigoEstudiante || inv.nombres}-${index}`}>
+                              <td>{inv.dni || "Sin DNI"}</td>
+                              <td>{inv.codigoEstudiante || "—"}</td>
+                              <td>{inv.nombres}</td>
+                              <td>{inv.grado}</td>
+                              <td>{inv.seccion}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                ) : (
+                  matriculados.length === 0 ? (
+                    <p className="coord-process-note">No hay alumnos matriculados aún para este programa.</p>
+                  ) : (
+                    <div className="coord-table-wrap">
+                      <table className="coord-table">
+                        <thead>
+                          <tr>
+                            <th>DNI</th>
+                            <th>Código</th>
+                            <th>Estudiante</th>
+                            <th>Grado</th>
+                            <th>Sección</th>
+                            <th>Estado Inscripción</th>
+                            <th>Estado Pago</th>
+                            <th>Canal</th>
+                            <th>Fecha</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {matriculados.map((mat, index) => (
+                            <tr key={`${mat.dni || mat.codigoEstudiante || mat.nombres}-${index}`}>
+                              <td>{mat.dni || "Sin DNI"}</td>
+                              <td>{mat.codigoEstudiante || "—"}</td>
+                              <td><strong>{mat.nombres}</strong></td>
+                              <td>{mat.grado}</td>
+                              <td>{mat.seccion}</td>
+                              <td>
+                                <span style={{
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  background: mat.estadoInscripcion === "Pago validado" ? "#e8f7ef" : "#fef6e7",
+                                  color: mat.estadoInscripcion === "Pago validado" ? "#006b5b" : "#b25e00",
+                                }}>
+                                  {mat.estadoInscripcion}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{
+                                  padding: "2px 6px",
+                                  borderRadius: "4px",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  background: mat.estadoPago === "Pagado" ? "#e8f7ef" : "#fdf2f2",
+                                  color: mat.estadoPago === "Pagado" ? "#006b5b" : "#b42318",
+                                }}>
+                                  {mat.estadoPago}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: "11px", fontWeight: 600, color: "#475467" }}>
+                                  {mat.origenRegistro}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: "11px", color: "#667085" }}>
+                                  {mat.fechaRegistro ? mat.fechaRegistro.split("T")[0] : "—"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
                 )}
               </div>
             </div>

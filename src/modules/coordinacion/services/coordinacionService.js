@@ -245,6 +245,28 @@ export async function listarInvitados(programaId) {
   return [...(apiDb.invitadosPorPrograma[programaId] || [])];
 }
 
+export async function listarMatriculados(programaId) {
+  await delay(400);
+  await syncApiDb();
+  return (apiDb.inscripciones || [])
+    .filter((item) => item.programaId === programaId && item.estadoInscripcion !== "Anulada")
+    .map((item) => ({
+      id: item.id,
+      dni: item.dniEstudiante || "",
+      codigoEstudiante: item.codigoEstudiante || "",
+      nombres: item.nombresEstudiante || "",
+      grado: item.gradoEstudiante || item.grado || "",
+      seccion: item.seccion || "",
+      estadoInscripcion: item.estadoInscripcion || "",
+      estadoPago: item.estadoPago || "",
+      origenRegistro: item.origenRegistro || "Presencial",
+      fechaRegistro: item.fechaRegistro || "",
+      costo: item.costo,
+      apoderado: item.apoderado || "",
+      telefono: item.telefono || "",
+    }));
+}
+
 export async function buscarInvitacionPorDniPeriodo(dni, periodo) {
   await delay(250);
   await syncApiDb();

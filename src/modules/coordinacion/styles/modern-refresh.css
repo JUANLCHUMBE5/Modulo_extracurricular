@@ -215,3 +215,193 @@
     padding: 28px 22px;
   }
 }
+
+/* ==========================================================================
+   REFRESHED PROGRAM FORM STYLES
+   ========================================================================== */
+
+/* Category Toggle Link & Manager Container */
+.coord-category-toggle-btn {
+  background: none;
+  border: none;
+  color: #0d9488;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0;
+  margin-left: auto;
+  text-decoration: underline;
+}
+
+.coord-category-toggle-btn:hover {
+  color: #0f766e;
+}
+
+.coord-category-manager-container {
+  grid-column: 1 / -1;
+  background: #f8fbfa;
+  border: 1px solid #dbe7e4;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 4px;
+  animation: coordSlideIn 200ms ease;
+}
+
+.coord-category-manager-inner {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 640px) {
+  .coord-category-manager-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.coord-general-grid {
+  grid-template-columns: 2.2fr 0.9fr 0.9fr !important;
+  gap: 16px !important;
+}
+
+.coord-general-grid > .coord-program-name-field {
+  grid-column: span 1 !important;
+}
+
+.coord-general-grid > .coord-program-name-field + .coord-field {
+  grid-column: span 1 !important;
+}
+
+.coord-general-grid > .coord-category-field {
+  grid-column: span 1 !important;
+}
+
+@media (max-width: 768px) {
+  .coord-general-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .coord-general-grid > .coord-program-name-field,
+  .coord-general-grid > .coord-program-name-field + .coord-field,
+  .coord-general-grid > .coord-category-field {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* Reorganized Schedule Block Grid (Horarios vs Vigencia) */
+.coord-schedule-block-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  background: #ffffff;
+}
+
+@media (max-width: 860px) {
+  .coord-schedule-block-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.coord-schedule-block-column {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: #fcfdfe;
+  border: 1px solid #eef2f6;
+  border-radius: 12px;
+}
+
+.coord-block-title {
+  margin: 0 0 4px 0;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  color: #1e293b !important;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Time and Dates sub-grids */
+.coord-time-fields-grid,
+.coord-vigencia-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+/* Turn schedule dynamic groups layout override */
+.coord-group-schedule-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+.coord-group-schedule {
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+  padding: 18px !important;
+  background: #fafbfd !important;
+}
+
+.coord-group-schedule-title {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+}
+
+/* Small day list and day chips for turn schedule multiselect */
+.coord-day-list-sm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px !important;
+  border: 1px solid #d8e7df;
+  border-radius: 8px;
+  background: #f5fbf8;
+  min-height: 46px;
+  align-items: center;
+}
+
+.coord-program-form .coord-day-chip-sm {
+  min-height: 24px !important;
+  padding: 0 6px !important;
+  font-size: 11px !important;
+  gap: 4px !important;
+  border-radius: 6px !important;
+}
+
+.coord-program-form .coord-day-chip-sm input[type="checkbox"] {
+  width: 11px !important;
+  min-width: 11px !important;
+  max-width: 11px !important;
+  height: 11px !important;
+  min-height: 11px !important;
+  max-height: 11px !important;
+  flex: 0 0 11px !important;
+  border-radius: 2px !important;
+}
+
+.coord-program-form .coord-day-chip-sm input[type="checkbox"]:checked::after {
+  left: 3px !important;
+  top: 0px !important;
+  width: 3px !important;
+  height: 6px !important;
+  border-width: 0 1.5px 1.5px 0 !important;
+}
+
+/* Students Modal custom width and tabs */
+.coord-modal-students {
+  max-width: 1100px !important;
+  width: 95% !important;
+}
+
+.coord-tab-btn {
+  border-radius: 6px;
+}
+
+.coord-tab-btn:hover {
+  color: #006b5b !important;
+  background: rgba(0, 107, 91, 0.05) !important;
+}
