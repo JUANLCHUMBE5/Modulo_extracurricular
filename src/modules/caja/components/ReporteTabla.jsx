@@ -9,6 +9,23 @@ import {
 import { formatearFechaPeru } from "../../../services/dateService";
 import { formatearSoles } from "../utils/cajaFormatters";
 
+function esPagoWebPadres(fila = {}) {
+  const origen = String(fila.origen || "").toLowerCase();
+  const formaPago = String(fila.formaPago || "").toLowerCase();
+  const tienePago = Boolean(fila.pagoId || fila.numeroOperacion || ["pagado", "verificando", "observado"].includes(fila.estadoPago));
+  return (origen.includes("portal") || origen.includes("web")) && tienePago && !formaPago.includes("sin pago");
+}
+
+function obtenerMedioCanalWeb(fila = {}) {
+  if (!esPagoWebPadres(fila)) return "-";
+  return `${fila.formaPago || "Yape"} / Web`;
+}
+
+function obtenerTelefonoPagoWeb(fila = {}) {
+  if (!esPagoWebPadres(fila)) return "-";
+  return fila.telefonoOperacion || fila.telefono || "-";
+}
+
 export default function ReporteTabla({
   filas,
   onPagar,
@@ -35,8 +52,9 @@ export default function ReporteTabla({
             <Table.Th>Programa</Table.Th>
             <Table.Th>Monto</Table.Th>
             <Table.Th>Pago</Table.Th>
-            <Table.Th>Medio</Table.Th>
-            <Table.Th>Origen</Table.Th>
+            <Table.Th>Cod. operacion</Table.Th>
+            <Table.Th>Telefono</Table.Th>
+            <Table.Th>Medio / canal</Table.Th>
             <Table.Th>Fecha</Table.Th>
             {onPagar ? <Table.Th>Accion</Table.Th> : null}
           </Table.Tr>
@@ -80,8 +98,21 @@ export default function ReporteTabla({
                     {badgeText}
                   </Badge>
                 </Table.Td>
-                <Table.Td>{fila.formaPago || "Sin pago"}</Table.Td>
-                <Table.Td>{fila.origen || "Sin origen"}</Table.Td>
+                <Table.Td>
+                  <span className={fila.numeroOperacion ? "caja-operation-code" : "caja-row-muted"}>
+                    {fila.numeroOperacion || "-"}
+                  </span>
+                </Table.Td>
+                <Table.Td>
+                  <span className={esPagoWebPadres(fila) ? "caja-phone-channel" : "caja-row-muted"}>
+                    {obtenerTelefonoPagoWeb(fila)}
+                  </span>
+                </Table.Td>
+                <Table.Td>
+                  <span className={esPagoWebPadres(fila) ? "caja-phone-channel" : "caja-row-muted"}>
+                    {obtenerMedioCanalWeb(fila)}
+                  </span>
+                </Table.Td>
                 <Table.Td>{formatearFechaPeru(fila.fecha || fila.fechaRegistro)}</Table.Td>
                 {onPagar ? (
                   <Table.Td>

@@ -50,15 +50,18 @@ export function extraerDatosProgramaDesdeWord(textoPlano, nombreArchivo, categor
     "actividad",
   ]) || nombreDesdeArchivo(nombreArchivo);
   const categoriaDetectada = extraerCategoria(texto, categorias);
-  const horarioDetectado = extraerValorEtiqueta(texto, ["horario", "dias y horario", "día y hora", "dia y hora"]);
+  const horarioDetectado = extraerValorEtiqueta(texto, ["horario", "horarios", "dias y horario", "día y hora", "dia y hora"]);
   const horas = extraerHoras(horarioDetectado || texto);
   const fechas = extraerFechas(texto);
   const grados = extraerGrados(texto);
   const costo = extraerCosto(texto);
   const cupos = extraerNumeroEtiqueta(texto, ["cupos", "vacantes"]);
-  const requisitos = extraerValorEtiqueta(texto, ["requisitos", "materiales", "consideraciones"]);
+  const requisitos = extraerValorEtiqueta(texto, ["requisitos", "materiales", "consideraciones"]) || extraerBloqueSeccion(texto, ["incluye"], ["modalidades", "opcion a", "opción a"]);
   const comunicado = extraerComunicadoPrincipal(texto);
-  const detalleCosto = extraerBloqueSeccion(texto, ["costo"], ["el almuerzo", "almuerzo", "requisitos", "entregar este formato", "acepto"]);
+  const detalleCosto = compactarBloquesDetectados([
+    extraerBloqueSeccion(texto, ["la modalidad de ingreso"], ["atentamente"]),
+    extraerBloqueSeccion(texto, ["costo", "precio por ciclo"], ["el almuerzo", "almuerzo", "requisitos", "entregar este formato", "acepto"]),
+  ]);
   const detalleAlmuerzo = extraerBloqueSeccion(texto, ["el almuerzo", "almuerzo"], ["entregar este formato", "acepto", "datos del alumno"]);
   const concesionarios = extraerConcesionarios(texto);
   const modalidadCobro = extraerModalidad(texto);
@@ -255,11 +258,14 @@ function normalizarSaltos(texto) {
 
 function extraerValorEtiqueta(texto, etiquetas) {
   const lineas = normalizarSaltos(texto).split("\n").map((linea) => linea.trim()).filter(Boolean);
-  for (const linea of lineas) {
+  for (let index = 0; index < lineas.length; index += 1) {
+    const linea = lineas[index];
     for (const etiqueta of etiquetas) {
       const patron = new RegExp(`^\\s*${escaparRegExp(etiqueta)}\\s*[:\\-–]\\s*(.+)$`, "i");
       const match = linea.match(patron);
       if (match?.[1]) return limpiarValorDetectado(match[1]);
+      const etiquetaSola = new RegExp(`^\\s*${escaparRegExp(etiqueta)}\\s*[:\\-–]?\\s*$`, "i");
+      if (etiquetaSola.test(linea) && lineas[index + 1]) return limpiarValorDetectado(lineas[index + 1]);
     }
   }
   return "";
@@ -270,6 +276,7 @@ function extraerComunicadoPrincipal(texto) {
   const lineas = normal.split("\n").map((linea) => linea.trim()).filter(Boolean);
   const indiceInicio = lineas.findIndex((linea) =>
     /^reciba\b/i.test(linea) ||
+    /^en nuestra instituci[oó]n\b/i.test(linea) ||
     /^nos dirigimos\b/i.test(linea) ||
     normalizarComparacion(linea).startsWith("reciba un cordial saludo")
   );
@@ -277,7 +284,7 @@ function extraerComunicadoPrincipal(texto) {
 
   const indiceFinRelativo = lineas.slice(indiceInicio + 1).findIndex((linea) => {
     const comparacion = normalizarComparacion(linea);
-    return /^(club|ciclo|duracion|a continuacion|requisitos|costo|el almuerzo|entregar este formato)\b/.test(comparacion);
+    return /^(club|ciclo|duracion|a continuacion|requisitos|costo|precio|la modalidad|el programa de preparacion|el almuerzo|entregar este formato)\b/.test(comparacion);
   });
   const indiceFin = indiceFinRelativo === -1 ? Math.min(lineas.length, indiceInicio + 8) : indiceInicio + 1 + indiceFinRelativo;
   return limpiarBloqueDetectado(lineas.slice(indiceInicio, indiceFin).join(" "));
@@ -319,6 +326,14 @@ function limpiarBloqueDetectado(valor) {
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")
     .trim();
+}
+
+function compactarBloquesDetectados(bloques) {
+  return bloques
+    .map((bloque) => String(bloque || "").trim())
+    .filter(Boolean)
+    .filter((bloque, index, lista) => lista.findIndex((item) => item === bloque) === index)
+    .join("\n\n");
 }
 
 function limpiarValorDetectado(valor) {
@@ -387,6 +402,12 @@ function extraerFechas(texto) {
 
 function extraerCosto(texto) {
   const costoLinea = extraerValorEtiqueta(texto, ["costo", "inversion", "inversión", "pago"]);
+  const precioCiclo = String(texto || "").match(/precio\s+por\s+ciclo[\s\S]{0,80}?S\/\.?\s*(\d+(?:[.,]\d{1,2})?)/i);
+  if (precioCiclo?.[1]) return Number(precioCiclo[1].replace(",", ".")).toFixed(2);
+  const primerPago = String(texto || "").match(/primer\s+pago\s+de\s+S\/\.?\s*(\d+(?:[.,]\d{1,2})?)/i);
+  if (primerPago?.[1]) return Number(primerPago[1].replace(",", ".")).toFixed(2);
+  const montoSoles = String(texto || "").match(/S\/\.?\s*(\d+(?:[.,]\d{1,2})?)/i);
+  if (montoSoles?.[1]) return Number(montoSoles[1].replace(",", ".")).toFixed(2);
   const pagoUnico = String(texto || "").match(/pago\s+[úu]nico\s*[:\-–]?\s*(?:S\/\.?\s*)?(\d+(?:[.,]\d{1,2})?)/i);
   if (pagoUnico?.[1]) return Number(pagoUnico[1].replace(",", ".")).toFixed(2);
   const bloqueCosto = extraerBloqueSeccion(texto, ["costo"], ["el almuerzo", "almuerzo", "requisitos", "entregar este formato", "acepto"]);
@@ -404,6 +425,7 @@ function extraerNumeroEtiqueta(texto, etiquetas) {
 
 function extraerModalidad(texto) {
   const normal = normalizarComparacion(texto);
+  if (normal.includes("precio por ciclo") || normal.includes("por ciclo")) return "Por ciclo";
   if (normal.includes("pago unico") || normal.includes("unico")) return "Unico";
   if (normal.includes("mensual") || normal.includes("cuota")) return "Mensual";
   return "";

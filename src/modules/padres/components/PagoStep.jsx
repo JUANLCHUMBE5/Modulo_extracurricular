@@ -13,8 +13,25 @@ const PAGO_QR_SRC = "/PAGO_QR.jpg";
 
 function esPagoEnVerificacion(inscripcion, pagoConfirmado) {
   const estadoInscripcion = normalizarTexto(inscripcion?.estadoInscripcion);
-  const estadoPago = normalizarTexto(pagoConfirmado?.estado || inscripcion?.estadoPago);
+  const pagoCorresponde = !pagoConfirmado?.inscripcionId || pagoConfirmado.inscripcionId === inscripcion?.id;
+  const estadoPago = normalizarTexto([
+    pagoCorresponde ? pagoConfirmado?.estado : "",
+    pagoCorresponde ? pagoConfirmado?.estadoVerificacion : "",
+    inscripcion?.estadoPago,
+  ].filter(Boolean).join(" "));
   return estadoInscripcion.includes("verificacion") || estadoPago.includes("verificando");
+}
+
+function esPagoAprobado(inscripcion, pagoConfirmado) {
+  const pagoCorresponde = !pagoConfirmado?.inscripcionId || pagoConfirmado.inscripcionId === inscripcion?.id;
+  const texto = normalizarTexto([
+    pagoCorresponde ? pagoConfirmado?.estado : "",
+    pagoCorresponde ? pagoConfirmado?.estadoVerificacion : "",
+    inscripcion?.estadoPago,
+    inscripcion?.estadoInscripcion,
+  ].filter(Boolean).join(" "));
+
+  return ["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item));
 }
 
 function normalizarTexto(valor) {
@@ -49,16 +66,16 @@ export default function PagoStep({
   const [archivoNombre, setArchivoNombre] = useState("");
   const [errorFormulario, setErrorFormulario] = useState("");
 
-  const monto = programa && (inscripcion || infoProgramaAceptada) ? formatearSoles(programa.costo) : "S/ 0.00";
-  const pagoListo = Boolean(programa && infoProgramaAceptada && datosConfirmados);
+  const montoBase = Number(inscripcion?.costo ?? programa?.costo ?? 0);
+  const monto = programa && (inscripcion || infoProgramaAceptada) ? formatearSoles(montoBase) : "S/ 0.00";
+  const pagoListo = Boolean(programa && (infoProgramaAceptada || inscripcion) && datosConfirmados);
   const pagoVerificando = esPagoEnVerificacion(inscripcion, pagoConfirmado);
   const puedeEnviarVerificacion = Boolean(inscripcion && pagoListo && !pagoVerificando && !requiereCaja);
   const textoBoton = pagoVerificando
     ? "Pago pendiente de verificacion"
     : "Guardar pago";
 
-  const estadoPagoNormalizado = String(pagoConfirmado?.estado || inscripcion?.estadoPago || "").toLowerCase().trim();
-  const esPagado = estadoPagoNormalizado === "pagado" || estadoPagoNormalizado === "pago validado" || estadoPagoNormalizado === "completado";
+  const esPagado = esPagoAprobado(inscripcion, pagoConfirmado);
 
   if (esPagado) {
     return (
@@ -130,6 +147,18 @@ export default function PagoStep({
     event.preventDefault();
     setErrorFormulario("");
 
+    if (!inscripcion) {
+      setErrorFormulario("Primero debe quedar registrada la inscripcion de este taller.");
+      return;
+    }
+    if (!datosConfirmados) {
+      setErrorFormulario("Confirme los datos del apoderado antes de enviar el pago.");
+      return;
+    }
+    if (requiereCaja) {
+      setErrorFormulario("Este registro debe revisarse directamente en Caja.");
+      return;
+    }
     if (!puedeEnviarVerificacion) return;
     if (!referencia.trim()) {
       setErrorFormulario("Ingrese el numero de operacion de Yape.");

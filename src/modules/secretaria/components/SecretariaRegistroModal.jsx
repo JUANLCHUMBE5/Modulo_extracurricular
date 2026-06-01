@@ -13,6 +13,16 @@ import {
   formatearCuposSecretaria,
 } from "./SecretariaFields";
 
+function describirSeleccionCambridge(valor = "") {
+  const seleccion = String(valor || "").trim().toUpperCase();
+  const opciones = {
+    A: "A - Promovido por certificado oficial",
+    B: "B - Ingresante por Admission Test",
+    C: "C - Ingresante por desempeno academico",
+  };
+  return opciones[seleccion] || "";
+}
+
 export default function SecretariaRegistroModal({
   actualizarFormulario,
   esCicloVerano,
@@ -31,6 +41,14 @@ export default function SecretariaRegistroModal({
   setModoRegistro,
 }) {
   const obtenerEtiquetaPrograma = etiquetaPrograma || ((programa) => programa?.nombre || "");
+  const esCambridge = /cambridge/i.test([
+    programaParaRegistro?.nombre,
+    programaParaRegistro?.programa,
+    programaParaRegistro?.plantilla,
+  ].filter(Boolean).join(" "));
+  const seleccionCambridge = programaParaRegistro?.seleccion || "";
+  const ingresoCambridge = describirSeleccionCambridge(seleccionCambridge);
+  const nivelCambridge = programaParaRegistro?.nivelCambridge || "";
 
   return (
 <>
@@ -370,6 +388,12 @@ export default function SecretariaRegistroModal({
                   <DatoHorario label="Clase" value={horarioResumenRegistro.clase} />
                   <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} />
                 </div>
+                {esCambridge && ingresoCambridge ? (
+                  <div className="secretaria-program-cost-row secretaria-field-full">
+                    <CampoLectura label="Modalidad Cambridge A/B/C" value={ingresoCambridge} />
+                    {nivelCambridge ? <CampoLectura label="Nivel Cambridge" value={nivelCambridge} /> : null}
+                  </div>
+                ) : null}
                 <div className="secretaria-program-cost-row secretaria-field-full">
                   <CampoLectura label="Costo referencial" value={programaParaRegistro ? `S/ ${Number(programaParaRegistro.costo).toFixed(2)}` : ""} />
                   <CampoLectura label="Cupos disponibles" value={formatearCuposSecretaria(programaParaRegistro)} />

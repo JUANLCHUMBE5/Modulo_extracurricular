@@ -24,6 +24,16 @@ const badgeStyle = (activo, tone) => ({
   color: activo ? "#006b5b" : tone === "warning" ? "#b25e00" : "#b42318",
 });
 
+function describirSeleccionCambridge(valor = "") {
+  const seleccion = String(valor || "").trim().toUpperCase();
+  const opciones = {
+    A: "A - Certificado oficial",
+    B: "B - Admission Test",
+    C: "C - Desempeno academico",
+  };
+  return opciones[seleccion] || (seleccion || "-");
+}
+
 function AlumnosProgramaModal({
   descargarPdfAlumnos,
   exportarAExcel,
@@ -35,6 +45,7 @@ function AlumnosProgramaModal({
   subVistaAlumnos,
 }) {
   const listaActual = subVistaAlumnos === "preinscritos" ? invitados : matriculados;
+  const puedeDescargar = subVistaAlumnos === "matriculados";
 
   return (
     <div className="coord-modal-overlay" onClick={onClose}>
@@ -63,28 +74,34 @@ function AlumnosProgramaModal({
             </button>
           </div>
 
-          <div className="coord-invitados-actions" style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
-            <button
-              className="coord-primary-button"
-              type="button"
-              onClick={() => descargarPdfAlumnos(subVistaAlumnos)}
-              disabled={!listaActual.length}
-              style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", minHeight: "38px" }}
-            >
-              <FileDown size={15} />
-              <span>Descargar PDF</span>
-            </button>
-            <button
-              className="coord-template-autofill"
-              type="button"
-              onClick={() => exportarAExcel(subVistaAlumnos)}
-              disabled={!listaActual.length}
-              style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", minHeight: "38px", background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" }}
-            >
-              <FileDown size={15} />
-              <span>Exportar Excel</span>
-            </button>
-          </div>
+          {puedeDescargar ? (
+            <div className="coord-invitados-actions" style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+              <button
+                className="coord-primary-button"
+                type="button"
+                onClick={() => descargarPdfAlumnos(subVistaAlumnos)}
+                disabled={!listaActual.length}
+                style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", minHeight: "38px" }}
+              >
+                <FileDown size={15} />
+                <span>Descargar PDF</span>
+              </button>
+              <button
+                className="coord-template-autofill"
+                type="button"
+                onClick={() => exportarAExcel(subVistaAlumnos)}
+                disabled={!listaActual.length}
+                style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", minHeight: "38px", background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" }}
+              >
+                <FileDown size={15} />
+                <span>Exportar Excel</span>
+              </button>
+            </div>
+          ) : (
+            <p className="coord-process-note" style={{ marginBottom: "16px" }}>
+              Los pre-inscritos son solo invitados de Excel. La descarga esta disponible unicamente para alumnos matriculados.
+            </p>
+          )}
 
           {subVistaAlumnos === "preinscritos" ? (
             <TablaPreinscritos alumnos={invitados} />
@@ -101,6 +118,7 @@ function TablaPreinscritos({ alumnos }) {
   if (!alumnos.length) {
     return <p className="coord-process-note">No hay invitados registrados para este programa.</p>;
   }
+  const mostrarCambridge = alumnos.some((alumno) => alumno.seleccion || alumno.nivelCambridge);
 
   return (
     <div className="coord-table-wrap">
@@ -112,6 +130,8 @@ function TablaPreinscritos({ alumnos }) {
             <th>Estudiante</th>
             <th>Grado</th>
             <th>Sección</th>
+            {mostrarCambridge ? <th>Ingreso Cambridge</th> : null}
+            {mostrarCambridge ? <th>Nivel Cambridge</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -122,6 +142,8 @@ function TablaPreinscritos({ alumnos }) {
               <td>{alumno.nombres}</td>
               <td>{alumno.grado}</td>
               <td>{alumno.seccion}</td>
+              {mostrarCambridge ? <td>{describirSeleccionCambridge(alumno.seleccion)}</td> : null}
+              {mostrarCambridge ? <td>{alumno.nivelCambridge || "Pendiente"}</td> : null}
             </tr>
           ))}
         </tbody>

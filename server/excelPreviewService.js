@@ -226,6 +226,7 @@ function normalizarFila(fila) {
 
 function validarFilaCarga(fila, programaDetectado) {
   const errores = [];
+  const esCambridge = programaDetectado && esProgramaCambridge(programaDetectado);
   if (fila.dni && !/^\d{8}$/.test(fila.dni)) errores.push("DNI invalido. Debe tener 8 digitos.");
   if (!textoSeguro(fila.alumno || `${fila.nombres} ${fila.apellidos}`)) errores.push("Falta alumno.");
   if (!textoSeguro(fila.grado)) errores.push("Falta grado.");
@@ -233,6 +234,8 @@ function validarFilaCarga(fila, programaDetectado) {
   if (!textoSeguro(fila.curso) && !textoSeguro(fila.nivelCambridge)) errores.push("Falta curso o nivel Cambridge.");
   if (fila.curso && !programaDetectado) errores.push("El programa indicado no existe en el periodo seleccionado.");
   if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
+  if (esCambridge && !/^[ABC]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A, B o C.");
+  if (esCambridge && !textoSeguro(fila.nivelCambridge)) errores.push("Para Cambridge, falta nivel_cambridge.");
   if (programaDetectado && String(programaDetectado.estado || "Habilitado") !== "Habilitado") {
     errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} esta ${programaDetectado.estado}. Habilitelo antes de cargar alumnos.`);
   }

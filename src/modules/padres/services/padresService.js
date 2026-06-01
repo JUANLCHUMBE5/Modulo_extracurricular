@@ -98,14 +98,27 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
     throw new Error("El programa no esta disponible para el grado del estudiante.");
   }
 
-  const duplicada = apiDb.inscripciones.some((item) =>
+  const inscripcionExistente = apiDb.inscripciones.find((item) =>
     item.programaId === programa.id &&
     item.estadoInscripcion !== "Anulada" &&
     item.dniEstudiante === dniLimpio
   );
+  const duplicada = Boolean(inscripcionExistente);
+  if (inscripcionExistente) {
+    const pagoExistente = encontrarPagoActivoPadres(inscripcionExistente);
+    const estadoExistente = normalizarEstadoPagoPadres(
+      inscripcionExistente.estadoPago,
+      inscripcionExistente.estadoInscripcion,
+      pagoExistente?.estado,
+      pagoExistente?.estadoVerificacion
+    );
+    if (estadoExistente === "pagado") {
+      throw new Error("El estudiante ya esta matriculado y cancelado en este programa. No se puede volver a matricular.");
+    }
+  }
   if (duplicada) throw new Error("El estudiante ya tiene una inscripción registrada en este programa.");
 
-  const horarioRegistro = horarioPersonalizado || invitacion?.horario || resolverHorarioPorGrado(programa, estudiante.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar";
+  const horarioRegistro = horarioPersonalizado || invitacion?.horario || resolverHorarioPorGrado(programa, estudiante.grado) || (programa.invitacionMasiva ? programa.horario : "") || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar";
   if (!programa.invitacionMasiva) {
     validarCruceHorarioPadres(dniLimpio, programa.id, programa.periodo, horarioRegistro);
   }
@@ -183,6 +196,19 @@ export async function registrarPagoVerificacionPadres(dni, inscripcionId, datosP
   if (inscripcionIndex === -1) throw new Error("No se encontro una inscripcion pendiente para pagar.");
 
   const inscripcion = apiDb.inscripciones[inscripcionIndex];
+  const pagoActivo = encontrarPagoActivoPadres(inscripcion);
+  const estadoActual = normalizarEstadoPagoPadres(
+    inscripcion.estadoPago,
+    inscripcion.estadoInscripcion,
+    pagoActivo?.estado,
+    pagoActivo?.estadoVerificacion
+  );
+  if (estadoActual === "pagado") {
+    throw new Error("Caja ya registro este pago como cancelado. No puede enviar otro pago web.");
+  }
+  if (estadoActual === "verificando") {
+    throw new Error("Ya existe un pago web en verificacion para esta inscripcion.");
+  }
   const referencia = String(datosPago.referencia || "").trim();
   const telefono = String(datosPago.telefono || "").replace(/\D/g, "").slice(0, 9);
   const captura = datosPago.captura || null;
@@ -256,16 +282,13 @@ function obtenerInvitaciones(dni, estudiante = null) {
   apiDb.programas.forEach((programa) => {
     if (!programaVisibleEnPortalPadres(programa)) return;
 
-    if (
-      programa.invitacionMasiva &&
-      programaDisponibleParaGrado(programa, estudiante?.grado || "")
-    ) {
+    if (programa.invitacionMasiva) {
       resultado.push({
         id: `${programa.id}-masiva-${dni}`,
         programaId: programa.id,
         programa: programa.nombre,
         periodo: normalizarPeriodoTexto(programa.periodo),
-        horario: resolverHorarioPorGrado(programa, estudiante?.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar",
+        horario: resolverHorarioPorGrado(programa, estudiante?.grado) || programa.horario || "Horario por confirmar",
         responsable: programa.responsable || programa.docente || "Responsable por definir",
         costo: Number(programa.costo || 0),
         modalidadCobro: programa.modalidadCobro || "No definido",
@@ -276,9 +299,11 @@ function obtenerInvitaciones(dni, estudiante = null) {
         concesionarios: programa.concesionarios || "",
         anuncioImagen: programa.anuncioImagen || "",
         anuncioImagenNombre: programa.anuncioImagenNombre || "",
-        requiereUniforme: Boolean(programa.requiereUniforme),
-        estadoPrograma: programa.estado || "No definido",
-        estadoInvitacion: "Invitacion masiva",
+          requiereUniforme: Boolean(programa.requiereUniforme),
+          seleccion: estudiante?.seleccion || "",
+          nivelCambridge: estudiante?.nivelCambridge || "",
+          estadoPrograma: programa.estado || "No definido",
+          estadoInvitacion: "Invitacion masiva",
         fechaInicio: programa.fechaInicio || "",
         fechaFin: programa.fechaFin || "",
         duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
@@ -312,6 +337,8 @@ function obtenerInvitaciones(dni, estudiante = null) {
           anuncioImagen: programa.anuncioImagen || "",
           anuncioImagenNombre: programa.anuncioImagenNombre || "",
           requiereUniforme: Boolean(programa.requiereUniforme),
+          seleccion: invitado.seleccion || "",
+          nivelCambridge: invitado.nivelCambridge || "",
           estadoPrograma: programa.estado || "No definido",
           estadoInvitacion: invitado.estado || "Invitado",
           fechaInicio: programa.fechaInicio || "",
@@ -419,7 +446,7 @@ function sincronizarInscripcionConPrograma(inscripcion) {
   return normalizarInscripcion({
     ...inscripcion,
     programa: programa.nombre || inscripcion.programa,
-    horario: resolverHorarioPorGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || inscripcion.horario,
+    horario: resolverHorarioPorGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado) || (programa.invitacionMasiva ? programa.horario : "") || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || inscripcion.horario,
     docente: programa.responsable || programa.docente || inscripcion.docente,
     costo: Number(programa.costo ?? inscripcion.costo ?? 0),
     modalidadCobro: programa.modalidadCobro || inscripcion.modalidadCobro,
@@ -490,6 +517,8 @@ function tieneHorariosPorGrupo(programa) {
 }
 
 function programaDisponibleParaGrado(programa, gradoAlumno = "") {
+  if (programa?.invitacionMasiva) return true;
+
   if (tieneHorariosPorGrupo(programa)) {
     return Boolean(resolverHorarioPorGrado(programa, gradoAlumno));
   }
@@ -532,6 +561,32 @@ function normalizarTexto(texto) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+}
+
+function normalizarEstadoPagoPadres(...valores) {
+  const texto = normalizarTexto(valores.filter(Boolean).join(" "));
+  if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
+  if (["verificando", "verificacion", "por verificar", "revision"].some((item) => texto.includes(item))) return "verificando";
+  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) return "observado";
+  if (["cancelado", "anulado"].some((item) => texto.includes(item))) return "anulado";
+  return "pendiente";
+}
+
+function encontrarPagoActivoPadres(inscripcion = {}) {
+  const registro = inscripcion || {};
+  const pagos = Array.isArray(apiDb.pagos) ? apiDb.pagos : [];
+  const programaNombre = normalizarTexto(registro.programa);
+
+  return pagos.find((pago) => {
+    const estado = normalizarEstadoPagoPadres(pago.estado, pago.estadoPago, pago.estadoVerificacion);
+    if (["observado", "anulado"].includes(estado)) return false;
+    if (pago.inscripcionId && pago.inscripcionId === registro.id) return true;
+
+    const mismoDni = (pago.dniEstudiante || pago.estudianteDni) === registro.dniEstudiante;
+    if (!mismoDni) return false;
+    if (pago.programaId && pago.programaId === registro.programaId) return true;
+    return programaNombre && normalizarTexto(pago.programa || pago.programaNombre) === programaNombre;
+  }) || null;
 }
 
 function descomponerGrado(valor) {
@@ -591,8 +646,10 @@ export async function obtenerProgramasCoordinacion() {
     const cuposDisponibles = Math.max(0, cupos - cuposOcupados);
     const duracionAvisoDias = normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7);
     const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias);
-    const requiereGradoCompatible = tieneHorariosPorGrupo(programa) ||
-      (Array.isArray(programa.gradosAplicables) && programa.gradosAplicables.length > 0);
+    const requiereGradoCompatible = !programa.invitacionMasiva && (
+      tieneHorariosPorGrupo(programa) ||
+      (Array.isArray(programa.gradosAplicables) && programa.gradosAplicables.length > 0)
+    );
 
     return {
       id: programa.id,

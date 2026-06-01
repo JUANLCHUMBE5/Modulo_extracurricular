@@ -107,6 +107,7 @@ export default function Padres({ user, onLogout }) {
   const [tallaShort, setTallaShort] = useState("");
   const [tallaUniforme, setTallaUniforme] = useState("");
   const [programaAdicional, setProgramaAdicional] = useState(null);
+  const [inscripcionPagoId, setInscripcionPagoId] = useState("");
   const [comunicadoCompletoVisto, setComunicadoCompletoVisto] = useState(false);
   const comunicadoModalRef = useRef(null);
 
@@ -126,6 +127,7 @@ export default function Padres({ user, onLogout }) {
     infoProgramaAceptada,
     iniciales,
     inscripcion,
+    inscripciones,
     invitacion,
     mensajes,
     mostrarCatalogoProgramas,
@@ -146,13 +148,18 @@ export default function Padres({ user, onLogout }) {
   } = usePadres(user);
 
   const programaActual = programaAdicional || programa;
+  const inscripcionPago = inscripcionPagoId
+    ? inscripciones.find((item) => item.id === inscripcionPagoId) || null
+    : programaAdicional
+      ? inscripciones.find((item) => item.programaId === programaAdicional.id) || null
+      : inscripcion;
   const programaActualKey = programaActual
     ? `${programaActual.programaId || programaActual.id || ""}:${programaActual.programa || programaActual.nombre || ""}`
     : "";
 
   const comunicadoPadres = prepararComunicadoPadres(programaActual, estudiante);
   const invitacionPendiente = Boolean(invitacion && !inscripcion);
-  const requiereCaja = Boolean(!inscripcion && programaActual?.ventanaInscripcion?.requiereCaja);
+  const requiereCaja = Boolean(!inscripcionPago && programaActual?.ventanaInscripcion?.requiereCaja);
   const tieneCursosDisponibles = programasDisponibles.length > 0;
   const programaConAnuncio = programaActual?.anuncioImagen
     ? programaActual
@@ -234,6 +241,7 @@ export default function Padres({ user, onLogout }) {
 
   function manejarInscribirProgramaPrincipal() {
     setProgramaAdicional(null);
+    setInscripcionPagoId("");
     setHorarioSeleccionado("");
     setTallaPolo("");
     setTallaShort("");
@@ -244,12 +252,13 @@ export default function Padres({ user, onLogout }) {
 
   function manejarInscribirCursoAdicional(prog) {
     setProgramaAdicional(prog);
+    setInscripcionPagoId(prog.inscripcionRegistrada?.id || "");
     setHorarioSeleccionado("");
     setTallaPolo("");
     setTallaShort("");
     setTallaUniforme("");
-    setInfoProgramaAceptada(String(prog.categoria || "").toLowerCase() === "deportivo");
-    cambiarPaso(1);
+    setInfoProgramaAceptada(Boolean(prog.inscripcionRegistrada) || String(prog.categoria || "").toLowerCase() === "deportivo");
+    cambiarPaso(prog.inscripcionRegistrada ? 3 : 1);
   }
 
   async function guardarDatosYEntrarAPago(event) {
@@ -276,8 +285,8 @@ export default function Padres({ user, onLogout }) {
         guardarPasoPago(user?.dni, null);
         return false;
       }
-      if (programaAdicional) {
-        setProgramaAdicional(null);
+      if (programaAdicional && registrado?.id) {
+        setInscripcionPagoId(registrado.id);
       }
     }
 
@@ -302,15 +311,15 @@ export default function Padres({ user, onLogout }) {
       consultarRafael("Que debo hacer ahora");
       return;
     }
-    if (invitacionPendiente || programaAdicional) {
+    if ((invitacionPendiente || programaAdicional) && !inscripcionPago) {
       const progId = programaAdicional?.id;
       const registrado = await solicitarInscripcionPadres(progId, horarioSeleccionado, { tallaPolo, tallaShort, tallaUniforme });
-      if (registrado && programaAdicional) {
-        setProgramaAdicional(null);
+      if (registrado?.id) {
+        setInscripcionPagoId(registrado.id);
       }
       return;
     }
-    await enviarPagoVerificacionPadres(datosPago);
+    await enviarPagoVerificacionPadres(datosPago, inscripcionPago?.id);
   }
 
   function marcarComunicadoVistoSiCorresponde(event) {
@@ -373,7 +382,7 @@ export default function Padres({ user, onLogout }) {
           datosConfirmados={datosConfirmados}
           guardando={guardando}
           infoProgramaAceptada={infoProgramaAceptada}
-          inscripcion={inscripcion}
+          inscripcion={inscripcionPago}
           invitacionPendiente={invitacionPendiente}
           manejarAccionPago={manejarAccionPago}
           pagoConfirmado={pagoConfirmado}
@@ -721,10 +730,14 @@ export default function Padres({ user, onLogout }) {
                     {pagosOrdenados.map((pago) => {
                       const estado = normalizarEstadoPagoPadres(pago);
                       const fecha = formatearFechaPagoPadres(pago.fechaPago || pago.fecha || pago.createdAt);
+                      const nombreProgramaPago = pago.programa || pago.programaNombre || "Programa";
                       return (
                         <div className="padres-history-row" role="row" key={pago.id || `${fecha}-${pago.monto}`}>
                           <span>{fecha}</span>
-                          <span>{formatearMontoPadres(pago.monto)}</span>
+                          <span>
+                            <strong>{nombreProgramaPago}</strong>
+                            <small>{formatearMontoPadres(pago.monto)}</small>
+                          </span>
                           <strong className={`padres-history-status ${estado.clase}`}>{estado.texto}</strong>
                           <button type="button" onClick={() => setPagoDetalle(pago)}>
                             <Eye size={14} />

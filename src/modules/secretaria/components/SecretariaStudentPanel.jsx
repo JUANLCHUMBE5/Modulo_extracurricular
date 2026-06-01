@@ -8,6 +8,16 @@ import {
 } from "@tabler/icons-react";
 import { resumirClaseSecretaria } from "./SecretariaFields";
 
+function describirSeleccionCambridge(valor = "") {
+  const seleccion = String(valor || "").trim().toUpperCase();
+  const opciones = {
+    A: "A - Promovido por certificado oficial",
+    B: "B - Ingresante por Admission Test",
+    C: "C - Ingresante por desempeno academico",
+  };
+  return opciones[seleccion] || "Pendiente de definir en Coordinacion";
+}
+
 function SecretariaStudentPanel({
   abrirFichaGenerada,
   abrirCursoAdicional,
@@ -27,6 +37,14 @@ function SecretariaStudentPanel({
   tipoAlumnoMostrado,
 }) {
   if (!estudiante) return null;
+  const esCambridge = /cambridge/i.test([
+    nombreProgramaAMostrar,
+    estudiante.programaNombre,
+    estudiante.plantilla,
+    inscripcion?.programa,
+  ].filter(Boolean).join(" "));
+  const seleccionCambridge = inscripcion?.seleccion || estudiante.seleccion || "";
+  const nivelCambridge = inscripcion?.nivelCambridge || estudiante.nivelCambridge || "";
 
   return (
     <section className="secretaria-student-panel">
@@ -97,6 +115,20 @@ function SecretariaStudentPanel({
           <dt>{tieneInvitacionOperativa ? "Programa asignado" : esCicloVerano ? "Programa de verano" : "Programa"}</dt>
           <dd>{nombreProgramaAMostrar || "Se seleccionara al registrar"}</dd>
         </div>
+        {esCambridge ? (
+          <>
+            <div className="secretaria-data-program">
+              <dt>Modalidad Cambridge A/B/C</dt>
+              <dd>{describirSeleccionCambridge(seleccionCambridge)}</dd>
+            </div>
+            {nivelCambridge ? (
+              <div className="secretaria-data-program">
+                <dt>Nivel Cambridge</dt>
+                <dd>{nivelCambridge}</dd>
+              </div>
+            ) : null}
+          </>
+        ) : null}
         {inscripcion ? (
           <>
             <div className="secretaria-data-program">

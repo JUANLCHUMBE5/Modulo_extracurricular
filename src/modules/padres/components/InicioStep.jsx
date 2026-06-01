@@ -32,6 +32,18 @@ function InfoTile({ icon: Icon, label, value, children }) {
   );
 }
 
+function obtenerEstadoPagoPadres(inscripcion = {}) {
+  const registro = inscripcion || {};
+  const texto = String(`${registro.estadoPago || ""} ${registro.estadoInscripcion || ""}`)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
+  if (["verificando", "verificacion", "por verificar", "revision"].some((item) => texto.includes(item))) return "verificando";
+  return "pendiente";
+}
+
 function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirProgramaPrincipal }) {
   if (!programa) {
     return (
@@ -51,14 +63,12 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
   let buttonAction = onInscribirProgramaPrincipal;
 
   if (inscripcion) {
-    const estadoPagoNormalizado = String(inscripcion.estadoPago || "").toLowerCase().trim();
-    const estadoInscripcionNormalizado = String(inscripcion.estadoInscripcion || "").toLowerCase().trim();
-
-    const esPagado = estadoPagoNormalizado === "pagado" || estadoPagoNormalizado === "pago validado" || estadoPagoNormalizado === "completado";
-    const esVerificando = estadoPagoNormalizado === "verificando" || estadoPagoNormalizado === "por verificar" || estadoInscripcionNormalizado.includes("verificacion") || estadoInscripcionNormalizado.includes("revision");
+    const estadoPago = obtenerEstadoPagoPadres(inscripcion);
+    const esPagado = estadoPago === "pagado";
+    const esVerificando = estadoPago === "verificando";
 
     if (esPagado) {
-      buttonText = "Registrado";
+      buttonText = "Pagado";
       buttonDisabled = true;
     } else if (esVerificando) {
       buttonText = "En aprobación";
@@ -366,7 +376,21 @@ function CatalogoProgramas({
         >
           {programasDisponibles.map((prog) => {
             const registrando = guardando && programaSeleccionadoId === prog.id;
-            const sinCupos = Number(prog.cuposDisponibles || 0) <= 0;
+            const sinCupos = !prog.registrado && Number(prog.cuposDisponibles || 0) <= 0;
+            const estadoPago = obtenerEstadoPagoPadres(prog.inscripcionRegistrada);
+            const pagoValidado = estadoPago === "pagado";
+            const pagoEnRevision = estadoPago === "verificando";
+            const puedeContinuarPago = prog.registrado && !pagoValidado && !pagoEnRevision;
+            const botonDeshabilitado = registrando || sinCupos || (prog.registrado && !puedeContinuarPago);
+            const textoAccion = sinCupos
+              ? "Sin cupos"
+              : pagoValidado
+                ? "Pagado"
+                : pagoEnRevision
+                  ? "En aprobacion"
+                  : puedeContinuarPago
+                    ? "Continuar al pago"
+                    : "Inscribir";
             return (
               <article className="padres-flow-course-card" key={prog.id}>
 
@@ -402,14 +426,14 @@ function CatalogoProgramas({
                 <button
                   className={`padres-flow-primary-button${sinCupos ? " is-empty" : ""}`}
                   type="button"
-                  disabled={registrando || prog.registrado || sinCupos}
+                  disabled={botonDeshabilitado}
                   onClick={() => {
-                    if (prog.registrado || sinCupos) return;
+                    if (botonDeshabilitado) return;
                     onInscribirCursoAdicional(prog);
                   }}
                 >
                   {registrando ? <Loader2 className="padres-spin" size={16} /> : null}
-                  {sinCupos ? "Sin cupos" : prog.registrado ? "Registrado" : "Inscribir"}
+                  {textoAccion}
                 </button>
               </article>
             );

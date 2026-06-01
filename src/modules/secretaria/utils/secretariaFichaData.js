@@ -7,6 +7,8 @@ import {
 
 export function crearDatosFicha(estudiante, inscripcion) {
   const fechaRegistro = normalizarFecha(inscripcion.fechaRegistro) || new Date();
+  const seleccionCambridge = normalizarSeleccionCambridge(inscripcion.seleccion || estudiante?.seleccion);
+  const nivelCambridge = inscripcion.nivelCambridge || estudiante?.nivelCambridge || "";
 
   return {
     codigo: inscripcion.id || "Sin código",
@@ -31,6 +33,8 @@ export function crearDatosFicha(estudiante, inscripcion) {
       talla: inscripcion.tallaUniforme || "No aplica",
       estado: inscripcion.estadoInscripción || "Pendiente de pago",
       estadoPago: inscripcion.estadoPago || "Pendiente",
+      ingresoCambridge: describirSeleccionCambridgeFicha(seleccionCambridge),
+      nivelCambridge,
     },
     apoderado: {
       nombre: inscripcion.apoderado || "No definido",
@@ -43,7 +47,7 @@ export function crearDatosFicha(estudiante, inscripcion) {
 }
 
 export function crearResumenInvitacion(ficha) {
-  return [
+  const resumen = [
     ["Estudiante", ficha.estudiante.nombre],
     ["DNI", ficha.estudiante.dni],
     ["Grado y sección", `${ficha.estudiante.grado} ${ficha.estudiante.seccion}`],
@@ -55,6 +59,13 @@ export function crearResumenInvitacion(ficha) {
     ["Apoderado", ficha.apoderado.nombre],
     ["Celular", ficha.apoderado.telefono],
   ];
+  if (esFichaCambridge(ficha)) {
+    resumen.splice(5, 0, ["Modalidad Cambridge A/B/C", ficha.programa.ingresoCambridge]);
+    if (ficha.programa.nivelCambridge) {
+      resumen.splice(6, 0, ["Nivel Cambridge", ficha.programa.nivelCambridge]);
+    }
+  }
+  return resumen;
 }
 
 export function crearMapaVariablesDocumento(estudiante, inscripcion) {
@@ -310,6 +321,23 @@ function extraerDiasHorario(horario) {
 function normalizarSeleccionCambridge(valor) {
   const texto = normalizarComparacion(valor).replace(/[^abc]/g, "");
   return texto.charAt(0).toUpperCase();
+}
+
+function describirSeleccionCambridgeFicha(valor = "") {
+  const seleccion = normalizarSeleccionCambridge(valor);
+  const opciones = {
+    A: "A - Promovido por certificado oficial",
+    B: "B - Ingresante por Admission Test",
+    C: "C - Ingresante por desempeno academico",
+  };
+  return opciones[seleccion] || "Pendiente de definir";
+}
+
+function esFichaCambridge(ficha) {
+  return normalizarComparacion([
+    ficha?.programa?.nombre,
+    ficha?.programa?.plantilla,
+  ].filter(Boolean).join(" ")).includes("cambridge");
 }
 
 function extraerHorasHorario(horario) {

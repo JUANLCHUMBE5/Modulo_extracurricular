@@ -70,6 +70,9 @@ function CargaExcelView({
                 {archivosExcel.length ? (
                   <small>Puede cargar hasta 6 archivos. Tamaño máximo por archivo: 5 MB.</small>
                 ) : null}
+                <small>
+                  Para Cambridge incluya las columnas <b>seleccion</b> y <b>nivel_cambridge</b>. Use A para certificado oficial, B para Admission Test o C para desempeño académico.
+                </small>
               </div>
             </div>
 

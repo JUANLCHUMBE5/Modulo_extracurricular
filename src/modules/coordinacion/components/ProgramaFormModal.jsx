@@ -569,9 +569,9 @@ function ProgramaFormModal({
                             <label className="coord-check-label coord-check-label-stacked">
                               <span>
                                 <input type="checkbox" checked={form.invitacionMasiva} onChange={e => actualizarInvitacionMasiva(e.target.checked)} />
-                                Invitación masiva en Padres
+                                Invitacion para todos los grados en Padres
                               </span>
-                              <small>El curso aparecerá en el portal de padres para todos los alumnos de los grados seleccionados, sin cargar Excel de invitados.</small>
+                              <small>El curso aparecera en el portal de padres para todos los alumnos, sin excepcion por grado y sin cargar Excel de invitados.</small>
                             </label>
                             {form.invitacionMasiva ? (
                               <div className="coord-announcement-image-field">

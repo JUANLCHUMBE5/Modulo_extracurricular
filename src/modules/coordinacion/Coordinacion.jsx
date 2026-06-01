@@ -489,6 +489,10 @@ function Coordinacion({
 
   function descargarPdfAlumnos(tipo) {
     if (!progSeleccionado) return;
+    if (tipo === "preinscritos") {
+      mostrarMsg("Solo se puede descargar la lista de alumnos matriculados.", "warning");
+      return;
+    }
     const isPre = tipo === "preinscritos";
     const lista = isPre ? invitados : matriculados;
     if (!lista.length) {
@@ -502,6 +506,10 @@ function Coordinacion({
 
   async function exportarAExcel(tipo) {
     if (!progSeleccionado) return;
+    if (tipo === "preinscritos") {
+      mostrarMsg("Solo se puede exportar la lista de alumnos matriculados.", "warning");
+      return;
+    }
     const isPre = tipo === "preinscritos";
     const data = isPre ? invitados : matriculados;
     if (!data.length) {

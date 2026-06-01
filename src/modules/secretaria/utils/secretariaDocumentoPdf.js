@@ -280,12 +280,13 @@ export function crearHtmlImpresionFicha(ficha) {
       ["Periodo", ficha.estudiante.periodo],
       ["Colegio de procedencia", ficha.estudiante.colegio],
     ]],
-    ["Datos del programa", [
-      ["Programa / taller", ficha.programa.nombre],
-      ["Horario", ficha.programa.horario],
-      ["Responsable", ficha.programa.responsable],
-      ["Costo referencial", ficha.programa.costo],
-      ["Modalidad de cobro", ficha.programa.modalidadCobro],
+	    ["Datos del programa", [
+	      ["Programa / taller", ficha.programa.nombre],
+	      ["Horario", ficha.programa.horario],
+	      ["Responsable", ficha.programa.responsable],
+	      ...obtenerFilasCambridgeFicha(ficha),
+	      ["Costo referencial", ficha.programa.costo],
+	      ["Modalidad de cobro", ficha.programa.modalidadCobro],
       ["Requisitos", ficha.programa.requisitos],
       ["Plantilla utilizada", ficha.programa.plantilla],
       ["Uniforme requerido", ficha.programa.uniforme],
@@ -342,6 +343,19 @@ export function crearHtmlImpresionFicha(ficha) {
   `;
 }
 
+function obtenerFilasCambridgeFicha(ficha) {
+  const texto = [
+    ficha?.programa?.nombre,
+    ficha?.programa?.plantilla,
+  ].filter(Boolean).join(" ").toLowerCase();
+  if (!texto.includes("cambridge")) return [];
+  const filas = [["Modalidad Cambridge A/B/C", ficha.programa.ingresoCambridge || "Pendiente de definir"]];
+  if (ficha.programa.nivelCambridge) {
+    filas.push(["Nivel Cambridge", ficha.programa.nivelCambridge]);
+  }
+  return filas;
+}
+
 export function descargarFichaPdf(ficha) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const margen = 18;
@@ -375,11 +389,12 @@ export function descargarFichaPdf(ficha) {
     ["Colegio de procedencia", ficha.estudiante.colegio],
   ], margen, y, anchoTexto);
 
-  y = agregarBloquePdf(doc, "Datos del programa", [
-    ["Programa / taller", ficha.programa.nombre],
-    ["Horario", ficha.programa.horario],
-    ["Responsable", ficha.programa.responsable],
-    ["Costo referencial", ficha.programa.costo],
+	  y = agregarBloquePdf(doc, "Datos del programa", [
+	    ["Programa / taller", ficha.programa.nombre],
+	    ["Horario", ficha.programa.horario],
+	    ["Responsable", ficha.programa.responsable],
+	    ...obtenerFilasCambridgeFicha(ficha),
+	    ["Costo referencial", ficha.programa.costo],
     ["Modalidad de cobro", ficha.programa.modalidadCobro],
     ["Requisitos", ficha.programa.requisitos],
     ["Plantilla utilizada", ficha.programa.plantilla],

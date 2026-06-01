@@ -174,6 +174,7 @@ export async function registrarInscripcion(payload) {
     validarCruceHorarioAlumno(payload, horarioResuelto || programa.horario);
   }
 
+  const datosCambridge = obtenerDatosCambridgeSeguros(programa, payload);
   const registro = {
     id: `INS-${Date.now().toString().slice(-6)}`,
     estadoInscripcion: "Pendiente de pago",
@@ -197,8 +198,8 @@ export async function registrarInscripcion(payload) {
     plantilla: programa.plantilla || "",
     plantillaBase64: "",
     plantillaVariables: programa.plantillaVariables || [],
-    seleccion: payload.seleccion || "",
-    nivelCambridge: payload.nivelCambridge || "",
+    seleccion: datosCambridge.seleccion,
+    nivelCambridge: datosCambridge.nivelCambridge,
     requiereUniforme: Boolean(programa.requiereUniforme),
     requiereIndumentaria: Boolean(programa.requiereIndumentaria),
   };
@@ -283,6 +284,20 @@ export async function derivarInscripcionCaja(inscripcionId, datos = {}) {
   }
   if (inscripcion.derivadoCaja) {
     throw new Error("Esta inscripcion ya fue derivada a Caja. Para cobrar otro taller, registre una nueva inscripcion.");
+  }
+  const pagoActivo = encontrarPagoActivoInscripcion(inscripcion);
+  if (pagoActivo) {
+    const estado = normalizarEstadoPagoSecretaria([
+      pagoActivo.estado,
+      pagoActivo.estadoPago,
+      pagoActivo.estadoVerificacion,
+      inscripcion.estadoPago,
+      inscripcion.estadoInscripcion,
+    ].join(" "));
+    if (estado.includes("pag") || estado.includes("completado") || estado.includes("validado")) {
+      throw new Error("Esta inscripcion ya tiene un pago web aprobado. No se puede derivar ni cobrar nuevamente.");
+    }
+    throw new Error("El padre ya envio un pago web para esta inscripcion. Caja debe validarlo u observarlo, no crear otro cobro.");
   }
 
   const actualizada = {
@@ -533,6 +548,8 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
     programaFechaFin: programa.fechaFin || "",
     programaDuracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
     programaDuracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+    seleccion: invitado.seleccion || "",
+    nivelCambridge: invitado.nivelCambridge || "",
     plantilla: programa.plantilla || "",
     plantillaBase64: programa.plantillaBase64 || "",
     plantillaVariables: programa.plantillaVariables || [],
@@ -740,6 +757,49 @@ function normalizarEstadoPagoSecretaria(valor = "") {
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
     .toLowerCase();
+}
+
+function esProgramaCambridge(programa = {}) {
+  return normalizarTexto([
+    programa.nombre,
+    programa.programa,
+    programa.categoria,
+    programa.plantilla,
+  ].filter(Boolean).join(" ")).includes("cambridge");
+}
+
+function obtenerDatosCambridgeSeguros(programa, payload = {}) {
+  if (!esProgramaCambridge(programa)) {
+    return { seleccion: "", nivelCambridge: "" };
+  }
+
+  return {
+    seleccion: normalizarSeleccionCambridge(payload.seleccion),
+    nivelCambridge: String(payload.nivelCambridge || "").trim(),
+  };
+}
+
+function normalizarSeleccionCambridge(valor = "") {
+  const seleccion = String(valor || "").trim().toUpperCase();
+  return ["A", "B", "C"].includes(seleccion) ? seleccion : "";
+}
+
+function encontrarPagoActivoInscripcion(inscripcion = {}) {
+  const pagos = Array.isArray(apiDb.pagos) ? apiDb.pagos : [];
+  const programaNombre = normalizarTexto(inscripcion.programa);
+
+  return pagos.find((pago) => {
+    const estado = normalizarEstadoPagoSecretaria([pago.estado, pago.estadoPago, pago.estadoVerificacion].join(" "));
+    if (estado.includes("observado") || estado.includes("rechazado") || estado.includes("anulado") || estado.includes("cancelado")) {
+      return false;
+    }
+    if (pago.inscripcionId && pago.inscripcionId === inscripcion.id) return true;
+
+    const mismoDni = (pago.dniEstudiante || pago.estudianteDni) === inscripcion.dniEstudiante;
+    if (!mismoDni) return false;
+    if (pago.programaId && pago.programaId === inscripcion.programaId) return true;
+    return programaNombre && normalizarTexto(pago.programa || pago.programaNombre) === programaNombre;
+  }) || null;
 }
 
 function claveAlumno(alumno) {

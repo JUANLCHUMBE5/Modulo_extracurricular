@@ -96,6 +96,14 @@ function etiquetaProgramaSecretaria(programa) {
   return programa?.nombre || "";
 }
 
+function esProgramaCambridgeSecretaria(programa) {
+  return normalizarComparacion([
+    programa?.nombre,
+    programa?.programa,
+    programa?.plantilla,
+  ].filter(Boolean).join(" ")).includes("cambridge");
+}
+
 function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, onLogout }) {
   const [periodo, setPeriodo] = useState("escolar");
   const [dni, setDni] = useState("");
@@ -231,10 +239,12 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     }
 
     window.addEventListener("mock-db-updated", refrescarDesdeBase);
+    window.addEventListener("api-db-updated", refrescarDesdeBase);
     window.addEventListener("storage", refrescarDesdeBase);
 
     return () => {
       window.removeEventListener("mock-db-updated", refrescarDesdeBase);
+      window.removeEventListener("api-db-updated", refrescarDesdeBase);
       window.removeEventListener("storage", refrescarDesdeBase);
     };
   }, [periodo, dni]);
@@ -530,6 +540,13 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       const tipoAlumnoVeranoAutomatico = estudiante.esExterno ? "Alumno externo" : "Alumno interno";
       const horarioRegistro = resolverHorarioPorGradoLocal(programaActualizado, gradoRegistro)
         || programaActualizado.horario;
+      const registrarDatosCambridge = esProgramaCambridgeSecretaria(programaActualizado);
+      const seleccionCambridgeRegistro = registrarDatosCambridge
+        ? (programaParaRegistro?.seleccion || estudiante.seleccion || "")
+        : "";
+      const nivelCambridgeRegistro = registrarDatosCambridge
+        ? (programaParaRegistro?.nivelCambridge || estudiante.nivelCambridge || "")
+        : "";
       const registro = await registrarInscripcion({
         dniEstudiante: dniRegistro,
         codigoEstudiante: estudiante.codigoEstudiante || "",
@@ -562,8 +579,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         telefono: formulario.telefono,
         correo: "",
         medioEnvio: "Impreso",
-        seleccion: estudiante.seleccion || programaParaRegistro?.seleccion || "",
-        nivelCambridge: estudiante.nivelCambridge || programaParaRegistro?.nivelCambridge || "",
+        seleccion: seleccionCambridgeRegistro,
+        nivelCambridge: nivelCambridgeRegistro,
         tallaUniforme: formulario.tallaUniforme,
         tallaPolo: formulario.tallaPolo,
         tallaShort: formulario.tallaShort,
@@ -694,6 +711,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       const gradoRegistro = estudiante.grado || "";
       const horarioRegistro = resolverHorarioPorGradoLocal(programaActualizado, gradoRegistro)
         || programaActualizado.horario;
+      const registrarDatosCambridge = esProgramaCambridgeSecretaria(programaActualizado);
       const registro = await registrarInscripcion({
         dniEstudiante: estudiante.dni,
         codigoEstudiante: estudiante.codigoEstudiante || "",
@@ -717,8 +735,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         telefono: inscripcion.telefono || estudiante.telefonoApoderado || formulario.telefono,
         correo: inscripcion.correo || "",
         medioEnvio: inscripcion.medioEnvio || "Impreso",
-        seleccion: estudiante.seleccion || "",
-        nivelCambridge: estudiante.nivelCambridge || "",
+        seleccion: registrarDatosCambridge ? estudiante.seleccion || "" : "",
+        nivelCambridge: registrarDatosCambridge ? estudiante.nivelCambridge || "" : "",
         observacion: "Curso adicional registrado por Secretaria.",
         origenRegistro: "Curso adicional por Secretaria",
       });

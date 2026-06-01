@@ -5,6 +5,7 @@ import {
   IconCalendar as CalendarDays,
 } from "@tabler/icons-react";
 import PortalBadge from "./PortalBadge";
+import { describirSeleccionCambridgePadres } from "../utils/padresTextUtils";
 
 function obtenerTalleresEstructurados(programa) {
   if (!programa) return [];
@@ -193,14 +194,21 @@ export default function ComunicadoStep({
             ))}
           </div>
 
-          <div className="padres-flow-requirements">
-            <h3>Indicaciones principales</h3>
-            <ul>
-              {(comunicadoPadres.indicacionesResumen || comunicadoPadres.indicaciones || []).map((indicacion) => (
-                <li key={indicacion}>{indicacion}</li>
-              ))}
-            </ul>
-          </div>
+          {comunicadoPadres.datosCambridge ? (
+            <div className="padres-flow-requirements">
+              <h3>Resumen Cambridge</h3>
+              <ul>
+                <li>
+                  <strong>Modalidad Cambridge A/B/C:</strong> {describirSeleccionCambridgePadres(comunicadoPadres.datosCambridge.seleccion)}
+                </li>
+                {comunicadoPadres.datosCambridge.nivelCambridge ? (
+                  <li>
+                    <strong>Nivel:</strong> {comunicadoPadres.datosCambridge.nivelCambridge}
+                  </li>
+                ) : null}
+              </ul>
+            </div>
+          ) : null}
         </>
       ) : null}
 

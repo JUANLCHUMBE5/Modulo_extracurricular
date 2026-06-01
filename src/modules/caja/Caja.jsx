@@ -36,6 +36,38 @@ import { validarDni } from "../../services/validators";
 import { formatearSoles } from "./utils/cajaFormatters";
 import "./Caja.css";
 
+function normalizarEstadoPagoVista(...valores) {
+  const texto = valores
+    .filter(Boolean)
+    .join(" ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
+  if (["verificando", "verificacion", "por verificar", "revision"].some((item) => texto.includes(item))) return "verificando";
+  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) return "observado";
+  if (["cancelado", "anulado"].some((item) => texto.includes(item))) return "anulado";
+  return "pendiente";
+}
+
+function esPagoWebPadresCaja(fila = {}) {
+  const origen = String(fila.origen || "").toLowerCase();
+  const formaPago = String(fila.formaPago || "").toLowerCase();
+  const tienePago = Boolean(fila.pagoId || fila.numeroOperacion || ["pagado", "verificando", "observado"].includes(fila.estadoPago));
+  return (origen.includes("portal") || origen.includes("web")) && tienePago && !formaPago.includes("sin pago");
+}
+
+function obtenerMedioCanalWebCaja(fila = {}) {
+  if (!esPagoWebPadresCaja(fila)) return "-";
+  return `${fila.formaPago || "Yape"} / Web`;
+}
+
+function obtenerTelefonoPagoWebCaja(fila = {}) {
+  if (!esPagoWebPadresCaja(fila)) return "-";
+  return fila.telefonoOperacion || fila.telefono || "-";
+}
+
 export default function Caja({
   delegatedContent,
   embedded = false,
@@ -86,6 +118,30 @@ export default function Caja({
 
   useEffect(() => {
     cargarReporteCaja();
+  }, [periodo, filtrosReporte]);
+
+  useEffect(() => {
+    const refrescarCaja = () => {
+      cargarDatos();
+      cargarReporteCaja();
+    };
+    const refrescarPorStorage = (event) => {
+      if (!event?.key || event.key === "san_rafael_db_updated_at") refrescarCaja();
+    };
+
+    window.addEventListener("api-db-updated", refrescarCaja);
+    window.addEventListener("mock-db-updated", refrescarCaja);
+    window.addEventListener("storage", refrescarPorStorage);
+    window.addEventListener("focus", refrescarCaja);
+    const intervalo = window.setInterval(refrescarCaja, 30000);
+
+    return () => {
+      window.removeEventListener("api-db-updated", refrescarCaja);
+      window.removeEventListener("mock-db-updated", refrescarCaja);
+      window.removeEventListener("storage", refrescarPorStorage);
+      window.removeEventListener("focus", refrescarCaja);
+      window.clearInterval(intervalo);
+    };
   }, [periodo, filtrosReporte]);
 
   const pagosFiltrados = useMemo(() => {
@@ -206,6 +262,21 @@ export default function Caja({
           console.error("Error al cargar pago asociado:", e);
         }
       }
+      const estadoPagoSistema = normalizarEstadoPagoVista(
+        inscripcion?.estadoPago,
+        inscripcion?.estadoInscripcion,
+        pagoAsociado?.estado,
+        pagoAsociado?.estadoVerificacion
+      );
+      if (estadoPagoSistema === "pagado") {
+        setEstudiante(null);
+        setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
+        setMensaje(`El estudiante ya cuenta con un pago registrado y aprobado para el programa "${inscripcion.programa}". No se puede registrar el pago nuevamente.`);
+        return;
+      }
+      if (estadoPagoSistema === "verificando") {
+        setMensaje(`El padre ya envio un pago web para "${inscripcion.programa}". Caja debe aprobarlo u observarlo, no cobrarlo nuevamente.`);
+      }
 
       const nombre = `${encontrado.nombres || ""} ${encontrado.apellidos || ""}`.trim();
       setEstudiante(encontrado);
@@ -220,7 +291,7 @@ export default function Caja({
         tipoAlumno: inscripcion?.tipoAlumno || encontrado.tipoAlumno || (inscripcion?.esExterno ? "Alumno externo" : "Alumno interno"),
         monto: inscripcion?.costo ? String(inscripcion.costo) : encontrado.programaCosto ? String(encontrado.programaCosto) : actual.monto,
         pagoId: pagoAsociado?.id || "",
-        estadoPago: pagoAsociado?.estado || inscripcion?.estadoPago || "pendiente",
+        estadoPago: estadoPagoSistema === "verificando" ? "verificando" : pagoAsociado?.estado || inscripcion?.estadoPago || "pendiente",
         numeroOperacion: pagoAsociado?.numeroOperacion || "",
         telefonoOperacion: pagoAsociado?.telefonoOperacion || "",
         capturaPagoBase64: pagoAsociado?.capturaPagoBase64 || "",
@@ -468,15 +539,16 @@ export default function Caja({
   }
 
   function generarCSVReporte(datos) {
-    const encabezados = ["DNI", "Estudiante", "Programa", "Monto", "Estado pago", "Medio pago", "Origen", "Fecha registro", "Fecha pago", "Apoderado", "Telefono"];
+    const encabezados = ["DNI", "Estudiante", "Programa", "Monto", "Estado pago", "Codigo operacion", "Telefono", "Medio / canal", "Fecha registro", "Fecha pago", "Apoderado", "Telefono apoderado"];
     const filas = datos.map((fila) => [
       fila.dniEstudiante,
       fila.estudiante,
       fila.programa,
       Number(fila.monto || 0).toFixed(2),
       fila.estadoPago,
-      fila.formaPago,
-      fila.origen,
+      fila.numeroOperacion,
+      obtenerTelefonoPagoWebCaja(fila),
+      obtenerMedioCanalWebCaja(fila),
       formatearFechaPeru(fila.fechaRegistro),
       formatearFechaPeru(fila.fechaPago),
       fila.apoderado,

@@ -15,6 +15,7 @@ export async function listarPagos(periodo = "escolar", filtros = {}) {
   if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
   
   const periodoNormalizado = normalizarPeriodo(periodo);
+  const programasVigentes = obtenerProgramasVigentesCaja(periodoNormalizado);
   let pagos = [...apiDb.pagos].filter((p) => normalizarPeriodo(p.periodo || periodoNormalizado) === periodoNormalizado);
   
   if (filtros.estudianteDni) {
@@ -24,7 +25,7 @@ export async function listarPagos(periodo = "escolar", filtros = {}) {
     pagos = pagos.filter((p) => p.estado === filtros.estado);
   }
   if (filtros.programa) {
-    pagos = pagos.filter((p) => p.programaId === filtros.programa || p.programa === filtros.programa);
+    pagos = pagos.filter((p) => coincideProgramaFiltroCaja(p, filtros.programa, programasVigentes));
   }
   
   return pagos.sort((a, b) => new Date(b.fecha || b.fechaPago || 0) - new Date(a.fecha || a.fechaPago || 0));
@@ -39,6 +40,18 @@ export async function registrarPago(datosPago) {
   const dniEstudiante = datosPago.dniEstudiante || datosPago.estudianteDni || "";
   const nombresEstudiante = datosPago.nombresEstudiante || datosPago.estudianteNombre || "";
   const programa = datosPago.programa || datosPago.programaNombre || "";
+  const pagoDuplicado = encontrarPagoActivoDuplicado(datosPago);
+
+  if (pagoDuplicado) {
+    const estadoDuplicado = normalizarEstadoPago(pagoDuplicado.estado || pagoDuplicado.estadoPago || pagoDuplicado.estadoVerificacion);
+    if (estadoDuplicado === "pagado") {
+      throw new Error("Este estudiante ya tiene un pago aprobado para este taller. No se puede cobrar nuevamente.");
+    }
+    if (estadoDuplicado === "verificando") {
+      throw new Error("El padre ya envio un pago web para este taller. Caja debe validarlo u observarlo, no registrar otro cobro.");
+    }
+    throw new Error("Ya existe un pago activo para esta inscripcion. No se puede registrar un pago duplicado.");
+  }
 
   const pago = {
     id: generarPagoId(),
@@ -202,20 +215,11 @@ export async function obtenerOpcionesReporteCaja(periodo = "escolar") {
   await syncApiDb();
 
   const periodoNormalizado = normalizarPeriodo(periodo);
-  const programasBase = new Map((apiDb.programas || []).map((programa) => [programa.id, programa]));
-  const programasInscritos = new Map();
-
-  obtenerInscripcionesCaja(periodoNormalizado).forEach((inscripcion) => {
-    const id = inscripcion.programaId || inscripcion.programa || "";
-    if (!id) return;
-    const programa = programasBase.get(inscripcion.programaId) || {};
-    programasInscritos.set(id, {
-      value: id,
-      label: programa.nombre || inscripcion.programa || "Sin programa",
-    });
-  });
-
-  const programas = [...programasInscritos.values()]
+  const programas = obtenerProgramasVigentesCaja(periodoNormalizado).items
+    .map((programa) => ({
+      value: programa.id,
+      label: programa.nombre || "Sin programa",
+    }))
     .sort((a, b) => a.label.localeCompare(b.label));
 
   const medios = new Set(
@@ -307,19 +311,20 @@ export async function generarReporteCaja(filtros = {}) {
   await syncApiDb();
 
   const periodoNormalizado = normalizarPeriodo(filtros.periodo || "escolar");
+  const programasVigentes = obtenerProgramasVigentesCaja(periodoNormalizado);
   const pagos = [...(Array.isArray(apiDb.pagos) ? apiDb.pagos : [])]
     .filter((pago) => normalizarPeriodo(pago.periodo || periodoNormalizado) === periodoNormalizado);
 
   if (filtros.tipoReporte === "pagos_registrados" || filtros.tipoReporte === "pagos_realizados") {
-    return filtrarReporteCaja(pagos.map(crearFilaPago), filtros);
+    return filtrarReporteCaja(pagos.map((pago) => crearFilaPago(pago, programasVigentes)).filter(Boolean), filtros);
   }
 
   const inscripciones = obtenerInscripcionesCaja(periodoNormalizado);
 
-  const programas = new Map((apiDb.programas || []).map((programa) => [programa.id, programa]));
   const filas = inscripciones.map((inscripcion) => {
     const pago = encontrarPagoInscripcion(inscripcion, pagos);
-    const programa = programas.get(inscripcion.programaId) || {};
+    const programa = resolverProgramaVigenteCaja(inscripcion, programasVigentes);
+    if (!programa) return null;
     const monto = Number(pago?.monto ?? inscripcion.costo ?? programa.costo ?? 0);
     const estadoPago = normalizarEstadoPago(pago?.estado || inscripcion.estadoPago);
     const fechaBase = pago?.fechaPago || pago?.fecha || inscripcion.fechaRegistro || "";
@@ -329,13 +334,15 @@ export async function generarReporteCaja(filtros = {}) {
       inscripcionId: inscripcion.id,
       dniEstudiante: inscripcion.dniEstudiante || pago?.dniEstudiante || pago?.estudianteDni || "",
       estudiante: inscripcion.nombresEstudiante || pago?.nombresEstudiante || pago?.estudianteNombre || "",
-      programaId: inscripcion.programaId || pago?.programaId || "",
-      programa: inscripcion.programa || pago?.programa || pago?.programaNombre || programa.nombre || "",
+      programaId: programa.id,
+      programa: programa.nombre || inscripcion.programa || pago?.programa || pago?.programaNombre || "",
       periodo: periodoNormalizado,
       monto,
       estadoPago,
       estadoInscripcion: inscripcion.estadoInscripcion || "",
       formaPago: pago?.formaPago || pago?.medioPago || "Sin pago",
+      numeroOperacion: pago?.numeroOperacion || pago?.referenciaPago || inscripcion.pagoReferencia || "",
+      telefonoOperacion: pago?.telefonoOperacion || inscripcion.pagoTelefono || "",
       origen: (pago ? (pago.origenRegistro || (pago.formaPago === "Yape" ? "Portal padres" : "Caja")) : inscripcion.origenRegistro) || "Sin origen",
       fuente: "inscripcion",
       pagoId: pago?.id || "",
@@ -346,9 +353,51 @@ export async function generarReporteCaja(filtros = {}) {
       telefono: inscripcion.telefono || "",
       puedePagarCaja: true,
     };
-  });
+  }).filter(Boolean);
 
   return filtrarReporteCaja(filas, filtros);
+}
+
+function obtenerProgramasVigentesCaja(periodoNormalizado = "escolar") {
+  const porId = new Map();
+  const porNombre = new Map();
+  const items = [];
+
+  [...(Array.isArray(apiDb.programas) ? apiDb.programas : [])]
+    .filter((programa) => normalizarPeriodo(programa.periodo || periodoNormalizado) === periodoNormalizado)
+    .filter((programa) => !["eliminado", "archivado"].includes(normalizarTexto(programa.estado)))
+    .forEach((programa) => {
+      if (!programa?.id) return;
+
+      const nombreKey = normalizarTexto(programa.nombre);
+      if (nombreKey && porNombre.has(nombreKey)) return;
+
+      const item = {
+        ...programa,
+        nombre: programa.nombre || "Sin programa",
+      };
+      items.push(item);
+      porId.set(item.id, item);
+      if (nombreKey) porNombre.set(nombreKey, item);
+    });
+
+  return { items, porId, porNombre };
+}
+
+function resolverProgramaVigenteCaja(registro = {}, programasVigentes) {
+  const catalogo = programasVigentes || obtenerProgramasVigentesCaja(normalizarPeriodo(registro.periodo));
+  const porId = catalogo.porId || new Map();
+  const porNombre = catalogo.porNombre || new Map();
+  const id = registro.programaId || registro.programaAsignado || "";
+  const nombre = registro.programa || registro.programaNombre || "";
+
+  return porId.get(id) || porNombre.get(normalizarTexto(nombre)) || null;
+}
+
+function coincideProgramaFiltroCaja(registro = {}, programaId = "todos", programasVigentes) {
+  if (!programaId || programaId === "todos") return true;
+  const programa = resolverProgramaVigenteCaja(registro, programasVigentes);
+  return programa?.id === programaId;
 }
 
 async function actualizarEstadoPagoWeb(pagoId, cambios) {
@@ -401,20 +450,25 @@ function obtenerInscripcionesCaja(periodoNormalizado) {
     );
 }
 
-function crearFilaPago(pago) {
+function crearFilaPago(pago, programasVigentes = null) {
+  const programa = resolverProgramaVigenteCaja(pago, programasVigentes || obtenerProgramasVigentesCaja(normalizarPeriodo(pago.periodo)));
+  if (!programa) return null;
+
   return {
     id: pago.id,
     pagoId: pago.id,
     inscripcionId: pago.inscripcionId || "",
     dniEstudiante: pago.dniEstudiante || pago.estudianteDni || "",
     estudiante: pago.nombresEstudiante || pago.estudianteNombre || "",
-    programaId: pago.programaId || "",
-    programa: pago.programa || pago.programaNombre || "",
+    programaId: programa.id,
+    programa: programa.nombre || pago.programa || pago.programaNombre || "",
     periodo: normalizarPeriodo(pago.periodo),
     monto: Number(pago.monto || 0),
     estadoPago: normalizarEstadoPago(pago.estado),
     estadoInscripcion: "",
     formaPago: pago.formaPago || pago.medioPago || "Sin medio",
+    numeroOperacion: pago.numeroOperacion || pago.referenciaPago || "",
+    telefonoOperacion: pago.telefonoOperacion || "",
     origen: "Caja",
     fuente: "pago",
     fecha: pago.fechaPago || pago.fecha || "",
@@ -433,6 +487,25 @@ function encontrarPagoInscripcion(inscripcion, pagos) {
         normalizarTexto(pago.programa || pago.programaNombre) === normalizarTexto(inscripcion.programa))
     )
     || null;
+}
+
+function encontrarPagoActivoDuplicado(datosPago = {}) {
+  const pagos = Array.isArray(apiDb.pagos) ? apiDb.pagos : [];
+  const inscripcionId = datosPago.inscripcionId || "";
+  const dniEstudiante = datosPago.dniEstudiante || datosPago.estudianteDni || "";
+  const programaId = datosPago.programaId || "";
+  const programaNombre = normalizarTexto(datosPago.programa || datosPago.programaNombre);
+
+  return pagos.find((pago) => {
+    const estado = normalizarEstadoPago(pago.estado || pago.estadoPago || pago.estadoVerificacion);
+    if (["observado", "anulado"].includes(estado)) return false;
+    if (inscripcionId && pago.inscripcionId === inscripcionId) return true;
+
+    const mismoDni = (pago.dniEstudiante || pago.estudianteDni) === dniEstudiante;
+    if (!mismoDni) return false;
+    if (programaId && pago.programaId === programaId) return true;
+    return programaNombre && normalizarTexto(pago.programa || pago.programaNombre) === programaNombre;
+  }) || null;
 }
 
 function sincronizarPagoConInscripcion(pago) {

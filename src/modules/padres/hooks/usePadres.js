@@ -16,6 +16,8 @@ const mensajesIniciales = [
   },
 ];
 
+const INTERVALO_REFRESCO_RESPALDO_MS = 180000;
+
 function usePadres(user) {
   const [resumen, setResumen] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -30,6 +32,7 @@ function usePadres(user) {
   const [infoProgramaAbierta, setInfoProgramaAbierta] = useState(false);
   const [infoProgramaAceptada, setInfoProgramaAceptada] = useState(false);
   const [pagoConfirmado, setPagoConfirmado] = useState(null);
+  const formularioEditadoRef = useRef(false);
   const [form, setForm] = useState({
     apoderado: "",
     telefono: "",
@@ -54,19 +57,20 @@ function usePadres(user) {
       const estudiante = datos.estudiante;
       const inscripcion = datos.inscripcionActual;
 
-      setForm((actual) => ({
-        ...actual,
-        apoderado: inscripcion?.apoderado || estudiante.apoderado || actual.apoderado,
-        telefono: inscripcion?.telefono || estudiante.telefonoApoderado || actual.telefono,
-        correo: inscripcion?.correo || estudiante.correoApoderado || actual.correo,
-        enviarPdfCorreo: Boolean(inscripcion?.enviarPdfCorreo ?? estudiante.enviarPdfCorreo ?? actual.enviarPdfCorreo),
-      }));
+      setForm((actual) => {
+        if (silencioso && formularioEditadoRef.current) {
+          return actual;
+        }
 
-      if (silencioso) {
-        toast.success("Padres", {
-          description: "Informacion actualizada.",
-        });
-      }
+        return {
+          ...actual,
+          apoderado: inscripcion?.apoderado || estudiante.apoderado || actual.apoderado,
+          telefono: inscripcion?.telefono || estudiante.telefonoApoderado || actual.telefono,
+          correo: inscripcion?.correo || estudiante.correoApoderado || actual.correo,
+          enviarPdfCorreo: Boolean(inscripcion?.enviarPdfCorreo ?? estudiante.enviarPdfCorreo ?? actual.enviarPdfCorreo),
+        };
+      });
+
     } catch (err) {
       const mensaje = err.message || "No se pudo cargar la información del estudiante.";
       setError(mensaje);
@@ -94,6 +98,10 @@ function usePadres(user) {
   }, [cargarResumen, cargarProgramas]);
 
   useEffect(() => {
+    formularioEditadoRef.current = false;
+  }, [user?.dni]);
+
+  useEffect(() => {
     const actualizar = () => {
       cargarResumen({ silencioso: true });
       cargarProgramas();
@@ -105,10 +113,14 @@ function usePadres(user) {
     window.addEventListener("mock-db-updated", actualizar);
     window.addEventListener("api-db-updated", actualizar);
     window.addEventListener("storage", actualizarPorStorage);
+    window.addEventListener("focus", actualizar);
+    const intervalo = window.setInterval(actualizar, INTERVALO_REFRESCO_RESPALDO_MS);
     return () => {
       window.removeEventListener("mock-db-updated", actualizar);
       window.removeEventListener("api-db-updated", actualizar);
       window.removeEventListener("storage", actualizarPorStorage);
+      window.removeEventListener("focus", actualizar);
+      window.clearInterval(intervalo);
     };
   }, [cargarResumen, cargarProgramas]);
 
@@ -127,6 +139,10 @@ function usePadres(user) {
     () => new Set(inscripciones.map((item) => item.programaId).filter(Boolean)),
     [inscripciones]
   );
+  const inscripcionesPorPrograma = useMemo(
+    () => new Map(inscripciones.map((item) => [item.programaId, item])),
+    [inscripciones]
+  );
   const mostrarCatalogoProgramas = Boolean(estudiante);
   const programasDisponibles = useMemo(
     () => programasCoordinacion
@@ -136,8 +152,9 @@ function usePadres(user) {
       .map((item) => ({
         ...item,
         registrado: programasYaRegistrados.has(item.id),
+        inscripcionRegistrada: inscripcionesPorPrograma.get(item.id) || null,
       })),
-    [programa?.programaId, programasCoordinacion, programasYaRegistrados, estudiante?.grado]
+    [programa?.programaId, programasCoordinacion, programasYaRegistrados, inscripcionesPorPrograma, estudiante?.grado]
   );
 
   const programaIdAnteriorRef = useRef(programa?.programaId || programa?.id || null);
@@ -148,6 +165,7 @@ function usePadres(user) {
       const habiaProgramaPrevio = Boolean(programaIdAnteriorRef.current);
       programaIdAnteriorRef.current = programaIdActual;
       if (habiaProgramaPrevio) {
+        formularioEditadoRef.current = false;
         setInfoProgramaAceptada(false);
         setInfoProgramaAbierta(false);
         setPagoConfirmado(null);
@@ -177,6 +195,7 @@ function usePadres(user) {
     setGuardando(true);
     try {
       await guardarDatosApoderadoPadres(user.dni, form);
+      formularioEditadoRef.current = false;
       toast.success("Padres", {
         description: "Datos del apoderado guardados.",
       });
@@ -212,16 +231,16 @@ function usePadres(user) {
     setGuardando(true);
     if (programaId) setProgramaSeleccionadoId(programaId);
     try {
-      await registrarInscripcionPadres(user.dni, form, programaId, horarioPersonalizado, tallas);
+      const registro = await registrarInscripcionPadres(user.dni, form, programaId, horarioPersonalizado, tallas);
       toast.success("Padres", {
         description: "Inscripcion registrada como pendiente de pago. Acerquese a Caja para validar el pago.",
       });
       await cargarResumen({ silencioso: true });
-      return true;
+      return registro;
     } catch (err) {
       if (String(err.message || "").toLowerCase().includes("ya tiene una inscrip")) {
         await cargarResumen({ silencioso: true });
-        return true;
+        return inscripcionesPorPrograma.get(programaId) || true;
       }
       avisar(err.message || "No se pudo registrar la inscripcion.");
       return false;
@@ -235,6 +254,7 @@ function usePadres(user) {
   }
 
   function actualizar(campo, valor) {
+    formularioEditadoRef.current = true;
     setForm((actual) => {
       const siguiente = { ...actual, [campo]: valor };
       if (campo === "correo" && !String(valor || "").trim()) {
@@ -278,15 +298,16 @@ function usePadres(user) {
     consultarRafael("Monto a pagar");
   }
 
-  async function enviarPagoVerificacionPadres(datosPago = {}) {
-    if (!inscripcion) {
+  async function enviarPagoVerificacionPadres(datosPago = {}, inscripcionObjetivoId = "") {
+    const inscripcionId = inscripcionObjetivoId || inscripcion?.id || "";
+    if (!inscripcionId) {
       avisar("Primero registre la inscripcion para generar el pago.");
       return false;
     }
 
     setGuardando(true);
     try {
-      const pago = await registrarPagoVerificacionPadres(user.dni, inscripcion.id, datosPago);
+      const pago = await registrarPagoVerificacionPadres(user.dni, inscripcionId, datosPago);
       setPagoConfirmado(pago);
       toast.success("Pago enviado a verificacion", {
         description: "El colegio validara la operacion. Por ahora figura como pago en verificacion.",
@@ -319,6 +340,7 @@ function usePadres(user) {
     infoProgramaAceptada,
     iniciales,
     inscripcion,
+    inscripciones,
     invitacion,
     mensajes,
     mostrarCatalogoProgramas,
@@ -494,6 +516,8 @@ function extraerDiasHorarioCatalogo(horario = "") {
 }
 
 function programaDisponibleCatalogoParaGrado(programa, gradoEstudiante, horarioDelGrado = "") {
+  if (programa?.invitacionMasiva) return true;
+
   if (!programa?.requiereGradoCompatible) return true;
   if (Array.isArray(programa.horariosPorGrupo) && programa.horariosPorGrupo.length > 0) {
     return Boolean(horarioDelGrado);

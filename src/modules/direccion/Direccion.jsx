@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Badge, Button, Group, Loader, Select, Table, Checkbox, Grid, Divider } from "@mantine/core";
 import { BarChart, DonutChart } from "@mantine/charts";
 import { toast } from "sonner";
@@ -70,6 +70,7 @@ export default function Direccion({ onLogout, user }) {
   const [customFiltroPago, setCustomFiltroPago] = useState("todos");
   const [customColumnas, setCustomColumnas] = useState([]);
   const [exportandoCustom, setExportandoCustom] = useState(false);
+  const recargaTimerRef = useRef(null);
 
   const exportarHabilitado = puedeExportar(user);
 
@@ -155,8 +156,8 @@ export default function Direccion({ onLogout, user }) {
     setCustomColumnas(defaultCols);
   }, [reporteSeleccionado]);
 
-  const cargarPanel = async () => {
-    setCargando(true);
+  const cargarPanel = useCallback(async ({ silencioso = false } = {}) => {
+    if (!silencioso) setCargando(true);
     setError("");
     try {
       const datos = await obtenerPanelDireccion({ periodo });
@@ -164,13 +165,41 @@ export default function Direccion({ onLogout, user }) {
     } catch (err) {
       setError(err.message || "No se pudo cargar el modulo de Direccion.");
     } finally {
-      setCargando(false);
+      if (!silencioso) setCargando(false);
     }
-  };
+  }, [periodo]);
 
   useEffect(() => {
     cargarPanel();
-  }, [periodo]);
+  }, [cargarPanel]);
+
+  useEffect(() => {
+    const recargarSilencioso = () => {
+      window.clearTimeout(recargaTimerRef.current);
+      recargaTimerRef.current = window.setTimeout(() => {
+        cargarPanel({ silencioso: true });
+      }, 300);
+    };
+
+    const manejarStorage = (event) => {
+      if (!event.key || event.key === "san_rafael_db_updated_at") {
+        recargarSilencioso();
+      }
+    };
+
+    window.addEventListener("api-db-updated", recargarSilencioso);
+    window.addEventListener("storage", manejarStorage);
+    window.addEventListener("focus", recargarSilencioso);
+    const intervalo = window.setInterval(recargarSilencioso, 30000);
+
+    return () => {
+      window.clearTimeout(recargaTimerRef.current);
+      window.clearInterval(intervalo);
+      window.removeEventListener("api-db-updated", recargarSilencioso);
+      window.removeEventListener("storage", manejarStorage);
+      window.removeEventListener("focus", recargarSilencioso);
+    };
+  }, [cargarPanel]);
 
   const resumen = panel?.resumen || {};
   const filasProgramas = panel?.filasProgramas || [];

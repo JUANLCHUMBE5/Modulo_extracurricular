@@ -17,6 +17,7 @@ export function prepararComunicadoPadres(programa, estudiante) {
   const indicaciones = obtenerIndicacionesProgramaPadres(programa, { esCambridge });
   const detalleFormato = obtenerDetalleFormatoPadres(programa);
   const resumenParrafos = resumirComunicadoPadres(parrafos, programa, detalleFormato);
+  const datosCambridge = esCambridge ? obtenerDatosCambridgePadres(programa, estudiante) : null;
 
   return {
     titulo,
@@ -26,6 +27,7 @@ export function prepararComunicadoPadres(programa, estudiante) {
     indicaciones,
     indicacionesResumen: indicaciones.slice(0, 3),
     detalleFormato,
+    datosCambridge,
     tieneAlmuerzoFormato: detalleFormato.some((seccion) =>
       ["almuerzo", "concesionarios"].includes(normalizarTextoPadres(seccion.titulo))
     ),
@@ -111,6 +113,16 @@ export function esProgramaCambridgePadres(programa) {
   return texto.includes("cambridge");
 }
 
+export function describirSeleccionCambridgePadres(valor = "") {
+  const seleccion = String(valor || "").trim().toUpperCase();
+  const opciones = {
+    A: "A - Promovido por certificado oficial",
+    B: "B - Ingresante por Admission Test",
+    C: "C - Ingresante por desempeno academico",
+  };
+  return opciones[seleccion] || "Pendiente de definir en Coordinacion";
+}
+
 function crearComunicadoCambridgePadres(programa, estudiante, titulo) {
   const alumno = estudiante?.nombres || "su menor hijo(a)";
   const aula = [estudiante?.grado, estudiante?.seccion ? `Sección ${estudiante.seccion}` : ""]
@@ -120,15 +132,26 @@ function crearComunicadoCambridgePadres(programa, estudiante, titulo) {
   const horario = repararTexto(String(programa?.horario || "").trim()) || "Por confirmar";
   const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
   const modalidad = programa?.modalidadCobro ? `Modalidad de pago: ${programa.modalidadCobro}.` : "";
-  const nivelCambridge = estudiante?.nivelCambridge ? ` en el nivel ${estudiante.nivelCambridge}` : "";
+  const datosCambridge = obtenerDatosCambridgePadres(programa, estudiante);
+  const nivelCambridge = datosCambridge?.nivelCambridge ? ` en el nivel ${datosCambridge.nivelCambridge}` : "";
+  const ingresoCambridge = datosCambridge?.seleccion
+    ? ` Modalidad Cambridge A/B/C asignada: ${describirSeleccionCambridgePadres(datosCambridge.seleccion)}.`
+    : "";
 
   return [
-    `En nuestra institución estamos comprometidos con la formación integral de nuestros estudiantes y con una enseñanza sólida del idioma inglés. Por ello, invitamos a ${alumno}${aula ? ` del aula ${aula}` : ""} a participar en ${titulo}${nivelCambridge}.`,
+    `En nuestra institución estamos comprometidos con la formación integral de nuestros estudiantes y con una enseñanza sólida del idioma inglés. Por ello, invitamos a ${alumno}${aula ? ` del aula ${aula}` : ""} a participar en ${titulo}${nivelCambridge}.${ingresoCambridge}`,
     "El programa de Preparación Cambridge fortalece las habilidades necesarias para rendir una certificación internacional reconocida y brinda acompañamiento mediante clases especializadas, materiales de preparación y simulacros del examen.",
     `La vigencia registrada es ${vigencia}. El horario asignado es: ${horario}.`,
     `El costo registrado para este programa es ${costo}. ${modalidad}`.trim(),
     "Para completar la inscripción, la familia debe revisar y aceptar esta información antes de confirmar los datos del apoderado y continuar con el pago.",
   ];
+}
+
+function obtenerDatosCambridgePadres(programa, estudiante) {
+  const seleccion = String(programa?.seleccion || estudiante?.seleccion || "").trim().toUpperCase();
+  const nivelCambridge = String(programa?.nivelCambridge || estudiante?.nivelCambridge || "").trim();
+  if (!seleccion && !nivelCambridge) return null;
+  return { seleccion, nivelCambridge };
 }
 
 function obtenerIndicacionesProgramaPadres(programa, { esCambridge = false } = {}) {
@@ -153,7 +176,7 @@ function obtenerIndicacionesProgramaPadres(programa, { esCambridge = false } = {
 
 function resumirComunicadoPadres(parrafos, programa, detalleFormato) {
   const resumen = [];
-  const principal = recortarTexto(parrafos.find((parrafo) => parrafo.length > 40) || parrafos[0] || "", 280);
+  const principal = recortarTexto(parrafos.find((parrafo) => parrafo.length > 40) || parrafos[0] || "", 180);
   if (principal) resumen.push(principal);
 
   const costo = Number(programa?.costo || 0) > 0 ? ` Costo registrado: S/ ${Number(programa.costo).toFixed(2)}.` : "";
@@ -163,11 +186,9 @@ function resumirComunicadoPadres(parrafos, programa, detalleFormato) {
     : "";
   const datosClave = `${vigencia}${horario}${costo}`.trim();
   if (datosClave) resumen.push(datosClave);
-  if (detalleFormato.length) {
-    resumen.push("Para ver ventajas, materiales, almuerzo y demás condiciones, abra el comunicado completo.");
-  }
+  resumen.push("Abra el comunicado completo para leer condiciones, indicaciones, materiales y modalidades de pago.");
 
-  return resumen.length ? resumen : parrafos.slice(0, 2);
+  return resumen.length ? resumen.slice(0, 3) : parrafos.slice(0, 1);
 }
 
 function obtenerDetalleFormatoPadres(programa) {
@@ -207,6 +228,14 @@ function detectarTituloDetalle(linea) {
   if (/^nota\b/.test(normal)) return "Nota";
   if (/^requisitos\b/.test(normal)) return "Requisitos";
   if (/^indicaciones\b/.test(normal)) return "Indicaciones";
+  if (/^la modalidad de ingreso\b/.test(normal) || /^modalidad de ingreso\b/.test(normal)) return "Modalidad de ingreso";
+  if (/^el programa de preparacion\b/.test(normal) || /^ciclo\b/.test(normal)) return "Ciclos";
+  if (/^precio por ciclo\b/.test(normal)) return "Precio por ciclo";
+  if (/^horarios?\b/.test(normal)) return "Horario";
+  if (/^incluye\b/.test(normal)) return "Incluye";
+  if (/^modalidades de inscripcion\b/.test(normal)) return "Modalidades de inscripción";
+  if (/^opcion a\b/.test(normal)) return "Inscripción presencial";
+  if (/^opcion b\b/.test(normal)) return "Inscripción virtual";
   if (/^materiales\b/.test(normal) || normal.includes("traer los siguientes utiles")) return "Útiles";
   if (/^el almuerzo\b/.test(normal) || /^almuerzo\b/.test(normal)) return "Almuerzo";
   if (normal.startsWith("si deseara coordinar")) return "Concesionarios";
