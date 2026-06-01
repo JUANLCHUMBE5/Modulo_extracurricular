@@ -13,6 +13,17 @@
   font-family: var(--font-body);
 }
 
+.padres-layout h1,
+.padres-layout h2,
+.padres-layout h3,
+.padres-layout h4,
+.padres-layout h5,
+.padres-layout h6,
+.padres-layout strong {
+  font-family: var(--font-heading), sans-serif;
+  letter-spacing: -0.01em;
+}
+
 .padres-main {
   width: min(980px, 100%);
   padding: 28px 24px 42px;
@@ -28,7 +39,7 @@
 }
 
 .padres-header span {
-  color: #176c60;
+  color: #315f91;
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
@@ -79,8 +90,8 @@
 .padres-ghost-button,
 .padres-outline-button,
 .padres-hero-secondary {
-  border: 1px solid #d8e5e2;
-  color: #176c60;
+  border: 1px solid #d3e1f1;
+  color: #315f91;
   background: #ffffff;
 }
 
@@ -88,16 +99,16 @@
 .padres-primary-button,
 .padres-green-button,
 .padres-hero-primary {
-  border: 1px solid #23977f;
-  color: #ffffff;
-  background: #23977f;
-  box-shadow: 0 12px 22px rgba(35, 151, 127, 0.18);
-}
-
-.padres-blue-button {
   border: 1px solid #315f91;
   color: #ffffff;
   background: #315f91;
+  box-shadow: 0 12px 22px rgba(49, 95, 145, 0.18);
+}
+
+.padres-blue-button {
+  border: 1px solid #2563eb;
+  color: #ffffff;
+  background: #2563eb;
 }
 
 .padres-disabled-button {
@@ -109,7 +120,7 @@
 .padres-ghost-button:hover,
 .padres-outline-button:hover,
 .padres-hero-secondary:hover {
-  background: #f0faf7;
+  background: #edf5ff;
 }
 
 .padres-primary-button:disabled {

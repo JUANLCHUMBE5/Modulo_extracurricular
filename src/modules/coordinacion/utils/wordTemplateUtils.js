@@ -147,6 +147,7 @@ async function analizarZipPlantilla(zip, opciones = {}) {
   const modeloBase = modeloCompleto || obtenerModeloMasCercano(presentes);
   const variablesBase = modeloBase?.variables || variablesPlantillaRequeridas;
   const faltantes = variablesBase.filter((variable) => !presentes.includes(variable.id));
+  const variablesListasModelo = variablesBase.filter((variable) => presentes.includes(variable.id));
   const flexibleValida = !modeloCompleto && esPlantillaDigitalUtil(presentes);
 
   if (validarVariables && faltantes.length && !flexibleValida) {
@@ -155,6 +156,8 @@ async function analizarZipPlantilla(zip, opciones = {}) {
 
   return {
     variablesDetectadas: presentes,
+    variablesListasModelo: variablesListasModelo.map((item) => item.id),
+    variablesRequeridasModelo: variablesBase.map((item) => item.id),
     variablesFaltantes: faltantes.map((item) => item.id),
     plantillaValida: faltantes.length === 0 || flexibleValida,
     plantillaModelo: modeloCompleto?.id || (flexibleValida ? `${modeloBase?.id || "general"}-digital` : "general"),
@@ -183,10 +186,33 @@ function esPlantillaDigitalUtil(presentes) {
 }
 
 function detectarVariablesPlantilla(contenidoXml, variables) {
+  const marcadores = extraerMarcadoresPlantilla(contenidoXml);
+  if (marcadores.length) {
+    return variables
+      .filter((variable) => variable.aliases.some((alias) => marcadores.some((marcador) => coincideMarcadorPlantilla(marcador, alias))))
+      .map((variable) => variable.id);
+  }
+
   const contenido = decodificarXml(String(contenidoXml || "").replace(/<[^>]+>/g, " "));
   return variables
     .filter((variable) => variable.aliases.some((alias) => contieneAliasPlantilla(contenido, alias)))
     .map((variable) => variable.id);
+}
+
+function extraerMarcadoresPlantilla(contenidoXml) {
+  const texto = extraerTextoPlanoXml(contenidoXml);
+  const marcadores = new Set();
+  const patron = /\{\{?\s*([^{}]+?)\s*\}\}?/g;
+  let match = patron.exec(texto);
+  while (match) {
+    if (match[1]) marcadores.add(normalizarComparacion(match[1]).replace(/\s+/g, "_"));
+    match = patron.exec(texto);
+  }
+  return Array.from(marcadores);
+}
+
+function coincideMarcadorPlantilla(marcador, alias) {
+  return marcador === normalizarComparacion(alias).replace(/\s+/g, "_");
 }
 
 function contieneAliasPlantilla(contenido, alias) {

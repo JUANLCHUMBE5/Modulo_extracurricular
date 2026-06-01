@@ -45,6 +45,31 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
     );
   }
 
+  // Determine state of the button
+  let buttonText = "Inscribir";
+  let buttonDisabled = false;
+  let buttonAction = onInscribirProgramaPrincipal;
+
+  if (inscripcion) {
+    const estadoPagoNormalizado = String(inscripcion.estadoPago || "").toLowerCase().trim();
+    const estadoInscripcionNormalizado = String(inscripcion.estadoInscripcion || "").toLowerCase().trim();
+
+    const esPagado = estadoPagoNormalizado === "pagado" || estadoPagoNormalizado === "pago validado" || estadoPagoNormalizado === "completado";
+    const esVerificando = estadoPagoNormalizado === "verificando" || estadoPagoNormalizado === "por verificar" || estadoInscripcionNormalizado.includes("verificacion") || estadoInscripcionNormalizado.includes("revision");
+
+    if (esPagado) {
+      buttonText = "Registrado";
+      buttonDisabled = true;
+    } else if (esVerificando) {
+      buttonText = "En aprobación";
+      buttonDisabled = true;
+    } else {
+      // Pending payment
+      buttonText = "Continuar al pago";
+      buttonAction = () => setPasoActivo(3);
+    }
+  }
+
   return (
     <article className="padres-flow-panel padres-flow-program-card">
       <div className="padres-flow-program-head">
@@ -79,8 +104,14 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
       </div>
 
       <div className="padres-flow-program-note">
-        <button className="padres-flow-primary-button" type="button" onClick={onInscribirProgramaPrincipal}>
-          Inscribir
+        <button 
+          className="padres-flow-primary-button" 
+          type="button" 
+          disabled={buttonDisabled}
+          onClick={buttonAction}
+          style={buttonDisabled ? { background: "#e2e8f0", color: "#64748b", cursor: "not-allowed", border: "1px solid #cbd5e1" } : null}
+        >
+          {buttonText}
         </button>
       </div>
 

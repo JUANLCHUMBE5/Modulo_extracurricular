@@ -327,12 +327,12 @@ export default function ComunicadoStep({
           flexDirection: "column",
           gap: "12px",
           padding: "16px",
-          background: "#f0fdf4",
+          background: "#f0f7ff",
           borderRadius: "12px",
-          border: "1px solid #bbf7d0",
+          border: "1px solid #bfdbfe",
           marginTop: "12px"
         }}>
-          <h4 style={{ margin: 0, fontSize: "13px", fontWeight: "800", color: "#166534", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+          <h4 style={{ margin: 0, fontSize: "13px", fontWeight: "800", color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.5px" }}>
             Tallas Requeridas para la Indumentaria:
           </h4>
           

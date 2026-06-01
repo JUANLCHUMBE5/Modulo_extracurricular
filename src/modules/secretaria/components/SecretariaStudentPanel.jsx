@@ -131,7 +131,10 @@ function SecretariaStudentPanel({
         <CheckCircle2 size={19} />
         {inscripcion?.derivadoCaja ? (
           <p>
-            Derivado exitosamente a Caja: {inscripcion.programa || "taller seleccionado"}. Ya puede validarse el pago en el modulo de Caja.
+            Derivado exitosamente a Caja: {inscripcion.programa || "taller seleccionado"}. Este mismo taller ya no se puede derivar otra vez.
+            {cursosAdicionalesDisponibles > 0
+              ? " Si necesita otro cobro, registre un curso adicional."
+              : " No hay cursos adicionales disponibles para este grado."}
           </p>
         ) : inscripcion && programas.length > 0 ? (
           <p>

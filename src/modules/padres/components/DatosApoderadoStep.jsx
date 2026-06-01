@@ -7,7 +7,6 @@ import PortalBadge from "./PortalBadge";
 
 export default function DatosApoderadoStep({
   actualizar,
-  apoderadoBloqueado,
   form,
   guardando,
   guardarDatos,
@@ -40,7 +39,6 @@ export default function DatosApoderadoStep({
           value={form.apoderado}
           onChange={(value) => actualizar("apoderado", value)}
           placeholder="Nombre completo"
-          disabled={apoderadoBloqueado}
         />
         <Campo
           label="Teléfono de contacto"

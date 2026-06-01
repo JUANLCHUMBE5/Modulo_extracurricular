@@ -33,6 +33,14 @@ function DocumentosView({
   variablesPlantillaAceptadas,
   variablesPlantillaRequeridas,
 }) {
+  const variablesRequeridasDocumento = lecturaDocumento?.variablesRequeridasModelo || variablesPlantillaRequeridas.map((item) => item.id);
+  const variablesListasDocumento = lecturaDocumento?.variablesListasModelo ||
+    (lecturaDocumento?.variables || []).filter((variable) => variablesRequeridasDocumento.includes(variable));
+  const variablesFaltantesDocumento = lecturaDocumento?.variablesFaltantes || [];
+  const variablesPendientesTexto = variablesFaltantesDocumento.length
+    ? `Faltan: ${variablesFaltantesDocumento.join(", ").toUpperCase()}`
+    : "Formato completo";
+
   return (
     <>
       <header className="coord-topbar"><h1>PLANTILLAS Y DOCUMENTOS</h1></header>
@@ -111,7 +119,16 @@ function DocumentosView({
                 </div>
                 <div className="coord-document-detected">
                   <SummaryBox label="Datos interpretados" value={Object.keys(lecturaDocumento.datos || {}).length} />
-                  <SummaryBox label="Variables listas" value={`${(lecturaDocumento.variables || []).length}/${variablesPlantillaRequeridas.length}`} tone={(lecturaDocumento.variables || []).length ? "success" : "warning"} />
+                  <SummaryBox
+                    label="Variables del formato"
+                    value={`${variablesListasDocumento.length}/${variablesRequeridasDocumento.length}`}
+                    tone={variablesFaltantesDocumento.length ? "warning" : "success"}
+                  />
+                  <SummaryBox
+                    label={lecturaDocumento.plantillaModelo ? `Modelo ${lecturaDocumento.plantillaModelo}` : "Estado"}
+                    value={variablesPendientesTexto}
+                    tone={variablesFaltantesDocumento.length ? "warning" : "success"}
+                  />
                 </div>
                 {Object.keys(lecturaDocumento.datos || {}).length ? (
                   <dl className="coord-document-fields coord-document-preview-fields">

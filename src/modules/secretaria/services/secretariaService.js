@@ -281,6 +281,9 @@ export async function derivarInscripcionCaja(inscripcionId, datos = {}) {
   if (!inscripcion) {
     throw new Error("No se encontro la inscripcion para derivar a Caja.");
   }
+  if (inscripcion.derivadoCaja) {
+    throw new Error("Esta inscripcion ya fue derivada a Caja. Para cobrar otro taller, registre una nueva inscripcion.");
+  }
 
   const actualizada = {
     ...inscripcion,

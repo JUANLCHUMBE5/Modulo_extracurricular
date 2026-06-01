@@ -22,6 +22,9 @@ export default function CajaFields({
     setFormulario((actual) => ({ ...actual, [campo]: valor }));
   }
 
+  const esPorVerificar = formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar";
+  const labelEstado = esPorVerificar ? "Por Verificar" : "Pagado";
+
   const datosLectura = [
     ["DNI", formulario.estudianteDni || "Sin DNI"],
     ["Estudiante", formulario.estudianteNombre || "Sin estudiante"],
@@ -29,7 +32,7 @@ export default function CajaFields({
     ["Programa", formulario.programaNombre || "Sin programa"],
     ["Monto", formatearSoles(formulario.monto)],
     ["Concepto", formulario.concepto || "Inscripcion"],
-    ["Estado", "Pagado"],
+    ["Estado", labelEstado],
     ["Fecha", formatearFechaPeru(formulario.fechaPago)],
   ];
 
@@ -89,7 +92,11 @@ export default function CajaFields({
             ))}
             <label className="caja-payment-method">
               Forma de pago
-              <select value={formulario.formaPago} onChange={(event) => actualizar("formaPago", event.currentTarget.value)}>
+              <select 
+                value={formulario.formaPago} 
+                onChange={(event) => actualizar("formaPago", event.currentTarget.value)}
+                disabled={esPorVerificar}
+              >
                 <option value="Efectivo">Efectivo</option>
                 <option value="Yape">Yape</option>
                 <option value="Plin">Plin</option>
@@ -97,6 +104,42 @@ export default function CajaFields({
                 <option value="Tarjeta">Tarjeta</option>
               </select>
             </label>
+            {esPorVerificar ? (
+              <div className="caja-yape-details-card" style={{
+                gridColumn: "1 / -1",
+                background: "#fef3c7",
+                border: "1px solid #fde68a",
+                borderRadius: "6px",
+                padding: "12px",
+                marginTop: "10px"
+              }}>
+                <h4 style={{ margin: "0 0 8px 0", color: "#b45309", fontSize: "13px" }}>
+                  Detalles del Yape (Web)
+                </h4>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "8px" }}>
+                  <div>
+                    <span style={{ fontSize: "11px", color: "#6b7280", display: "block" }}>Celular de Operación:</span>
+                    <strong style={{ fontSize: "13px", color: "#1f2937" }}>{formulario.telefonoOperacion || "No ingresado"}</strong>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", color: "#6b7280", display: "block" }}>Código de Operación:</span>
+                    <strong style={{ fontSize: "13px", color: "#1f2937" }}>{formulario.numeroOperacion || "No ingresado"}</strong>
+                  </div>
+                </div>
+                {formulario.capturaPagoBase64 ? (
+                  <div style={{ textAlign: "center" }}>
+                    <span style={{ fontSize: "11px", color: "#b45309", display: "block", marginBottom: "4px" }}>Captura de pantalla:</span>
+                    <img 
+                      src={formulario.capturaPagoBase64} 
+                      alt="Captura Yape" 
+                      style={{ maxWidth: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "4px", border: "1px solid #eaeaea" }} 
+                    />
+                  </div>
+                ) : (
+                  <span style={{ fontSize: "11px", color: "#9ca3af", fontStyle: "italic" }}>No se adjuntó captura de pantalla.</span>
+                )}
+              </div>
+            ) : null}
           </div>
         </section>
       ) : null}

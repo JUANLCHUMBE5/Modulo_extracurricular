@@ -202,15 +202,15 @@ export default function Caja() {
     ]);
 
     const contenido = [
-      encabezados.join(","),
-      ...filas.map((fila) => fila.map((col) => `"${col}"`).join(",")),
+      encabezados.join(";"),
+      ...filas.map((fila) => fila.map((col) => `"${col}"`).join(";")),
     ].join("\n");
 
-    return contenido;
+    return "sep=;\n" + contenido;
   }
 
   function descargarArchivo(contenido, nombreArchivo) {
-    const blob = new Blob([contenido], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + contenido], { type: "text/csv;charset=utf-8;" });
     const enlace = document.createElement("a");
     enlace.href = URL.createObjectURL(blob);
     enlace.download = nombreArchivo;

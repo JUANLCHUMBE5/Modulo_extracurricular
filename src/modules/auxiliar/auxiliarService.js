@@ -3,16 +3,66 @@ import { fechaActualIso } from "../../services/dateService";
 
 const esperar = (ms = 220) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function validarDni(dni) {
+export async function validarDni(busqueda) {
   await esperar();
   await syncApiDb();
 
-  const dniLimpio = limpiarDni(dni);
-  if (!/^\d{8}$/.test(dniLimpio)) {
-    throw new Error("El DNI debe contener exactamente 8 numeros.");
+  const query = String(busqueda || "").trim();
+  if (!query) {
+    throw new Error("Ingrese un DNI o nombre para buscar.");
   }
 
-  return resolverValidacion({ dni: dniLimpio, codigoOriginal: dniLimpio });
+  // Si es numérico (o parece DNI)
+  if (/^\d+$/.test(query)) {
+    const dniLimpio = limpiarDni(query);
+    if (!/^\d{8}$/.test(dniLimpio)) {
+      throw new Error("El DNI debe contener exactamente 8 numeros.");
+    }
+    return resolverValidacion({ dni: dniLimpio, codigoOriginal: dniLimpio });
+  }
+
+  // Si es texto, buscamos por nombre
+  return resolverValidacionPorNombre(query);
+}
+
+function resolverValidacionPorNombre(nombreQuery) {
+  const queryNormalizada = normalizarTexto(nombreQuery);
+  if (queryNormalizada.length < 3) {
+    throw new Error("El nombre de busqueda debe tener al menos 3 caracteres.");
+  }
+
+  // 1. Buscar en inscripciones activas (para tener taller directo)
+  const inscripciones = obtenerInscripcionesActivas();
+  const coincidenciaInscripcion = inscripciones.find(ins => 
+    normalizarTexto(ins.nombresEstudiante).includes(queryNormalizada)
+  );
+
+  if (coincidenciaInscripcion) {
+    const ids = normalizarIdentificadores({
+      dni: coincidenciaInscripcion.dniEstudiante,
+      codigoEstudiante: coincidenciaInscripcion.codigoEstudiante,
+      inscripcionId: coincidenciaInscripcion.id,
+      codigoOriginal: coincidenciaInscripcion.dniEstudiante
+    });
+    return resolverValidacion(ids);
+  }
+
+  // 2. Si no esta matriculado en un taller, buscar en la lista general de estudiantes del colegio
+  const estudiantes = obtenerEstudiantes();
+  const coincidenciaEstudiante = estudiantes.find(est => 
+    normalizarTexto(est.nombres).includes(queryNormalizada)
+  );
+
+  if (coincidenciaEstudiante) {
+    const ids = normalizarIdentificadores({
+      dni: coincidenciaEstudiante.dni,
+      codigoEstudiante: coincidenciaEstudiante.codigoEstudiante,
+      codigoOriginal: coincidenciaEstudiante.dni
+    });
+    return resolverValidacion(ids);
+  }
+
+  throw new Error(`No se encontro ningun estudiante que coincida con "${nombreQuery}".`);
 }
 
 export async function validarQR(codigo) {

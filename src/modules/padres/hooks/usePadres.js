@@ -94,10 +94,23 @@ function usePadres(user) {
   }, [cargarResumen, cargarProgramas]);
 
   useEffect(() => {
-    const actualizar = () => cargarResumen({ silencioso: true });
+    const actualizar = () => {
+      cargarResumen({ silencioso: true });
+      cargarProgramas();
+    };
+    const actualizarPorStorage = (event) => {
+      if (event.key === "san_rafael_db_updated_at") actualizar();
+    };
+
     window.addEventListener("mock-db-updated", actualizar);
-    return () => window.removeEventListener("mock-db-updated", actualizar);
-  }, [cargarResumen]);
+    window.addEventListener("api-db-updated", actualizar);
+    window.addEventListener("storage", actualizarPorStorage);
+    return () => {
+      window.removeEventListener("mock-db-updated", actualizar);
+      window.removeEventListener("api-db-updated", actualizar);
+      window.removeEventListener("storage", actualizarPorStorage);
+    };
+  }, [cargarResumen, cargarProgramas]);
 
   const estudiante = resumen?.estudiante;
   const inscripcion = resumen?.inscripcionActual;
@@ -105,7 +118,6 @@ function usePadres(user) {
   const inscripciones = Array.isArray(resumen?.inscripciones) ? resumen.inscripciones : [];
   const pagos = Array.isArray(resumen?.pagos) ? resumen.pagos : [];
   const programa = inscripcion || invitacion;
-  const apoderadoBloqueado = Boolean(inscripcion?.apoderado || estudiante?.apoderado);
   const tipoReforzamiento = useMemo(() => obtenerTipoReforzamiento(programa), [programa]);
   const nombreCorto = obtenerNombreCorto(estudiante?.nombres);
   const iniciales = obtenerIniciales(estudiante?.nombres);
@@ -303,7 +315,6 @@ function usePadres(user) {
     estudiante,
     form,
     guardando,
-    apoderadoBloqueado,
     infoProgramaAbierta,
     infoProgramaAceptada,
     iniciales,

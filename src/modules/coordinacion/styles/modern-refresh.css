@@ -313,6 +313,48 @@
   border-radius: 12px;
 }
 
+.coord-schedule-unified {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.coord-schedule-unified .coord-schedule-block-main {
+  gap: 16px;
+}
+
+.coord-schedule-flow-row {
+  display: grid;
+  grid-template-columns: minmax(96px, 0.55fr) repeat(2, minmax(150px, 1fr));
+  gap: 12px;
+  align-items: end;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.coord-schedule-flow-row-wide {
+  grid-template-columns: minmax(96px, 0.55fr) repeat(4, minmax(130px, 1fr));
+}
+
+.coord-schedule-mini-title {
+  align-self: center;
+  color: #176c60;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 920px) {
+  .coord-schedule-flow-row,
+  .coord-schedule-flow-row-wide {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .coord-schedule-mini-title {
+    grid-column: 1 / -1;
+  }
+}
+
 .coord-block-title {
   margin: 0 0 4px 0;
   font-size: 14px !important;

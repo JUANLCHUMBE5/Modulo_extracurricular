@@ -765,6 +765,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
 
   async function derivarACaja() {
     if (!inscripcion || derivandoCaja) return;
+    if (inscripcion.derivadoCaja) {
+      mostrarMensaje("Este taller ya fue derivado a Caja. Registre un curso adicional si necesita derivar otro taller.");
+      return;
+    }
     if (!inscripcion.fichaGenerada && !inscripcion.documentoGenerado) {
       mostrarMensaje("Primero imprima o genere la ficha de inscripción antes de derivar a Caja.");
       return;

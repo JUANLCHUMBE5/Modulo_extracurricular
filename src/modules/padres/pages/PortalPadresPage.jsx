@@ -2,11 +2,17 @@ import { Alert } from "@mantine/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   IconAlertCircle as AlertCircle,
+  IconBook2 as BookOpen,
+  IconBulb as Bulb,
   IconCircleCheck as CheckCircle2,
+  IconClipboardCheck as ClipboardCheck,
   IconEye as Eye,
   IconLoader2 as Loader2,
   IconLogout as LogOut,
+  IconNotes as Notes,
+  IconPhone as Phone,
   IconReceipt as Receipt,
+  IconToolsKitchen2 as Utensils,
   IconX as X,
 } from "@tabler/icons-react";
 import AsistentePadres from "../components/AsistentePadres";
@@ -22,6 +28,17 @@ import "../Padres.css";
 
 const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
 const PASO_PAGO_STORAGE_PREFIX = "padres:pasoPago:";
+
+function obtenerMetaSeccionComunicado(titulo = "") {
+  const texto = String(titulo).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (texto.includes("costo")) return { Icono: Receipt, clase: "is-cost", ayuda: "Monto y modalidad registrados para este programa." };
+  if (texto.includes("almuerzo")) return { Icono: Utensils, clase: "is-lunch", ayuda: "Horario de entrega y recomendaciones para la lonchera." };
+  if (texto.includes("ventaja")) return { Icono: Bulb, clase: "is-benefits", ayuda: "Beneficios incluidos durante el ciclo." };
+  if (texto.includes("nota")) return { Icono: Notes, clase: "is-note", ayuda: "Compromisos importantes para la familia." };
+  if (texto.includes("util")) return { Icono: ClipboardCheck, clase: "is-supplies", ayuda: "Materiales que debe preparar la familia." };
+  if (texto.includes("concesionario")) return { Icono: Phone, clase: "is-contact", ayuda: "Contactos autorizados por la institución." };
+  return { Icono: BookOpen, clase: "is-general", ayuda: "Información importante del programa." };
+}
 
 function obtenerPasoPagoGuardado(dni) {
   if (typeof window === "undefined" || !dni) return null;
@@ -105,7 +122,6 @@ export default function Padres({ user, onLogout }) {
     estudiante,
     form,
     guardando,
-    apoderadoBloqueado,
     infoProgramaAbierta,
     infoProgramaAceptada,
     iniciales,
@@ -342,7 +358,6 @@ export default function Padres({ user, onLogout }) {
       return (
         <DatosApoderadoStep
           actualizar={actualizar}
-          apoderadoBloqueado={apoderadoBloqueado}
           form={form}
           guardando={guardando}
           guardarDatos={guardarDatosYEntrarAPago}
@@ -476,109 +491,132 @@ export default function Padres({ user, onLogout }) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="padres-info-title"
-            ref={comunicadoModalRef}
-            onScroll={marcarComunicadoVistoSiCorresponde}
           >
             <header className="padres-info-modal-head">
               <div>
                 <span>Comunicado para el apoderado</span>
                 <h2 id="padres-info-title">{programaActual.programa || programaActual.nombre}</h2>
+                <p>Revise los puntos importantes del programa antes de confirmar la inscripción.</p>
               </div>
               <button type="button" onClick={() => setInfoProgramaAbierta(false)} aria-label="Cerrar información">
                 <X size={18} />
               </button>
             </header>
 
-            <div className="padres-comunicado-box">
-              <div className="padres-comunicado-letter">
-                <span>Comunicado</span>
+            <div className="padres-info-modal-body" ref={comunicadoModalRef} onScroll={marcarComunicadoVistoSiCorresponde}>
+              <div className="padres-info-guide">
+                <BookOpen size={19} />
+                <div>
+                  <strong>Lea el comunicado completo</strong>
+                  <p>Encontrará costos, beneficios, materiales y datos útiles organizados por tema.</p>
+                </div>
+              </div>
+
+              <div className="padres-comunicado-box">
+                <div className="padres-comunicado-letter">
+                  <span>Mensaje del colegio</span>
                 {comunicadoPadres.fecha ? <p>{comunicadoPadres.fecha}</p> : null}
                 {comunicadoPadres.parrafos.map((parrafo, index) => (
                   <p key={`${index}-${parrafo}`}>{parrafo}</p>
                 ))}
-              </div>
-
-              <div className="padres-comunicado-section">
-                <div className="padres-comunicado-section-title">
-                  <strong>Indicaciones para la familia</strong>
-                  <span>Lo necesario antes de confirmar.</span>
                 </div>
-                <ul className="padres-info-list">
-                  {(comunicadoPadres.indicaciones || []).map((indicacion) => (
-                    <li key={indicacion}>{indicacion}</li>
-                  ))}
-                </ul>
-              </div>
 
-              {(comunicadoPadres.detalleFormato || []).map((seccion) => (
-                <div className="padres-comunicado-section" key={seccion.titulo}>
+                <div className="padres-comunicado-section is-family">
                   <div className="padres-comunicado-section-title">
-                    <strong>{seccion.titulo}</strong>
-                    <span>Información tomada del formato asignado.</span>
+                    <span className="padres-comunicado-section-icon"><ClipboardCheck size={17} /></span>
+                    <div>
+                      <strong>Indicaciones para la familia</strong>
+                      <span>Lo necesario antes de confirmar.</span>
+                    </div>
                   </div>
                   <ul className="padres-info-list">
-                    {seccion.items.map((item) => (
-                      <li key={item}>{item}</li>
+                    {(comunicadoPadres.indicaciones || []).map((indicacion) => (
+                      <li key={indicacion}>{indicacion}</li>
                     ))}
                   </ul>
                 </div>
-              ))}
 
-              {!comunicadoPadres.ocultarAlmuerzo && !comunicadoPadres.tieneAlmuerzoFormato ? (
-                <div className="padres-comunicado-section padres-lunch-section">
-                  <div className="padres-comunicado-section-title">
-                    <strong>Almuerzo</strong>
-                    <span>Recepción y concesionarios autorizados.</span>
-                  </div>
-                  <p>
-                    El colegio cuenta con un área para recibir almuerzos. Deben dejarse de 01:20 a 01:45 p.m.
-                    La lonchera debe tener una etiqueta grande con nombre del alumno, grado y sección.
-                  </p>
-                  <div className="padres-lunch-vendors">
-                    <div>
-                      <span>Cafetín Los Amigos del recreo</span>
-                      <strong>Sra. Rocío</strong>
-                      <p>976280197</p>
+                {(comunicadoPadres.detalleFormato || []).map((seccion) => {
+                  const { Icono, clase, ayuda } = obtenerMetaSeccionComunicado(seccion.titulo);
+                  return (
+                    <div className={`padres-comunicado-section ${clase}`} key={seccion.titulo}>
+                      <div className="padres-comunicado-section-title">
+                        <span className="padres-comunicado-section-icon"><Icono size={17} /></span>
+                        <div>
+                          <strong>{seccion.titulo}</strong>
+                          <span>{ayuda}</span>
+                        </div>
+                      </div>
+                      <ul className="padres-info-list">
+                        {seccion.items.map((item) => (
+                          <li key={item}>{item}</li>
+                        ))}
+                      </ul>
                     </div>
-                    <div>
-                      <span>Cafetín Edith</span>
-                      <strong>Sra. Deysli</strong>
-                      <p>960897529</p>
+                  );
+                })}
+
+                {!comunicadoPadres.ocultarAlmuerzo && !comunicadoPadres.tieneAlmuerzoFormato ? (
+                  <div className="padres-comunicado-section padres-lunch-section is-lunch">
+                    <div className="padres-comunicado-section-title">
+                      <span className="padres-comunicado-section-icon"><Utensils size={17} /></span>
+                      <div>
+                        <strong>Almuerzo</strong>
+                        <span>Recepción y concesionarios autorizados.</span>
+                      </div>
                     </div>
+                    <p>
+                      El colegio cuenta con un área para recibir almuerzos. Deben dejarse de 01:20 a 01:45 p.m.
+                      La lonchera debe tener una etiqueta grande con nombre del alumno, grado y sección.
+                    </p>
+                    <div className="padres-lunch-vendors">
+                      <div>
+                        <span>Cafetín Los Amigos del recreo</span>
+                        <strong>Sra. Rocío</strong>
+                        <p>976280197</p>
+                      </div>
+                      <div>
+                        <span>Cafetín Edith</span>
+                        <strong>Sra. Deysli</strong>
+                        <p>960897529</p>
+                      </div>
+                    </div>
+                    <p>
+                      Estos concesionarios están autorizados por la institución y cumplen con los protocolos correspondientes
+                      según las disposiciones del MINSA.
+                    </p>
                   </div>
-                  <p>
-                    Estos concesionarios están autorizados por la institución y cumplen con los protocolos correspondientes
-                    según las disposiciones del MINSA.
-                  </p>
-                </div>
-              ) : null}
+                ) : null}
+              </div>
             </div>
 
-            <label className="padres-info-accept">
-              <input
-                type="checkbox"
-                checked={infoProgramaAceptada}
-                disabled={!comunicadoCompletoVisto && !infoProgramaAceptada}
-                onChange={actualizarAceptacionComunicado}
-              />
-              <span>
-                {invitacionPendiente
-                  ? "He leído y acepto la información del programa antes de registrar la inscripción."
-                  : "He leído y acepto la información del programa antes de continuar con la matricula."}
-              </span>
-            </label>
-            {!comunicadoCompletoVisto && !infoProgramaAceptada ? (
-              <p className="padres-info-read-hint">
-                Desplace el comunicado hasta el final para habilitar la aceptacion.
-              </p>
-            ) : null}
+            <div className="padres-info-modal-footer">
+              <label className="padres-info-accept">
+                <input
+                  type="checkbox"
+                  checked={infoProgramaAceptada}
+                  disabled={!comunicadoCompletoVisto && !infoProgramaAceptada}
+                  onChange={actualizarAceptacionComunicado}
+                />
+                <span>
+                  {invitacionPendiente
+                    ? "He leído y acepto la información del programa antes de registrar la inscripción."
+                    : "He leído y acepto la información del programa antes de continuar con la matricula."}
+                </span>
+              </label>
+              {!comunicadoCompletoVisto && !infoProgramaAceptada ? (
+                <p className="padres-info-read-hint">
+                  Deslice el contenido hasta el final para habilitar la aceptación.
+                </p>
+              ) : null}
 
-            <footer className="padres-info-modal-actions">
-              <button className="padres-orange-button" type="button" onClick={continuarDesdeComunicado} disabled={!infoProgramaAceptada || guardando}>
-                {guardando ? <Loader2 className="padres-spin" size={15} /> : <CheckCircle2 size={15} />}
-                {invitacionPendiente || programaAdicional ? "Continuar con la inscripcion" : "Continuar con la matricula"}
-              </button>
-            </footer>
+              <footer className="padres-info-modal-actions">
+                <button className="padres-orange-button" type="button" onClick={continuarDesdeComunicado} disabled={!infoProgramaAceptada || guardando}>
+                  {guardando ? <Loader2 className="padres-spin" size={15} /> : <CheckCircle2 size={15} />}
+                  {invitacionPendiente || programaAdicional ? "Continuar con la inscripción" : "Continuar con la matricula"}
+                </button>
+              </footer>
+            </div>
           </section>
         </div>
       ) : null}

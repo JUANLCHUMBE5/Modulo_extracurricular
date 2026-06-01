@@ -783,6 +783,10 @@ function Coordinacion({
           texto: textoPlano,
           datos: datosAplicables,
           variables: variablesDetectadas,
+          variablesListasModelo: lectura.variablesListasModelo,
+          variablesRequeridasModelo: lectura.variablesRequeridasModelo,
+          variablesFaltantes: lectura.variablesFaltantes,
+          plantillaModelo: lectura.plantillaModelo,
         });
       }
       setForm((actual) => ({
@@ -833,6 +837,10 @@ function Coordinacion({
           texto: textoPlano,
           datos: datosAplicables,
           variables: variablesDetectadas,
+          variablesListasModelo: lectura.variablesListasModelo,
+          variablesRequeridasModelo: lectura.variablesRequeridasModelo,
+          variablesFaltantes: lectura.variablesFaltantes,
+          plantillaModelo: lectura.plantillaModelo,
         });
       }
 

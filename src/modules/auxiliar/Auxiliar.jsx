@@ -10,7 +10,11 @@ import {
   IconScan as Scan,
   IconSearch as Search,
   IconVideoOff as VideoOff,
-  IconXboxX as XCircle
+  IconXboxX as XCircle,
+  IconSchool as School,
+  IconClock as Clock,
+  IconUser as User,
+  IconAlertTriangle as AlertTriangle
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { registrarAsistencia, validarDni, validarQR } from "./auxiliarService";
@@ -123,13 +127,22 @@ export default function Auxiliar({ onLogout }) {
     const valor = String(valorEntrada || "").trim();
 
     if (!valor) {
-      mostrarMsg(`Ingrese un ${modoValidacion === "DNI" ? "DNI" : "codigo QR"} valido.`);
+      mostrarMsg(`Ingrese un ${modoValidacion === "DNI" ? "DNI o nombre" : "codigo QR"} valido.`);
       return;
     }
 
-    if (modoValidacion === "DNI" && !/^\d{8}$/.test(valor)) {
-      mostrarMsg("Por seguridad, el DNI debe contener exactamente 8 numeros.");
-      return;
+    if (modoValidacion === "DNI") {
+      if (/^\d+$/.test(valor)) {
+        if (valor.length !== 8) {
+          mostrarMsg("Por seguridad, el DNI debe contener exactamente 8 numeros.");
+          return;
+        }
+      } else {
+        if (valor.length < 3) {
+          mostrarMsg("El nombre a buscar debe tener al menos 3 letras.");
+          return;
+        }
+      }
     }
 
     setCargando(true);
@@ -263,212 +276,405 @@ export default function Auxiliar({ onLogout }) {
     setInputValue("");
   };
 
-  const estadoAcceso = ultimoEvento?.estado === "registrado"
-    ? "registrado"
-    : estudiante?.estadoAcceso || ultimoEvento?.estado || "esperando";
+  const esInscritoNoMatriculado = estudiante &&
+    estudiante.estadoAcceso === "no_registrado" &&
+    estudiante.nombres &&
+    estudiante.nombres !== "Codigo no registrado" &&
+    estudiante.nombres !== estudiante.dni &&
+    !estudiante.inscripcionId;
 
-  const tituloEstado = ultimoEvento?.estado === "registrado"
-    ? "Ingreso registrado"
-    : estadoAcceso === "pagado"
-      ? "Pago validado"
-      : estadoAcceso === "pendiente"
-        ? "Pago pendiente"
-        : estadoAcceso === "no_registrado" || ultimoEvento?.estado === "observado"
-          ? "No registrado"
-        : "Esperando escaneo";
+  const getKioskState = () => {
+    if (registrando) return "registrando";
+    if (cargando) return "cargando";
+    if (ultimoEvento?.estado === "registrado") return "registrado-exito";
+    if (!estudiante) return "esperando";
+    if (estudiante.estadoAcceso === "pagado") return "autorizado";
+    if (estudiante.estadoAcceso === "pendiente") return "pendiente";
+    if (esInscritoNoMatriculado) return "no-matriculado";
+    return "no-registrado";
+  };
 
-  const estadoResultado = estudiante?.estadoAcceso || "";
-  const resultadoPermitido = estadoResultado === "pagado";
-  const resultadoPendiente = estadoResultado === "pendiente";
-  const resultadoTitulo = resultadoPermitido
-    ? "Pago validado - acceso permitido"
-    : resultadoPendiente
-      ? "Pago pendiente"
-      : "No registrado";
-  const resultadoIcono = resultadoPermitido
-    ? <CheckCircle2 size={22} />
-    : resultadoPendiente
-      ? <AlertCircle size={22} />
-      : <XCircle size={22} />;
-  const badgeEstado = resultadoPermitido ? "ok" : resultadoPendiente ? "warning" : "error";
-  const iconoEstadoPrincipal = estadoAcceso === "pagado" || estadoAcceso === "registrado"
-    ? <CheckCircle2 size={36} />
-    : estadoAcceso === "pendiente"
-      ? <AlertCircle size={36} />
-      : estadoAcceso === "no_registrado" || estadoAcceso === "observado"
-        ? <XCircle size={36} />
-        : <QrCode size={36} />;
-  const textoEstadoPrincipal = ultimoEvento?.detalle
-    || estudiante?.accion
-    || (modo === "DNI" ? "Ingrese el DNI de respaldo." : "Escanee el QR con lector fisico o camara.");
+  const kioskState = getKioskState();
 
   return (
-    <div className={`auxiliar-page state-${estadoAcceso}`}>
+    <div className={`auxiliar-page kiosk-state-${kioskState}`}>
       <header className="auxiliar-topbar">
-        <div>
-          <span>Auxiliar de ingreso</span>
-          <strong>Validacion QR / DNI</strong>
+        <div className="auxiliar-brand">
+          <span className="auxiliar-school-icon">🏫</span>
+          <div>
+            <span className="auxiliar-kicker">Colegio San Rafael</span>
+            <strong className="auxiliar-title">Portal de Ingreso Taller 🎒</strong>
+          </div>
         </div>
-        <button className="auxiliar-logout" type="button" onClick={onLogout}>
-          <LogOut size={17} /> Salir
-        </button>
+        <div className="auxiliar-header-actions">
+          <div className="auxiliar-clock">
+            ⏰ {new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}
+          </div>
+          <button className="auxiliar-logout" type="button" onClick={onLogout}>
+            <LogOut size={17} /> Salir
+          </button>
+        </div>
       </header>
 
       <main className="auxiliar-kiosk">
-        <section className={`auxiliar-status-hero ${estadoAcceso}`}>
-          <span className="auxiliar-status-icon">{iconoEstadoPrincipal}</span>
-          <div>
-            <span className="auxiliar-status-kicker">{new Date().toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit" })}</span>
-            <h1>{tituloEstado}</h1>
-            <p>{textoEstadoPrincipal}</p>
-          </div>
-        </section>
-
-        <section className="auxiliar-scan-console">
-          <div className="auxiliar-mode-tabs" role="tablist" aria-label="Modo de validacion">
-            <button type="button" className={modo === "QR" ? "active" : ""} onClick={cambiarModoQr}>
-              <QrCode size={20} /> QR
-            </button>
-            <button type="button" className={modo === "DNI" ? "active" : ""} onClick={cambiarModoDni}>
-              <Search size={20} /> DNI
-            </button>
-          </div>
-
-          {modo === "QR" ? (
-            <>
-              <div className={`auxiliar-scanner ${entrada === "camara" ? "camera" : "reader"} ${camaraActiva ? "is-active" : ""}`}>
-                {entrada === "camara" ? (
-                  <>
-                    <video ref={videoRef} muted playsInline aria-label="Vista de camara para escanear QR" />
-                    {!camaraActiva && (
-                      <div className="auxiliar-scanner-placeholder">
-                        <Camera size={48} />
-                        <strong>Camara apagada</strong>
-                        <span>{camaraMensaje}</span>
-                      </div>
-                    )}
-                    <div className="auxiliar-scan-frame" />
-                  </>
-                ) : (
-                  <div className="auxiliar-scanner-placeholder">
-                    <Scan size={58} />
-                    <strong>Listo para escanear</strong>
-                    <span>El lector escribira el codigo aqui.</span>
-                    <div className="auxiliar-scan-frame inline" />
-                  </div>
-                )}
-
-                <button
-                  className="auxiliar-camera-mini"
-                  type="button"
-                  onClick={entrada === "camara" ? activarLector : iniciarCamara}
-                  disabled={cargando || registrando}
-                  title={entrada === "camara" ? "Usar lector QR" : "Usar camara PC"}
-                >
-                  {entrada === "camara" ? <Keyboard size={18} /> : <Camera size={18} />}
-                  {entrada === "camara" ? "Lector" : "Camara"}
-                </button>
-              </div>
-
-              {entrada === "camara" && (
-                <div className="auxiliar-camera-controls">
-                  <span><Scan size={17} /> {camaraMensaje}</span>
-                  {camaraActiva ? (
-                    <button type="button" onClick={detenerCamara}>
-                      <VideoOff size={18} /> Detener
-                    </button>
-                  ) : (
-                    <button type="button" onClick={iniciarCamara} disabled={cargando || registrando}>
-                      <Camera size={18} /> Activar
-                    </button>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="auxiliar-dni-panel">
-              <Search size={52} />
-              <strong>Busqueda por DNI</strong>
-              <span>Solo para respaldo cuando el QR no pueda leerse.</span>
-            </div>
-          )}
-
-          <form className="auxiliar-input-form" onSubmit={handleBuscar}>
-            <label htmlFor="auxiliar-codigo">{modo === "DNI" ? "DNI" : "Codigo QR"}</label>
-            <div>
-              <input
-                id="auxiliar-codigo"
-                ref={inputRef}
-                inputMode={modo === "DNI" ? "numeric" : "text"}
-                placeholder={modo === "DNI" ? "DNI del estudiante" : "Escanee o pegue el codigo"}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-              />
-              <button type="submit" disabled={cargando || registrando}>
-                {cargando ? <Loader2 className="auxiliar-spin" size={22} /> : <Search size={22} />}
-                Validar
+        {/* COLUMNA IZQUIERDA: ESCÁNER Y ENTRADA */}
+        <section className="auxiliar-console-col">
+          <div className="auxiliar-console-card">
+            <h3 className="console-card-title">Escaneo de Acceso</h3>
+            
+            <div className="auxiliar-mode-tabs" role="tablist" aria-label="Modo de validacion">
+              <button type="button" className={modo === "QR" ? "active" : ""} onClick={cambiarModoQr}>
+                <QrCode size={20} /> Modo QR
+              </button>
+              <button type="button" className={modo === "DNI" ? "active" : ""} onClick={cambiarModoDni}>
+                <Search size={20} /> Buscar DNI / Nombre
               </button>
             </div>
-          </form>
+
+            {modo === "QR" ? (
+              <div className="qr-scanner-wrapper">
+                <div className={`auxiliar-scanner ${entrada === "camara" ? "camera" : "reader"} ${camaraActiva ? "is-active" : ""}`}>
+                  {entrada === "camara" ? (
+                    <>
+                      <video ref={videoRef} muted playsInline aria-label="Vista de camara para escanear QR" />
+                      {!camaraActiva && (
+                        <div className="auxiliar-scanner-placeholder">
+                          <Camera size={48} />
+                          <strong>Camara apagada</strong>
+                          <span>{camaraMensaje}</span>
+                        </div>
+                      )}
+                      <div className="auxiliar-scan-frame" />
+                    </>
+                  ) : (
+                    <div className="auxiliar-scanner-placeholder">
+                      <div className="cute-scan-illustration">
+                        <Scan size={58} className="scan-icon-animate" />
+                        <span className="cute-bubble">🎒</span>
+                        <span className="cute-pencil">✏️</span>
+                      </div>
+                      <strong>¡Listo para escanear!</strong>
+                      <span>Apunta el lector físico al código QR</span>
+                      <div className="auxiliar-scan-frame inline" />
+                    </div>
+                  )}
+
+                  <button
+                    className="auxiliar-camera-mini"
+                    type="button"
+                    onClick={entrada === "camara" ? activarLector : iniciarCamara}
+                    disabled={cargando || registrando}
+                    title={entrada === "camara" ? "Usar lector QR" : "Usar camara PC"}
+                  >
+                    {entrada === "camara" ? <Keyboard size={18} /> : <Camera size={18} />}
+                    {entrada === "camara" ? "Lector Físico" : "Cámara Web"}
+                  </button>
+                </div>
+
+                {entrada === "camara" && (
+                  <div className="auxiliar-camera-controls">
+                    <span><Scan size={17} /> {camaraMensaje}</span>
+                    {camaraActiva ? (
+                      <button type="button" className="btn-stop-cam" onClick={detenerCamara}>
+                        <VideoOff size={18} /> Apagar Cámara
+                      </button>
+                    ) : (
+                      <button type="button" className="btn-start-cam" onClick={iniciarCamara} disabled={cargando || registrando}>
+                        <Camera size={18} /> Encender Cámara
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="auxiliar-dni-panel">
+                <div className="cute-search-illustration">
+                  <User size={52} className="user-icon-animate" />
+                  <span className="cute-star">⭐</span>
+                </div>
+                <strong>Búsqueda por DNI / Nombre</strong>
+                <span>Ingresa el DNI o nombre del alumno para buscar su estado de pago.</span>
+              </div>
+            )}
+
+            <form className="auxiliar-input-form" onSubmit={handleBuscar}>
+              <label htmlFor="auxiliar-codigo">
+                {modo === "DNI" ? "DNI o Nombre del Alumno" : "Código QR (Lectura Manual)"}
+              </label>
+              <div className="input-group">
+                <input
+                  id="auxiliar-codigo"
+                  ref={inputRef}
+                  inputMode="text"
+                  placeholder={modo === "DNI" ? "Escribe el DNI o nombre del alumno..." : "Código QR escaneado..."}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                />
+                <button type="submit" className="btn-validate" disabled={cargando || registrando}>
+                  {cargando ? <Loader2 className="auxiliar-spin" size={22} /> : <Search size={22} />}
+                  Validar
+                </button>
+              </div>
+            </form>
+          </div>
         </section>
 
-        {(estudiante || ultimoEvento) && (
-        <section className={`auxiliar-result ${estudiante ? `status-${estudiante.estadoAcceso}` : "empty"}`}>
-          {estudiante ? (
-            <>
-              <div className="auxiliar-result-main">
-                <span>{resultadoIcono}</span>
-                <div>
-                  <strong>{resultadoTitulo}</strong>
-                  <p>{estudiante.accion}</p>
+        {/* COLUMNA DERECHA: RESULTADO EN TIEMPO REAL */}
+        <section className="auxiliar-result-col">
+          {kioskState === "esperando" && (
+            <div className="kiosk-status-card state-esperando">
+              <div className="kiosk-status-illustration">
+                <span className="floating-emoji">🎒</span>
+                <span className="floating-emoji second">✨</span>
+                <div className="kiosk-pulse-target">
+                  <QrCode size={72} />
                 </div>
               </div>
-
-              <div className="auxiliar-student-line">
-                <strong>{estudiante.nombres}</strong>
-                <span>{estudiante.dni || "Sin DNI"} {estudiante.codigoEstudiante ? `- ${estudiante.codigoEstudiante}` : ""}</span>
+              <h2>¡Hola! Bienvenidos 🏫</h2>
+              <p className="kiosk-status-message">
+                Por favor, acerca tu código QR al lector o cámara para validar tu ingreso al taller.
+              </p>
+              <div className="kiosk-friendly-tips">
+                <span>💡 Auxiliar: También puede buscar digitando el DNI del alumno.</span>
               </div>
+            </div>
+          )}
 
-              <div className="auxiliar-result-grid">
-                <div>
-                  <span>Programa</span>
-                  <strong>{estudiante.programa}</strong>
+          {(kioskState === "cargando" || kioskState === "registrando") && (
+            <div className="kiosk-status-card state-cargando">
+              <div className="kiosk-loader-wrapper">
+                <Loader2 size={64} className="kiosk-spin" />
+                <span className="loader-emoji">🎒</span>
+              </div>
+              <h2>{registrando ? "Registrando ingreso..." : "Buscando en el sistema..."}</h2>
+              <p className="kiosk-status-message">
+                {registrando 
+                  ? "Guardando la asistencia del estudiante para su taller." 
+                  : "Verificando estado de matrícula y reportes de pagos en Caja."}
+              </p>
+            </div>
+          )}
+
+          {kioskState === "registrado-exito" && (
+            <div className="kiosk-status-card state-registrado-exito">
+              <div className="kiosk-status-header-icon success-pop">
+                <CheckCircle2 size={72} />
+              </div>
+              <div className="sparkles-container">
+                <span className="sparkle s1">⭐</span>
+                <span className="sparkle s2">✨</span>
+                <span className="sparkle s3">🎉</span>
+              </div>
+              <span className="kiosk-badge-tag success">¡INGRESO REGISTRADO!</span>
+              <h2 className="student-name">¡Lindo día, {ultimoEvento?.estudiante}! 😊</h2>
+              <p className="success-footer-msg">¡Tu ingreso ha sido registrado de manera correcta!</p>
+              <div className="kiosk-student-details-box">
+                <div className="detail-item">
+                  <span className="label">TALLER</span>
+                  <strong className="value">⚽ {ultimoEvento?.programa}</strong>
                 </div>
-                <div>
-                  <span>Horario</span>
-                  <strong>{estudiante.horario}</strong>
-                </div>
-                <div>
-                  <span>Pago</span>
-                  <strong className={`status-badge ${badgeEstado}`}>{estudiante.estadoPago}</strong>
+                <div className="detail-item">
+                  <span className="label">HORA REGISTRO</span>
+                  <strong className="value">⏰ {ultimoEvento?.hora}</strong>
                 </div>
               </div>
-
-              <div className="auxiliar-result-actions">
-                <button type="button" onClick={limpiarPuesto}>
-                  Nuevo escaneo
+              <div className="kiosk-actions-panel">
+                <button type="button" className="kiosk-action-btn primary success" onClick={limpiarPuesto}>
+                  Siguiente Estudiante 🔄
                 </button>
+              </div>
+            </div>
+          )}
+
+          {kioskState === "autorizado" && (
+            <div className="kiosk-status-card state-autorizado">
+              <div className="kiosk-status-header-icon success-pop">
+                <CheckCircle2 size={72} />
+              </div>
+              <div className="sparkles-container">
+                <span className="sparkle s1">⭐</span>
+                <span className="sparkle s2">✨</span>
+                <span className="sparkle s3">🌟</span>
+              </div>
+              <span className="kiosk-badge-tag success">ACCESO PERMITIDO</span>
+              <h2 className="student-name">¡Hola, {estudiante.nombres}! 👋</h2>
+              <p className="kiosk-status-message-highlight">
+                ¡Tu pago está al día y tu matrícula activa! Que tengas una excelente clase.
+              </p>
+              
+              <div className="kiosk-student-details-box">
+                <div className="detail-item">
+                  <span className="label">TALLER</span>
+                  <strong className="value">🎨 {estudiante.programa}</strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">HORARIO</span>
+                  <strong className="value">⏰ {estudiante.horario}</strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">ESTADO PAGO</span>
+                  <strong className="value badge-success">✅ {estudiante.estadoPago}</strong>
+                </div>
+              </div>
+
+              <div className="kiosk-actions-panel">
                 <button
-                  className="primary"
+                  className="kiosk-action-btn pulse-button success-btn"
                   type="button"
                   onClick={() => ejecutarRegistro()}
-                  disabled={registrando || !estudiante.accesoPermitido}
+                  disabled={registrando}
                 >
-                  {registrando ? <Loader2 className="auxiliar-spin" size={20} /> : <CheckCircle2 size={20} />}
-                  Registrar ingreso
+                  {registrando ? <Loader2 className="kiosk-spin" size={24} /> : "REGISTRAR INGRESO 🚀"}
+                </button>
+                <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+                  Limpiar / Nuevo Escaneo
                 </button>
               </div>
-            </>
-          ) : (
-            <div className="auxiliar-result-empty">
-              <QrCode size={34} />
-              <strong>Sin lectura</strong>
-              <span>Escanee un QR o ingrese DNI.</span>
+            </div>
+          )}
+
+          {kioskState === "pendiente" && (
+            <div className="kiosk-status-card state-pendiente">
+              <div className="kiosk-status-header-icon warning-shake">
+                <AlertTriangle size={72} />
+              </div>
+              <span className="kiosk-badge-tag warning">PAGO PENDIENTE</span>
+              <h2 className="student-name">¡Hola, {estudiante.nombres}! ⏳</h2>
+              
+              <div className="kiosk-alert-explanation">
+                <p><strong>Usted o el alumno no ha realizado el pago.</strong></p>
+                <p className="sub-msg">
+                  Para poder ingresar a la clase del taller, el apoderado debe regularizar el pago pendiente (en Caja o Web).
+                </p>
+              </div>
+
+              <div className="kiosk-student-details-box">
+                <div className="detail-item">
+                  <span className="label">TALLER</span>
+                  <strong className="value">📚 {estudiante.programa}</strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">ESTADO PAGO</span>
+                  <strong className="value badge-warning">⚠️ {estudiante.estadoPago}</strong>
+                </div>
+              </div>
+
+              <div className="kiosk-actions-panel">
+                <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+                  Siguiente Estudiante 🔄
+                </button>
+              </div>
+            </div>
+          )}
+
+          {kioskState === "no-matriculado" && (
+            <div className="kiosk-status-card state-no-matriculado">
+              <div className="kiosk-status-header-icon info-bounce">
+                <School size={72} />
+              </div>
+              <span className="kiosk-badge-tag info">INSCRITO NO MATRICULADO</span>
+              <h2 className="student-name">¡Hola, {estudiante.nombres}! 🏫</h2>
+              
+              <div className="kiosk-alert-explanation">
+                <p><strong>Estás inscrito en el colegio, pero no matriculado en este taller.</strong></p>
+                <p className="sub-msg">
+                  Por favor, acércate con tu apoderado a Secretaría para regularizar la matrícula en este programa.
+                </p>
+              </div>
+
+              <div className="kiosk-student-details-box">
+                <div className="detail-item">
+                  <span className="label">GRADO / SECCIÓN</span>
+                  <strong className="value">🏫 {estudiante.grado} "{estudiante.seccion}"</strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">TALLER ASOCIADO</span>
+                  <strong className="value text-rose-500">❌ Sin Matrícula Activa</strong>
+                </div>
+              </div>
+
+              <div className="kiosk-actions-panel">
+                <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+                  Siguiente Estudiante 🔄
+                </button>
+              </div>
+            </div>
+          )}
+
+          {kioskState === "no-registrado" && (
+            <div className="kiosk-status-card state-no-registrado">
+              <div className="kiosk-status-header-icon error-shake">
+                <XCircle size={72} />
+              </div>
+              <span className="kiosk-badge-tag error">NO REGISTRADO</span>
+              <h2 className="student-name">Código no reconocido ❌</h2>
+              
+              <div className="kiosk-alert-explanation">
+                <p><strong>Este código QR o DNI no figura en el sistema del colegio.</strong></p>
+                <p className="sub-msg">
+                  No se ha encontrado ninguna inscripción o registro de alumno. Por favor, consulta con el auxiliar o acércate a Secretaría.
+                </p>
+              </div>
+
+              {estudiante?.nombres && estudiante.nombres !== "Codigo no registrado" && (
+                <div className="kiosk-student-details-box">
+                  <div className="detail-item">
+                    <span className="label">CÓDIGO EVALUADO</span>
+                    <strong className="value">{estudiante.nombres}</strong>
+                  </div>
+                </div>
+              )}
+
+              <div className="kiosk-actions-panel">
+                <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+                  Siguiente Estudiante 🔄
+                </button>
+              </div>
             </div>
           )}
         </section>
-        )}
       </main>
+
+      {/* FOOTER: HISTORIAL RECIENTE */}
+      <footer className="auxiliar-footer">
+        <div className="auxiliar-footer-header">
+          <h3>Últimos Ingresos Registrados ⏰</h3>
+          <span className="badge-count">{historial.length} hoy</span>
+        </div>
+        
+        {historial.length > 0 ? (
+          <div className="historial-cards-container">
+            {historial.map((ev) => {
+              const histState = ev.estado === "registrado" 
+                ? "success" 
+                : ev.estado === "pendiente" 
+                  ? "warning" 
+                  : "error";
+              
+              return (
+                <div key={ev.id} className={`historial-bubble-card border-${histState}`}>
+                  <div className={`historial-badge-icon bg-${histState}`}>
+                    {histState === "success" ? "✅" : histState === "warning" ? "⏳" : "❌"}
+                  </div>
+                  <div className="historial-card-info">
+                    <strong className="student-name-small">{ev.estudiante}</strong>
+                    <span className="student-detail-small">
+                      ⚽ {ev.programa} • ⏰ {ev.hora}
+                    </span>
+                    <span className={`historial-status-text text-${histState}`}>
+                      {ev.estado === "registrado" ? "Ingresó" : ev.estado === "pendiente" ? "Pago Pendiente" : "No Autorizado"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="historial-empty">
+            <p>Aún no se registran ingresos en esta sesión. ¡Listo para comenzar! 🌟</p>
+          </div>
+        )}
+      </footer>
     </div>
   );
 }

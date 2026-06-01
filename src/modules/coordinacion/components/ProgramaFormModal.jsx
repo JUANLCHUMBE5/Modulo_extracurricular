@@ -253,9 +253,9 @@ function ProgramaFormModal({
                               </div>
                             </div>
                           :
-                            <div className="coord-schedule-block-grid coord-field-full">
-                              <div className="coord-schedule-block-column">
-                                <h4 className="coord-block-title">Horario de Clases</h4>
+                            <div className="coord-schedule-block-grid coord-schedule-unified coord-field-full">
+                              <div className="coord-schedule-block-column coord-schedule-block-main">
+                                <h4 className="coord-block-title">Configuración del horario</h4>
                                 <div className="coord-field">
                                   <label>{esFormularioVerano ? "Días de atención *" : "Días del programa / taller *"}</label>
                                   <div className="coord-day-list">
@@ -275,7 +275,8 @@ function ProgramaFormModal({
                                   </div>
                                 </div>
                                 
-                                <div className="coord-time-fields-grid">
+                                <div className="coord-schedule-flow-row">
+                                  <div className="coord-schedule-mini-title">Clases</div>
                                   <div className="coord-field">
                                     <label>Hora inicio *</label>
                                     <input type="time" value={form.horaInicio} onChange={e => actualizarForm("horaInicio", e.target.value)} />
@@ -284,6 +285,10 @@ function ProgramaFormModal({
                                     <label>Hora fin *</label>
                                     <input type="time" value={form.horaFin} onChange={e => actualizarForm("horaFin", e.target.value)} />
                                   </div>
+                                </div>
+
+                                <div className="coord-schedule-flow-row">
+                                  <div className="coord-schedule-mini-title">Almuerzo</div>
                                   <div className="coord-field">
                                     <label>Almuerzo inicio</label>
                                     <input type="time" value={form.almuerzoInicio} onChange={e => actualizarForm("almuerzoInicio", e.target.value)} />
@@ -293,11 +298,9 @@ function ProgramaFormModal({
                                     <input type="time" value={form.almuerzoFin} onChange={e => actualizarForm("almuerzoFin", e.target.value)} />
                                   </div>
                                 </div>
-                              </div>
-    
-                              <div className="coord-schedule-block-column">
-                                <h4 className="coord-block-title">Vigencia del Programa</h4>
-                                <div className="coord-vigencia-fields-grid">
+
+                                <div className="coord-schedule-flow-row coord-schedule-flow-row-wide">
+                                  <div className="coord-schedule-mini-title">Vigencia</div>
                                   <div className="coord-field">
                                     <label>Fecha inicio *</label>
                                     <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />

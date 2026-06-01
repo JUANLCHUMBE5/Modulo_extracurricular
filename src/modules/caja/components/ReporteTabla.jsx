@@ -1,12 +1,21 @@
-import { Badge, Button, Table } from "@mantine/core";
+import { ActionIcon, Badge, Button, Group, Table, Tooltip } from "@mantine/core";
 import {
   IconChartBar as ChartBar,
   IconReceipt2 as Receipt,
+  IconEye,
+  IconCheck,
+  IconX,
 } from "@tabler/icons-react";
 import { formatearFechaPeru } from "../../../services/dateService";
 import { formatearSoles } from "../utils/cajaFormatters";
 
-export default function ReporteTabla({ filas, onPagar }) {
+export default function ReporteTabla({
+  filas,
+  onPagar,
+  onValidarWebPago,
+  onObservarWebPago,
+  onVerCapturaWebPago,
+}) {
   if (filas.length === 0) {
     return (
       <div className="caja-empty">
@@ -34,7 +43,28 @@ export default function ReporteTabla({ filas, onPagar }) {
         </Table.Thead>
         <Table.Tbody>
           {filas.map((fila) => {
-            const puedePagar = fila.estadoPago === "pendiente" && fila.inscripcionId;
+            const puedePagar = fila.estadoPago === "pendiente" && fila.inscripcionId && fila.puedePagarCaja;
+            const esPagoWebVerificar = fila.estadoPago === "verificando" && fila.pagoId;
+            const esObservado = fila.estadoPago === "observado";
+            const esAnulado = fila.estadoPago === "anulado";
+
+            let badgeColor = "yellow";
+            let badgeText = "Pendiente";
+
+            if (fila.estadoPago === "pagado") {
+              badgeColor = "green";
+              badgeText = "Pagado";
+            } else if (esPagoWebVerificar) {
+              badgeColor = "orange";
+              badgeText = "Por Verificar";
+            } else if (esObservado) {
+              badgeColor = "red";
+              badgeText = "Observado";
+            } else if (esAnulado) {
+              badgeColor = "red";
+              badgeText = "Anulado";
+            }
+
             return (
               <Table.Tr key={`${fila.id || fila.inscripcionId || fila.pagoId}-${fila.dniEstudiante}`}>
                 <Table.Td>
@@ -46,8 +76,8 @@ export default function ReporteTabla({ filas, onPagar }) {
                 <Table.Td>{fila.programa || "Sin programa"}</Table.Td>
                 <Table.Td className="caja-amount">{formatearSoles(fila.monto)}</Table.Td>
                 <Table.Td>
-                  <Badge color={fila.estadoPago === "pagado" ? "green" : fila.estadoPago === "anulado" ? "red" : "yellow"} variant="light">
-                    {fila.estadoPago === "pagado" ? "Pagado" : fila.estadoPago === "anulado" ? "Anulado" : "Pendiente"}
+                  <Badge color={badgeColor} variant="light">
+                    {badgeText}
                   </Badge>
                 </Table.Td>
                 <Table.Td>{fila.formaPago || "Sin pago"}</Table.Td>
@@ -55,7 +85,40 @@ export default function ReporteTabla({ filas, onPagar }) {
                 <Table.Td>{formatearFechaPeru(fila.fecha || fila.fechaRegistro)}</Table.Td>
                 {onPagar ? (
                   <Table.Td>
-                    {puedePagar ? (
+                    {esPagoWebVerificar ? (
+                      <Group gap={6} wrap="nowrap">
+                        <Tooltip label="Ver captura y detalles">
+                          <ActionIcon
+                            color="blue"
+                            onClick={() => onVerCapturaWebPago?.(fila)}
+                            size="sm"
+                            variant="light"
+                          >
+                            <IconEye size={15} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Aprobar pago">
+                          <ActionIcon
+                            color="green"
+                            onClick={() => onValidarWebPago?.(fila)}
+                            size="sm"
+                            variant="light"
+                          >
+                            <IconCheck size={15} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Rechazar / Observar">
+                          <ActionIcon
+                            color="red"
+                            onClick={() => onObservarWebPago?.(fila)}
+                            size="sm"
+                            variant="light"
+                          >
+                            <IconX size={15} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Group>
+                    ) : puedePagar ? (
                       <Button
                         className="caja-pay-row-button"
                         leftSection={<Receipt size={15} />}

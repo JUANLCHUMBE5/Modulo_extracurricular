@@ -54,6 +54,17 @@ export default function ReporteFiltros({ filtros, mediosPago, onChange, programa
           ))}
         </select>
       </label>
+      <label>
+        Estado de pago
+        <select value={filtros.estadoPago} onChange={(event) => onChange("estadoPago", event.currentTarget.value)}>
+          <option value="todos">Todos</option>
+          <option value="pagado">Solo pagados</option>
+          <option value="pendiente">Solo pendientes</option>
+          <option value="verificando">Solo por verificar</option>
+          <option value="observado">Solo observados</option>
+          <option value="anulado">Solo anulados</option>
+        </select>
+      </label>
     </section>
   );
 }

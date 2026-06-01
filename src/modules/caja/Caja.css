@@ -159,7 +159,7 @@
 
 .caja-report-filters {
   display: grid;
-  grid-template-columns: minmax(190px, 1.35fr) minmax(160px, 1fr) minmax(135px, 0.8fr) minmax(135px, 0.8fr) minmax(170px, 1fr) minmax(150px, 0.9fr);
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid #d8e5e1;

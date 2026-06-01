@@ -23,8 +23,8 @@ export async function obtenerResumenPadre(dni) {
   const inscripciones = obtenerInscripciones(estudiante, dniLimpio);
   const pagos = obtenerPagos(dniLimpio, inscripciones);
   const documentos = obtenerDocumentos(dniLimpio, estudiante);
-  const inscripcionActual = inscripciones.find((item) => !esProgramaCortoPadres(item)) || null;
-  const invitacionActual = invitaciones.find((item) => !esProgramaCortoPadres(item)) || null;
+  const inscripcionActual = obtenerProgramaPrincipalPadres(inscripciones);
+  const invitacionActual = obtenerProgramaPrincipalPadres(invitaciones);
 
   return {
     estudiante,
@@ -46,8 +46,7 @@ export async function guardarDatosApoderadoPadres(dni, datos) {
   const estudiante = apiDb.estudiantes[dniLimpio];
   if (!estudiante) throw new Error("No se encontró información del estudiante.");
 
-  const apoderadoRegistrado = limpiarTexto(estudiante.apoderado);
-  estudiante.apoderado = apoderadoRegistrado || limpiarTexto(datos.apoderado);
+  estudiante.apoderado = limpiarTexto(datos.apoderado);
   estudiante.telefonoApoderado = limpiarTexto(datos.telefono);
   estudiante.correoApoderado = limpiarTexto(datos.correo);
   estudiante.enviarPdfCorreo = Boolean(datos.enviarPdfCorreo && estudiante.correoApoderado);
@@ -124,6 +123,10 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
     fechaFin: programa.fechaFin || "",
     duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
     duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+    gradosAplicables: programa.gradosAplicables || [],
+    horariosPorGrupo: programa.horariosPorGrupo || [],
+    grupo: programa.grupo || "",
+    grupoEtario: programa.grupoEtario || programa.grupo || "",
     requisitos: programa.requisitos || "",
     comunicado: programa.comunicado || "",
     detalleCosto: programa.detalleCosto || "",
@@ -251,9 +254,10 @@ function obtenerInvitaciones(dni, estudiante = null) {
   const resultado = [];
 
   apiDb.programas.forEach((programa) => {
+    if (!programaVisibleEnPortalPadres(programa)) return;
+
     if (
       programa.invitacionMasiva &&
-      programa.estado === "Habilitado" &&
       programaDisponibleParaGrado(programa, estudiante?.grado || "")
     ) {
       resultado.push({
@@ -356,6 +360,10 @@ function esProgramaCortoPadres(programa = {}) {
   return dias > 0 && dias < 28;
 }
 
+function obtenerProgramaPrincipalPadres(programas = []) {
+  return programas.find((item) => !esProgramaCortoPadres(item)) || programas[0] || null;
+}
+
 function crearFechaLocal(valor) {
   if (!valor) return null;
   const partes = String(valor).split("-").map(Number);
@@ -381,13 +389,19 @@ function obtenerDocumentos(dni, estudiante) {
 }
 
 function sincronizarInscripcionConPrograma(inscripcion) {
-  const programa = apiDb.programas.find((item) =>
-    item.id === inscripcion.programaId ||
-    normalizarTexto(item.nombre) === normalizarTexto(inscripcion.programa)
-  );
+  const programa = apiDb.programas.find((item) => {
+    if (inscripcion.programaId) return item.id === inscripcion.programaId;
+    return normalizarTexto(item.nombre) === normalizarTexto(inscripcion.programa);
+  });
 
   if (!programa) {
-    return normalizarInscripcion(inscripcion);
+    return normalizarInscripcion({
+      ...inscripcion,
+      estadoInscripcion: "Requiere revision",
+      estadoPago: inscripcion.estadoPago || "Pendiente",
+      estadoPrograma: "Programa eliminado",
+      horario: "Programa eliminado por Coordinacion",
+    });
   }
 
   if (!programaDisponibleParaGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado)) {
@@ -487,6 +501,10 @@ function programaDisponibleParaGrado(programa, gradoAlumno = "") {
   if (!gradoNormalizado.numero) return false;
 
   return gradosAplicables.some((grado) => coincideGrado(grado, gradoNormalizado));
+}
+
+function programaVisibleEnPortalPadres(programa) {
+  return Boolean(programa) && programa.estado === "Habilitado";
 }
 
 function calcularEstadoGeneral(inscripcion, invitacion) {

@@ -43,6 +43,7 @@ export async function registrarPago(datosPago) {
   const pago = {
     id: generarPagoId(),
     ...datosPago,
+    origenRegistro: datosPago.origenRegistro || "Caja",
     estudianteDni: datosPago.estudianteDni || dniEstudiante,
     estudianteNombre: datosPago.estudianteNombre || nombresEstudiante,
     dniEstudiante,
@@ -335,7 +336,7 @@ export async function generarReporteCaja(filtros = {}) {
       estadoPago,
       estadoInscripcion: inscripcion.estadoInscripcion || "",
       formaPago: pago?.formaPago || pago?.medioPago || "Sin pago",
-      origen: inscripcion.origenRegistro || pago?.origenRegistro || "Sin origen",
+      origen: (pago ? (pago.origenRegistro || (pago.formaPago === "Yape" ? "Portal padres" : "Caja")) : inscripcion.origenRegistro) || "Sin origen",
       fuente: "inscripcion",
       pagoId: pago?.id || "",
       fecha: fechaBase,
@@ -343,6 +344,7 @@ export async function generarReporteCaja(filtros = {}) {
       fechaPago: pago?.fechaPago || pago?.fecha || "",
       apoderado: inscripcion.apoderado || "",
       telefono: inscripcion.telefono || "",
+      puedePagarCaja: true,
     };
   });
 
@@ -471,6 +473,7 @@ function filtrarReporteCaja(filas, filtros) {
       if (filtros.medioPago && filtros.medioPago !== "todos" && fila.formaPago !== filtros.medioPago) return false;
       if (filtros.desde && normalizarFechaReporte(fila.fecha) < filtros.desde) return false;
       if (filtros.hasta && normalizarFechaReporte(fila.fecha) > filtros.hasta) return false;
+      if (filtros.estadoPago && filtros.estadoPago !== "todos" && fila.estadoPago !== filtros.estadoPago) return false;
 
       if (filtros.tipoReporte === "registro_secretaria") return !esRegistroWeb(fila.origen);
       if (filtros.tipoReporte === "por_cobrar" || filtros.tipoReporte === "pagos_pendientes") return fila.estadoPago === "pendiente";
@@ -504,6 +507,12 @@ function obtenerEstadoRevisionWeb(inscripcion, pago) {
   if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
   if (["verificando", "verificacion", "por verificar"].some((item) => texto.includes(item))) return "verificando";
   return "pendiente";
+}
+
+export async function obtenerPagoPorId(pagoId) {
+  await syncApiDb();
+  if (!Array.isArray(apiDb.pagos)) return null;
+  return apiDb.pagos.find((p) => p.id === pagoId) || null;
 }
 
 function esRegistroWeb(valor) {

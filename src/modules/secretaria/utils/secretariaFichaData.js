@@ -1,5 +1,6 @@
 import {
   calcularDuracionTexto as calcularDuracionFechas,
+  formatearFechaLargaPeru,
   formatearFechaPeru,
   normalizarFecha,
 } from "../../../services/dateService";
@@ -57,7 +58,7 @@ export function crearResumenInvitacion(ficha) {
 }
 
 export function crearMapaVariablesDocumento(estudiante, inscripcion) {
-  const costo = `S/ ${Number(inscripcion.costo || 0).toFixed(2)}`;
+  const costo = Number(inscripcion.costo || 0).toFixed(2);
   const fechaInicio = formatearFechaInicioRango(inscripcion.fechaInicio, inscripcion.fechaFin);
   const fechaFin = formatearFechaFinRango(inscripcion.fechaInicio, inscripcion.fechaFin);
   const rangoFechas = formatearRangoFechasLetras(inscripcion.fechaInicio, inscripcion.fechaFin);
@@ -65,20 +66,25 @@ export function crearMapaVariablesDocumento(estudiante, inscripcion) {
   const alumno = inscripcion.nombresEstudiante || estudiante?.nombres || "";
   const apoderado = inscripcion.apoderado || "";
   const telefono = inscripcion.telefono || "";
-  const grado = estudiante?.grado || "";
-  const seccion = estudiante?.seccion || "";
+  const grado = inscripcion.gradoEstudiante || inscripcion.grado || estudiante?.grado || "";
+  const seccion = inscripcion.seccion || estudiante?.seccion || "";
   const gradoSeccion = `${grado} ${seccion}`.trim();
   const programa = inscripcion.programa || "";
   const fechaActual = formatearFechaFicha(new Date());
+  const fechaActualLarga = formatearFechaLargaPeru(new Date(), fechaActual);
+  const mesEvaluacion = formatearMesEvaluacion(inscripcion.fechaRegistro || new Date());
   const horario = inscripcion.horario || "";
   const horarioDocumento = crearHorarioDocumento(inscripcion, estudiante);
+  const filasHorario = crearFilasHorarioDocumento(inscripcion, estudiante, horarioDocumento);
+  const fila1 = obtenerFilaHorario(filasHorario, 0);
+  const fila2 = obtenerFilaHorario(filasHorario, 1);
   const dias = horarioDocumento.dia || extraerDiasHorario(horario);
   const horas = horarioDocumento.clase || extraerHorasHorario(horario);
   const almuerzo = horarioDocumento.almuerzo || extraerAlmuerzoHorario(horario);
   const aula = horarioDocumento.aula || inscripcion.aula || "";
   const horarioCambridge = [dias, horas].filter(Boolean).join(" ");
   const niveles = horarioDocumento.niveles;
-  const pago = inscripcion.modalidadCobro || "";
+  const modalidadCobro = inscripcion.modalidadCobro || "";
   const anioActual = String(new Date().getFullYear());
   const seleccionCambridge = normalizarSeleccionCambridge(inscripcion.seleccion || estudiante?.seleccion);
   const marcaSeleccion = "X";
@@ -107,7 +113,7 @@ export function crearMapaVariablesDocumento(estudiante, inscripcion) {
     DIA: dias,
     ALM: almuerzo || "",
     CLASE: horas || horario,
-    PAGO: pago,
+    PAGO: costo,
     COSTO: costo,
     HOR_ALM: almuerzo || "",
     ALUMNO: alumno,
@@ -165,12 +171,14 @@ export function crearMapaVariablesDocumento(estudiante, inscripcion) {
     clase: horas || inscripcion.horario || "",
     clase1: horas || inscripcion.horario || "",
     almuerzo: almuerzo || "",
+    alm: almuerzo || "",
     alm1: almuerzo || "",
     costo,
-    modalidad_cobro: pago,
+    modalidad_cobro: modalidadCobro,
     requisitos: inscripcion.requisitos || "",
     observacion: inscripcion.observacion || "",
     inicio: fechaInicio,
+    ini: fechaInicio,
     fecha_inicio: fechaInicio,
     fin: fechaFin,
     fecha_fin: fechaFin,
@@ -178,8 +186,24 @@ export function crearMapaVariablesDocumento(estudiante, inscripcion) {
     rango_fechas: rangoFechas,
     vigencia: rangoFechas,
     duracion,
+    dur: duracion,
     duración: duracion,
     fecha: fechaActual,
+    fecha_carta: fechaActualLarga,
+    mes_eval: mesEvaluacion,
+    gr_sec: gradoSeccion,
+    apod: apoderado,
+    cel: telefono,
+    nivel_1: fila1.nivel,
+    dias_1: fila1.dia,
+    alm_1: fila1.almuerzo,
+    clase_1: fila1.clase,
+    hor_alm_1: fila1.almuerzo,
+    nivel_2: fila2.nivel,
+    dias_2: fila2.dia,
+    alm_2: fila2.almuerzo,
+    clase_2: fila2.clase,
+    hor_alm_2: fila2.almuerzo,
   };
 }
 
@@ -305,6 +329,49 @@ function extraerAlmuerzoHorario(horario) {
   return match?.[1]?.trim() || "";
 }
 
+function formatearMesEvaluacion(valor) {
+  const fecha = normalizarFecha(valor) || new Date();
+  return new Intl.DateTimeFormat("es-PE", { month: "long" }).format(fecha);
+}
+
+function crearFilasHorarioDocumento(inscripcion, estudiante, horarioRespaldo) {
+  const grupos = Array.isArray(inscripcion?.horariosPorGrupo) ? inscripcion.horariosPorGrupo : [];
+  const filas = grupos
+    .map((grupo) => ({
+      nivel: formatearNivelesDocumento(grupo.grados),
+      dia: grupo.dia || "",
+      almuerzo: formatearRangoHoraDocumento(grupo.almuerzoInicio, grupo.almuerzoFin),
+      clase: formatearRangoHoraDocumento(grupo.horaInicio, grupo.horaFin),
+    }))
+    .filter((fila) => fila.nivel || fila.dia || fila.almuerzo || fila.clase);
+
+  if (filas.length) return filas;
+
+  const gradoAlumno = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
+  return [{
+    nivel: horarioRespaldo.niveles[0] || formatearGradoDocumento(gradoAlumno),
+    dia: horarioRespaldo.dia || extraerDiasHorario(inscripcion?.horario),
+    almuerzo: horarioRespaldo.almuerzo || extraerAlmuerzoHorario(inscripcion?.horario),
+    clase: horarioRespaldo.clase || extraerHorasHorario(inscripcion?.horario),
+  }];
+}
+
+function obtenerFilaHorario(filas, index) {
+  return filas[index] || {
+    nivel: "",
+    dia: "",
+    almuerzo: "",
+    clase: "",
+  };
+}
+
+function formatearNivelesDocumento(grados = []) {
+  return (Array.isArray(grados) ? grados : [])
+    .map(formatearGradoDocumento)
+    .filter(Boolean)
+    .join(", ");
+}
+
 function crearHorarioDocumento(inscripcion, estudiante) {
   const grupos = Array.isArray(inscripcion?.horariosPorGrupo) ? inscripcion.horariosPorGrupo : [];
   const gradoAlumno = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
@@ -348,8 +415,9 @@ function descomponerGradoDocumento(valor) {
 function formatearGradoDocumento(valor) {
   const texto = String(valor || "").replace(/^(Inicial|Primaria|Secundaria):/i, "").trim();
   if (!texto) return "";
-  if (/años?/i.test(texto)) return texto.toUpperCase();
   const numero = texto.match(/\d+/)?.[0];
+  if (normalizarComparacion(valor).includes("inicial") && numero) return `INICIAL ${numero} AÑOS`;
+  if (/años?/i.test(texto)) return texto.toUpperCase();
   if (!numero) return texto.toUpperCase();
   return `${numero}°GRADO`;
 }

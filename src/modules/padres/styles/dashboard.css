@@ -235,8 +235,8 @@
   display: grid;
   place-items: center;
   border-radius: 18px;
-  color: #176c60;
-  background: #e8f7f2;
+  color: #315f91;
+  background: #eef5ff;
   font-size: 20px;
   font-weight: 950;
 }
@@ -376,8 +376,8 @@
   min-height: 24px;
   border-radius: 999px;
   padding: 0 8px;
-  color: #176c60;
-  background: #dff8ed;
+  color: #315f91;
+  background: #eef5ff;
   font-size: 11px;
   font-weight: 900;
   white-space: nowrap;
@@ -398,7 +398,7 @@
 }
 
 .padres-program-main span {
-  color: #176c60;
+  color: #315f91;
   font-size: 12px;
   font-weight: 950;
 }

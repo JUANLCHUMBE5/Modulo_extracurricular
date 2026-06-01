@@ -4,6 +4,7 @@ import {
   IconCreditCard as CreditCard,
   IconLoader2 as Loader2,
   IconPhotoUp as PhotoUp,
+  IconCircleCheck as CheckCircle2,
 } from "@tabler/icons-react";
 import { formatearSoles } from "../hooks/usePadres";
 import PortalBadge from "./PortalBadge";
@@ -55,6 +56,49 @@ export default function PagoStep({
   const textoBoton = pagoVerificando
     ? "Pago pendiente de verificacion"
     : "Guardar pago";
+
+  const estadoPagoNormalizado = String(pagoConfirmado?.estado || inscripcion?.estadoPago || "").toLowerCase().trim();
+  const esPagado = estadoPagoNormalizado === "pagado" || estadoPagoNormalizado === "pago validado" || estadoPagoNormalizado === "completado";
+
+  if (esPagado) {
+    return (
+      <article className="padres-flow-panel padres-flow-payment-step">
+        <div className="padres-flow-section-title">
+          <div>
+            <PortalBadge tone="green">Inscripción Completada</PortalBadge>
+            <h2>Pago registrado y aprobado</h2>
+            <p>
+              Tu pago ha sido validado correctamente por la institución.
+            </p>
+          </div>
+        </div>
+
+        <div className="padres-flow-payment-layout" style={{ display: "block" }}>
+          <section className="padres-flow-pay-success" style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            padding: "24px",
+            border: "1px solid #bbf7d0",
+            borderRadius: "8px",
+            background: "#f0fdf4",
+            color: "#166534",
+            flexDirection: "column",
+            textAlign: "center"
+          }}>
+            <CheckCircle2 size={40} style={{ color: "#15803d" }} />
+            <div style={{ marginTop: "8px" }}>
+              <strong style={{ fontSize: "17px", display: "block", fontWeight: 800 }}>¡Inscripción y Pago Confirmados!</strong>
+              <span style={{ fontSize: "14px", display: "block", color: "#14532d", marginTop: "6px", lineHeight: "1.5" }}>
+                El pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido validado y aprobado exitosamente por el área de Caja. 
+                El estudiante se encuentra debidamente inscrito.
+              </span>
+            </div>
+          </section>
+        </div>
+      </article>
+    );
+  }
 
   async function manejarArchivo(event) {
     const file = event.target.files?.[0];

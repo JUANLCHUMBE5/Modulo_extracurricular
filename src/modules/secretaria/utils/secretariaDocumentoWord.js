@@ -60,11 +60,13 @@ export async function generarComunicadoWordBlob({ estudiante, inscripcion, omiti
   const datos = crearMapaVariablesDocumento(estudiante, inscripcion);
   try {
     const zipPlantilla = new PizZip(base64ToArrayBuffer(inscripcion.plantillaBase64));
-    normalizarDelimitadoresPlantilla(zipPlantilla, datos);
+    const delimitadores = obtenerDelimitadoresPlantilla(zipPlantilla);
+    if (!delimitadores) normalizarDelimitadoresPlantilla(zipPlantilla, datos);
     const doc = new Docxtemplater(zipPlantilla, {
       paragraphLoop: true,
       linebreaks: true,
       nullGetter: () => "",
+      ...(delimitadores ? { delimiters: delimitadores } : {}),
     });
     doc.render(datos);
     if (omitirMarcaAguaVista) {
@@ -80,6 +82,14 @@ export async function generarComunicadoWordBlob({ estudiante, inscripcion, omiti
   } catch {
     return generarComunicadoWordBlobLegacy({ datos, inscripcion, omitirMarcaAguaVista });
   }
+}
+
+function obtenerDelimitadoresPlantilla(zip) {
+  const usaLlavesDobles = Object.keys(zip.files)
+    .filter((name) => /^word\/(document|header|footer)\d*\.xml$/i.test(name))
+    .some((name) => /\{\{\s*[^{}]+\s*\}\}/.test(extraerTextoPlanoDocx(zip.file(name)?.asText())));
+
+  return usaLlavesDobles ? { start: "{{", end: "}}" } : null;
 }
 
 async function extraerPlantillaPersonalizada({ estudiante, inscripcion }) {
