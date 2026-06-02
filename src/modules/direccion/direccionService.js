@@ -53,6 +53,62 @@ export async function obtenerPanelDireccion(filtros = {}) {
   const pendientesPago = inscripciones.filter((item) => normalizarEstadoPago(item.estadoPago) !== "Pagado");
   const familias = new Set(inscripciones.map((item) => item.telefono || item.apoderado || item.dniEstudiante).filter(Boolean));
 
+  // --- Procesamiento de Asistencia ---
+  const asistencias = apiDb.asistencias || [];
+  const hoyStr = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD local
+  
+  const asistenciasHoy = asistencias.filter(item => {
+    if (!item.fechaRegistro) return false;
+    return item.fechaRegistro.slice(0, 10) === hoyStr;
+  });
+
+  const asistidosHoyUnicos = new Set(
+    asistenciasHoy.map(item => item.dniEstudiante || item.codigoEstudiante || item.nombresEstudiante).filter(Boolean)
+  ).size;
+
+  const asistenciaPorPrograma = filasProgramas.slice(0, 8).map((prog) => {
+    const asistidosHoy = new Set(
+      asistenciasHoy
+        .filter(item => {
+          const idCoincide = item.programaId && prog.id && String(item.programaId) === String(prog.id);
+          const nombreCoincide = item.programa && prog.nombre && normalizarTexto(item.programa) === normalizarTexto(prog.nombre);
+          return idCoincide || nombreCoincide;
+        })
+        .map(item => item.dniEstudiante || item.codigoEstudiante || item.nombresEstudiante).filter(Boolean)
+    ).size;
+
+    return {
+      programa: abreviar(prog.nombre),
+      matriculados: prog.inscritos,
+      asistidos: asistidosHoy,
+    };
+  });
+
+  const ultimosIngresos = [...asistencias]
+    .sort((a, b) => new Date(b.fechaRegistro || 0).getTime() - new Date(a.fechaRegistro || 0).getTime())
+    .slice(0, 15)
+    .map(item => {
+      let horaFormateada = "—";
+      if (item.fechaRegistro) {
+        try {
+          const date = new Date(item.fechaRegistro);
+          horaFormateada = date.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true });
+        } catch {
+          horaFormateada = String(item.fechaRegistro).slice(11, 16);
+        }
+      }
+      return {
+        id: item.id || "",
+        hora: horaFormateada,
+        estudiante: item.nombresEstudiante || "Estudiante",
+        dni: item.dniEstudiante || "",
+        programa: item.programa || "Sin programa",
+        estadoPago: item.estadoPago || "Pendiente",
+        estadoAcceso: item.estadoAcceso || "no_registrado",
+        observacion: item.observacion || "",
+      };
+    });
+
   return {
     resumen: {
       programas: programas.length,
@@ -64,8 +120,10 @@ export async function obtenerPanelDireccion(filtros = {}) {
       totalPendiente: pendientesPago.reduce((sum, item) => sum + Number(item.costo || 0), 0),
       cupos: filasProgramas.reduce((sum, item) => sum + Number(item.cupos || 0), 0),
       ocupados: filasProgramas.reduce((sum, item) => sum + Number(item.ocupados || 0), 0),
+      asistidosHoy: asistidosHoyUnicos,
     },
     filasProgramas,
+    ultimosIngresos,
     graficos: {
       inscripcionesPorPrograma: filasProgramas.slice(0, 8).map((item) => ({
         programa: abreviar(item.nombre),
@@ -78,6 +136,7 @@ export async function obtenerPanelDireccion(filtros = {}) {
       })),
       estadoPago: contarPor(inscripciones, (item) => normalizarEstadoPago(item.estadoPago)),
       origen: contarPor(inscripciones, (item) => item.origenRegistro || "Sin origen"),
+      asistenciaPorPrograma,
     },
     reportes: {
       programas: filasProgramas,

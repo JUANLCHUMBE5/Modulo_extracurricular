@@ -343,18 +343,16 @@ function esFichaCambridge(ficha) {
 function extraerHorasHorario(horario) {
   const matches = [...String(horario || "").matchAll(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/gi)]
     .map((match) => {
-      const hora = match[1];
       const minuto = match[2] || "00";
-      const periodo = match[3] ? ` ${match[3].replace(/\s+/g, "")}` : "";
-      return `${hora}:${minuto}${periodo}`;
+      return formatearHoraDocumento(`${match[1]}:${minuto}`);
     });
 
-  return matches.length >= 2 ? `${matches[0]} - ${matches[1]}` : "";
+  return matches.length >= 2 ? `${matches[0]} a ${matches[1]}` : "";
 }
 
 function extraerAlmuerzoHorario(horario) {
   const match = String(horario || "").match(/almuerzo\s+([^,·/]+)/i);
-  return match?.[1]?.trim() || "";
+  return formatearRangoHoraTexto(match?.[1]?.trim() || "");
 }
 
 function formatearMesEvaluacion(valor) {
@@ -453,6 +451,13 @@ function formatearGradoDocumento(valor) {
 function formatearRangoHoraDocumento(inicio, fin) {
   if (!inicio || !fin) return "";
   return `${formatearHoraDocumento(inicio)} a ${formatearHoraDocumento(fin)}`;
+}
+
+function formatearRangoHoraTexto(valor) {
+  const horas = [...String(valor || "").matchAll(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/gi)]
+    .map((match) => formatearHoraDocumento(`${match[1]}:${match[2] || "00"}`));
+  if (horas.length >= 2) return `${horas[0]} a ${horas[1]}`;
+  return String(valor || "").replace(/\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)\b/gi, "").trim();
 }
 
 function formatearHoraDocumento(valor) {

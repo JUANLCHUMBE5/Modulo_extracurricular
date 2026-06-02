@@ -439,10 +439,13 @@ function validarColumnasObligatorias(encabezados) {
   const formatoEstandar = esFormatoEstandar(disponibles);
   const formatoNombreCompleto = esFormatoNombreCompleto(disponibles);
   const formatoDocenteTalleres = esFormatoDocenteTalleres(disponibles);
+  const formatoCambridgeLista = esFormatoCambridgeLista(disponibles);
   const obligatorias = formatoEstandar
     ? ["dni", "alumno", "nivel_educativo", "grado", "seccion", "curso_programa"]
-    : esFormatoCargaCambridge(disponibles) && !esFormatoCargaGeneral(disponibles)
-      ? ["dni", "alumno", "grado", "seccion", "seleccion", "nivel_cambridge"]
+    : formatoCambridgeLista
+      ? ["dni", "grado", "seccion", "seleccion", "curso_programa"]
+      : esFormatoCargaCambridge(disponibles) && !esFormatoCargaGeneral(disponibles)
+      ? ["dni", "alumno", "grado", "seccion", "seleccion"]
       : formatoDocenteTalleres
         ? ["alumno", "nivel_educativo", "grado", "seccion", "curso_programa"]
       : formatoNombreCompleto
@@ -485,8 +488,14 @@ function esFormatoNombreCompleto(disponibles) {
 function esFormatoCargaCambridge(disponibles) {
   return disponibles.has("dni") &&
     disponibles.has("alumno") &&
-    disponibles.has("nivel_cambridge") &&
     disponibles.has("seleccion");
+}
+
+function esFormatoCambridgeLista(disponibles) {
+  return disponibles.has("dni") &&
+    disponibles.has("curso_programa") &&
+    disponibles.has("seleccion") &&
+    (disponibles.has("alumno") || disponibles.has("nombres"));
 }
 
 function validarRegistros({ filas, programasPeriodo, existentes }) {
@@ -555,7 +564,6 @@ function validarFilaCarga(fila, programaDetectado) {
   if (fila.curso && !programaDetectado) errores.push("El programa indicado no existe en el periodo seleccionado.");
   if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
   if (esCambridge && !/^[ABC]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A, B o C.");
-  if (esCambridge && !textoSeguro(fila.nivelCambridge)) errores.push("Para Cambridge, falta nivel_cambridge.");
   if (programaDetectado && String(programaDetectado.estado || "Habilitado") !== "Habilitado") {
     errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} esta ${programaDetectado.estado}. Habilitelo antes de cargar alumnos.`);
   }
@@ -565,7 +573,9 @@ function validarFilaCarga(fila, programaDetectado) {
 
 function detectarProgramaPorCurso(curso, programas) {
   if (!curso) return null;
-  return programas.find((programa) => coincideCurso(curso, programa.nombre)) || null;
+  const directo = programas.find((programa) => coincideCurso(curso, programa.nombre));
+  if (directo) return directo;
+  return /\bcambridge\b/.test(normalizarComparacion(curso)) ? detectarProgramaCambridge(programas) : null;
 }
 
 function detectarProgramaCambridge(programas) {
@@ -586,7 +596,7 @@ function esProgramaCambridge(programa) {
     /\bcertificacion\b/.test(texto) ||
     /\bpreparacion\b/.test(texto) ||
     (programa.plantillaVariables || []).some((variable) =>
-      ["fecha_carta", "anio_cert", "nivel_cambridge", "ciclo_i", "ciclo_ii", "chk_a", "chk_b", "chk_c"].includes(variable)
+      ["anio_cert", "nivel_cambridge", "chk_a", "chk_b", "chk_c"].includes(variable)
     );
 }
 
@@ -667,6 +677,7 @@ function normalizarEncabezado(valor) {
     nombre: "nombres",
     nombres_y_apellidos: "alumno",
     programa: "curso_programa",
+    selecci_n: "seleccion",
     taller: "curso_programa",
   };
   return alias[encabezado] || encabezado;

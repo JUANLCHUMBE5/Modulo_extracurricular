@@ -6,6 +6,7 @@ import {
   normalizarDuracionAvisoDias,
   normalizarFecha,
 } from "../../../services/dateService";
+import { esProgramaCambridge } from "../utils/coordinacionProgramUtils";
 
 const delay = (ms = 600) => new Promise((resolve) => setTimeout(resolve, ms));
 const obtenerApiBase = () => String(
@@ -72,6 +73,7 @@ export async function crearPrograma(datos) {
   finalizarProgramasVencidos();
   validarDatosPrograma(datos);
   const correlativo = nextApiId("nextProgramaId");
+  const esCambridge = esProgramaCambridge(datos);
   const nuevo = {
     id: `PROG-${String(correlativo).padStart(3, "0")}`,
     cuposOcupados: 0,
@@ -125,9 +127,11 @@ export async function crearProgramaDesdeDocumento(datos) {
     categoria: datos.categoria || apiDb.categorias[0] || "General",
     grupo: datos.grupo || "Por definir",
     horario: datos.horario || "Por definir",
-    gradosAplicables: Array.isArray(datos.gradosAplicables) && datos.gradosAplicables.length
-      ? datos.gradosAplicables
-      : ["3 años", "4 años", "5 años", "1", "2", "3", "4", "5", "6"],
+    gradosAplicables: esCambridge
+      ? []
+      : Array.isArray(datos.gradosAplicables) && datos.gradosAplicables.length
+        ? datos.gradosAplicables
+        : ["3 anos", "4 anos", "5 anos", "1", "2", "3", "4", "5", "6"],
     edadMinima: datos.edadMinima || "",
     edadMaxima: datos.edadMaxima || "",
     fechaNacimientoDesde: datos.fechaNacimientoDesde || "",
@@ -520,7 +524,8 @@ function validarDatosPrograma(datos) {
   if (!String(datos.periodo || "").trim()) throw new Error("El periodo del programa es obligatorio.");
   if (!String(datos.categoria || "").trim()) throw new Error("La categoría del programa es obligatoria.");
   const esVerano = normalizarPeriodo(datos.periodo) === "verano";
-  if (!esVerano && (!Array.isArray(datos.gradosAplicables) || datos.gradosAplicables.length === 0)) {
+  const esCambridge = esProgramaCambridge(datos);
+  if (!esVerano && !esCambridge && (!Array.isArray(datos.gradosAplicables) || datos.gradosAplicables.length === 0)) {
     throw new Error("Seleccione al menos un grado aplicable.");
   }
   if (esVerano) {

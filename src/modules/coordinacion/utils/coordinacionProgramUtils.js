@@ -44,6 +44,24 @@ export function esProgramaDeportivo(nombre = "", categoria = "") {
   return /\b(deport|voley|volley|futbol|futsal|fulbito|football|soccer)\b/.test(texto);
 }
 
+export function esProgramaCambridge(programa = {}) {
+  const variables = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
+  const texto = normalizarTextoBusqueda([
+    programa.nombre,
+    programa.categoria,
+    programa.plantilla,
+    ...variables,
+  ].filter(Boolean).join(" "));
+
+  return /\bingles\b/.test(texto) ||
+    /\bcambridge\b/.test(texto) ||
+    /\bcertificacion\b/.test(texto) ||
+    /\bpreparacion\b/.test(texto) ||
+    variables.some((variable) =>
+      ["anio_cert", "nivel_cambridge", "chk_a", "chk_b", "chk_c"].includes(String(variable || "").toLowerCase())
+    );
+}
+
 export function calcularRangoEdades(desde, hasta) {
   const edadDesde = calcularEdadDesdeFecha(desde);
   const edadHasta = calcularEdadDesdeFecha(hasta);

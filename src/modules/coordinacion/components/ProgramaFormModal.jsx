@@ -36,6 +36,7 @@ function ProgramaFormModal({
   diasSemana,
   duracionTallerFormulario,
   esDeportivoForm,
+  esCambridgeForm,
   esFormularioVerano,
   form,
   formDias,
@@ -66,6 +67,7 @@ function ProgramaFormModal({
   setTallerDepHoraInicio,
   setTallerDepMaxEdad,
   setTallerDepMinEdad,
+  setTallerDepCupos,
   show,
   tallerDepCustom,
   tallerDepDeporte,
@@ -74,6 +76,7 @@ function ProgramaFormModal({
   tallerDepHoraInicio,
   tallerDepMaxEdad,
   tallerDepMinEdad,
+  tallerDepCupos,
   toggleDia,
   toggleGrado,
   toggleGradoGrupo,
@@ -195,6 +198,14 @@ function ProgramaFormModal({
                                   <strong>Equivalente en Grados:</strong> <span style={{ color: "#006b5b", fontWeight: 700 }}>{resumenGrados(obtenerGradosDeportivos(form.talleresDeportivos)) || "Sin grados calculados"}</span>
                                 </div>
                               )}
+                            </div>
+                          ) : esCambridgeForm ? (
+                            <div className="coord-field coord-field-full">
+                              <label>Grados aplicables</label>
+                              <div className="coord-readonly-field">Asignados desde la lista Excel</div>
+                              <p className="coord-field-hint">
+                                Para Ingles/Cambridge no seleccione grados del programa. Coordinacion los cargara por alumno en el Excel de invitados.
+                              </p>
                             </div>
                           ) : (
                             <div className="coord-field coord-field-full">
@@ -395,6 +406,17 @@ function ProgramaFormModal({
                                   <label>Clase fin *</label>
                                   <input type="time" value={tallerDepHoraFin} onChange={e => setTallerDepHoraFin(e.target.value)} />
                                 </div>
+
+                                <div className="coord-field">
+                                  <label>Cupos *</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={tallerDepCupos}
+                                    onChange={e => setTallerDepCupos(e.target.value)}
+                                    placeholder="20"
+                                  />
+                                </div>
                                 
                                 <div className="coord-field" style={{ display: "flex", alignItems: "flex-end" }}>
                                   <button 
@@ -418,6 +440,7 @@ function ProgramaFormModal({
                                           <th style={{ padding: "8px" }}>Deporte</th>
                                           <th style={{ padding: "8px" }}>Edades</th>
                                           <th style={{ padding: "8px" }}>Día y Horario</th>
+                                          <th style={{ padding: "8px" }}>Cupos</th>
                                           <th style={{ padding: "8px", textAlign: "right" }}>Acción</th>
                                         </tr>
                                       </thead>
@@ -430,6 +453,7 @@ function ProgramaFormModal({
                                               <span style={{ background: "#e8f7ef", color: "#006b5b", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: 700, marginRight: "6px" }}>{taller.dia}</span>
                                               {formatearHora12(taller.horaInicio)} a {formatearHora12(taller.horaFin)}
                                             </td>
+                                            <td style={{ padding: "8px", fontWeight: "bold" }}>{taller.cupos || 20}</td>
                                             <td style={{ padding: "8px", textAlign: "right" }}>
                                               <button 
                                                 type="button" 
@@ -553,8 +577,24 @@ function ProgramaFormModal({
                           </div>
                         </div>
                         <div className="coord-section-grid coord-payment-grid">
-                          <div className="coord-field"><label>Cupos</label>
-                            <input type="number" min="1" value={form.cupos} onChange={e => actualizarForm("cupos", e.target.value)} placeholder="20" />
+                          <div className="coord-field">
+                            <label>Cupos</label>
+                            {esDeportivoForm ? (
+                              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                                <input
+                                  type="number"
+                                  value={form.cupos}
+                                  readOnly
+                                  style={{ background: "#f1f5f9", cursor: "not-allowed" }}
+                                  title="Se calcula automáticamente sumando los cupos de cada taller deportivo"
+                                />
+                                <span style={{ fontSize: "11px", color: "#006b5b", fontWeight: 700, whiteSpace: "nowrap" }}>
+                                  (Suma de talleres)
+                                </span>
+                              </div>
+                            ) : (
+                              <input type="number" min="1" value={form.cupos} onChange={e => actualizarForm("cupos", e.target.value)} placeholder="20" />
+                            )}
                           </div>
                           <div className="coord-field"><label>Costo (S/)</label>
                             <input inputMode="decimal" value={form.costo} onChange={e => actualizarCosto(e.target.value)} onBlur={formatearCostoFormulario} placeholder="70.00" />

@@ -11,371 +11,122 @@
   "nextCargaId": 1,
   "nextDocumentoId": 1,
   "estudiantes": {
+    "10101111": {
+      "dni": "10101111",
+      "codigoEstudiante": "EST-0010",
+      "nombres": "Fabian Cruz Salazar",
+      "grado": "4 Primaria",
+      "seccion": "A",
+      "nivel": "Primaria",
+      "sexo": "M",
+      "fechaNacimiento": "2010-01-01",
+      "tipoAlumno": "Alumno invitado",
+      "estadoMatricula": "Activo",
+      "apoderado": "Andrea Salazar",
+      "telefonoApoderado": "967891245"
+    },
     "11112223": {
       "dni": "11112223",
-      "codigoEstudiante": "75640895",
+      "codigoEstudiante": "EST-0011",
       "nombres": "Nicole Fernandez Vega",
       "grado": "1 Secundaria",
       "seccion": "A",
       "nivel": "Secundaria",
-      "sexo": "",
+      "sexo": "F",
       "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
+      "tipoAlumno": "Alumno externo",
       "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Invitacion Preparacion Cambridge 2026"
-      ],
-      "fuentesExcel": [
-        "02_CAMBRIDGE_2026_CARGA.xlsx"
-      ],
-      "seleccion": "A",
-      "nivelCambridge": ""
+      "apoderado": "Pedro Fernandez",
+      "telefonoApoderado": "978123456"
     },
     "22223334": {
       "dni": "22223334",
-      "codigoEstudiante": "75640896",
+      "codigoEstudiante": "EST-0012",
       "nombres": "Aaron Castillo Ramos",
       "grado": "2 Secundaria",
       "seccion": "B",
       "nivel": "Secundaria",
-      "sexo": "",
+      "sexo": "M",
       "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
+      "tipoAlumno": "Alumno interno",
       "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Invitacion Preparacion Cambridge 2026"
-      ],
-      "fuentesExcel": [
-        "02_CAMBRIDGE_2026_CARGA.xlsx"
-      ],
-      "seleccion": "B",
-      "nivelCambridge": ""
-    },
-    "24730815": {
-      "dni": "24730815",
-      "codigoEstudiante": "75640223",
-      "nombres": "Luciana Torres Rojas",
-      "grado": "4 inicial",
-      "seccion": "A",
-      "nivel": "Inicial",
-      "sexo": "",
-      "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Reforzamiento y/o nivelacion"
-      ],
-      "fuentesExcel": [
-        "01_REFORZAMIENTO_CIRCULAR_2026_CARGA.xlsx"
-      ],
-      "seleccion": "",
-      "nivelCambridge": ""
-    },
-    "24730816": {
-      "dni": "24730816",
-      "codigoEstudiante": "75640224",
-      "nombres": "Mateo Quispe Huaman",
-      "grado": "5 Inicial",
-      "seccion": "B",
-      "nivel": "Inicial",
-      "sexo": "",
-      "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Reforzamiento y/o nivelacion"
-      ],
-      "fuentesExcel": [
-        "01_REFORZAMIENTO_CIRCULAR_2026_CARGA.xlsx"
-      ],
-      "seleccion": "",
-      "nivelCambridge": ""
-    },
-    "24730817": {
-      "dni": "24730817",
-      "codigoEstudiante": "75640225",
-      "nombres": "Valentina Chavez Flores",
-      "grado": "1 Primaria",
-      "seccion": "A",
-      "nivel": "Primaria",
-      "sexo": "",
-      "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Reforzamiento y/o nivelacion"
-      ],
-      "fuentesExcel": [
-        "01_REFORZAMIENTO_CIRCULAR_2026_CARGA.xlsx"
-      ],
-      "seleccion": "",
-      "nivelCambridge": ""
-    },
-    "24730818": {
-      "dni": "24730818",
-      "codigoEstudiante": "75640226",
-      "nombres": "Thiago Ramos Medina",
-      "grado": "2 Primaria",
-      "seccion": "C",
-      "nivel": "Primaria",
-      "sexo": "",
-      "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Reforzamiento y/o nivelacion"
-      ],
-      "fuentesExcel": [
-        "01_REFORZAMIENTO_CIRCULAR_2026_CARGA.xlsx"
-      ],
-      "seleccion": "",
-      "nivelCambridge": ""
-    },
-    "24730819": {
-      "dni": "24730819",
-      "codigoEstudiante": "75640227",
-      "nombres": "Camila Paredes Silva",
-      "grado": "3 Primaria",
-      "seccion": "A",
-      "nivel": "Primaria",
-      "sexo": "",
-      "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Reforzamiento y/o nivelacion"
-      ],
-      "fuentesExcel": [
-        "01_REFORZAMIENTO_CIRCULAR_2026_CARGA.xlsx"
-      ],
-      "seleccion": "",
-      "nivelCambridge": ""
-    },
-    "24737415": {
-      "dni": "24737415",
-      "codigoEstudiante": "75640735",
-      "nombres": "Luciana Torres Rojas",
-      "grado": "4 Primaria",
-      "seccion": "A",
-      "nivel": "Primaria",
-      "sexo": "",
-      "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "adf aef",
-      "telefonoApoderado": "234234345",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Club De Tareas Matematica"
-      ],
-      "fuentesExcel": [
-        "03_CLUB_DE_TAREAS_CARGA.xlsx"
-      ],
-      "seleccion": "",
-      "nivelCambridge": "",
-      "enviarPdfCorreo": false
-    },
-    "24737416": {
-      "dni": "24737416",
-      "codigoEstudiante": "75640742",
-      "nombres": "Mateo Quispe Huaman",
-      "grado": "5 Primaria",
-      "seccion": "B",
-      "nivel": "Primaria",
-      "sexo": "",
-      "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Club De Tareas Matematica"
-      ],
-      "fuentesExcel": [
-        "03_CLUB_DE_TAREAS_CARGA.xlsx"
-      ],
-      "seleccion": "",
-      "nivelCambridge": ""
-    },
-    "24737417": {
-      "dni": "24737417",
-      "codigoEstudiante": "75640749",
-      "nombres": "Valentina Chavez Flores",
-      "grado": "6 Primaria",
-      "seccion": "A",
-      "nivel": "Primaria",
-      "sexo": "",
-      "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Club De Tareas Matematica"
-      ],
-      "fuentesExcel": [
-        "03_CLUB_DE_TAREAS_CARGA.xlsx"
-      ],
-      "seleccion": "",
-      "nivelCambridge": ""
-    },
-    "24737418": {
-      "dni": "24737418",
-      "codigoEstudiante": "75640756",
-      "nombres": "Thiago Ramos Medina",
-      "grado": "1 secundaria",
-      "seccion": "C",
-      "nivel": "Secundaria",
-      "sexo": "",
-      "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Club De Tareas Matematica"
-      ],
-      "fuentesExcel": [
-        "03_CLUB_DE_TAREAS_CARGA.xlsx"
-      ],
-      "seleccion": "",
-      "nivelCambridge": ""
-    },
-    "24737419": {
-      "dni": "24737419",
-      "codigoEstudiante": "75640763",
-      "nombres": "Camila Paredes Silva",
-      "grado": "2 Primaria",
-      "seccion": "A",
-      "nivel": "Primaria",
-      "sexo": "",
-      "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Club De Tareas Matematica"
-      ],
-      "fuentesExcel": [
-        "03_CLUB_DE_TAREAS_CARGA.xlsx"
-      ],
-      "seleccion": "",
-      "nivelCambridge": ""
+      "apoderado": "Luis Castillo",
+      "telefonoApoderado": "989234567"
     },
     "33334445": {
       "dni": "33334445",
-      "codigoEstudiante": "75640897",
+      "codigoEstudiante": "EST-0013",
       "nombres": "Daniela Mendoza Ortiz",
       "grado": "3 Secundaria",
       "seccion": "C",
       "nivel": "Secundaria",
-      "sexo": "",
+      "sexo": "F",
       "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
-      "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Invitacion Preparacion Cambridge 2026"
-      ],
-      "fuentesExcel": [
-        "02_CAMBRIDGE_2026_CARGA.xlsx"
-      ],
-      "seleccion": "C",
-      "nivelCambridge": ""
+      "tipoAlumno": "Alumno externo",
+      "estadoMatricula": "Egresado",
+      "apoderado": "Julia Ortiz",
+      "telefonoApoderado": "991345678"
     },
     "44445556": {
       "dni": "44445556",
-      "codigoEstudiante": "75640898",
+      "codigoEstudiante": "EST-0014",
       "nombres": "Bruno Silva Aquino",
       "grado": "4 Secundaria",
       "seccion": "A",
       "nivel": "Secundaria",
-      "sexo": "",
+      "sexo": "M",
       "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
+      "tipoAlumno": "Alumno interno",
       "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Invitacion Preparacion Cambridge 2026"
-      ],
-      "fuentesExcel": [
-        "02_CAMBRIDGE_2026_CARGA.xlsx"
-      ],
-      "seleccion": "A",
-      "nivelCambridge": ""
+      "apoderado": "Ricardo Silva",
+      "telefonoApoderado": "902456789"
     },
     "55556667": {
       "dni": "55556667",
-      "codigoEstudiante": "75640899",
+      "codigoEstudiante": "EST-0015",
       "nombres": "Mariana Gutierrez Leon",
       "grado": "5 Secundaria",
       "seccion": "B",
       "nivel": "Secundaria",
-      "sexo": "",
+      "sexo": "F",
       "fechaNacimiento": "2010-01-01",
-      "tipoAlumno": "Alumno invitado",
+      "tipoAlumno": "Alumno externo",
       "estadoMatricula": "Activo",
-      "apoderado": "",
-      "telefonoApoderado": "",
-      "correoApoderado": "",
-      "origenRegistro": "Excel carga Coordinacion - acceso padres",
-      "cursosOrigen": [
-        "Invitacion Preparacion Cambridge 2026"
-      ],
-      "fuentesExcel": [
-        "02_CAMBRIDGE_2026_CARGA.xlsx"
-      ],
-      "seleccion": "B",
-      "nivelCambridge": ""
+      "apoderado": "Teresa Leon",
+      "telefonoApoderado": "913567890"
+    },
+    "88889999": {
+      "dni": "88889999",
+      "codigoEstudiante": "EST-0008",
+      "nombres": "Diego Herrera Molina",
+      "grado": "5 Primaria",
+      "seccion": "C",
+      "nivel": "Primaria",
+      "sexo": "M",
+      "fechaNacimiento": "2010-01-01",
+      "tipoAlumno": "Alumno externo",
+      "estadoMatricula": "Traslado",
+      "apoderado": "Miguel Herrera",
+      "telefonoApoderado": "945678123"
+    },
+    "99990000": {
+      "dni": "99990000",
+      "codigoEstudiante": "EST-0009",
+      "nombres": "Alessia Navarro Ruiz",
+      "grado": "6 Primaria",
+      "seccion": "B",
+      "nivel": "Primaria",
+      "sexo": "F",
+      "fechaNacimiento": "2010-01-01",
+      "tipoAlumno": "Alumno interno",
+      "estadoMatricula": "Activo",
+      "apoderado": "Carmen Ruiz",
+      "telefonoApoderado": "956789234"
     }
   },
   "programas": [
     {
-      "nombre": "Reforzamiento Inicial Y Primaria",
+      "nombre": "Reforzamiento Circular 2026 Inicial Y Primaria I Ciclo",
       "periodo": "escolar",
       "categoria": "Academico",
       "grupo": "Inicial: 4, 5",
@@ -534,10 +285,10 @@
       "creadoDesdeDocumento": true
     },
     {
-      "nombre": "Club De Tareas Matematica",
+      "nombre": "Club De Tareas",
       "periodo": "escolar",
       "categoria": "Academico",
-      "grupo": "Primaria: 4, 5, 6 / Secundaria: 1",
+      "grupo": "Primaria: 4, 5 / Secundaria: 1",
       "horario": "Jueves clase 3:20 PM - 5:20 PM · almuerzo 1:20 PM - 2:20 PM",
       "grupoEtario": "",
       "gradosAplicables": [
@@ -549,8 +300,7 @@
         "6",
         "Primaria:4",
         "Primaria:5",
-        "Secundaria:1",
-        "Primaria:6"
+        "Secundaria:1"
       ],
       "edadMinima": "",
       "edadMaxima": "",
@@ -617,151 +367,17 @@
       "anuncioImagenComprimida": false,
       "id": "PROG-003",
       "duracionTaller": "3 meses",
-      "cuposOcupados": 1,
+      "cuposOcupados": 6,
       "estado": "Habilitado",
       "creadoDesdeDocumento": true
     }
   ],
   "invitadosPorPrograma": {
-    "PROG-001": [
-      {
-        "codigoEstudiante": "75640223",
-        "dni": "24730815",
-        "nombres": "Luciana Torres Rojas",
-        "grado": "4 inicial",
-        "seccion": "A",
-        "nivelEducativo": "Inicial",
-        "seleccion": "",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      },
-      {
-        "codigoEstudiante": "75640224",
-        "dni": "24730816",
-        "nombres": "Mateo Quispe Huaman",
-        "grado": "5 Inicial",
-        "seccion": "B",
-        "nivelEducativo": "Inicial",
-        "seleccion": "",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      },
-      {
-        "codigoEstudiante": "75640225",
-        "dni": "24730817",
-        "nombres": "Valentina Chavez Flores",
-        "grado": "1 Primaria",
-        "seccion": "A",
-        "nivelEducativo": "Primaria",
-        "seleccion": "",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      },
-      {
-        "codigoEstudiante": "75640226",
-        "dni": "24730818",
-        "nombres": "Thiago Ramos Medina",
-        "grado": "2 Primaria",
-        "seccion": "C",
-        "nivelEducativo": "Primaria",
-        "seleccion": "",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      },
-      {
-        "codigoEstudiante": "75640227",
-        "dni": "24730819",
-        "nombres": "Camila Paredes Silva",
-        "grado": "3 Primaria",
-        "seccion": "A",
-        "nivelEducativo": "Primaria",
-        "seleccion": "",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      }
-    ],
-    "PROG-002": [
-      {
-        "codigoEstudiante": "75640895",
-        "dni": "11112223",
-        "nombres": "Nicole Fernandez Vega",
-        "grado": "1 Secundaria",
-        "seccion": "A",
-        "nivelEducativo": "Secundaria",
-        "seleccion": "A",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      },
-      {
-        "codigoEstudiante": "75640896",
-        "dni": "22223334",
-        "nombres": "Aaron Castillo Ramos",
-        "grado": "2 Secundaria",
-        "seccion": "B",
-        "nivelEducativo": "Secundaria",
-        "seleccion": "B",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      },
-      {
-        "codigoEstudiante": "75640897",
-        "dni": "33334445",
-        "nombres": "Daniela Mendoza Ortiz",
-        "grado": "3 Secundaria",
-        "seccion": "C",
-        "nivelEducativo": "Secundaria",
-        "seleccion": "C",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      },
-      {
-        "codigoEstudiante": "75640898",
-        "dni": "44445556",
-        "nombres": "Bruno Silva Aquino",
-        "grado": "4 Secundaria",
-        "seccion": "A",
-        "nivelEducativo": "Secundaria",
-        "seleccion": "A",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      },
-      {
-        "codigoEstudiante": "75640899",
-        "dni": "55556667",
-        "nombres": "Mariana Gutierrez Leon",
-        "grado": "5 Secundaria",
-        "seccion": "B",
-        "nivelEducativo": "Secundaria",
-        "seleccion": "B",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      }
-    ],
     "PROG-003": [
       {
-        "codigoEstudiante": "75640735",
-        "dni": "24737415",
-        "nombres": "Luciana Torres Rojas",
+        "codigoEstudiante": "EST-0010",
+        "dni": "10101111",
+        "nombres": "Fabian Cruz Salazar",
         "grado": "4 Primaria",
         "seccion": "A",
         "nivelEducativo": "Primaria",
@@ -772,10 +388,23 @@
         "estado": "Invitado"
       },
       {
-        "codigoEstudiante": "75640742",
-        "dni": "24737416",
-        "nombres": "Mateo Quispe Huaman",
+        "codigoEstudiante": "EST-0008",
+        "dni": "88889999",
+        "nombres": "Diego Herrera Molina",
         "grado": "5 Primaria",
+        "seccion": "C",
+        "nivelEducativo": "Primaria",
+        "seleccion": "",
+        "nivelCambridge": "",
+        "periodo": "escolar",
+        "observacion": "",
+        "estado": "Invitado"
+      },
+      {
+        "codigoEstudiante": "EST-0009",
+        "dni": "99990000",
+        "nombres": "Alessia Navarro Ruiz",
+        "grado": "6 Primaria",
         "seccion": "B",
         "nivelEducativo": "Primaria",
         "seleccion": "",
@@ -785,24 +414,11 @@
         "estado": "Invitado"
       },
       {
-        "codigoEstudiante": "75640749",
-        "dni": "24737417",
-        "nombres": "Valentina Chavez Flores",
-        "grado": "6 Primaria",
+        "codigoEstudiante": "EST-0011",
+        "dni": "11112223",
+        "nombres": "Nicole Fernandez Vega",
+        "grado": "1 Secundaria",
         "seccion": "A",
-        "nivelEducativo": "Primaria",
-        "seleccion": "",
-        "nivelCambridge": "",
-        "periodo": "escolar",
-        "observacion": "",
-        "estado": "Invitado"
-      },
-      {
-        "codigoEstudiante": "75640756",
-        "dni": "24737418",
-        "nombres": "Thiago Ramos Medina",
-        "grado": "1 secundaria",
-        "seccion": "C",
         "nivelEducativo": "Secundaria",
         "seleccion": "",
         "nivelCambridge": "",
@@ -811,106 +427,35 @@
         "estado": "Invitado"
       },
       {
-        "codigoEstudiante": "75640763",
-        "dni": "24737419",
-        "nombres": "Camila Paredes Silva",
-        "grado": "2 Primaria",
-        "seccion": "A",
-        "nivelEducativo": "Primaria",
-        "seleccion": "",
+        "codigoEstudiante": "00000075640738",
+        "dni": "",
+        "nombres": "María Fernanda Torres Castillo",
+        "grado": "4 Secundaria",
+        "seccion": "B",
+        "nivelEducativo": "",
+        "seleccion": "A",
+        "nivelCambridge": "",
+        "periodo": "escolar",
+        "observacion": "",
+        "estado": "Invitado"
+      },
+      {
+        "codigoEstudiante": "00000075640742",
+        "dni": "",
+        "nombres": "Luciana Isabel Mendoza Chávez",
+        "grado": "5 Secundaria",
+        "seccion": "C",
+        "nivelEducativo": "",
+        "seleccion": "B",
         "nivelCambridge": "",
         "periodo": "escolar",
         "observacion": "",
         "estado": "Invitado"
       }
-    ]
+    ],
+    "PROG-001": []
   },
-  "inscripciones": [
-    {
-      "id": "INS-198220",
-      "programaId": "PROG-003",
-      "periodo": "escolar",
-      "programa": "Club De Tareas",
-      "horario": "Jueves clase 3:20 PM - 5:20 PM · almuerzo 1:20 PM - 2:20 PM",
-      "docente": "ANA TORRES 2",
-      "costo": 95,
-      "modalidadCobro": "Unico",
-      "fechaInicio": "2026-06-08",
-      "fechaFin": "2026-09-02",
-      "duracionTaller": "3 meses",
-      "duracionAvisoDias": 7,
-      "gradosAplicables": [
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "Primaria:4",
-        "Primaria:5",
-        "Secundaria:1"
-      ],
-      "horariosPorGrupo": [],
-      "grupo": "Primaria: 4, 5 / Secundaria: 1",
-      "grupoEtario": "Primaria: 4, 5 / Secundaria: 1",
-      "requisitos": "Asistencia continua",
-      "comunicado": "Reciba un cordial saludo de parte de la Comunidad Educativa del Colegio Matemático \"San Rafael\", especialmente de la Dirección General, que está aquí para servirle. Nos dirigimos a usted para informarle que, tras observar que algunos alumnos requieren apoyo en la explicación y resolución de tareas en el área de , hemos decidido apoyar y reforzar el aprendizaje del estudiante. En este sentido, consideramos apropiado invitarlo al aula , la cual ha sido organizada y mejorada en la distribución del tiempo para abordar las tareas dejadas durante la semana. 45462605368000: Del al .",
-      "detalleCosto": "COSTO:\n: soles por todo el ciclo.",
-      "detalleAlmuerzo": "ALMUERZO\nCLASES\n\nREQUISITOS:\nAsistencia continua.\nMantener el orden y la disciplina.\nTraer los siguientes materiales:\n01 cartuchera completa con lápiz negro, chequeo rojo, borrador, tajador con depósito, regla, lapiceros, FORMATOS DE TAREA.\nCOSTO:\n: soles por todo el ciclo.\nEL ALMUERZO:\nContamos con un área para la recepción de los almuerzos, donde se deberá dejar bajo el siguiente horario: De\n\nIndicando claramente una etiqueta grande en la lonchera, con NOMBRE DEL ALUMNO, GRADO Y SECCIÓN.\nSi deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\n📞 Cafetín Los Amigos del recreo (Sra. Rocío) 📞 Cafetín Edith (Sra. Deysli)\n976280197 960897529\n2727352119006 que son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde\nde acuerdo a las disposiciones del MINSA.\nAtentamente\n0-6350000ENTREGAR ESTE FORMATO FIRMADO si está conforme, al momento de inscribirse en Administración.",
-      "concesionarios": "Si deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\n📞 Cafetín Los Amigos del recreo (Sra. Rocío) 📞 Cafetín Edith (Sra. Deysli)\n976280197 960897529\n2727352119006 que son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde\nde acuerdo a las disposiciones del MINSA.\nAtentamente\n0-6350000ENTREGAR ESTE FORMATO FIRMADO si está conforme, al momento de inscribirse en Administración.",
-      "anuncioImagen": "",
-      "anuncioImagenNombre": "",
-      "plantilla": "CARTA_CLUB_DE_TAREAS_PLANTILLA_DIGITAL.docx",
-      "plantillaVariables": [
-        "n_com",
-        "titulo",
-        "fecha",
-        "area",
-        "prog",
-        "ciclo",
-        "ini",
-        "fin",
-        "dur",
-        "n1",
-        "n2",
-        "n3",
-        "n4",
-        "dia",
-        "alm",
-        "clase",
-        "pago",
-        "costo",
-        "hor_alm",
-        "alumno",
-        "gr_sec",
-        "apod",
-        "cel",
-        "alu"
-      ],
-      "requiereUniforme": false,
-      "requiereIndumentaria": false,
-      "tallaUniforme": "",
-      "tallaPolo": "",
-      "tallaShort": "",
-      "seleccion": "",
-      "nivelCambridge": "",
-      "dniEstudiante": "24737415",
-      "codigoEstudiante": "75640735",
-      "nombresEstudiante": "Luciana Torres Rojas",
-      "gradoEstudiante": "4 Primaria",
-      "grado": "4 Primaria",
-      "seccion": "A",
-      "apoderado": "adf aef",
-      "telefono": "234234345",
-      "correo": "",
-      "enviarPdfCorreo": false,
-      "observacion": "Registro solicitado desde portal de padres.",
-      "estadoInscripcion": "Pendiente de pago",
-      "estadoPago": "Pendiente",
-      "origenRegistro": "Portal padres",
-      "fechaRegistro": "2026-06-01T23:23:18-05:00"
-    }
-  ],
+  "inscripciones": [],
   "documentosGenerados": [],
   "pagos": [],
   "asistencias": [],

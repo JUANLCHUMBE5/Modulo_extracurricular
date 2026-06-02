@@ -71,7 +71,7 @@ function CargaExcelView({
                   <small>Puede cargar hasta 6 archivos. Tamaño máximo por archivo: 5 MB.</small>
                 ) : null}
                 <small>
-                  Para Cambridge incluya las columnas <b>seleccion</b> y <b>nivel_cambridge</b>. Use A para certificado oficial, B para Admission Test o C para desempeño académico.
+                  Para Cambridge incluya las columnas <b>grado</b>, <b>seccion</b> y <b>seleccion</b>. La columna <b>nivel_cambridge</b> es opcional. Use A para certificado oficial, B para Admission Test o C para desempeño académico.
                 </small>
               </div>
             </div>
@@ -143,12 +143,14 @@ function CargaExcelView({
                 <table className="coord-table">
                   <thead>
                     <tr>
-                      <th>Alumno</th><th>Grado</th><th>Sección</th><th>Selección</th><th>Curso / nivel</th><th>Estado</th><th>Detalle</th>
+                      <th>DNI</th><th>Código</th><th>Alumno</th><th>Grado</th><th>Sección</th><th>Selección</th><th>Curso / nivel</th><th>Estado</th><th>Detalle</th>
                     </tr>
                   </thead>
                   <tbody>
                     {previewCarga.registros.map((reg) => (
                       <tr key={reg.fila}>
+                        <td>{reg.dniOriginalExcel || reg.dni || "-"}</td>
+                        <td>{reg.codigoEstudianteOriginalExcel || reg.codigoEstudiante || "-"}</td>
                         <td>{`${reg.nombres} ${reg.apellidos}`.trim() || "-"}</td>
                         <td>{reg.grado || "-"}</td>
                         <td>{reg.seccion || "-"}</td>

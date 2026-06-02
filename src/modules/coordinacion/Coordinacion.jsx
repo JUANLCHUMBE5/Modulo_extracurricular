@@ -142,6 +142,7 @@ function Coordinacion({
   const [tallerDepDia, setTallerDepDia] = useState("Jueves");
   const [tallerDepHoraInicio, setTallerDepHoraInicio] = useState("15:50");
   const [tallerDepHoraFin, setTallerDepHoraFin] = useState("16:50");
+  const [tallerDepCupos, setTallerDepCupos] = useState("20");
   const [programaDocsId, setProgramaDocsId] = useState("");
   const [lecturaDocumento, setLecturaDocumento] = useState(null);
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
@@ -246,6 +247,12 @@ function Coordinacion({
   }
 
   function datosProgramaAFormulario(prog) {
+    const talleres = Array.isArray(prog.talleresDeportivos) ? prog.talleresDeportivos : [];
+    const esDeportivo = String(prog.categoria).toLowerCase() === "deportivo" || esProgramaDeportivo(prog.nombre, prog.categoria);
+    let cuposCalculados = prog.cupos;
+    if (esDeportivo && talleres.length > 0) {
+      cuposCalculados = String(talleres.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0));
+    }
     return {
       nombre: prog.nombre, periodo: normalizarPeriodoVista(prog.periodo), categoria: prog.categoria,
       grupo: prog.grupo, grupoEtario: prog.grupoEtario || "", horario: prog.horario, fechaInicio: prog.fechaInicio,
@@ -260,10 +267,10 @@ function Coordinacion({
       almuerzoInicio: prog.almuerzoInicio || "",
       almuerzoFin: prog.almuerzoFin || "",
       horariosPorGrupo: normalizarHorariosPorGrupo(prog.horariosPorGrupo),
-      talleresDeportivos: Array.isArray(prog.talleresDeportivos) ? prog.talleresDeportivos : [],
+      talleresDeportivos: talleres,
       fechaFin: prog.fechaFin,
       duracionAvisoDias: String(normalizarDuracionAvisoDias(prog.duracionAvisoDias, 7)),
-      cupos: String(prog.cupos), costo: String(prog.costo),
+      cupos: String(cuposCalculados), costo: String(prog.costo),
       modalidadCobro: prog.modalidadCobro, responsable: prog.responsable,
       tutora: prog.tutora, plantilla: prog.plantilla || "",
       plantillaBase64: prog.plantillaBase64 || "",
@@ -694,6 +701,11 @@ function Coordinacion({
       mostrarMsg("La hora de inicio debe ser menor a la hora de fin.");
       return;
     }
+    const cuposTaller = Number(tallerDepCupos);
+    if (Number.isNaN(cuposTaller) || cuposTaller <= 0) {
+      mostrarMsg("Ingrese un número de cupos válido para el taller.");
+      return;
+    }
 
     const nuevoTaller = {
       deporte: deporteFinal,
@@ -702,39 +714,67 @@ function Coordinacion({
       dia: tallerDepDia,
       horaInicio: tallerDepHoraInicio,
       horaFin: tallerDepHoraFin,
+      cupos: cuposTaller,
     };
 
     const listaActual = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
+    const nuevaLista = [...listaActual, nuevoTaller];
+    const totalCupos = nuevaLista.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0);
+
     setForm(prev => ({
       ...prev,
-      talleresDeportivos: [...listaActual, nuevoTaller]
+      talleresDeportivos: nuevaLista,
+      cupos: String(totalCupos),
     }));
 
     setTallerDepCustom("");
+    setTallerDepCupos("20");
   };
 
   const quitarTallerDeportivo = (index) => {
     const listaActual = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
+    const nuevaLista = listaActual.filter((_, idx) => idx !== index);
+    const totalCupos = nuevaLista.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0);
+
     setForm(prev => ({
       ...prev,
-      talleresDeportivos: listaActual.filter((_, idx) => idx !== index)
+      talleresDeportivos: nuevaLista,
+      cupos: String(totalCupos),
     }));
   };
 
   function actualizarNombrePrograma(valor) {
-    setForm((actual) => ({
-      ...actual,
-      nombre: valor,
-      requiereIndumentaria: esProgramaDeportivo(valor, actual.categoria) ? true : actual.requiereIndumentaria,
-    }));
+    setForm((actual) => {
+      const esDeportivo = String(actual.categoria).toLowerCase() === "deportivo" || esProgramaDeportivo(valor, actual.categoria);
+      const talleres = Array.isArray(actual.talleresDeportivos) ? actual.talleresDeportivos : [];
+      let nuevosCupos = actual.cupos;
+      if (esDeportivo && talleres.length > 0) {
+        nuevosCupos = String(talleres.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0));
+      }
+      return {
+        ...actual,
+        nombre: valor,
+        cupos: nuevosCupos,
+        requiereIndumentaria: esDeportivo ? true : actual.requiereIndumentaria,
+      };
+    });
   }
 
   function actualizarCategoriaPrograma(valor) {
-    setForm((actual) => ({
-      ...actual,
-      categoria: valor,
-      requiereIndumentaria: esProgramaDeportivo(actual.nombre, valor) ? true : actual.requiereIndumentaria,
-    }));
+    setForm((actual) => {
+      const esDeportivo = String(valor).toLowerCase() === "deportivo" || esProgramaDeportivo(actual.nombre, valor);
+      const talleres = Array.isArray(actual.talleresDeportivos) ? actual.talleresDeportivos : [];
+      let nuevosCupos = actual.cupos;
+      if (esDeportivo && talleres.length > 0) {
+        nuevosCupos = String(talleres.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0));
+      }
+      return {
+        ...actual,
+        categoria: valor,
+        cupos: nuevosCupos,
+        requiereIndumentaria: esDeportivo ? true : actual.requiereIndumentaria,
+      };
+    });
   }
 
   function actualizarCosto(valor) {
@@ -1331,6 +1371,7 @@ function Coordinacion({
           setTallerDepHoraInicio={setTallerDepHoraInicio}
           setTallerDepMaxEdad={setTallerDepMaxEdad}
           setTallerDepMinEdad={setTallerDepMinEdad}
+          setTallerDepCupos={setTallerDepCupos}
           show={showModal}
           tallerDepCustom={tallerDepCustom}
           tallerDepDeporte={tallerDepDeporte}
@@ -1339,6 +1380,7 @@ function Coordinacion({
           tallerDepHoraInicio={tallerDepHoraInicio}
           tallerDepMaxEdad={tallerDepMaxEdad}
           tallerDepMinEdad={tallerDepMinEdad}
+          tallerDepCupos={tallerDepCupos}
           toggleDia={toggleDia}
           toggleGrado={toggleGrado}
           toggleGradoGrupo={toggleGradoGrupo}

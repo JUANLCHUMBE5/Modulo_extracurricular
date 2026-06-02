@@ -17,6 +17,7 @@ import {
   IconFilter as Filter,
   IconAdjustments as Adjustments,
   IconClick as Click,
+  IconUserCheck as UserCheck,
 } from "@tabler/icons-react";
 import { descargarReporteDireccion, descargarReportePersonalizado, obtenerPanelDireccion } from "./direccionService";
 import "./Direccion.css";
@@ -464,6 +465,19 @@ export default function Direccion({ onLogout, user }) {
                   <strong>Módulo Padres</strong>
                 </div>
               </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={dashboardTab === "asistencia"}
+                className={`dir-module-tab ${dashboardTab === "asistencia" ? "is-active" : ""}`}
+                onClick={() => setDashboardTab("asistencia")}
+              >
+                <UserCheck size={18} />
+                <div>
+                  <strong>Asistencia y Control</strong>
+                </div>
+              </button>
             </div>
 
             {/* ── SECCIÓN SEGMENTADA POR PESTAÑA ACTIVA ── */}
@@ -504,11 +518,14 @@ export default function Direccion({ onLogout, user }) {
                         data={chartIngresos}
                         dataKey="programa"
                         series={[
-                          { name: "proyectado", color: "orange.6" },
-                          { name: "recaudado", color: "teal.6" },
+                          { name: "proyectado", color: "orange.5" },
+                          { name: "recaudado", color: "teal.5" },
                         ]}
                         tickLine="none"
-                        gridAxis="y"
+                        gridAxis="xy"
+                        strokeDasharray="4 4"
+                        radius={6}
+                        barProps={{ radius: [6, 6, 0, 0] }}
                       />
                     ) : (
                       <EmptyChart text="Aun no hay montos para graficar." />
@@ -520,7 +537,17 @@ export default function Direccion({ onLogout, user }) {
                       <h2>Estado de pagos</h2>
                     </header>
                     {chartEstadoPago.length ? (
-                      <DonutChart h={260} data={chartEstadoPago} withLabelsLine withLabels />
+                      <DonutChart
+                        h={260}
+                        data={chartEstadoPago}
+                        thickness={14}
+                        paddingAngle={5}
+                        size={170}
+                        withLabels={false}
+                        withLabelsLine={false}
+                        withLegend
+                        legendPosition="right"
+                      />
                     ) : (
                       <EmptyChart text="Aun no hay pagos registrados." />
                     )}
@@ -558,9 +585,12 @@ export default function Direccion({ onLogout, user }) {
                         h={260}
                         data={chartInscripciones}
                         dataKey="programa"
-                        series={[{ name: "inscripciones", color: "teal.6" }]}
+                        series={[{ name: "inscripciones", color: "teal.5" }]}
                         tickLine="none"
-                        gridAxis="y"
+                        gridAxis="xy"
+                        strokeDasharray="4 4"
+                        radius={6}
+                        barProps={{ radius: [6, 6, 0, 0] }}
                       />
                     ) : (
                       <EmptyChart text="Aun no hay inscripciones para graficar." />
@@ -653,7 +683,17 @@ export default function Direccion({ onLogout, user }) {
                       <h2>Origen de registros</h2>
                     </header>
                     {chartOrigen.length ? (
-                      <DonutChart h={260} data={chartOrigen} withLabelsLine withLabels />
+                      <DonutChart
+                        h={260}
+                        data={chartOrigen}
+                        thickness={14}
+                        paddingAngle={5}
+                        size={170}
+                        withLabels={false}
+                        withLabelsLine={false}
+                        withLegend
+                        legendPosition="right"
+                      />
                     ) : (
                       <EmptyChart text="Aun no hay origenes registrados." />
                     )}
@@ -686,6 +726,109 @@ export default function Direccion({ onLogout, user }) {
                           title={`Secretaría: ${metricasAnalisis.secPct}%`}
                         />
                       </div>
+                    </div>
+                  </article>
+                </section>
+              </>
+            )}
+
+            {dashboardTab === "asistencia" && (
+              <>
+                <section className="dir-stats" aria-label="Indicadores principales de asistencia">
+                  <StatCard
+                    icon={UserCheck}
+                    label="Asistidos Hoy"
+                    value={resumen.asistidosHoy || 0}
+                    detail="Alumnos únicos que registraron ingreso hoy"
+                    tone="green"
+                  />
+                  <StatCard
+                    icon={Users}
+                    label="Matrícula Total"
+                    value={resumen.inscripciones || 0}
+                    detail="Alumnos activos registrados en el periodo"
+                    tone="blue"
+                  />
+                  <StatCard
+                    icon={ChartBar}
+                    label="Tasa de Asistencia"
+                    value={resumen.inscripciones > 0 ? `${Math.round((resumen.asistidosHoy / resumen.inscripciones) * 100)}%` : "0%"}
+                    detail="Porcentaje de asistencia del día de hoy"
+                    tone="purple"
+                  />
+                </section>
+
+                <section className="dir-charts">
+                  <article className="dir-panel">
+                    <header>
+                      <h2>Asistencia por taller hoy</h2>
+                      <p>Matriculados vs Asistidos</p>
+                    </header>
+                    {panel?.graficos?.asistenciaPorPrograma?.length ? (
+                      <BarChart
+                        h={280}
+                        data={panel.graficos.asistenciaPorPrograma}
+                        dataKey="programa"
+                        series={[
+                          { name: "matriculados", color: "gray.4" },
+                          { name: "asistidos", color: "teal.5" },
+                        ]}
+                        tickLine="none"
+                        gridAxis="xy"
+                        strokeDasharray="4 4"
+                        radius={6}
+                        barProps={{ radius: [6, 6, 0, 0] }}
+                      />
+                    ) : (
+                      <EmptyChart text="Aun no hay asistencias hoy." />
+                    )}
+                  </article>
+
+                  <article className="dir-panel dir-table-panel" style={{ display: "flex", flexDirection: "column" }}>
+                    <header style={{ padding: "16px 20px" }}>
+                      <h2>Bitácora de Ingresos (En Vivo)</h2>
+                      <p>Últimos accesos registrados por el auxiliar</p>
+                    </header>
+                    <div className="dir-table-wrap" style={{ flexGrow: 1, maxHeight: "280px", overflowY: "auto" }}>
+                      <Table striped highlightOnHover verticalSpacing="xs">
+                        <Table.Thead>
+                          <Table.Tr>
+                            <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Hora</Table.Th>
+                            <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Estudiante</Table.Th>
+                            <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Taller</Table.Th>
+                            <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Acceso</Table.Th>
+                          </Table.Tr>
+                        </Table.Thead>
+                        <Table.Tbody>
+                          {panel?.ultimosIngresos?.map((item, index) => (
+                            <Table.Tr key={item.id || index}>
+                              <Table.Td style={{ fontWeight: 700, color: "var(--ui-primary-dark)" }}>{item.hora}</Table.Td>
+                              <Table.Td>
+                                <strong>{item.estudiante}</strong>
+                                <span className="dir-muted" style={{ fontSize: "11px" }}>DNI: {item.dni || "—"}</span>
+                              </Table.Td>
+                              <Table.Td>{item.programa}</Table.Td>
+                              <Table.Td>
+                                <Badge 
+                                  color={item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "teal" : "red"} 
+                                  variant="light"
+                                >
+                                  {item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "Permitido" : "Rechazado"}
+                                </Badge>
+                              </Table.Td>
+                            </Table.Tr>
+                          ))}
+                          {!panel?.ultimosIngresos?.length ? (
+                            <Table.Tr>
+                              <Table.Td colSpan={4}>
+                                <div className="dir-empty-table" style={{ minHeight: "120px" }}>
+                                  No hay registros de ingreso en la base de datos.
+                                </div>
+                              </Table.Td>
+                            </Table.Tr>
+                          ) : null}
+                        </Table.Tbody>
+                      </Table>
                     </div>
                   </article>
                 </section>
@@ -903,33 +1046,6 @@ export default function Direccion({ onLogout, user }) {
                     </div>
                   </div>
 
-                  <div className="dir-builder-summary-card">
-                    <div className="dir-summary-card-header">
-                      <h4>Resumen</h4>
-                    </div>
-                    <div className="dir-summary-card-body">
-                      <div className="dir-summary-metric">
-                        <span>Registros:</span>
-                        <strong>{registrosFiltrados.length}</strong>
-                      </div>
-                      <div className="dir-summary-metric">
-                        <span>Columnas:</span>
-                        <strong>{customColumnas.length}</strong>
-                      </div>
-                    </div>
-                    <Button
-                      color="teal"
-                      fullWidth
-                      leftSection={<Download size={18} />}
-                      loading={exportandoCustom}
-                      disabled={!exportarHabilitado || registrosFiltrados.length === 0 || customColumnas.length === 0}
-                      onClick={ejecutarDescargaCustom}
-                      size="md"
-                      className="dir-download-custom-btn"
-                    >
-                      Descargar Excel (.xlsx)
-                    </Button>
-                  </div>
                 </div>
 
                 <div className="dir-builder-columns-selector">
@@ -977,6 +1093,36 @@ export default function Direccion({ onLogout, user }) {
                         );
                       })}
                     </Grid>
+                  </div>
+                </div>
+
+                <div className="dir-builder-action-column">
+                  <div className="dir-builder-summary-card">
+                    <div className="dir-summary-card-header">
+                      <h4>Resumen</h4>
+                    </div>
+                    <div className="dir-summary-card-body">
+                      <div className="dir-summary-metric">
+                        <span>Registros:</span>
+                        <strong>{registrosFiltrados.length}</strong>
+                      </div>
+                      <div className="dir-summary-metric">
+                        <span>Columnas:</span>
+                        <strong>{customColumnas.length}</strong>
+                      </div>
+                    </div>
+                    <Button
+                      color="teal"
+                      fullWidth
+                      leftSection={<Download size={18} />}
+                      loading={exportandoCustom}
+                      disabled={!exportarHabilitado || registrosFiltrados.length === 0 || customColumnas.length === 0}
+                      onClick={ejecutarDescargaCustom}
+                      size="md"
+                      className="dir-download-custom-btn"
+                    >
+                      Descargar Excel (.xlsx)
+                    </Button>
                   </div>
                 </div>
               </div>
