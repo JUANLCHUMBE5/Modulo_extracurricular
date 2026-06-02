@@ -342,6 +342,32 @@ function ProgramaFormModal({
                             </div>
                           }
     
+                          {esCambridgeForm ? (
+                            <div className="coord-field coord-field-full">
+                              <div className="coord-section-grid">
+                                <div className="coord-field">
+                                  <label>Ciclo I para carta Cambridge</label>
+                                  <input
+                                    value={form.cicloI || ""}
+                                    onChange={e => actualizarForm("cicloI", e.target.value)}
+                                    placeholder="Ej: De abril a julio"
+                                  />
+                                </div>
+                                <div className="coord-field">
+                                  <label>Ciclo II para carta Cambridge</label>
+                                  <input
+                                    value={form.cicloII || ""}
+                                    onChange={e => actualizarForm("cicloII", e.target.value)}
+                                    placeholder="Ej: De agosto a noviembre"
+                                  />
+                                </div>
+                              </div>
+                              <p className="coord-field-hint">
+                                Estos textos se usan en las variables CICLO_I y CICLO_II del documento Cambridge.
+                              </p>
+                            </div>
+                          ) : null}
+
                           {esDeportivoForm && (
                             <div className="coord-field coord-field-full">
                               <div className="coord-deportivo-builder-heading" style={{ marginBottom: "14px", borderTop: "1px dashed #e2ece9", paddingTop: "14px" }}>
@@ -609,10 +635,27 @@ function ProgramaFormModal({
                             <label className="coord-check-label coord-check-label-stacked">
                               <span>
                                 <input type="checkbox" checked={form.invitacionMasiva} onChange={e => actualizarInvitacionMasiva(e.target.checked)} />
-                                Invitacion para todos los grados en Padres
+                                Invitación masiva en Padres
                               </span>
-                              <small>El curso aparecera en el portal de padres para todos los alumnos, sin excepcion por grado y sin cargar Excel de invitados.</small>
+                              <small>El curso aparecerá en el portal de padres sin cargar Excel de invitados, según el alcance seleccionado.</small>
                             </label>
+                            {form.invitacionMasiva ? (
+                              <div className="coord-field coord-field-full">
+                                <label>Alcance de la invitación masiva</label>
+                                <select
+                                  value={form.alcanceInvitacionMasiva || "colegio"}
+                                  onChange={e => actualizarForm("alcanceInvitacionMasiva", e.target.value)}
+                                >
+                                  <option value="colegio">Todo el colegio</option>
+                                  <option value="primaria">Solo nivel Primaria</option>
+                                  <option value="secundaria">Solo nivel Secundaria</option>
+                                  <option value="grados">Solo grados habilitados arriba</option>
+                                </select>
+                                <small>
+                                  Use Primaria o Secundaria cuando el anuncio sea masivo para un nivel completo; use grados habilitados si debe respetar la selección del formulario.
+                                </small>
+                              </div>
+                            ) : null}
                             {form.invitacionMasiva ? (
                               <div className="coord-announcement-image-field">
                                 <div className="coord-announcement-copy">
@@ -661,7 +704,7 @@ function ProgramaFormModal({
                             <Users size={18} />
                             <div>
                               <h3>Indumentaria deportiva</h3>
-                              <p>Para programas deportivos como vóley o fútbol, Secretaría puede registrar tallas por alumno.</p>
+                              <p>Marque esta opción solo si el taller necesita talla de polo y short para la indumentaria.</p>
                             </div>
                           </div>
                           <div className="coord-section-grid">
@@ -673,9 +716,9 @@ function ProgramaFormModal({
                                     checked={Boolean(form.requiereIndumentaria)}
                                     onChange={e => actualizarForm("requiereIndumentaria", e.target.checked)}
                                   />
-                                  Pedir talla de polo y short en Secretaría
+                                  Requiere tallas de polo y short para la indumentaria
                                 </span>
-                                <small>Al registrar al alumno, Secretaría seleccionará la talla correspondiente para cada prenda.</small>
+                                <small>Si se marca, Padres deberá seleccionar ambas tallas antes de continuar con la inscripción.</small>
                               </label>
                             </div>
                           </div>

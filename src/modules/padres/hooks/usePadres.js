@@ -516,7 +516,7 @@ function extraerDiasHorarioCatalogo(horario = "") {
 }
 
 function programaDisponibleCatalogoParaGrado(programa, gradoEstudiante, horarioDelGrado = "") {
-  if (programa?.invitacionMasiva) return true;
+  if (programa?.invitacionMasiva) return programaDisponibleCatalogoParaAlcanceMasivo(programa, gradoEstudiante);
 
   if (!programa?.requiereGradoCompatible) return true;
   if (Array.isArray(programa.horariosPorGrupo) && programa.horariosPorGrupo.length > 0) {
@@ -530,6 +530,26 @@ function programaDisponibleCatalogoParaGrado(programa, gradoEstudiante, horarioD
   if (!gradoNormalizado.numero) return false;
 
   return gradosAplicables.some((grado) => coincideGradoCatalogo(grado, gradoNormalizado));
+}
+
+function programaDisponibleCatalogoParaAlcanceMasivo(programa, gradoEstudiante = "") {
+  const alcance = normalizarTexto(programa?.alcanceInvitacionMasiva || "colegio");
+  if (!alcance || alcance === "colegio" || alcance === "todos") return true;
+
+  const gradoNormalizado = descomponerGradoCatalogo(gradoEstudiante);
+  if (!gradoNormalizado.nivel) return false;
+
+  if (alcance === "primaria" || alcance === "secundaria" || alcance === "inicial") {
+    return gradoNormalizado.nivel === alcance;
+  }
+
+  if (alcance === "grados" || alcance === "seleccionados") {
+    const gradosAplicables = Array.isArray(programa?.gradosAplicables) ? programa.gradosAplicables : [];
+    if (!gradosAplicables.length || !gradoNormalizado.numero) return false;
+    return gradosAplicables.some((grado) => coincideGradoCatalogo(grado, gradoNormalizado));
+  }
+
+  return true;
 }
 
 function resolverHorarioCatalogoPorGrado(programa, gradoEstudiante = "") {

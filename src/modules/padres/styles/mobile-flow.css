@@ -1035,6 +1035,92 @@
   color: #d86716;
 }
 
+.padres-cambridge-summary {
+  display: grid;
+  gap: 12px;
+}
+
+.padres-cambridge-selected {
+  border: 1px solid #fed7aa;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff7ed;
+  display: grid;
+  gap: 5px;
+}
+
+.padres-cambridge-selected span {
+  color: #9a3412;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.padres-cambridge-selected strong {
+  color: #102035;
+  font-size: 14px;
+}
+
+.padres-cambridge-selected small {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.padres-cambridge-options {
+  display: grid;
+  gap: 8px;
+}
+
+.padres-cambridge-option {
+  border: 1px solid #dbe7f3;
+  border-radius: 12px;
+  padding: 10px 11px;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 9px;
+  align-items: center;
+}
+
+.padres-cambridge-option.is-selected {
+  border-color: #f97316;
+  background: #fff7ed;
+  box-shadow: 0 8px 18px rgba(249, 115, 22, 0.12);
+}
+
+.padres-cambridge-check {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #cbd5e1;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.padres-cambridge-option.is-selected .padres-cambridge-check {
+  border-color: #f97316;
+  background: #f97316;
+}
+
+.padres-cambridge-option strong {
+  display: block;
+  color: #102035;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.padres-cambridge-option small {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .padres-flow-check {
   border: 1px solid #ffd7ad;
   border-radius: 13px;

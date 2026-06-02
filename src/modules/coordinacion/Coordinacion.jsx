@@ -17,7 +17,7 @@ import {
 import {
   listarProgramas, crearPrograma, crearProgramaDesdeDocumento, editarPrograma, cambiarEstadoPrograma,
   eliminarPrograma,
-  listarCategorias, crearCategoria, eliminarCategoria, listarInvitados, listarMatriculados,
+  listarCategorias, crearCategoria, eliminarCategoria, listarInvitados, listarMatriculados, listarAsistenciasPrograma,
   previsualizarCargaAlumnosMasiva, confirmarCargaAlumnos, obtenerActividadPrograma,
 } from "./services/coordinacionService";
 import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias } from "../../services/dateService";
@@ -66,10 +66,11 @@ const formInicial = {
   horariosPorGrupo: [],
   talleresDeportivos: [],
   fechaInicio: "", fechaFin: "", duracionAvisoDias: "7", cupos: "", costo: "", modalidadCobro: "Mensual",
+  cicloI: "", cicloII: "",
   responsable: "", tutora: "", plantilla: "", plantillaBase64: "", plantillaVariables: [],
   plantillaValidada: false, plantillaActualizadaEn: "", requisitos: "",
   comunicado: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
-  requiereUniforme: false, requiereIndumentaria: false, invitacionMasiva: false,
+  requiereUniforme: false, requiereIndumentaria: false, invitacionMasiva: false, alcanceInvitacionMasiva: "colegio",
   anuncioImagen: "", anuncioImagenNombre: "", anuncioImagenTamano: 0, anuncioImagenComprimida: false,
 };
 
@@ -151,6 +152,7 @@ function Coordinacion({
   const [showInvitados, setShowInvitados] = useState(false);
   const [invitados, setInvitados] = useState([]);
   const [matriculados, setMatriculados] = useState([]);
+  const [asistenciasPrograma, setAsistenciasPrograma] = useState([]);
   const [subVistaAlumnos, setSubVistaAlumnos] = useState("preinscritos");
   const [progSeleccionado, setProgSeleccionado] = useState(null);
 
@@ -269,6 +271,8 @@ function Coordinacion({
       horariosPorGrupo: normalizarHorariosPorGrupo(prog.horariosPorGrupo),
       talleresDeportivos: talleres,
       fechaFin: prog.fechaFin,
+      cicloI: prog.cicloI || "",
+      cicloII: prog.cicloII || "",
       duracionAvisoDias: String(normalizarDuracionAvisoDias(prog.duracionAvisoDias, 7)),
       cupos: String(cuposCalculados), costo: String(prog.costo),
       modalidadCobro: prog.modalidadCobro, responsable: prog.responsable,
@@ -285,6 +289,7 @@ function Coordinacion({
       requiereUniforme: false,
       requiereIndumentaria: Boolean(prog.requiereIndumentaria),
       invitacionMasiva: Boolean(prog.invitacionMasiva),
+      alcanceInvitacionMasiva: prog.alcanceInvitacionMasiva || "colegio",
       anuncioImagen: prog.anuncioImagen || "",
       anuncioImagenNombre: prog.anuncioImagenNombre || "",
       anuncioImagenTamano: prog.anuncioImagenTamano || 0,
@@ -384,6 +389,8 @@ function Coordinacion({
       fechaNacimientoDesde: "",
       fechaNacimientoHasta: "",
       duracionTaller: calcularDuracionTexto(form.fechaInicio, form.fechaFin),
+      cicloI: form.cicloI || "",
+      cicloII: form.cicloII || "",
       duracionAvisoDias,
       dias: diasFinales,
       horariosPorGrupo: gruposHorario,
@@ -395,6 +402,7 @@ function Coordinacion({
       grupoEtario: esVeranoGuardar ? crearGrupoEtarioVerano(form) : "",
       requiereUniforme: false,
       requiereIndumentaria: Boolean(form.requiereIndumentaria),
+      alcanceInvitacionMasiva: form.invitacionMasiva ? form.alcanceInvitacionMasiva || "colegio" : "",
       anuncioImagen: form.invitacionMasiva ? form.anuncioImagen : "",
       anuncioImagenNombre: form.invitacionMasiva ? form.anuncioImagenNombre : "",
       anuncioImagenTamano: form.invitacionMasiva ? form.anuncioImagenTamano : 0,
@@ -489,8 +497,10 @@ function Coordinacion({
     setSubVistaAlumnos("preinscritos");
     const lista = await listarInvitados(prog.id);
     const listaMatriculados = await listarMatriculados(prog.id);
+    const listaAsistencias = await listarAsistenciasPrograma(prog.id);
     setInvitados(lista);
     setMatriculados(listaMatriculados);
+    setAsistenciasPrograma(listaAsistencias);
     setShowInvitados(true);
   }
 
@@ -626,6 +636,7 @@ function Coordinacion({
     setForm((actual) => ({
       ...actual,
       invitacionMasiva: activa,
+      alcanceInvitacionMasiva: activa ? actual.alcanceInvitacionMasiva || "colegio" : "colegio",
       anuncioImagen: activa ? actual.anuncioImagen : "",
       anuncioImagenNombre: activa ? actual.anuncioImagenNombre : "",
       anuncioImagenTamano: activa ? actual.anuncioImagenTamano : 0,
@@ -755,7 +766,7 @@ function Coordinacion({
         ...actual,
         nombre: valor,
         cupos: nuevosCupos,
-        requiereIndumentaria: esDeportivo ? true : actual.requiereIndumentaria,
+        requiereIndumentaria: esDeportivo ? actual.requiereIndumentaria : false,
       };
     });
   }
@@ -772,7 +783,7 @@ function Coordinacion({
         ...actual,
         categoria: valor,
         cupos: nuevosCupos,
-        requiereIndumentaria: esDeportivo ? true : actual.requiereIndumentaria,
+        requiereIndumentaria: esDeportivo ? actual.requiereIndumentaria : false,
       };
     });
   }
@@ -1208,7 +1219,7 @@ function Coordinacion({
   const esFormularioVerano = normalizarPeriodoVista(form.periodo) === "verano";
   const esDeportivoForm = String(form.categoria).toLowerCase() === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
   const duracionTallerFormulario = calcularDuracionTexto(form.fechaInicio, form.fechaFin);
-  const mostrarIndumentariaDeportiva = esProgramaDeportivo(form.nombre, form.categoria);
+  const mostrarIndumentariaDeportiva = esDeportivoForm;
 
   return (
     <div className={embedded ? "coord-embedded" : `coord-layout ${esProfesor ? "coord-layout-profesor" : ""} ${sidebarAbierta ? "" : "coord-layout-collapsed"}`}>
@@ -1388,6 +1399,7 @@ function Coordinacion({
 
         {showInvitados && (
           <AlumnosProgramaModal
+            asistencias={asistenciasPrograma}
             descargarPdfAlumnos={descargarPdfAlumnos}
             exportarAExcel={exportarAExcel}
             invitados={invitados}

@@ -7,6 +7,12 @@ import {
 import PortalBadge from "./PortalBadge";
 import { describirSeleccionCambridgePadres } from "../utils/padresTextUtils";
 
+const opcionesCambridge = [
+  { id: "A", titulo: "A", detalle: "Promovido/a por Certificado Oficial 2025" },
+  { id: "B", titulo: "B", detalle: "Ingresante por Admission Test" },
+  { id: "C", titulo: "C", detalle: "Ingresante por Desempeno Academico" },
+];
+
 function obtenerTalleresEstructurados(programa) {
   if (!programa) return [];
 
@@ -157,7 +163,7 @@ export default function ComunicadoStep({
     setHorarioSeleccionado("");
   };
 
-  const requierePoloYShort = Boolean(programa.requiereIndumentaria) || String(programa.categoria || "").toLowerCase() === "deportivo";
+  const requierePoloYShort = Boolean(programa.requiereIndumentaria);
   const requiereTallaUniforme = Boolean(programa.requiereUniforme);
   const faltanTallas = (requierePoloYShort && (!tallaPolo || !tallaShort)) || (requiereTallaUniforme && !tallaUniforme);
 
@@ -172,7 +178,11 @@ export default function ComunicadoStep({
           <div>
             <PortalBadge tone="orange">Datos de inscripción</PortalBadge>
             <h2>Complete los datos de la inscripción</h2>
-            <p>Seleccione el deporte/grupo de edad y las tallas requeridas para continuar.</p>
+            <p>
+              {requierePoloYShort || requiereTallaUniforme
+                ? "Seleccione el deporte/grupo de edad y las tallas requeridas para continuar."
+                : "Seleccione el deporte/grupo de edad para continuar."}
+            </p>
           </div>
         </div>
       ) : (
@@ -197,16 +207,29 @@ export default function ComunicadoStep({
           {comunicadoPadres.datosCambridge ? (
             <div className="padres-flow-requirements">
               <h3>Resumen Cambridge</h3>
-              <ul>
-                <li>
-                  <strong>Modalidad Cambridge A/B/C:</strong> {describirSeleccionCambridgePadres(comunicadoPadres.datosCambridge.seleccion)}
-                </li>
-                {comunicadoPadres.datosCambridge.nivelCambridge ? (
-                  <li>
-                    <strong>Nivel:</strong> {comunicadoPadres.datosCambridge.nivelCambridge}
-                  </li>
-                ) : null}
-              </ul>
+              <div className="padres-cambridge-summary">
+                <div className="padres-cambridge-selected">
+                  <span>Modalidad asignada</span>
+                  <strong>{describirSeleccionCambridgePadres(comunicadoPadres.datosCambridge.seleccion)}</strong>
+                  {comunicadoPadres.datosCambridge.nivelCambridge ? (
+                    <small>Nivel Cambridge: {comunicadoPadres.datosCambridge.nivelCambridge}</small>
+                  ) : null}
+                </div>
+                <div className="padres-cambridge-options" aria-label="Opciones de modalidad Cambridge">
+                  {opcionesCambridge.map((opcion) => {
+                    const seleccionada = String(comunicadoPadres.datosCambridge.seleccion || "").trim().toUpperCase() === opcion.id;
+                    return (
+                      <div className={`padres-cambridge-option ${seleccionada ? "is-selected" : ""}`} key={opcion.id}>
+                        <span className="padres-cambridge-check">{seleccionada ? "✓" : ""}</span>
+                        <div>
+                          <strong>{opcion.titulo}</strong>
+                          <small>{opcion.detalle}</small>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           ) : null}
         </>

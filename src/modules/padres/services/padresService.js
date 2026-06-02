@@ -128,16 +128,21 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
     programaId: programa.id,
     periodo: programa.periodo,
     programa: programa.nombre,
+    categoria: programa.categoria || "",
+    alcanceInvitacionMasiva: programa.alcanceInvitacionMasiva || "",
     horario: horarioRegistro,
     docente: programa.responsable || programa.docente || "No definido",
     costo: Number(programa.costo ?? 0),
     modalidadCobro: programa.modalidadCobro || "",
     fechaInicio: programa.fechaInicio || "",
     fechaFin: programa.fechaFin || "",
+    cicloI: programa.cicloI || "",
+    cicloII: programa.cicloII || "",
     duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
     duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
     gradosAplicables: programa.gradosAplicables || [],
     horariosPorGrupo: programa.horariosPorGrupo || [],
+    talleresDeportivos: programa.talleresDeportivos || [],
     grupo: programa.grupo || "",
     grupoEtario: programa.grupoEtario || programa.grupo || "",
     requisitos: programa.requisitos || "",
@@ -151,7 +156,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
     plantillaBase64: "",
     plantillaVariables: programa.plantillaVariables || [],
     requiereUniforme: Boolean(programa.requiereUniforme),
-    requiereIndumentaria: Boolean(programa.requiereIndumentaria) || String(programa.categoria || "").toLowerCase() === "deportivo",
+    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
     tallaUniforme: tallas.tallaUniforme || "",
     tallaPolo: tallas.tallaPolo || "",
     tallaShort: tallas.tallaShort || "",
@@ -282,11 +287,13 @@ function obtenerInvitaciones(dni, estudiante = null) {
   apiDb.programas.forEach((programa) => {
     if (!programaVisibleEnPortalPadres(programa)) return;
 
-    if (programa.invitacionMasiva) {
+    if (programa.invitacionMasiva && programaDisponibleParaGrado(programa, estudiante?.grado)) {
       resultado.push({
         id: `${programa.id}-masiva-${dni}`,
         programaId: programa.id,
         programa: programa.nombre,
+        categoria: programa.categoria || "",
+        alcanceInvitacionMasiva: programa.alcanceInvitacionMasiva || "colegio",
         periodo: normalizarPeriodoTexto(programa.periodo),
         horario: resolverHorarioPorGrado(programa, estudiante?.grado) || programa.horario || "Horario por confirmar",
         responsable: programa.responsable || programa.docente || "Responsable por definir",
@@ -299,13 +306,17 @@ function obtenerInvitaciones(dni, estudiante = null) {
         concesionarios: programa.concesionarios || "",
         anuncioImagen: programa.anuncioImagen || "",
         anuncioImagenNombre: programa.anuncioImagenNombre || "",
-          requiereUniforme: Boolean(programa.requiereUniforme),
-          seleccion: estudiante?.seleccion || "",
-          nivelCambridge: estudiante?.nivelCambridge || "",
-          estadoPrograma: programa.estado || "No definido",
-          estadoInvitacion: "Invitacion masiva",
+        talleresDeportivos: programa.talleresDeportivos || [],
+        requiereUniforme: Boolean(programa.requiereUniforme),
+        requiereIndumentaria: Boolean(programa.requiereIndumentaria),
+        seleccion: estudiante?.seleccion || "",
+        nivelCambridge: estudiante?.nivelCambridge || "",
+        estadoPrograma: programa.estado || "No definido",
+        estadoInvitacion: "Invitacion masiva",
         fechaInicio: programa.fechaInicio || "",
         fechaFin: programa.fechaFin || "",
+        cicloI: programa.cicloI || "",
+        cicloII: programa.cicloII || "",
         duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
         duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
         ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias),
@@ -324,6 +335,8 @@ function obtenerInvitaciones(dni, estudiante = null) {
           id: `${programa.id}-${invitado.dni || invitado.codigoEstudiante || invitado.nombres}`,
           programaId: programa.id,
           programa: programa.nombre,
+          categoria: programa.categoria || "",
+          alcanceInvitacionMasiva: programa.alcanceInvitacionMasiva || "colegio",
           periodo: normalizarPeriodoTexto(programa.periodo),
           horario: resolverHorarioPorGrado(programa, invitado.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar",
           responsable: programa.responsable || programa.docente || "Responsable por definir",
@@ -336,13 +349,17 @@ function obtenerInvitaciones(dni, estudiante = null) {
           concesionarios: programa.concesionarios || "",
           anuncioImagen: programa.anuncioImagen || "",
           anuncioImagenNombre: programa.anuncioImagenNombre || "",
+          talleresDeportivos: programa.talleresDeportivos || [],
           requiereUniforme: Boolean(programa.requiereUniforme),
+          requiereIndumentaria: Boolean(programa.requiereIndumentaria),
           seleccion: invitado.seleccion || "",
           nivelCambridge: invitado.nivelCambridge || "",
           estadoPrograma: programa.estado || "No definido",
           estadoInvitacion: invitado.estado || "Invitado",
           fechaInicio: programa.fechaInicio || "",
           fechaFin: programa.fechaFin || "",
+          cicloI: programa.cicloI || "",
+          cicloII: programa.cicloII || "",
           duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
           duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
           ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias),
@@ -452,6 +469,8 @@ function sincronizarInscripcionConPrograma(inscripcion) {
     modalidadCobro: programa.modalidadCobro || inscripcion.modalidadCobro,
     fechaInicio: programa.fechaInicio || inscripcion.fechaInicio,
     fechaFin: programa.fechaFin || inscripcion.fechaFin,
+    cicloI: programa.cicloI || inscripcion.cicloI || "",
+    cicloII: programa.cicloII || inscripcion.cicloII || "",
     duracionTaller: programa.duracionTaller || inscripcion.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
     duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias || inscripcion.duracionAvisoDias, 7),
     requisitos: programa.requisitos || inscripcion.requisitos,
@@ -517,7 +536,7 @@ function tieneHorariosPorGrupo(programa) {
 }
 
 function programaDisponibleParaGrado(programa, gradoAlumno = "") {
-  if (programa?.invitacionMasiva) return true;
+  if (programa?.invitacionMasiva) return programaDisponibleParaAlcanceMasivo(programa, gradoAlumno);
 
   if (tieneHorariosPorGrupo(programa)) {
     return Boolean(resolverHorarioPorGrado(programa, gradoAlumno));
@@ -530,6 +549,26 @@ function programaDisponibleParaGrado(programa, gradoAlumno = "") {
   if (!gradoNormalizado.numero) return false;
 
   return gradosAplicables.some((grado) => coincideGrado(grado, gradoNormalizado));
+}
+
+function programaDisponibleParaAlcanceMasivo(programa, gradoAlumno = "") {
+  const alcance = normalizarTexto(programa?.alcanceInvitacionMasiva || "colegio");
+  if (!alcance || alcance === "colegio" || alcance === "todos") return true;
+
+  const gradoNormalizado = descomponerGrado(gradoAlumno);
+  if (!gradoNormalizado.nivel) return false;
+
+  if (alcance === "primaria" || alcance === "secundaria" || alcance === "inicial") {
+    return gradoNormalizado.nivel === alcance;
+  }
+
+  if (alcance === "grados" || alcance === "seleccionados") {
+    const gradosAplicables = Array.isArray(programa?.gradosAplicables) ? programa.gradosAplicables : [];
+    if (!gradosAplicables.length || !gradoNormalizado.numero) return false;
+    return gradosAplicables.some((grado) => coincideGrado(grado, gradoNormalizado));
+  }
+
+  return true;
 }
 
 function programaVisibleEnPortalPadres(programa) {
@@ -655,10 +694,14 @@ export async function obtenerProgramasCoordinacion() {
       id: programa.id,
       nombre: programa.nombre,
       categoria: programa.categoria,
+      alcanceInvitacionMasiva: programa.alcanceInvitacionMasiva || "colegio",
       horario: programa.horario || "Por confirmar",
       horariosPorGrupo: programa.horariosPorGrupo || [],
       gradosAplicables: programa.gradosAplicables || [],
       invitacionMasiva: Boolean(programa.invitacionMasiva),
+      talleresDeportivos: programa.talleresDeportivos || [],
+      requiereUniforme: Boolean(programa.requiereUniforme),
+      requiereIndumentaria: Boolean(programa.requiereIndumentaria),
       requiereGradoCompatible,
       periodo: normalizarPeriodoTexto(programa.periodo),
       estado: programa.estado || "Habilitado",
@@ -671,6 +714,8 @@ export async function obtenerProgramasCoordinacion() {
       anuncioImagenNombre: programa.anuncioImagenNombre || "",
       fechaInicio: programa.fechaInicio || "",
       fechaFin: programa.fechaFin || "",
+      cicloI: programa.cicloI || "",
+      cicloII: programa.cicloII || "",
       duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
       duracionAvisoDias,
       ventanaInscripcion,

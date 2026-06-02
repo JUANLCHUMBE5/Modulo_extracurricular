@@ -13,7 +13,7 @@ export function prepararComunicadoPadres(programa, estudiante) {
     ? textoWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
     : esCambridge
       ? crearComunicadoCambridgePadres(programa, estudiante, titulo)
-      : [`Coordinación aún no registró un comunicado en la plantilla Word para ${alumno}.`];
+      : crearComunicadoBasicoPadres(programa, estudiante, titulo);
   const indicaciones = obtenerIndicacionesProgramaPadres(programa, { esCambridge });
   const detalleFormato = obtenerDetalleFormatoPadres(programa);
   const resumenParrafos = resumirComunicadoPadres(parrafos, programa, detalleFormato);
@@ -31,7 +31,7 @@ export function prepararComunicadoPadres(programa, estudiante) {
     tieneAlmuerzoFormato: detalleFormato.some((seccion) =>
       ["almuerzo", "concesionarios"].includes(normalizarTextoPadres(seccion.titulo))
     ),
-    ocultarAlmuerzo: esCambridge && !programa?.detalleAlmuerzo && !programa?.concesionarios,
+    ocultarAlmuerzo: !programa?.detalleAlmuerzo && !programa?.concesionarios,
   };
 }
 
@@ -147,6 +147,21 @@ function crearComunicadoCambridgePadres(programa, estudiante, titulo) {
   ];
 }
 
+function crearComunicadoBasicoPadres(programa, estudiante, titulo) {
+  const alumno = estudiante?.nombres || "el estudiante";
+  const vigencia = formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin);
+  const horario = repararTexto(String(programa?.horario || "").trim()) || "Por confirmar";
+  const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
+  const responsable = repararTexto(String(programa?.responsable || programa?.docente || "").trim());
+
+  return [
+    `El colegio informa que ${alumno} tiene disponible el programa ${titulo}.`,
+    `Vigencia: ${vigencia}. Horario: ${horario}. Costo: ${costo}.`,
+    responsable ? `Responsable del programa: ${responsable}.` : "La coordinacion del programa brindara las indicaciones necesarias antes del inicio.",
+    "Revise esta informacion y confirme la aceptacion para continuar con la inscripcion.",
+  ];
+}
+
 function obtenerDatosCambridgePadres(programa, estudiante) {
   const seleccion = String(programa?.seleccion || estudiante?.seleccion || "").trim().toUpperCase();
   const nivelCambridge = String(programa?.nivelCambridge || estudiante?.nivelCambridge || "").trim();
@@ -171,7 +186,7 @@ function obtenerIndicacionesProgramaPadres(programa, { esCambridge = false } = {
     ];
   }
 
-  return ["Revise el comunicado del programa y siga las indicaciones registradas por Coordinación."];
+  return ["Revise el resumen del programa, confirme el horario y continue con los datos del apoderado."];
 }
 
 function resumirComunicadoPadres(parrafos, programa, detalleFormato) {
@@ -186,7 +201,9 @@ function resumirComunicadoPadres(parrafos, programa, detalleFormato) {
     : "";
   const datosClave = `${vigencia}${horario}${costo}`.trim();
   if (datosClave) resumen.push(datosClave);
-  resumen.push("Abra el comunicado completo para leer condiciones, indicaciones, materiales y modalidades de pago.");
+  if (detalleFormato.length) {
+    resumen.push("Abra el comunicado completo para leer condiciones, indicaciones, materiales y modalidades de pago.");
+  }
 
   return resumen.length ? resumen.slice(0, 3) : parrafos.slice(0, 1);
 }

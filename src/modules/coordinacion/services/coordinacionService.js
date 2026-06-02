@@ -9,6 +9,12 @@ import {
 import { esProgramaCambridge } from "../utils/coordinacionProgramUtils";
 
 const delay = (ms = 600) => new Promise((resolve) => setTimeout(resolve, ms));
+const normalizarTextoSimple = (valor = "") =>
+  String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 const obtenerApiBase = () => String(
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? import.meta.env.VITE_LOCAL_API_URL : "") ||
@@ -87,6 +93,8 @@ export async function crearPrograma(datos) {
     fechaNacimientoDesde: datos.fechaNacimientoDesde || "",
     fechaNacimientoHasta: datos.fechaNacimientoHasta || "",
     duracionTaller: datos.duracionTaller || calcularDuracionTexto(datos.fechaInicio, datos.fechaFin),
+    cicloI: datos.cicloI || "",
+    cicloII: datos.cicloII || "",
     duracionAvisoDias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
     plantillaBase64: datos.plantillaBase64 || "",
     plantillaVariables: datos.plantillaVariables || [],
@@ -97,6 +105,7 @@ export async function crearPrograma(datos) {
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
     invitacionMasiva: Boolean(datos.invitacionMasiva),
+    alcanceInvitacionMasiva: datos.invitacionMasiva ? datos.alcanceInvitacionMasiva || "colegio" : "",
     anuncioImagen: datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
     anuncioImagenNombre: datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
     anuncioImagenTamano: datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
@@ -120,6 +129,7 @@ export async function crearProgramaDesdeDocumento(datos) {
   }
 
   const correlativo = nextApiId("nextProgramaId");
+  const esCambridge = esProgramaCambridge(datos);
   const nuevo = {
     ...datos,
     id: `PROG-${String(correlativo).padStart(3, "0")}`,
@@ -141,6 +151,8 @@ export async function crearProgramaDesdeDocumento(datos) {
     fechaInicio: datos.fechaInicio || fechaActualInput(),
     fechaFin: datos.fechaFin || fechaActualInput(),
     duracionTaller: datos.duracionTaller || calcularDuracionTexto(datos.fechaInicio, datos.fechaFin),
+    cicloI: datos.cicloI || "",
+    cicloII: datos.cicloII || "",
     duracionAvisoDias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
     cupos: Number(datos.cupos) > 0 ? Number(datos.cupos) : 1,
     cuposOcupados: 0,
@@ -157,6 +169,7 @@ export async function crearProgramaDesdeDocumento(datos) {
     requiereUniforme: Boolean(datos.requiereUniforme),
     requiereIndumentaria: Boolean(datos.requiereIndumentaria),
     invitacionMasiva: Boolean(datos.invitacionMasiva),
+    alcanceInvitacionMasiva: datos.invitacionMasiva ? datos.alcanceInvitacionMasiva || "colegio" : "",
     anuncioImagen: datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
     anuncioImagenNombre: datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
     anuncioImagenTamano: datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
@@ -189,6 +202,8 @@ export async function editarPrograma(id, datos) {
     fechaNacimientoDesde: datos.fechaNacimientoDesde || "",
     fechaNacimientoHasta: datos.fechaNacimientoHasta || "",
     duracionTaller: datos.duracionTaller || calcularDuracionTexto(datos.fechaInicio, datos.fechaFin),
+    cicloI: datos.cicloI || "",
+    cicloII: datos.cicloII || "",
     duracionAvisoDias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
     plantillaBase64: datos.plantillaBase64 || "",
     plantillaVariables: datos.plantillaVariables || [],
@@ -199,6 +214,7 @@ export async function editarPrograma(id, datos) {
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
     invitacionMasiva: Boolean(datos.invitacionMasiva),
+    alcanceInvitacionMasiva: datos.invitacionMasiva ? datos.alcanceInvitacionMasiva || "colegio" : "",
     anuncioImagen: datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
     anuncioImagenNombre: datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
     anuncioImagenTamano: datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
@@ -268,6 +284,37 @@ export async function listarMatriculados(programaId) {
       costo: item.costo,
       apoderado: item.apoderado || "",
       telefono: item.telefono || "",
+    }));
+}
+
+export async function listarAsistenciasPrograma(programaId) {
+  await delay(400);
+  await syncApiDb();
+  const programa = apiDb.programas.find((item) => String(item.id) === String(programaId));
+  const nombrePrograma = normalizarTextoSimple(programa?.nombre);
+
+  return (apiDb.asistencias || [])
+    .filter((item) => {
+      const coincideId = item.programaId && String(item.programaId) === String(programaId);
+      const coincideNombre = nombrePrograma && normalizarTextoSimple(item.programa) === nombrePrograma;
+      return coincideId || coincideNombre;
+    })
+    .sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0))
+    .map((item) => ({
+      id: item.id || "",
+      inscripcionId: item.inscripcionId || "",
+      pagoId: item.pagoId || "",
+      dni: item.dniEstudiante || "",
+      codigoEstudiante: item.codigoEstudiante || "",
+      nombres: item.nombresEstudiante || "",
+      programaId: item.programaId || programaId,
+      programa: item.programa || programa?.nombre || "",
+      horario: item.horario || "",
+      estadoPago: item.estadoPago || "",
+      estadoAcceso: item.estadoAcceso || "",
+      observacion: item.observacion || "",
+      origen: item.origen || "Auxiliar",
+      fechaRegistro: item.fechaRegistro || "",
     }));
 }
 

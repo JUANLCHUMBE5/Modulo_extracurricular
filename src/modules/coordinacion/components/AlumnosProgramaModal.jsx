@@ -35,6 +35,7 @@ function describirSeleccionCambridge(valor = "") {
 }
 
 function AlumnosProgramaModal({
+  asistencias = [],
   descargarPdfAlumnos,
   exportarAExcel,
   invitados,
@@ -44,7 +45,11 @@ function AlumnosProgramaModal({
   setSubVistaAlumnos,
   subVistaAlumnos,
 }) {
-  const listaActual = subVistaAlumnos === "preinscritos" ? invitados : matriculados;
+  const listaActual = subVistaAlumnos === "preinscritos"
+    ? invitados
+    : subVistaAlumnos === "asistencias"
+      ? asistencias
+      : matriculados;
   const puedeDescargar = subVistaAlumnos === "matriculados";
 
   return (
@@ -71,6 +76,14 @@ function AlumnosProgramaModal({
               style={tabStyle(subVistaAlumnos === "matriculados")}
             >
               Matriculados (Caja / Padres) ({matriculados.length})
+            </button>
+            <button
+              type="button"
+              className={`coord-tab-btn ${subVistaAlumnos === "asistencias" ? "is-active" : ""}`}
+              onClick={() => setSubVistaAlumnos("asistencias")}
+              style={tabStyle(subVistaAlumnos === "asistencias")}
+            >
+              Asistencia (Auxiliar) ({asistencias.length})
             </button>
           </div>
 
@@ -99,12 +112,16 @@ function AlumnosProgramaModal({
             </div>
           ) : (
             <p className="coord-process-note" style={{ marginBottom: "16px" }}>
-              Los pre-inscritos son solo invitados de Excel. La descarga esta disponible unicamente para alumnos matriculados.
+              {subVistaAlumnos === "asistencias"
+                ? ""
+                : ""}
             </p>
           )}
 
           {subVistaAlumnos === "preinscritos" ? (
             <TablaPreinscritos alumnos={invitados} />
+          ) : subVistaAlumnos === "asistencias" ? (
+            <TablaAsistencias asistencias={asistencias} />
           ) : (
             <TablaMatriculados alumnos={matriculados} />
           )}
@@ -197,6 +214,113 @@ function TablaMatriculados({ alumnos }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function formatearFechaAsistencia(valor) {
+  if (!valor) return "Sin fecha";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return "Sin fecha";
+  const texto = fecha.toLocaleDateString("es-PE", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
+function formatearHoraAsistencia(valor) {
+  if (!valor) return "-";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return "-";
+  return fecha.toLocaleTimeString("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function claveFechaAsistencia(valor) {
+  if (!valor) return "sin-fecha";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return "sin-fecha";
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, "0");
+  const day = String(fecha.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function agruparAsistenciasPorFecha(asistencias) {
+  return asistencias.reduce((grupos, asistencia) => {
+    const clave = claveFechaAsistencia(asistencia.fechaRegistro);
+    if (!grupos[clave]) {
+      grupos[clave] = {
+        clave,
+        titulo: formatearFechaAsistencia(asistencia.fechaRegistro),
+        filas: [],
+      };
+    }
+    grupos[clave].filas.push(asistencia);
+    return grupos;
+  }, {});
+}
+
+function TablaAsistencias({ asistencias }) {
+  if (!asistencias.length) {
+    return <p className="coord-process-note">Aun no hay asistencias registradas por Auxiliar para este programa.</p>;
+  }
+
+  const grupos = Object.values(agruparAsistenciasPorFecha(asistencias));
+
+  return (
+    <div style={{ display: "grid", gap: "16px" }}>
+      {grupos.map((grupo) => (
+        <div key={grupo.clave} className="coord-table-wrap">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+            <strong style={{ color: "#0f172a" }}>{grupo.titulo}</strong>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: "#475467" }}>
+              {grupo.filas.length} asistencia{grupo.filas.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          <table className="coord-table">
+            <thead>
+              <tr>
+                <th>Hora</th>
+                <th>DNI</th>
+                <th>Codigo</th>
+                <th>Estudiante</th>
+                <th>Horario del taller</th>
+                <th>Pago</th>
+                <th>Acceso</th>
+                <th>Observacion</th>
+              </tr>
+            </thead>
+            <tbody>
+              {grupo.filas.map((asistencia, index) => (
+                <tr key={`${asistencia.id || asistencia.dni || asistencia.nombres}-${index}`}>
+                  <td>{formatearHoraAsistencia(asistencia.fechaRegistro)}</td>
+                  <td>{asistencia.dni || "Sin DNI"}</td>
+                  <td>{asistencia.codigoEstudiante || "-"}</td>
+                  <td><strong>{asistencia.nombres || "-"}</strong></td>
+                  <td>{asistencia.horario || "-"}</td>
+                  <td>
+                    <span style={badgeStyle(String(asistencia.estadoPago).toLowerCase() === "pagado", "warning")}>
+                      {asistencia.estadoPago || "Pendiente"}
+                    </span>
+                  </td>
+                  <td>
+                    <span style={badgeStyle(String(asistencia.estadoAcceso).toLowerCase() === "permitido", "error")}>
+                      {asistencia.estadoAcceso || "Sin validar"}
+                    </span>
+                  </td>
+                  <td>{asistencia.observacion || "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
     </div>
   );
 }
