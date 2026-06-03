@@ -15,6 +15,7 @@ import {
 const accesos = [
   { texto: "Ver programa", icon: BookOpen },
   { texto: "Monto a pagar", icon: CreditCard },
+  { texto: "Como pagar correctamente", icon: CreditCard },
   { texto: "Ver horario", icon: CalendarDays },
   { texto: "Estado del pago", icon: CheckCircle2 },
   { texto: "Descargar ficha", icon: FileText },
@@ -35,7 +36,6 @@ function AsistentePadres({ abierto, setAbierto, mensajes, consulta, setConsulta,
     return (
       <button className="padres-assistant-fab" type="button" onClick={() => setAbierto(true)}>
         <MessageCircle size={20} />
-        <span>Ayuda</span>
       </button>
     );
   }

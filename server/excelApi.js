@@ -539,7 +539,8 @@ function mapDbAsistenciaToApi(item) {
     nombres_estudiante: item.nombresEstudiante || "",
     nombre_programa: item.programa || "",
     horario: item.horario || "",
-    observacion: item.observacion || ""
+    observacion: item.observacion || "",
+    estado_pago: item.estadoPago || "Pendiente"
   };
 }
 

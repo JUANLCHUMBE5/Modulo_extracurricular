@@ -12,7 +12,7 @@ import SummaryBox from "./SummaryBox";
 import { textoEstadoCarga } from "../utils/coordinacionFormatters";
 
 function obtenerResumenArchivos(archivosExcel = []) {
-  if (!archivosExcel.length) return "Seleccione uno o varios archivos .xlsx o .xls";
+  if (!archivosExcel.length) return "Ningun archivo seleccionado";
   if (archivosExcel.length === 1) return archivosExcel[0].name;
   return `${archivosExcel.length} archivos seleccionados`;
 }
@@ -36,17 +36,13 @@ function CargaExcelView({
 }) {
   return (
     <>
-      <header className="coord-topbar"><h1>CARGA MASIVA DE ALUMNOS DESDE EXCEL</h1></header>
+      <header className="coord-topbar"><h1>CARGAR EXCEL</h1></header>
       <section className="coord-workspace coord-workspace-single coord-workspace-upload">
         <article className="coord-card coord-search-card coord-upload-card">
           <div className="coord-form">
             <div className="coord-upload-grid">
-              <div className="coord-field">
-                <label>Periodo</label>
-                <div className="coord-readonly-field">Año escolar</div>
-              </div>
               <div className="coord-field coord-field-full">
-                <label>Archivo Excel</label>
+                <label>Archivo</label>
                 <div className="coord-file-picker">
                   <input
                     id="coord-excel-upload"
@@ -67,12 +63,6 @@ function CargaExcelView({
                   </label>
                   <span>{obtenerResumenArchivos(archivosExcel)}</span>
                 </div>
-                {archivosExcel.length ? (
-                  <small>Puede cargar hasta 6 archivos. Tamaño máximo por archivo: 5 MB.</small>
-                ) : null}
-                <small>
-                  Para Cambridge incluya las columnas <b>grado</b>, <b>seccion</b> y <b>seleccion</b>. La columna <b>nivel_cambridge</b> es opcional. Use A para certificado oficial, B para Admission Test o C para desempeño académico.
-                </small>
               </div>
             </div>
 
@@ -118,7 +108,7 @@ function CargaExcelView({
                     ? "Vista previa lista"
                     : progresoCarga.actual > 0
                       ? `Validando archivo ${progresoCarga.actual} de ${progresoCarga.total}`
-                      : "Preparando validación"}
+                      : "Preparando validacion"}
                 </strong>
                 <span>{progresoCarga.porcentaje}%</span>
               </div>
@@ -135,7 +125,7 @@ function CargaExcelView({
             <>
               <div className="coord-load-summary">
                 <SummaryBox label="Leidos" value={previewCarga.resumen.total} />
-                <SummaryBox label="Válidos" value={previewCarga.resumen.validos} tone="success" />
+                <SummaryBox label="Validos" value={previewCarga.resumen.validos} tone="success" />
                 <SummaryBox label="Errores" value={previewCarga.resumen.errores} tone="error" />
                 <SummaryBox label="Duplicados" value={previewCarga.resumen.duplicados} tone="warning" />
               </div>
@@ -143,7 +133,7 @@ function CargaExcelView({
                 <table className="coord-table">
                   <thead>
                     <tr>
-                      <th>DNI</th><th>Código</th><th>Alumno</th><th>Grado</th><th>Sección</th><th>Selección</th><th>Curso / nivel</th><th>Estado</th><th>Detalle</th>
+                      <th>DNI</th><th>Codigo</th><th>Alumno</th><th>Grado</th><th>Seccion</th><th>Seleccion</th><th>Curso / nivel</th><th>Estado</th><th>Detalle</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -165,9 +155,9 @@ function CargaExcelView({
               </div>
             </>
           ) : (
-            <div className="coord-empty">
+            <div className="coord-empty coord-upload-empty">
               <ListCheck size={18} />
-              <p>Seleccione un Excel y presione <b>Vista previa</b>. Todavía no se guarda nada hasta que revise los resultados y confirme la carga.</p>
+              <p>Seleccione archivo y revise <b>Vista previa</b> antes de guardar.</p>
             </div>
           )}
         </article>

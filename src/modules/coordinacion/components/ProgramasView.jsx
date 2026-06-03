@@ -12,9 +12,32 @@ import {
   IconToggleLeft as ToggleLeft,
   IconToggleRight as ToggleRight,
   IconTrash as Trash2,
+  IconSchool as School,
+  IconTrophy as Trophy,
+  IconLanguage as Language,
+  IconSun as Sun,
+  IconBookmark as Bookmark,
 } from "@tabler/icons-react";
 import { formatearSoles } from "../utils/coordinacionFormatters";
 import { CuposTabla, GradosTabla, HorarioTabla, VigenciaTabla } from "./ProgramTableCells";
+
+const obtenerClaseCategoria = (cat) => {
+  const c = String(cat || "").toLowerCase();
+  if (c.includes("deport")) return "deportivo";
+  if (c.includes("acad") || c.includes("tarea")) return "academico";
+  if (c.includes("cambridge") || c.includes("ingles") || c.includes("ingl")) return "ingles";
+  if (c.includes("verano")) return "verano";
+  return "general";
+};
+
+const obtenerIconoCategoria = (cat) => {
+  const c = String(cat || "").toLowerCase();
+  if (c.includes("deport")) return <Trophy size={18} style={{ color: "#c2410c", marginRight: "8px", flexShrink: 0 }} />;
+  if (c.includes("acad") || c.includes("tarea")) return <School size={18} style={{ color: "#0369a1", marginRight: "8px", flexShrink: 0 }} />;
+  if (c.includes("cambridge") || c.includes("ingles") || c.includes("ingl")) return <Language size={18} style={{ color: "#6b21a8", marginRight: "8px", flexShrink: 0 }} />;
+  if (c.includes("verano")) return <Sun size={18} style={{ color: "#a16207", marginRight: "8px", flexShrink: 0 }} />;
+  return <Bookmark size={18} style={{ color: "#475569", marginRight: "8px", flexShrink: 0 }} />;
+};
 
 function ProgramasView({
   abrirCrear,
@@ -100,21 +123,26 @@ function ProgramasView({
               {programas.map((programa) => (
                 <article
                   key={programa.id}
-                  className={`coord-program-card-item coord-program-card-${String(programa.estado || "").toLowerCase()}`}
+                  className={`coord-program-card-item coord-program-card-${String(programa.estado || "").toLowerCase()} coord-cat-${obtenerClaseCategoria(programa.categoria)}`}
                 >
                   <div className="coord-program-card-body">
                     <div className="coord-program-card-header">
                       <div className="coord-program-card-title">
-                        <h3>{programa.nombre}</h3>
+                        <h3 style={{ display: "flex", alignItems: "center" }}>
+                          {obtenerIconoCategoria(programa.categoria)}
+                          <span>{programa.nombre}</span>
+                        </h3>
                         <div className="coord-program-card-meta">
                           <span>{programa.id || "Sin código"}</span>
-                          <span>{programa.categoria || "Sin categoría"}</span>
+                          <span className={`coord-badge-cat coord-badge-cat-${obtenerClaseCategoria(programa.categoria)}`}>
+                            {programa.categoria || "General"}
+                          </span>
                           <span>Tutor: {programa.responsable || "No asignado"}</span>
                         </div>
                       </div>
                       <Badge
-                        color={programa.estado === "Habilitado" ? "blue" : programa.estado === "Deshabilitado" ? "gray" : "yellow"}
-                        variant="light"
+                        color={programa.estado === "Habilitado" ? "blue" : programa.estado === "Deshabilitado" ? "red" : "yellow"}
+                        variant={programa.estado === "Deshabilitado" ? "filled" : "light"}
                         size="sm"
                       >
                         {programa.estado}

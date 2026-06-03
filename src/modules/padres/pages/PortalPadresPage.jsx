@@ -177,6 +177,14 @@ export default function Padres({ user, onLogout }) {
     /^\d{9}$/.test(form.telefono.trim()) &&
     form.acepta
   );
+  const contextoAsistente = useMemo(() => ({
+    datosConfirmados,
+    infoProgramaAceptada,
+    inscripcionActual: inscripcionPago,
+    pasoActivo,
+    programaActual,
+    requiereCaja,
+  }), [datosConfirmados, infoProgramaAceptada, inscripcionPago, pasoActivo, programaActual, requiereCaja]);
   const pagosOrdenados = [...pagos].sort((a, b) =>
     new Date(b.fecha || b.createdAt || b.fechaPago || 0) - new Date(a.fecha || a.createdAt || a.fechaPago || 0)
   );
@@ -296,7 +304,7 @@ export default function Padres({ user, onLogout }) {
 
   async function manejarAccionPago(datosPago = null) {
     if (!programaActual) {
-      consultarRafael("Que programa tiene disponible mi hijo");
+      consultarRafael("Que programa tiene disponible mi hijo", contextoAsistente);
       return;
     }
     if (!infoProgramaAceptada) {
@@ -308,7 +316,7 @@ export default function Padres({ user, onLogout }) {
       return;
     }
     if (requiereCaja) {
-      consultarRafael("Que debo hacer ahora");
+      consultarRafael("Que debo hacer ahora", contextoAsistente);
       return;
     }
     if ((invitacionPendiente || programaAdicional) && !inscripcionPago) {
@@ -766,7 +774,7 @@ export default function Padres({ user, onLogout }) {
         mensajes={mensajes}
         consulta={consulta}
         setConsulta={setConsulta}
-        preguntar={preguntar}
+        preguntar={(texto) => preguntar(texto, contextoAsistente)}
       />
     </div>
   );

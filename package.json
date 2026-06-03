@@ -7,14 +7,11 @@
   "scripts": {
     "api": "node server/excelApi.js",
     "api:local": "node server/excelApi.js",
-    "db:push-supabase-pilot": "node server/scripts/pushSupabasePilot.js",
-    "db:push-supabase-tables": "node server/scripts/pushSupabaseTables.js",
     "dev": "vite",
     "dev:local": "vite",
     "start": "node server/excelApi.js",
     "build": "vite build",
     "build:local": "vite build",
-    "vercel:ignore-build": "node scripts/vercel-ignore-build.js",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -22,7 +19,6 @@
     "@mantine/core": "^9.2.1",
     "@mantine/dates": "^9.2.1",
     "@mantine/hooks": "^9.2.1",
-    "@supabase/supabase-js": "^2.106.1",
     "@tabler/icons-react": "^3.44.0",
     "@tailwindcss/vite": "^4.3.0",
     "@vitejs/plugin-react": "^4.3.4",

@@ -1,7 +1,10 @@
 import {
+  IconChevronLeft as ChevronLeft,
+  IconChevronRight as ChevronRight,
   IconFileDownload as FileDown,
   IconX as X,
 } from "@tabler/icons-react";
+import { useMemo, useState } from "react";
 
 const tabStyle = (activo) => ({
   background: "none",
@@ -110,13 +113,7 @@ function AlumnosProgramaModal({
                 <span>Exportar Excel</span>
               </button>
             </div>
-          ) : (
-            <p className="coord-process-note" style={{ marginBottom: "16px" }}>
-              {subVistaAlumnos === "asistencias"
-                ? ""
-                : ""}
-            </p>
-          )}
+          ) : null}
 
           {subVistaAlumnos === "preinscritos" ? (
             <TablaPreinscritos alumnos={invitados} />
@@ -231,6 +228,22 @@ function formatearFechaAsistencia(valor) {
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
+function obtenerFechaAsistencia(asistencia = {}) {
+  return asistencia.fechaRegistro || asistencia.fecha || asistencia.createdAt || asistencia.fechaAsistencia || "";
+}
+
+function obtenerDniAsistencia(asistencia = {}) {
+  return asistencia.dni || asistencia.dniEstudiante || asistencia.estudianteId || "";
+}
+
+function obtenerNombreAsistencia(asistencia = {}) {
+  return asistencia.nombres || asistencia.nombresEstudiante || asistencia.estudianteNombre || asistencia.alumno || "";
+}
+
+function obtenerEstadoAccesoAsistencia(asistencia = {}) {
+  return asistencia.estadoAcceso || asistencia.estado || asistencia.estadoAsistencia || "";
+}
+
 function formatearHoraAsistencia(valor) {
   if (!valor) return "-";
   const fecha = new Date(valor);
@@ -253,11 +266,12 @@ function claveFechaAsistencia(valor) {
 
 function agruparAsistenciasPorFecha(asistencias) {
   return asistencias.reduce((grupos, asistencia) => {
-    const clave = claveFechaAsistencia(asistencia.fechaRegistro);
+    const fecha = obtenerFechaAsistencia(asistencia);
+    const clave = claveFechaAsistencia(fecha);
     if (!grupos[clave]) {
       grupos[clave] = {
         clave,
-        titulo: formatearFechaAsistencia(asistencia.fechaRegistro),
+        titulo: formatearFechaAsistencia(fecha),
         filas: [],
       };
     }
@@ -267,42 +281,149 @@ function agruparAsistenciasPorFecha(asistencias) {
 }
 
 function TablaAsistencias({ asistencias }) {
+  const [fechaSeleccionada, setFechaSeleccionada] = useState("");
+
+  const grupos = useMemo(
+    () => Object.values(agruparAsistenciasPorFecha(asistencias))
+      .sort((a, b) => String(b.clave).localeCompare(String(a.clave))),
+    [asistencias]
+  );
+
+  const grupoActivo = grupos.find((grupo) => grupo.clave === fechaSeleccionada) || grupos[0];
+  const indiceActivo = grupos.findIndex((grupo) => grupo.clave === grupoActivo?.clave);
+
+  const irAnterior = () => {
+    if (indiceActivo < grupos.length - 1) {
+      setFechaSeleccionada(grupos[indiceActivo + 1].clave);
+    }
+  };
+
+  const irSiguiente = () => {
+    if (indiceActivo > 0) {
+      setFechaSeleccionada(grupos[indiceActivo - 1].clave);
+    }
+  };
+
   if (!asistencias.length) {
     return <p className="coord-process-note">Aun no hay asistencias registradas por Auxiliar para este programa.</p>;
   }
 
-  const grupos = Object.values(agruparAsistenciasPorFecha(asistencias));
-
   return (
-    <div style={{ display: "grid", gap: "16px" }}>
-      {grupos.map((grupo) => (
-        <div key={grupo.clave} className="coord-table-wrap">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-            <strong style={{ color: "#0f172a" }}>{grupo.titulo}</strong>
-            <span style={{ fontSize: "12px", fontWeight: 700, color: "#475467" }}>
-              {grupo.filas.length} asistencia{grupo.filas.length === 1 ? "" : "s"}
-            </span>
+    <div style={{ display: "grid", gap: "14px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "6px" }}>
+        <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Fecha de asistencia:</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <button
+            type="button"
+            onClick={irAnterior}
+            disabled={indiceActivo >= grupos.length - 1}
+            title="Día anterior"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "36px",
+              height: "36px",
+              borderRadius: "8px",
+              border: "1px solid #d0d5dd",
+              background: "#ffffff",
+              color: "#344054",
+              cursor: indiceActivo >= grupos.length - 1 ? "not-allowed" : "pointer",
+              opacity: indiceActivo >= grupos.length - 1 ? 0.5 : 1,
+              transition: "all 0.2s ease",
+            }}
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div style={{ position: "relative" }}>
+            <select
+              value={grupoActivo?.clave || ""}
+              onChange={(e) => setFechaSeleccionada(e.target.value)}
+              style={{
+                appearance: "none",
+                WebkitAppearance: "none",
+                padding: "8px 36px 8px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d0d5dd",
+                background: "#ffffff",
+                color: "#1d2939",
+                fontSize: "14px",
+                fontWeight: "600",
+                height: "36px",
+                cursor: "pointer",
+                outline: "none",
+                minWidth: "240px",
+                boxShadow: "0 1px 2px rgba(16, 24, 40, 0.05)",
+                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23344054' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 12px center",
+                backgroundSize: "16px",
+              }}
+            >
+              {grupos.map((grupo) => (
+                <option key={grupo.clave} value={grupo.clave}>
+                  {grupo.titulo} ({grupo.filas.length} {grupo.filas.length === 1 ? "asistencia" : "asistencias"})
+                </option>
+              ))}
+            </select>
           </div>
-          <table className="coord-table">
-            <thead>
-              <tr>
-                <th>Hora</th>
-                <th>DNI</th>
-                <th>Codigo</th>
-                <th>Estudiante</th>
-                <th>Horario del taller</th>
-                <th>Pago</th>
-                <th>Acceso</th>
-                <th>Observacion</th>
-              </tr>
-            </thead>
-            <tbody>
-              {grupo.filas.map((asistencia, index) => (
-                <tr key={`${asistencia.id || asistencia.dni || asistencia.nombres}-${index}`}>
-                  <td>{formatearHoraAsistencia(asistencia.fechaRegistro)}</td>
-                  <td>{asistencia.dni || "Sin DNI"}</td>
+          <button
+            type="button"
+            onClick={irSiguiente}
+            disabled={indiceActivo <= 0}
+            title="Día siguiente"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "36px",
+              height: "36px",
+              borderRadius: "8px",
+              border: "1px solid #d0d5dd",
+              background: "#ffffff",
+              color: "#344054",
+              cursor: indiceActivo <= 0 ? "not-allowed" : "pointer",
+              opacity: indiceActivo <= 0 ? 0.5 : 1,
+              transition: "all 0.2s ease",
+            }}
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
+
+      <div className="coord-table-wrap">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
+          <strong style={{ color: "#0f172a" }}>{grupoActivo?.titulo}</strong>
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#475467" }}>
+            {grupoActivo?.filas.length || 0} alumno{grupoActivo?.filas.length === 1 ? "" : "s"} asistieron
+          </span>
+        </div>
+        <table className="coord-table">
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>DNI</th>
+              <th>Codigo</th>
+              <th>Estudiante</th>
+              <th>Horario del taller</th>
+              <th>Pago</th>
+              <th>Acceso</th>
+              <th>Observacion</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(grupoActivo?.filas || []).map((asistencia, index) => {
+              const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asistencia);
+              const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
+              const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
+              const toneAcceso = String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "warning" : "error";
+              return (
+                <tr key={`${asistencia.id || obtenerDniAsistencia(asistencia) || obtenerNombreAsistencia(asistencia)}-${index}`}>
+                  <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asistencia))}</td>
+                  <td>{obtenerDniAsistencia(asistencia) || "Sin DNI"}</td>
                   <td>{asistencia.codigoEstudiante || "-"}</td>
-                  <td><strong>{asistencia.nombres || "-"}</strong></td>
+                  <td><strong>{obtenerNombreAsistencia(asistencia) || "-"}</strong></td>
                   <td>{asistencia.horario || "-"}</td>
                   <td>
                     <span style={badgeStyle(String(asistencia.estadoPago).toLowerCase() === "pagado", "warning")}>
@@ -310,17 +431,17 @@ function TablaAsistencias({ asistencias }) {
                     </span>
                   </td>
                   <td>
-                    <span style={badgeStyle(String(asistencia.estadoAcceso).toLowerCase() === "permitido", "error")}>
-                      {asistencia.estadoAcceso || "Sin validar"}
+                    <span style={badgeStyle(esAccesoPermitido, toneAcceso)}>
+                      {textoAcceso}
                     </span>
                   </td>
                   <td>{asistencia.observacion || "-"}</td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

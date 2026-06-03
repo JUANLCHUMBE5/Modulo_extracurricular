@@ -8,12 +8,6 @@ import {
   resetOfficialDb,
   saveOfficialDb,
 } from "./officialApiDb.js";
-import {
-  getSupabaseDb,
-  isSupabasePilotEnabled,
-  resetSupabaseDb,
-  saveSupabaseDb,
-} from "./supabaseDb.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, "db.json");
@@ -23,13 +17,9 @@ export async function getDb() {
     return getOfficialDb();
   }
 
-  if (isSupabasePilotEnabled()) {
-    return getSupabaseDb();
-  }
-
   await ensureDb();
   const raw = await fs.readFile(DB_PATH, "utf8");
-  return JSON.parse(stripBom(raw));
+  return parseDb(raw);
 }
 
 export async function saveDb(data) {
@@ -37,12 +27,8 @@ export async function saveDb(data) {
     return saveOfficialDb(data);
   }
 
-  if (isSupabasePilotEnabled()) {
-    return saveSupabaseDb(data);
-  }
-
   const db = mergeWithDefaults(data || {}, clone(initialData));
-  await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2), "utf8");
+  await writeDbFile(db);
   return db;
 }
 
@@ -51,16 +37,12 @@ export async function resetDb() {
     return resetOfficialDb();
   }
 
-  if (isSupabasePilotEnabled()) {
-    return resetSupabaseDb();
-  }
-
   return saveDb(clone(initialData));
 }
 
 export function getDbSource() {
   if (isOfficialApiEnabled()) return "official-api";
-  return isSupabasePilotEnabled() ? "supabase-pilot" : "local-json";
+  return "local-json";
 }
 
 async function ensureDb() {
@@ -102,4 +84,25 @@ function clone(value) {
 
 function stripBom(value) {
   return String(value || "").replace(/^\uFEFF/, "");
+}
+
+function parseDb(raw) {
+  const text = stripBom(raw);
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    const match = /position (\d+)/.exec(error.message || "");
+    if (!match) throw error;
+
+    const repaired = text.slice(0, Number(match[1])).trimEnd();
+    const parsed = JSON.parse(repaired);
+    void writeDbFile(parsed);
+    return parsed;
+  }
+}
+
+async function writeDbFile(db) {
+  const tmpPath = `${DB_PATH}.tmp`;
+  await fs.writeFile(tmpPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
+  await fs.rename(tmpPath, DB_PATH);
 }

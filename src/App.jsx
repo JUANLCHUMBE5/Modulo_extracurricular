@@ -78,6 +78,10 @@ const rolesSistema = {
   Direccion: "direccion",
 };
 
+const rolesApiASistema = Object.fromEntries(
+  Object.entries(rolesSistema).map(([rol, role]) => [role, rol])
+);
+
 const SESSION_STORAGE_KEY = "modulo_extracurricular_session";
 const MODULE_STORAGE_KEY = "modulo_extracurricular_active_module";
 const DELEGATED_STORAGE_KEY = "modulo_extracurricular_delegated_module";
@@ -284,20 +288,30 @@ function App() {
           if (res.success && res.data && res.data.user) {
             setUser((actual) => {
               if (!actual) return actual;
-              const role = res.data.user.role;
+              const apiUser = res.data.user;
+              const role = apiUser.role;
+              const rol = apiUser.rol || rolesApiASistema[role] || "Secretaria";
+              const normalizado = normalizeUser({
+                usuario: apiUser.username || actual.username,
+                nombre: apiUser.name,
+                rol,
+                estado: apiUser.estado || actual.estado,
+                permisos: apiUser.permissions || apiUser.permisos,
+              });
+              const permisos = normalizado.permisos;
               if (
                 actual.role === role &&
-                actual.name === res.data.user.name &&
-                samePermissions(actual.permisos || actual.permissions || [], res.data.user.permissions || [])
+                actual.name === apiUser.name &&
+                samePermissions(actual.permisos || actual.permissions || [], permisos)
               ) {
                 return actual;
               }
               const updatedUser = {
                 ...actual,
                 role,
-                name: res.data.user.name,
-                permisos: res.data.user.permissions || [],
-                permissions: res.data.user.permissions || []
+                name: apiUser.name,
+                permisos,
+                permissions: permisos
               };
               localStorage.setItem("san_rafael_user", JSON.stringify(updatedUser));
               return updatedUser;

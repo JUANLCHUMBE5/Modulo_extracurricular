@@ -21,11 +21,10 @@ function VigenciaTabla({ inicio, fin, duracion, avisoDias }) {
   const diasAviso = normalizarDuracionAvisoDias(avisoDias, 7);
   return (
     <div className="coord-table-date">
-      <span>{formatearFechaCorta(inicio)}</span>
-      <span>al</span>
-      <span>{formatearFechaCorta(fin)}</span>
-      {duracionTexto ? <small>{duracionTexto}</small> : null}
-      <small>Aviso {diasAviso} d.</small>
+      <span className="coord-date-range">{formatearFechaCorta(inicio)} al {formatearFechaCorta(fin)}</span>
+      <small className="coord-date-details">
+        {duracionTexto ? `${duracionTexto} · ` : ""}Aviso {diasAviso} d.
+      </small>
     </div>
   );
 }

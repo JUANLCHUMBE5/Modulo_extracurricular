@@ -252,8 +252,8 @@
 }
 
 .coord-program-row-deshabilitado {
-  opacity: 0.72;
-  background: #fbfcfd;
+  opacity: 0.6;
+  background: #f1f5f9;
 }
 
 .coord-program-row-deshabilitado td:first-child,
@@ -266,7 +266,7 @@
 }
 
 .coord-program-row-deshabilitado td:first-child {
-  border-left-color: #b9c5ce;
+  border-left-color: #cbd5e1;
 }
 
 .coord-pill,

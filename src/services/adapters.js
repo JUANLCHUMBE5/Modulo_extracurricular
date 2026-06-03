@@ -162,6 +162,7 @@ export function adaptarAsistencia(apiAsistencia) {
     nombresEstudiante: apiAsistencia.nombres_estudiante || apiAsistencia.nombresEstudiante || apiAsistencia.nombres || "",
     programa: apiAsistencia.nombre_programa || apiAsistencia.programa || "",
     horario: apiAsistencia.horario || "",
-    observacion: apiAsistencia.observacion || ""
+    observacion: apiAsistencia.observacion || "",
+    estadoPago: apiAsistencia.estado_pago || apiAsistencia.estadoPago || "Pendiente"
   };
 }

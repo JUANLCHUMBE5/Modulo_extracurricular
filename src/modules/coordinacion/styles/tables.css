@@ -83,20 +83,22 @@
 }
 
 .coord-table-date {
-  display: grid;
-  gap: 1px;
-  min-width: 74px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 140px;
 }
 
-.coord-table-date span:nth-child(2) {
-  color: var(--coord-muted);
-  font-size: 11px;
+.coord-date-range {
+  color: var(--coord-ink);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.coord-table-date small {
+.coord-date-details {
   color: var(--coord-muted);
   font-size: 11px;
-  line-height: 1.2;
 }
 
 .coord-table-cupos {
@@ -129,16 +131,17 @@
 }
 
 .coord-program-row-deshabilitado {
-  background: #f5f7f8;
-  opacity: 0.72;
+  background: #f1f5f9;
+  opacity: 0.6;
 }
 
 .coord-program-row-deshabilitado td {
-  color: #6b7280;
+  color: #94a3b8;
+  font-style: italic;
 }
 
 .coord-program-row-deshabilitado td:first-child {
-  box-shadow: inset 4px 0 0 #94a3b8;
+  box-shadow: inset 4px 0 0 #cbd5e1;
 }
 
 .coord-program-row-finalizado {
@@ -179,9 +182,64 @@
   transform: translateY(-1px);
 }
 
+.coord-program-card-habilitado {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f1 !important;
+  box-shadow: 0 4px 14px rgba(31, 41, 51, 0.04) !important;
+  opacity: 1 !important;
+  filter: none !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.coord-program-card-habilitado:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(31, 41, 51, 0.08) !important;
+  border-color: #cbd5e1 !important;
+}
+
 .coord-program-card-deshabilitado {
-  background: #f8fafc;
-  opacity: 0.76;
+  background-color: #f1f5f9 !important;
+  background-image: none !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+  opacity: 0.48 !important;
+  filter: grayscale(1) !important;
+  transition: all 0.2s ease;
+}
+
+.coord-program-card-deshabilitado:hover {
+  opacity: 0.70 !important;
+  border-color: #94a3b8 !important;
+}
+
+.coord-program-card-deshabilitado .coord-program-card-title h3 span {
+  color: #475569 !important;
+  font-style: normal !important;
+  text-decoration: none !important;
+}
+
+.coord-program-card-deshabilitado .coord-program-card-title h3 svg {
+  opacity: 0.50 !important;
+}
+
+.coord-program-card-deshabilitado .coord-program-card-meta,
+.coord-program-card-deshabilitado .coord-program-card-detail span {
+  color: #64748b !important;
+}
+
+.coord-program-card-deshabilitado .coord-program-card-detail strong {
+  color: #475569 !important;
+}
+
+.coord-program-card-deshabilitado .coord-table-cupos div i {
+  background: #94a3b8 !important;
+}
+
+.coord-program-card-deshabilitado .mantine-Badge-root {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+  text-shadow: none !important;
 }
 
 .coord-program-card-finalizado {
@@ -251,7 +309,7 @@
 
 .coord-program-card-grid {
   display: grid;
-  grid-template-columns: minmax(150px, 1.15fr) minmax(180px, 1.25fr) minmax(120px, 0.85fr) minmax(90px, 0.65fr) minmax(90px, 0.65fr);
+  grid-template-columns: minmax(180px, 1.4fr) minmax(160px, 1.1fr) minmax(165px, 1.15fr) minmax(75px, 0.55fr) minmax(75px, 0.55fr);
   gap: 0;
   border-top: 1px solid #eef3f6;
   padding-top: 10px;
@@ -372,4 +430,40 @@
   .coord-program-card-title h3 {
     font-size: 17px;
   }
+}
+
+
+
+/* Category Badge Pills */
+.coord-badge-cat {
+  display: inline-flex !important;
+  align-items: center;
+  padding: 2px 8px !important;
+  border-radius: 9999px;
+  font-size: 10px !important;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.coord-program-card-meta span.coord-badge-cat::before {
+  display: none !important;
+}
+.coord-badge-cat-academico {
+  background: #e0f2fe !important;
+  color: #0369a1 !important;
+}
+.coord-badge-cat-deportivo {
+  background: #ffedd5 !important;
+  color: #c2410c !important;
+}
+.coord-badge-cat-ingles {
+  background: #f3e8ff !important;
+  color: #6b21a8 !important;
+}
+.coord-badge-cat-verano {
+  background: #fef9c3 !important;
+  color: #a16207 !important;
+}
+.coord-badge-cat-general {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
 }

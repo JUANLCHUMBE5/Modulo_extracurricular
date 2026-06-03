@@ -19,19 +19,37 @@ const rolesSistema = {
   Direccion: "direccion",
 };
 
+const rolesApiASistema = Object.fromEntries(
+  Object.entries(rolesSistema).map(([rol, role]) => [role, rol])
+);
+
+function normalizarUsuarioApi(usuario = {}) {
+  const role = usuario.role || String(usuario.rol || "").toLowerCase();
+  const rol = usuario.rol || rolesApiASistema[role] || "Secretaria";
+  const usuarioConPermisos = normalizeUser({
+    usuario: usuario.username || usuario.usuario,
+    nombre: usuario.name || usuario.nombre,
+    rol,
+    estado: usuario.estado,
+    permisos: usuario.permisos || usuario.permissions,
+  });
+
+  return {
+    username: usuario.username || usuario.usuario,
+    role: rolesSistema[usuarioConPermisos.rol] || role,
+    name: usuario.name || usuario.nombre,
+    estado: usuario.estado,
+    permisos: usuarioConPermisos.permisos,
+    permissions: usuarioConPermisos.permisos,
+  };
+}
+
 export const loginPersonal = async (username, password) => {
   if (isApiMode()) {
     const res = await apiClient.post("/api/v1/auth/login", { username, password });
     if (!res.success) return { success: false, message: res.message || "Usuario o contraseña incorrectos." };
     
-    const user = {
-      username: res.data.user.username || res.data.user.usuario,
-      role: res.data.user.role || String(res.data.user.rol || "").toLowerCase(),
-      name: res.data.user.name || res.data.user.nombre,
-      estado: res.data.user.estado,
-      permisos: res.data.user.permisos || res.data.user.permissions || [],
-      permissions: res.data.user.permisos || res.data.user.permissions || []
-    };
+    const user = normalizarUsuarioApi(res.data.user || {});
 
     if (res.data.token) {
       localStorage.setItem("san_rafael_token", res.data.token);
