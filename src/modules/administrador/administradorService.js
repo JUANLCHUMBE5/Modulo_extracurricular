@@ -1,15 +1,26 @@
 import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../services/dbApi";
+import { isApiMode, apiClient } from "../../services/apiClient";
 import { ALL_PERMISSIONS, isSuperAdmin } from "./models/usuarioModel";
 
 const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function listarUsuarios() {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/usuarios");
+    if (!res.success || !Array.isArray(res.data)) return [];
+    return res.data;
+  }
   await delay(300);
   await syncApiDb();
   return Array.isArray(apiDb.usuarios) ? [...apiDb.usuarios] : [];
 }
 
 export async function crearUsuario(datos) {
+  if (isApiMode()) {
+    const res = await apiClient.post("/api/v1/usuarios", datos);
+    if (!res.success) throw new Error(res.message || "Error al crear usuario");
+    return res.data;
+  }
   await delay(600);
   await syncApiDb();
   
@@ -29,6 +40,11 @@ export async function crearUsuario(datos) {
 }
 
 export async function editarUsuario(id, datos) {
+  if (isApiMode()) {
+    const res = await apiClient.put(`/api/v1/usuarios/${id}`, datos);
+    if (!res.success) throw new Error(res.message || "Error al editar usuario");
+    return res.data;
+  }
   await delay(600);
   await syncApiDb();
   
@@ -58,6 +74,11 @@ export async function editarUsuario(id, datos) {
 }
 
 export async function cambiarEstadoUsuario(id, nuevoEstado) {
+  if (isApiMode()) {
+    const res = await apiClient.put(`/api/v1/usuarios/${id}/estado`, { estado: nuevoEstado });
+    if (!res.success) throw new Error(res.message || "Error al cambiar estado del usuario");
+    return res.data;
+  }
   await delay(400);
   await syncApiDb();
   
@@ -81,6 +102,11 @@ export async function cambiarEstadoUsuario(id, nuevoEstado) {
 }
 
 export async function resetearContrasenaUsuario(id) {
+  if (isApiMode()) {
+    const res = await apiClient.post(`/api/v1/usuarios/${id}/resetear-contrasena`);
+    if (!res.success) throw new Error(res.message || "Error al resetear contraseña");
+    return res.data;
+  }
   await delay(400);
   await syncApiDb();
 
@@ -93,6 +119,11 @@ export async function resetearContrasenaUsuario(id) {
 }
 
 export async function eliminarUsuario(id) {
+  if (isApiMode()) {
+    const res = await apiClient.delete(`/api/v1/usuarios/${id}`);
+    if (!res.success) throw new Error(res.message || "Error al eliminar usuario");
+    return res.data;
+  }
   await delay(400);
   await syncApiDb();
 

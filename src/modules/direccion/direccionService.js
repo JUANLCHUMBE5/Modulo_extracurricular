@@ -1,10 +1,19 @@
 
 import ExcelJS from "exceljs";
 import { apiDb, syncApiDb } from "../../services/dbApi";
+import { isApiMode, apiClient } from "../../services/apiClient";
 
 const esperar = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function obtenerPanelDireccion(filtros = {}) {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/reportes/resumen", {
+      params: filtros
+    });
+    if (!res.success) throw new Error(res.message || "Error al obtener panel de dirección");
+    return res.data;
+  }
+
   await esperar();
   await syncApiDb();
 

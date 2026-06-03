@@ -1,4 +1,11 @@
 import { apiDb, saveApiDb, syncApiDb } from "../../services/dbApi";
+import { isApiMode, apiClient } from "../../services/apiClient";
+import {
+  adaptarEstudiante,
+  adaptarInscripcion,
+  adaptarPago,
+  adaptarPrograma,
+} from "../../services/adapters";
 import { fechaActualIso } from "../../services/dateService";
 
 const esperar = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -9,6 +16,14 @@ function normalizarPeriodo(periodo) {
 }
 
 export async function listarPagos(periodo = "escolar", filtros = {}) {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/pagos", {
+      params: { periodo, ...filtros }
+    });
+    if (!res.success || !Array.isArray(res.data)) return [];
+    return res.data.map(adaptarPago);
+  }
+
   await esperar(400);
   await syncApiDb();
   
@@ -32,6 +47,22 @@ export async function listarPagos(periodo = "escolar", filtros = {}) {
 }
 
 export async function registrarPago(datosPago) {
+  if (isApiMode()) {
+    const apiPayload = {
+      inscripcion_id: datosPago.inscripcionId || "",
+      dni_estudiante: datosPago.dniEstudiante || datosPago.estudianteDni || "",
+      monto_pago: Number(datosPago.monto || 0),
+      metodo_pago: datosPago.formaPago || datosPago.medioPago || datosPago.metodo || "Efectivo",
+      estado_pago: datosPago.estado || "completado",
+      numero_operacion: datosPago.numeroOperacion || datosPago.referenciaPago || "",
+      telefono_operacion: datosPago.telefonoOperacion || "",
+      origen_registro: "Caja"
+    };
+    const res = await apiClient.post("/api/v1/extracurricular/pagos", apiPayload);
+    if (!res.success) throw new Error(res.message || "Error al registrar pago");
+    return adaptarPago(res.data);
+  }
+
   await esperar(500);
   await syncApiDb();
   
@@ -89,6 +120,12 @@ function generarPagoId() {
 }
 
 export async function actualizarPago(pagoId, datosActualizados) {
+  if (isApiMode()) {
+    const res = await apiClient.put(`/api/v1/extracurricular/pagos/${pagoId}`, datosActualizados);
+    if (!res.success) throw new Error(res.message || "Error al actualizar pago");
+    return adaptarPago(res.data);
+  }
+
   await esperar(400);
   await syncApiDb();
   
@@ -124,6 +161,14 @@ export async function actualizarPago(pagoId, datosActualizados) {
 }
 
 export async function obtenerResumenCaja(periodo = "escolar") {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/caja/resumen", {
+      params: { periodo }
+    });
+    if (!res.success) throw new Error(res.message || "Error al obtener resumen de caja");
+    return res.data;
+  }
+
   await esperar(300);
   await syncApiDb();
   
@@ -155,6 +200,31 @@ export async function obtenerResumenCaja(periodo = "escolar") {
 }
 
 export async function obtenerEstudiantePorDni(dni, periodo = "") {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/caja/estudiantes/${dni}`, {
+      params: { periodo }
+    });
+    if (!res.success || !res.data) return null;
+    
+    const estudiante = adaptarEstudiante(res.data.estudiante || res.data);
+    const inscripcion = res.data.inscripcionCaja ? adaptarInscripcion(res.data.inscripcionCaja) : null;
+    
+    if (!inscripcion) {
+      return {
+        ...estudiante,
+        sinInscripcionCaja: true,
+      };
+    }
+
+    return {
+      ...estudiante,
+      inscripcionCaja: inscripcion,
+      programaAsignado: inscripcion.programaId || estudiante.programaAsignado || "",
+      programaNombre: inscripcion.programa || estudiante.programaNombre || "",
+      programaCosto: inscripcion.costo ?? estudiante.programaCosto,
+    };
+  }
+
   await esperar(200);
   await syncApiDb();
 
@@ -236,6 +306,42 @@ export async function obtenerOpcionesReporteCaja(periodo = "escolar") {
 }
 
 export async function listarBandejaPagosWeb(periodo = "escolar") {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/caja/bandeja-pagos-web", {
+      params: { periodo }
+    });
+    if (!res.success || !Array.isArray(res.data)) return [];
+    
+    return res.data.map((item) => ({
+      id: item.id || `${item.inscripcionId}-${item.pagoId || "sin-pago"}`,
+      inscripcionId: item.inscripcionId,
+      pagoId: item.pagoId || "",
+      dniEstudiante: item.dniEstudiante || "",
+      estudiante: item.estudiante || "",
+      programaId: item.programaId || "",
+      programa: item.programa || "",
+      grado: item.grado || "",
+      seccion: item.seccion || "",
+      apoderado: item.apoderado || "",
+      telefono: item.telefono || "",
+      telefonoOperacion: item.telefonoOperacion || "",
+      numeroOperacion: item.numeroOperacion || "",
+      capturaPagoBase64: item.capturaPagoBase64 || "",
+      capturaPagoNombre: item.capturaPagoNombre || "",
+      monto: Number(item.monto || 0),
+      formaPago: item.formaPago || "Yape",
+      estadoRevision: item.estadoRevision || "pendiente",
+      estadoPago: item.estadoPago || "pendiente",
+      estadoVerificacion: item.estadoVerificacion || "",
+      estadoInscripcion: item.estadoInscripcion || "",
+      observaciones: item.observaciones || "",
+      fechaRegistro: item.fechaRegistro || "",
+      fechaPago: item.fechaPago || "",
+      fecha: item.fecha || "",
+      origen: item.origen || "Portal padres",
+    }));
+  }
+
   await esperar(300);
   await syncApiDb();
 
@@ -286,6 +392,11 @@ export async function listarBandejaPagosWeb(periodo = "escolar") {
 }
 
 export async function validarPagoWeb(pagoId, observaciones = "") {
+  if (isApiMode()) {
+    const res = await apiClient.put(`/api/v1/extracurricular/pagos/${pagoId}/validar`, { observaciones });
+    if (!res.success) throw new Error(res.message || "Error al validar pago web");
+    return adaptarPago(res.data);
+  }
   return actualizarEstadoPagoWeb(pagoId, {
     estado: "completado",
     estadoVerificacion: "validado",
@@ -297,6 +408,11 @@ export async function validarPagoWeb(pagoId, observaciones = "") {
 }
 
 export async function observarPagoWeb(pagoId, observaciones = "Operacion no coincide con la verificacion.") {
+  if (isApiMode()) {
+    const res = await apiClient.put(`/api/v1/extracurricular/pagos/${pagoId}/observar`, { observaciones });
+    if (!res.success) throw new Error(res.message || "Error al observar pago web");
+    return adaptarPago(res.data);
+  }
   return actualizarEstadoPagoWeb(pagoId, {
     estado: "observado",
     estadoVerificacion: "observado",
@@ -307,6 +423,14 @@ export async function observarPagoWeb(pagoId, observaciones = "Operacion no coin
 }
 
 export async function generarReporteCaja(filtros = {}) {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/caja/reporte", {
+      params: filtros
+    });
+    if (!res.success || !Array.isArray(res.data)) return [];
+    return res.data.map(adaptarPago);
+  }
+
   await esperar(450);
   await syncApiDb();
 
@@ -583,6 +707,11 @@ function obtenerEstadoRevisionWeb(inscripcion, pago) {
 }
 
 export async function obtenerPagoPorId(pagoId) {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/pagos/${pagoId}`);
+    if (!res.success) return null;
+    return adaptarPago(res.data);
+  }
   await syncApiDb();
   if (!Array.isArray(apiDb.pagos)) return null;
   return apiDb.pagos.find((p) => p.id === pagoId) || null;

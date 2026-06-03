@@ -2,7 +2,7 @@
 set "PATH=%~dp0.tools\node-v24.15.0-win-x64;%PATH%"
 cd /d "%~dp0"
 set "APP_URL=http://localhost:5173"
-set "API_URL=http://127.0.0.1:5175/api/db"
+set "API_URL=http://127.0.0.1:5175/api/health"
 
 echo Iniciando Modulo Extracurricular...
 echo.

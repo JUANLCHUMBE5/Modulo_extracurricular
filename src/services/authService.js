@@ -1,4 +1,6 @@
 import { apiDb, syncApiDb } from "./dbApi";
+import { isApiMode, apiClient } from "./apiClient";
+import { adaptarEstudiante } from "./adapters";
 import { normalizeUser } from "../modules/administrador/models/usuarioModel";
 
 const delay = (ms = 650) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -18,6 +20,30 @@ const rolesSistema = {
 };
 
 export const loginPersonal = async (username, password) => {
+  if (isApiMode()) {
+    const res = await apiClient.post("/api/v1/auth/login", { username, password });
+    if (!res.success) return { success: false, message: res.message || "Usuario o contraseña incorrectos." };
+    
+    const user = {
+      username: res.data.user.username || res.data.user.usuario,
+      role: res.data.user.role || String(res.data.user.rol || "").toLowerCase(),
+      name: res.data.user.name || res.data.user.nombre,
+      estado: res.data.user.estado,
+      permisos: res.data.user.permisos || res.data.user.permissions || [],
+      permissions: res.data.user.permisos || res.data.user.permissions || []
+    };
+
+    if (res.data.token) {
+      localStorage.setItem("san_rafael_token", res.data.token);
+      localStorage.setItem("san_rafael_user", JSON.stringify(user));
+    }
+
+    return {
+      success: true,
+      user
+    };
+  }
+
   await delay();
   await syncApiDb();
 
@@ -49,7 +75,30 @@ export const loginPersonal = async (username, password) => {
 };
 
 export const loginPadre = async (dni, fechaNacimiento) => {
-  // Temporal: reemplazar por POST /api/padres/login cuando exista el backend real.
+  if (isApiMode()) {
+    const res = await apiClient.post("/api/v1/extracurricular/padres/validar", { dni, fecha_nacimiento: fechaNacimiento });
+    if (!res.success || !res.data) return { success: false, message: res.message || "DNI o fecha de nacimiento incorrectos." };
+    
+    const estudiante = adaptarEstudiante(res.data.estudiante || res.data);
+    const user = {
+      username: estudiante.dni,
+      role: "padres",
+      name: "Padre de familia",
+      dni: estudiante.dni,
+      estudiante: estudiante.nombres,
+    };
+
+    if (res.data.token) {
+      localStorage.setItem("san_rafael_token", res.data.token);
+      localStorage.setItem("san_rafael_user", JSON.stringify(user));
+    }
+
+    return {
+      success: true,
+      user
+    };
+  }
+
   await delay();
   await syncApiDb();
 

@@ -1,9 +1,25 @@
 import { apiDb, saveApiDb, syncApiDb } from "../../services/dbApi";
+import { isApiMode, apiClient } from "../../services/apiClient";
+import {
+  adaptarEstudiante,
+  adaptarInscripcion,
+  adaptarPago,
+  adaptarPrograma,
+  adaptarAsistencia
+} from "../../services/adapters";
 import { fechaActualIso } from "../../services/dateService";
 
 const esperar = (ms = 220) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function validarDni(busqueda) {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/auxiliar/validar", {
+      params: { busqueda }
+    });
+    if (!res.success) throw new Error(res.message || "Error al validar DNI");
+    return res.data;
+  }
+
   await esperar();
   await syncApiDb();
 
@@ -66,6 +82,14 @@ function resolverValidacionPorNombre(nombreQuery) {
 }
 
 export async function validarQR(codigo) {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/auxiliar/validar-qr", {
+      params: { codigo }
+    });
+    if (!res.success) throw new Error(res.message || "Error al validar QR");
+    return res.data;
+  }
+
   await esperar();
   await syncApiDb();
 
@@ -78,6 +102,20 @@ export async function validarQR(codigo) {
 }
 
 export async function registrarAsistencia(data, observacion = "") {
+  if (isApiMode()) {
+    const apiPayload = {
+      inscripcion_id: data.inscripcionId || "",
+      pago_id: data.pagoId || "",
+      dni_estudiante: data.dni || data.dniEstudiante || "",
+      estado_acceso: data.estadoAcceso || "presente",
+      observacion: observacion || "",
+      origen: "Auxiliar"
+    };
+    const res = await apiClient.post("/api/v1/extracurricular/asistencia", apiPayload);
+    if (!res.success) throw new Error(res.message || "Error al registrar asistencia");
+    return adaptarAsistencia(res.data);
+  }
+
   await esperar(260);
   await syncApiDb();
 

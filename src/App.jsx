@@ -7,6 +7,7 @@ import Padres from "./modules/padres";
 import Auxiliar from "./modules/auxiliar/Auxiliar";
 import Caja from "./modules/caja/Caja";
 import { apiDb, syncApiDb } from "./services/dbApi";
+import { isApiMode, apiClient } from "./services/apiClient";
 import { normalizeUser } from "./modules/administrador/models/usuarioModel";
 import {
   IconBook as BookOpen,
@@ -122,6 +123,8 @@ function removeStoredSession() {
     window.localStorage.removeItem(SESSION_STORAGE_KEY);
     window.localStorage.removeItem(MODULE_STORAGE_KEY);
     window.localStorage.removeItem(DELEGATED_STORAGE_KEY);
+    window.localStorage.removeItem("san_rafael_token");
+    window.localStorage.removeItem("san_rafael_user");
   } catch {
     // No hay nada mas que limpiar si el navegador bloquea storage.
   }
@@ -276,6 +279,33 @@ function App() {
 
     const actualizarUsuarioActivo = async () => {
       try {
+        if (isApiMode()) {
+          const res = await apiClient.get("/api/v1/auth/me");
+          if (res.success && res.data && res.data.user) {
+            setUser((actual) => {
+              if (!actual) return actual;
+              const role = res.data.user.role;
+              if (
+                actual.role === role &&
+                actual.name === res.data.user.name &&
+                samePermissions(actual.permisos || actual.permissions || [], res.data.user.permissions || [])
+              ) {
+                return actual;
+              }
+              const updatedUser = {
+                ...actual,
+                role,
+                name: res.data.user.name,
+                permisos: res.data.user.permissions || [],
+                permissions: res.data.user.permissions || []
+              };
+              localStorage.setItem("san_rafael_user", JSON.stringify(updatedUser));
+              return updatedUser;
+            });
+          }
+          return;
+        }
+
         await syncApiDb();
         const usuario = (apiDb.usuarios || []).find((item) =>
           String(item.usuario || "").trim().toLowerCase() === String(user.username || "").trim().toLowerCase()

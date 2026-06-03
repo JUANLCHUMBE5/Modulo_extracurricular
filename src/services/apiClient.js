@@ -14,19 +14,67 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest(path, options = {}) {
-  const { body, headers, ...requestOptions } = options;
+  const { body, headers, params, ...requestOptions } = options;
   const isFormData = body instanceof FormData;
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  // 1. Resolver query params
+  let url = `${API_BASE_URL}${path}`;
+  if (params && typeof params === "object") {
+    const cleanParams = {};
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== "") {
+        cleanParams[key] = String(val);
+      }
+    });
+    const searchParams = new URLSearchParams(cleanParams).toString();
+    if (searchParams) {
+      url += (url.includes("?") ? "&" : "?") + searchParams;
+    }
+  }
+
+  // 2. Resolver Token de Autenticación
+  const token = typeof window !== "undefined" ? localStorage.getItem("san_rafael_token") : null;
+  const authHeaders = token ? { "Authorization": `Bearer ${token}` } : {};
+
+  // 3. Timeout (15 segundos)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  const response = await fetch(url, {
     ...requestOptions,
+    signal: controller.signal,
     headers: {
       ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...authHeaders,
       ...(headers || {}),
     },
     body: isFormData || body == null ? body : JSON.stringify(body),
-  }).catch(() => {
-    throw new ApiError(getConnectionErrorMessage(), { status: 0 });
-  });
+  })
+    .then((res) => {
+      clearTimeout(timeoutId);
+      return res;
+    })
+    .catch((err) => {
+      clearTimeout(timeoutId);
+      if (err.name === "AbortError") {
+        throw new ApiError("La solicitud tardó demasiado tiempo en responder (Timeout).", { status: 408 });
+      }
+      throw new ApiError(getConnectionErrorMessage(), { status: 0 });
+    });
+
+  // 4. Manejo de códigos 401 y 403
+  if (response.status === 401) {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("san_rafael_token");
+      localStorage.removeItem("san_rafael_user");
+      window.dispatchEvent(new CustomEvent("api-unauthorized"));
+    }
+    throw new ApiError("Su sesión ha expirado o es inválida. Inicie sesión nuevamente.", { status: 401 });
+  }
+
+  if (response.status === 403) {
+    throw new ApiError("No tiene permisos suficientes para realizar esta acción.", { status: 403 });
+  }
 
   const contentType = response.headers.get("content-type") || "";
   const data = contentType.includes("application/json")
@@ -56,6 +104,12 @@ export const localDbApi = {
   saveDatabase: (data) => apiClient.put("/api/db", data),
   resetDatabase: () => apiClient.post("/api/db/reset"),
 };
+
+export const VITE_API_MODE = String(
+  import.meta.env?.VITE_API_MODE || "mock"
+).toLowerCase();
+
+export const isApiMode = () => VITE_API_MODE === "api";
 
 function getConnectionErrorMessage() {
   if (import.meta.env?.PROD && !API_BASE_URL) {

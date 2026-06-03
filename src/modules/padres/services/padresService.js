@@ -1,4 +1,11 @@
 import { apiDb, saveApiDb, syncApiDb } from "../../../services/dbApi";
+import { isApiMode, apiClient } from "../../../services/apiClient";
+import {
+  adaptarEstudiante,
+  adaptarInscripcion,
+  adaptarPago,
+  adaptarPrograma,
+} from "../../../services/adapters";
 import {
   calcularDuracionTexto,
   fechaActualIso,
@@ -9,6 +16,31 @@ import {
 const delay = (ms = 350) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export async function obtenerResumenPadre(dni) {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/padres/resumen/${dni}`);
+    if (!res.success) throw new Error(res.message || "Error al obtener resumen de padres");
+    
+    const data = res.data || {};
+    const estudiante = adaptarEstudiante(data.estudiante);
+    const invitaciones = (data.invitaciones || []).map(adaptarPrograma);
+    const inscripciones = (data.inscripciones || []).map(adaptarInscripcion);
+    const pagos = (data.pagos || []).map(adaptarPago);
+    const documentos = data.documentos || [];
+    const inscripcionActual = obtenerProgramaPrincipalPadres(inscripciones);
+    const invitacionActual = obtenerProgramaPrincipalPadres(invitaciones);
+
+    return {
+      estudiante,
+      invitaciones,
+      inscripciones,
+      pagos,
+      documentos,
+      inscripcionActual,
+      invitacionActual,
+      estadoGeneral: calcularEstadoGeneral(inscripcionActual, invitacionActual),
+    };
+  }
+
   await delay();
   await syncApiDb();
 
@@ -39,6 +71,18 @@ export async function obtenerResumenPadre(dni) {
 }
 
 export async function guardarDatosApoderadoPadres(dni, datos) {
+  if (isApiMode()) {
+    const payload = {
+      apoderado: limpiarTexto(datos.apoderado),
+      telefono: limpiarTexto(datos.telefono),
+      correo: limpiarTexto(datos.correo),
+      enviar_pdf_correo: Boolean(datos.enviarPdfCorreo && datos.correo),
+    };
+    const res = await apiClient.put(`/api/v1/extracurricular/padres/${dni}/apoderado`, payload);
+    if (!res.success) throw new Error(res.message || "Error al actualizar datos de apoderado");
+    return adaptarEstudiante(res.data);
+  }
+
   await delay(300);
   await syncApiDb();
 
@@ -67,6 +111,25 @@ export async function guardarDatosApoderadoPadres(dni, datos) {
 }
 
 export async function registrarInscripcionPadres(dni, datos, programaId = "", horarioPersonalizado = "", tallas = {}) {
+  if (isApiMode()) {
+    const payload = {
+      estudiante_id: dni,
+      programa_id: programaId,
+      horario: horarioPersonalizado,
+      tallas: tallas,
+      apoderado: {
+        apoderado: limpiarTexto(datos.apoderado),
+        telefono: limpiarTexto(datos.telefono),
+        correo: limpiarTexto(datos.correo),
+        enviar_pdf_correo: Boolean(datos.enviarPdfCorreo && datos.correo),
+      },
+      origen: "web"
+    };
+    const res = await apiClient.post("/api/v1/extracurricular/inscripciones", payload);
+    if (!res.success) throw new Error(res.message || "Error al registrar inscripción");
+    return adaptarInscripcion(res.data);
+  }
+
   await delay(400);
   await syncApiDb();
 
@@ -186,6 +249,25 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
 }
 
 export async function registrarPagoVerificacionPadres(dni, inscripcionId, datosPago = {}) {
+  if (isApiMode()) {
+    const formData = new FormData();
+    formData.append("inscripcion_id", inscripcionId);
+    formData.append("metodo_pago", "Yape");
+    formData.append("referencia", String(datosPago.referencia || "").trim());
+    formData.append("telefono", String(datosPago.telefono || "").replace(/\D/g, "").slice(0, 9));
+    
+    if (datosPago.captura?.file) {
+      formData.append("comprobante", datosPago.captura.file);
+    } else {
+      formData.append("comprobante_base64", datosPago.captura?.base64 || "");
+      formData.append("comprobante_nombre", datosPago.captura?.nombre || "");
+    }
+    
+    const res = await apiClient.post("/api/v1/extracurricular/pagos/comprobante", formData);
+    if (!res.success) throw new Error(res.message || "Error al subir comprobante de pago");
+    return adaptarPago(res.data);
+  }
+
   await delay(650);
   await syncApiDb();
 
@@ -677,6 +759,28 @@ function limpiarTexto(texto) {
 }
 
 export async function obtenerProgramasCoordinacion() {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/programas");
+    if (!res.success) throw new Error(res.message || "Error al obtener programas");
+    return res.data.map(adaptarPrograma).map((programa) => {
+      const cupos = Number(programa.cupos || 0);
+      const cuposOcupados = Number(programa.cuposOcupados || 0);
+      const cuposDisponibles = Math.max(0, cupos - cuposOcupados);
+      const duracionAvisoDias = normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7);
+      const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias);
+      const requiereGradoCompatible = !programa.invitacionMasiva && (
+        Array.isArray(programa.horariosPorGrupo) && programa.horariosPorGrupo.length > 0 ||
+        (Array.isArray(programa.gradosAplicables) && programa.gradosAplicables.length > 0)
+      );
+
+      return {
+        ...programa,
+        requiereGradoCompatible,
+        registrable: Boolean(programa.invitacionMasiva) && programa.estado === "Habilitado" && cuposDisponibles > 0 && ventanaInscripcion.permitida,
+      };
+    });
+  }
+
   await delay(300);
   await syncApiDb();
   return apiDb.programas.map((programa) => {

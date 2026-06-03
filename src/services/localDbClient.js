@@ -1,4 +1,4 @@
-﻿// BASE LOCAL PARA DESARROLLO.
+// BASE LOCAL PARA DESARROLLO.
 // La fuente principal es server/db.json mediante /api/db.
 // En producciÃ³n serÃ¡ reemplazada por la API del sistema principal.
 
@@ -237,6 +237,7 @@ export const initialData = {
     { id: "6", nombre: "Direccion General", usuario: "dir", rol: "Direccion", estado: "Activo", contrasena: "1234" },
     { id: "7", nombre: "Profesor Responsable", usuario: "profe", rol: "Coordinacion", estado: "Activo", contrasena: "1234" },
   ],
+  auditLogs: [],
 };
 
 export const mockDb = loadDatabase();
@@ -354,6 +355,7 @@ function mergeWithDefaults(stored, defaults) {
       ...(stored.plantillasPorPrograma || {}),
     },
     usuarios: mergeUsuarios(defaults.usuarios, stored.usuarios || []),
+    auditLogs: Array.isArray(stored.auditLogs) ? stored.auditLogs : (defaults.auditLogs || []),
   };
   return merged;
 }

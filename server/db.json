@@ -1365,7 +1365,7 @@
       "usuario": "admin",
       "rol": "Administrador",
       "estado": "Activo",
-      "contrasena": "1234"
+      "contrasena": "$2b$10$PpJCJka4umG6XmCQS.oGHOVzwgP9tv9r1akWpeMuAVBkP.prx5l7."
     },
     {
       "id": "2",
@@ -1419,6 +1419,24 @@
       "rol": "Coordinacion",
       "estado": "Activo",
       "contrasena": "1234"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "AUD-059770-5a65",
+      "usuario": "11112223",
+      "rol": "padres",
+      "fecha": "2026-06-03T02:50:59.770Z",
+      "accion": "PADRES_VALIDAR_EXITOSO",
+      "detalles": "{\"dni\":\"11112223\",\"nombres\":\"Nicole Fernandez Vega\"}"
+    },
+    {
+      "id": "AUD-059732-8b7f",
+      "usuario": "admin",
+      "rol": "administrador",
+      "fecha": "2026-06-03T02:50:59.732Z",
+      "accion": "LOGIN_EXITOSO",
+      "detalles": "{\"ip\":\"127.0.0.1\"}"
     }
   ],
   "plantillasPorPrograma": {

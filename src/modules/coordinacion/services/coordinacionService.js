@@ -1,4 +1,11 @@
 import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
+import { isApiMode, apiClient } from "../../../services/apiClient";
+import {
+  adaptarPrograma,
+  adaptarInscripcion,
+  adaptarPago,
+  adaptarAsistencia
+} from "../../../services/adapters";
 import {
   calcularDuracionTexto,
   fechaActualInput,
@@ -22,12 +29,22 @@ const obtenerApiBase = () => String(
 ).replace(/\/$/, "");
 
 export async function listarCategorias() {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/categorias");
+    if (!res.success) throw new Error(res.message || "Error al listar categorías");
+    return res.data;
+  }
   await delay(300);
   await syncApiDb();
   return [...apiDb.categorias];
 }
 
 export async function crearCategoria(nombre) {
+  if (isApiMode()) {
+    const res = await apiClient.post("/api/v1/extracurricular/categorias", { nombre });
+    if (!res.success) throw new Error(res.message || "Error al crear categoría");
+    return res.data;
+  }
   await delay(300);
   if (apiDb.categorias.includes(nombre)) throw new Error("La categoría ya existe.");
   apiDb.categorias.push(nombre);
@@ -36,6 +53,11 @@ export async function crearCategoria(nombre) {
 }
 
 export async function eliminarCategoria(nombre) {
+  if (isApiMode()) {
+    const res = await apiClient.delete(`/api/v1/extracurricular/categorias/${nombre}`);
+    if (!res.success) throw new Error(res.message || "Error al eliminar categoría");
+    return nombre;
+  }
   await delay(300);
   await syncApiDb();
   const categoria = String(nombre || "").trim();
@@ -56,6 +78,11 @@ export async function eliminarCategoria(nombre) {
 }
 
 export async function listarProgramas() {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/programas");
+    if (!res.success) throw new Error(res.message || "Error al listar programas");
+    return res.data.map(adaptarPrograma);
+  }
   await delay(400);
   await syncApiDb();
   normalizarPeriodosGuardados();
@@ -64,6 +91,11 @@ export async function listarProgramas() {
 }
 
 export async function obtenerPrograma(id) {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/programas/${id}`);
+    if (!res.success) throw new Error(res.message || "Error al obtener programa");
+    return adaptarPrograma(res.data);
+  }
   await delay(300);
   await syncApiDb();
   normalizarPeriodosGuardados();
@@ -74,6 +106,38 @@ export async function obtenerPrograma(id) {
 }
 
 export async function crearPrograma(datos) {
+  if (isApiMode()) {
+    const payload = {
+      nombre_programa: datos.nombre,
+      categoria: datos.categoria,
+      fecha_inicio: datos.fechaInicio,
+      fecha_fin: datos.fechaFin,
+      hora_inicio: datos.horaInicio,
+      hora_fin: datos.horaFin,
+      monto: Number(datos.costo || datos.precio || 0),
+      cupos: Number(datos.cupos),
+      grados: datos.gradosAplicables || [],
+      responsable: datos.responsable || datos.docente || "",
+      periodo: datos.periodo || "escolar",
+      modalidad_cobro: datos.modalidadCobro || "Mensual",
+      requiere_uniforme: Boolean(datos.requiereUniforme),
+      requiere_indumentaria: Boolean(datos.requiereIndumentaria),
+      anuncio_imagen: datos.anuncioImagen || "",
+      anuncio_imagen_nombre: datos.anuncioImagenNombre || "",
+      talleres_deportivos: datos.talleresDeportivos || [],
+      horarios_por_grupo: datos.horariosPorGrupo || [],
+      requisitos: datos.requisitos || "",
+      comunicado: datos.comunicado || "",
+      detalle_costo: datos.detalleCosto || "",
+      detalle_almuerzo: datos.detalleAlmuerzo || "",
+      concesionarios: datos.concesionarios || "",
+      invitacion_masiva: Boolean(datos.invitacionMasiva),
+      alcance_invitacion_masiva: datos.alcanceInvitacionMasiva || "colegio",
+    };
+    const res = await apiClient.post("/api/v1/extracurricular/programas", payload);
+    if (!res.success) throw new Error(res.message || "Error al crear programa");
+    return adaptarPrograma(res.data);
+  }
   await delay(700);
   await syncApiDb();
   finalizarProgramasVencidos();
@@ -119,6 +183,30 @@ export async function crearPrograma(datos) {
 }
 
 export async function crearProgramaDesdeDocumento(datos) {
+  if (isApiMode()) {
+    const payload = {
+      nombre_programa: datos.nombre,
+      categoria: datos.categoria,
+      fecha_inicio: datos.fechaInicio,
+      fecha_fin: datos.fechaFin,
+      monto: Number(datos.costo || 0),
+      cupos: Number(datos.cupos || 0),
+      plantilla: datos.plantilla || "",
+      plantilla_base64: datos.plantillaBase64 || "",
+      plantilla_variables: datos.plantillaVariables || [],
+      creado_desde_documento: true,
+      periodo: datos.periodo || "escolar",
+      modalidad_cobro: datos.modalidadCobro || "Mensual",
+      requiere_uniforme: Boolean(datos.requiereUniforme),
+      requiere_indumentaria: Boolean(datos.requiereIndumentaria),
+      grados: datos.gradosAplicables || [],
+      horario: datos.horario || "Por definir",
+      grupo: datos.grupo || "Por definir",
+    };
+    const res = await apiClient.post("/api/v1/extracurricular/programas/documento", payload);
+    if (!res.success) throw new Error(res.message || "Error al crear programa desde documento");
+    return adaptarPrograma(res.data);
+  }
   await delay(700);
   await syncApiDb();
   finalizarProgramasVencidos();
@@ -183,6 +271,38 @@ export async function crearProgramaDesdeDocumento(datos) {
 }
 
 export async function editarPrograma(id, datos) {
+  if (isApiMode()) {
+    const payload = {
+      nombre_programa: datos.nombre,
+      categoria: datos.categoria,
+      fecha_inicio: datos.fechaInicio,
+      fecha_fin: datos.fechaFin,
+      hora_inicio: datos.horaInicio,
+      hora_fin: datos.horaFin,
+      monto: Number(datos.costo || datos.precio || 0),
+      cupos: Number(datos.cupos),
+      grados: datos.gradosAplicables || [],
+      responsable: datos.responsable || datos.docente || "",
+      periodo: datos.periodo || "escolar",
+      modalidad_cobro: datos.modalidadCobro || "Mensual",
+      requiere_uniforme: Boolean(datos.requiereUniforme),
+      requiere_indumentaria: Boolean(datos.requiereIndumentaria),
+      anuncio_imagen: datos.anuncioImagen || "",
+      anuncio_imagen_nombre: datos.anuncioImagenNombre || "",
+      talleres_deportivos: datos.talleresDeportivos || [],
+      horarios_por_grupo: datos.horariosPorGrupo || [],
+      requisitos: datos.requisitos || "",
+      comunicado: datos.comunicado || "",
+      detalle_costo: datos.detalleCosto || "",
+      detalle_almuerzo: datos.detalleAlmuerzo || "",
+      concesionarios: datos.concesionarios || "",
+      invitacion_masiva: Boolean(datos.invitacionMasiva),
+      alcance_invitacion_masiva: datos.alcanceInvitacionMasiva || "colegio",
+    };
+    const res = await apiClient.put(`/api/v1/extracurricular/programas/${id}`, payload);
+    if (!res.success) throw new Error(res.message || "Error al editar programa");
+    return adaptarPrograma(res.data);
+  }
   await delay(700);
   await syncApiDb();
   finalizarProgramasVencidos();
@@ -227,6 +347,11 @@ export async function editarPrograma(id, datos) {
 }
 
 export async function cambiarEstadoPrograma(id, nuevoEstado) {
+  if (isApiMode()) {
+    const res = await apiClient.put(`/api/v1/extracurricular/programas/${id}/estado`, { estado: nuevoEstado });
+    if (!res.success) throw new Error(res.message || "Error al cambiar estado de programa");
+    return adaptarPrograma(res.data);
+  }
   await delay(400);
   await syncApiDb();
   normalizarPeriodosGuardados();
@@ -248,6 +373,11 @@ export async function cambiarEstadoPrograma(id, nuevoEstado) {
 }
 
 export async function eliminarPrograma(id) {
+  if (isApiMode()) {
+    const res = await apiClient.delete(`/api/v1/extracurricular/programas/${id}`);
+    if (!res.success) throw new Error(res.message || "Error al eliminar programa");
+    return true;
+  }
   await delay(400);
   await syncApiDb();
   const index = apiDb.programas.findIndex((item) => item.id === id);
@@ -260,12 +390,22 @@ export async function eliminarPrograma(id) {
 }
 
 export async function listarInvitados(programaId) {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/programas/${programaId}/invitados`);
+    if (!res.success) throw new Error(res.message || "Error al listar invitados");
+    return res.data;
+  }
   await delay(400);
   await syncApiDb();
   return [...(apiDb.invitadosPorPrograma[programaId] || [])];
 }
 
 export async function listarMatriculados(programaId) {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/programas/${programaId}/matriculados`);
+    if (!res.success) throw new Error(res.message || "Error al listar matriculados");
+    return res.data.map(adaptarInscripcion);
+  }
   await delay(400);
   await syncApiDb();
   return (apiDb.inscripciones || [])
@@ -288,6 +428,11 @@ export async function listarMatriculados(programaId) {
 }
 
 export async function listarAsistenciasPrograma(programaId) {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/programas/${programaId}/asistencias`);
+    if (!res.success) throw new Error(res.message || "Error al listar asistencias");
+    return res.data.map(adaptarAsistencia);
+  }
   await delay(400);
   await syncApiDb();
   const programa = apiDb.programas.find((item) => String(item.id) === String(programaId));
@@ -319,6 +464,18 @@ export async function listarAsistenciasPrograma(programaId) {
 }
 
 export async function buscarInvitacionPorDniPeriodo(dni, periodo) {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/invitaciones/buscar`, {
+      params: { dni, periodo }
+    });
+    if (!res.success) return null;
+    if (!res.data) return null;
+    return {
+      programaId: res.data.programaId,
+      programa: adaptarPrograma(res.data.programa),
+      invitado: res.data.invitado
+    };
+  }
   await delay(250);
   await syncApiDb();
   normalizarPeriodosGuardados();
@@ -347,6 +504,11 @@ export async function buscarInvitacionPorDniPeriodo(dni, periodo) {
 }
 
 export async function importarInvitados(programaId, lista) {
+  if (isApiMode()) {
+    const res = await apiClient.post(`/api/v1/extracurricular/programas/${programaId}/invitados`, { lista });
+    if (!res.success) throw new Error(res.message || "Error al importar invitados");
+    return res.data;
+  }
   await delay(800);
   const existentes = apiDb.invitadosPorPrograma[programaId] || [];
   const dniExistentes = new Set(existentes.map((item) => item.dni));
@@ -491,6 +653,11 @@ function claveRegistroPreview(registro) {
 }
 
 export async function confirmarCargaAlumnos(preview) {
+  if (isApiMode()) {
+    const res = await apiClient.post(`/api/v1/extracurricular/coordinacion/cargas/confirmar`, preview);
+    if (!res.success) throw new Error(res.message || "Error al confirmar carga de alumnos");
+    return res.data;
+  }
   await delay(600);
   await syncApiDb();
   const validos = preview.registros.filter((item) => item.estado === "Valido");
@@ -528,6 +695,11 @@ export async function confirmarCargaAlumnos(preview) {
 }
 
 export async function obtenerActividadPrograma(programaId) {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/programas/${programaId}/actividad`);
+    if (!res.success) throw new Error(res.message || "Error al obtener actividad del programa");
+    return res.data;
+  }
   await delay(200);
   await syncApiDb();
   const alumnos = apiDb.invitadosPorPrograma[programaId]?.length || 0;
@@ -537,12 +709,22 @@ export async function obtenerActividadPrograma(programaId) {
 }
 
 export async function obtenerErroresCarga(cargaId) {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/coordinacion/cargas/${cargaId}/errores`);
+    if (!res.success) return [];
+    return res.data;
+  }
   await delay(250);
   await syncApiDb();
   return [];
 }
 
 export async function obtenerListaAsistencia(programaId) {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/programas/${programaId}/lista-asistencia`);
+    if (!res.success) throw new Error(res.message || "Error al obtener lista de asistencia");
+    return res.data;
+  }
   await delay(500);
   await syncApiDb();
   const invitados = apiDb.invitadosPorPrograma[programaId] || [];

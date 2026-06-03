@@ -1,4 +1,12 @@
 import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
+import { isApiMode, apiClient } from "../../../services/apiClient";
+import {
+  adaptarEstudiante,
+  adaptarInscripcion,
+  adaptarPago,
+  adaptarPrograma,
+  adaptarAsistencia,
+} from "../../../services/adapters";
 import {
   buscarInvitacionPorDniPeriodo,
   listarProgramas,
@@ -14,6 +22,14 @@ import {
 } from "../../../services/dateService";
 
 export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes/${dni}`, {
+      params: { periodo }
+    });
+    if (!res.success) return null;
+    return res.data ? adaptarEstudiante(res.data) : null;
+  }
+
   await esperar(350);
   await syncApiDb();
   const periodoNormalizado = normalizarPeriodo(periodo);
@@ -47,6 +63,14 @@ export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
 }
 
 export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes`, {
+      params: { nombre, periodo }
+    });
+    if (!res.success || !Array.isArray(res.data)) return [];
+    return res.data.map(adaptarEstudiante);
+  }
+
   await esperar(350);
   await syncApiDb();
   const periodoNormalizado = normalizarPeriodo(periodo);
@@ -128,6 +152,28 @@ export async function obtenerProgramaPorId(programaId, periodo) {
 }
 
 export async function registrarInscripcion(payload) {
+  if (isApiMode()) {
+    const apiPayload = {
+      estudiante_id: payload.dniEstudiante,
+      programa_id: payload.programaId,
+      origen_inscripcion: "presencial",
+      usuario_registro: payload.usuarioRegistro || "Secretaria",
+      seccion: payload.seccionEstudiante || payload.seccion || "",
+      grado: payload.gradoEstudiante || payload.grado || "",
+      apoderado: payload.apoderado || "",
+      telefono_apoderado: payload.telefono || "",
+      correo_apoderado: payload.correo || "",
+      talla_uniforme: payload.tallaUniforme || "",
+      talla_polo: payload.tallaPolo || "",
+      talla_short: payload.tallaShort || "",
+      seleccion: payload.seleccion || "",
+      nivel_cambridge: payload.nivelCambridge || ""
+    };
+    const res = await apiClient.post("/api/v1/extracurricular/inscripciones", apiPayload);
+    if (!res.success) throw new Error(res.message || "Error al registrar inscripción");
+    return adaptarInscripcion(res.data);
+  }
+
   await esperar(500);
   await syncApiDb();
   finalizarProgramasVencidos();
@@ -250,6 +296,17 @@ export async function registrarDocumentoGenerado({
   usuario = "Secretaría",
   tipoDocumento = "Comunicado personalizado",
 }) {
+  if (isApiMode()) {
+    const res = await apiClient.post(`/api/v1/extracurricular/inscripciones/${inscripcion.id}/documento`, {
+      estudiante_id: estudiante?.id || estudiante?.dni || inscripcion.dniEstudiante,
+      usuario,
+      tipo_documento: tipoDocumento,
+      plantilla: inscripcion.plantilla || ""
+    });
+    if (!res.success) throw new Error(res.message || "Error al registrar documento");
+    return res.data;
+  }
+
   await esperar(250);
   await syncApiDb();
 
@@ -277,6 +334,12 @@ export async function registrarDocumentoGenerado({
 }
 
 export async function derivarInscripcionCaja(inscripcionId, datos = {}) {
+  if (isApiMode()) {
+    const res = await apiClient.put(`/api/v1/extracurricular/inscripciones/${inscripcionId}/derivar-caja`, datos);
+    if (!res.success) throw new Error(res.message || "Error al derivar inscripción a Caja");
+    return adaptarInscripcion(res.data);
+  }
+
   await esperar(250);
   await syncApiDb();
 
@@ -324,6 +387,14 @@ export async function derivarInscripcionCaja(inscripcionId, datos = {}) {
 }
 
 export async function buscarInscripcionEstudiante(estudiante, periodo = "escolar") {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/secretaria/inscripciones/buscar`, {
+      params: { dni: estudiante?.dni || estudiante?.dniEstudiante, periodo }
+    });
+    if (!res.success || !res.data) return null;
+    return adaptarInscripcion(res.data);
+  }
+
   await esperar(200);
   await syncApiDb();
 
@@ -348,6 +419,14 @@ export async function buscarInscripcionEstudiante(estudiante, periodo = "escolar
 }
 
 export async function listarInscripcionesEstudiante(estudiante, periodo = "escolar") {
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/secretaria/inscripciones`, {
+      params: { dni: estudiante?.dni || estudiante?.dniEstudiante, periodo }
+    });
+    if (!res.success || !Array.isArray(res.data)) return [];
+    return res.data.map(adaptarInscripcion);
+  }
+
   await esperar(160);
   await syncApiDb();
 

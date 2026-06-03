@@ -6,3 +6,10 @@ dist/
 .tmp_docx_text/
 *.log
 *.docx
+.tmp*
+.pnpm-debug.log
+package-lock.json
+yape.png
+plim.png
+*.tmp
+

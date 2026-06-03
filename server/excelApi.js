@@ -1,4 +1,4 @@
-﻿import cors from "cors";
+import cors from "cors";
 import "./loadEnv.js";
 import { execFile } from "child_process";
 import { randomUUID } from "crypto";
@@ -11,10 +11,174 @@ import path from "path";
 import { promisify } from "util";
 import { generarPreviewCargaExcel } from "./excelPreviewService.js";
 import { getDb, getDbSource, resetDb, saveDb } from "./localDb.js";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
+
 
 const app = express();
 const PORT = Number(process.env.PORT || process.env.EXCEL_API_PORT || 5175);
 const API_HOST = process.env.API_HOST || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
+const JWT_SECRET = process.env.JWT_SECRET || "secreto-local-san-rafael-extracurricular-2026";
+
+// Middlewares de Seguridad
+function requireAuth(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ success: false, message: "No autorizado. Token inexistente o inválido." });
+  }
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ success: false, message: "Sesión inválida o expirada." });
+  }
+}
+
+function requireRole(allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "No autorizado." });
+    }
+    const role = String(req.user.role || "").toLowerCase();
+    const hasRole = allowedRoles.map(r => String(r).toLowerCase()).includes(role);
+    if (role === "administrador" || hasRole) {
+      return next();
+    }
+    return res.status(403).json({ success: false, message: "No tiene permisos suficientes para realizar esta acción." });
+  };
+}
+
+function requirePermission(allowedPermissions) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "No autorizado." });
+    }
+    const role = String(req.user.role || "").toLowerCase();
+    if (role === "administrador") {
+      return next();
+    }
+    const userPerms = req.user.permissions || req.user.permisos || [];
+    const hasPermission = allowedPermissions.some(p => userPerms.includes(p));
+    if (hasPermission) {
+      return next();
+    }
+    return res.status(403).json({ success: false, message: "No tiene permisos suficientes para realizar esta acción." });
+  };
+}
+
+// Normalización de Estados (Mapeos)
+function normalizeProgramStateToFrontend(state) {
+  const map = {
+    borrador: "Deshabilitado",
+    publicado: "Habilitado",
+    cerrado: "Deshabilitado",
+    archivado: "Deshabilitado",
+    Habilitado: "Habilitado",
+    Deshabilitado: "Deshabilitado"
+  };
+  return map[state] || state || "Habilitado";
+}
+
+function normalizeEnrollmentStateToFrontend(state) {
+  const map = {
+    preinscrita: "Pendiente de pago",
+    pendiente_pago: "Pendiente de pago",
+    pendiente_validacion: "Por Verificar",
+    confirmada: "Pago validado",
+    observada: "Pago observado",
+    anulada: "Anulada",
+    "Pendiente de pago": "Pendiente de pago",
+    "Por Verificar": "Por Verificar",
+    "Pago validado": "Pago validado",
+    "Pago observado": "Pago observado",
+    "Anulada": "Anulada"
+  };
+  return map[state] || state || "Pendiente de pago";
+}
+
+function normalizePaymentStateToFrontend(state) {
+  const map = {
+    pendiente: "Por Verificar",
+    validado: "completado",
+    observado: "observado",
+    rechazado: "observado",
+    anulado: "anulado",
+    "Por Verificar": "Por Verificar",
+    "completado": "completado",
+    "observado": "observado",
+    "anulado": "anulado"
+  };
+  return map[state] || state || "Por Verificar";
+}
+
+function normalizeAttendanceStateToFrontend(state) {
+  return state || "presente";
+}
+
+function normalizeProgramStateToBackend(state) {
+  const map = {
+    Habilitado: "publicado",
+    Deshabilitado: "borrador",
+    publicado: "publicado",
+    borrador: "borrador",
+    cerrado: "cerrado",
+    archivado: "archivado"
+  };
+  return map[state] || state || "publicado";
+}
+
+function normalizeEnrollmentStateToBackend(state) {
+  const map = {
+    "Pendiente de pago": "pendiente_pago",
+    "Por Verificar": "pendiente_validacion",
+    "Pago validado": "confirmada",
+    "Pago observado": "observada",
+    "Anulada": "anulada",
+    pendiente_pago: "pendiente_pago",
+    pendiente_validacion: "pendiente_validacion",
+    confirmada: "confirmada",
+    observada: "observada",
+    anulada: "anulada"
+  };
+  return map[state] || state || "pendiente_pago";
+}
+
+function normalizePaymentStateToBackend(state) {
+  const map = {
+    "Por Verificar": "pendiente",
+    "completado": "validado",
+    "observado": "observado",
+    "anulado": "anulado",
+    pendiente: "pendiente",
+    validado: "validado",
+    observado: "observado",
+    anulado: "anulado"
+  };
+  return map[state] || state || "pendiente";
+}
+
+// Log de Auditoría
+async function registrarAuditoria(usuario, rol, accion, detalles) {
+  try {
+    const db = await getDb();
+    db.auditLogs = db.auditLogs || [];
+    const log = {
+      id: `AUD-${String(Date.now()).slice(-6)}-${randomUUID().slice(0, 4)}`,
+      usuario: usuario || "sistema",
+      rol: rol || "sistema",
+      fecha: new Date().toISOString(),
+      accion,
+      detalles: typeof detalles === "object" ? JSON.stringify(detalles) : String(detalles || "")
+    };
+    db.auditLogs.unshift(log);
+    await saveDb(db);
+  } catch (error) {
+    console.error("Error al registrar auditoria:", error);
+  }
+}
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const MAX_WORD_FILE_SIZE = 25 * 1024 * 1024;
 const execFileAsync = promisify(execFile);
@@ -75,7 +239,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, dbSource: getDbSource() });
 });
 
-app.get("/api/db", async (_req, res) => {
+app.get("/api/db", requireAuth, requireRole(["administrador"]), async (_req, res) => {
   try {
     res.json(await getDb());
   } catch (error) {
@@ -84,7 +248,7 @@ app.get("/api/db", async (_req, res) => {
   }
 });
 
-app.put("/api/db", async (req, res) => {
+app.put("/api/db", requireAuth, requireRole(["administrador"]), async (req, res) => {
   try {
     const db = await saveDb(req.body);
     res.json(db);
@@ -94,7 +258,7 @@ app.put("/api/db", async (req, res) => {
   }
 });
 
-app.post("/api/db/reset", async (_req, res) => {
+app.post("/api/db/reset", requireAuth, requireRole(["administrador"]), async (_req, res) => {
   try {
     res.json(await resetDb());
   } catch (error) {
@@ -248,6 +412,1940 @@ app.post("/api/secretaria/documentos/pdf", documentUpload.single("archivo"), asy
     res.status(400).json({
       message: error.publicMessage || "No se pudo convertir el Word a PDF. Verifique que el servidor tenga Microsoft Word o LibreOffice instalado.",
     });
+  }
+});
+
+// ==========================================
+// NEW REST API V1 ENDPOINTS FOR LOCAL TESTING
+// ==========================================
+
+function normalizarPeriodoApi(valor) {
+  return String(valor || "").toLowerCase().includes("verano") ? "verano" : "escolar";
+}
+
+function normalizarTextoApi(valor) {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function mapDbProgramToApi(p) {
+  if (!p) return null;
+  return {
+    id: p.id,
+    nombre_programa: p.nombre,
+    categoria: p.categoria,
+    fecha_inicio: p.fechaInicio,
+    fecha_fin: p.fechaFin,
+    hora_inicio: p.horaInicio,
+    hora_fin: p.horaFin,
+    monto: p.costo,
+    cupos: p.cupos,
+    cupos_disponibles: p.cupos,
+    cupos_ocupados: p.cuposOcupados || 0,
+    estado_programa: normalizeProgramStateToFrontend(p.estado || "Habilitado"),
+    grados: p.gradosAplicables || [],
+    responsable: p.responsable || p.docente || "",
+    horario: p.horario || "",
+    periodo: p.periodo || "escolar",
+    modalidad_cobro: p.modalidadCobro || "Mensual",
+    requiere_uniforme: p.requiereUniforme,
+    requiere_indumentaria: p.requiereIndumentaria,
+    anuncio_imagen: p.anuncioImagen || "",
+    anuncio_imagen_nombre: p.anuncioImagenNombre || "",
+    talleres_deportivos: p.talleresDeportivos || [],
+    horarios_por_grupo: p.horariosPorGrupo || [],
+    requisitos: p.requisitos || "",
+    comunicado: p.comunicado || "",
+    detalle_costo: p.detalleCosto || "",
+    detalle_almuerzo: p.detalleAlmuerzo || "",
+    concesionarios: p.concesionarios || "",
+    invitacion_masiva: p.invitacionMasiva,
+    alcance_invitacion_masiva: p.alcanceInvitacionMasiva || "colegio",
+    plantilla: p.plantilla || "",
+    plantilla_base64: p.plantillaBase64 || "",
+    plantilla_variables: p.plantillaVariables || [],
+    plantilla_validada: p.plantillaValidada || false
+  };
+}
+
+function mapDbEnrollmentToApi(item) {
+  if (!item) return null;
+  return {
+    inscripcion_id: item.id,
+    estudiante_id: item.dniEstudiante || "",
+    programa_id: item.programaId || "",
+    creado_en: item.fechaRegistro || "",
+    origen_inscripcion: item.origenRegistro || "Presencial",
+    estado_inscripcion: normalizeEnrollmentStateToFrontend(item.estadoInscripcion || "Pendiente de pago"),
+    dni_estudiante: item.dniEstudiante || "",
+    codigo_estudiante: item.codigoEstudiante || "",
+    nombres_estudiante: item.nombresEstudiante || "",
+    grado_estudiante: item.gradoEstudiante || item.grado || "",
+    seccion: item.seccion || "",
+    nombre_programa: item.programa || "",
+    categoria: item.categoria || "",
+    horario: item.horario || "",
+    docente: item.docente || item.responsable || "No definido",
+    monto: item.costo || 0,
+    modalidad_cobro: item.modalidadCobro || "Mensual",
+    fecha_inicio: item.fechaInicio || "",
+    fecha_fin: item.fechaFin || "",
+    apoderado: item.apoderado || "",
+    telefono_apoderado: item.telefono || "",
+    correo_apoderado: item.correo || "",
+    estado_pago: normalizePaymentStateToFrontend(item.estadoPago || "Pendiente"),
+    pago_id: item.pagoId || "",
+    fecha_pago: item.fechaPago || ""
+  };
+}
+
+function mapDbPaymentToApi(item) {
+  if (!item) return null;
+  return {
+    pago_id: item.id,
+    inscripcion_id: item.inscripcionId,
+    monto_pago: item.monto,
+    metodo_pago: item.formaPago,
+    estado_pago: normalizePaymentStateToFrontend(item.estado),
+    comprobante_url: item.capturaPagoBase64 || "",
+    motivo_observacion: item.observacion || item.observaciones || "",
+    usuario_validacion: item.validadoPor || "",
+    fecha_validacion: item.validadoEn || "",
+    dni_estudiante: item.dniEstudiante,
+    nombres_estudiante: item.nombresEstudiante || "",
+    nombre_programa: item.programa || "",
+    periodo: item.periodo || "escolar",
+    creado_en: item.fecha || "",
+    numero_operacion: item.numeroOperacion || "",
+    telefono_operacion: item.telefonoOperacion || "",
+    origen_registro: item.origenRegistro || "Portal padres"
+  };
+}
+
+function mapDbAsistenciaToApi(item) {
+  if (!item) return null;
+  return {
+    asistencia_id: item.id,
+    estudiante_id: item.dniEstudiante || "",
+    programa_id: item.programaId || "",
+    fecha_asistencia: item.fechaRegistro || item.fecha || "",
+    estado_asistencia: normalizeAttendanceStateToFrontend(item.estadoAcceso || item.estado || "presente"),
+    usuario_registro: item.origen || item.registradoPor || "Auxiliar",
+    dni_estudiante: item.dniEstudiante || "",
+    codigo_estudiante: item.codigoEstudiante || "",
+    nombres_estudiante: item.nombresEstudiante || "",
+    nombre_programa: item.programa || "",
+    horario: item.horario || "",
+    observacion: item.observacion || ""
+  };
+}
+
+
+// 1. Auth Login
+app.post("/api/v1/auth/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const db = await getDb();
+    const cleanUser = String(username || "").trim().toLowerCase();
+    const aliases = { secre: "secretaria", coord: "coordinacion" };
+    const userToFind = aliases[cleanUser] || cleanUser;
+    const userObj = (db.usuarios || []).find(u => String(u.usuario || "").trim().toLowerCase() === userToFind);
+    
+    if (userObj && userObj.estado !== "Inactivo") {
+      const contrasenaGuardada = userObj.contrasena || "1234";
+      let passwordValido = false;
+      let migrarContrasena = false;
+
+      if (contrasenaGuardada.startsWith("$2a$") || contrasenaGuardada.startsWith("$2b$")) {
+        passwordValido = bcrypt.compareSync(password, contrasenaGuardada);
+      } else {
+        passwordValido = String(password) === String(contrasenaGuardada);
+        if (passwordValido) {
+          migrarContrasena = true;
+        }
+      }
+
+      if (passwordValido) {
+        if (migrarContrasena) {
+          userObj.contrasena = bcrypt.hashSync(password, 10);
+          await saveDb(db);
+        }
+
+        const rolesMap = {
+          Administrador: "administrador",
+          Secretaria: "secretaria",
+          Caja: "caja",
+          Coordinacion: "coordinacion",
+          Auxiliar: "auxiliar",
+          Direccion: "direccion"
+        };
+        const role = rolesMap[userObj.rol] || String(userObj.rol || "").toLowerCase();
+        
+        // Generar JWT firmado real
+        const token = jwt.sign({
+          username: userObj.usuario,
+          role,
+          name: userObj.nombre,
+          permissions: userObj.permisos || []
+        }, JWT_SECRET, { expiresIn: "24h" });
+
+        await registrarAuditoria(userObj.usuario, role, "LOGIN_EXITOSO", { ip: req.ip });
+
+        res.json({
+          success: true,
+          data: {
+            token,
+            user: {
+              username: userObj.usuario,
+              role,
+              name: userObj.nombre,
+              estado: userObj.estado,
+              permisos: userObj.permisos || [],
+              permissions: userObj.permisos || []
+            }
+          }
+        });
+      } else {
+        await registrarAuditoria(username, "desconocido", "LOGIN_FALLIDO", { ip: req.ip, motivo: "Contraseña incorrecta" });
+        res.status(401).json({ success: false, message: "Usuario o contraseña incorrectos." });
+      }
+    } else {
+      await registrarAuditoria(username, "desconocido", "LOGIN_FALLIDO", { ip: req.ip, motivo: "Usuario inactivo o no existe" });
+      res.status(401).json({ success: false, message: "Usuario o contraseña incorrectos." });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Auth Get Current User
+app.get("/api/v1/auth/me", requireAuth, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      data: {
+        user: {
+          username: req.user.username,
+          role: req.user.role,
+          name: req.user.name,
+          permissions: req.user.permissions || [],
+          permisos: req.user.permissions || []
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 2. Padres Validar
+app.post("/api/v1/extracurricular/padres/validar", async (req, res) => {
+  try {
+    const { dni, fecha_nacimiento } = req.body;
+    const db = await getDb();
+    const student = db.estudiantes?.[dni];
+    if (student && student.fechaNacimiento === fecha_nacimiento) {
+      // Generar JWT firmado real para padres
+      const token = jwt.sign({
+        username: student.dni,
+        role: "padres",
+        name: "Padre de familia",
+        dni: student.dni,
+        estudiante: student.nombres,
+        permissions: []
+      }, JWT_SECRET, { expiresIn: "24h" });
+
+      await registrarAuditoria(student.dni, "padres", "PADRES_VALIDAR_EXITOSO", { dni, nombres: student.nombres });
+
+      res.json({
+        success: true,
+        data: {
+          token,
+          estudiante_id: student.dni,
+          dni_estudiante: student.dni,
+          codigo_estudiante: student.codigoEstudiante,
+          nombres: student.nombres,
+          apellidos: student.apellidos || "",
+          fecha_nacimiento: student.fechaNacimiento,
+          grado_nombre: student.grado,
+          seccion: student.seccion,
+          nivel_nombre: student.nivel || "",
+          tipo_alumno: student.tipoAlumno || "Alumno interno",
+          estado_matricula: student.estadoMatricula || "Activo",
+          apoderado: student.apoderado || "",
+          telefono_apoderado: student.telefonoApoderado || "",
+          correo_apoderado: student.correoApoderado || ""
+        }
+      });
+    } else {
+      await registrarAuditoria(dni || "desconocido", "padres", "PADRES_VALIDAR_FALLIDO", { ip: req.ip });
+      res.status(400).json({ success: false, message: "DNI o fecha de nacimiento incorrectos." });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Proteger todos los endpoints extracurricular posteriores con JWT
+app.use("/api/v1/extracurricular", requireAuth);
+
+// 3. Categorias CRUD
+app.get("/api/v1/extracurricular/categorias", async (req, res) => {
+  try {
+    const db = await getDb();
+    res.json({ success: true, data: db.categorias || [] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/categorias", async (req, res) => {
+  try {
+    const { nombre } = req.body;
+    const db = await getDb();
+    if (!db.categorias.includes(nombre)) {
+      db.categorias.push(nombre);
+      await saveDb(db);
+    }
+    res.json({ success: true, data: nombre });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.delete("/api/v1/extracurricular/categorias/:nombre", async (req, res) => {
+  try {
+    const { nombre } = req.params;
+    const db = await getDb();
+    db.categorias = (db.categorias || []).filter(c => String(c).toLowerCase() !== String(nombre).toLowerCase());
+    await saveDb(db);
+    res.json({ success: true, data: nombre });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 4. Programas CRUD
+app.get("/api/v1/extracurricular/programas", async (req, res) => {
+  try {
+    const db = await getDb();
+    res.json({ success: true, data: (db.programas || []).map(mapDbProgramToApi) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/programas/:id", async (req, res) => {
+  try {
+    const db = await getDb();
+    const prog = (db.programas || []).find(p => p.id === req.params.id);
+    if (!prog) return res.status(404).json({ success: false, message: "Programa no encontrado." });
+    res.json({ success: true, data: mapDbProgramToApi(prog) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/programas", async (req, res) => {
+  try {
+    const db = await getDb();
+    const id = `PROG-${String(db.nextProgramaId || 1).padStart(3, "0")}`;
+    db.nextProgramaId = (db.nextProgramaId || 1) + 1;
+    
+    const nuevo = {
+      id,
+      nombre: req.body.nombre_programa,
+      categoria: req.body.categoria,
+      fechaInicio: req.body.fecha_inicio,
+      fechaFin: req.body.fecha_fin,
+      horaInicio: req.body.hora_inicio,
+      horaFin: req.body.hora_fin,
+      costo: Number(req.body.monto || 0),
+      cupos: Number(req.body.cupos || 0),
+      cuposOcupados: 0,
+      gradosAplicables: req.body.grados || [],
+      responsable: req.body.responsable || "",
+      periodo: req.body.periodo || "escolar",
+      modalidadCobro: req.body.modalidad_cobro || "Mensual",
+      requiereUniforme: Boolean(req.body.requiere_uniforme),
+      requiereIndumentaria: Boolean(req.body.requiere_indumentaria),
+      anuncioImagen: req.body.anuncio_imagen || "",
+      anuncioImagenNombre: req.body.anuncio_imagen_nombre || "",
+      talleresDeportivos: req.body.talleres_deportivos || [],
+      horariosPorGrupo: req.body.horarios_por_grupo || [],
+      requisitos: req.body.requisitos || "",
+      comunicado: req.body.comunicado || "",
+      detalleCosto: req.body.detalle_costo || "",
+      detalleAlmuerzo: req.body.detalle_almuerzo || "",
+      concesionarios: req.body.concesionarios || "",
+      invitacionMasiva: Boolean(req.body.invitacion_masiva),
+      alcanceInvitacionMasiva: req.body.alcance_invitacion_masiva || "colegio",
+      estado: "Habilitado"
+    };
+    
+    db.programas.push(nuevo);
+    await saveDb(db);
+    res.json({ success: true, data: mapDbProgramToApi(nuevo) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/programas/documento", async (req, res) => {
+  try {
+    const db = await getDb();
+    const id = `PROG-${String(db.nextProgramaId || 1).padStart(3, "0")}`;
+    db.nextProgramaId = (db.nextProgramaId || 1) + 1;
+    
+    const nuevo = {
+      id,
+      nombre: req.body.nombre_programa,
+      categoria: req.body.categoria,
+      fechaInicio: req.body.fecha_inicio,
+      fechaFin: req.body.fecha_fin,
+      costo: Number(req.body.monto || 0),
+      cupos: Number(req.body.cupos || 0),
+      cuposOcupados: 0,
+      gradosAplicables: req.body.grados || [],
+      periodo: req.body.periodo || "escolar",
+      modalidadCobro: req.body.modalidad_cobro || "Mensual",
+      requiereUniforme: Boolean(req.body.requiere_uniforme),
+      requiereIndumentaria: Boolean(req.body.requiere_indumentaria),
+      horario: req.body.horario || "Por definir",
+      grupo: req.body.grupo || "Por definir",
+      plantilla: req.body.plantilla || "",
+      plantillaBase64: req.body.plantilla_base64 || "",
+      plantillaVariables: req.body.plantilla_variables || [],
+      plantillaValidada: true,
+      creadoDesdeDocumento: true,
+      estado: "Deshabilitado"
+    };
+    
+    db.programas.push(nuevo);
+    await saveDb(db);
+    res.json({ success: true, data: mapDbProgramToApi(nuevo) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.put("/api/v1/extracurricular/programas/:id", async (req, res) => {
+  try {
+    const db = await getDb();
+    const idx = (db.programas || []).findIndex(p => p.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ success: false, message: "Programa no encontrado." });
+    
+    const updated = {
+      ...db.programas[idx],
+      nombre: req.body.nombre_programa,
+      categoria: req.body.categoria,
+      fechaInicio: req.body.fecha_inicio,
+      fechaFin: req.body.fecha_fin,
+      horaInicio: req.body.hora_inicio,
+      horaFin: req.body.hora_fin,
+      costo: Number(req.body.monto || 0),
+      cupos: Number(req.body.cupos || 0),
+      gradosAplicables: req.body.grados || [],
+      responsable: req.body.responsable || "",
+      periodo: req.body.periodo || "escolar",
+      modalidadCobro: req.body.modalidad_cobro || "Mensual",
+      requiereUniforme: Boolean(req.body.requiere_uniforme),
+      requiereIndumentaria: Boolean(req.body.requiere_indumentaria),
+      anuncioImagen: req.body.anuncio_imagen || "",
+      anuncioImagenNombre: req.body.anuncio_imagen_nombre || "",
+      talleresDeportivos: req.body.talleres_deportivos || [],
+      horariosPorGrupo: req.body.horarios_por_grupo || [],
+      requisitos: req.body.requisitos || "",
+      comunicado: req.body.comunicado || "",
+      detalleCosto: req.body.detalle_costo || "",
+      detalleAlmuerzo: req.body.detalle_almuerzo || "",
+      concesionarios: req.body.concesionarios || "",
+      invitacionMasiva: Boolean(req.body.invitacion_masiva),
+      alcanceInvitacionMasiva: req.body.alcance_invitacion_masiva || "colegio"
+    };
+    
+    db.programas[idx] = updated;
+    await saveDb(db);
+    res.json({ success: true, data: mapDbProgramToApi(updated) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.put("/api/v1/extracurricular/programas/:id/estado", async (req, res) => {
+  try {
+    const db = await getDb();
+    const idx = (db.programas || []).findIndex(p => p.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ success: false, message: "Programa no encontrado." });
+    
+    db.programas[idx].estado = req.body.estado;
+    await saveDb(db);
+    res.json({ success: true, data: mapDbProgramToApi(db.programas[idx]) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.delete("/api/v1/extracurricular/programas/:id", async (req, res) => {
+  try {
+    const db = await getDb();
+    db.programas = (db.programas || []).filter(p => p.id !== req.params.id);
+    if (db.invitadosPorPrograma) {
+      delete db.invitadosPorPrograma[req.params.id];
+    }
+    await saveDb(db);
+    res.json({ success: true, data: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 5. Invitaciones e Historial de Cargas
+app.get("/api/v1/extracurricular/programas/:programaId/invitados", async (req, res) => {
+  try {
+    const db = await getDb();
+    res.json({ success: true, data: db.invitadosPorPrograma?.[req.params.programaId] || [] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/programas/:programaId/matriculados", async (req, res) => {
+  try {
+    const db = await getDb();
+    const list = (db.inscripciones || [])
+      .filter(item => item.programaId === req.params.programaId && item.estadoInscripcion !== "Anulada");
+    res.json({ success: true, data: list.map(mapDbEnrollmentToApi) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/programas/:programaId/asistencias", async (req, res) => {
+  try {
+    const db = await getDb();
+    const prog = db.programas.find(p => p.id === req.params.programaId);
+    const nomProg = normalizarTextoApi(prog?.nombre);
+    const list = (db.asistencias || [])
+      .filter(item => {
+        const coincideId = item.programaId && String(item.programaId) === String(req.params.programaId);
+        const coincideNombre = nomProg && normalizarTextoApi(item.programa) === nomProg;
+        return coincideId || coincideNombre;
+      });
+    res.json({ success: true, data: list.map(mapDbAsistenciaToApi) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/invitaciones/buscar", async (req, res) => {
+  try {
+    const { dni, periodo } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
+    
+    let result = null;
+    for (const prog of programs) {
+      const invitados = db.invitadosPorPrograma[prog.id] || [];
+      const inv = invitados.find(item => String(item.dni).replace(/\D/g, "") === String(dni).replace(/\D/g, ""));
+      if (inv) {
+        result = {
+          programaId: prog.id,
+          programa: mapDbProgramToApi(prog),
+          invitado: inv
+        };
+        break;
+      }
+    }
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/programas/:programaId/invitados", async (req, res) => {
+  try {
+    const { programaId } = req.params;
+    const { lista } = req.body;
+    const db = await getDb();
+    const existentes = db.invitadosPorPrograma[programaId] || [];
+    const dniExistentes = new Set(existentes.map(item => item.dni));
+    const nuevos = (lista || []).filter(item => !dniExistentes.has(item.dni));
+    const duplicados = (lista || []).length - nuevos.length;
+    const prog = db.programas.find(p => p.id === programaId);
+    
+    db.invitadosPorPrograma[programaId] = [
+      ...existentes,
+      ...nuevos.map(item => ({
+        ...item,
+        periodo: item.periodo || normalizarPeriodoApi(prog?.periodo)
+      }))
+    ];
+    await saveDb(db);
+    res.json({ success: true, data: { importados: nuevos.length, duplicados } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", async (req, res) => {
+  try {
+    const preview = req.body;
+    const db = await getDb();
+    const validos = (preview.registros || []).filter(item => item.estado === "Valido");
+    
+    validos.forEach(item => {
+      if (!item.programaId) return;
+      const existentes = db.invitadosPorPrograma[item.programaId] || [];
+      db.invitadosPorPrograma[item.programaId] = [
+        ...existentes,
+        {
+          codigoEstudiante: item.codigoEstudiante || "",
+          dni: item.dni,
+          nombres: `${item.nombres || ""} ${item.apellidos || ""}`.trim(),
+          grado: item.grado,
+          seccion: item.seccion,
+          nivelEducativo: item.nivelEducativo || "",
+          seleccion: item.seleccion || "",
+          nivelCambridge: item.nivelCambridge || "",
+          periodo: normalizarPeriodoApi(preview.periodo),
+          telefonoApoderado: item.telefono || "",
+          correo: item.correo || "",
+          observacion: item.observacion || "",
+          estado: item.estadoAlumno || "Invitado"
+        }
+      ];
+    });
+    
+    await saveDb(db);
+    res.json({
+      success: true,
+      data: {
+        importados: validos.length,
+        total: preview.resumen?.total || validos.length,
+        errores: preview.resumen?.errores || 0,
+        duplicados: preview.resumen?.duplicados || 0
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/programas/:programaId/actividad", async (req, res) => {
+  try {
+    const { programaId } = req.params;
+    const db = await getDb();
+    const alumnos = db.invitadosPorPrograma[programaId]?.length || 0;
+    const inscripciones = (db.inscripciones || []).filter(item => item.programaId === programaId).length;
+    const documentos = (db.documentosGenerados || []).filter(item => item.programaId === programaId).length;
+    res.json({
+      success: true,
+      data: {
+        alumnos,
+        inscripciones,
+        documentos,
+        tieneActividad: (alumnos + inscripciones + documentos) > 0
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/coordinacion/cargas/:cargaId/errores", async (req, res) => {
+  res.json({ success: true, data: [] });
+});
+
+app.get("/api/v1/extracurricular/programas/:programaId/lista-asistencia", async (req, res) => {
+  try {
+    const { programaId } = req.params;
+    const db = await getDb();
+    const invitados = db.invitadosPorPrograma[programaId] || [];
+    const list = invitados.map(estudiante => ({
+      ...estudiante,
+      asistencia: Array.from({ length: 5 }, (_, index) => ({
+        sesion: index + 1,
+        fecha: `2026-04-${String(7 + index * 7).padStart(2, "0")}`,
+        asistio: Math.random() > 0.3
+      }))
+    }));
+    res.json({ success: true, data: list });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 6. Secretaria Estudiantes y Inscripciones
+app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", async (req, res) => {
+  try {
+    const { dni } = req.params;
+    const { periodo } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    
+    let student = db.estudiantes?.[dni];
+    let invitacion = null;
+    
+    const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
+    for (const prog of programs) {
+      const invitados = db.invitadosPorPrograma[prog.id] || [];
+      const inv = invitados.find(item => item.dni === dni);
+      if (inv) {
+        invitacion = {
+          programaId: prog.id,
+          programa: prog,
+          invitado: inv
+        };
+        break;
+      }
+    }
+    
+    if (!student && invitacion) {
+      student = {
+        dni: invitacion.invitado.dni,
+        codigoEstudiante: invitacion.invitado.codigoEstudiante || "",
+        nombres: invitacion.invitado.nombres.split(" ").slice(0, -2).join(" ") || invitacion.invitado.nombres,
+        apellidos: invitacion.invitado.nombres.split(" ").slice(-2).join(" ") || "",
+        grado: invitacion.invitado.grado,
+        seccion: invitacion.invitado.seccion,
+        nivel: invitacion.invitado.nivelEducativo || "",
+        fechaNacimiento: "2010-01-01",
+        tipoAlumno: "Alumno invitado",
+        estadoMatricula: "Activo",
+        apoderado: "",
+        telefonoApoderado: invitacion.invitado.telefonoApoderado || "",
+        correoApoderado: invitacion.invitado.correo || "",
+        tieneInvitacion: true,
+        programaAsignado: invitacion.programaId,
+        programaNombre: invitacion.programa.nombre,
+        programaCosto: invitacion.programa.costo,
+        seleccion: invitacion.invitado.seleccion || "",
+        nivelCambridge: invitacion.invitado.nivelCambridge || ""
+      };
+    }
+    
+    if (student) {
+      const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
+      const inscrip = inscripciones[0];
+      
+      const resStudent = {
+        id: student.dni,
+        estudiante_id: student.dni,
+        dni_estudiante: student.dni,
+        codigo_estudiante: student.codigoEstudiante || "",
+        nombres: student.nombres,
+        apellidos: student.apellidos || "",
+        fecha_nacimiento: student.fechaNacimiento,
+        grado_nombre: student.grado,
+        seccion: student.seccion,
+        nivel_nombre: student.nivel || "",
+        tipo_alumno: student.tipoAlumno || "Alumno interno",
+        estado_matricula: student.estadoMatricula || "Activo",
+        apoderado: student.apoderado || (invitacion ? (invitacion.invitado.apoderado || "") : ""),
+        telefono_apoderado: student.telefonoApoderado || (invitacion ? (invitacion.invitado.telefonoApoderado || "") : ""),
+        correo_apoderado: student.correoApoderado || (invitacion ? (invitacion.invitado.correo || "") : ""),
+        tieneInvitacion: Boolean(invitacion),
+        programaAsignado: invitacion ? invitacion.programaId : "",
+        programaNombre: invitacion ? invitacion.programa.nombre : "",
+        programaCosto: invitacion ? invitacion.programa.costo : "",
+        seleccion: student.seleccion || (invitacion ? (invitacion.invitado.seleccion || "") : ""),
+        nivelCambridge: student.nivelCambridge || (invitacion ? (invitacion.invitado.nivelCambridge || "") : ""),
+        estadoInscripcion: inscrip ? inscrip.estadoInscripcion : "No inscrito",
+        estadoPago: inscrip ? (inscrip.estadoPago || "Pendiente") : "Pendiente",
+        origenRegistro: inscrip ? (inscrip.origenRegistro || "Presencial") : "Base general de estudiantes"
+      };
+      
+      res.json({ success: true, data: resStudent });
+    } else {
+      res.json({ success: true, data: null });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/secretaria/estudiantes", async (req, res) => {
+  try {
+    const { nombre, periodo } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    const searchVal = normalizarTextoApi(nombre);
+    
+    if (searchVal.length < 3) return res.json({ success: true, data: [] });
+    
+    const results = [];
+    const seenDnis = new Set();
+    
+    Object.values(db.estudiantes || {}).forEach(student => {
+      const searchKey = normalizarTextoApi(`${student.nombres} ${student.codigoEstudiante || ""}`);
+      if (searchKey.includes(searchVal)) {
+        seenDnis.add(student.dni);
+        
+        let invitacion = null;
+        const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
+        for (const prog of programs) {
+          const invitados = db.invitadosPorPrograma[prog.id] || [];
+          const inv = invitados.find(item => item.dni === student.dni);
+          if (inv) {
+            invitacion = {
+              programaId: prog.id,
+              programa: prog,
+              invitado: inv
+            };
+            break;
+          }
+        }
+        
+        const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === student.dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
+        const inscrip = inscripciones[0];
+        
+        results.push({
+          id: student.dni,
+          estudiante_id: student.dni,
+          dni_estudiante: student.dni,
+          codigo_estudiante: student.codigoEstudiante || "",
+          nombres: student.nombres,
+          apellidos: student.apellidos || "",
+          fecha_nacimiento: student.fechaNacimiento,
+          grado_nombre: student.grado,
+          seccion: student.seccion,
+          nivel_nombre: student.nivel || "",
+          tipo_alumno: student.tipoAlumno || "Alumno interno",
+          estado_matricula: student.estadoMatricula || "Activo",
+          apoderado: student.apoderado || (invitacion ? (invitacion.invitado.apoderado || "") : ""),
+          telefono_apoderado: student.telefonoApoderado || (invitacion ? (invitacion.invitado.telefonoApoderado || "") : ""),
+          correo_apoderado: student.correoApoderado || (invitacion ? (invitacion.invitado.correo || "") : ""),
+          tieneInvitacion: Boolean(invitacion),
+          programaAsignado: invitacion ? invitacion.programaId : "",
+          programaNombre: invitacion ? invitacion.programa.nombre : "",
+          programaCosto: invitacion ? invitacion.programa.costo : "",
+          seleccion: student.seleccion || (invitacion ? (invitacion.invitado.seleccion || "") : ""),
+          nivelCambridge: student.nivelCambridge || (invitacion ? (invitacion.invitado.nivelCambridge || "") : ""),
+          estadoInscripcion: inscrip ? inscrip.estadoInscripcion : "No inscrito",
+          estadoPago: inscrip ? (inscrip.estadoPago || "Pendiente") : "Pendiente",
+          origenRegistro: inscrip ? (inscrip.origenRegistro || "Presencial") : "Base general de estudiantes"
+        });
+      }
+    });
+    
+    const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
+    programs.forEach(prog => {
+      (db.invitadosPorPrograma[prog.id] || []).forEach(invitado => {
+        if (seenDnis.has(invitado.dni)) return;
+        
+        const searchKey = normalizarTextoApi(`${invitado.nombres} ${invitado.codigoEstudiante || ""}`);
+        if (searchKey.includes(searchVal)) {
+          seenDnis.add(invitado.dni);
+          results.push({
+            id: invitado.dni,
+            estudiante_id: invitado.dni,
+            dni_estudiante: invitado.dni,
+            codigo_estudiante: invitado.codigoEstudiante || "",
+            nombres: invitado.nombres,
+            apellidos: "",
+            fecha_nacimiento: "2010-01-01",
+            grado_nombre: invitado.grado,
+            seccion: invitado.seccion,
+            nivel_nombre: invitado.nivelEducativo || "",
+            tipo_alumno: "Alumno invitado",
+            estado_matricula: "Activo",
+            apoderado: "",
+            telefono_apoderado: invitado.telefonoApoderado || "",
+            correo_apoderado: invitado.correo || "",
+            tieneInvitacion: true,
+            programaAsignado: prog.id,
+            programaNombre: prog.nombre,
+            programaCosto: prog.costo,
+            seleccion: invitado.seleccion || "",
+            nivelCambridge: invitado.nivelCambridge || "",
+            estadoInscripcion: "Invitado",
+            estadoPago: "Pendiente",
+            origenRegistro: "Excel carga Coordinacion"
+          });
+        }
+      });
+    });
+    
+    res.json({ success: true, data: results.slice(0, 10) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["secretaria", "coordinacion", "padres"]), async (req, res) => {
+  try {
+    const db = await getDb();
+    const enrollmentId = `INS-${String(Date.now()).slice(-6)}`;
+    const { estudiante_id, programa_id, origen_inscripcion, seccion, grado, apoderado, telefono_apoderado, correo_apoderado, talla_uniforme, talla_polo, talla_short, seleccion, nivel_cambridge } = req.body;
+    
+    // Si es un padre, solo puede inscribir a su propio DNI (estudiante_id)
+    if (req.user.role === "padres" && String(req.user.username) !== String(estudiante_id)) {
+      return res.status(403).json({ success: false, message: "No está autorizado para inscribir a este estudiante." });
+    }
+
+    const prog = db.programas.find(p => p.id === programa_id);
+    if (!prog) return res.status(400).json({ success: false, message: "El programa no existe." });
+    
+    // 1. Validar que el programa esté activo
+    const progEstado = String(prog.estado || "Habilitado").toLowerCase();
+    if (progEstado !== "habilitado" && progEstado !== "publicado") {
+      return res.status(400).json({ success: false, message: "No se puede registrar inscripción en un programa no habilitado." });
+    }
+
+    // 2. Validar cupos disponibles
+    const cuposMax = Number(prog.cupos || 0);
+    const cuposOcupados = Number(prog.cuposOcupados || 0);
+    if (cuposOcupados >= cuposMax) {
+      return res.status(400).json({ success: false, message: "No hay cupos disponibles para este programa." });
+    }
+
+    // 3. Validar inscripciones duplicadas
+    const esDuplicado = (db.inscripciones || []).some(
+      item => item.dniEstudiante === estudiante_id &&
+      item.programaId === programa_id &&
+      item.estadoInscripcion !== "Anulada" &&
+      item.estadoInscripcion !== "anulada"
+    );
+    if (esDuplicado) {
+      return res.status(409).json({ success: false, message: "El estudiante ya cuenta con una inscripción activa en este programa." });
+    }
+
+    // 4. Validar lista de invitados si no es invitación masiva
+    if (!prog.invitacionMasiva) {
+      const invitados = db.invitadosPorPrograma?.[programa_id] || [];
+      const estaInvitado = invitados.some(
+        inv => String(inv.dni).replace(/\D/g, "") === String(estudiante_id).replace(/\D/g, "")
+      );
+      if (!estaInvitado) {
+        return res.status(400).json({ success: false, message: "El estudiante no se encuentra en la lista de invitados para este programa." });
+      }
+    }
+
+    const student = db.estudiantes?.[estudiante_id] || {
+      dni: estudiante_id,
+      nombres: "Estudiante",
+      apellidos: "",
+      grado: grado || "",
+      seccion: seccion || ""
+    };
+    
+    // Almacenar estados normalizados internamente en base de datos
+    const newEnrollment = {
+      id: enrollmentId,
+      dniEstudiante: estudiante_id,
+      codigoEstudiante: student.codigoEstudiante || "",
+      nombresEstudiante: `${student.nombres || ""} ${student.apellidos || ""}`.trim(),
+      gradoEstudiante: grado || student.grado || "",
+      seccion: seccion || student.seccion || "",
+      programaId: programa_id,
+      programa: prog.nombre,
+      categoria: prog.categoria,
+      costo: prog.costo,
+      modalidadCobro: prog.modalidadCobro || "Mensual",
+      fechaInicio: prog.fechaInicio,
+      fechaFin: prog.fechaFin,
+      apoderado: apoderado || student.apoderado || "",
+      telefono: telefono_apoderado || student.telefonoApoderado || "",
+      correo: correo_apoderado || student.correoApoderado || "",
+      tallaUniforme: talla_uniforme || "",
+      tallaPolo: talla_polo || "",
+      tallaShort: talla_short || "",
+      seleccion: seleccion || "",
+      nivelCambridge: nivel_cambridge || "",
+      estadoInscripcion: "pendiente_pago", // estado normalizado
+      estadoPago: "pendiente", // estado normalizado
+      origenRegistro: origen_inscripcion || "Portal padres",
+      fechaRegistro: new Date().toISOString()
+    };
+    
+    prog.cuposOcupados = (prog.cuposOcupados || 0) + 1;
+    
+    db.inscripciones = db.inscripciones || [];
+    db.inscripciones.push(newEnrollment);
+    
+    if (db.estudiantes?.[estudiante_id]) {
+      db.estudiantes[estudiante_id].apoderado = apoderado || student.apoderado || "";
+      db.estudiantes[estudiante_id].telefonoApoderado = telefono_apoderado || student.telefonoApoderado || "";
+      db.estudiantes[estudiante_id].estadoInscripcion = "pendiente_pago";
+    }
+    
+    await saveDb(db);
+
+    await registrarAuditoria(req.user.username, req.user.role, "INSCRIPCION_CREAR", {
+      inscripcionId: enrollmentId,
+      estudianteId: estudiante_id,
+      programaId: programa_id
+    });
+
+    res.json({ success: true, data: mapDbEnrollmentToApi(newEnrollment) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/inscripciones/:id/documento", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estudiante_id, usuario, tipo_documento, plantilla } = req.body;
+    const db = await getDb();
+    
+    const inscrip = (db.inscripciones || []).find(item => item.id === id);
+    if (!inscrip) return res.status(404).json({ success: false, message: "Inscripción no encontrada." });
+    
+    const docId = `DOC-${String(db.nextDocumentoId || 1).padStart(3, "0")}`;
+    db.nextDocumentoId = (db.nextDocumentoId || 1) + 1;
+    
+    const docObj = {
+      id: docId,
+      alumno: inscrip.nombresEstudiante,
+      dniEstudiante: inscrip.dniEstudiante,
+      programa: inscrip.programa,
+      programaId: inscrip.programaId,
+      fecha: new Date().toISOString(),
+      usuario: usuario || "Secretaría",
+      tipoDocumento: tipo_documento || "Comunicado personalizado",
+      plantilla: plantilla || ""
+    };
+    
+    db.documentosGenerados = db.documentosGenerados || [];
+    db.documentosGenerados.unshift(docObj);
+    
+    inscrip.documentoGenerado = true;
+    inscrip.ultimoDocumentoGeneradoId = docId;
+    inscrip.ultimoDocumentoGeneradoEn = docObj.fecha;
+    
+    await saveDb(db);
+    res.json({ success: true, data: docObj });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", async (req, res) => {
+  try {
+    const { inscripcionId } = req.params;
+    const db = await getDb();
+    const idx = (db.inscripciones || []).findIndex(item => item.id === inscripcionId);
+    if (idx === -1) return res.status(404).json({ success: false, message: "Inscripción no encontrada." });
+    
+    const updated = {
+      ...db.inscripciones[idx],
+      ...req.body,
+      derivadoCaja: true,
+      estadoCaja: "derivado_caja",
+      estadoInscripcion: db.inscripciones[idx].estadoPago === "validado" ? "confirmada" : "pendiente_pago",
+      fechaDerivacionCaja: new Date().toISOString()
+    };
+    
+    db.inscripciones[idx] = updated;
+    
+    const student = db.estudiantes?.[updated.dniEstudiante];
+    if (student) {
+      student.estadoInscripcion = updated.estadoInscripcion;
+      student.estadoCaja = updated.estadoCaja;
+    }
+    
+    await saveDb(db);
+    res.json({ success: true, data: mapDbEnrollmentToApi(updated) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/secretaria/inscripciones/buscar", async (req, res) => {
+  try {
+    const { dni, periodo } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    const list = (db.inscripciones || [])
+      .filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
+    
+    const active = list.find(item => !item.derivadoCaja && item.estadoPago !== "Pagado") || list[0] || null;
+    res.json({ success: true, data: active ? mapDbEnrollmentToApi(active) : null });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/secretaria/inscripciones", async (req, res) => {
+  try {
+    const { dni, periodo } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    const list = (db.inscripciones || [])
+      .filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
+    res.json({ success: true, data: list.map(mapDbEnrollmentToApi) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 7. Padres Resumen y Datos
+app.get("/api/v1/extracurricular/padres/resumen/:dni", async (req, res) => {
+  try {
+    const { dni } = req.params;
+    const db = await getDb();
+    const student = db.estudiantes?.[dni];
+    if (!student) return res.status(404).json({ success: false, message: "Estudiante no encontrado." });
+    
+    const studentData = {
+      id: student.dni,
+      dni_estudiante: student.dni,
+      codigo_estudiante: student.codigoEstudiante,
+      nombres: student.nombres,
+      apellidos: student.apellidos || "",
+      fecha_nacimiento: student.fechaNacimiento,
+      grado_nombre: student.grado,
+      seccion: student.seccion,
+      nivel_nombre: student.nivel || "",
+      tipo_alumno: student.tipoAlumno || "Alumno interno",
+      estado_matricula: student.estadoMatricula || "Activo",
+      apoderado: student.apoderado || "",
+      telefono_apoderado: student.telefonoApoderado || "",
+      correo_apoderado: student.correoApoderado || ""
+    };
+    
+    const enrollments = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && item.estadoInscripcion !== "Anulada");
+    const payments = (db.pagos || []).filter(item => item.dniEstudiante === dni || enrollments.some(e => e.id === item.inscripcionId));
+    const documents = (db.documentosGenerados || []).filter(item => item.dniEstudiante === dni || item.alumno === student.nombres);
+    
+    const invitations = [];
+    const programs = db.programas || [];
+    for (const prog of programs) {
+      const invitados = db.invitadosPorPrograma[prog.id] || [];
+      const inv = invitados.find(item => item.dni === dni);
+      if (inv) {
+        invitations.push({
+          codigo_estudiante: inv.codigoEstudiante || "",
+          dni: inv.dni,
+          nombres: inv.nombres,
+          grado: inv.grado,
+          seccion: inv.seccion,
+          nivel_educativo: inv.nivelEducativo || "",
+          seleccion: inv.seleccion || "",
+          nivel_cambridge: inv.nivelCambridge || "",
+          periodo: inv.periodo || prog.periodo,
+          programa_id: prog.id,
+          programa: prog.nombre,
+          costo: prog.costo,
+          horario: prog.horario
+        });
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        estudiante: studentData,
+        invitaciones: invitations,
+        inscripciones: enrollments.map(mapDbEnrollmentToApi),
+        pagos: payments.map(mapDbPaymentToApi),
+        documentos: documents
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.put("/api/v1/extracurricular/padres/:dni/apoderado", async (req, res) => {
+  try {
+    const { dni } = req.params;
+    const { apoderado, telefono_apoderado, correo_apoderado } = req.body;
+    const db = await getDb();
+    const student = db.estudiantes?.[dni];
+    if (!student) return res.status(404).json({ success: false, message: "Estudiante no encontrado." });
+    
+    student.apoderado = apoderado || "";
+    student.telefonoApoderado = telefono_apoderado || "";
+    student.correoApoderado = correo_apoderado || "";
+    
+    (db.inscripciones || []).forEach(item => {
+      if (item.dniEstudiante === dni) {
+        item.apoderado = apoderado || "";
+        item.telefono = telefono_apoderado || "";
+        item.correo = correo_apoderado || "";
+      }
+    });
+    
+    await saveDb(db);
+    res.json({
+      success: true,
+      data: {
+        id: student.dni,
+        dni_estudiante: student.dni,
+        codigo_estudiante: student.codigoEstudiante,
+        nombres: student.nombres,
+        apellidos: student.apellidos || "",
+        fecha_nacimiento: student.fechaNacimiento,
+        grado_nombre: student.grado,
+        seccion: student.seccion,
+        nivel_nombre: student.nivel || "",
+        tipo_alumno: student.tipoAlumno || "Alumno interno",
+        estado_matricula: student.estadoMatricula || "Activo",
+        apoderado: student.apoderado,
+        telefono_apoderado: student.telefonoApoderado,
+        correo_apoderado: student.correoApoderado
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/pagos/comprobante", upload.single("archivo"), async (req, res) => {
+  try {
+    const db = await getDb();
+    let base64Image = "";
+    if (req.file) {
+      base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+    }
+    
+    const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
+    const nuevoPago = {
+      id: pagoId,
+      inscripcionId: req.body.inscripcion_id || "",
+      dniEstudiante: req.body.dni_estudiante || "",
+      programa: req.body.nombre_programa || "",
+      periodo: req.body.periodo || "escolar",
+      monto: Number(req.body.monto_pago || 0),
+      formaPago: req.body.metodo_pago || "Yape",
+      numeroOperacion: req.body.numero_operacion || "",
+      telefonoOperacion: req.body.telefono_operacion || "",
+      capturaPagoBase64: base64Image,
+      estado: "pendiente", // estado normalizado
+      fecha: new Date().toISOString(),
+      fechaPago: new Date().toISOString(),
+      origenRegistro: "Portal padres"
+    };
+    
+    db.pagos = db.pagos || [];
+    db.pagos.push(nuevoPago);
+    
+    const inscrip = (db.inscripciones || []).find(item => item.id === req.body.inscripcion_id);
+    if (inscrip) {
+      inscrip.estadoPago = "pendiente"; // estado normalizado
+      inscrip.estadoInscripcion = "pendiente_validacion"; // estado normalizado
+      inscrip.pagoId = pagoId;
+    }
+    
+    await saveDb(db);
+
+    await registrarAuditoria("padre", "padres", "PAGO_COMPROBANTE_SUBIR", {
+      pagoId,
+      inscripcionId: req.body.inscripcion_id,
+      monto: nuevoPago.monto
+    });
+
+    res.json({ success: true, data: mapDbPaymentToApi(nuevoPago) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 8. Auxiliar
+app.get("/api/v1/extracurricular/auxiliar/validar", async (req, res) => {
+  try {
+    const { dni, programa_id } = req.query;
+    const db = await getDb();
+    
+    const inscripcion = (db.inscripciones || []).find(item => item.dniEstudiante === dni && item.programaId === programa_id && item.estadoInscripcion !== "Anulada");
+    const student = db.estudiantes?.[dni];
+    const pago = inscripcion ? (db.pagos || []).find(p => p.inscripcionId === inscripcion.id && p.estado !== "anulado" && p.estado !== "observado") : null;
+    
+    let result = {
+      accesoPermitido: false,
+      mensajeAcceso: "No registrado",
+      accion: "Estudiante no registrado en este programa. Dirigirse a Secretaria.",
+      color: "rojo",
+      nombres: student ? student.nombres : "",
+      dni: dni,
+      codigoEstudiante: student ? student.codigoEstudiante : "",
+      grado: student ? student.grado : "",
+      seccion: student ? student.seccion : "",
+      programa: "",
+      horario: "",
+      estadoPago: "Pendiente",
+      pagoId: "",
+      inscripcionId: ""
+    };
+    
+    if (inscripcion) {
+      result.inscripcionId = inscripcion.id;
+      result.programa = inscripcion.programa;
+      result.horario = inscripcion.horario;
+      result.pagoId = pago ? pago.id : "";
+      
+      const isPaid = (pago && (pago.estado === "completado" || pago.estado === "validado")) || inscripcion.estadoPago === "Pagado";
+      if (isPaid) {
+        result.accesoPermitido = true;
+        result.mensajeAcceso = "Pago validado";
+        result.accion = "Ingreso permitido.";
+        result.color = "verde";
+        result.estadoPago = "Pagado";
+      } else if (pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar")) {
+        result.accesoPermitido = true;
+        result.mensajeAcceso = "Por verificar";
+        result.accion = "Ingreso permitido condicional (Pago web por verificar).";
+        result.color = "amarillo";
+        result.estadoPago = "Por Verificar";
+      } else {
+        result.accesoPermitido = false;
+        result.mensajeAcceso = "Pago pendiente";
+        result.accion = "Tiene pagos pendientes. Dirigirse a Caja antes de ingresar.";
+        result.color = "rojo";
+        result.estadoPago = "Pendiente";
+      }
+    }
+    
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/auxiliar/validar-qr", async (req, res) => {
+  try {
+    const { codigo, programa_id } = req.query;
+    const dni = String(codigo || "").replace(/\D/g, "");
+    const db = await getDb();
+    
+    const inscripcion = (db.inscripciones || []).find(item => item.dniEstudiante === dni && item.programaId === programa_id && item.estadoInscripcion !== "Anulada");
+    const student = db.estudiantes?.[dni];
+    const pago = inscripcion ? (db.pagos || []).find(p => p.inscripcionId === inscripcion.id && p.estado !== "anulado" && p.estado !== "observado") : null;
+    
+    let result = {
+      accesoPermitido: false,
+      mensajeAcceso: "No registrado",
+      accion: "Estudiante no registrado en este programa. Dirigirse a Secretaria.",
+      color: "rojo",
+      nombres: student ? student.nombres : "",
+      dni: dni,
+      codigoEstudiante: student ? student.codigoEstudiante : "",
+      grado: student ? student.grado : "",
+      seccion: student ? student.seccion : "",
+      programa: "",
+      horario: "",
+      estadoPago: "Pendiente",
+      pagoId: "",
+      inscripcionId: ""
+    };
+    
+    if (inscripcion) {
+      result.inscripcionId = inscripcion.id;
+      result.programa = inscripcion.programa;
+      result.horario = inscripcion.horario;
+      result.pagoId = pago ? pago.id : "";
+      
+      const isPaid = (pago && (pago.estado === "completado" || pago.estado === "validado")) || inscripcion.estadoPago === "Pagado";
+      if (isPaid) {
+        result.accesoPermitido = true;
+        result.mensajeAcceso = "Pago validado";
+        result.accion = "Ingreso permitido.";
+        result.color = "verde";
+        result.estadoPago = "Pagado";
+      } else if (pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar")) {
+        result.accesoPermitido = true;
+        result.mensajeAcceso = "Por verificar";
+        result.accion = "Ingreso permitido condicional (Pago web por verificar).";
+        result.color = "amarillo";
+        result.estadoPago = "Por Verificar";
+      } else {
+        result.accesoPermitido = false;
+        result.mensajeAcceso = "Pago pendiente";
+        result.accion = "Tiene pagos pendientes. Dirigirse a Caja antes de ingresar.";
+        result.color = "rojo";
+        result.estadoPago = "Pendiente";
+      }
+    }
+    
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/asistencia", async (req, res) => {
+  try {
+    const { inscripcion_id, pago_id, dni_estudiante, estado_acceso, observacion, origen } = req.body;
+    const db = await getDb();
+    
+    const inscrip = (db.inscripciones || []).find(item => item.id === inscripcion_id);
+    const student = db.estudiantes?.[dni_estudiante];
+    const prog = inscrip ? db.programas.find(p => p.id === inscrip.programaId) : null;
+    
+    const astId = `AST-${String(Date.now()).slice(-6)}`;
+    const nuevaAsistencia = {
+      id: astId,
+      inscripcionId: inscripcion_id,
+      pagoId: pago_id,
+      dniEstudiante: dni_estudiante,
+      codigoEstudiante: student?.codigoEstudiante || "",
+      nombresEstudiante: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : "",
+      programaId: inscrip?.programaId || "",
+      programa: inscrip?.programa || prog?.nombre || "",
+      horario: inscrip?.horario || "",
+      estadoPago: inscrip?.estadoPago || "Pendiente",
+      estadoAcceso: estado_acceso || "presente",
+      observacion: observacion || "",
+      origen: origen || "Auxiliar",
+      fechaRegistro: new Date().toISOString()
+    };
+    
+    db.asistencias = db.asistencias || [];
+    db.asistencias.push(nuevaAsistencia);
+    await saveDb(db);
+    
+    res.json({ success: true, data: mapDbAsistenciaToApi(nuevaAsistencia) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 9. Caja
+app.get("/api/v1/extracurricular/pagos", async (req, res) => {
+  try {
+    const { periodo } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    const filtered = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
+    res.json({ success: true, data: filtered.map(mapDbPaymentToApi) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/pagos", async (req, res) => {
+  try {
+    const db = await getDb();
+    const { inscripcion_id, monto, forma_pago, numero_operacion, telefono_operacion, fecha_pago, usuario_registro, dni_estudiante, nombres_estudiante, programa, periodo } = req.body;
+    
+    const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
+    const nuevoPago = {
+      id: pagoId,
+      inscripcionId: inscripcion_id || "",
+      dniEstudiante: dni_estudiante || "",
+      nombresEstudiante: nombres_estudiante || "",
+      programa: programa || "",
+      periodo: periodo || "escolar",
+      monto: Number(monto || 0),
+      formaPago: forma_pago || "Efectivo",
+      numeroOperacion: numero_operacion || "",
+      telefonoOperacion: telefono_operacion || "",
+      capturaPagoBase64: "",
+      estado: "validado", // estado normalizado
+      fecha: fecha_pago || new Date().toISOString(),
+      fechaPago: fecha_pago || new Date().toISOString(),
+      origenRegistro: "Caja",
+      validadoPor: usuario_registro || "Caja",
+      validadoEn: new Date().toISOString()
+    };
+    
+    db.pagos = db.pagos || [];
+    db.pagos.push(nuevoPago);
+    
+    const inscrip = (db.inscripciones || []).find(item => item.id === inscripcion_id);
+    if (inscrip) {
+      inscrip.estadoPago = "validado"; // estado normalizado
+      inscrip.estadoInscripcion = "confirmada"; // estado normalizado
+      inscrip.pagoId = pagoId;
+      inscrip.fechaPago = nuevoPago.fechaPago;
+    }
+    
+    if (db.estudiantes?.[dni_estudiante]) {
+      db.estudiantes[dni_estudiante].estadoInscripcion = "confirmada";
+    }
+    
+    await saveDb(db);
+
+    await registrarAuditoria(usuario_registro || "Caja", "caja", "PAGO_REGISTRAR", {
+      pagoId,
+      inscripcionId: inscripcion_id,
+      monto: nuevoPago.monto
+    });
+
+    res.json({ success: true, data: mapDbPaymentToApi(nuevoPago) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.put("/api/v1/extracurricular/pagos/:pagoId", async (req, res) => {
+  try {
+    const { pagoId } = req.params;
+    const db = await getDb();
+    const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
+    if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    
+    const updated = {
+      ...db.pagos[idx],
+      monto: Number(req.body.monto || db.pagos[idx].monto),
+      formaPago: req.body.formaPago || db.pagos[idx].formaPago,
+      numeroOperacion: req.body.numeroOperacion || db.pagos[idx].numeroOperacion,
+      telefonoOperacion: req.body.telefonoOperacion || db.pagos[idx].telefonoOperacion,
+      fechaPago: req.body.fechaPago || db.pagos[idx].fechaPago
+    };
+    db.pagos[idx] = updated;
+    
+    const inscrip = (db.inscripciones || []).find(item => item.id === updated.inscripcionId);
+    if (inscrip) {
+      inscrip.fechaPago = updated.fechaPago;
+    }
+    
+    await saveDb(db);
+    res.json({ success: true, data: mapDbPaymentToApi(updated) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/caja/resumen", async (req, res) => {
+  try {
+    const { periodo } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    
+    const pagos = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && p.estado === "completado");
+    const totalCobrado = pagos.reduce((sum, p) => sum + Number(p.monto || 0), 0);
+    
+    const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
+    const paidInscripIds = new Set(pagos.map(p => p.inscripcionId));
+    const pendingInscrip = enrollments.filter(e => !paidInscripIds.has(e.id));
+    const totalPendiente = pendingInscrip.reduce((sum, e) => sum + Number(e.costo || 0), 0);
+    
+    res.json({
+      success: true,
+      data: {
+        totalCobrado,
+        totalPendiente,
+        transacciones: pagos.length
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/caja/estudiantes/:dni", async (req, res) => {
+  try {
+    const { dni } = req.params;
+    const { periodo } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    
+    const student = db.estudiantes?.[dni];
+    if (!student) return res.json({ success: true, data: null });
+    
+    const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
+    const activeInscrip = inscripciones.find(item => item.derivadoCaja && item.estadoPago !== "Pagado") || inscripciones[0] || null;
+    
+    if (activeInscrip) {
+      res.json({
+        success: true,
+        data: {
+          nombres: student.nombres,
+          apellidos: student.apellidos || "",
+          grado: student.grado,
+          seccion: student.seccion,
+          tipoAlumno: student.tipoAlumno || "Alumno interno",
+          programaAsignado: activeInscrip.programaId,
+          programaNombre: activeInscrip.programa,
+          programaCosto: activeInscrip.costo,
+          periodo: activeInscrip.periodo,
+          inscripcionCaja: activeInscrip,
+          sinInscripcionCaja: false,
+          requiereDerivacionCaja: !activeInscrip.derivadoCaja
+        }
+      });
+    } else {
+      res.json({
+        success: true,
+        data: {
+          nombres: student.nombres,
+          apellidos: student.apellidos || "",
+          grado: student.grado,
+          seccion: student.seccion,
+          tipoAlumno: student.tipoAlumno || "Alumno interno",
+          sinInscripcionCaja: true,
+          requiereDerivacionCaja: false
+        }
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/caja/bandeja-pagos-web", async (req, res) => {
+  try {
+    const { periodo } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    
+    const list = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && (p.estado === "Por Verificar" || p.estado === "pendiente"));
+    
+    const dataList = list.map(p => {
+      const student = db.estudiantes?.[p.dniEstudiante];
+      return {
+        ...mapDbPaymentToApi(p),
+        estudiante: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : p.nombresEstudiante || "",
+        dniEstudiante: p.dniEstudiante,
+        programa: p.programa
+      };
+    });
+    
+    res.json({ success: true, data: dataList });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.put("/api/v1/extracurricular/pagos/:pagoId/validar", async (req, res) => {
+  try {
+    const { pagoId } = req.params;
+    const { observaciones } = req.body;
+    const db = await getDb();
+    
+    const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
+    if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    
+    db.pagos[idx].estado = "validado"; // estado normalizado
+    db.pagos[idx].observaciones = observaciones || "";
+    db.pagos[idx].validadoPor = req.user?.username || "Caja";
+    db.pagos[idx].validadoEn = new Date().toISOString();
+    
+    const inscrip = (db.inscripciones || []).find(item => item.id === db.pagos[idx].inscripcionId);
+    if (inscrip) {
+      inscrip.estadoPago = "validado"; // estado normalizado
+      inscrip.estadoInscripcion = "confirmada"; // estado normalizado
+      inscrip.fechaPago = db.pagos[idx].validadoEn;
+      inscrip.pagoObservacionCaja = observaciones || "";
+    }
+    
+    if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
+      db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "confirmada";
+    }
+    
+    await saveDb(db);
+
+    await registrarAuditoria(req.user?.username || "Caja", req.user?.role || "caja", "PAGO_VALIDAR", {
+      pagoId,
+      observaciones
+    });
+
+    res.json({ success: true, data: mapDbPaymentToApi(db.pagos[idx]) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.put("/api/v1/extracurricular/pagos/:pagoId/observar", async (req, res) => {
+  try {
+    const { pagoId } = req.params;
+    const { observaciones } = req.body;
+    const db = await getDb();
+    
+    const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
+    if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    
+    db.pagos[idx].estado = "observado"; // estado normalizado
+    db.pagos[idx].observaciones = observaciones || "";
+    db.pagos[idx].validadoPor = req.user?.username || "Caja";
+    db.pagos[idx].validadoEn = new Date().toISOString();
+    
+    const inscrip = (db.inscripciones || []).find(item => item.id === db.pagos[idx].inscripcionId);
+    if (inscrip) {
+      inscrip.estadoPago = "pendiente"; // estado normalizado
+      inscrip.estadoInscripcion = "observada"; // estado normalizado
+      inscrip.pagoObservacionCaja = observaciones || "";
+    }
+    
+    if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
+      db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "observada";
+    }
+    
+    await saveDb(db);
+
+    await registrarAuditoria(req.user?.username || "Caja", req.user?.role || "caja", "PAGO_OBSERVAR", {
+      pagoId,
+      observaciones
+    });
+
+    res.json({ success: true, data: mapDbPaymentToApi(db.pagos[idx]) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/caja/reporte", async (req, res) => {
+  try {
+    const { periodo, tipoReporte, desde, hasta, programa, medioPago, estadoPago } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    
+    const payments = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
+    const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
+    
+    let reportList = [];
+    
+    if (tipoReporte === "pagos_registrados" || tipoReporte === "pagos_realizados") {
+      reportList = payments.map(p => {
+        const prog = db.programas.find(progItem => progItem.id === p.programaId || normalizarTextoApi(progItem.nombre) === normalizarTextoApi(p.programa));
+        const student = db.estudiantes?.[p.dniEstudiante];
+        return {
+          id: p.id,
+          pagoId: p.id,
+          inscripcionId: p.inscripcionId || "",
+          dniEstudiante: p.dniEstudiante,
+          estudiante: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : p.nombresEstudiante || "",
+          programaId: prog ? prog.id : p.programaId || "",
+          programa: prog ? prog.nombre : p.programa || "",
+          periodo: period,
+          monto: p.monto,
+          estadoPago: p.estado === "completado" ? "pagado" : p.estado === "Por Verificar" ? "verificando" : p.estado === "observado" ? "observado" : "pendiente",
+          estadoInscripcion: "",
+          formaPago: p.formaPago,
+          numeroOperacion: p.numeroOperacion || "",
+          telefonoOperacion: p.telefonoOperacion || "",
+          origen: p.origenRegistro || "Portal padres",
+          fuente: "pago",
+          fecha: p.fechaPago || p.fecha || "",
+          fechaRegistro: p.fecha || "",
+          fechaPago: p.fechaPago || "",
+          apoderado: student ? student.apoderado : "",
+          telefono: student ? student.telefonoApoderado : ""
+        };
+      });
+    } else {
+      reportList = enrollments.map(e => {
+        const p = payments.find(pay => pay.inscripcionId === e.id) || payments.find(pay => pay.dniEstudiante === e.dniEstudiante && (pay.programaId === e.programaId || normalizarTextoApi(pay.programa) === normalizarTextoApi(e.programa)));
+        const prog = db.programas.find(progItem => progItem.id === e.programaId);
+        const student = db.estudiantes?.[e.dniEstudiante];
+        
+        const monto = p ? p.monto : e.costo;
+        const statePay = p ? (p.estado === "completado" ? "pagado" : p.estado === "Por Verificar" ? "verificando" : p.estado === "observado" ? "observado" : "pendiente") : (e.estadoPago === "Pagado" ? "pagado" : "pendiente");
+        
+        return {
+          id: e.id,
+          inscripcionId: e.id,
+          dniEstudiante: e.dniEstudiante,
+          estudiante: e.nombresEstudiante,
+          programaId: prog ? prog.id : e.programaId || "",
+          programa: prog ? prog.nombre : e.programa || "",
+          periodo: period,
+          monto,
+          estadoPago: statePay,
+          estadoInscripcion: e.estadoInscripcion || "",
+          formaPago: p ? p.formaPago : "Sin pago",
+          numeroOperacion: p ? p.numeroOperacion : "",
+          telefonoOperacion: p ? p.telefonoOperacion : "",
+          origen: p ? p.origenRegistro : e.origenRegistro || "Presencial",
+          fuente: "inscripcion",
+          pagoId: p ? p.id : "",
+          fecha: p ? (p.fechaPago || p.fecha) : e.fechaRegistro || "",
+          fechaRegistro: e.fechaRegistro || "",
+          fechaPago: p ? (p.fechaPago || p.fecha) : "",
+          apoderado: e.apoderado || "",
+          telefono: e.telefono || ""
+        };
+      });
+    }
+    
+    const finalReport = reportList.filter(row => {
+      if (programa && programa !== "todos" && row.programaId !== programa) return false;
+      if (medioPago && medioPago !== "todos" && row.formaPago !== medioPago) return false;
+      if (estadoPago && estadoPago !== "todos" && row.estadoPago !== estadoPago) return false;
+      
+      const rowDate = String(row.fecha).slice(0, 10);
+      if (desde && rowDate < desde) return false;
+      if (hasta && rowDate > hasta) return false;
+      
+      const isWeb = String(row.origen).toLowerCase().includes("portal padres") || String(row.origen).toLowerCase().includes("web");
+      if (tipoReporte === "registro_secretaria" && isWeb) return false;
+      if (tipoReporte === "registro_web" && !isWeb) return false;
+      if ((tipoReporte === "por_cobrar" || tipoReporte === "pagos_pendientes") && row.estadoPago !== "pendiente") return false;
+      
+      return true;
+    });
+    
+    res.json({ success: true, data: finalReport });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/pagos/:pagoId", async (req, res) => {
+  try {
+    const { pagoId } = req.params;
+    const db = await getDb();
+    const p = (db.pagos || []).find(pay => pay.id === pagoId);
+    if (!p) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    res.json({ success: true, data: mapDbPaymentToApi(p) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 10. Reportes Direccion
+app.get("/api/v1/extracurricular/reportes/resumen", async (req, res) => {
+  try {
+    const { periodo } = req.query;
+    const db = await getDb();
+    const period = normalizarPeriodoApi(periodo);
+    
+    const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
+    const payments = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && p.estado === "completado");
+    
+    const totalMatriculados = enrollments.length;
+    const totalRecaudado = payments.reduce((sum, p) => sum + Number(p.monto || 0), 0);
+    const pagosPendientesVerificar = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && p.estado === "Por Verificar").length;
+    
+    const porPrograma = {};
+    (db.programas || [])
+      .filter(p => normalizarPeriodoApi(p.periodo) === period)
+      .forEach(p => {
+        porPrograma[p.nombre] = enrollments.filter(e => e.programaId === p.id).length;
+      });
+      
+    res.json({
+      success: true,
+      data: {
+        resumenGeneral: {
+          totalMatriculados,
+          totalRecaudado,
+          pagosPendientesVerificar
+        },
+        matriculadosPorPrograma: porPrograma,
+        recaudacionPorPrograma: {}
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 11. Usuarios
+app.use("/api/v1/usuarios", requireAuth, requireRole(["administrador"]));
+
+app.get("/api/v1/usuarios", async (req, res) => {
+  try {
+    const db = await getDb();
+    res.json({ success: true, data: db.usuarios || [] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/usuarios", async (req, res) => {
+  try {
+    const db = await getDb();
+    const contrasenaPlana = req.body.contrasena || "1234";
+    const nuevo = {
+      id: `USR-${String(Date.now()).slice(-6)}`,
+      usuario: req.body.usuario,
+      nombre: req.body.nombre,
+      rol: req.body.rol,
+      estado: req.body.estado || "Activo",
+      contrasena: bcrypt.hashSync(contrasenaPlana, 10),
+      permisos: req.body.permisos || []
+    };
+    db.usuarios = db.usuarios || [];
+    db.usuarios.push(nuevo);
+    await saveDb(db);
+
+    await registrarAuditoria(req.user.username, req.user.role, "USUARIO_CREAR", { usuarioId: nuevo.id, usuario: nuevo.usuario });
+
+    res.json({ success: true, data: nuevo });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.put("/api/v1/usuarios/:id", async (req, res) => {
+  try {
+    const db = await getDb();
+    const idx = (db.usuarios || []).findIndex(u => u.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
+    
+    let contrasena = db.usuarios[idx].contrasena;
+    if (req.body.contrasena && req.body.contrasena !== contrasena) {
+      if (!req.body.contrasena.startsWith("$2a$") && !req.body.contrasena.startsWith("$2b$")) {
+        contrasena = bcrypt.hashSync(req.body.contrasena, 10);
+      } else {
+        contrasena = req.body.contrasena;
+      }
+    }
+
+    const updated = {
+      ...db.usuarios[idx],
+      usuario: req.body.usuario,
+      nombre: req.body.nombre,
+      rol: req.body.rol,
+      estado: req.body.estado || db.usuarios[idx].estado,
+      contrasena: contrasena,
+      permisos: req.body.permisos || []
+    };
+    db.usuarios[idx] = updated;
+    await saveDb(db);
+
+    await registrarAuditoria(req.user.username, req.user.role, "USUARIO_EDITAR", { usuarioId: req.params.id });
+
+    res.json({ success: true, data: updated });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.put("/api/v1/usuarios/:id/estado", async (req, res) => {
+  try {
+    const db = await getDb();
+    const idx = (db.usuarios || []).findIndex(u => u.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
+    
+    db.usuarios[idx].estado = req.body.estado;
+    await saveDb(db);
+
+    await registrarAuditoria(req.user.username, req.user.role, "USUARIO_ESTADO", { usuarioId: req.params.id, estado: req.body.estado });
+
+    res.json({ success: true, data: db.usuarios[idx] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/usuarios/:id/resetear-contrasena", async (req, res) => {
+  try {
+    const db = await getDb();
+    const idx = (db.usuarios || []).findIndex(u => u.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
+    
+    db.usuarios[idx].contrasena = bcrypt.hashSync("1234", 10);
+    await saveDb(db);
+
+    await registrarAuditoria(req.user.username, req.user.role, "USUARIO_RESET_CONTRASENA", { usuarioId: req.params.id });
+
+    res.json({ success: true, data: db.usuarios[idx] });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.delete("/api/v1/usuarios/:id", async (req, res) => {
+  try {
+    const db = await getDb();
+    db.usuarios = (db.usuarios || []).filter(u => u.id !== req.params.id);
+    await saveDb(db);
+
+    await registrarAuditoria(req.user.username, req.user.role, "USUARIO_ELIMINAR", { usuarioId: req.params.id });
+
+    res.json({ success: true, data: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 

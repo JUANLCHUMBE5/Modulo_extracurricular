@@ -92,6 +92,7 @@ function mergeWithDefaults(stored, defaults) {
       ...(stored.plantillasPorPrograma || {}),
     },
     usuarios: stored.usuarios || defaults.usuarios,
+    auditLogs: stored.auditLogs || defaults.auditLogs || [],
   };
 }
 
