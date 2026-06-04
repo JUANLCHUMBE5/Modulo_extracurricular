@@ -5,6 +5,9 @@ import {
   eliminarUsuario,
   listarUsuarios,
   resetearContrasenaUsuario,
+  listarLogsAuditoria,
+  descargarBackup,
+  resetearBaseDatos,
 } from "../administradorService";
 import { buildUserPayload, normalizeUser } from "../models/usuarioModel";
 
@@ -31,4 +34,16 @@ export async function resetearContrasenaUsuarioController(id) {
 
 export async function eliminarUsuarioController(id) {
   return normalizeUser(await eliminarUsuario(id));
+}
+
+export async function listarLogsAuditoriaController() {
+  return await listarLogsAuditoria();
+}
+
+export async function descargarBackupController() {
+  return await descargarBackup();
+}
+
+export async function resetearBaseDatosController() {
+  return await resetearBaseDatos();
 }

@@ -1,4 +1,4 @@
-﻿import { Alert as MantineAlert } from "@mantine/core";
+import { Alert as MantineAlert } from "@mantine/core";
 import {
   IconAlertCircle as AlertCircle,
   IconClipboardCheck as ClipboardCheck,
@@ -49,6 +49,10 @@ export default function SecretariaRegistroModal({
   const seleccionCambridge = programaParaRegistro?.seleccion || "";
   const ingresoCambridge = describirSeleccionCambridge(seleccionCambridge);
   const nivelCambridge = programaParaRegistro?.nivelCambridge || "";
+  const requiereSeleccionPrograma = esCicloVerano || mostrarSelectorPrograma;
+  const mostrarDetallePrograma = Boolean(programaParaRegistro) && (
+    !requiereSeleccionPrograma || Boolean(formulario.programa)
+  );
 
   return (
 <>
@@ -69,13 +73,23 @@ export default function SecretariaRegistroModal({
                   <span className="secretaria-title-icon">
                     <ClipboardCheck size={21} />
                   </span>
-                  <div>
-                    <h2 id="secretaria-registration-title">{esCicloVerano ? "Registro ciclo verano" : "Registrar inscripcion"}</h2>
-                    <p>
-                      {esCicloVerano
-                        ? "Complete los datos de verano antes de confirmar la participación."
-                        : "Revise la información enviada por Coordinación antes de confirmar."}
-                    </p>
+                  <div className="secretaria-modal-header-info">
+                    <h2 id="secretaria-registration-title" className="secretaria-modal-title">
+                      {esCicloVerano ? "Registro Ciclo Verano" : "Registrar Inscripción"}
+                    </h2>
+                    <div className="secretaria-modal-student-meta-inline">
+                      <span className="secretaria-modal-student-name-badge">{estudiante.nombres}</span>
+                      <span className="secretaria-meta-divider">•</span>
+                      <span><strong>DNI:</strong> {estudiante.dni || "Sin DNI"}</span>
+                      <span className="secretaria-meta-divider">•</span>
+                      <span><strong>Grado:</strong> {estudiante.grado}</span>
+                      {!estudiante.esExterno ? (
+                        <>
+                          <span className="secretaria-meta-divider">•</span>
+                          <span><strong>Sección:</strong> {estudiante.seccion || "Sin sección"}</span>
+                        </>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
                 <button
@@ -89,14 +103,6 @@ export default function SecretariaRegistroModal({
               </div>
 
               <form className="secretaria-registration-form secretaria-registration-form-clean" onSubmit={guardarInscripción}>
-                <div className="secretaria-modal-student secretaria-field-full">
-                  <p><strong>Nombre y apellido:</strong> {estudiante.nombres}</p>
-                  <p><strong>DNI:</strong> {estudiante.dni || "Sin DNI"}</p>
-                  <p><strong>Grado:</strong> {estudiante.grado}</p>
-                  {!estudiante.esExterno ? (
-                    <p><strong>Sección:</strong> {estudiante.seccion || "Sin sección"}</p>
-                  ) : null}
-                </div>
 
                 {mensaje ? (
                   <MantineAlert
@@ -107,6 +113,29 @@ export default function SecretariaRegistroModal({
                   >
                     {mensaje}
                   </MantineAlert>
+                ) : null}
+
+                {!esCicloVerano ? (
+                  <div className="secretaria-student-context secretaria-field-full">
+                    <div className="secretaria-student-context-item is-name">
+                      <span>Alumno</span>
+                      <strong>{estudiante.nombres}</strong>
+                    </div>
+                    <div className="secretaria-student-context-item">
+                      <span>DNI</span>
+                      <strong>{estudiante.dni || "Sin DNI"}</strong>
+                    </div>
+                    <div className="secretaria-student-context-item">
+                      <span>Grado</span>
+                      <strong>{estudiante.grado}</strong>
+                    </div>
+                    {!estudiante.esExterno ? (
+                      <div className="secretaria-student-context-item">
+                        <span>Seccion</span>
+                        <strong>{estudiante.seccion || "Sin seccion"}</strong>
+                      </div>
+                    ) : null}
+                  </div>
                 ) : null}
 
                 {esCicloVerano ? (
@@ -221,19 +250,27 @@ export default function SecretariaRegistroModal({
                         >
                           Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
                         </MantineAlert>
-                      ) : programaParaRegistro ? (
-                        <>
-                          <div className="secretaria-schedule-summary secretaria-field-full">
+                      ) : mostrarDetallePrograma ? (
+                        <div className="secretaria-program-details-card secretaria-field-full">
+                          <h4 className="secretaria-details-card-title">Resumen del Taller</h4>
+                          <div className="secretaria-schedule-summary is-summer-grid">
                             <DatoHorario label="Grupo" value={programaParaRegistro.grupoEtario || programaParaRegistro.grupo} />
                             <DatoHorario label="Día" value={horarioResumenRegistro.dia} />
                             <DatoHorario label="Clase" value={horarioResumenRegistro.clase} />
                             <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} />
                           </div>
-                          <div className="secretaria-program-cost-row secretaria-field-full">
-                            <CampoLectura label="Costo referencial" value={`S/ ${Number(programaParaRegistro.costo).toFixed(2)}`} />
-                            <CampoLectura label="Cupos disponibles" value={formatearCuposSecretaria(programaParaRegistro)} />
+                          <div className="secretaria-details-divider" />
+                          <div className="secretaria-details-meta-grid">
+                            <div className="secretaria-meta-item">
+                              <span>Costo Referencial</span>
+                              <strong>S/ {Number(programaParaRegistro.costo).toFixed(2)}</strong>
+                            </div>
+                            <div className="secretaria-meta-item">
+                              <span>Cupos Disponibles</span>
+                              <strong className="secretaria-highlight-green">{formatearCuposSecretaria(programaParaRegistro)}</strong>
+                            </div>
                           </div>
-                        </>
+                        </div>
                       ) : null}
                     </section>
 
@@ -383,21 +420,33 @@ export default function SecretariaRegistroModal({
                   </MantineAlert>
                 ) : null}
 
-                <div className="secretaria-schedule-summary secretaria-field-full">
-                  <DatoHorario label="Día" value={horarioResumenRegistro.dia} />
-                  <DatoHorario label="Clase" value={horarioResumenRegistro.clase} />
-                  <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} />
-                </div>
-                {esCambridge && ingresoCambridge ? (
-                  <div className="secretaria-program-cost-row secretaria-field-full">
-                    <CampoLectura label="Modalidad Cambridge A/B/C" value={ingresoCambridge} />
-                    {nivelCambridge ? <CampoLectura label="Nivel Cambridge" value={nivelCambridge} /> : null}
+                {mostrarDetallePrograma ? (
+                  <div className="secretaria-program-details-card secretaria-field-full">
+                    <h4 className="secretaria-details-card-title">Resumen del Taller</h4>
+                    <div className="secretaria-schedule-summary">
+                      <DatoHorario label="Día" value={horarioResumenRegistro.dia} />
+                      <DatoHorario label="Clase" value={horarioResumenRegistro.clase} />
+                      <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} />
+                    </div>
+                    <div className="secretaria-details-divider" />
+                    <div className="secretaria-details-meta-grid">
+                      {esCambridge && ingresoCambridge ? (
+                        <div className="secretaria-meta-item is-cambridge">
+                          <span>Modalidad Cambridge</span>
+                          <strong>{ingresoCambridge} {nivelCambridge ? `(${nivelCambridge})` : ""}</strong>
+                        </div>
+                      ) : null}
+                      <div className="secretaria-meta-item">
+                        <span>Costo Referencial</span>
+                        <strong>S/ {Number(programaParaRegistro.costo).toFixed(2)}</strong>
+                      </div>
+                      <div className="secretaria-meta-item">
+                        <span>Cupos Disponibles</span>
+                        <strong className="secretaria-highlight-green">{formatearCuposSecretaria(programaParaRegistro)}</strong>
+                      </div>
+                    </div>
                   </div>
                 ) : null}
-                <div className="secretaria-program-cost-row secretaria-field-full">
-                  <CampoLectura label="Costo referencial" value={programaParaRegistro ? `S/ ${Number(programaParaRegistro.costo).toFixed(2)}` : ""} />
-                  <CampoLectura label="Cupos disponibles" value={formatearCuposSecretaria(programaParaRegistro)} />
-                </div>
 
                 {programaParaRegistro?.requiereUniforme ? (
                   <div className="secretaria-field">

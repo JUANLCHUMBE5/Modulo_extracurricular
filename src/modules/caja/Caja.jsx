@@ -96,8 +96,8 @@ export default function Caja({
   const [reporteCaja, setReporteCaja] = useState([]);
   const [opcionesReporte, setOpcionesReporte] = useState({ programas: [], mediosPago: [] });
   const [filtrosReporte, setFiltrosReporte] = useState({
-    tipoReporte: "registro_web",
-    rango: "personalizado",
+    tipoReporte: "todos",
+    rango: "todo",
     desde: "",
     hasta: "",
     programa: "todos",
@@ -579,10 +579,10 @@ export default function Caja({
         <p className="caja-module-label">Modulo Caja</p>
         <nav className="caja-nav" aria-label="Modulo de caja">
           <button className={!delegatedContent && vista === "pagos" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("pagos"); }} type="button">
-            <Receipt size={17} /> Consultar pagos
+            <Receipt size={17} /> Registrar Cobro
           </button>
           <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button">
-            <ChartBar size={17} /> Reportes
+            <ChartBar size={17} /> Control y Exportación
           </button>
         </nav>
         {moduleSwitcher ? (
@@ -604,9 +604,9 @@ export default function Caja({
         {vista === "reportes" ? (
         <header className="caja-header">
           <div>
-            <span>Control y exportacion</span>
-            <h1>Consulta de pagos realizados</h1>
-            <p>Consulte pagos, pendientes y descargas de Caja.</p>
+            <span>Control y exportación</span>
+            <h1>Consulta de Transacciones</h1>
+            <p>Visualice el estado de los cobros, gestione pendientes y descargue reportes en CSV.</p>
           </div>
           <div className="caja-header-actions">
             <Select

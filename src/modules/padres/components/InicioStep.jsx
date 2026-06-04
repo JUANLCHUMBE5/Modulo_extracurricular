@@ -105,11 +105,6 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
           label="Duración"
           value={programa.duracionTaller || "Por definir"}
         />
-        <InfoTile
-          icon={CalendarDays}
-          label="Aviso"
-          value={programa.ventanaInscripcion?.fechaLimite ? `Hasta ${programa.ventanaInscripcion.fechaLimite}` : "Por definir"}
-        />
         <InfoTile icon={School} label="Grupo" value={programa.periodo || "Escolar"} />
       </div>
 

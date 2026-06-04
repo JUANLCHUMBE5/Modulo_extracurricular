@@ -8,15 +8,19 @@
 }
 
 .caja-sidebar {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  width: var(--caja-sidebar);
   height: 100dvh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 20px 14px;
   border-right: 1px solid #dce7e4;
   background: #ffffff;
+  overflow: hidden;
 }
 
 .caja-brand {
@@ -88,6 +92,7 @@
 }
 
 .caja-main {
+  grid-column: 2;
   width: min(1180px, calc(100% - 40px));
   margin: 0 auto;
   padding: 18px 0 32px;
@@ -863,10 +868,14 @@
 
   .caja-sidebar {
     position: static;
+    inset: auto;
+    width: auto;
     height: auto;
+    min-height: 0;
     flex-direction: row;
     align-items: center;
     padding: 12px;
+    overflow: visible;
   }
 
   .caja-nav {
@@ -878,6 +887,7 @@
   }
 
   .caja-main {
+    grid-column: 1;
     width: min(100% - 28px, 1120px);
     padding-top: 18px;
   }

@@ -310,7 +310,11 @@
   width: var(--coord-sidebar-width);
   min-height: 100dvh;
   height: 100dvh;
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+.coord-sidebar > .coord-logout {
+  margin-top: auto;
 }
 
 .coord-main {

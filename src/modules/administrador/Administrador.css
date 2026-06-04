@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
 *, *::before, *::after { box-sizing: border-box; }
 
 .adm-root {
@@ -7,25 +5,30 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: var(--adm-sidebar) minmax(0, 1fr);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-body);
   color: #172033;
   background: #ffffff;
   overflow-x: hidden;
 }
 
 .adm-sidebar {
-  position: sticky;
-  top: 0;
-  height: 100vh;
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  width: var(--adm-sidebar);
+  height: 100dvh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 20px 14px;
   border-right: 1px solid #dce7e4;
   background: #ffffff;
+  overflow: hidden;
 }
 
 .adm-main {
+  grid-column: 2;
   width: min(1180px, calc(100% - 40px));
   margin: 0 auto;
   padding: 16px 0 32px;
@@ -101,6 +104,8 @@
 
 .adm-sidebar-footer {
   margin-top: auto;
+  padding-top: 12px;
+  background: #ffffff;
 }
 
 .adm-topbar {
@@ -558,21 +563,50 @@
   .adm-root { display: block; }
   .adm-sidebar {
     position: static;
+    inset: auto;
+    width: auto;
     height: auto;
+    min-height: 0;
     flex-direction: row;
     align-items: center;
     padding: 12px;
+    overflow: visible;
   }
   .adm-brand-logo { width: 136px; }
-  .adm-module-label,
-  .adm-nav { display: none; }
-  .adm-sidebar-footer { margin: 0 0 0 auto; }
+  .adm-module-label { display: none; }
+  .adm-nav {
+    display: flex !important;
+    flex-direction: row;
+    gap: 6px;
+    margin-left: 12px;
+    flex-wrap: wrap;
+  }
+  .adm-nav-item {
+    width: auto !important;
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 13px;
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+  .adm-sidebar-footer {
+    margin: 0 0 0 auto;
+    padding-top: 0;
+  }
+  .adm-sidebar-footer .adm-logout-btn {
+    width: auto !important;
+    min-height: 36px;
+    grid-template-columns: 16px minmax(0, 1fr);
+    padding: 0 10px;
+  }
   .adm-main { width: min(100% - 28px, 1180px); padding-top: 16px; }
   .adm-topbar { align-items: flex-start; flex-direction: column; }
   .adm-topbar-actions { width: 100%; justify-content: flex-start; }
   .adm-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .adm-filters { grid-template-columns: 1fr; }
-  .adm-filter-group { width: 100%; }
+  .adm-filters,
+  .adm-filters-logs { grid-template-columns: 1fr; }
+  .adm-filter-group,
+  .adm-filter-group-logs { width: 100%; }
   .adm-filter-select { flex: 1; min-width: 0; }
 }
 
@@ -584,7 +618,8 @@
   }
   .adm-sidebar-footer { margin: 0; }
   .adm-topbar-actions,
-  .adm-filter-group {
+  .adm-filter-group,
+  .adm-filter-group-logs {
     flex-direction: column;
     align-items: stretch;
   }
@@ -594,4 +629,314 @@
   }
   .adm-stats { grid-template-columns: 1fr; }
   .adm-card-header { align-items: flex-start; }
+}
+
+/* --- NUEVOS ACCIONES Y BADGES DE AUDITORIA --- */
+.adm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.adm-badge-exito {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+.adm-badge-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+
+.adm-badge-crear {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.adm-badge-editar {
+  background: #fffbeb;
+  color: #b45309;
+  border-color: #fcd34d;
+}
+
+.adm-badge-eliminar {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+.adm-badge-critico {
+  background: #faf5ff;
+  color: #6b21a8;
+  border-color: #e9d5ff;
+}
+
+.adm-badge-default {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+/* --- FILTROS DE LOGS --- */
+.adm-filters-logs {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e3ece9;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  background: #fbfdfc;
+}
+
+.adm-filter-group-logs {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.adm-date-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.adm-date-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adm-date-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.adm-date-input {
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  outline: 0;
+  cursor: pointer;
+}
+
+.adm-date-input:focus {
+  border-color: #0e9f85;
+  box-shadow: 0 0 0 3px rgba(14, 159, 133, 0.12);
+}
+
+/* --- DETALLES DE LOGS --- */
+.adm-log-row:hover {
+  background: #fbfdff;
+}
+
+.adm-log-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.adm-log-username {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.adm-log-role {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: capitalize;
+}
+
+.adm-log-details-cell {
+  max-width: 320px;
+}
+
+.adm-log-details-text {
+  display: block;
+  font-size: 13px;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adm-btn-view-details:hover {
+  color: #0e9f85;
+  border-color: #aee0d2;
+  background: #eaf8f3;
+}
+
+/* --- VISTA MANTENIMIENTO --- */
+.adm-mantenimiento-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 20px;
+  margin-top: 8px;
+}
+
+.adm-maint-card {
+  background: #ffffff;
+  border: 1px solid #d8e5e1;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 280px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.adm-maint-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(14, 159, 133, 0.04);
+}
+
+.adm-maint-card-danger {
+  border-color: #fecaca;
+}
+
+.adm-maint-card-danger:hover {
+  box-shadow: 0 12px 24px rgba(239, 68, 68, 0.05);
+}
+
+.adm-maint-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.adm-maint-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.adm-maint-icon-backup {
+  background: #e8f7ef;
+  color: #075e50;
+  border: 1px solid #ccebe3;
+}
+
+.adm-maint-icon-reset {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fee2e2;
+}
+
+.adm-maint-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.adm-maint-header p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.adm-maint-body {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #475569;
+  flex-grow: 1;
+}
+
+.adm-maint-body p {
+  margin: 0 0 16px 0;
+}
+
+.adm-maint-note,
+.adm-maint-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.adm-maint-note {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.adm-maint-warning {
+  background: #fff5f5;
+  color: #c53030;
+  border: 1px solid #fed7d7;
+}
+
+.adm-maint-footer {
+  margin-top: 24px;
+}
+
+.adm-maint-btn {
+  width: 100%;
+  height: 42px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.adm-maint-btn:hover {
+  transform: translateY(-1px);
+}
+
+.adm-maint-btn-backup {
+  background: #169b83;
+  color: #ffffff;
+}
+
+.adm-maint-btn-backup:hover {
+  background: #0f7d6c;
+}
+
+.adm-maint-btn-reset {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.adm-maint-btn-reset:hover {
+  background: #b91c1c;
+}
+
+.adm-text-danger {
+  color: #dc2626 !important;
+  font-weight: 700;
 }

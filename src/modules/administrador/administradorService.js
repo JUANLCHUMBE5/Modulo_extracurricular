@@ -1,8 +1,45 @@
-import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../services/dbApi";
+import { apiDb, nextApiId, saveApiDb, syncApiDb, resetApiDb } from "../../services/dbApi";
 import { isApiMode, apiClient } from "../../services/apiClient";
 import { ALL_PERMISSIONS, isSuperAdmin } from "./models/usuarioModel";
 
 const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const modulosAuditables = {
+  administrador: "Administrador",
+  secretaria: "Secretaria",
+  caja: "Caja",
+  coordinacion: "Coordinacion",
+  auxiliar: "Auxiliar",
+  direccion: "Direccion",
+};
+
+function normalizarRolAuditoria(rol) {
+  return String(rol || "").trim().toLowerCase();
+}
+
+function crearDetalleAcceso(rol) {
+  return JSON.stringify({ modulo: modulosAuditables[rol] });
+}
+
+function filtrarLogsAcceso(logs = []) {
+  return (Array.isArray(logs) ? logs : [])
+    .filter((log) => {
+      const rol = normalizarRolAuditoria(log.rol);
+      const accion = String(log.accion || "");
+      return Boolean(modulosAuditables[rol]) && (accion === "INICIO_SESION" || accion === "LOGIN_EXITOSO");
+    })
+    .map((log) => {
+      const rol = normalizarRolAuditoria(log.rol);
+      return {
+        id: log.id,
+        usuario: log.usuario,
+        rol,
+        fecha: log.fecha,
+        accion: "INICIO_SESION",
+        detalles: crearDetalleAcceso(rol),
+      };
+    });
+}
 
 export async function listarUsuarios() {
   if (isApiMode()) {
@@ -146,4 +183,36 @@ export async function eliminarUsuario(id) {
   const [eliminado] = apiDb.usuarios.splice(index, 1);
   await saveApiDb();
   return eliminado;
+}
+
+export async function listarLogsAuditoria() {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/administrador/audit-logs");
+    if (!res.success || !Array.isArray(res.data)) return [];
+    return filtrarLogsAcceso(res.data);
+  }
+  await delay(200);
+  await syncApiDb();
+  return filtrarLogsAcceso(apiDb.auditLogs);
+}
+
+export async function descargarBackup() {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/administrador/db/backup");
+    if (!res.success || !res.data) throw new Error("No se pudo obtener la copia de seguridad.");
+    return res.data;
+  }
+  await delay(200);
+  await syncApiDb();
+  return JSON.parse(JSON.stringify(apiDb));
+}
+
+export async function resetearBaseDatos() {
+  if (isApiMode()) {
+    const res = await apiClient.post("/api/v1/administrador/db/reset");
+    if (!res.success) throw new Error(res.message || "Error al resetear la base de datos.");
+    return res.data;
+  }
+  await delay(500);
+  return await resetApiDb();
 }

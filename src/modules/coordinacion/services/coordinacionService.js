@@ -133,6 +133,10 @@ export async function crearPrograma(datos) {
       concesionarios: datos.concesionarios || "",
       invitacion_masiva: Boolean(datos.invitacionMasiva),
       alcance_invitacion_masiva: datos.alcanceInvitacionMasiva || "colegio",
+      plantilla: datos.plantilla || "",
+      plantilla_base64: datos.plantillaBase64 || "",
+      plantilla_variables: datos.plantillaVariables || [],
+      plantilla_validada: Boolean(datos.plantillaValidada),
     };
     const res = await apiClient.post("/api/v1/extracurricular/programas", payload);
     if (!res.success) throw new Error(res.message || "Error al crear programa");
@@ -298,6 +302,10 @@ export async function editarPrograma(id, datos) {
       concesionarios: datos.concesionarios || "",
       invitacion_masiva: Boolean(datos.invitacionMasiva),
       alcance_invitacion_masiva: datos.alcanceInvitacionMasiva || "colegio",
+      plantilla: datos.plantilla || "",
+      plantilla_base64: datos.plantillaBase64 || "",
+      plantilla_variables: datos.plantillaVariables || [],
+      plantilla_validada: Boolean(datos.plantillaValidada),
     };
     const res = await apiClient.put(`/api/v1/extracurricular/programas/${id}`, payload);
     if (!res.success) throw new Error(res.message || "Error al editar programa");
@@ -310,10 +318,20 @@ export async function editarPrograma(id, datos) {
   const index = apiDb.programas.findIndex((item) => item.id === id);
   if (index === -1) throw new Error("Programa no encontrado.");
 
+  let nuevoEstado = apiDb.programas[index].estado;
+  if (nuevoEstado === "Finalizado") {
+    const hoy = normalizarFecha(fechaActualInput());
+    const fechaFin = normalizarFecha(datos.fechaFin);
+    if (fechaFin && hoy && fechaFin >= hoy) {
+      nuevoEstado = "Habilitado";
+    }
+  }
+
   apiDb.programas[index] = {
     ...apiDb.programas[index],
     ...datos,
     id,
+    estado: nuevoEstado,
     periodo: normalizarPeriodo(datos.periodo),
     cupos: Number(datos.cupos),
     costo: Number(Number(datos.costo).toFixed(2)),
@@ -358,8 +376,8 @@ export async function cambiarEstadoPrograma(id, nuevoEstado) {
   finalizarProgramasVencidos();
   const programa = apiDb.programas.find((item) => item.id === id);
   if (!programa) throw new Error("Programa no encontrado.");
-  if (programa.estado === "Finalizado") {
-    throw new Error("El programa ya finalizó. Cree un nuevo ciclo para continuar.");
+  if (programa.estado === "Finalizado" && programaVencido(programa)) {
+    throw new Error("El programa ya finalizó por fecha de vigencia. Modifique la fecha fin para volver a usarlo.");
   }
   if (nuevoEstado === "Habilitado" && programaVencido(programa)) {
     programa.estado = "Finalizado";

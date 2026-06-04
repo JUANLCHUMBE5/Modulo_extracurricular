@@ -40,7 +40,13 @@ export function adaptarPrograma(apiPrograma) {
     comunicado: apiPrograma.comunicado || "",
     detalleCosto: apiPrograma.detalle_costo || apiPrograma.detalleCosto || "",
     detalleAlmuerzo: apiPrograma.detalle_almuerzo || apiPrograma.detalleAlmuerzo || "",
-    concesionarios: apiPrograma.concesionarios || ""
+    concesionarios: apiPrograma.concesionarios || "",
+    invitacionMasiva: Boolean(apiPrograma.invitacion_masiva ?? apiPrograma.invitacionMasiva),
+    alcanceInvitacionMasiva: apiPrograma.alcance_invitacion_masiva || apiPrograma.alcanceInvitacionMasiva || "colegio",
+    plantilla: apiPrograma.plantilla || "",
+    plantillaBase64: apiPrograma.plantilla_base64 || apiPrograma.plantillaBase64 || "",
+    plantillaVariables: apiPrograma.plantilla_variables || apiPrograma.plantillaVariables || [],
+    plantillaValidada: Boolean(apiPrograma.plantilla_validada ?? apiPrograma.plantillaValidada)
   };
 }
 
@@ -103,7 +109,16 @@ export function adaptarInscripcion(apiInscripcion) {
     estadoPago: apiInscripcion.estado_pago || apiInscripcion.estadoPago || "Pendiente",
     pagoId: apiInscripcion.pago_id || apiInscripcion.pagoId || "",
     fechaPago: apiInscripcion.fecha_pago || apiInscripcion.fechaPago || "",
-    origenRegistro: apiInscripcion.origen_inscripcion || apiInscripcion.origen || apiInscripcion.origenRegistro || "Portal padres"
+    origenRegistro: apiInscripcion.origen_inscripcion || apiInscripcion.origen || apiInscripcion.origenRegistro || "Portal padres",
+    requisitos: apiInscripcion.requisitos || "",
+    comunicado: apiInscripcion.comunicado || "",
+    detalleCosto: apiInscripcion.detalle_costo || apiInscripcion.detalleCosto || "",
+    detalleAlmuerzo: apiInscripcion.detalle_almuerzo || apiInscripcion.detalleAlmuerzo || "",
+    concesionarios: apiInscripcion.concesionarios || "",
+    plantilla: apiInscripcion.plantilla || "",
+    plantillaBase64: apiInscripcion.plantilla_base64 || apiInscripcion.plantillaBase64 || "",
+    plantillaVariables: apiInscripcion.plantilla_variables || apiInscripcion.plantillaVariables || [],
+    plantillaValidada: Boolean(apiInscripcion.plantilla_validada ?? apiInscripcion.plantillaValidada)
   };
 }
 

@@ -1,42 +1,40 @@
 /* Estilos del Módulo de Auxiliar - Diseño Escolar Kiosk */
 
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Outfit:wght@300..900&family=Quicksand:wght@300..700&display=swap');
-
 :root {
-  --school-font-title: 'Outfit', 'Quicksand', system-ui, sans-serif;
-  --school-font-body: 'Quicksand', 'Inter', system-ui, sans-serif;
+  --school-font-title: var(--font-heading);
+  --school-font-body: var(--font-body);
   
-  /* Paleta HSL Lúdica */
-  --color-bg-main: #f0f7f4;
-  --color-card-bg: rgba(255, 255, 255, 0.9);
+  /* Paleta Vivid y Lúdica */
+  --color-bg-main: #e8f5e9;
+  --color-card-bg: rgba(255, 255, 255, 0.95);
   
-  --color-success-main: hsl(156, 72%, 38%);
-  --color-success-bg: linear-gradient(135deg, #eefcf6 0%, #cbf2de 100%);
-  --color-success-glow: rgba(20, 164, 107, 0.25);
+  --color-success-main: #0fa388;
+  --color-success-bg: linear-gradient(135deg, #ecfdf5 0%, #a7f3d0 100%);
+  --color-success-glow: rgba(16, 185, 129, 0.25);
   
-  --color-warning-main: hsl(38, 92%, 48%);
-  --color-warning-bg: linear-gradient(135deg, #fffbf0 0%, #fde7b7 100%);
-  --color-warning-glow: rgba(230, 142, 0, 0.2);
-
-  --color-info-main: hsl(205, 85%, 45%);
-  --color-info-bg: linear-gradient(135deg, #f4fafe 0%, #d4eaf7 100%);
-  --color-info-glow: rgba(17, 117, 184, 0.2);
+  --color-warning-main: #d97706;
+  --color-warning-bg: linear-gradient(135deg, #fffbeb 0%, #fde68a 100%);
+  --color-warning-glow: rgba(217, 119, 6, 0.2);
   
-  --color-error-main: hsl(354, 76%, 52%);
-  --color-error-bg: linear-gradient(135deg, #fff3f3 0%, #fecdcd 100%);
-  --color-error-glow: rgba(230, 38, 57, 0.2);
+  --color-info-main: #0ea5e9;
+  --color-info-bg: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  --color-info-glow: rgba(14, 165, 233, 0.2);
   
-  --color-idle-bg: linear-gradient(135deg, #f6f8fb 0%, #e2e8f0 100%);
+  --color-error-main: #f43f5e;
+  --color-error-bg: linear-gradient(135deg, #fff1f2 0%, #fecdd3 100%);
+  --color-error-glow: rgba(244, 63, 94, 0.25);
+  
+  --color-idle-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   --color-idle-glow: rgba(100, 116, 139, 0.15);
 }
 
 /* Contenedor Principal */
 .auxiliar-page {
   min-height: 100vh;
-  background: var(--color-bg-main);
+  background: linear-gradient(135deg, #e3f2fd 0%, #e8f5e9 100%);
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(35, 151, 127, 0.05) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(49, 95, 145, 0.05) 0%, transparent 45%);
+    radial-gradient(circle at 10% 20%, rgba(33, 150, 243, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(76, 175, 80, 0.08) 0%, transparent 45%);
   color: #1a2a24;
   font-family: var(--school-font-body);
   display: flex;
@@ -51,11 +49,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 24px;
-  background: #ffffff;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(29, 117, 102, 0.05);
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(15, 163, 136, 0.08);
   margin-top: 16px;
-  border: 2px solid #e1ede8;
+  border: 2px solid #ccece4;
+  backdrop-filter: blur(10px);
 }
 
 .auxiliar-brand {
@@ -72,7 +71,7 @@
 .auxiliar-kicker {
   display: block;
   font-family: var(--school-font-title);
-  color: #176c60;
+  color: #0fa388;
   font-size: 0.85rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -96,12 +95,13 @@
 .auxiliar-clock {
   font-family: var(--school-font-title);
   font-size: 1.15rem;
-  font-weight: 700;
-  background: #e8f7f2;
-  color: #176c60;
+  font-weight: 800;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  color: #0369a1;
   padding: 6px 16px;
-  border-radius: 12px;
-  border: 1px dashed #a4ded0;
+  border-radius: 14px;
+  border: 1.5px solid #7dd3fc;
+  box-shadow: 0 4px 10px rgba(14, 165, 233, 0.15);
 }
 
 .auxiliar-logout {
@@ -110,20 +110,22 @@
   gap: 8px;
   min-height: 40px;
   padding: 0 16px;
-  border: 2px solid #dbe7e4;
+  border: 2px solid #fda4af;
   border-radius: 14px;
-  background: #ffffff;
-  color: #ff4d4d;
+  background: #fff1f2;
+  color: #e11d48;
   font-family: var(--school-font-title);
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.25s ease;
 }
 
 .auxiliar-logout:hover {
-  background: #fff5f5;
-  border-color: #ffcccc;
+  background: #ffe4e6;
+  border-color: #f43f5e;
+  color: #be123c;
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.15);
 }
 
 /* Grid Kiosco de Dos Columnas */
@@ -149,11 +151,11 @@
 }
 
 .auxiliar-console-card {
-  background: var(--color-card-bg);
-  border: 2px solid #e1ede8;
+  background: #ffffff;
+  border: 2px solid #ccece4;
   border-radius: 28px;
   padding: 24px;
-  box-shadow: 0 15px 35px rgba(29, 117, 102, 0.04);
+  box-shadow: 0 15px 35px rgba(15, 163, 136, 0.06);
   backdrop-filter: blur(10px);
 }
 
@@ -170,11 +172,11 @@
 /* Selector de Modos (QR / DNI) Estilo Burbuja */
 .auxiliar-mode-tabs {
   display: flex;
-  background: #f0f5f3;
+  background: #eef5f3;
   padding: 6px;
   border-radius: 18px;
   margin-bottom: 20px;
-  border: 1px solid #e1ede8;
+  border: 1.5px solid #cbe6df;
 }
 
 .auxiliar-mode-tabs button {
@@ -182,23 +184,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   min-height: 44px;
   border: 0;
   border-radius: 14px;
   font-family: var(--school-font-title);
-  font-weight: 750;
-  font-size: 0.95rem;
-  color: #556660;
+  font-weight: 800;
+  font-size: 0.88rem;
+  color: #4b6b62;
   background: transparent;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  white-space: nowrap;
+  transition: background-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .auxiliar-mode-tabs button.active {
-  background: #176c60;
+  background: linear-gradient(135deg, #0fa388 0%, #176c60 100%);
   color: #ffffff;
-  box-shadow: 0 6px 15px rgba(23, 108, 96, 0.25);
+  box-shadow: 0 6px 14px rgba(23, 108, 96, 0.25);
 }
 
 /* Área de Escáner QR */
@@ -212,18 +215,19 @@
   height: 280px;
   border-radius: 20px;
   overflow: hidden;
-  background: #121816;
-  border: 4px solid #176c60;
-  box-shadow: 0 8px 25px rgba(23, 108, 96, 0.15);
+  background: #101614;
+  border: 4px solid #0fa388;
+  box-shadow: 0 8px 25px rgba(15, 163, 136, 0.2);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .auxiliar-scanner.is-active {
-  border-color: #38bdf8;
+  border-color: #00f0ff;
+  box-shadow: 0 8px 25px rgba(0, 240, 255, 0.3);
 }
 
 .auxiliar-scanner video {
@@ -256,11 +260,12 @@
 
 .auxiliar-scan-frame.inline {
   position: absolute;
-  inset: auto;
-  width: 180px;
-  height: 180px;
+  inset: 16px;
+  width: auto;
+  height: auto;
   border-color: #10b981;
   box-shadow: none;
+  pointer-events: none;
 }
 
 .auxiliar-scan-frame.inline::after {
@@ -283,15 +288,15 @@
 
 .cute-scan-illustration {
   position: relative;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(16, 185, 129, 0.15);
   width: 90px;
   height: 90px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px dashed rgba(255, 255, 255, 0.2);
-  margin-bottom: 8px;
+  border: 2px dashed rgba(16, 185, 129, 0.4);
+  margin-bottom: 12px;
 }
 
 .scan-icon-animate {
@@ -401,23 +406,23 @@
   align-items: center;
   justify-content: center;
   height: 280px;
-  border: 2px dashed #b2cfc4;
+  border: 2px dashed #aee0d2;
   border-radius: 20px;
-  background: #f8faf9;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fbf7 100%);
   text-align: center;
   padding: 24px;
 }
 
 .cute-search-illustration {
   position: relative;
-  background: #edf5f2;
+  background: #e6f6f1;
   width: 84px;
   height: 84px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #176c60;
+  color: #0fa388;
   margin-bottom: 12px;
 }
 
@@ -465,10 +470,12 @@
 .input-group {
   display: flex;
   gap: 10px;
+  width: 100%;
 }
 
 .auxiliar-input-form input {
   flex: 1;
+  min-width: 0;
   min-height: 52px;
   padding: 0 16px;
   border: 2px solid #b2cfc4;
@@ -483,13 +490,13 @@
 }
 
 .auxiliar-input-form input:focus {
-  border-color: #176c60;
-  box-shadow: 0 0 0 4px rgba(23, 108, 96, 0.12);
+  border-color: #0fa388;
+  box-shadow: 0 0 0 4px rgba(15, 163, 136, 0.12);
 }
 
 .btn-validate {
   min-width: 110px;
-  background: #176c60;
+  background: linear-gradient(135deg, #0fa388 0%, #176c60 100%);
   color: #ffffff;
   border: 0;
   border-radius: 16px;
@@ -501,7 +508,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  box-shadow: 0 4px 12px rgba(23, 108, 96, 0.15);
+  box-shadow: 0 4px 14px rgba(15, 163, 136, 0.25);
   transition: all 0.25s ease;
 }
 
@@ -540,7 +547,7 @@
 /* Gradiantes de Estado Kiosco */
 .kiosk-state-esperando .kiosk-status-card {
   background: var(--color-info-bg);
-  border-color: #c5e4f5;
+  border-color: #7dd3fc;
   box-shadow: 0 20px 45px var(--color-info-glow);
 }
 
@@ -553,31 +560,31 @@
 
 .kiosk-state-registrado-exito .kiosk-status-card {
   background: var(--color-success-bg);
-  border-color: #a7f3d0;
+  border-color: #6ee7b7;
   box-shadow: 0 20px 45px var(--color-success-glow);
 }
 
 .kiosk-state-autorizado .kiosk-status-card {
   background: var(--color-success-bg);
-  border-color: #a7f3d0;
+  border-color: #6ee7b7;
   box-shadow: 0 20px 45px var(--color-success-glow);
 }
 
 .kiosk-state-pendiente .kiosk-status-card {
   background: var(--color-warning-bg);
-  border-color: #fde047;
+  border-color: #fbbf24;
   box-shadow: 0 20px 45px var(--color-warning-glow);
 }
 
 .kiosk-state-no-matriculado .kiosk-status-card {
-  background: var(--color-warning-bg);
-  border-color: #ffedd5;
-  box-shadow: 0 20px 45px var(--color-warning-glow);
+  background: linear-gradient(135deg, #faf5ff 0%, #e9d5ff 100%);
+  border-color: #d8b4fe;
+  box-shadow: 0 20px 45px rgba(168, 85, 247, 0.15);
 }
 
 .kiosk-state-no-registrado .kiosk-status-card {
   background: var(--color-error-bg);
-  border-color: #fca5a5;
+  border-color: #fda4af;
   box-shadow: 0 20px 45px var(--color-error-glow);
 }
 
@@ -876,11 +883,11 @@
 .auxiliar-footer {
   margin-top: 32px;
   margin-bottom: 24px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 2px solid #e1ede8;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid #ccece4;
   border-radius: 24px;
   padding: 20px 24px;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 10px 30px rgba(15, 163, 136, 0.04);
   backdrop-filter: blur(10px);
 }
 
@@ -900,12 +907,13 @@
 }
 
 .badge-count {
-  background: #176c60;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   color: #ffffff;
   font-size: 0.8rem;
-  font-weight: 750;
-  padding: 4px 10px;
-  border-radius: 10px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
 }
 
 /* Fila de Tarjetas Burbuja (Historial) */

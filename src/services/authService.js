@@ -1,7 +1,8 @@
-import { apiDb, syncApiDb } from "./dbApi";
+import { apiDb, saveApiDb, syncApiDb } from "./dbApi";
 import { isApiMode, apiClient } from "./apiClient";
 import { adaptarEstudiante } from "./adapters";
 import { normalizeUser } from "../modules/administrador/models/usuarioModel";
+import bcrypt from "bcryptjs";
 
 const delay = (ms = 650) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -17,6 +18,15 @@ const rolesSistema = {
   Coordinacion: "coordinacion",
   Auxiliar: "auxiliar",
   Direccion: "direccion",
+};
+
+const modulosAuditables = {
+  administrador: "Administrador",
+  secretaria: "Secretaria",
+  caja: "Caja",
+  coordinacion: "Coordinacion",
+  auxiliar: "Auxiliar",
+  direccion: "Direccion",
 };
 
 const rolesApiASistema = Object.fromEntries(
@@ -42,6 +52,22 @@ function normalizarUsuarioApi(usuario = {}) {
     permisos: usuarioConPermisos.permisos,
     permissions: usuarioConPermisos.permisos,
   };
+}
+
+async function registrarAccesoLocal(usuario, role) {
+  const rol = String(role || "").trim().toLowerCase();
+  if (!modulosAuditables[rol]) return;
+
+  apiDb.auditLogs = Array.isArray(apiDb.auditLogs) ? apiDb.auditLogs : [];
+  apiDb.auditLogs.unshift({
+    id: `AUD-${String(Date.now()).slice(-6)}-${Math.random().toString(16).slice(2, 6)}`,
+    usuario: usuario || "sistema",
+    rol,
+    fecha: new Date().toISOString(),
+    accion: "INICIO_SESION",
+    detalles: JSON.stringify({ modulo: modulosAuditables[rol] }),
+  });
+  await saveApiDb();
 }
 
 export const loginPersonal = async (username, password) => {
@@ -74,13 +100,22 @@ export const loginPersonal = async (username, password) => {
 
   const contrasenaGuardada = String(usuario?.contrasena || "1234");
 
-  if (usuario && usuario.estado !== "Inactivo" && String(password) === contrasenaGuardada) {
+  let passwordValido = false;
+  if (contrasenaGuardada.startsWith("$2a$") || contrasenaGuardada.startsWith("$2b$")) {
+    passwordValido = bcrypt.compareSync(password, contrasenaGuardada);
+  } else {
+    passwordValido = String(password) === contrasenaGuardada;
+  }
+
+  if (usuario && usuario.estado !== "Inactivo" && passwordValido) {
     const usuarioConPermisos = normalizeUser(usuario);
+    const role = rolesSistema[usuario.rol] || String(usuario.rol || "").toLowerCase();
+    await registrarAccesoLocal(usuario.usuario, role);
     return {
       success: true,
       user: {
         username: usuario.usuario,
-        role: rolesSistema[usuario.rol] || String(usuario.rol || "").toLowerCase(),
+        role,
         name: usuario.nombre,
         estado: usuario.estado,
         permisos: usuarioConPermisos.permisos,

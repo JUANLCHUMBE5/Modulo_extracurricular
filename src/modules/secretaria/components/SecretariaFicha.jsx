@@ -140,10 +140,13 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
           }
         }
       } catch (err) {
+        const documentoFallback = await crearDocumentoInvitacion(estudiante, inscripcion);
+        const pdf = crearPdfInvitacionDocumento(documentoFallback).output("blob");
+        imprimirPdfBlob(pdf);
         setWordPreview((actual) => ({
           ...actual,
           cargando: false,
-          error: err.message || "No se pudo preparar la impresión.",
+          error: "La plantilla Word no se pudo usar. Se imprimio la ficha automatica.",
         }));
       } finally {
         setImprimiendoFicha(false);
@@ -262,14 +265,18 @@ function FichaBloque({ titulo, items }) {
 
 async function imprimirInscripcionDirecta(estudiante, inscripcion) {
   if (inscripcion.plantillaBase64) {
-    const word = await generarComunicadoWordBlob({ estudiante, inscripcion });
     try {
-      const pdf = await convertirWordOriginalAPdf(word);
-      imprimirPdfBlob(pdf);
-    } catch {
-      await imprimirWordRenderizado(word);
+      const word = await generarComunicadoWordBlob({ estudiante, inscripcion });
+      try {
+        const pdf = await convertirWordOriginalAPdf(word);
+        imprimirPdfBlob(pdf);
+      } catch {
+        await imprimirWordRenderizado(word);
+      }
+      return;
+    } catch (error) {
+      console.warn("No se pudo usar la plantilla Word. Se usara la ficha PDF automatica.", error);
     }
-    return;
   }
 
   const documento = await crearDocumentoInvitacion(estudiante, inscripcion);

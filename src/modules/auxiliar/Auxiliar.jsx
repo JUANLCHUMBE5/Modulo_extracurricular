@@ -327,7 +327,7 @@ export default function Auxiliar({ onLogout }) {
                 <QrCode size={20} /> Modo QR
               </button>
               <button type="button" className={modo === "DNI" ? "active" : ""} onClick={cambiarModoDni}>
-                <Search size={20} /> Buscar DNI / Nombre
+                <Search size={20} /> DNI / Nombre
               </button>
             </div>
 

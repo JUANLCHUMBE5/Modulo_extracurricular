@@ -68,6 +68,14 @@ function requirePermission(allowedPermissions) {
   };
 }
 
+function requireLocalDbAccess(req, res, next) {
+  if (process.env.NODE_ENV !== "production") {
+    return next();
+  }
+
+  return requireAuth(req, res, () => requireRole(["administrador"])(req, res, next));
+}
+
 // Normalización de Estados (Mapeos)
 function normalizeProgramStateToFrontend(state) {
   const map = {
@@ -160,22 +168,62 @@ function normalizePaymentStateToBackend(state) {
 }
 
 // Log de Auditoría
-async function registrarAuditoria(usuario, rol, accion, detalles) {
+const modulosAuditables = {
+  administrador: "Administrador",
+  secretaria: "Secretaria",
+  caja: "Caja",
+  coordinacion: "Coordinacion",
+  auxiliar: "Auxiliar",
+  direccion: "Direccion",
+};
+
+function normalizarRolAuditoria(rol) {
+  return String(rol || "").trim().toLowerCase();
+}
+
+function crearDetalleAcceso(rol) {
+  return JSON.stringify({ modulo: modulosAuditables[rol] });
+}
+
+function prepararLogsAcceso(logs = []) {
+  return logs
+    .filter((log) => {
+      const rol = normalizarRolAuditoria(log.rol);
+      const accion = String(log.accion || "");
+      return Boolean(modulosAuditables[rol]) && (accion === "INICIO_SESION" || accion === "LOGIN_EXITOSO");
+    })
+    .map((log) => {
+      const rol = normalizarRolAuditoria(log.rol);
+      return {
+        id: log.id,
+        usuario: log.usuario,
+        rol,
+        fecha: log.fecha,
+        accion: "INICIO_SESION",
+        detalles: crearDetalleAcceso(rol),
+      };
+    });
+}
+
+async function registrarAuditoria(usuario, rol, accion) {
   try {
+    const rolNormalizado = normalizarRolAuditoria(rol);
+    if (accion !== "INICIO_SESION" || !modulosAuditables[rolNormalizado]) return;
+
     const db = await getDb();
     db.auditLogs = db.auditLogs || [];
     const log = {
       id: `AUD-${String(Date.now()).slice(-6)}-${randomUUID().slice(0, 4)}`,
       usuario: usuario || "sistema",
-      rol: rol || "sistema",
+      rol: rolNormalizado,
       fecha: new Date().toISOString(),
-      accion,
-      detalles: typeof detalles === "object" ? JSON.stringify(detalles) : String(detalles || "")
+      accion: "INICIO_SESION",
+      detalles: crearDetalleAcceso(rolNormalizado),
     };
     db.auditLogs.unshift(log);
     await saveDb(db);
   } catch (error) {
-    console.error("Error al registrar auditoria:", error);
+    console.error("Error al registrar acceso:", error);
   }
 }
 
@@ -239,7 +287,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true, dbSource: getDbSource() });
 });
 
-app.get("/api/db", requireAuth, requireRole(["administrador"]), async (_req, res) => {
+app.get("/api/db", requireLocalDbAccess, async (_req, res) => {
   try {
     res.json(await getDb());
   } catch (error) {
@@ -248,7 +296,7 @@ app.get("/api/db", requireAuth, requireRole(["administrador"]), async (_req, res
   }
 });
 
-app.put("/api/db", requireAuth, requireRole(["administrador"]), async (req, res) => {
+app.put("/api/db", requireLocalDbAccess, async (req, res) => {
   try {
     const db = await saveDb(req.body);
     res.json(db);
@@ -258,7 +306,7 @@ app.put("/api/db", requireAuth, requireRole(["administrador"]), async (req, res)
   }
 });
 
-app.post("/api/db/reset", requireAuth, requireRole(["administrador"]), async (_req, res) => {
+app.post("/api/db/reset", requireLocalDbAccess, async (_req, res) => {
   try {
     res.json(await resetDb());
   } catch (error) {
@@ -431,8 +479,54 @@ function normalizarTextoApi(valor) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function mapDbProgramToApi(p) {
+function obtenerPlantillaProgramaApi(db, programa = {}) {
+  const guardada = db?.plantillasPorPrograma?.[programa?.id] || {};
+  const variablesPrograma = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
+  const variablesGuardadas = Array.isArray(guardada.plantillaVariables) ? guardada.plantillaVariables : [];
+  const plantillaBase64 = programa.plantillaBase64 || guardada.plantillaBase64 || "";
+
+  return {
+    plantilla: programa.plantilla || guardada.plantilla || "",
+    plantillaBase64,
+    plantillaVariables: variablesPrograma.length ? variablesPrograma : variablesGuardadas,
+    plantillaValidada: Boolean(programa.plantillaValidada || guardada.plantillaValidada || plantillaBase64),
+  };
+}
+
+function sincronizarPlantillaProgramaApi(db, programa = {}) {
+  if (!programa?.id || !programa.plantillaBase64) return;
+  db.plantillasPorPrograma = db.plantillasPorPrograma || {};
+  db.plantillasPorPrograma[programa.id] = {
+    plantilla: programa.plantilla || "",
+    plantillaBase64: programa.plantillaBase64,
+    plantillaVariables: Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [],
+    plantillaValidada: Boolean(programa.plantillaValidada || programa.plantillaBase64),
+    plantillaActualizadaEn: programa.plantillaActualizadaEn || new Date().toISOString(),
+  };
+}
+
+function obtenerPlantillaInscripcionApi(db, inscripcion = {}) {
+  const programa = (db?.programas || []).find(p => p.id === inscripcion.programaId) || {};
+  const guardada = db?.plantillasPorPrograma?.[inscripcion.programaId] || {};
+  const variablesInscripcion = Array.isArray(inscripcion.plantillaVariables) ? inscripcion.plantillaVariables : [];
+  const variablesPrograma = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
+  const variablesGuardadas = Array.isArray(guardada.plantillaVariables) ? guardada.plantillaVariables : [];
+  const plantillaBase64 = inscripcion.plantillaBase64 || programa.plantillaBase64 || guardada.plantillaBase64 || "";
+
+  return {
+    programa,
+    plantilla: inscripcion.plantilla || programa.plantilla || guardada.plantilla || "",
+    plantillaBase64,
+    plantillaVariables: variablesInscripcion.length
+      ? variablesInscripcion
+      : (variablesPrograma.length ? variablesPrograma : variablesGuardadas),
+    plantillaValidada: Boolean(inscripcion.plantillaValidada || programa.plantillaValidada || guardada.plantillaValidada || plantillaBase64),
+  };
+}
+
+function mapDbProgramToApi(p, db = null) {
   if (!p) return null;
+  const plantilla = obtenerPlantillaProgramaApi(db, p);
   return {
     id: p.id,
     nombre_programa: p.nombre,
@@ -464,15 +558,17 @@ function mapDbProgramToApi(p) {
     concesionarios: p.concesionarios || "",
     invitacion_masiva: p.invitacionMasiva,
     alcance_invitacion_masiva: p.alcanceInvitacionMasiva || "colegio",
-    plantilla: p.plantilla || "",
-    plantilla_base64: p.plantillaBase64 || "",
-    plantilla_variables: p.plantillaVariables || [],
-    plantilla_validada: p.plantillaValidada || false
+    plantilla: plantilla.plantilla,
+    plantilla_base64: plantilla.plantillaBase64,
+    plantilla_variables: plantilla.plantillaVariables,
+    plantilla_validada: plantilla.plantillaValidada
   };
 }
 
-function mapDbEnrollmentToApi(item) {
+function mapDbEnrollmentToApi(item, db = null) {
   if (!item) return null;
+  const plantilla = obtenerPlantillaInscripcionApi(db, item);
+  const programa = plantilla.programa || {};
   return {
     inscripcion_id: item.id,
     estudiante_id: item.dniEstudiante || "",
@@ -485,14 +581,23 @@ function mapDbEnrollmentToApi(item) {
     nombres_estudiante: item.nombresEstudiante || "",
     grado_estudiante: item.gradoEstudiante || item.grado || "",
     seccion: item.seccion || "",
-    nombre_programa: item.programa || "",
-    categoria: item.categoria || "",
-    horario: item.horario || "",
-    docente: item.docente || item.responsable || "No definido",
-    monto: item.costo || 0,
-    modalidad_cobro: item.modalidadCobro || "Mensual",
-    fecha_inicio: item.fechaInicio || "",
-    fecha_fin: item.fechaFin || "",
+    nombre_programa: item.programa || programa.nombre || "",
+    categoria: item.categoria || programa.categoria || "",
+    horario: item.horario || programa.horario || "",
+    docente: item.docente || item.responsable || programa.responsable || programa.docente || "No definido",
+    monto: item.costo ?? programa.costo ?? 0,
+    modalidad_cobro: item.modalidadCobro || programa.modalidadCobro || "Mensual",
+    fecha_inicio: item.fechaInicio || programa.fechaInicio || "",
+    fecha_fin: item.fechaFin || programa.fechaFin || "",
+    requisitos: item.requisitos || programa.requisitos || "",
+    comunicado: item.comunicado || programa.comunicado || "",
+    detalle_costo: item.detalleCosto || programa.detalleCosto || "",
+    detalle_almuerzo: item.detalleAlmuerzo || programa.detalleAlmuerzo || "",
+    concesionarios: item.concesionarios || programa.concesionarios || "",
+    plantilla: plantilla.plantilla,
+    plantilla_base64: plantilla.plantillaBase64,
+    plantilla_variables: plantilla.plantillaVariables,
+    plantilla_validada: plantilla.plantillaValidada,
     apoderado: item.apoderado || "",
     telefono_apoderado: item.telefono || "",
     correo_apoderado: item.correo || "",
@@ -593,7 +698,7 @@ app.post("/api/v1/auth/login", async (req, res) => {
           permissions: userObj.permisos || []
         }, JWT_SECRET, { expiresIn: "24h" });
 
-        await registrarAuditoria(userObj.usuario, role, "LOGIN_EXITOSO", { ip: req.ip });
+        await registrarAuditoria(userObj.usuario, role, "INICIO_SESION");
 
         res.json({
           success: true,
@@ -637,6 +742,35 @@ app.get("/api/v1/auth/me", requireAuth, async (req, res) => {
         }
       }
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Administrator Routes
+app.get("/api/v1/administrador/audit-logs", requireAuth, requireRole(["administrador"]), async (req, res) => {
+  try {
+    const db = await getDb();
+    res.json({ success: true, data: prepararLogsAcceso(db.auditLogs || []) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/administrador/db/backup", requireAuth, requireRole(["administrador"]), async (req, res) => {
+  try {
+    const db = await getDb();
+    res.json({ success: true, data: db });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/administrador/db/reset", requireAuth, requireRole(["administrador"]), async (req, res) => {
+  try {
+    const db = await resetDb();
+    await registrarAuditoria(req.user.username, req.user.role, "DB_RESET", { ip: req.ip });
+    res.json({ success: true, data: db });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -733,7 +867,7 @@ app.delete("/api/v1/extracurricular/categorias/:nombre", async (req, res) => {
 app.get("/api/v1/extracurricular/programas", async (req, res) => {
   try {
     const db = await getDb();
-    res.json({ success: true, data: (db.programas || []).map(mapDbProgramToApi) });
+    res.json({ success: true, data: (db.programas || []).map((programa) => mapDbProgramToApi(programa, db)) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -744,7 +878,7 @@ app.get("/api/v1/extracurricular/programas/:id", async (req, res) => {
     const db = await getDb();
     const prog = (db.programas || []).find(p => p.id === req.params.id);
     if (!prog) return res.status(404).json({ success: false, message: "Programa no encontrado." });
-    res.json({ success: true, data: mapDbProgramToApi(prog) });
+    res.json({ success: true, data: mapDbProgramToApi(prog, db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -784,12 +918,17 @@ app.post("/api/v1/extracurricular/programas", async (req, res) => {
       concesionarios: req.body.concesionarios || "",
       invitacionMasiva: Boolean(req.body.invitacion_masiva),
       alcanceInvitacionMasiva: req.body.alcance_invitacion_masiva || "colegio",
+      plantilla: req.body.plantilla || "",
+      plantillaBase64: req.body.plantilla_base64 || "",
+      plantillaVariables: req.body.plantilla_variables || [],
+      plantillaValidada: Boolean(req.body.plantilla_validada || req.body.plantilla_base64),
       estado: "Habilitado"
     };
     
+    sincronizarPlantillaProgramaApi(db, nuevo);
     db.programas.push(nuevo);
     await saveDb(db);
-    res.json({ success: true, data: mapDbProgramToApi(nuevo) });
+    res.json({ success: true, data: mapDbProgramToApi(nuevo, db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -825,9 +964,10 @@ app.post("/api/v1/extracurricular/programas/documento", async (req, res) => {
       estado: "Deshabilitado"
     };
     
+    sincronizarPlantillaProgramaApi(db, nuevo);
     db.programas.push(nuevo);
     await saveDb(db);
-    res.json({ success: true, data: mapDbProgramToApi(nuevo) });
+    res.json({ success: true, data: mapDbProgramToApi(nuevo, db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -839,6 +979,17 @@ app.put("/api/v1/extracurricular/programas/:id", async (req, res) => {
     const idx = (db.programas || []).findIndex(p => p.id === req.params.id);
     if (idx === -1) return res.status(404).json({ success: false, message: "Programa no encontrado." });
     
+    let nuevoEstado = db.programas[idx].estado;
+    if (nuevoEstado === "Finalizado") {
+      const d = new Date();
+      const tzOffset = d.getTimezoneOffset() * 60000;
+      const hoy = (new Date(d.getTime() - tzOffset)).toISOString().slice(0, 10);
+      if (req.body.fecha_fin >= hoy) {
+        nuevoEstado = "Habilitado";
+      }
+    }
+
+    const plantillaActual = obtenerPlantillaProgramaApi(db, db.programas[idx]);
     const updated = {
       ...db.programas[idx],
       nombre: req.body.nombre_programa,
@@ -865,12 +1016,18 @@ app.put("/api/v1/extracurricular/programas/:id", async (req, res) => {
       detalleAlmuerzo: req.body.detalle_almuerzo || "",
       concesionarios: req.body.concesionarios || "",
       invitacionMasiva: Boolean(req.body.invitacion_masiva),
-      alcanceInvitacionMasiva: req.body.alcance_invitacion_masiva || "colegio"
+      alcanceInvitacionMasiva: req.body.alcance_invitacion_masiva || "colegio",
+      plantilla: req.body.plantilla ?? plantillaActual.plantilla,
+      plantillaBase64: req.body.plantilla_base64 ?? plantillaActual.plantillaBase64,
+      plantillaVariables: req.body.plantilla_variables ?? plantillaActual.plantillaVariables,
+      plantillaValidada: Boolean(req.body.plantilla_validada ?? plantillaActual.plantillaValidada),
+      estado: nuevoEstado
     };
     
+    sincronizarPlantillaProgramaApi(db, updated);
     db.programas[idx] = updated;
     await saveDb(db);
-    res.json({ success: true, data: mapDbProgramToApi(updated) });
+    res.json({ success: true, data: mapDbProgramToApi(updated, db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -882,9 +1039,18 @@ app.put("/api/v1/extracurricular/programas/:id/estado", async (req, res) => {
     const idx = (db.programas || []).findIndex(p => p.id === req.params.id);
     if (idx === -1) return res.status(404).json({ success: false, message: "Programa no encontrado." });
     
+    if (db.programas[idx].estado === "Finalizado" && req.body.estado === "Habilitado") {
+      const d = new Date();
+      const tzOffset = d.getTimezoneOffset() * 60000;
+      const hoy = (new Date(d.getTime() - tzOffset)).toISOString().slice(0, 10);
+      if (db.programas[idx].fechaFin < hoy) {
+        return res.status(400).json({ success: false, message: "El programa ya finalizó por fecha de vigencia. Modifique la fecha fin para volver a usarlo." });
+      }
+    }
+    
     db.programas[idx].estado = req.body.estado;
     await saveDb(db);
-    res.json({ success: true, data: mapDbProgramToApi(db.programas[idx]) });
+    res.json({ success: true, data: mapDbProgramToApi(db.programas[idx], db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -919,7 +1085,7 @@ app.get("/api/v1/extracurricular/programas/:programaId/matriculados", async (req
     const db = await getDb();
     const list = (db.inscripciones || [])
       .filter(item => item.programaId === req.params.programaId && item.estadoInscripcion !== "Anulada");
-    res.json({ success: true, data: list.map(mapDbEnrollmentToApi) });
+    res.json({ success: true, data: list.map((item) => mapDbEnrollmentToApi(item, db)) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -956,7 +1122,7 @@ app.get("/api/v1/extracurricular/invitaciones/buscar", async (req, res) => {
       if (inv) {
         result = {
           programaId: prog.id,
-          programa: mapDbProgramToApi(prog),
+          programa: mapDbProgramToApi(prog, db),
           invitado: inv
         };
         break;
@@ -1334,6 +1500,7 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       grado: grado || "",
       seccion: seccion || ""
     };
+    const plantillaPrograma = obtenerPlantillaProgramaApi(db, prog);
     
     // Almacenar estados normalizados internamente en base de datos
     const newEnrollment = {
@@ -1346,10 +1513,22 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       programaId: programa_id,
       programa: prog.nombre,
       categoria: prog.categoria,
+      periodo: prog.periodo || "escolar",
+      horario: prog.horario || "",
+      docente: prog.responsable || prog.docente || "No definido",
       costo: prog.costo,
       modalidadCobro: prog.modalidadCobro || "Mensual",
       fechaInicio: prog.fechaInicio,
       fechaFin: prog.fechaFin,
+      requisitos: prog.requisitos || "",
+      comunicado: prog.comunicado || "",
+      detalleCosto: prog.detalleCosto || "",
+      detalleAlmuerzo: prog.detalleAlmuerzo || "",
+      concesionarios: prog.concesionarios || "",
+      plantilla: plantillaPrograma.plantilla,
+      plantillaBase64: plantillaPrograma.plantillaBase64,
+      plantillaVariables: plantillaPrograma.plantillaVariables,
+      plantillaValidada: plantillaPrograma.plantillaValidada,
       apoderado: apoderado || student.apoderado || "",
       telefono: telefono_apoderado || student.telefonoApoderado || "",
       correo: correo_apoderado || student.correoApoderado || "",
@@ -1383,7 +1562,7 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       programaId: programa_id
     });
 
-    res.json({ success: true, data: mapDbEnrollmentToApi(newEnrollment) });
+    res.json({ success: true, data: mapDbEnrollmentToApi(newEnrollment, db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1452,7 +1631,7 @@ app.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", asy
     }
     
     await saveDb(db);
-    res.json({ success: true, data: mapDbEnrollmentToApi(updated) });
+    res.json({ success: true, data: mapDbEnrollmentToApi(updated, db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1467,7 +1646,7 @@ app.get("/api/v1/extracurricular/secretaria/inscripciones/buscar", async (req, r
       .filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
     
     const active = list.find(item => !item.derivadoCaja && item.estadoPago !== "Pagado") || list[0] || null;
-    res.json({ success: true, data: active ? mapDbEnrollmentToApi(active) : null });
+    res.json({ success: true, data: active ? mapDbEnrollmentToApi(active, db) : null });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1480,7 +1659,7 @@ app.get("/api/v1/extracurricular/secretaria/inscripciones", async (req, res) => 
     const period = normalizarPeriodoApi(periodo);
     const list = (db.inscripciones || [])
       .filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
-    res.json({ success: true, data: list.map(mapDbEnrollmentToApi) });
+    res.json({ success: true, data: list.map((item) => mapDbEnrollmentToApi(item, db)) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -1544,7 +1723,7 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", async (req, res) => {
       data: {
         estudiante: studentData,
         invitaciones: invitations,
-        inscripciones: enrollments.map(mapDbEnrollmentToApi),
+        inscripciones: enrollments.map((item) => mapDbEnrollmentToApi(item, db)),
         pagos: payments.map(mapDbPaymentToApi),
         documentos: documents
       }

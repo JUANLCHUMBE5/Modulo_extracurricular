@@ -5,6 +5,8 @@ import {
   IconPrinter as Printer,
   IconSearch as Search,
   IconSend as Send,
+  IconAlertTriangle as AlertTriangle,
+  IconInfoCircle as InfoCircle,
 } from "@tabler/icons-react";
 import { resumirClaseSecretaria } from "./SecretariaFields";
 
@@ -16,6 +18,32 @@ function describirSeleccionCambridge(valor = "") {
     C: "C - Ingresante por desempeno academico",
   };
   return opciones[seleccion] || "Pendiente de definir en Coordinacion";
+}
+
+function obtenerPillEstadoInscripcion(estado = "") {
+  const est = String(estado).trim().toLowerCase();
+  if (est.includes("no inscrito") || est.includes("anulada")) {
+    return {
+      clase: "secretaria-pill-danger",
+      Icono: AlertTriangle,
+    };
+  }
+  if (est.includes("pago validado") || est.includes("inscrito")) {
+    return {
+      clase: "secretaria-pill-success",
+      Icono: CheckCircle2,
+    };
+  }
+  if (est.includes("pendiente") || est.includes("derivado")) {
+    return {
+      clase: "secretaria-pill-warning",
+      Icono: AlertTriangle,
+    };
+  }
+  return {
+    clase: "secretaria-pill-info",
+    Icono: InfoCircle,
+  };
 }
 
 function SecretariaStudentPanel({
@@ -102,9 +130,15 @@ function SecretariaStudentPanel({
         <div className="secretaria-data-status secretaria-data-process">
           <dt>Estado inscripción</dt>
           <dd>
-            <span className="secretaria-pill secretaria-pill-info">
-              {estudiante.estadoInscripción}
-            </span>
+            {(() => {
+              const { clase, Icono } = obtenerPillEstadoInscripcion(estudiante.estadoInscripción);
+              return (
+                <span className={`secretaria-pill ${clase}`}>
+                  <Icono size={13} />
+                  {estudiante.estadoInscripción}
+                </span>
+              );
+            })()}
           </dd>
         </div>
         <div className="secretaria-data-status secretaria-data-process">

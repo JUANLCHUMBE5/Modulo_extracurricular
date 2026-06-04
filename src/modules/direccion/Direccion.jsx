@@ -406,9 +406,6 @@ export default function Direccion({ onLogout, user }) {
               onChange={(value) => setPeriodo(value || "todos")}
               allowDeselect={false}
             />
-            <Button variant="light" color="teal" leftSection={<Refresh size={17} />} onClick={cargarPanel}>
-              Actualizar
-            </Button>
           </Group>
         </header>
 

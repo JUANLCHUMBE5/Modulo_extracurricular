@@ -221,6 +221,7 @@ export async function registrarInscripcion(payload) {
   }
 
   const datosCambridge = obtenerDatosCambridgeSeguros(programa, payload);
+  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
   const registro = {
     id: `INS-${Date.now().toString().slice(-6)}`,
     estadoInscripcion: "Pendiente de pago",
@@ -243,9 +244,10 @@ export async function registrarInscripcion(payload) {
     grupo: programa.grupo || "",
     grupoEtario: programa.grupoEtario || programa.grupo || "",
     requisitos: programa.requisitos || "",
-    plantilla: programa.plantilla || "",
-    plantillaBase64: "",
-    plantillaVariables: programa.plantillaVariables || [],
+    plantilla: plantillaPrograma.plantilla,
+    plantillaBase64: plantillaPrograma.plantillaBase64,
+    plantillaVariables: plantillaPrograma.plantillaVariables,
+    plantillaValidada: plantillaPrograma.plantillaValidada,
     seleccion: datosCambridge.seleccion,
     nivelCambridge: datosCambridge.nivelCambridge,
     requiereUniforme: Boolean(programa.requiereUniforme),
@@ -458,13 +460,17 @@ function sincronizarInscripcionConProgramaActual(inscripcion) {
     normalizarTexto(item.nombre) === normalizarTexto(inscripcion.programa)
   );
   if (!programa) {
+    const plantillaInscripcion = obtenerPlantillaProgramaLocal(null, inscripcion?.programaId);
     return {
       ...inscripcion,
+      plantilla: plantillaInscripcion.plantilla || inscripcion.plantilla || "",
       plantillaBase64: obtenerPlantillaBase64(inscripcion, null),
       plantillaVariables: obtenerPlantillaVariables(inscripcion, null),
+      plantillaValidada: Boolean(plantillaInscripcion.plantillaValidada || inscripcion.plantillaValidada),
     };
   }
   if (!programaDisponibleParaGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado)) return null;
+  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
 
   return {
     ...inscripcion,
@@ -484,22 +490,38 @@ function sincronizarInscripcionConProgramaActual(inscripcion) {
     grupo: programa.grupo || inscripcion.grupo || "",
     grupoEtario: programa.grupoEtario || inscripcion.grupoEtario || programa.grupo || "",
     requisitos: programa.requisitos || inscripcion.requisitos || "",
-    plantilla: programa.plantilla || inscripcion.plantilla || "",
+    plantilla: plantillaPrograma.plantilla || inscripcion.plantilla || "",
     plantillaBase64: obtenerPlantillaBase64(inscripcion, programa),
     plantillaVariables: obtenerPlantillaVariables(inscripcion, programa),
+    plantillaValidada: Boolean(plantillaPrograma.plantillaValidada || inscripcion.plantillaValidada),
     requiereUniforme: Boolean(programa.requiereUniforme),
     requiereIndumentaria: Boolean(programa.requiereIndumentaria),
   };
 }
 
 function obtenerPlantillaBase64(inscripcion, programa) {
-  const plantillaGuardada = apiDb.plantillasPorPrograma?.[programa?.id || inscripcion?.programaId] || null;
-  return programa?.plantillaBase64 || plantillaGuardada?.plantillaBase64 || inscripcion?.plantillaBase64 || "";
+  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa, programa?.id || inscripcion?.programaId);
+  return plantillaPrograma.plantillaBase64 || inscripcion?.plantillaBase64 || "";
 }
 
 function obtenerPlantillaVariables(inscripcion, programa) {
-  const plantillaGuardada = apiDb.plantillasPorPrograma?.[programa?.id || inscripcion?.programaId] || null;
-  return programa?.plantillaVariables || plantillaGuardada?.plantillaVariables || inscripcion?.plantillaVariables || [];
+  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa, programa?.id || inscripcion?.programaId);
+  return plantillaPrograma.plantillaVariables.length ? plantillaPrograma.plantillaVariables : (inscripcion?.plantillaVariables || []);
+}
+
+function obtenerPlantillaProgramaLocal(programa = null, programaId = "") {
+  const id = programa?.id || programaId || "";
+  const plantillaGuardada = apiDb.plantillasPorPrograma?.[id] || {};
+  const variablesPrograma = Array.isArray(programa?.plantillaVariables) ? programa.plantillaVariables : [];
+  const variablesGuardadas = Array.isArray(plantillaGuardada.plantillaVariables) ? plantillaGuardada.plantillaVariables : [];
+  const plantillaBase64 = programa?.plantillaBase64 || plantillaGuardada.plantillaBase64 || "";
+
+  return {
+    plantilla: programa?.plantilla || plantillaGuardada.plantilla || "",
+    plantillaBase64,
+    plantillaVariables: variablesPrograma.length ? variablesPrograma : variablesGuardadas,
+    plantillaValidada: Boolean(programa?.plantillaValidada || plantillaGuardada.plantillaValidada || plantillaBase64),
+  };
 }
 
 function extraerNumeroCupos(valor) {
@@ -522,6 +544,7 @@ function calcularCuposDisponibles(programa) {
 function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
   const periodoNormalizado = normalizarPeriodo(programa.periodo);
   const cuposDisponibles = calcularCuposDisponibles(programa);
+  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
   return {
     id: programa.id,
     nombre: programa.nombre,
@@ -550,10 +573,10 @@ function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
     fechaNacimientoDesde: programa.fechaNacimientoDesde || "",
     fechaNacimientoHasta: programa.fechaNacimientoHasta || "",
     requisitos: programa.requisitos || "",
-    plantilla: programa.plantilla || "",
-    plantillaBase64: programa.plantillaBase64 || "",
-    plantillaVariables: programa.plantillaVariables || [],
-    plantillaValidada: Boolean(programa.plantillaValidada),
+    plantilla: plantillaPrograma.plantilla,
+    plantillaBase64: plantillaPrograma.plantillaBase64,
+    plantillaVariables: plantillaPrograma.plantillaVariables,
+    plantillaValidada: plantillaPrograma.plantillaValidada,
     invitacionMasiva: Boolean(programa.invitacionMasiva),
     estado: programa.estado,
   };
@@ -564,6 +587,7 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
   const horarioResuelto = resolverHorarioPorGrado(programa, estudiante.grado);
   const horarioConfigurado = Boolean(horarioResuelto || !tieneHorariosPorGrupo(programa));
   const cuposDisponibles = calcularCuposDisponibles(programa);
+  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
   return {
     ...estudiante,
     periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
@@ -591,9 +615,10 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
     programaDuracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
     seleccion: invitado.seleccion || "",
     nivelCambridge: invitado.nivelCambridge || "",
-    plantilla: programa.plantilla || "",
-    plantillaBase64: programa.plantillaBase64 || "",
-    plantillaVariables: programa.plantillaVariables || [],
+    plantilla: plantillaPrograma.plantilla,
+    plantillaBase64: plantillaPrograma.plantillaBase64,
+    plantillaVariables: plantillaPrograma.plantillaVariables,
+    plantillaValidada: plantillaPrograma.plantillaValidada,
     requiereUniforme: Boolean(programa.requiereUniforme),
     requiereIndumentaria: Boolean(programa.requiereIndumentaria),
   };
@@ -604,6 +629,7 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
   const horarioResuelto = resolverHorarioPorGrado(programa, invitado.grado);
   const horarioConfigurado = Boolean(horarioResuelto || !tieneHorariosPorGrupo(programa));
   const cuposDisponibles = calcularCuposDisponibles(programa);
+  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
   return {
     dni: invitado.dni || "",
     codigoEstudiante: invitado.codigoEstudiante || "",
@@ -635,9 +661,10 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
     programaDuracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
     seleccion: invitado.seleccion || "",
     nivelCambridge: invitado.nivelCambridge || "",
-    plantilla: programa.plantilla || "",
-    plantillaBase64: programa.plantillaBase64 || "",
-    plantillaVariables: programa.plantillaVariables || [],
+    plantilla: plantillaPrograma.plantilla,
+    plantillaBase64: plantillaPrograma.plantillaBase64,
+    plantillaVariables: plantillaPrograma.plantillaVariables,
+    plantillaValidada: plantillaPrograma.plantillaValidada,
     requiereUniforme: Boolean(programa.requiereUniforme),
     requiereIndumentaria: Boolean(programa.requiereIndumentaria),
     telefonoApoderado: invitado.telefonoApoderado || "",

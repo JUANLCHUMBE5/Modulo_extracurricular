@@ -513,7 +513,7 @@
   border-radius: 13px;
   padding: 8px 10px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 9px;
   background: #fbfefd;
 }
