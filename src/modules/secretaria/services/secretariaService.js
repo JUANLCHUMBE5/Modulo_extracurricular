@@ -137,7 +137,6 @@ export async function listarProgramasPorPeriodo(periodo, gradoAlumno = "", edadA
       normalizarPeriodo(programa.periodo) === periodoNormalizado &&
       programa.estado === "Habilitado" &&
       Number(programa.cuposDisponibles ?? 0) > 0 &&
-      (periodoNormalizado === "verano" || programa.invitacionMasiva) &&
       (periodoNormalizado === "verano"
         ? programaDisponibleParaEdad(programa, edadAlumno)
         : (!gradoAlumno || programaDisponibleParaGrado(programa, gradoAlumno)))
@@ -584,12 +583,20 @@ function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
 
 function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo) {
   const { programa, invitado = {} } = invitacionPeriodo;
-  const horarioResuelto = resolverHorarioPorGrado(programa, estudiante.grado);
+  const gradoInvitacion = invitado.grado || estudiante.grado;
+  const seccionInvitacion = invitado.seccion || estudiante.seccion;
+  const nivelInvitacion = invitado.nivelEducativo || estudiante.nivel || "";
+  const horarioResuelto = resolverHorarioPorGrado(programa, gradoInvitacion);
   const horarioConfigurado = Boolean(horarioResuelto || !tieneHorariosPorGrupo(programa));
   const cuposDisponibles = calcularCuposDisponibles(programa);
   const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
   return {
     ...estudiante,
+    codigoEstudiante: invitado.codigoEstudiante || estudiante.codigoEstudiante || "",
+    nombres: invitado.nombres || estudiante.nombres,
+    grado: gradoInvitacion,
+    seccion: seccionInvitacion,
+    nivel: nivelInvitacion,
     periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
     estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
     estadoInscripción: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
@@ -601,7 +608,7 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
     programaGrupo: programa.grupo || "",
     programaGrupoEtario: programa.grupoEtario || programa.grupo || "",
     programaHorario: horarioResuelto || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario),
-    programaDisponible: programaDisponibleParaGrado(programa, estudiante.grado),
+    programaDisponible: programaDisponibleParaGrado(programa, gradoInvitacion),
     programaHorarioConfigurado: horarioConfigurado,
     programaDocente: programa.responsable || programa.docente || "No definido",
     programaCosto: Number(programa.costo ?? 0),

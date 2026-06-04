@@ -1,4 +1,5 @@
 .padres-layout {
+  --font-heading: Poppins, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100vh;
   color: #172331;
   background: #ffffff;

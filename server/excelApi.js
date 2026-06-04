@@ -10,7 +10,7 @@ import os from "os";
 import path from "path";
 import { promisify } from "util";
 import { generarPreviewCargaExcel } from "./excelPreviewService.js";
-import { getDb, getDbSource, resetDb, saveDb } from "./localDb.js";
+import { getDb, getDbSource, resetDb, saveDb, updateDb } from "./localDb.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 
@@ -175,6 +175,8 @@ const modulosAuditables = {
   coordinacion: "Coordinacion",
   auxiliar: "Auxiliar",
   direccion: "Direccion",
+  padres: "Padres",
+  desconocido: "Desconocido"
 };
 
 function normalizarRolAuditoria(rol) {
@@ -182,48 +184,49 @@ function normalizarRolAuditoria(rol) {
 }
 
 function crearDetalleAcceso(rol) {
-  return JSON.stringify({ modulo: modulosAuditables[rol] });
+  return JSON.stringify({ modulo: modulosAuditables[rol] || rol });
 }
 
 function prepararLogsAcceso(logs = []) {
-  return logs
-    .filter((log) => {
-      const rol = normalizarRolAuditoria(log.rol);
-      const accion = String(log.accion || "");
-      return Boolean(modulosAuditables[rol]) && (accion === "INICIO_SESION" || accion === "LOGIN_EXITOSO");
-    })
-    .map((log) => {
-      const rol = normalizarRolAuditoria(log.rol);
-      return {
-        id: log.id,
-        usuario: log.usuario,
-        rol,
-        fecha: log.fecha,
-        accion: "INICIO_SESION",
-        detalles: crearDetalleAcceso(rol),
-      };
-    });
+  return (Array.isArray(logs) ? logs : []).map((log) => {
+    const rol = normalizarRolAuditoria(log.rol);
+    return {
+      id: log.id,
+      usuario: log.usuario,
+      rol,
+      fecha: log.fecha,
+      accion: log.accion,
+      detalles: log.detalles || crearDetalleAcceso(rol),
+    };
+  });
 }
 
-async function registrarAuditoria(usuario, rol, accion) {
+async function registrarAuditoria(usuario, rol, accion, detalles = null) {
   try {
     const rolNormalizado = normalizarRolAuditoria(rol);
-    if (accion !== "INICIO_SESION" || !modulosAuditables[rolNormalizado]) return;
 
-    const db = await getDb();
-    db.auditLogs = db.auditLogs || [];
+    let detallesStr = "";
+    if (detalles) {
+      detallesStr = typeof detalles === "object" ? JSON.stringify(detalles) : String(detalles);
+    } else {
+      detallesStr = crearDetalleAcceso(rolNormalizado);
+    }
+
     const log = {
       id: `AUD-${String(Date.now()).slice(-6)}-${randomUUID().slice(0, 4)}`,
       usuario: usuario || "sistema",
       rol: rolNormalizado,
       fecha: new Date().toISOString(),
-      accion: "INICIO_SESION",
-      detalles: crearDetalleAcceso(rolNormalizado),
+      accion,
+      detalles: detallesStr,
     };
-    db.auditLogs.unshift(log);
-    await saveDb(db);
+    await updateDb((db) => {
+      db.auditLogs = Array.isArray(db.auditLogs) ? db.auditLogs : [];
+      db.auditLogs.unshift(log);
+      return db;
+    });
   } catch (error) {
-    console.error("Error al registrar acceso:", error);
+    console.error("Error al registrar auditoria:", error);
   }
 }
 
@@ -485,24 +488,154 @@ function obtenerPlantillaProgramaApi(db, programa = {}) {
   const variablesGuardadas = Array.isArray(guardada.plantillaVariables) ? guardada.plantillaVariables : [];
   const plantillaBase64 = programa.plantillaBase64 || guardada.plantillaBase64 || "";
 
+  const plantillaNombre = programa.plantilla === "" ? "" : (programa.plantilla || guardada.plantilla || "");
+  const finalBase64 = programa.plantilla === "" ? "" : plantillaBase64;
+  const finalVariables = programa.plantilla === "" ? [] : (variablesPrograma.length ? variablesPrograma : variablesGuardadas);
+  const finalValidada = programa.plantilla === "" ? false : Boolean(programa.plantillaValidada || guardada.plantillaValidada || plantillaBase64);
+
   return {
-    plantilla: programa.plantilla || guardada.plantilla || "",
-    plantillaBase64,
-    plantillaVariables: variablesPrograma.length ? variablesPrograma : variablesGuardadas,
-    plantillaValidada: Boolean(programa.plantillaValidada || guardada.plantillaValidada || plantillaBase64),
+    plantilla: plantillaNombre,
+    plantillaBase64: finalBase64,
+    plantillaVariables: finalVariables,
+    plantillaValidada: finalValidada,
   };
 }
 
-function sincronizarPlantillaProgramaApi(db, programa = {}) {
-  if (!programa?.id || !programa.plantillaBase64) return;
-  db.plantillasPorPrograma = db.plantillasPorPrograma || {};
-  db.plantillasPorPrograma[programa.id] = {
-    plantilla: programa.plantilla || "",
-    plantillaBase64: programa.plantillaBase64,
-    plantillaVariables: Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [],
-    plantillaValidada: Boolean(programa.plantillaValidada || programa.plantillaBase64),
-    plantillaActualizadaEn: programa.plantillaActualizadaEn || new Date().toISOString(),
+function obtenerCamposProgramaInvitacionApi(db, programa = null) {
+  if (!programa) {
+    return {
+      programaCosto: "",
+      programaGrupo: "",
+      programaGrupoEtario: "",
+      programaHorario: "",
+      programaDisponible: false,
+      programaHorarioConfigurado: false,
+      programaDocente: "",
+      programaCupos: "",
+      programaCuposDisponibles: 0,
+      programaModalidadCobro: "",
+      programaRequisitos: "",
+      programaFechaInicio: "",
+      programaFechaFin: "",
+      programaDuracionTaller: "",
+      programaDuracionAvisoDias: "",
+      plantilla: "",
+      plantillaBase64: "",
+      plantillaVariables: [],
+      plantillaValidada: false,
+      requiereUniforme: false,
+      requiereIndumentaria: false,
+    };
+  }
+
+  const plantilla = obtenerPlantillaProgramaApi(db, programa);
+  const cuposDisponibles = Math.max(0, Number(programa.cupos || 0) - Number(programa.cuposOcupados || 0));
+
+  return {
+    programaCosto: programa.costo ?? "",
+    programaGrupo: programa.grupo || "",
+    programaGrupoEtario: programa.grupoEtario || programa.grupo || "",
+    programaHorario: programa.horario || "",
+    programaDisponible: true,
+    programaHorarioConfigurado: true,
+    programaDocente: programa.responsable || programa.docente || "No definido",
+    programaCupos: `${cuposDisponibles} cupos disponibles`,
+    programaCuposDisponibles: cuposDisponibles,
+    programaModalidadCobro: programa.modalidadCobro || "",
+    programaRequisitos: programa.requisitos || "",
+    programaFechaInicio: programa.fechaInicio || "",
+    programaFechaFin: programa.fechaFin || "",
+    programaDuracionTaller: programa.duracionTaller || "",
+    programaDuracionAvisoDias: programa.duracionAvisoDias || "",
+    plantilla: plantilla.plantilla,
+    plantillaBase64: plantilla.plantillaBase64,
+    plantillaVariables: plantilla.plantillaVariables,
+    plantillaValidada: Boolean(plantilla.plantillaValidada),
+    requiereUniforme: Boolean(programa.requiereUniforme),
+    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
   };
+}
+
+function normalizarGradoAplicableDesdeAlumnoApi(grado = "") {
+  const texto = normalizarTextoApi(grado).replace(":", " ");
+  const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
+  const numero = texto.match(/\d+/)?.[0] || "";
+  if (!nivel || !numero) return "";
+
+  const nivelFormateado = {
+    inicial: "Inicial",
+    primaria: "Primaria",
+    secundaria: "Secundaria",
+  }[nivel];
+
+  return nivel === "inicial" && /anos|ano/.test(texto)
+    ? `${nivelFormateado}:${numero} anos`
+    : `${nivelFormateado}:${numero}`;
+}
+
+function agregarGradoProgramaDesdeAlumnoApi(programa, gradoAlumno) {
+  if (!programa) return;
+  const gradoAplicable = normalizarGradoAplicableDesdeAlumnoApi(gradoAlumno);
+  if (!gradoAplicable) return;
+
+  const actuales = Array.isArray(programa.gradosAplicables) ? programa.gradosAplicables : [];
+  const existe = actuales.some((grado) => normalizarTextoApi(grado) === normalizarTextoApi(gradoAplicable));
+  if (!existe) {
+    programa.gradosAplicables = [...actuales, gradoAplicable];
+  }
+}
+
+function sincronizarGradosProgramaConInvitadosApi(db, programaId) {
+  const programa = (db.programas || []).find(p => p.id === programaId);
+  if (!programa) return;
+
+  const grados = [];
+  (db.invitadosPorPrograma?.[programaId] || []).forEach((invitado) => {
+    const gradoAplicable = normalizarGradoAplicableDesdeAlumnoApi(invitado.grado);
+    if (!gradoAplicable) return;
+    const existe = grados.some((grado) => normalizarTextoApi(grado) === normalizarTextoApi(gradoAplicable));
+    if (!existe) grados.push(gradoAplicable);
+  });
+
+  if (grados.length) {
+    programa.gradosAplicables = ordenarGradosAplicablesApi(grados);
+  }
+}
+
+function ordenarGradosAplicablesApi(grados) {
+  const ordenNivel = { inicial: 0, primaria: 1, secundaria: 2 };
+  return [...grados].sort((a, b) => {
+    const gradoA = descomponerGradoAplicableApi(a);
+    const gradoB = descomponerGradoAplicableApi(b);
+    if (gradoA.nivelOrden !== gradoB.nivelOrden) return gradoA.nivelOrden - gradoB.nivelOrden;
+    return gradoA.numero - gradoB.numero;
+  });
+
+  function descomponerGradoAplicableApi(valor) {
+    const texto = normalizarTextoApi(valor);
+    const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
+    const numero = Number(texto.match(/\d+/)?.[0] || 0);
+    return {
+      nivelOrden: ordenNivel[nivel] ?? 99,
+      numero,
+    };
+  }
+}
+
+function sincronizarPlantillaProgramaApi(db, programa = {}) {
+  if (!programa?.id) return;
+  db.plantillasPorPrograma = db.plantillasPorPrograma || {};
+  if (!programa.plantilla) {
+    delete db.plantillasPorPrograma[programa.id];
+  } else {
+    db.plantillasPorPrograma[programa.id] = {
+      plantilla: programa.plantilla || "",
+      plantillaBase64: programa.plantillaBase64 || "",
+      plantillaVariables: Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [],
+      plantillaValidada: Boolean(programa.plantillaValidada || programa.plantillaBase64),
+      plantillaActualizadaEn: programa.plantillaActualizadaEn || new Date().toISOString(),
+    };
+  }
 }
 
 function obtenerPlantillaInscripcionApi(db, inscripcion = {}) {
@@ -837,7 +970,7 @@ app.get("/api/v1/extracurricular/categorias", async (req, res) => {
   }
 });
 
-app.post("/api/v1/extracurricular/categorias", async (req, res) => {
+app.post("/api/v1/extracurricular/categorias", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const { nombre } = req.body;
     const db = await getDb();
@@ -851,7 +984,7 @@ app.post("/api/v1/extracurricular/categorias", async (req, res) => {
   }
 });
 
-app.delete("/api/v1/extracurricular/categorias/:nombre", async (req, res) => {
+app.delete("/api/v1/extracurricular/categorias/:nombre", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const { nombre } = req.params;
     const db = await getDb();
@@ -884,7 +1017,7 @@ app.get("/api/v1/extracurricular/programas/:id", async (req, res) => {
   }
 });
 
-app.post("/api/v1/extracurricular/programas", async (req, res) => {
+app.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const db = await getDb();
     const id = `PROG-${String(db.nextProgramaId || 1).padStart(3, "0")}`;
@@ -928,13 +1061,19 @@ app.post("/api/v1/extracurricular/programas", async (req, res) => {
     sincronizarPlantillaProgramaApi(db, nuevo);
     db.programas.push(nuevo);
     await saveDb(db);
+    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "PROGRAMA_CREAR", {
+      id,
+      nombre: nuevo.nombre,
+      costo: nuevo.costo,
+      cupos: nuevo.cupos
+    });
     res.json({ success: true, data: mapDbProgramToApi(nuevo, db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.post("/api/v1/extracurricular/programas/documento", async (req, res) => {
+app.post("/api/v1/extracurricular/programas/documento", requireRole(["secretaria", "coordinacion"]), async (req, res) => {
   try {
     const db = await getDb();
     const id = `PROG-${String(db.nextProgramaId || 1).padStart(3, "0")}`;
@@ -967,13 +1106,18 @@ app.post("/api/v1/extracurricular/programas/documento", async (req, res) => {
     sincronizarPlantillaProgramaApi(db, nuevo);
     db.programas.push(nuevo);
     await saveDb(db);
+    await registrarAuditoria(req.user?.username || "Secretaria", req.user?.role || "secretaria", "PROGRAMA_CREAR", {
+      id,
+      nombre: nuevo.nombre,
+      creadoDesdeDocumento: true
+    });
     res.json({ success: true, data: mapDbProgramToApi(nuevo, db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.put("/api/v1/extracurricular/programas/:id", async (req, res) => {
+app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const db = await getDb();
     const idx = (db.programas || []).findIndex(p => p.id === req.params.id);
@@ -1027,13 +1171,19 @@ app.put("/api/v1/extracurricular/programas/:id", async (req, res) => {
     sincronizarPlantillaProgramaApi(db, updated);
     db.programas[idx] = updated;
     await saveDb(db);
+    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "PROGRAMA_EDITAR", {
+      id: req.params.id,
+      nombre: updated.nombre,
+      costo: updated.costo,
+      cupos: updated.cupos
+    });
     res.json({ success: true, data: mapDbProgramToApi(updated, db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.put("/api/v1/extracurricular/programas/:id/estado", async (req, res) => {
+app.put("/api/v1/extracurricular/programas/:id/estado", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const db = await getDb();
     const idx = (db.programas || []).findIndex(p => p.id === req.params.id);
@@ -1048,22 +1198,34 @@ app.put("/api/v1/extracurricular/programas/:id/estado", async (req, res) => {
       }
     }
     
+    const estadoAnterior = db.programas[idx].estado;
     db.programas[idx].estado = req.body.estado;
     await saveDb(db);
+    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "PROGRAMA_ESTADO", {
+      id: req.params.id,
+      nombre: db.programas[idx].nombre,
+      estadoAnterior,
+      estadoNuevo: req.body.estado
+    });
     res.json({ success: true, data: mapDbProgramToApi(db.programas[idx], db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.delete("/api/v1/extracurricular/programas/:id", async (req, res) => {
+app.delete("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const db = await getDb();
+    const progAEliminar = (db.programas || []).find(p => p.id === req.params.id);
     db.programas = (db.programas || []).filter(p => p.id !== req.params.id);
     if (db.invitadosPorPrograma) {
       delete db.invitadosPorPrograma[req.params.id];
     }
     await saveDb(db);
+    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "PROGRAMA_ELIMINAR", {
+      id: req.params.id,
+      nombre: progAEliminar?.nombre || ""
+    });
     res.json({ success: true, data: true });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -1071,7 +1233,7 @@ app.delete("/api/v1/extracurricular/programas/:id", async (req, res) => {
 });
 
 // 5. Invitaciones e Historial de Cargas
-app.get("/api/v1/extracurricular/programas/:programaId/invitados", async (req, res) => {
+app.get("/api/v1/extracurricular/programas/:programaId/invitados", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const db = await getDb();
     res.json({ success: true, data: db.invitadosPorPrograma?.[req.params.programaId] || [] });
@@ -1134,7 +1296,7 @@ app.get("/api/v1/extracurricular/invitaciones/buscar", async (req, res) => {
   }
 });
 
-app.post("/api/v1/extracurricular/programas/:programaId/invitados", async (req, res) => {
+app.post("/api/v1/extracurricular/programas/:programaId/invitados", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const { programaId } = req.params;
     const { lista } = req.body;
@@ -1153,45 +1315,130 @@ app.post("/api/v1/extracurricular/programas/:programaId/invitados", async (req, 
       }))
     ];
     await saveDb(db);
+    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "INVITACION_MASIVA", {
+      programaId,
+      programaNombre: prog?.nombre || "",
+      cantidad: nuevos.length,
+      duplicados
+    });
     res.json({ success: true, data: { importados: nuevos.length, duplicados } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", async (req, res) => {
+app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const preview = req.body;
     const db = await getDb();
     const validos = (preview.registros || []).filter(item => item.estado === "Valido");
-    
+    const registrosPorArchivo = new Map();
+    const validosPorArchivo = new Map();
+    const programasTocados = new Set();
+    const nuevasCargas = [];
+    const fechaCarga = new Date().toISOString();
+    db.invitadosPorPrograma = db.invitadosPorPrograma || {};
+
+    (preview.registros || []).forEach(item => {
+      const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
+      if (!registrosPorArchivo.has(archivoNombre)) registrosPorArchivo.set(archivoNombre, []);
+      registrosPorArchivo.get(archivoNombre).push(item);
+    });
+
+    validos.forEach(item => {
+      const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
+      if (!validosPorArchivo.has(archivoNombre)) validosPorArchivo.set(archivoNombre, []);
+      validosPorArchivo.get(archivoNombre).push(item);
+    });
+
     validos.forEach(item => {
       if (!item.programaId) return;
+      const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
+      const grupoArchivo = validosPorArchivo.get(archivoNombre) || [];
+      if (!grupoArchivo.cargaId) {
+        grupoArchivo.cargaId = `CARGA-${Date.now().toString().slice(-8)}-${randomUUID().slice(0, 4)}`;
+        grupoArchivo.registrosHistorial = [];
+      }
+      const cargaId = grupoArchivo.cargaId;
       const existentes = db.invitadosPorPrograma[item.programaId] || [];
+      const programaCarga = db.programas.find(p => p.id === item.programaId);
+      agregarGradoProgramaDesdeAlumnoApi(programaCarga, item.grado);
+      programasTocados.add(item.programaId);
+      const invitado = {
+        cargaId,
+        codigoEstudiante: item.codigoEstudiante || "",
+        dni: item.dni,
+        nombres: `${item.nombres || ""} ${item.apellidos || ""}`.trim(),
+        grado: item.grado,
+        seccion: item.seccion,
+        nivelEducativo: item.nivelEducativo || "",
+        seleccion: item.seleccion || "",
+        nivelCambridge: item.nivelCambridge || "",
+        periodo: normalizarPeriodoApi(preview.periodo),
+        telefonoApoderado: item.telefono || "",
+        correo: item.correo || "",
+        observacion: item.observacion || "",
+        archivoNombre,
+        estado: item.estadoAlumno || "Invitado"
+      };
       db.invitadosPorPrograma[item.programaId] = [
         ...existentes,
-        {
-          codigoEstudiante: item.codigoEstudiante || "",
-          dni: item.dni,
-          nombres: `${item.nombres || ""} ${item.apellidos || ""}`.trim(),
-          grado: item.grado,
-          seccion: item.seccion,
-          nivelEducativo: item.nivelEducativo || "",
-          seleccion: item.seleccion || "",
-          nivelCambridge: item.nivelCambridge || "",
-          periodo: normalizarPeriodoApi(preview.periodo),
-          telefonoApoderado: item.telefono || "",
-          correo: item.correo || "",
-          observacion: item.observacion || "",
-          estado: item.estadoAlumno || "Invitado"
-        }
+        invitado
       ];
+      grupoArchivo.registrosHistorial.push({
+        programaId: item.programaId,
+        programaNombre: item.programaNombre || "",
+        archivoNombre,
+        dni: item.dni,
+        codigoEstudiante: item.codigoEstudiante || "",
+        nombres: invitado.nombres,
+        grado: item.grado,
+        seccion: item.seccion
+      });
     });
-    
+
+    programasTocados.forEach((programaId) => {
+      sincronizarGradosProgramaConInvitadosApi(db, programaId);
+    });
+
+    validosPorArchivo.forEach((grupoArchivo, archivoNombre) => {
+      if (!grupoArchivo.cargaId) return;
+      const registrosArchivo = registrosPorArchivo.get(archivoNombre) || grupoArchivo;
+      nuevasCargas.push({
+        id: grupoArchivo.cargaId,
+        fecha: fechaCarga,
+        periodo: normalizarPeriodoApi(preview.periodo),
+        archivoNombre,
+        archivos: [archivoNombre],
+        usuario: req.user?.username || "Coordinacion",
+        resumen: {
+          importados: grupoArchivo.length,
+          total: registrosArchivo.length,
+          errores: registrosArchivo.filter(item => item.estado === "Error").length,
+          duplicados: registrosArchivo.filter(item => item.estado === "Duplicado").length
+        },
+        registros: grupoArchivo.registrosHistorial || []
+      });
+    });
+
+    db.historialCargas = Array.isArray(db.historialCargas) ? db.historialCargas : [];
+    db.historialCargas = [...nuevasCargas, ...db.historialCargas];
+
     await saveDb(db);
+    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "CARGAR_EXCEL", {
+      cargaIds: nuevasCargas.map(carga => carga.id),
+      cantidad: validos.length,
+      periodo: preview.periodo,
+      total: preview.resumen?.total || validos.length,
+      errores: preview.resumen?.errores || 0,
+      duplicados: preview.resumen?.duplicados || 0
+    });
     res.json({
       success: true,
       data: {
+        cargaId: nuevasCargas[0]?.id || "",
+        cargaIds: nuevasCargas.map(carga => carga.id),
+        cargas: nuevasCargas,
         importados: validos.length,
         total: preview.resumen?.total || validos.length,
         errores: preview.resumen?.errores || 0,
@@ -1203,7 +1450,66 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", async (req, re
   }
 });
 
-app.get("/api/v1/extracurricular/programas/:programaId/actividad", async (req, res) => {
+app.get("/api/v1/extracurricular/coordinacion/cargas", requireRole(["coordinacion"]), async (req, res) => {
+  try {
+    const db = await getDb();
+    const historial = Array.isArray(db.historialCargas) ? db.historialCargas : [];
+    res.json({ success: true, data: historial });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.delete("/api/v1/extracurricular/coordinacion/cargas/:cargaId", requireRole(["coordinacion"]), async (req, res) => {
+  try {
+    const { cargaId } = req.params;
+    const db = await getDb();
+    db.historialCargas = Array.isArray(db.historialCargas) ? db.historialCargas : [];
+    db.invitadosPorPrograma = db.invitadosPorPrograma || {};
+    const carga = db.historialCargas.find(item => item.id === cargaId);
+    if (!carga) return res.status(404).json({ success: false, message: "No se encontro la carga seleccionada." });
+
+    const registros = Array.isArray(carga.registros) ? carga.registros : [];
+    const tieneInscripcion = registros.some(registro =>
+      (db.inscripciones || []).some(inscripcion =>
+        inscripcion.programaId === registro.programaId &&
+        inscripcion.dniEstudiante === registro.dni &&
+        inscripcion.estadoInscripcion !== "Anulada" &&
+        inscripcion.estadoInscripcion !== "anulada"
+      )
+    );
+
+    if (tieneInscripcion) {
+      return res.status(409).json({
+        success: false,
+        message: "No se puede borrar esta carga porque uno o mas alumnos ya tienen inscripcion activa."
+      });
+    }
+
+    let eliminados = 0;
+    const programasAfectados = new Set(registros.map(registro => registro.programaId).filter(Boolean));
+    programasAfectados.forEach(programaId => {
+      const actuales = db.invitadosPorPrograma[programaId] || [];
+      const filtrados = actuales.filter(invitado => invitado.cargaId !== cargaId);
+      eliminados += actuales.length - filtrados.length;
+      db.invitadosPorPrograma[programaId] = filtrados;
+      sincronizarGradosProgramaConInvitadosApi(db, programaId);
+    });
+
+    db.historialCargas = db.historialCargas.filter(item => item.id !== cargaId);
+    await saveDb(db);
+    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "CARGA_EXCEL_REVERTIR", {
+      cargaId,
+      eliminados,
+      archivos: carga.archivos || []
+    });
+    res.json({ success: true, data: { cargaId, eliminados } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/v1/extracurricular/programas/:programaId/actividad", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const { programaId } = req.params;
     const db = await getDb();
@@ -1224,11 +1530,11 @@ app.get("/api/v1/extracurricular/programas/:programaId/actividad", async (req, r
   }
 });
 
-app.get("/api/v1/extracurricular/coordinacion/cargas/:cargaId/errores", async (req, res) => {
+app.get("/api/v1/extracurricular/coordinacion/cargas/:cargaId/errores", requireRole(["coordinacion"]), async (req, res) => {
   res.json({ success: true, data: [] });
 });
 
-app.get("/api/v1/extracurricular/programas/:programaId/lista-asistencia", async (req, res) => {
+app.get("/api/v1/extracurricular/programas/:programaId/lista-asistencia", requireRole(["auxiliar", "coordinacion"]), async (req, res) => {
   try {
     const { programaId } = req.params;
     const db = await getDb();
@@ -1248,7 +1554,7 @@ app.get("/api/v1/extracurricular/programas/:programaId/lista-asistencia", async 
 });
 
 // 6. Secretaria Estudiantes y Inscripciones
-app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", async (req, res) => {
+app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["secretaria", "coordinacion"]), async (req, res) => {
   try {
     const { dni } = req.params;
     const { periodo } = req.query;
@@ -1299,18 +1605,24 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", async (req, res) 
     if (student) {
       const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
       const inscrip = inscripciones[0];
+      const programaInvitado = invitacion ? invitacion.programa : null;
+      const plantillaInvitada = programaInvitado ? obtenerPlantillaProgramaApi(db, programaInvitado) : {};
+      const cuposDisponiblesInvitado = programaInvitado
+        ? Math.max(0, Number(programaInvitado.cupos || 0) - Number(programaInvitado.cuposOcupados || 0))
+        : 0;
+      const invitadoExcel = invitacion?.invitado || {};
       
       const resStudent = {
         id: student.dni,
         estudiante_id: student.dni,
         dni_estudiante: student.dni,
-        codigo_estudiante: student.codigoEstudiante || "",
-        nombres: student.nombres,
-        apellidos: student.apellidos || "",
+        codigo_estudiante: invitadoExcel.codigoEstudiante || student.codigoEstudiante || "",
+        nombres: invitadoExcel.nombres || student.nombres,
+        apellidos: invitadoExcel.nombres ? "" : (student.apellidos || ""),
         fecha_nacimiento: student.fechaNacimiento,
-        grado_nombre: student.grado,
-        seccion: student.seccion,
-        nivel_nombre: student.nivel || "",
+        grado_nombre: invitadoExcel.grado || student.grado,
+        seccion: invitadoExcel.seccion || student.seccion,
+        nivel_nombre: invitadoExcel.nivelEducativo || student.nivel || "",
         tipo_alumno: student.tipoAlumno || "Alumno interno",
         estado_matricula: student.estadoMatricula || "Activo",
         apoderado: student.apoderado || (invitacion ? (invitacion.invitado.apoderado || "") : ""),
@@ -1320,8 +1632,28 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", async (req, res) 
         programaAsignado: invitacion ? invitacion.programaId : "",
         programaNombre: invitacion ? invitacion.programa.nombre : "",
         programaCosto: invitacion ? invitacion.programa.costo : "",
-        seleccion: student.seleccion || (invitacion ? (invitacion.invitado.seleccion || "") : ""),
-        nivelCambridge: student.nivelCambridge || (invitacion ? (invitacion.invitado.nivelCambridge || "") : ""),
+        programaGrupo: programaInvitado?.grupo || "",
+        programaGrupoEtario: programaInvitado?.grupoEtario || programaInvitado?.grupo || "",
+        programaHorario: programaInvitado?.horario || "",
+        programaDisponible: Boolean(invitacion),
+        programaHorarioConfigurado: true,
+        programaDocente: programaInvitado?.responsable || programaInvitado?.docente || "No definido",
+        programaCupos: programaInvitado ? `${cuposDisponiblesInvitado} cupos disponibles` : "",
+        programaCuposDisponibles: cuposDisponiblesInvitado,
+        programaModalidadCobro: programaInvitado?.modalidadCobro || "",
+        programaRequisitos: programaInvitado?.requisitos || "",
+        programaFechaInicio: programaInvitado?.fechaInicio || "",
+        programaFechaFin: programaInvitado?.fechaFin || "",
+        programaDuracionTaller: programaInvitado?.duracionTaller || "",
+        programaDuracionAvisoDias: programaInvitado?.duracionAvisoDias || "",
+        plantilla: plantillaInvitada.plantilla || "",
+        plantillaBase64: plantillaInvitada.plantillaBase64 || "",
+        plantillaVariables: plantillaInvitada.plantillaVariables || [],
+        plantillaValidada: Boolean(plantillaInvitada.plantillaValidada),
+        requiereUniforme: Boolean(programaInvitado?.requiereUniforme),
+        requiereIndumentaria: Boolean(programaInvitado?.requiereIndumentaria),
+        seleccion: invitadoExcel.seleccion || student.seleccion || "",
+        nivelCambridge: invitadoExcel.nivelCambridge || student.nivelCambridge || "",
         estadoInscripcion: inscrip ? inscrip.estadoInscripcion : "No inscrito",
         estadoPago: inscrip ? (inscrip.estadoPago || "Pendiente") : "Pendiente",
         origenRegistro: inscrip ? (inscrip.origenRegistro || "Presencial") : "Base general de estudiantes"
@@ -1336,7 +1668,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", async (req, res) 
   }
 });
 
-app.get("/api/v1/extracurricular/secretaria/estudiantes", async (req, res) => {
+app.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretaria", "coordinacion"]), async (req, res) => {
   try {
     const { nombre, periodo } = req.query;
     const db = await getDb();
@@ -1370,18 +1702,20 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", async (req, res) => {
         
         const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === student.dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
         const inscrip = inscripciones[0];
+        const camposProgramaInvitacion = obtenerCamposProgramaInvitacionApi(db, invitacion ? invitacion.programa : null);
+        const invitadoExcel = invitacion?.invitado || {};
         
         results.push({
           id: student.dni,
           estudiante_id: student.dni,
           dni_estudiante: student.dni,
-          codigo_estudiante: student.codigoEstudiante || "",
-          nombres: student.nombres,
-          apellidos: student.apellidos || "",
+          codigo_estudiante: invitadoExcel.codigoEstudiante || student.codigoEstudiante || "",
+          nombres: invitadoExcel.nombres || student.nombres,
+          apellidos: invitadoExcel.nombres ? "" : (student.apellidos || ""),
           fecha_nacimiento: student.fechaNacimiento,
-          grado_nombre: student.grado,
-          seccion: student.seccion,
-          nivel_nombre: student.nivel || "",
+          grado_nombre: invitadoExcel.grado || student.grado,
+          seccion: invitadoExcel.seccion || student.seccion,
+          nivel_nombre: invitadoExcel.nivelEducativo || student.nivel || "",
           tipo_alumno: student.tipoAlumno || "Alumno interno",
           estado_matricula: student.estadoMatricula || "Activo",
           apoderado: student.apoderado || (invitacion ? (invitacion.invitado.apoderado || "") : ""),
@@ -1390,9 +1724,9 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", async (req, res) => {
           tieneInvitacion: Boolean(invitacion),
           programaAsignado: invitacion ? invitacion.programaId : "",
           programaNombre: invitacion ? invitacion.programa.nombre : "",
-          programaCosto: invitacion ? invitacion.programa.costo : "",
-          seleccion: student.seleccion || (invitacion ? (invitacion.invitado.seleccion || "") : ""),
-          nivelCambridge: student.nivelCambridge || (invitacion ? (invitacion.invitado.nivelCambridge || "") : ""),
+          ...camposProgramaInvitacion,
+          seleccion: invitadoExcel.seleccion || student.seleccion || "",
+          nivelCambridge: invitadoExcel.nivelCambridge || student.nivelCambridge || "",
           estadoInscripcion: inscrip ? inscrip.estadoInscripcion : "No inscrito",
           estadoPago: inscrip ? (inscrip.estadoPago || "Pendiente") : "Pendiente",
           origenRegistro: inscrip ? (inscrip.origenRegistro || "Presencial") : "Base general de estudiantes"
@@ -1427,7 +1761,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", async (req, res) => {
             tieneInvitacion: true,
             programaAsignado: prog.id,
             programaNombre: prog.nombre,
-            programaCosto: prog.costo,
+            ...obtenerCamposProgramaInvitacionApi(db, prog),
             seleccion: invitado.seleccion || "",
             nivelCambridge: invitado.nivelCambridge || "",
             estadoInscripcion: "Invitado",
@@ -1482,13 +1816,14 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       return res.status(409).json({ success: false, message: "El estudiante ya cuenta con una inscripción activa en este programa." });
     }
 
-    // 4. Validar lista de invitados si no es invitación masiva
-    if (!prog.invitacionMasiva) {
-      const invitados = db.invitadosPorPrograma?.[programa_id] || [];
-      const estaInvitado = invitados.some(
-        inv => String(inv.dni).replace(/\D/g, "") === String(estudiante_id).replace(/\D/g, "")
-      );
-      if (!estaInvitado) {
+    // 4. Padres solo puede inscribir si el programa es masivo o si el alumno esta invitado.
+    // Secretaria y Coordinacion pueden registrar manualmente en programas habilitados.
+    const invitadosPrograma = db.invitadosPorPrograma?.[programa_id] || [];
+    const invitacionRegistro = invitadosPrograma.find(
+      inv => String(inv.dni).replace(/\D/g, "") === String(estudiante_id).replace(/\D/g, "")
+    );
+    if (req.user.role === "padres" && !prog.invitacionMasiva) {
+      if (!invitacionRegistro) {
         return res.status(400).json({ success: false, message: "El estudiante no se encuentra en la lista de invitados para este programa." });
       }
     }
@@ -1500,16 +1835,20 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       grado: grado || "",
       seccion: seccion || ""
     };
+    const codigoRegistro = invitacionRegistro?.codigoEstudiante || student.codigoEstudiante || "";
+    const nombresRegistro = invitacionRegistro?.nombres || `${student.nombres || ""} ${student.apellidos || ""}`.trim();
+    const gradoRegistro = grado || invitacionRegistro?.grado || student.grado || "";
+    const seccionRegistro = seccion || invitacionRegistro?.seccion || student.seccion || "";
     const plantillaPrograma = obtenerPlantillaProgramaApi(db, prog);
     
     // Almacenar estados normalizados internamente en base de datos
     const newEnrollment = {
       id: enrollmentId,
       dniEstudiante: estudiante_id,
-      codigoEstudiante: student.codigoEstudiante || "",
-      nombresEstudiante: `${student.nombres || ""} ${student.apellidos || ""}`.trim(),
-      gradoEstudiante: grado || student.grado || "",
-      seccion: seccion || student.seccion || "",
+      codigoEstudiante: codigoRegistro,
+      nombresEstudiante: nombresRegistro,
+      gradoEstudiante: gradoRegistro,
+      seccion: seccionRegistro,
       programaId: programa_id,
       programa: prog.nombre,
       categoria: prog.categoria,
@@ -1535,8 +1874,8 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       tallaUniforme: talla_uniforme || "",
       tallaPolo: talla_polo || "",
       tallaShort: talla_short || "",
-      seleccion: seleccion || "",
-      nivelCambridge: nivel_cambridge || "",
+      seleccion: seleccion || invitacionRegistro?.seleccion || "",
+      nivelCambridge: nivel_cambridge || invitacionRegistro?.nivelCambridge || "",
       estadoInscripcion: "pendiente_pago", // estado normalizado
       estadoPago: "pendiente", // estado normalizado
       origenRegistro: origen_inscripcion || "Portal padres",
@@ -1568,7 +1907,7 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
   }
 });
 
-app.post("/api/v1/extracurricular/inscripciones/:id/documento", async (req, res) => {
+app.post("/api/v1/extracurricular/inscripciones/:id/documento", requireRole(["secretaria", "coordinacion"]), async (req, res) => {
   try {
     const { id } = req.params;
     const { estudiante_id, usuario, tipo_documento, plantilla } = req.body;
@@ -1606,7 +1945,7 @@ app.post("/api/v1/extracurricular/inscripciones/:id/documento", async (req, res)
   }
 });
 
-app.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", async (req, res) => {
+app.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", requireRole(["secretaria"]), async (req, res) => {
   try {
     const { inscripcionId } = req.params;
     const db = await getDb();
@@ -1631,13 +1970,20 @@ app.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", asy
     }
     
     await saveDb(db);
+    await registrarAuditoria(req.user?.username || "Secretaria", req.user?.role || "secretaria", "INSCRIPCION_ESTADO", {
+      inscripcionId,
+      alumno: updated.nombresEstudiante,
+      taller: updated.programa,
+      estadoAnterior: db.inscripciones[idx].estadoInscripcion,
+      estadoNuevo: updated.estadoInscripcion
+    });
     res.json({ success: true, data: mapDbEnrollmentToApi(updated, db) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-app.get("/api/v1/extracurricular/secretaria/inscripciones/buscar", async (req, res) => {
+app.get("/api/v1/extracurricular/secretaria/inscripciones/buscar", requireRole(["secretaria"]), async (req, res) => {
   try {
     const { dni, periodo } = req.query;
     const db = await getDb();
@@ -1652,7 +1998,7 @@ app.get("/api/v1/extracurricular/secretaria/inscripciones/buscar", async (req, r
   }
 });
 
-app.get("/api/v1/extracurricular/secretaria/inscripciones", async (req, res) => {
+app.get("/api/v1/extracurricular/secretaria/inscripciones", requireRole(["secretaria"]), async (req, res) => {
   try {
     const { dni, periodo } = req.query;
     const db = await getDb();
@@ -1666,7 +2012,7 @@ app.get("/api/v1/extracurricular/secretaria/inscripciones", async (req, res) => 
 });
 
 // 7. Padres Resumen y Datos
-app.get("/api/v1/extracurricular/padres/resumen/:dni", async (req, res) => {
+app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "secretaria"]), async (req, res) => {
   try {
     const { dni } = req.params;
     const db = await getDb();
@@ -1701,6 +2047,8 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", async (req, res) => {
       const inv = invitados.find(item => item.dni === dni);
       if (inv) {
         invitations.push({
+          id: prog.id,
+          nombre: prog.nombre,
           codigo_estudiante: inv.codigoEstudiante || "",
           dni: inv.dni,
           nombres: inv.nombres,
@@ -1712,8 +2060,26 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", async (req, res) => {
           periodo: inv.periodo || prog.periodo,
           programa_id: prog.id,
           programa: prog.nombre,
+          categoria: prog.categoria || "",
           costo: prog.costo,
-          horario: prog.horario
+          horario: prog.horario,
+          responsable: prog.responsable || prog.docente || "",
+          modalidad_cobro: prog.modalidadCobro || "",
+          requisitos: prog.requisitos || "",
+          comunicado: prog.comunicado || "",
+          detalle_costo: prog.detalleCosto || "",
+          detalle_almuerzo: prog.detalleAlmuerzo || "",
+          concesionarios: prog.concesionarios || "",
+          anuncio_imagen: prog.anuncioImagen || "",
+          anuncio_imagen_nombre: prog.anuncioImagenNombre || "",
+          grados: prog.gradosAplicables || [],
+          horarios_por_grupo: prog.horariosPorGrupo || [],
+          fecha_inicio: prog.fechaInicio || "",
+          fecha_fin: prog.fechaFin || "",
+          estado_programa: prog.estado || "",
+          requiere_uniforme: Boolean(prog.requiereUniforme),
+          requiere_indumentaria: Boolean(prog.requiereIndumentaria),
+          invitacion_masiva: Boolean(prog.invitacionMasiva),
         });
       }
     }
@@ -1733,7 +2099,7 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", async (req, res) => {
   }
 });
 
-app.put("/api/v1/extracurricular/padres/:dni/apoderado", async (req, res) => {
+app.put("/api/v1/extracurricular/padres/:dni/apoderado", requireRole(["padres", "secretaria"]), async (req, res) => {
   try {
     const { dni } = req.params;
     const { apoderado, telefono_apoderado, correo_apoderado } = req.body;
@@ -1778,7 +2144,7 @@ app.put("/api/v1/extracurricular/padres/:dni/apoderado", async (req, res) => {
   }
 });
 
-app.post("/api/v1/extracurricular/pagos/comprobante", upload.single("archivo"), async (req, res) => {
+app.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), upload.single("archivo"), async (req, res) => {
   try {
     const db = await getDb();
     let base64Image = "";
@@ -1829,7 +2195,7 @@ app.post("/api/v1/extracurricular/pagos/comprobante", upload.single("archivo"), 
 });
 
 // 8. Auxiliar
-app.get("/api/v1/extracurricular/auxiliar/validar", async (req, res) => {
+app.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar"]), async (req, res) => {
   try {
     const { dni, programa_id } = req.query;
     const db = await getDb();
@@ -1889,7 +2255,7 @@ app.get("/api/v1/extracurricular/auxiliar/validar", async (req, res) => {
   }
 });
 
-app.get("/api/v1/extracurricular/auxiliar/validar-qr", async (req, res) => {
+app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"]), async (req, res) => {
   try {
     const { codigo, programa_id } = req.query;
     const dni = String(codigo || "").replace(/\D/g, "");
@@ -1950,7 +2316,7 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", async (req, res) => {
   }
 });
 
-app.post("/api/v1/extracurricular/asistencia", async (req, res) => {
+app.post("/api/v1/extracurricular/asistencia", requireRole(["auxiliar"]), async (req, res) => {
   try {
     const { inscripcion_id, pago_id, dni_estudiante, estado_acceso, observacion, origen } = req.body;
     const db = await getDb();
@@ -1980,7 +2346,12 @@ app.post("/api/v1/extracurricular/asistencia", async (req, res) => {
     db.asistencias = db.asistencias || [];
     db.asistencias.push(nuevaAsistencia);
     await saveDb(db);
-    
+    await registrarAuditoria(req.user?.username || origen || "Auxiliar", req.user?.role || "auxiliar", "ASISTENCIA_REGISTRAR", {
+      alumno: nuevaAsistencia.nombresEstudiante,
+      taller: nuevaAsistencia.programa,
+      fecha: nuevaAsistencia.fechaRegistro,
+      estado: nuevaAsistencia.estadoAcceso
+    });
     res.json({ success: true, data: mapDbAsistenciaToApi(nuevaAsistencia) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -1988,7 +2359,7 @@ app.post("/api/v1/extracurricular/asistencia", async (req, res) => {
 });
 
 // 9. Caja
-app.get("/api/v1/extracurricular/pagos", async (req, res) => {
+app.get("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res) => {
   try {
     const { periodo } = req.query;
     const db = await getDb();
@@ -2000,7 +2371,7 @@ app.get("/api/v1/extracurricular/pagos", async (req, res) => {
   }
 });
 
-app.post("/api/v1/extracurricular/pagos", async (req, res) => {
+app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res) => {
   try {
     const db = await getDb();
     const { inscripcion_id, monto, forma_pago, numero_operacion, telefono_operacion, fecha_pago, usuario_registro, dni_estudiante, nombres_estudiante, programa, periodo } = req.body;
@@ -2055,7 +2426,7 @@ app.post("/api/v1/extracurricular/pagos", async (req, res) => {
   }
 });
 
-app.put("/api/v1/extracurricular/pagos/:pagoId", async (req, res) => {
+app.put("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres"]), async (req, res) => {
   try {
     const { pagoId } = req.params;
     const db = await getDb();
@@ -2084,7 +2455,7 @@ app.put("/api/v1/extracurricular/pagos/:pagoId", async (req, res) => {
   }
 });
 
-app.get("/api/v1/extracurricular/caja/resumen", async (req, res) => {
+app.get("/api/v1/extracurricular/caja/resumen", requireRole(["caja"]), async (req, res) => {
   try {
     const { periodo } = req.query;
     const db = await getDb();
@@ -2111,7 +2482,7 @@ app.get("/api/v1/extracurricular/caja/resumen", async (req, res) => {
   }
 });
 
-app.get("/api/v1/extracurricular/caja/estudiantes/:dni", async (req, res) => {
+app.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]), async (req, res) => {
   try {
     const { dni } = req.params;
     const { periodo } = req.query;
@@ -2161,7 +2532,7 @@ app.get("/api/v1/extracurricular/caja/estudiantes/:dni", async (req, res) => {
   }
 });
 
-app.get("/api/v1/extracurricular/caja/bandeja-pagos-web", async (req, res) => {
+app.get("/api/v1/extracurricular/caja/bandeja-pagos-web", requireRole(["caja"]), async (req, res) => {
   try {
     const { periodo } = req.query;
     const db = await getDb();
@@ -2185,7 +2556,7 @@ app.get("/api/v1/extracurricular/caja/bandeja-pagos-web", async (req, res) => {
   }
 });
 
-app.put("/api/v1/extracurricular/pagos/:pagoId/validar", async (req, res) => {
+app.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]), async (req, res) => {
   try {
     const { pagoId } = req.params;
     const { observaciones } = req.body;
@@ -2224,7 +2595,7 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/validar", async (req, res) => {
   }
 });
 
-app.put("/api/v1/extracurricular/pagos/:pagoId/observar", async (req, res) => {
+app.put("/api/v1/extracurricular/pagos/:pagoId/observar", requireRole(["caja"]), async (req, res) => {
   try {
     const { pagoId } = req.params;
     const { observaciones } = req.body;
@@ -2262,7 +2633,7 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/observar", async (req, res) => {
   }
 });
 
-app.get("/api/v1/extracurricular/caja/reporte", async (req, res) => {
+app.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"]), async (req, res) => {
   try {
     const { periodo, tipoReporte, desde, hasta, programa, medioPago, estadoPago } = req.query;
     const db = await getDb();
@@ -2359,7 +2730,7 @@ app.get("/api/v1/extracurricular/caja/reporte", async (req, res) => {
   }
 });
 
-app.get("/api/v1/extracurricular/pagos/:pagoId", async (req, res) => {
+app.get("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres"]), async (req, res) => {
   try {
     const { pagoId } = req.params;
     const db = await getDb();
@@ -2372,7 +2743,7 @@ app.get("/api/v1/extracurricular/pagos/:pagoId", async (req, res) => {
 });
 
 // 10. Reportes Direccion
-app.get("/api/v1/extracurricular/reportes/resumen", async (req, res) => {
+app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), async (req, res) => {
   try {
     const { periodo } = req.query;
     const db = await getDb();
@@ -2881,14 +3252,17 @@ function esProgramaCambridge(programa) {
 function coincideCurso(curso, programa) {
   const a = normalizarComparacion(curso);
   const b = normalizarComparacion(programa);
-  if (a === b || a.includes(b) || b.includes(a)) return true;
+  if (a === b) return true;
 
   const tokensA = tokensCurso(a);
   const tokensB = tokensCurso(b);
   if (!tokensA.length || !tokensB.length) return false;
 
   const coincidencias = tokensA.filter((token) => tokensB.includes(token)).length;
-  return coincidencias >= Math.min(2, tokensA.length, tokensB.length);
+  const coberturaCurso = coincidencias / tokensA.length;
+  const coberturaPrograma = coincidencias / tokensB.length;
+
+  return coberturaCurso >= 0.85 && coberturaPrograma >= 0.6;
 }
 
 function claveAlumno(alumno) {

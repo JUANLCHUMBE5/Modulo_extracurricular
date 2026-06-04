@@ -12,8 +12,8 @@
 export function adaptarPrograma(apiPrograma) {
   if (!apiPrograma) return null;
   return {
-    id: apiPrograma.id,
-    nombre: apiPrograma.nombre_programa || apiPrograma.nombre || "",
+    id: apiPrograma.id || apiPrograma.programa_id || apiPrograma.programaId || "",
+    nombre: apiPrograma.nombre_programa || apiPrograma.nombre || apiPrograma.programa || "",
     categoria: apiPrograma.categoria || "General",
     fechaInicio: apiPrograma.fecha_inicio || apiPrograma.fechaInicio || "",
     fechaFin: apiPrograma.fecha_fin || apiPrograma.fechaFin || "",
@@ -25,7 +25,7 @@ export function adaptarPrograma(apiPrograma) {
     cuposOcupados: apiPrograma.cupos_ocupados !== undefined ? Number(apiPrograma.cupos_ocupados) : Number(apiPrograma.cuposOcupados || 0),
     cuposDisponibles: (apiPrograma.cupos_disponibles !== undefined ? Number(apiPrograma.cupos_disponibles) : Number(apiPrograma.cupos || 0)) - (apiPrograma.cupos_ocupados !== undefined ? Number(apiPrograma.cupos_ocupados) : Number(apiPrograma.cuposOcupados || 0)),
     estado: apiPrograma.estado_programa || apiPrograma.estado || "Habilitado",
-    gradosAplicables: apiPrograma.grados || apiPrograma.gradosAplicables || [],
+    gradosAplicables: apiPrograma.grados || apiPrograma.gradosAplicables || (apiPrograma.grado ? [apiPrograma.grado] : []),
     responsable: apiPrograma.responsable || apiPrograma.docente || "",
     horario: apiPrograma.horario || "",
     periodo: apiPrograma.periodo || "escolar",
@@ -46,7 +46,15 @@ export function adaptarPrograma(apiPrograma) {
     plantilla: apiPrograma.plantilla || "",
     plantillaBase64: apiPrograma.plantilla_base64 || apiPrograma.plantillaBase64 || "",
     plantillaVariables: apiPrograma.plantilla_variables || apiPrograma.plantillaVariables || [],
-    plantillaValidada: Boolean(apiPrograma.plantilla_validada ?? apiPrograma.plantillaValidada)
+    plantillaValidada: Boolean(apiPrograma.plantilla_validada ?? apiPrograma.plantillaValidada),
+    codigoEstudiante: apiPrograma.codigo_estudiante || apiPrograma.codigoEstudiante || "",
+    dni: apiPrograma.dni || apiPrograma.dni_estudiante || "",
+    grado: apiPrograma.grado || apiPrograma.grado_nombre || "",
+    seccion: apiPrograma.seccion || "",
+    nivelEducativo: apiPrograma.nivel_educativo || apiPrograma.nivelEducativo || apiPrograma.nivel_nombre || "",
+    seleccion: apiPrograma.seleccion || "",
+    nivelCambridge: apiPrograma.nivel_cambridge || apiPrograma.nivelCambridge || "",
+    estadoInvitacion: apiPrograma.estado_invitacion || apiPrograma.estadoInvitacion || "",
   };
 }
 
@@ -70,7 +78,33 @@ export function adaptarEstudiante(apiEstudiante) {
     estadoMatricula: apiEstudiante.estado_matricula || apiEstudiante.estadoMatricula || "Activo",
     apoderado: apiEstudiante.apoderado || "",
     telefonoApoderado: apiEstudiante.telefono_apoderado || apiEstudiante.telefonoApoderado || "",
-    correoApoderado: apiEstudiante.correo_apoderado || apiEstudiante.correoApoderado || ""
+    correoApoderado: apiEstudiante.correo_apoderado || apiEstudiante.correoApoderado || "",
+    tieneInvitacion: Boolean(apiEstudiante.tieneInvitacion || apiEstudiante.tiene_invitacion),
+    programaAsignado: apiEstudiante.programaAsignado || apiEstudiante.programa_asignado || "",
+    programaNombre: apiEstudiante.programaNombre || apiEstudiante.programa_nombre || "",
+    programaGrupo: apiEstudiante.programaGrupo || apiEstudiante.programa_grupo || "",
+    programaGrupoEtario: apiEstudiante.programaGrupoEtario || apiEstudiante.programa_grupo_etario || "",
+    programaHorario: apiEstudiante.programaHorario || apiEstudiante.programa_horario || "",
+    programaDisponible: apiEstudiante.programaDisponible ?? apiEstudiante.programa_disponible,
+    programaHorarioConfigurado: apiEstudiante.programaHorarioConfigurado ?? apiEstudiante.programa_horario_configurado,
+    programaDocente: apiEstudiante.programaDocente || apiEstudiante.programa_docente || "",
+    programaCosto: Number(apiEstudiante.programaCosto ?? apiEstudiante.programa_costo ?? 0),
+    programaCupos: apiEstudiante.programaCupos || apiEstudiante.programa_cupos || "",
+    programaCuposDisponibles: Number(apiEstudiante.programaCuposDisponibles ?? apiEstudiante.programa_cupos_disponibles ?? 0),
+    programaModalidadCobro: apiEstudiante.programaModalidadCobro || apiEstudiante.programa_modalidad_cobro || "",
+    programaRequisitos: apiEstudiante.programaRequisitos || apiEstudiante.programa_requisitos || "",
+    programaFechaInicio: apiEstudiante.programaFechaInicio || apiEstudiante.programa_fecha_inicio || "",
+    programaFechaFin: apiEstudiante.programaFechaFin || apiEstudiante.programa_fecha_fin || "",
+    programaDuracionTaller: apiEstudiante.programaDuracionTaller || apiEstudiante.programa_duracion_taller || "",
+    programaDuracionAvisoDias: apiEstudiante.programaDuracionAvisoDias ?? apiEstudiante.programa_duracion_aviso_dias ?? "",
+    seleccion: apiEstudiante.seleccion || "",
+    nivelCambridge: apiEstudiante.nivelCambridge || apiEstudiante.nivel_cambridge || "",
+    plantilla: apiEstudiante.plantilla || "",
+    plantillaBase64: apiEstudiante.plantilla_base64 || apiEstudiante.plantillaBase64 || "",
+    plantillaVariables: apiEstudiante.plantilla_variables || apiEstudiante.plantillaVariables || [],
+    plantillaValidada: Boolean(apiEstudiante.plantilla_validada ?? apiEstudiante.plantillaValidada),
+    requiereUniforme: Boolean(apiEstudiante.requiere_uniforme ?? apiEstudiante.requiereUniforme),
+    requiereIndumentaria: Boolean(apiEstudiante.requiere_indumentaria ?? apiEstudiante.requiereIndumentaria)
   };
 }
 

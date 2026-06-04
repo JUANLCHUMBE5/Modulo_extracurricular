@@ -15,6 +15,7 @@ export default function CajaFields({
   onBuscar,
   setDni,
   setFormulario,
+  mensaje,
 }) {
   const pagoHabilitado = modoEdicion || Boolean(formulario.inscripcionId);
 
@@ -58,6 +59,11 @@ export default function CajaFields({
               Buscar
             </Button>
           </form>
+          {mensaje ? (
+            <div className="mt-3 rounded-lg border border-[#f8c7c1] bg-[#fff0ef] px-3 py-2 text-[13px] font-extrabold text-[#b42318]">
+              {mensaje}
+            </div>
+          ) : null}
           {estudiante ? (
             <div className="caja-student-card">
               <span>{obtenerIniciales(estudiante)}</span>

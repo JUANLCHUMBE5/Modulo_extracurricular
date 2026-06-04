@@ -140,5 +140,5 @@ function prepareDbForStorage(db) {
 }
 
 function requiresApiDataMode() {
-  return import.meta.env?.PROD || String(import.meta.env?.VITE_DATA_MODE || "").toLowerCase() === "pilot";
+  return import.meta.env?.PROD || String(import.meta.env?.VITE_DATA_MODE || "").toLowerCase() === "production";
 }

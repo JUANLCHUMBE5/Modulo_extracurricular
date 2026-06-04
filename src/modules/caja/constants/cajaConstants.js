@@ -39,6 +39,6 @@ export const tiposReporte = [
 export const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
 
 export const alertClass = "mb-3 rounded-lg border border-[#f8c7c1] bg-[#fff0ef] px-3 py-2 text-[13px] font-extrabold text-[#b42318]";
-export const reportCardClass = "min-h-[72px] rounded-lg border border-[#d8e5e1] bg-white px-4 py-3";
-export const reportLabelClass = "block text-[13px] font-bold text-slate-500";
-export const reportValueClass = "my-1 block text-[22px] font-black text-slate-900";
+export const reportCardClass = "rounded-lg border border-[#d8e5e1] bg-white px-4 py-2";
+export const reportLabelClass = "block text-xs font-semibold text-slate-500";
+export const reportValueClass = "my-0.5 block text-lg font-extrabold text-slate-900";

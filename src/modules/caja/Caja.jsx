@@ -629,7 +629,6 @@ export default function Caja({
         {vista === "pagos" ? (
           <>
             <section className="caja-payment-workspace">
-              {mensaje ? <div className={alertClass}>{mensaje}</div> : null}
               {pagoConfirmado ? (
                 <div className="caja-payment-approved" role="status">
                   <Check size={20} />
@@ -650,6 +649,7 @@ export default function Caja({
                 onBuscar={buscarEstudiante}
                 setDni={setDni}
                 setFormulario={setFormulario}
+                mensaje={mensaje}
               />
               {formulario.inscripcionId ? (
                 formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar" ? (
@@ -723,7 +723,6 @@ export default function Caja({
         size="xl"
         title={modoEdicion ? "Editar pago" : "Registrar pago"}
       >
-        {mensaje ? <div className={alertClass}>{mensaje}</div> : null}
         {pagoConfirmado ? (
           <div className="caja-payment-approved" role="status">
             <Check size={20} />
@@ -744,6 +743,7 @@ export default function Caja({
           onBuscar={buscarEstudiante}
           setDni={setDni}
           setFormulario={setFormulario}
+          mensaje={mensaje}
         />
         <Group justify="flex-end" mt="lg">
           <Button onClick={cerrarModal} variant="default">

@@ -78,8 +78,10 @@ export const loginPersonal = async (username, password) => {
     const user = normalizarUsuarioApi(res.data.user || {});
 
     if (res.data.token) {
-      localStorage.setItem("san_rafael_token", res.data.token);
-      localStorage.setItem("san_rafael_user", JSON.stringify(user));
+      sessionStorage.setItem("san_rafael_token", res.data.token);
+      sessionStorage.setItem("san_rafael_user", JSON.stringify(user));
+      localStorage.removeItem("san_rafael_token");
+      localStorage.removeItem("san_rafael_user");
     }
 
     return {
@@ -142,8 +144,10 @@ export const loginPadre = async (dni, fechaNacimiento) => {
     };
 
     if (res.data.token) {
-      localStorage.setItem("san_rafael_token", res.data.token);
-      localStorage.setItem("san_rafael_user", JSON.stringify(user));
+      sessionStorage.setItem("san_rafael_token", res.data.token);
+      sessionStorage.setItem("san_rafael_user", JSON.stringify(user));
+      localStorage.removeItem("san_rafael_token");
+      localStorage.removeItem("san_rafael_user");
     }
 
     return {

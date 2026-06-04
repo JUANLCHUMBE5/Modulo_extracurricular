@@ -46,6 +46,39 @@
   margin-top: 14px;
 }
 
+.coord-upload-history {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--coord-line);
+}
+
+.coord-upload-history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.coord-upload-history-header h2 {
+  margin: 0;
+  color: var(--coord-ink);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.coord-upload-history-header p {
+  margin: 4px 0 0;
+  color: var(--coord-muted);
+  font-size: 12px;
+}
+
+.coord-upload-history-delete {
+  min-height: 32px;
+  padding-inline: 10px;
+}
+
 .coord-search-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;

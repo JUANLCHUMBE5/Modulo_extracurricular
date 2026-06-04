@@ -20,7 +20,7 @@ import {
   listarProgramas, crearPrograma, crearProgramaDesdeDocumento, editarPrograma, cambiarEstadoPrograma,
   eliminarPrograma,
   listarCategorias, crearCategoria, eliminarCategoria, listarInvitados, listarMatriculados, listarAsistenciasPrograma,
-  previsualizarCargaAlumnosMasiva, confirmarCargaAlumnos, obtenerActividadPrograma,
+  previsualizarCargaAlumnosMasiva, confirmarCargaAlumnos, listarHistorialCargas, eliminarCargaAlumnos, obtenerActividadPrograma,
 } from "./services/coordinacionService";
 import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias } from "../../services/dateService";
 import AlumnosProgramaModal from "./components/AlumnosProgramaModal";
@@ -167,6 +167,8 @@ function Coordinacion({
   const [cargandoPreview, setCargandoPreview] = useState(false);
   const [progresoCarga, setProgresoCarga] = useState(null);
   const [confirmandoCarga, setConfirmandoCarga] = useState(false);
+  const [historialCargas, setHistorialCargas] = useState([]);
+  const [eliminandoCargaId, setEliminandoCargaId] = useState("");
   const puedeCrearProgramas = tienePermisoAsignado(user, "programas.crear");
   const puedeEditarProgramas = tienePermisoAsignado(user, "programas.editar");
   const puedeCrearGrupos = tienePermisoAsignado(user, "grupos.crear");
@@ -198,12 +200,14 @@ function Coordinacion({
   async function cargarDatos() {
     setCargando(true);
     try {
-      const [progs, cats] = await Promise.all([
+      const [progs, cats, cargas] = await Promise.all([
         listarProgramas(),
         listarCategorias(),
+        listarHistorialCargas(),
       ]);
       setProgramas(progs);
       setCategorias(cats);
+      setHistorialCargas(cargas);
     } catch (err) {
       mostrarMsg(err.message || "No se pudieron cargar los datos de Coordinación.");
     } finally {
@@ -858,7 +862,9 @@ function Coordinacion({
       setForm((actual) => ({
         ...actual,
         ...datosAplicables,
-        nombre: actual.nombre || nombreDocumento,
+        nombre: vista === "documentos" && !programaDocsId
+          ? nombreDocumento || actual.nombre
+          : actual.nombre || nombreDocumento,
         categoria: actual.categoria || datosDetectados.categoria || categorias[0] || "",
         plantilla: archivo.name,
         plantillaBase64,
@@ -919,6 +925,9 @@ function Coordinacion({
       setForm((actual) => ({
         ...actual,
         ...datosAplicables,
+        ...(vista === "documentos" && !programaDocsId
+          ? { nombre: datosDetectados.nombre || nombreProgramaDesdeArchivo(form.plantilla) || actual.nombre }
+          : {}),
       }));
       return mostrarMsg(`Se autocompletaron ${totalDetectados} dato(s) del programa.`, "success");
     } catch (err) {
@@ -1209,6 +1218,28 @@ function Coordinacion({
     }
   }
 
+  async function eliminarCargaExcel(carga) {
+    if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para borrar cargas.");
+    const nombreCarga = Array.isArray(carga.archivos) && carga.archivos.length
+      ? carga.archivos.join(", ")
+      : carga.id;
+    const confirmado = window.confirm(
+      `¿Borrar esta carga de Excel?\n\n${nombreCarga}\n\nSe retirarán los alumnos importados mientras no tengan inscripción activa.`
+    );
+    if (!confirmado) return;
+
+    setEliminandoCargaId(carga.id);
+    try {
+      const resultado = await eliminarCargaAlumnos(carga.id);
+      await cargarDatos();
+      mostrarMsg(`Carga eliminada. Alumnos retirados: ${resultado.eliminados || 0}.`, "success");
+    } catch (err) {
+      mostrarMsg(err.message || "No se pudo borrar la carga.");
+    } finally {
+      setEliminandoCargaId("");
+    }
+  }
+
   function cancelarCargaExcel() {
     setArchivosExcel([]);
     setPreviewCarga(null);
@@ -1278,7 +1309,6 @@ function Coordinacion({
           <ProgramasView
             abrirCrear={abrirCrear}
             abrirEditar={abrirEditar}
-            busqueda={busqueda}
             cargando={cargando}
             eliminarCurso={eliminarCurso}
             filtroPeriodo={filtroPeriodo}
@@ -1288,7 +1318,6 @@ function Coordinacion({
             puedeCrearProgramas={puedeCrearProgramas}
             puedeEditarProgramas={puedeEditarProgramas}
             puedeVerAlumnos={puedeVerAlumnos}
-            setBusqueda={setBusqueda}
             setFiltroPeriodo={setFiltroPeriodo}
             tieneAccionesPrograma={tieneAccionesPrograma}
             tipoMsg={tipoMsg}
@@ -1305,7 +1334,10 @@ function Coordinacion({
             cancelarCargaExcel={cancelarCargaExcel}
             confirmandoCarga={confirmandoCarga}
             confirmarCargaExcel={confirmarCargaExcel}
+            eliminandoCargaId={eliminandoCargaId}
+            eliminarCargaExcel={eliminarCargaExcel}
             generarPreviewExcel={generarPreviewExcel}
+            historialCargas={historialCargas}
             mensaje={mensaje}
             previewCarga={previewCarga}
             progresoCarga={progresoCarga}

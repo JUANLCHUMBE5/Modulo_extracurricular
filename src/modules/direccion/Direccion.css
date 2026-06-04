@@ -6,12 +6,9 @@
 .dir-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 230px minmax(0, 1fr);
   color: var(--ui-ink);
-  background: linear-gradient(135deg, #f4f7f6 0%, #eef3f1 100%);
-  background-image: 
-    radial-gradient(circle at 80% 20%, rgba(35, 151, 127, 0.05) 0%, transparent 35%),
-    radial-gradient(circle at 20% 80%, rgba(37, 99, 235, 0.04) 0%, transparent 40%);
+  background: #ffffff;
   font-family: var(--font-body);
   transition: all 0.3s ease;
 }
@@ -24,126 +21,106 @@
 }
 
 /* ==========================================================================
-   BARRA LATERAL (SIDEBAR) - TEMA OSCURO PRESTIGIO
+   BARRA LATERAL (SIDEBAR) - TEMA CLARO SAN RAFAEL
    ========================================================================== */
 .dir-sidebar {
-  min-height: 100vh;
   position: fixed;
   inset: 0 auto 0 0;
-  width: 260px;
+  z-index: 20;
+  width: 230px;
   height: 100dvh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  padding: 32px 24px;
-  border-right: 1px solid rgba(22, 108, 96, 0.12);
-  background: linear-gradient(185deg, #071f1a 0%, #0b332b 100%);
-  box-shadow: 4px 0 30px rgba(6, 28, 23, 0.18);
-  z-index: 100;
+  gap: 12px;
+  padding: 20px 14px;
+  border-right: 1px solid #dce7e4;
+  background: #ffffff;
   overflow: hidden;
 }
 
 /* Marca e Identidad */
 .dir-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  color: #aeeedc;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: grid;
+  justify-items: center;
+  margin: 4px 0 0;
+  padding: 0;
 }
 
-.dir-brand img {
-  width: 150px;
-  height: 66px;
+.dir-brand-logo {
+  width: min(168px, 100%);
+  height: auto;
+  display: block;
   object-fit: contain;
-  filter: drop-shadow(0 2px 8px rgba(35, 151, 127, 0.3));
-  transition: transform 0.3s ease;
+  border-radius: 8px;
 }
 
-.dir-brand img:hover {
-  transform: scale(1.03);
-}
-
-.dir-brand span {
-  background: #176c60;
-  color: #ffffff;
-  padding: 4px 12px;
-  border-radius: 99px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  font-size: 10px;
+.dir-module-label {
+  margin: 0 0 8px;
+  color: #176c60;
+  font-size: 12px;
   font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 /* Navegación y Enlaces */
 .dir-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  gap: 8px;
 }
 
 .dir-nav button,
 .dir-logout {
   width: 100%;
-  min-height: 46px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  display: flex;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
-  padding: 0 16px;
-  color: #89a39e;
-  background: rgba(255, 255, 255, 0.02);
+  gap: 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #172331;
+  background: #ffffff;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
+}
+
+.dir-nav button {
+  border-color: #d6e2df;
 }
 
 .dir-nav button:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateX(4px);
+  color: #05604f;
+  background: #f4fbf9;
+  border-color: #c0eae0;
 }
 
 .dir-nav button.is-active {
-  color: #ffffff;
-  border-color: #23977f;
-  background: linear-gradient(135deg, #23977f 0%, #176c60 100%);
-  box-shadow: 0 8px 20px rgba(35, 151, 127, 0.25);
-  font-weight: 700;
+  color: #05604f;
+  background: #eaf8f3;
+  border-color: #aee0d2;
 }
 
 .dir-nav button svg,
 .dir-logout svg {
-  transition: transform 0.25s ease;
-}
-
-.dir-nav button:hover svg {
-  transform: scale(1.15);
+  color: currentColor;
+  stroke: currentColor;
 }
 
 /* Botón Cerrar Sesión */
 .dir-logout {
   margin-top: auto;
-  color: #fca5a5;
-  border-color: rgba(239, 68, 68, 0.15);
-  background: rgba(239, 68, 68, 0.05);
+  border-color: #d6e2df;
 }
 
 .dir-logout:hover {
-  color: #ffffff;
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  border-color: #ef4444;
-  box-shadow: 0 6px 15px rgba(239, 68, 68, 0.25);
-  transform: translateY(-2px);
+  color: #b42318;
+  background: #fff5f5;
+  border-color: #fca5a5;
 }
 
 /* ==========================================================================
@@ -154,20 +131,20 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 30px 40px 50px;
+  padding: 16px 20px 32px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 /* Cabecera del Panel */
 .dir-header {
-  min-height: 80px;
+  min-height: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding-bottom: 20px;
+  gap: 16px;
+  padding-bottom: 12px;
   border-bottom: 1px solid rgba(22, 108, 96, 0.1);
 }
 
@@ -184,16 +161,16 @@
 .dir-header h1 {
   margin: 0;
   color: #0c1a30;
-  font-size: 32px;
+  font-size: 22px;
   font-weight: 850;
   letter-spacing: -0.5px;
   line-height: 1.15;
 }
 
 .dir-header p {
-  margin: 6px 0 0 0;
+  margin: 4px 0 0 0;
   color: var(--ui-muted);
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 500;
 }
 
@@ -254,61 +231,60 @@
 .dir-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: 12px;
   width: 100%;
 }
 
 .dir-stat {
   position: relative;
-  min-height: 120px;
+  min-height: auto;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 24px 28px;
-  border-radius: 20px;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 8px;
   background: #ffffff;
-  border: 1.5px solid rgba(226, 236, 233, 0.9);
-  box-shadow: 0 10px 30px rgba(15, 31, 51, 0.02);
+  border: 1px solid #dce7e4;
+  box-shadow: 0 4px 12px rgba(15, 31, 51, 0.015);
   overflow: hidden;
-  backdrop-filter: blur(12px);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s ease;
 }
 
 
 .dir-stat:hover {
-  transform: translateY(-4px) scale(1.01);
-  box-shadow: 0 20px 40px rgba(15, 31, 51, 0.08);
-  border-color: rgba(35, 151, 127, 0.35);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(15, 31, 51, 0.04);
+  border-color: rgba(35, 151, 127, 0.25);
 }
 
 /* Iconos de las Métricas */
 .dir-stat-icon {
-  width: 52px;
-  height: 52px;
+  width: 38px;
+  height: 38px;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 8px;
   color: #0f766e;
   background: linear-gradient(135deg, #e6fcf5 0%, #c3fae8 100%);
   border: 1px solid rgba(15, 118, 110, 0.1);
-  box-shadow: 0 4px 10px rgba(15, 118, 110, 0.05);
-  transition: transform 0.3s ease;
+  box-shadow: 0 2px 5px rgba(15, 118, 110, 0.03);
+  transition: transform 0.25s ease;
 }
 
 .dir-stat:hover .dir-stat-icon {
-  transform: scale(1.1) rotate(3deg);
+  transform: scale(1.05);
 }
 
 /* Variaciones de Tono de Tarjetas */
 
 .dir-stat.is-teal {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 70%, rgba(240, 253, 250, 0.9) 100%);
+  background: linear-gradient(135deg, #ffffff 70%, #f0fdfa 100%);
 }
 
 
 .dir-stat.is-blue {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 70%, rgba(239, 246, 255, 0.9) 100%);
+  background: linear-gradient(135deg, #ffffff 70%, #eff6ff 100%);
 }
 .dir-stat.is-blue .dir-stat-icon {
   color: #1d4ed8;
@@ -318,7 +294,7 @@
 
 
 .dir-stat.is-orange {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 70%, rgba(255, 247, 237, 0.9) 100%);
+  background: linear-gradient(135deg, #ffffff 70%, #fff7ed 100%);
 }
 .dir-stat.is-orange .dir-stat-icon {
   color: #c2410c;
@@ -328,7 +304,7 @@
 
 
 .dir-stat.is-purple {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 70%, rgba(250, 245, 255, 0.9) 100%);
+  background: linear-gradient(135deg, #ffffff 70%, #faf5ff 100%);
 }
 .dir-stat.is-purple .dir-stat-icon {
   color: #6d28d9;
@@ -338,7 +314,7 @@
 
 
 .dir-stat.is-green {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 70%, rgba(240, 253, 244, 0.9) 100%);
+  background: linear-gradient(135deg, #ffffff 70%, #f0fdf4 100%);
 }
 .dir-stat.is-green .dir-stat-icon {
   color: #15803d;
@@ -359,9 +335,9 @@
 
 .dir-stat strong {
   display: block;
-  margin: 2px 0 4px;
+  margin: 1px 0;
   color: #0f1f33;
-  font-size: 28px;
+  font-size: 18px;
   line-height: 1.1;
   font-weight: 850;
   letter-spacing: -0.5px;
@@ -383,43 +359,40 @@
    ========================================================================== */
 .dir-module-tabs-row {
   display: flex;
-  gap: 12px;
-  margin-bottom: 28px;
-  border-bottom: none;
-  width: 100%;
-  padding: 6px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1.5px solid rgba(226, 236, 233, 0.9);
-  border-radius: 18px;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 6px 20px rgba(15, 163, 136, 0.03);
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 .dir-module-tab {
-  flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px 18px;
+  gap: 8px;
+  padding: 10px 16px;
   border: none;
-  border-radius: 12px;
+  border-bottom: 2px solid transparent;
   background: transparent;
   cursor: pointer;
-  text-align: center;
   color: #64748b;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
+  margin-bottom: -2px;
 }
 
 .dir-module-tab:hover {
-  color: var(--ui-primary-dark);
-  background: rgba(35, 151, 127, 0.05);
+  color: #0f766e;
+  background: rgba(15, 118, 110, 0.05);
 }
 
 .dir-module-tab.is-active {
-  background: linear-gradient(135deg, #23977f 0%, #176c60 100%);
-  color: #ffffff;
-  box-shadow: 0 6px 16px rgba(35, 151, 127, 0.25);
+  background: transparent;
+  color: #0f766e;
+  border-bottom-color: #0f766e;
+  box-shadow: none;
 }
 
 .dir-module-tab svg {
@@ -428,8 +401,7 @@
 }
 
 .dir-module-tab.is-active svg {
-  color: #ffffff;
-  transform: scale(1.05);
+  color: #0f766e;
 }
 
 .dir-module-tab strong {
@@ -440,7 +412,7 @@
 }
 
 .dir-module-tab.is-active strong {
-  font-weight: 800;
+  font-weight: 850;
 }
 
 /* ==========================================================================
@@ -460,9 +432,9 @@
 
 .dir-panel {
   min-width: 0;
-  padding: 28px;
+  padding: 18px 20px;
   border: 1.5px solid rgba(226, 236, 233, 0.9);
-  border-radius: 20px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.95);
   box-shadow: 0 12px 35px rgba(15, 31, 51, 0.02);
   backdrop-filter: blur(12px);
@@ -475,17 +447,17 @@
 }
 
 .dir-panel > header {
-  min-height: 40px;
+  min-height: auto;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .dir-panel h2 {
   margin: 0;
   color: #0c1a30;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 800;
   letter-spacing: -0.3px;
 }
@@ -493,7 +465,7 @@
 .dir-panel p {
   margin: 0;
   color: var(--ui-muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
 }
 
@@ -523,7 +495,7 @@
 
 .dir-table-panel > header {
   margin: 0;
-  padding: 20px 24px;
+  padding: 12px 16px;
   border-bottom: 1px solid rgba(22, 108, 96, 0.08);
 }
 
@@ -543,15 +515,15 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   background: #f8fafc;
-  padding: 14px 18px;
+  padding: 10px 12px;
   border-bottom: 2px solid #e2e8f0;
 }
 
 .dir-table-wrap .mantine-Table-td {
   color: #334155;
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 500;
-  padding: 16px 18px;
+  padding: 10px 12px;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
 }
@@ -563,7 +535,7 @@
 .dir-table-wrap .mantine-Table-td strong {
   display: block;
   color: #0c1a30;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 750;
 }
 
@@ -655,8 +627,8 @@
 .dir-analysis-dashboard {
   background: #ffffff;
   border: 1px solid rgba(226, 236, 233, 0.8);
-  border-radius: 18px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 16px 20px;
   box-shadow: 0 10px 30px rgba(15, 31, 51, 0.025);
 }
 
@@ -699,8 +671,8 @@
 
 .dir-analysis-card {
   border: 1px solid rgba(226, 236, 233, 0.7);
-  border-radius: 14px;
-  padding: 20px;
+  border-radius: 10px;
+  padding: 14px;
   background: #fdfefe;
   box-shadow: 0 2px 8px rgba(15, 31, 51, 0.01);
   display: flex;
@@ -789,7 +761,7 @@
 }
 
 .dir-stat-value {
-  font-size: 20px;
+  font-size: 18px;
   color: #0c1a30;
   font-weight: 800;
 }
@@ -861,8 +833,8 @@
 .dir-custom-report-builder {
   background: #ffffff;
   border: 1px solid rgba(226, 236, 233, 0.8);
-  border-radius: 18px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 16px 20px;
   box-shadow: 0 10px 30px rgba(15, 31, 51, 0.025);
 }
 
@@ -882,16 +854,16 @@
 .dir-builder-content {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr) 260px;
-  gap: 24px;
+  gap: 16px;
   align-items: start;
 }
 
 .dir-builder-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   border-right: 1px solid #e2e8f0;
-  padding-right: 24px;
+  padding-right: 16px;
 }
 
 .dir-builder-form-group {
@@ -996,9 +968,9 @@
 .dir-builder-columns-selector {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   border-right: 1px solid #e2e8f0;
-  padding-right: 24px;
+  padding-right: 16px;
 }
 
 /* Columna de Acción (Resumen y Botón) */
@@ -1019,16 +991,16 @@
 .dir-columns-checkbox-container {
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 24px;
+  border-radius: 10px;
+  padding: 16px;
   min-height: 240px;
 }
 
 /* Contenedor de cada Checkbox - Estilo Tiles Interactivas */
 .dir-columns-checkbox-container .mantine-Checkbox-root {
-  padding: 14px 18px;
+  padding: 8px 12px;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #ffffff;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.01);
@@ -1083,12 +1055,12 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  padding: 12px 14px;
+  padding: 8px 10px;
 }
 
 .dir-preview-table .mantine-Table-td {
   font-size: 13px;
-  padding: 12px 14px;
+  padding: 8px 10px;
 }
 
 .dir-empty-preview {

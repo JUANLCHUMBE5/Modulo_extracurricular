@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Alert as MantineAlert } from "@mantine/core";
 import {
   IconAlertCircle as AlertCircle,
@@ -40,6 +41,8 @@ export default function SecretariaRegistroModal({
   programasParaSelector,
   setModoRegistro,
 }) {
+  const modalRef = useRef(null);
+  const formRef = useRef(null);
   const obtenerEtiquetaPrograma = etiquetaPrograma || ((programa) => programa?.nombre || "");
   const esCambridge = /cambridge/i.test([
     programaParaRegistro?.nombre,
@@ -54,6 +57,19 @@ export default function SecretariaRegistroModal({
     !requiereSeleccionPrograma || Boolean(formulario.programa)
   );
 
+  useEffect(() => {
+    if (!modoRegistro || !estudiante || typeof window === "undefined") {
+      return undefined;
+    }
+
+    const frameId = window.requestAnimationFrame(() => {
+      modalRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      formRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [modoRegistro, estudiante?.dni, estudiante?.codigoEstudiante, estudiante?.nombres]);
+
   return (
 <>
         {modoRegistro && estudiante ? (
@@ -62,6 +78,7 @@ export default function SecretariaRegistroModal({
             role="presentation"
           >
             <section
+              ref={modalRef}
               className={`secretaria-card secretaria-registration-card secretaria-registration-modal${esCicloVerano ? " is-summer-registration" : ""}${estudiante.esExterno ? " is-external-registration" : ""}`}
               role="dialog"
               aria-modal="true"
@@ -77,19 +94,6 @@ export default function SecretariaRegistroModal({
                     <h2 id="secretaria-registration-title" className="secretaria-modal-title">
                       {esCicloVerano ? "Registro Ciclo Verano" : "Registrar Inscripción"}
                     </h2>
-                    <div className="secretaria-modal-student-meta-inline">
-                      <span className="secretaria-modal-student-name-badge">{estudiante.nombres}</span>
-                      <span className="secretaria-meta-divider">•</span>
-                      <span><strong>DNI:</strong> {estudiante.dni || "Sin DNI"}</span>
-                      <span className="secretaria-meta-divider">•</span>
-                      <span><strong>Grado:</strong> {estudiante.grado}</span>
-                      {!estudiante.esExterno ? (
-                        <>
-                          <span className="secretaria-meta-divider">•</span>
-                          <span><strong>Sección:</strong> {estudiante.seccion || "Sin sección"}</span>
-                        </>
-                      ) : null}
-                    </div>
                   </div>
                 </div>
                 <button
@@ -102,7 +106,7 @@ export default function SecretariaRegistroModal({
                 </button>
               </div>
 
-              <form className="secretaria-registration-form secretaria-registration-form-clean" onSubmit={guardarInscripción}>
+              <form ref={formRef} className="secretaria-registration-form secretaria-registration-form-clean" onSubmit={guardarInscripción}>
 
                 {mensaje ? (
                   <MantineAlert
@@ -373,11 +377,6 @@ export default function SecretariaRegistroModal({
                 {!esCicloVerano ? (
                 <>
                 <div className="secretaria-registration-section secretaria-registration-program secretaria-field-full">
-                  <div className="secretaria-registration-section-head">
-                    <strong>Programa</strong>
-                    <span>Datos necesarios para confirmar la inscripción</span>
-                  </div>
-
                 {mostrarSelectorPrograma ? (
                   <div className="secretaria-field secretaria-program-select-field">
                     <label htmlFor="programa">Programa o taller</label>
@@ -394,7 +393,7 @@ export default function SecretariaRegistroModal({
                           ? "Seleccione programa"
                           : esCicloVerano
                             ? "No hay programas de ciclo verano disponibles"
-                            : "No hay programas con invitación masiva para este grado"}
+                            : "No hay programas habilitados para este grado"}
                       </option>
                       {programasParaSelector.map((programa) => (
                         <option key={programa.id} value={programa.id}>
@@ -416,7 +415,7 @@ export default function SecretariaRegistroModal({
                   >
                     {esCicloVerano
                       ? "Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante."
-                      : "Coordinación debe registrar y habilitar un programa con invitación masiva para el grado del estudiante."}
+                      : "Coordinación debe registrar y habilitar un programa disponible para el grado del estudiante."}
                   </MantineAlert>
                 ) : null}
 
@@ -516,11 +515,6 @@ export default function SecretariaRegistroModal({
                 </div>
 
                 <div className="secretaria-registration-section secretaria-registration-contact secretaria-field-full">
-                  <div className="secretaria-registration-section-head">
-                    <strong>Padre o apoderado</strong>
-                    <span>Información de contacto para el registro</span>
-                  </div>
-
                 <CampoTexto
                   label="Nombre del padre / apoderado"
                   value={formulario.apoderado}

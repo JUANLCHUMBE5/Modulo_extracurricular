@@ -8,7 +8,6 @@ import {
   IconEye as Eye,
   IconLoader2 as Loader2,
   IconPlus as Plus,
-  IconSearch as Search,
   IconToggleLeft as ToggleLeft,
   IconToggleRight as ToggleRight,
   IconTrash as Trash2,
@@ -42,7 +41,6 @@ const obtenerIconoCategoria = (cat) => {
 function ProgramasView({
   abrirCrear,
   abrirEditar,
-  busqueda,
   cargando,
   eliminarCurso,
   filtroPeriodo,
@@ -52,7 +50,6 @@ function ProgramasView({
   puedeCrearProgramas,
   puedeEditarProgramas,
   puedeVerAlumnos,
-  setBusqueda,
   setFiltroPeriodo,
   tieneAccionesPrograma,
   tipoMsg,
@@ -77,15 +74,6 @@ function ProgramasView({
 
           <div className="coord-form">
             <div className="coord-filtros-row">
-              <div className="coord-field">
-                <label><Search size={14} /> Buscar</label>
-                <input
-                  value={busqueda}
-                  onChange={(event) => setBusqueda(event.target.value)}
-                  placeholder="Nombre o código del programa"
-                />
-              </div>
-
               <div className="coord-field">
                 <label><CalendarDays size={14} /> Periodo</label>
                 <select value={filtroPeriodo} onChange={(event) => setFiltroPeriodo(event.target.value)}>

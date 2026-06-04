@@ -2383,12 +2383,97 @@
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean {
   display: grid !important;
   grid-template-columns: 1.05fr 0.95fr !important; /* 2 unequal columns */
+  align-content: start !important;
   gap: 16px 24px !important;
   padding: 24px 24px 20px !important;
   background: #f8fafc !important;
   border-radius: 0 0 20px 20px !important;
   overflow-y: auto !important;
+  min-height: 0 !important;
+  overscroll-behavior: contain !important;
+  scroll-behavior: auto !important;
   max-height: calc(92vh - 77px - 40px) !important; /* Header is ~77px */
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context {
+  grid-column: 1 / -1 !important;
+  order: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(120px, 0.8fr)) !important;
+  gap: 10px !important;
+  margin: 0 !important;
+  padding: 12px !important;
+  border: 1px solid #d6e7e3 !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item {
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  padding: 9px 11px !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 9px !important;
+  background: #f8fafc !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item span {
+  color: #64748b !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  text-transform: uppercase !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item strong {
+  min-width: 0 !important;
+  color: #0f172a !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item.is-name strong {
+  color: #176c60 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean > .secretaria-student-context {
+  order: 1 !important;
+  grid-column: 1 / -1 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean > .secretaria-registration-minor {
+  order: 2 !important;
+  grid-column: 1 / -1 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean > .secretaria-registration-program {
+  order: 3 !important;
+  grid-column: 1 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean > .secretaria-registration-contact {
+  order: 3 !important;
+  grid-column: 2 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean > .secretaria-modal-message {
+  order: 4 !important;
+  grid-column: 1 / -1 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean > .secretaria-check {
+  order: 5 !important;
+  grid-column: 1 / -1 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean > .secretaria-form-actions {
+  order: 6 !important;
+  grid-column: 1 / -1 !important;
 }
 
 /* 4. Left and Right Sections as White Cards */
@@ -2675,6 +2760,10 @@
     grid-template-columns: 1fr !important;
     max-height: calc(92vh - 84px - 20px) !important;
   }
+
+  .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
   
   .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-program,
   .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-contact {
@@ -2689,6 +2778,10 @@
   }
   
   .secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-summary {
+    grid-template-columns: 1fr !important;
+  }
+
+  .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context {
     grid-template-columns: 1fr !important;
   }
 }

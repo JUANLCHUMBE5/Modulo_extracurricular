@@ -33,7 +33,7 @@ export async function apiRequest(path, options = {}) {
   }
 
   // 2. Resolver Token de Autenticación
-  const token = typeof window !== "undefined" ? localStorage.getItem("san_rafael_token") : null;
+  const token = typeof window !== "undefined" ? sessionStorage.getItem("san_rafael_token") : null;
   const authHeaders = token ? { "Authorization": `Bearer ${token}` } : {};
 
   // 3. Timeout (15 segundos)
@@ -65,6 +65,8 @@ export async function apiRequest(path, options = {}) {
   // 4. Manejo de códigos 401 y 403
   if (response.status === 401) {
     if (typeof window !== "undefined") {
+      sessionStorage.removeItem("san_rafael_token");
+      sessionStorage.removeItem("san_rafael_user");
       localStorage.removeItem("san_rafael_token");
       localStorage.removeItem("san_rafael_user");
       window.dispatchEvent(new CustomEvent("api-unauthorized"));

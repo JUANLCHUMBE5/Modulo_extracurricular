@@ -6,6 +6,7 @@ import {
   IconFileSpreadsheet as FileSpreadsheet,
   IconListCheck as ListCheck,
   IconLoader2 as Loader2,
+  IconTrash as Trash,
   IconX as X,
 } from "@tabler/icons-react";
 import SummaryBox from "./SummaryBox";
@@ -17,6 +18,24 @@ function obtenerResumenArchivos(archivosExcel = []) {
   return `${archivosExcel.length} archivos seleccionados`;
 }
 
+function formatearFechaCarga(valor = "") {
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return "-";
+  return new Intl.DateTimeFormat("es-PE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(fecha);
+}
+
+function resumirProgramasCarga(carga = {}) {
+  const nombres = new Set((carga.registros || []).map((item) => item.programaNombre).filter(Boolean));
+  if (!nombres.size) return "-";
+  return Array.from(nombres).join(", ");
+}
+
 function CargaExcelView({
   archivoInputKey,
   archivosExcel,
@@ -24,7 +43,10 @@ function CargaExcelView({
   cancelarCargaExcel,
   confirmandoCarga,
   confirmarCargaExcel,
+  eliminandoCargaId,
+  eliminarCargaExcel,
   generarPreviewExcel,
+  historialCargas = [],
   mensaje,
   previewCarga,
   progresoCarga,
@@ -133,7 +155,7 @@ function CargaExcelView({
                 <table className="coord-table">
                   <thead>
                     <tr>
-                      <th>DNI</th><th>Codigo</th><th>Alumno</th><th>Grado</th><th>Seccion</th><th>Seleccion</th><th>Curso / nivel</th><th>Estado</th><th>Detalle</th>
+                      <th>DNI</th><th>Codigo</th><th>Alumno</th><th>Grado</th><th>Seccion</th><th>Seleccion</th><th>Curso / nivel</th><th>Programa detectado</th><th>Estado</th><th>Detalle</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -146,6 +168,7 @@ function CargaExcelView({
                         <td>{reg.seccion || "-"}</td>
                         <td>{reg.seleccion || "-"}</td>
                         <td>{reg.curso || reg.nivelCambridge || "-"}</td>
+                        <td>{reg.programaNombre || "-"}</td>
                         <td><span className={`coord-pill ${reg.estado === "Valido" ? "coord-pill-success" : reg.estado === "Duplicado" ? "coord-pill-warning" : "coord-pill-error"}`}>{textoEstadoCarga(reg.estado)}</span></td>
                         <td>{reg.errores?.length ? reg.errores.join(" ") : "-"}</td>
                       </tr>
@@ -160,6 +183,59 @@ function CargaExcelView({
               <p>Seleccione archivo y revise <b>Vista previa</b> antes de guardar.</p>
             </div>
           )}
+
+          <div className="coord-upload-history">
+            <div className="coord-upload-history-header">
+              <div>
+                <h2>Historial de cargas</h2>
+                <p>Desde aquí puede borrar una carga confirmada si sus alumnos aún no tienen inscripción activa.</p>
+              </div>
+            </div>
+
+            {historialCargas.length ? (
+              <div className="coord-table-wrap">
+                <table className="coord-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Archivo</th>
+                      <th>Programa</th>
+                      <th>Importados</th>
+                      <th>Errores</th>
+                      <th>Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historialCargas.map((carga) => (
+                      <tr key={carga.id}>
+                        <td>{formatearFechaCarga(carga.fecha)}</td>
+                        <td>{Array.isArray(carga.archivos) && carga.archivos.length ? carga.archivos.join(", ") : carga.archivoNombre || carga.id}</td>
+                        <td>{resumirProgramasCarga(carga)}</td>
+                        <td>{carga.resumen?.importados ?? carga.resumen?.validos ?? carga.registros?.length ?? 0}</td>
+                        <td>{carga.resumen?.errores ?? 0}</td>
+                        <td>
+                          <button
+                            className="coord-danger-button coord-upload-history-delete"
+                            type="button"
+                            onClick={() => eliminarCargaExcel(carga)}
+                            disabled={eliminandoCargaId === carga.id}
+                          >
+                            {eliminandoCargaId === carga.id ? <Loader2 className="coord-spin" size={15} /> : <Trash size={15} />}
+                            <span>{eliminandoCargaId === carga.id ? "Borrando" : "Borrar"}</span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="coord-empty coord-upload-history-empty">
+                <ListCheck size={18} />
+                <p>Aún no hay cargas confirmadas para mostrar.</p>
+              </div>
+            )}
+          </div>
         </article>
       </section>
     </>

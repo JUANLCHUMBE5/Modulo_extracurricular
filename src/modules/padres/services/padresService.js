@@ -116,14 +116,14 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
       estudiante_id: dni,
       programa_id: programaId,
       horario: horarioPersonalizado,
-      tallas: tallas,
-      apoderado: {
-        apoderado: limpiarTexto(datos.apoderado),
-        telefono: limpiarTexto(datos.telefono),
-        correo: limpiarTexto(datos.correo),
-        enviar_pdf_correo: Boolean(datos.enviarPdfCorreo && datos.correo),
-      },
-      origen: "web"
+      origen_inscripcion: "Portal padres",
+      apoderado: limpiarTexto(datos.apoderado),
+      telefono_apoderado: limpiarTexto(datos.telefono),
+      correo_apoderado: limpiarTexto(datos.correo),
+      enviar_pdf_correo: Boolean(datos.enviarPdfCorreo && datos.correo),
+      talla_uniforme: tallas.tallaUniforme || "",
+      talla_polo: tallas.tallaPolo || "",
+      talla_short: tallas.tallaShort || "",
     };
     const res = await apiClient.post("/api/v1/extracurricular/inscripciones", payload);
     if (!res.success) throw new Error(res.message || "Error al registrar inscripción");
@@ -146,6 +146,10 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
   const programa = apiDb.programas.find((item) => item.id === programaSeleccionadoId);
   if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
   if (programa.estado !== "Habilitado") throw new Error("El programa no está habilitado.");
+  const gradoRegistro = invitacion?.grado || estudiante.grado;
+  const seccionRegistro = invitacion?.seccion || estudiante.seccion;
+  const codigoRegistro = invitacion?.codigoEstudiante || estudiante.codigoEstudiante || "";
+  const nombresRegistro = invitacion?.nombres || estudiante.nombres;
 
   if (!invitacion && !programa.invitacionMasiva) {
     throw new Error("Este programa requiere invitacion de Coordinacion.");
@@ -157,7 +161,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
     throw new Error("El programa no tiene cupos disponibles.");
   }
 
-  if (!programaDisponibleParaGrado(programa, estudiante.grado)) {
+  if (!programaDisponibleParaGrado(programa, gradoRegistro)) {
     throw new Error("El programa no esta disponible para el grado del estudiante.");
   }
 
@@ -181,7 +185,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
   }
   if (duplicada) throw new Error("El estudiante ya tiene una inscripción registrada en este programa.");
 
-  const horarioRegistro = horarioPersonalizado || invitacion?.horario || resolverHorarioPorGrado(programa, estudiante.grado) || (programa.invitacionMasiva ? programa.horario : "") || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar";
+  const horarioRegistro = horarioPersonalizado || invitacion?.horario || resolverHorarioPorGrado(programa, gradoRegistro) || (programa.invitacionMasiva ? programa.horario : "") || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar";
   if (!programa.invitacionMasiva) {
     validarCruceHorarioPadres(dniLimpio, programa.id, programa.periodo, horarioRegistro);
   }
@@ -226,11 +230,11 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
     seleccion: invitacion?.seleccion || estudiante.seleccion || "",
     nivelCambridge: invitacion?.nivelCambridge || estudiante.nivelCambridge || "",
     dniEstudiante: dniLimpio,
-    codigoEstudiante: estudiante.codigoEstudiante || "",
-    nombresEstudiante: estudiante.nombres,
-    gradoEstudiante: estudiante.grado,
-    grado: estudiante.grado,
-    seccion: estudiante.seccion,
+    codigoEstudiante: codigoRegistro,
+    nombresEstudiante: nombresRegistro,
+    gradoEstudiante: gradoRegistro,
+    grado: gradoRegistro,
+    seccion: seccionRegistro,
     apoderado: limpiarTexto(datos.apoderado || estudiante.apoderado),
     telefono: limpiarTexto(datos.telefono || estudiante.telefonoApoderado),
     correo: limpiarTexto(datos.correo || estudiante.correoApoderado),
@@ -410,7 +414,7 @@ function obtenerInvitaciones(dni, estudiante = null) {
       .filter((invitado) => invitado.dni === dni)
       .forEach((invitado) => {
         if (resultado.some((item) => item.programaId === programa.id)) return;
-        const gradoEstudiante = estudiante?.grado || invitado.grado;
+        const gradoEstudiante = invitado.grado || estudiante?.grado;
         if (!programaDisponibleParaGrado(programa, gradoEstudiante)) return;
 
         resultado.push({

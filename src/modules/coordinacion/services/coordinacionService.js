@@ -679,37 +679,155 @@ export async function confirmarCargaAlumnos(preview) {
   await delay(600);
   await syncApiDb();
   const validos = preview.registros.filter((item) => item.estado === "Valido");
+  const registrosPorArchivo = new Map();
+  const validosPorArchivo = new Map();
+  const programasTocados = new Set();
+  const nuevasCargas = [];
+
+  (preview.registros || []).forEach((item) => {
+    const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
+    if (!registrosPorArchivo.has(archivoNombre)) registrosPorArchivo.set(archivoNombre, []);
+    registrosPorArchivo.get(archivoNombre).push(item);
+  });
+
+  validos.forEach((item) => {
+    const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
+    if (!validosPorArchivo.has(archivoNombre)) validosPorArchivo.set(archivoNombre, []);
+    validosPorArchivo.get(archivoNombre).push(item);
+  });
 
   validos.forEach((item) => {
     if (!item.programaId) return;
+    const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
+    const grupoArchivo = validosPorArchivo.get(archivoNombre) || [];
+    if (!grupoArchivo.cargaId) {
+      grupoArchivo.cargaId = `CARGA-${Date.now().toString().slice(-8)}-${Math.random().toString(16).slice(2, 6)}`;
+      grupoArchivo.registrosHistorial = [];
+    }
+    const cargaId = grupoArchivo.cargaId;
     const existentes = apiDb.invitadosPorPrograma[item.programaId] || [];
+    const programaCarga = apiDb.programas.find((programa) => programa.id === item.programaId);
+    agregarGradoProgramaDesdeAlumno(programaCarga, item.grado);
+    programasTocados.add(item.programaId);
+    const invitado = {
+      cargaId,
+      codigoEstudiante: item.codigoEstudiante || "",
+      dni: item.dni,
+      nombres: `${item.nombres} ${item.apellidos}`.trim(),
+      grado: item.grado,
+      seccion: item.seccion,
+      nivelEducativo: item.nivelEducativo || "",
+      seleccion: item.seleccion || "",
+      nivelCambridge: item.nivelCambridge || "",
+      periodo: normalizarPeriodo(preview.periodo),
+      telefonoApoderado: item.telefono,
+      correo: item.correo,
+      observacion: item.observacion,
+      archivoNombre,
+      estado: item.estadoAlumno || "Invitado",
+    };
     apiDb.invitadosPorPrograma[item.programaId] = [
       ...existentes,
-      {
-        codigoEstudiante: item.codigoEstudiante || "",
-        dni: item.dni,
-        nombres: `${item.nombres} ${item.apellidos}`.trim(),
-        grado: item.grado,
-        seccion: item.seccion,
-        nivelEducativo: item.nivelEducativo || "",
-        seleccion: item.seleccion || "",
-        nivelCambridge: item.nivelCambridge || "",
-        periodo: normalizarPeriodo(preview.periodo),
-        telefonoApoderado: item.telefono,
-        correo: item.correo,
-        observacion: item.observacion,
-        estado: item.estadoAlumno || "Invitado",
-      },
+      invitado,
     ];
+    grupoArchivo.registrosHistorial.push({
+      programaId: item.programaId,
+      programaNombre: item.programaNombre || "",
+      archivoNombre,
+      dni: item.dni,
+      codigoEstudiante: item.codigoEstudiante || "",
+      nombres: invitado.nombres,
+      grado: item.grado,
+      seccion: item.seccion,
+    });
   });
+
+  programasTocados.forEach((programaId) => {
+    sincronizarGradosProgramaConInvitados(programaId);
+  });
+
+  validosPorArchivo.forEach((grupoArchivo, archivoNombre) => {
+    if (!grupoArchivo.cargaId) return;
+    const registrosArchivo = registrosPorArchivo.get(archivoNombre) || grupoArchivo;
+    nuevasCargas.push({
+      id: grupoArchivo.cargaId,
+      fecha: fechaActualIso(),
+      periodo: normalizarPeriodo(preview.periodo),
+      archivoNombre,
+      archivos: [archivoNombre],
+      resumen: {
+        importados: grupoArchivo.length,
+        total: registrosArchivo.length,
+        errores: registrosArchivo.filter((item) => item.estado === "Error").length,
+        duplicados: registrosArchivo.filter((item) => item.estado === "Duplicado").length,
+      },
+      registros: grupoArchivo.registrosHistorial || [],
+    });
+  });
+
+  apiDb.historialCargas = Array.isArray(apiDb.historialCargas) ? apiDb.historialCargas : [];
+  apiDb.historialCargas = [...nuevasCargas, ...apiDb.historialCargas];
 
   await saveApiDb();
   return {
+    cargaId: nuevasCargas[0]?.id || "",
+    cargaIds: nuevasCargas.map((carga) => carga.id),
+    cargas: nuevasCargas,
     importados: validos.length,
     total: preview.resumen?.total || validos.length,
     errores: preview.resumen?.errores || 0,
     duplicados: preview.resumen?.duplicados || 0,
   };
+}
+
+export async function listarHistorialCargas() {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/coordinacion/cargas");
+    if (!res.success) throw new Error(res.message || "Error al listar historial de cargas");
+    return Array.isArray(res.data) ? res.data : [];
+  }
+  await delay(200);
+  await syncApiDb();
+  return Array.isArray(apiDb.historialCargas) ? [...apiDb.historialCargas] : [];
+}
+
+export async function eliminarCargaAlumnos(cargaId) {
+  if (isApiMode()) {
+    const res = await apiClient.delete(`/api/v1/extracurricular/coordinacion/cargas/${cargaId}`);
+    if (!res.success) throw new Error(res.message || "Error al eliminar carga");
+    return res.data;
+  }
+  await delay(400);
+  await syncApiDb();
+  apiDb.historialCargas = Array.isArray(apiDb.historialCargas) ? apiDb.historialCargas : [];
+  const carga = apiDb.historialCargas.find((item) => item.id === cargaId);
+  if (!carga) throw new Error("No se encontro la carga seleccionada.");
+
+  const registros = Array.isArray(carga.registros) ? carga.registros : [];
+  const tieneInscripcion = registros.some((registro) =>
+    apiDb.inscripciones.some((inscripcion) =>
+      inscripcion.programaId === registro.programaId &&
+      inscripcion.dniEstudiante === registro.dni &&
+      inscripcion.estadoInscripcion !== "Anulada"
+    )
+  );
+  if (tieneInscripcion) {
+    throw new Error("No se puede borrar esta carga porque uno o mas alumnos ya tienen inscripcion activa.");
+  }
+
+  let eliminados = 0;
+  const programasAfectados = new Set(registros.map((registro) => registro.programaId).filter(Boolean));
+  programasAfectados.forEach((programaId) => {
+    const actuales = apiDb.invitadosPorPrograma[programaId] || [];
+    const filtrados = actuales.filter((invitado) => invitado.cargaId !== cargaId);
+    eliminados += actuales.length - filtrados.length;
+    apiDb.invitadosPorPrograma[programaId] = filtrados;
+    sincronizarGradosProgramaConInvitados(programaId);
+  });
+
+  apiDb.historialCargas = apiDb.historialCargas.filter((item) => item.id !== cargaId);
+  await saveApiDb();
+  return { cargaId, eliminados };
 }
 
 export async function obtenerActividadPrograma(programaId) {
@@ -907,6 +1025,88 @@ function obtenerValor(fila, nombres) {
 
 function limpiarTexto(valor) {
   return String(valor ?? "").trim().replace(/[<>]/g, "");
+}
+
+function normalizarGradoAplicableDesdeAlumno(grado = "") {
+  const texto = String(grado || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(":", " ");
+  const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
+  const numero = texto.match(/\d+/)?.[0] || "";
+  if (!nivel || !numero) return "";
+
+  const nivelFormateado = {
+    inicial: "Inicial",
+    primaria: "Primaria",
+    secundaria: "Secundaria",
+  }[nivel];
+
+  return nivel === "inicial" && /anos|ano/.test(texto)
+    ? `${nivelFormateado}:${numero} anos`
+    : `${nivelFormateado}:${numero}`;
+}
+
+function agregarGradoProgramaDesdeAlumno(programa, gradoAlumno) {
+  if (!programa) return;
+  const gradoAplicable = normalizarGradoAplicableDesdeAlumno(gradoAlumno);
+  if (!gradoAplicable) return;
+
+  const normalizar = (valor) => String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const actuales = Array.isArray(programa.gradosAplicables) ? programa.gradosAplicables : [];
+  const existe = actuales.some((grado) => normalizar(grado) === normalizar(gradoAplicable));
+  if (!existe) {
+    programa.gradosAplicables = [...actuales, gradoAplicable];
+  }
+}
+
+function sincronizarGradosProgramaConInvitados(programaId) {
+  const programa = apiDb.programas.find((item) => item.id === programaId);
+  if (!programa) return;
+
+  const normalizar = (valor) => String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const grados = [];
+  (apiDb.invitadosPorPrograma[programaId] || []).forEach((invitado) => {
+    const gradoAplicable = normalizarGradoAplicableDesdeAlumno(invitado.grado);
+    if (!gradoAplicable) return;
+    const existe = grados.some((grado) => normalizar(grado) === normalizar(gradoAplicable));
+    if (!existe) grados.push(gradoAplicable);
+  });
+
+  if (grados.length) {
+    programa.gradosAplicables = ordenarGradosAplicables(grados);
+  }
+}
+
+function ordenarGradosAplicables(grados) {
+  const ordenNivel = { inicial: 0, primaria: 1, secundaria: 2 };
+  const descomponer = (valor) => {
+    const texto = String(valor || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
+    const numero = Number(texto.match(/\d+/)?.[0] || 0);
+    return { nivelOrden: ordenNivel[nivel] ?? 99, numero };
+  };
+
+  return [...grados].sort((a, b) => {
+    const gradoA = descomponer(a);
+    const gradoB = descomponer(b);
+    if (gradoA.nivelOrden !== gradoB.nivelOrden) return gradoA.nivelOrden - gradoB.nivelOrden;
+    return gradoA.numero - gradoB.numero;
+  });
 }
 
 function claveAlumno(alumno) {

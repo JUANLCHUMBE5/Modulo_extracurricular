@@ -283,16 +283,17 @@ function esProgramaCambridge(programa) {
 function coincideCurso(curso, programa) {
   const a = normalizarComparacion(curso);
   const b = normalizarComparacion(programa);
-  if (a === b || a.includes(b) || b.includes(a)) return true;
+  if (a === b) return true;
 
   const tokensA = tokensCurso(a);
   const tokensB = tokensCurso(b);
   if (!tokensA.length || !tokensB.length) return false;
 
   const coincidencias = tokensA.filter((token) => tokensB.includes(token)).length;
-  if (coincidencias >= Math.min(2, tokensA.length, tokensB.length)) return true;
+  const coberturaCurso = coincidencias / tokensA.length;
+  const coberturaPrograma = coincidencias / tokensB.length;
 
-  return comparteTokenClave(tokensA, tokensB);
+  return coberturaCurso >= 0.85 && coberturaPrograma >= 0.6;
 }
 
 function crearIndiceEstudiantes(estudiantes = {}) {
@@ -342,29 +343,10 @@ function resolverEstudianteBase(fila, indice) {
 
   return {
     ...fila,
-    idOriginalExcel: fila.idExcel,
-    dniOriginalExcel: fila.dni,
-    codigoEstudianteOriginalExcel: fila.codigoEstudiante,
-    dni: estudiante.dni || fila.dni,
-    codigoEstudiante: estudiante.codigoEstudiante || fila.codigoEstudiante,
-    nombres: estudiante.nombres || fila.nombres,
-    apellidos: "",
-    alumno: estudiante.nombres || fila.alumno,
-    grado: estudiante.grado || fila.grado,
-    seccion: estudiante.seccion || fila.seccion,
-    nivelEducativo: estudiante.nivel || fila.nivelEducativo,
+    estudianteRegistradoDni: estudiante.dni || "",
+    estudianteRegistradoCodigo: estudiante.codigoEstudiante || "",
+    estudianteRegistradoNombre: estudiante.nombres || "",
   };
-}
-
-function comparteTokenClave(tokensA, tokensB) {
-  const claves = new Set([
-    "cambridge",
-    "danza",
-    "nivelacion",
-    "reforzamiento",
-    "tareas",
-  ]);
-  return tokensA.some((token) => claves.has(token) && tokensB.includes(token));
 }
 
 function claveAlumno(alumno) {

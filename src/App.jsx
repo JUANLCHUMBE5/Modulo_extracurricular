@@ -313,7 +313,7 @@ function App() {
                 permisos,
                 permissions: permisos
               };
-              localStorage.setItem("san_rafael_user", JSON.stringify(updatedUser));
+              sessionStorage.setItem("san_rafael_user", JSON.stringify(updatedUser));
               return updatedUser;
             });
           }

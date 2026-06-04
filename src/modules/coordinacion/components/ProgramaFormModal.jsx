@@ -10,6 +10,7 @@ import {
   IconUpload as Upload,
   IconUsers as Users,
   IconX as X,
+  IconEdit as Edit3,
 } from "@tabler/icons-react";
 import GradeSelector from "./GradeSelector";
 import { formatearHora12 } from "../utils/coordinacionFormatters";
@@ -88,7 +89,9 @@ function ProgramaFormModal({
                 <div className={`coord-modal ${esFormularioVerano ? "coord-modal-verano" : ""}`} onClick={e => e.stopPropagation()}>
                   <div className="coord-modal-header">
                     <div className="coord-modal-title">
-                      <span className="coord-modal-icon"><Plus size={20} /></span>
+                      <span className="coord-modal-icon">
+                        {modoEditar ? <Edit3 size={20} /> : <BookOpen size={20} />}
+                      </span>
                       <div>
                         <h2>{esFormularioVerano ? (modoEditar ? "Editar programa de verano" : "Registrar programa de verano") : (modoEditar ? "Editar programa" : "Registrar programa")}</h2>
                         <p>

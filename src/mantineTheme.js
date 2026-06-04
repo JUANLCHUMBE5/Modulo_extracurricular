@@ -4,7 +4,7 @@ export const mantineTheme = createTheme({
   primaryColor: "sanrafael",
   fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
   headings: {
-    fontFamily: "Poppins, Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontFamily: "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     fontWeight: "800",
   },
   colors: {

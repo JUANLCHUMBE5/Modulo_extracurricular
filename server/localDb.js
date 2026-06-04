@@ -11,6 +11,8 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, "db.json");
+let writeQueue = Promise.resolve();
+let mutationQueue = Promise.resolve();
 
 export async function getDb() {
   if (isOfficialApiEnabled()) {
@@ -28,8 +30,24 @@ export async function saveDb(data) {
   }
 
   const db = mergeWithDefaults(data || {}, clone(initialData));
-  await writeDbFile(db);
+  await queueDbWrite(db);
   return db;
+}
+
+export async function updateDb(mutator) {
+  if (isOfficialApiEnabled()) {
+    const db = await getOfficialDb();
+    const updated = await mutator(db);
+    return saveOfficialDb(updated || db);
+  }
+
+  return queueDbMutation(async () => {
+    await ensureDb();
+    const raw = await fs.readFile(DB_PATH, "utf8");
+    const current = mergeWithDefaults(parseDb(raw), clone(initialData));
+    const updated = await mutator(current);
+    return saveDb(updated || current);
+  });
 }
 
 export async function resetDb() {
@@ -96,13 +114,27 @@ function parseDb(raw) {
 
     const repaired = text.slice(0, Number(match[1])).trimEnd();
     const parsed = JSON.parse(repaired);
-    void writeDbFile(parsed);
+    void queueDbWrite(parsed);
     return parsed;
   }
 }
 
 async function writeDbFile(db) {
-  const tmpPath = `${DB_PATH}.tmp`;
+  const tmpPath = `${DB_PATH}.${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`;
   await fs.writeFile(tmpPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
   await fs.rename(tmpPath, DB_PATH);
+}
+
+function queueDbWrite(db) {
+  writeQueue = writeQueue
+    .catch(() => undefined)
+    .then(() => writeDbFile(db));
+  return writeQueue;
+}
+
+function queueDbMutation(task) {
+  mutationQueue = mutationQueue
+    .catch(() => undefined)
+    .then(task);
+  return mutationQueue;
 }

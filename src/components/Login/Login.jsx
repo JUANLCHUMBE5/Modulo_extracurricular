@@ -68,8 +68,8 @@ function Login({ onLoginSuccess }) {
       } else {
         mostrarError(response.message);
       }
-    } catch {
-      mostrarError("No se pudo conectar con el servidor.");
+    } catch (error) {
+      mostrarError(error.message || "No se pudo conectar con el servidor.");
     } finally {
       setIsLoading(false);
     }

@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "./styles/variables.css";
 
+:root {
+  --font-body: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-heading: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
 * {
   box-sizing: border-box;
   font-family: var(--font-body);
@@ -12,6 +17,7 @@ body,
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+  font-family: var(--font-body);
 }
 
 body {
@@ -24,7 +30,10 @@ body {
 button,
 input,
 select,
-textarea {
+textarea,
+table,
+th,
+td {
   font-family: var(--font-body);
 }
 
@@ -36,7 +45,69 @@ h5,
 h6,
 .mantine-Title-root {
   font-family: var(--font-heading) !important;
+  font-weight: 700 !important;
   letter-spacing: 0;
+}
+
+/* Unificar el peso de las negritas en los módulos profesionales a 700 (negrita estándar y elegante) */
+strong,
+b {
+  font-weight: 700 !important;
+}
+
+/* Unificar el tamaño de los títulos principales (h1) de los módulos profesionales */
+.adm-topbar h1,
+.caja-header h1,
+.coord-topbar h1,
+.dir-header h1,
+.secretaria-topbar h1 {
+  font-size: 26px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.015em !important;
+  line-height: 1.2 !important;
+}
+
+/* Unificar el tamaño de las secciones o títulos secundarios (h2) de los módulos profesionales */
+.adm-main h2,
+.caja-main h2,
+.coord-main h2,
+.dir-main h2,
+.secretaria-main h2,
+.coord-card-title h2,
+.dir-panel h2,
+.coord-process-card h2,
+.coord-modal-header h2 {
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.25 !important;
+}
+
+/* Permitir estilos y pesos específicos para el Portal de Padres */
+.padres-layout h1,
+.padres-layout h2,
+.padres-layout h3,
+.padres-layout h4,
+.padres-layout h5,
+.padres-layout h6,
+.padres-layout .mantine-Title-root {
+  font-weight: 850 !important;
+}
+.padres-layout strong,
+.padres-layout b {
+  font-weight: 800 !important;
+}
+
+/* Permitir estilos y pesos específicos para el Kiosko de Auxiliar */
+.auxiliar-page h1,
+.auxiliar-page h2,
+.auxiliar-page h3,
+.auxiliar-page h4,
+.auxiliar-page h5,
+.auxiliar-page h6,
+.auxiliar-page strong,
+.auxiliar-page b {
+  font-weight: 800 !important;
 }
 
 ::selection {

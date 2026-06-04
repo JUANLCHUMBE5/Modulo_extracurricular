@@ -38,7 +38,7 @@ function StatCard({ icon: Icon, label, value, detail, tone = "green" }) {
   return (
     <article className={`dir-stat is-${tone}`}>
       <div className="dir-stat-icon">
-        <Icon size={22} />
+        <Icon size={18} />
       </div>
       <div>
         <span>{label}</span>
@@ -365,23 +365,20 @@ export default function Direccion({ onLogout, user }) {
   return (
     <main className="dir-page">
       <aside className="dir-sidebar">
-        <div className="dir-brand">
-          <img src="/assets/padres/logo.png.jpg" alt="Colegio San Rafael" />
-          <span>Direccion</span>
+        <div className="dir-brand" aria-label="Colegio San Rafael">
+          <img className="dir-brand-logo" src="/assets/padres/logo.png.jpg" alt="Colegio San Rafael" />
         </div>
+        <p className="dir-module-label">Módulo Dirección</p>
         <nav className="dir-nav" aria-label="Navegacion de direccion">
           <button className={vista === "resumen" ? "is-active" : ""} type="button" onClick={() => setVista("resumen")}>
-            <ChartBar size={18} />
-            <span>Resumen general</span>
+            <ChartBar size={18} /> Resumen general
           </button>
           <button className={vista === "reportes" ? "is-active" : ""} type="button" onClick={() => setVista("reportes")}>
-            <Download size={18} />
-            <span>Reportes</span>
+            <Download size={18} /> Reportes
           </button>
         </nav>
         <button className="dir-logout" type="button" onClick={onLogout}>
-          <LogOut size={18} />
-          <span>Cerrar sesion</span>
+          <LogOut size={18} /> Cerrar sesion
         </button>
       </aside>
 

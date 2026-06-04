@@ -11,6 +11,8 @@ const modulosAuditables = {
   coordinacion: "Coordinacion",
   auxiliar: "Auxiliar",
   direccion: "Direccion",
+  padres: "Padres",
+  desconocido: "Desconocido"
 };
 
 function normalizarRolAuditoria(rol) {
@@ -18,16 +20,11 @@ function normalizarRolAuditoria(rol) {
 }
 
 function crearDetalleAcceso(rol) {
-  return JSON.stringify({ modulo: modulosAuditables[rol] });
+  return JSON.stringify({ modulo: modulosAuditables[rol] || rol });
 }
 
 function filtrarLogsAcceso(logs = []) {
   return (Array.isArray(logs) ? logs : [])
-    .filter((log) => {
-      const rol = normalizarRolAuditoria(log.rol);
-      const accion = String(log.accion || "");
-      return Boolean(modulosAuditables[rol]) && (accion === "INICIO_SESION" || accion === "LOGIN_EXITOSO");
-    })
     .map((log) => {
       const rol = normalizarRolAuditoria(log.rol);
       return {
@@ -35,8 +32,8 @@ function filtrarLogsAcceso(logs = []) {
         usuario: log.usuario,
         rol,
         fecha: log.fecha,
-        accion: "INICIO_SESION",
-        detalles: crearDetalleAcceso(rol),
+        accion: log.accion,
+        detalles: log.detalles || crearDetalleAcceso(rol),
       };
     });
 }
