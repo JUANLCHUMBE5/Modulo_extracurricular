@@ -229,7 +229,7 @@ export async function registrarInscripcion(payload) {
     ...payload,
     programa: programa.nombre,
     horario: horarioResuelto || programa.horario,
-    docente: programa.responsable || programa.docente || "No definido",
+    docente: resolverDocentePorGrado(programa, payload.gradoEstudiante),
     costo: Number(programa.costo ?? 0),
     modalidadCobro: programa.modalidadCobro || "",
     fechaInicio: programa.fechaInicio || "",
@@ -475,7 +475,7 @@ function sincronizarInscripcionConProgramaActual(inscripcion) {
     ...inscripcion,
     programa: programa.nombre || inscripcion.programa,
     horario: resolverHorarioPorGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || inscripcion.horario,
-    docente: programa.responsable || programa.docente || inscripcion.docente || "No definido",
+    docente: resolverDocentePorGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado) || inscripcion.docente || "No definido",
     costo: Number(programa.costo ?? inscripcion.costo ?? 0),
     modalidadCobro: programa.modalidadCobro || inscripcion.modalidadCobro || "",
     fechaInicio: programa.fechaInicio || inscripcion.fechaInicio || "",
@@ -553,7 +553,7 @@ function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
     horario: resolverHorarioPorGrado(programa, gradoAlumno) || programa.horario,
     horariosPorGrupo: programa.horariosPorGrupo || [],
     gradosAplicables: programa.gradosAplicables || [],
-    docente: programa.responsable || programa.docente || "No definido",
+    docente: resolverDocentePorGrado(programa, gradoAlumno),
     costo: Number(programa.costo ?? 0),
     cupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
     cuposDisponibles,
@@ -610,7 +610,7 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
     programaHorario: horarioResuelto || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario),
     programaDisponible: programaDisponibleParaGrado(programa, gradoInvitacion),
     programaHorarioConfigurado: horarioConfigurado,
-    programaDocente: programa.responsable || programa.docente || "No definido",
+    programaDocente: resolverDocentePorGrado(programa, gradoInvitacion),
     programaCosto: Number(programa.costo ?? 0),
     programaCupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
     programaCuposDisponibles: cuposDisponibles,
@@ -656,7 +656,7 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
     programaHorario: horarioResuelto || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario),
     programaDisponible: programaDisponibleParaGrado(programa, invitado.grado),
     programaHorarioConfigurado: horarioConfigurado,
-    programaDocente: programa.responsable || programa.docente || "No definido",
+    programaDocente: resolverDocentePorGrado(programa, invitado.grado),
     programaCosto: Number(programa.costo ?? 0),
     programaCupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
     programaCuposDisponibles: cuposDisponibles,
@@ -707,6 +707,22 @@ function resolverHorarioPorGrado(programa, gradoAlumno = "") {
   const grados = formatearGrado(gradoDelTurno || gradoAlumno);
   const aula = grupo.aula ? ` · Aula ${grupo.aula}` : "";
   return `${grados ? `${grados}: ` : ""}${grupo.dia} almuerzo ${grupo.almuerzoInicio || "14:20"}-${grupo.almuerzoFin || "15:10"}, clase ${grupo.horaInicio || ""}-${grupo.horaFin || ""}${aula}`;
+}
+
+function resolverDocentePorGrado(programa, gradoAlumno = "") {
+  const grupos = programa?.horariosPorGrupo || [];
+  if (!Array.isArray(grupos) || grupos.length === 0) return programa.responsable || programa.docente || "No definido";
+
+  const gradoNormalizado = descomponerGrado(gradoAlumno);
+  if (!gradoNormalizado.numero) return programa.responsable || programa.docente || "No definido";
+  const grupo = grupos.find((item) =>
+    (item.grados || []).some((grado) => coincideGrado(grado, gradoNormalizado))
+  );
+
+  if (grupo && grupo.responsable && grupo.responsable.trim()) {
+    return grupo.responsable;
+  }
+  return programa.responsable || programa.docente || "No definido";
 }
 
 function coincideGrado(gradoGrupo, gradoAlumnoNormalizado) {

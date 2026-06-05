@@ -3,7 +3,6 @@
     "Academico",
     "Ingles",
     "Deportivo",
-    "Verano",
     "Arte",
     "Otro"
   ],
@@ -284,7 +283,7 @@
       ],
       "plantillaValidada": true,
       "creadoDesdeDocumento": true,
-      "estado": "Habilitado",
+      "estado": "Finalizado",
       "horaInicio": "14:20",
       "horaFin": "15:00",
       "responsable": "ana tirres",
@@ -546,6 +545,86 @@
     }
   ],
   "auditLogs": [
+    {
+      "id": "AUD-023349-3a8d",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-05T19:00:23.351Z",
+      "accion": "PROGRAMA_ESTADO",
+      "detalles": "{\"id\":\"PROG-001\",\"nombre\":\"Club De Tareas MATEMÁTICA\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Finalizado\"}"
+    },
+    {
+      "id": "AUD-769706-6c0c",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-05T15:36:09.706Z",
+      "accion": "PROGRAMA_ESTADO",
+      "detalles": "{\"id\":\"PROG-002\",\"nombre\":\"Invitacion Preparacion Cambridge 2026 Digital\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Habilitado\"}"
+    },
+    {
+      "id": "AUD-768429-6b10",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-05T15:36:08.429Z",
+      "accion": "PROGRAMA_ESTADO",
+      "detalles": "{\"id\":\"PROG-001\",\"nombre\":\"Club De Tareas MATEMÁTICA\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Habilitado\"}"
+    },
+    {
+      "id": "AUD-763443-7bdd",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-05T15:36:03.444Z",
+      "accion": "PROGRAMA_ESTADO",
+      "detalles": "{\"id\":\"PROG-002\",\"nombre\":\"Invitacion Preparacion Cambridge 2026 Digital\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Deshabilitado\"}"
+    },
+    {
+      "id": "AUD-761982-9e49",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-05T15:36:01.982Z",
+      "accion": "PROGRAMA_ESTADO",
+      "detalles": "{\"id\":\"PROG-001\",\"nombre\":\"Club De Tareas MATEMÁTICA\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Deshabilitado\"}"
+    },
+    {
+      "id": "AUD-757009-afc5",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-05T15:35:57.009Z",
+      "accion": "PROGRAMA_ESTADO",
+      "detalles": "{\"id\":\"PROG-001\",\"nombre\":\"Club De Tareas MATEMÁTICA\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Habilitado\"}"
+    },
+    {
+      "id": "AUD-746224-74d0",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-05T15:35:46.226Z",
+      "accion": "PROGRAMA_ESTADO",
+      "detalles": "{\"id\":\"PROG-001\",\"nombre\":\"Club De Tareas MATEMÁTICA\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Deshabilitado\"}"
+    },
+    {
+      "id": "AUD-356000-42fd",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-05T14:55:56.000Z",
+      "accion": "PROGRAMA_ESTADO",
+      "detalles": "{\"id\":\"PROG-001\",\"nombre\":\"Club De Tareas MATEMÁTICA\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Habilitado\"}"
+    },
+    {
+      "id": "AUD-334857-d9dc",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-05T14:55:34.858Z",
+      "accion": "PROGRAMA_ESTADO",
+      "detalles": "{\"id\":\"PROG-001\",\"nombre\":\"Club De Tareas MATEMÁTICA\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Deshabilitado\"}"
+    },
+    {
+      "id": "AUD-873109-4720",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-05T12:51:13.110Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Coordinacion\"}"
+    },
     {
       "id": "AUD-442211-963f",
       "usuario": "22223333",

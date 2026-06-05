@@ -335,6 +335,10 @@
   grid-template-columns: minmax(96px, 0.55fr) repeat(4, minmax(130px, 1fr));
 }
 
+.coord-schedule-time-meal-row {
+  grid-template-columns: 86px minmax(120px, 1fr) minmax(120px, 1fr) 92px minmax(120px, 1fr) minmax(120px, 1fr);
+}
+
 .coord-schedule-mini-title {
   align-self: center;
   color: #176c60;
@@ -346,7 +350,8 @@
 
 @media (max-width: 920px) {
   .coord-schedule-flow-row,
-  .coord-schedule-flow-row-wide {
+  .coord-schedule-flow-row-wide,
+  .coord-schedule-time-meal-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -391,6 +396,208 @@
   border-bottom: 1px solid #e2e8f0;
   padding-bottom: 10px;
   margin-bottom: 6px;
+}
+
+.coord-nested-turn-modal {
+  max-width: 680px;
+  max-height: calc(100vh - 32px);
+}
+
+.coord-nested-turn-modal .coord-modal-header {
+  padding: 12px 16px;
+}
+
+.coord-nested-turn-modal .coord-modal-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.coord-nested-turn-modal .coord-modal-header h2 {
+  font-size: 16px;
+}
+
+.coord-nested-turn-modal .coord-modal-header p {
+  font-size: 12px;
+}
+
+.coord-nested-turn-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.coord-nested-turn-body.coord-program-form-main {
+  gap: 8px;
+  padding: 12px 16px !important;
+}
+
+.coord-nested-turn-section {
+  padding: 12px !important;
+}
+
+.coord-nested-turn-section .coord-section-grid {
+  gap: 10px;
+}
+
+.coord-nested-turn-section .coord-field label {
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.coord-nested-turn-section .coord-grade-selector {
+  gap: 6px;
+}
+
+.coord-nested-turn-section .coord-grade-summary {
+  min-height: 30px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.coord-nested-turn-section .coord-grade-summary strong {
+  min-width: 18px;
+  min-height: 18px;
+  font-size: 11px;
+}
+
+.coord-nested-turn-section .coord-grade-options {
+  gap: 6px;
+  padding: 8px;
+}
+
+.coord-nested-turn-section .coord-grade-chip,
+.coord-nested-turn-section .coord-day-chip-sm {
+  min-height: 24px !important;
+  padding: 0 7px !important;
+  font-size: 11px !important;
+}
+
+.coord-nested-turn-section .coord-grade-chip input,
+.coord-nested-turn-section .coord-day-chip-sm input {
+  width: 12px;
+  height: 12px;
+}
+
+.coord-nested-turn-modal .coord-modal-actions {
+  align-items: center;
+  padding: 10px 16px;
+}
+
+.coord-floating-error {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  z-index: 2300;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: min(520px, calc(100vw - 40px));
+  padding: 9px 14px;
+  border: 1px solid #fed7aa;
+  border-radius: 10px;
+  color: #9a3412;
+  background: #fff7ed;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+  font-size: 12px;
+  font-weight: 800;
+  animation: coordFloatingErrorPulse 900ms ease-in-out 2;
+}
+
+.coord-floating-error svg {
+  flex: 0 0 auto;
+  color: #ea580c;
+}
+
+@keyframes coordFloatingErrorPulse {
+  0%, 100% {
+    border-color: #fed7aa;
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+    transform: translateX(-50%) scale(1);
+  }
+
+  35% {
+    border-color: #f97316;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.18), 0 14px 28px rgba(15, 23, 42, 0.18);
+    transform: translateX(-50%) scale(1.02);
+  }
+
+  70% {
+    border-color: #fed7aa;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.1), 0 12px 24px rgba(15, 23, 42, 0.16);
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+.coord-group-schedule-list-compact {
+  gap: 6px !important;
+}
+
+.coord-group-schedule-compact {
+  grid-template-columns: 86px minmax(150px, 1fr) minmax(190px, 1.2fr) minmax(170px, 1fr) 34px;
+  align-items: center;
+  gap: 10px !important;
+  padding: 9px 10px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.coord-group-schedule-compact .coord-group-schedule-badge {
+  color: #102035;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.coord-group-schedule-cell {
+  min-width: 0;
+}
+
+.coord-group-schedule-cell span {
+  display: block;
+  margin-bottom: 2px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.coord-group-schedule-cell p {
+  overflow: hidden;
+  margin: 0;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coord-group-schedule-compact > button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #f3c6c6;
+  border-radius: 8px;
+  color: #b42318;
+  background: #fff7f7;
+  cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  .coord-group-schedule-compact {
+    grid-template-columns: minmax(0, 1fr) 34px;
+  }
+
+  .coord-group-schedule-compact .coord-group-schedule-badge,
+  .coord-group-schedule-cell {
+    grid-column: 1;
+  }
+
+  .coord-group-schedule-compact > button {
+    grid-column: 2;
+    grid-row: 1;
+  }
 }
 
 /* Small day list and day chips for turn schedule multiselect */

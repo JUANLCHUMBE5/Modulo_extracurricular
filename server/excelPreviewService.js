@@ -19,18 +19,29 @@ const COLUMNAS_CARGA_EXCEL = new Set([
   "seleccion",
 ]);
 
-export async function generarPreviewCargaExcel({ periodo, archivo, programas, existentes, estudiantes }) {
+export async function generarPreviewCargaExcel({ periodo, archivo, programas, existentes, estudiantes, programaId }) {
   const periodoNormalizado = normalizarPeriodo(periodo);
   validarArchivoExcel(archivo);
 
   const programasPeriodo = (programas || []).filter((programa) =>
     normalizarPeriodo(programa.periodo) === periodoNormalizado
   );
+  const programaSeleccionado = programaId
+    ? programasPeriodo.find((programa) => String(programa.id) === String(programaId)) || null
+    : null;
+
+  if (programaId && !programaSeleccionado) {
+    lanzar("Seleccione un programa habilitado del periodo actual antes de cargar el Excel.");
+  }
+  if (programaSeleccionado && !esCategoriaAcademica(programaSeleccionado)) {
+    lanzar("La carga de alumnos solo permite programas de categoria Academico.");
+  }
 
   const filas = await leerExcelSeguro(archivo);
   const registros = validarRegistros({
     filas,
     programasPeriodo,
+    programaSeleccionado,
     existentes: existentes || {},
     estudiantes: estudiantes || {},
   });
@@ -104,7 +115,7 @@ function obtenerEncabezados(hoja) {
     });
 
     const disponibles = new Set(encabezados.map((item) => item.nombre));
-    if (esFormatoCargaGeneral(disponibles) || esFormatoCargaCambridge(disponibles) || esFormatoDocenteTalleres(disponibles)) {
+    if (esFormatoCargaMasiva(disponibles) || esFormatoCargaGeneral(disponibles) || esFormatoCargaCambridge(disponibles) || esFormatoDocenteTalleres(disponibles)) {
       return { encabezados, filaEncabezado: fila };
     }
   }
@@ -118,7 +129,10 @@ function validarColumnasObligatorias(encabezados) {
   const formatoNombreCompleto = esFormatoNombreCompleto(disponibles);
   const formatoDocenteTalleres = esFormatoDocenteTalleres(disponibles);
   const formatoCambridgeLista = esFormatoCambridgeLista(disponibles);
-  const obligatorias = formatoEstandar
+  const formatoCargaMasiva = esFormatoCargaMasiva(disponibles);
+  const obligatorias = formatoCargaMasiva
+    ? ["dni", disponibles.has("alumno") ? "alumno" : "nombres", "grado"]
+    : formatoEstandar
     ? ["dni", "alumno", "nivel_educativo", "grado", "seccion", "curso_programa"]
     : formatoCambridgeLista
       ? ["dni", "grado", "seccion", "seleccion", "curso_programa"]
@@ -176,15 +190,16 @@ function esFormatoCambridgeLista(disponibles) {
     (disponibles.has("alumno") || disponibles.has("nombres"));
 }
 
-function validarRegistros({ filas, programasPeriodo, existentes, estudiantes }) {
+function validarRegistros({ filas, programasPeriodo, programaSeleccionado, existentes, estudiantes }) {
   const clavesArchivo = new Set();
   const indiceEstudiantes = crearIndiceEstudiantes(estudiantes);
 
   return filas.map((fila, index) => {
     const normalizada = resolverEstudianteBase(normalizarFila(fila), indiceEstudiantes);
-    const programaDetectado = detectarProgramaPorCurso(normalizada.curso, programasPeriodo) ||
+    const programaDetectado = programaSeleccionado ||
+      detectarProgramaPorCurso(normalizada.curso, programasPeriodo) ||
       (normalizada.nivelCambridge ? detectarProgramaCambridge(programasPeriodo) : null);
-    const errores = validarFilaCarga(normalizada, programaDetectado);
+    const errores = validarFilaCarga(normalizada, programaDetectado, { programaSeleccionado: Boolean(programaSeleccionado) });
     const clave = claveAlumno(normalizada);
     const claveArchivo = programaDetectado ? `${programaDetectado.id}:${clave}` : clave;
     const existentesPrograma = new Set((existentes[programaDetectado?.id] || []).map(claveAlumno));
@@ -233,17 +248,19 @@ function normalizarFila(fila) {
   };
 }
 
-function validarFilaCarga(fila, programaDetectado) {
+function validarFilaCarga(fila, programaDetectado, opciones = {}) {
   const errores = [...(fila.erroresDatos || [])];
   const esCambridge = programaDetectado && esProgramaCambridge(programaDetectado);
   if (fila.dni && !/^\d{8}$/.test(fila.dni)) errores.push("DNI invalido. Debe tener 8 digitos.");
   if (!textoSeguro(fila.alumno || `${fila.nombres} ${fila.apellidos}`)) errores.push("Falta alumno.");
   if (!textoSeguro(fila.grado)) errores.push("Falta grado.");
-  if (!textoSeguro(fila.seccion)) errores.push("Falta seccion.");
-  if (!textoSeguro(fila.curso) && !textoSeguro(fila.nivelCambridge)) errores.push("Falta curso o nivel Cambridge.");
-  if (fila.curso && !programaDetectado) errores.push("El programa indicado no existe en el periodo seleccionado.");
-  if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
-  if (esCambridge && !/^[ABC]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A, B o C.");
+  if (!opciones.programaSeleccionado) {
+    if (!textoSeguro(fila.seccion)) errores.push("Falta seccion.");
+    if (!textoSeguro(fila.curso) && !textoSeguro(fila.nivelCambridge)) errores.push("Falta curso o nivel Cambridge.");
+    if (fila.curso && !programaDetectado) errores.push("El programa indicado no existe en el periodo seleccionado.");
+    if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
+    if (esCambridge && !/^[ABC]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A, B o C.");
+  }
   if (programaDetectado && String(programaDetectado.estado || "Habilitado") !== "Habilitado") {
     errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} esta ${programaDetectado.estado}. Habilitelo antes de cargar alumnos.`);
   }
@@ -294,6 +311,12 @@ function coincideCurso(curso, programa) {
   const coberturaPrograma = coincidencias / tokensB.length;
 
   return coberturaCurso >= 0.85 && coberturaPrograma >= 0.6;
+}
+
+function esFormatoCargaMasiva(disponibles) {
+  return disponibles.has("dni") &&
+    disponibles.has("grado") &&
+    (disponibles.has("alumno") || disponibles.has("nombres"));
 }
 
 function crearIndiceEstudiantes(estudiantes = {}) {
@@ -352,7 +375,7 @@ function resolverEstudianteBase(fila, indice) {
 function claveAlumno(alumno) {
   if (alumno.dni) return `dni:${alumno.dni}`;
   const nombre = `${alumno.nombres || ""} ${alumno.apellidos || ""}`.trim().toLowerCase();
-  return nombre ? `nombre:${nombre}:${alumno.grado}:${alumno.seccion}` : "";
+  return nombre ? `nombre:${nombre}:${alumno.grado}` : "";
 }
 
 function limpiarTexto(valor) {
@@ -377,6 +400,10 @@ function normalizarPeriodo(valor) {
   return String(valor || "").toLowerCase().includes("verano") ? "verano" : "escolar";
 }
 
+function esCategoriaAcademica(programa = {}) {
+  return normalizarComparacion(programa.categoria).includes("academ");
+}
+
 function normalizarEncabezado(valor) {
   const encabezado = normalizarComparacion(valor)
     .replace(/[^a-z0-9]+/g, "_")
@@ -386,6 +413,7 @@ function normalizarEncabezado(valor) {
     apellido: "apellidos",
     apellidos_y_nombres: "alumno",
     cod_estudiante: "codigo_estudiante",
+    codigo: "codigo_estudiante",
     curso: "curso_programa",
     curso_taller: "curso_programa",
     nombre: "nombres",

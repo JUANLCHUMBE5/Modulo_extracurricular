@@ -1,4 +1,7 @@
+import { useState } from "react";
+import { Alert as MantineAlert } from "@mantine/core";
 import {
+  IconAlertCircle as AlertCircle,
   IconBook as BookOpen,
   IconCalendar as CalendarDays,
   IconCircleCheck as CheckCircle2,
@@ -21,6 +24,18 @@ import {
   resumenGrados,
 } from "../utils/coordinacionProgramUtils";
 
+const grupoHorarioDraftInicial = {
+  grados: [],
+  dia: "Jueves",
+  aula: "",
+  almuerzoInicio: "14:20",
+  almuerzoFin: "15:10",
+  horaInicio: "15:20",
+  horaFin: "17:20",
+  responsable: "",
+  tutora: "",
+};
+
 function ProgramaFormModal({
   actualizarCategoriaPrograma,
   actualizarCosto,
@@ -31,6 +46,7 @@ function ProgramaFormModal({
   agregarCategoria,
   agregarGrupoHorario,
   agregarTallerDeportivo,
+  alertaConfiguracion,
   cambiarPeriodoFormulario,
   catAEliminar,
   categorias,
@@ -84,7 +100,61 @@ function ProgramaFormModal({
   toggleGrado,
   toggleGradoGrupo,
 }) {
+  const [mostrarGrupoModal, setMostrarGrupoModal] = useState(false);
+  const [mostrarInvitacionModal, setMostrarInvitacionModal] = useState(false);
+  const [grupoDraft, setGrupoDraft] = useState(grupoHorarioDraftInicial);
+  const [grupoDraftError, setGrupoDraftError] = useState("");
+  const [grupoDraftErrorTick, setGrupoDraftErrorTick] = useState(0);
+
   if (!show) return null;
+
+  function actualizarGrupoDraft(campo, valor) {
+    setGrupoDraftError("");
+    setGrupoDraft((actual) => ({ ...actual, [campo]: valor }));
+  }
+
+  function toggleGradoDraft(valor) {
+    setGrupoDraftError("");
+    setGrupoDraft((actual) => {
+      const grados = Array.isArray(actual.grados) ? actual.grados : [];
+      return {
+        ...actual,
+        grados: grados.includes(valor)
+          ? grados.filter((item) => item !== valor)
+          : [...grados, valor],
+      };
+    });
+  }
+
+  function cerrarGrupoModal() {
+    setMostrarGrupoModal(false);
+    setGrupoDraft(grupoHorarioDraftInicial);
+    setGrupoDraftError("");
+  }
+
+  function guardarGrupoDraft() {
+    const grados = Array.isArray(grupoDraft.grados) ? grupoDraft.grados.filter(Boolean) : [];
+    const dias = String(grupoDraft.dia || "").split(",").map(d => d.trim()).filter(Boolean);
+
+    if (!grados.length || !dias.length || !grupoDraft.horaInicio || !grupoDraft.horaFin) {
+      setGrupoDraftError("Faltan grados, días u horario del turno.");
+      setGrupoDraftErrorTick((actual) => actual + 1);
+      return;
+    }
+
+    agregarGrupoHorario({ ...grupoDraft, id: `grupo-${Date.now()}` });
+    cerrarGrupoModal();
+  }
+
+  function obtenerEtiquetaAlcance(valor) {
+    const etiquetas = {
+      colegio: "Todo el colegio",
+      primaria: "Solo nivel Primaria",
+      secundaria: "Solo nivel Secundaria",
+      grados: "Solo grados habilitados arriba",
+    };
+    return etiquetas[valor || "colegio"] || etiquetas.colegio;
+  }
 
   return (
     <div className="coord-modal-overlay">
@@ -99,13 +169,23 @@ function ProgramaFormModal({
                         <p>
                           {esFormularioVerano
                             ? "Complete los datos del programa antes de habilitarlo."
-                            : "Complete la configuracion del taller antes de habilitarlo."}
+                            : "Complete la configuración del taller antes de habilitarlo."}
                         </p>
                       </div>
                     </div>
                     <button className="coord-modal-close" type="button" onClick={() => setShowModal(false)}><X size={20} /></button>
                   </div>
                   <form className="coord-program-form" id="form-programa" onSubmit={guardar}>
+                    {alertaConfiguracion ? (
+                      <MantineAlert
+                        className="coord-message"
+                        color="orange"
+                        radius="md"
+                        icon={<AlertCircle size={18} />}
+                      >
+                        {alertaConfiguracion}
+                      </MantineAlert>
+                    ) : null}
                     <div className="coord-program-form-main">
                       <section className="coord-form-section">
                         <div className="coord-section-heading">
@@ -116,7 +196,7 @@ function ProgramaFormModal({
                         </div>
                         <div className="coord-section-grid coord-general-grid">
                           <div className="coord-field coord-program-name-field"><label>{esFormularioVerano ? "Nombre del programa de verano *" : "Nombre del programa *"}</label>
-                            <input value={form.nombre} onChange={e => actualizarNombrePrograma(e.target.value)} placeholder={esFormularioVerano ? "Ej: Verano creativo 2026" : "Ej: Reforzamiento y nivelacion"} />
+                            <input value={form.nombre} onChange={e => actualizarNombrePrograma(e.target.value)} placeholder={esFormularioVerano ? "Ej: Verano creativo 2026" : "Ej: Reforzamiento y nivelación"} />
                           </div>
                           <div className="coord-field"><label>Periodo *</label>
                             <select value={normalizarPeriodoVista(form.periodo)} onChange={e => cambiarPeriodoFormulario(e.target.value)}>
@@ -125,7 +205,7 @@ function ProgramaFormModal({
                           </div>
                           <div className="coord-field coord-category-field">
                             <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                              <span>Categoría *</span>
+                              <span>{esFormularioVerano ? "Categoría general *" : "Categoría *"}</span>
                               <button
                                 type="button"
                                 className="coord-category-toggle-btn"
@@ -138,6 +218,11 @@ function ProgramaFormModal({
                               <option value="">Seleccione</option>
                               {categorias.map(c => <option key={c} value={c}>{c}</option>)}
                             </select>
+                            {esFormularioVerano ? (
+                              <p className="coord-field-hint">
+                              
+                              </p>
+                            ) : null}
                           </div>
     
                           {mostrarGestorCategorias ? (
@@ -163,44 +248,22 @@ function ProgramaFormModal({
                               </div>
                             </div>
                           ) : null}
-                          {esFormularioVerano ? (
-                            <div className="coord-age-range-row coord-field-full">
-                              <div className="coord-field">
-                                <label>Desde edad *</label>
-                                <select value={form.edadMinima} onChange={e => actualizarForm("edadMinima", e.target.value)}>
-                                  <option value="">Seleccione</option>
-                                  {Array.from({ length: 14 }, (_, index) => String(index + 3)).map((edad) => (
-                                    <option key={edad} value={edad}>{edad} años</option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div className="coord-field">
-                                <label>Hasta edad *</label>
-                                <select value={form.edadMaxima} onChange={e => actualizarForm("edadMaxima", e.target.value)}>
-                                  <option value="">Seleccione</option>
-                                  {Array.from({ length: 14 }, (_, index) => String(index + 3)).map((edad) => (
-                                    <option key={edad} value={edad}>{edad} años</option>
-                                  ))}
-                                </select>
-                              </div>
-                              <p className="coord-field-hint">
-                                Seleccione el rango de edad permitido para este programa de verano.
-                              </p>
-                              {form.grupoEtario ? (
-                                <p className="coord-field-hint coord-field-full">
-                                  Grupo etario: {form.grupoEtario}
-                                </p>
-                              ) : null}
-                            </div>
-                          ) : esDeportivoForm ? (
+                          {esFormularioVerano || esDeportivoForm ? (
                             <div className="coord-field coord-field-full">
-                              <label>Grados habilitados</label>
+                              <label>{esFormularioVerano ? "Talleres habilitados" : "Grados habilitados"}</label>
                               <p className="coord-field-hint" style={{ marginTop: "4px" }}>
-                                Los grados escolares aplicables se calculan automáticamente a partir de los rangos de edad de los talleres de abajo.
+                                {esFormularioVerano
+                                  ? "Configure abajo cada taller de verano con edad, día, horario y cupos. Secretaría registrará a los alumnos."
+                                  : "Los grados escolares aplicables se calculan automáticamente a partir de los rangos de edad de los talleres de abajo."}
                               </p>
                               {form.talleresDeportivos?.length > 0 && (
                                 <div className="coord-deportivo-grados-summary" style={{ marginTop: "8px", padding: "8px 12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                                  <strong>Equivalente en Grados:</strong> <span style={{ color: "#006b5b", fontWeight: 700 }}>{resumenGrados(obtenerGradosDeportivos(form.talleresDeportivos)) || "Sin grados calculados"}</span>
+                                  <strong>{esFormularioVerano ? "Talleres configurados:" : "Equivalente en Grados:"}</strong>{" "}
+                                  <span style={{ color: "#006b5b", fontWeight: 700 }}>
+                                    {esFormularioVerano
+                                      ? `${form.talleresDeportivos.length} taller(es)`
+                                      : resumenGrados(obtenerGradosDeportivos(form.talleresDeportivos)) || "Sin grados calculados"}
+                                  </span>
                                 </div>
                               )}
                             </div>
@@ -212,33 +275,19 @@ function ProgramaFormModal({
                                 Para Ingles/Cambridge no seleccione grados del programa. Coordinacion los cargara por alumno en el Excel de invitados.
                               </p>
                             </div>
-                          ) : (
-                            <div className="coord-field coord-field-full">
-                              <label>Grados aplicables *</label>
-                              <GradeSelector
-                                niveles={nivelesGrados}
-                                seleccionados={formGradosAplicables}
-                                onToggle={toggleGrado}
-                              />
-                              <p className="coord-field-hint">
-                                {formGradosAplicables.length
-                                  ? resumenGrados(formGradosAplicables)
-                                  : "Seleccione nivel y grados del programa."}
-                              </p>
-                            </div>
-                          )}
+                          ) : null}
                         </div>
                       </section>
-    
+     
                       <section className="coord-form-section">
                         <div className="coord-section-heading">
                           <CalendarDays size={18} />
                           <div>
-                            <h3>{esFormularioVerano ? "Fechas y turno de verano" : esDeportivoForm ? "Fechas y talleres deportivos" : "Horario y grupos de atención"}</h3>
+                            <h3>{esFormularioVerano ? "Fechas y horario de verano" : esDeportivoForm ? "Fechas y talleres deportivos" : "Grados y horarios de atención"}</h3>
                           </div>
                         </div>
                         <div className="coord-section-grid">
-                          {esDeportivoForm ?
+                          {(esFormularioVerano || esDeportivoForm) ?
                             <div className="coord-deportivo-schedule-dates coord-field-full">
                               <div className="coord-time-fields-grid">
                                 <div className="coord-field">
@@ -271,7 +320,20 @@ function ProgramaFormModal({
                           :
                             <div className="coord-schedule-block-grid coord-schedule-unified coord-field-full">
                               <div className="coord-schedule-block-column coord-schedule-block-main">
-                                <h4 className="coord-block-title">Configuración del horario</h4>
+                                <div className="coord-field coord-field-full">
+                                  <label>Horario base: grados aplicables *</label>
+                                  <GradeSelector
+                                    niveles={nivelesGrados}
+                                    seleccionados={formGradosAplicables}
+                                    onToggle={toggleGrado}
+                                  />
+                                  <p className="coord-field-hint">
+                                    {formGradosAplicables.length
+                                      ? `${resumenGrados(formGradosAplicables)} · Configure abajo el horario que comparten estos grados.`
+                                      : "Seleccione los grados que comparten este horario principal."}
+                                  </p>
+                                </div>
+
                                 <div className="coord-field">
                                   <label>{esFormularioVerano ? "Días de atención *" : "Días del programa / taller *"}</label>
                                   <div className="coord-day-list">
@@ -289,9 +351,14 @@ function ProgramaFormModal({
                                       </label>
                                     ))}
                                   </div>
+                                  {esFormularioVerano ? (
+                                    <p className="coord-field-hint">
+                                      Seleccione 3 días de atención por semana.
+                                    </p>
+                                  ) : null}
                                 </div>
                                 
-                                <div className="coord-schedule-flow-row">
+                                <div className="coord-schedule-flow-row coord-schedule-time-meal-row">
                                   <div className="coord-schedule-mini-title">Clases</div>
                                   <div className="coord-field">
                                     <label>Hora inicio *</label>
@@ -301,9 +368,7 @@ function ProgramaFormModal({
                                     <label>Hora fin *</label>
                                     <input type="time" value={form.horaFin} onChange={e => actualizarForm("horaFin", e.target.value)} />
                                   </div>
-                                </div>
 
-                                <div className="coord-schedule-flow-row">
                                   <div className="coord-schedule-mini-title">Almuerzo</div>
                                   <div className="coord-field">
                                     <label>Almuerzo inicio</label>
@@ -373,28 +438,45 @@ function ProgramaFormModal({
                             </div>
                           ) : null}
 
-                          {esDeportivoForm && (
+                          {(esFormularioVerano || esDeportivoForm) && (
                             <div className="coord-field coord-field-full">
                               <div className="coord-deportivo-builder-heading" style={{ marginBottom: "14px", borderTop: "1px dashed #e2ece9", paddingTop: "14px" }}>
-                                <strong>Configuración de Deportes por Edades y Horarios</strong>
+                                <strong>{esFormularioVerano ? "Configuración de talleres específicos de verano por edades y horarios" : "Configuración de Deportes por Edades y Horarios"}</strong>
                                 <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#667085" }}>
-                                  Agregue cada taller deportivo detallando la disciplina, edad y horario específico (según el afiche).
+                                  {esFormularioVerano 
+                                    ? "Agregue cada taller o actividad detallando la disciplina, edad y horario específico (según el afiche)."
+                                    : "Agregue cada taller deportivo detallando la disciplina, edad y horario específico (según el afiche)."}
                                 </p>
                               </div>
                               
                               <div className="coord-deportivo-fields-row" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
                                 <div className="coord-field">
-                                  <label>Deporte *</label>
+                                  <label>{esFormularioVerano ? "Taller específico *" : "Deporte *"}</label>
                                   <select value={tallerDepDeporte} onChange={e => setTallerDepDeporte(e.target.value)}>
-                                    <option value="Vóley">Vóley</option>
-                                    <option value="Fútbol">Fútbol</option>
-                                    <option value="Básquet">Básquet</option>
-                                    <option value="Otro">Otro deporte...</option>
+                                    {esFormularioVerano ? (
+                                      <>
+                                        <option value="Danza">Danza</option>
+                                        <option value="Mini Chef">Mini Chef</option>
+                                        <option value="Pintura">Pintura</option>
+                                        <option value="Teatro">Teatro</option>
+                                        <option value="Fútbol">Fútbol</option>
+                                        <option value="Vóley">Vóley</option>
+                                        <option value="Básquet">Básquet</option>
+                                        <option value="Otro">Otro taller...</option>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <option value="Vóley">Vóley</option>
+                                        <option value="Fútbol">Fútbol</option>
+                                        <option value="Básquet">Básquet</option>
+                                        <option value="Otro">Otro deporte...</option>
+                                      </>
+                                    )}
                                   </select>
                                   {tallerDepDeporte === "Otro" && (
                                     <input 
                                       style={{ marginTop: "6px" }}
-                                      placeholder="Escriba el deporte" 
+                                      placeholder={esFormularioVerano ? "Escriba el nombre del taller" : "Escriba el deporte"} 
                                       value={tallerDepCustom} 
                                       onChange={e => setTallerDepCustom(e.target.value)} 
                                     />
@@ -476,7 +558,7 @@ function ProgramaFormModal({
                                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px", textAlign: "left" }}>
                                       <thead>
                                         <tr style={{ borderBottom: "2px solid #e2ece9", color: "#475467" }}>
-                                          <th style={{ padding: "8px" }}>Deporte</th>
+                                          <th style={{ padding: "8px" }}>{esFormularioVerano ? "Taller específico" : "Deporte"}</th>
                                           <th style={{ padding: "8px" }}>Edades</th>
                                           <th style={{ padding: "8px" }}>Día y Horario</th>
                                           <th style={{ padding: "8px" }}>Cupos</th>
@@ -511,7 +593,9 @@ function ProgramaFormModal({
                                   </div>
                                 ) : (
                                   <div style={{ padding: "20px", border: "1px dashed #cbd5e1", borderRadius: "8px", color: "#667085", textAlign: "center", background: "#f8fafc" }}>
-                                    Aún no se han configurado talleres deportivos. Agregue uno usando el formulario de arriba.
+                                    {esFormularioVerano 
+                                      ? "Aún no se han configurado talleres de verano. Agregue uno usando el formulario de arriba."
+                                      : "Aún no se han configurado talleres deportivos. Agregue uno usando el formulario de arriba."}
                                   </div>
                                 )}
                               </div>
@@ -522,89 +606,112 @@ function ProgramaFormModal({
                             <div className="coord-field coord-field-full">
                               <div className="coord-group-schedule-head">
                                 <div>
-                                  <strong>{esFormularioVerano ? "Turnos de verano" : "Turnos del mismo curso"}</strong>
-                                  <p>
-                                    {esFormularioVerano
-                                      ? "Use turnos si Secretaría debe ofrecer horarios distintos por grado o grupo."
-                                      : "Separe los grados por día sin crear otro curso. Ejemplo: 4to, 5to y 1ro secundaria el jueves; 6to grado el viernes."}
-                                  </p>
+                                  <strong>Turnos adicionales por grado</strong>
+                                  <p>Úselo solo si algunos grados tienen otro día, aula u horario distinto al horario base.</p>
                                 </div>
-                                <button type="button" className="coord-template-autofill" onClick={agregarGrupoHorario}>
+                                <button type="button" className="coord-template-autofill" onClick={() => setMostrarGrupoModal(true)}>
                                   <Plus size={14} />
-                                  {esFormularioVerano ? "Añadir turno" : "Añadir día para otros grados"}
+                                  Añadir turno
                                 </button>
                               </div>
                               {formHorariosPorGrupo.length ? (
-                                <div className="coord-group-schedule-list">
+                                <div className="coord-group-schedule-list coord-group-schedule-list-compact">
                                   {formHorariosPorGrupo.map((grupo, index) => (
-                                    <div className="coord-group-schedule" key={grupo.id || index}>
-                                      <div className="coord-group-schedule-title">
-                                        <strong>Grupo {index + 1}</strong>
-                                        <button type="button" onClick={() => quitarGrupoHorario(index)} aria-label="Quitar grupo">
-                                          <X size={14} />
-                                        </button>
+                                    <div className="coord-group-schedule coord-group-schedule-compact" key={grupo.id || index}>
+                                      <strong className="coord-group-schedule-badge">Grupo {index + 1}</strong>
+                                      <div className="coord-group-schedule-cell">
+                                        <span>Grados</span>
+                                        <p>{resumenGrados(grupo.grados || []) || "Sin grados"}</p>
                                       </div>
-                                      <GradeSelector
-                                        niveles={nivelesGrados}
-                                        seleccionados={grupo.grados || []}
-                                        onToggle={(valor) => toggleGradoGrupo(index, valor)}
-                                      />
-                                      <div className="coord-group-schedule-grid">
-                                        <div className="coord-field">
-                                          <label>Días del turno *</label>
-                                          <div className="coord-day-list coord-day-list-sm">
-                                            {diasSemana.map((dia) => {
-                                              const diasSeleccionados = String(grupo.dia || "").split(",").map(d => d.trim()).filter(Boolean);
-                                              const isSelected = diasSeleccionados.includes(dia);
-                                              return (
-                                                <label
-                                                  className={`coord-day-chip coord-day-chip-sm ${isSelected ? "is-selected" : ""}`}
-                                                  key={dia}
-                                                >
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={isSelected}
-                                                    onChange={() => {
-                                                      const nuevosDias = isSelected
-                                                        ? diasSeleccionados.filter((d) => d !== dia)
-                                                        : [...diasSeleccionados, dia];
-                                                      const diasOrdenados = diasSemana.filter(d => nuevosDias.includes(d));
-                                                      actualizarGrupoHorario(index, "dia", diasOrdenados.join(", "));
-                                                    }}
-                                                  />
-                                                  <span title={dia}>{dia.substring(0, 2)}</span>
-                                                </label>
-                                              );
-                                            })}
-                                          </div>
-                                        </div>
-                                        <div className="coord-field">
-                                          <label>Aula</label>
-                                          <input value={grupo.aula || ""} onChange={(event) => actualizarGrupoHorario(index, "aula", event.target.value)} placeholder="Ej: A-204" />
-                                        </div>
-                                        <div className="coord-field">
-                                          <label>Clase inicio</label>
-                                          <input type="time" value={grupo.horaInicio || "15:20"} onChange={(event) => actualizarGrupoHorario(index, "horaInicio", event.target.value)} />
-                                        </div>
-                                        <div className="coord-field">
-                                          <label>Clase fin</label>
-                                          <input type="time" value={grupo.horaFin || "17:20"} onChange={(event) => actualizarGrupoHorario(index, "horaFin", event.target.value)} />
-                                        </div>
-                                        <div className="coord-field">
-                                          <label>Almuerzo inicio</label>
-                                          <input type="time" value={grupo.almuerzoInicio || "14:20"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoInicio", event.target.value)} />
-                                        </div>
-                                        <div className="coord-field">
-                                          <label>Almuerzo fin</label>
-                                          <input type="time" value={grupo.almuerzoFin || "15:10"} onChange={(event) => actualizarGrupoHorario(index, "almuerzoFin", event.target.value)} />
-                                        </div>
+                                      <div className="coord-group-schedule-cell">
+                                        <span>Días y hora</span>
+                                        <p>{grupo.dia || "Sin día"} · {formatearHora12(grupo.horaInicio || "15:20")} a {formatearHora12(grupo.horaFin || "17:20")}</p>
                                       </div>
+                                      <div className="coord-group-schedule-cell">
+                                        <span>Responsable / aula</span>
+                                        <p>
+                                          {[grupo.responsable, grupo.tutora, grupo.aula ? `Aula: ${grupo.aula}` : ""]
+                                            .filter(Boolean)
+                                            .join(" · ") || "Sin responsable"}
+                                        </p>
+                                      </div>
+                                      <button type="button" onClick={() => quitarGrupoHorario(index)} aria-label="Quitar grupo">
+                                        <X size={14} />
+                                      </button>
                                     </div>
                                   ))}
                                 </div>
                               ) : (
-                                <p className="coord-field-hint"></p>
+                                <p className="coord-field-hint">Si todos los grados usan el horario base, deje esta parte vacía.</p>
                               )}
+                              {mostrarGrupoModal ? (
+                                <div className="coord-modal-overlay" style={{ zIndex: 2200 }}>
+                                  {grupoDraftError ? (
+                                    <div className="coord-floating-error" role="alert" key={grupoDraftErrorTick}>
+                                      <AlertCircle size={15} />
+                                      {grupoDraftError}
+                                    </div>
+                                  ) : null}
+                                  <div className="coord-modal coord-nested-turn-modal" onClick={e => e.stopPropagation()}>
+                                    <div className="coord-modal-header">
+                                      <div className="coord-modal-title">
+                                        <span className="coord-modal-icon"><CalendarDays size={20} /></span>
+                                        <div>
+                                          <h2>Añadir día para otros grados</h2>
+                                          <p>Registre solo los grados que no usan el horario base.</p>
+                                        </div>
+                                      </div>
+                                      <button className="coord-modal-close" type="button" onClick={cerrarGrupoModal}><X size={20} /></button>
+                                    </div>
+                                    <div className="coord-program-form-main coord-nested-turn-body" style={{ padding: "16px 20px" }}>
+                                      <section className="coord-form-section coord-nested-turn-section">
+                                        <div className="coord-section-grid">
+                                          <div className="coord-field coord-field-full">
+                                            <label>Grados del turno *</label>
+                                            <GradeSelector niveles={nivelesGrados} seleccionados={grupoDraft.grados || []} onToggle={toggleGradoDraft} />
+                                          </div>
+                                          <div className="coord-field">
+                                            <label>Días del turno *</label>
+                                            <div className="coord-day-list coord-day-list-sm">
+                                              {diasSemana.map((dia) => {
+                                                const diasSeleccionados = String(grupoDraft.dia || "").split(",").map(d => d.trim()).filter(Boolean);
+                                                const isSelected = diasSeleccionados.includes(dia);
+                                                return (
+                                                  <label className={`coord-day-chip coord-day-chip-sm ${isSelected ? "is-selected" : ""}`} key={dia}>
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={isSelected}
+                                                      onChange={() => {
+                                                        const nuevosDias = isSelected ? diasSeleccionados.filter((d) => d !== dia) : [...diasSeleccionados, dia];
+                                                        const diasOrdenados = diasSemana.filter(d => nuevosDias.includes(d));
+                                                        actualizarGrupoDraft("dia", diasOrdenados.join(", "));
+                                                      }}
+                                                    />
+                                                    <span title={dia}>{dia.substring(0, 2)}</span>
+                                                  </label>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                          <div className="coord-field"><label>Aula</label><input value={grupoDraft.aula || ""} onChange={e => actualizarGrupoDraft("aula", e.target.value)} placeholder="Ej: A-204" /></div>
+                                          <div className="coord-field"><label>Clase inicio</label><input type="time" value={grupoDraft.horaInicio || "15:20"} onChange={e => actualizarGrupoDraft("horaInicio", e.target.value)} /></div>
+                                          <div className="coord-field"><label>Clase fin</label><input type="time" value={grupoDraft.horaFin || "17:20"} onChange={e => actualizarGrupoDraft("horaFin", e.target.value)} /></div>
+                                          <div className="coord-field"><label>Almuerzo inicio</label><input type="time" value={grupoDraft.almuerzoInicio || "14:20"} onChange={e => actualizarGrupoDraft("almuerzoInicio", e.target.value)} /></div>
+                                          <div className="coord-field"><label>Almuerzo fin</label><input type="time" value={grupoDraft.almuerzoFin || "15:10"} onChange={e => actualizarGrupoDraft("almuerzoFin", e.target.value)} /></div>
+                                          <div className="coord-field"><label>Responsable del turno</label><input value={grupoDraft.responsable || ""} onChange={e => actualizarGrupoDraft("responsable", e.target.value)} placeholder="Ej: Prof. Ana Torres" /></div>
+                                          <div className="coord-field"><label>Tutora / apoyo del turno</label><input value={grupoDraft.tutora || ""} onChange={e => actualizarGrupoDraft("tutora", e.target.value)} placeholder="Ej: Srta. Lucia Vega" /></div>
+                                        </div>
+                                      </section>
+                                    </div>
+                                    <div className="coord-modal-actions">
+                                      <button type="button" className="coord-secondary-button" onClick={cerrarGrupoModal}>Cancelar</button>
+                                      <button type="button" className="coord-register-button" onClick={guardarGrupoDraft}>
+                                        <CheckCircle2 size={17} /> <span>Guardar turno</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : null}
                             </div>
                           ) : null}
                         </div>
@@ -620,7 +727,7 @@ function ProgramaFormModal({
                         <div className="coord-section-grid coord-payment-grid">
                           <div className="coord-field">
                             <label>Cupos</label>
-                            {esDeportivoForm ? (
+                            {(esFormularioVerano || esDeportivoForm) ? (
                               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                                 <input
                                   type="number"
@@ -649,58 +756,107 @@ function ProgramaFormModal({
                             <div className="coord-field coord-field-full">
                             <label className="coord-check-label coord-check-label-stacked">
                               <span>
-                                <input type="checkbox" checked={form.invitacionMasiva} onChange={e => actualizarInvitacionMasiva(e.target.checked)} />
+                                <input
+                                  type="checkbox"
+                                  checked={form.invitacionMasiva}
+                                  onChange={e => {
+                                    actualizarInvitacionMasiva(e.target.checked);
+                                    if (e.target.checked) setMostrarInvitacionModal(true);
+                                  }}
+                                />
                                 Invitación masiva en Padres
                               </span>
                               <small>El curso aparecerá en el portal de padres sin cargar Excel de invitados, según el alcance seleccionado.</small>
                             </label>
                             {form.invitacionMasiva ? (
-                              <div className="coord-field coord-field-full">
-                                <label>Alcance de la invitación masiva</label>
-                                <select
-                                  value={form.alcanceInvitacionMasiva || "colegio"}
-                                  onChange={e => actualizarForm("alcanceInvitacionMasiva", e.target.value)}
+                              <div className="coord-summer-payment-note coord-field-full">
+                                <Photo size={16} />
+                                <span>
+                                  {obtenerEtiquetaAlcance(form.alcanceInvitacionMasiva)}
+                                  {form.anuncioImagenNombre ? ` · Imagen: ${form.anuncioImagenNombre}` : " · Sin imagen"}
+                                </span>
+                                <button
+                                  type="button"
+                                  className="coord-secondary-button"
+                                  onClick={() => setMostrarInvitacionModal(true)}
                                 >
-                                  <option value="colegio">Todo el colegio</option>
-                                  <option value="primaria">Solo nivel Primaria</option>
-                                  <option value="secundaria">Solo nivel Secundaria</option>
-                                  <option value="grados">Solo grados habilitados arriba</option>
-                                </select>
-                                <small>
-                                  Use Primaria o Secundaria cuando el anuncio sea masivo para un nivel completo; use grados habilitados si debe respetar la selección del formulario.
-                                </small>
+                                  Configurar invitación
+                                </button>
                               </div>
                             ) : null}
-                            {form.invitacionMasiva ? (
-                              <div className="coord-announcement-image-field">
-                                <div className="coord-announcement-copy">
-                                  <Photo size={18} />
-                                  <div>
-                                    <strong>Imagen de anuncio para Padres</strong>
-                                    
+                            {mostrarInvitacionModal && form.invitacionMasiva ? (
+                              <div className="coord-modal-overlay" style={{ zIndex: 2200 }}>
+                                <div className="coord-modal" style={{ maxWidth: "720px" }} onClick={e => e.stopPropagation()}>
+                                  <div className="coord-modal-header">
+                                    <div className="coord-modal-title">
+                                      <span className="coord-modal-icon"><Photo size={20} /></span>
+                                      <div>
+                                        <h2>Configurar invitación masiva</h2>
+                                        <p>Defina a qué padres se mostrará el curso y agregue una imagen si corresponde.</p>
+                                      </div>
+                                    </div>
+                                    <button className="coord-modal-close" type="button" onClick={() => setMostrarInvitacionModal(false)}><X size={20} /></button>
+                                  </div>
+                                  <div className="coord-program-form-main" style={{ padding: "16px 20px" }}>
+                                    <section className="coord-form-section">
+                                      <div className="coord-section-grid">
+                                        <div className="coord-field coord-field-full">
+                                          <label>Alcance de la invitación masiva</label>
+                                          <select
+                                            value={form.alcanceInvitacionMasiva || "colegio"}
+                                            onChange={e => actualizarForm("alcanceInvitacionMasiva", e.target.value)}
+                                          >
+                                            <option value="colegio">Todo el colegio</option>
+                                            <option value="primaria">Solo nivel Primaria</option>
+                                            <option value="secundaria">Solo nivel Secundaria</option>
+                                            <option value="grados">Solo grados habilitados arriba</option>
+                                          </select>
+                                          <small>
+                                            Use Primaria o Secundaria cuando el anuncio sea masivo para un nivel completo; use grados habilitados si debe respetar la selección del formulario.
+                                          </small>
+                                        </div>
+                                        <div className="coord-field coord-field-full">
+                                          <div className="coord-announcement-image-field">
+                                            <div className="coord-announcement-copy">
+                                              <Photo size={18} />
+                                              <div>
+                                                <strong>Imagen de anuncio para Padres</strong>
+                                              </div>
+                                            </div>
+                                            {form.anuncioImagen ? (
+                                              <div className="coord-announcement-preview">
+                                                <img src={form.anuncioImagen} alt="Anuncio para portal de padres" />
+                                                <div>
+                                                  <strong>{form.anuncioImagenNombre || "Imagen de anuncio"}</strong>
+                                                  <span>
+                                                    {formatearPesoArchivo(form.anuncioImagenTamano)}
+                                                    {form.anuncioImagenComprimida ? " · comprimida" : ""}
+                                                  </span>
+                                                  <button type="button" onClick={quitarImagenAnuncio}>
+                                                    Quitar imagen
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <label className="coord-announcement-upload">
+                                                <input type="file" accept="image/*" onChange={seleccionarImagenAnuncio} />
+                                                <Upload size={18} />
+                                                <span>Agregar imagen</span>
+                                              </label>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </section>
+                                  </div>
+                                  <div className="coord-modal-actions">
+                                    <button type="button" className="coord-secondary-button" onClick={() => setMostrarInvitacionModal(false)}>Cerrar</button>
+                                    <button type="button" className="coord-register-button" onClick={() => setMostrarInvitacionModal(false)}>
+                                      <CheckCircle2 size={17} />
+                                      <span>Guardar configuración</span>
+                                    </button>
                                   </div>
                                 </div>
-                                {form.anuncioImagen ? (
-                                  <div className="coord-announcement-preview">
-                                    <img src={form.anuncioImagen} alt="Anuncio para portal de padres" />
-                                    <div>
-                                      <strong>{form.anuncioImagenNombre || "Imagen de anuncio"}</strong>
-                                      <span>
-                                        {formatearPesoArchivo(form.anuncioImagenTamano)}
-                                        {form.anuncioImagenComprimida ? " · comprimida" : ""}
-                                      </span>
-                                      <button type="button" onClick={quitarImagenAnuncio}>
-                                        Quitar imagen
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <label className="coord-announcement-upload">
-                                    <input type="file" accept="image/*" onChange={seleccionarImagenAnuncio} />
-                                    <Upload size={18} />
-                                    <span>Agregar imagen</span>
-                                  </label>
-                                )}
                               </div>
                             ) : null}
                           </div>
@@ -740,22 +896,24 @@ function ProgramaFormModal({
                         </section>
                       ) : null}
     
-                      <section className="coord-form-section">
-                        <div className="coord-section-heading">
-                          <Users size={18} />
-                          <div>
-                            <h3>Responsables</h3>
+                      {!formHorariosPorGrupo || formHorariosPorGrupo.length === 0 ? (
+                        <section className="coord-form-section">
+                          <div className="coord-section-heading">
+                            <Users size={18} />
+                            <div>
+                              <h3>Responsables</h3>
+                            </div>
                           </div>
-                        </div>
-                        <div className="coord-section-grid">
-                          <div className="coord-field"><label>Responsable</label>
-                            <input value={form.responsable} onChange={e => actualizarForm("responsable", e.target.value)} placeholder="Prof. Ana Torres" />
+                          <div className="coord-section-grid">
+                            <div className="coord-field"><label>Responsable</label>
+                              <input value={form.responsable} onChange={e => actualizarForm("responsable", e.target.value)} placeholder="Prof. Ana Torres" />
+                            </div>
+                            <div className="coord-field"><label>Tutora / apoyo</label>
+                              <input value={form.tutora} onChange={e => actualizarForm("tutora", e.target.value)} placeholder="(Srta. Lucia Vega)" />
+                            </div>
                           </div>
-                          <div className="coord-field"><label>Tutora / apoyo</label>
-                            <input value={form.tutora} onChange={e => actualizarForm("tutora", e.target.value)} placeholder="(Srta. Lucia Vega)" />
-                          </div>
-                        </div>
-                      </section>
+                        </section>
+                      ) : null}
                     </div>
     
                   </form>
@@ -773,3 +931,9 @@ function ProgramaFormModal({
 }
 
 export default ProgramaFormModal;
+
+
+
+
+
+

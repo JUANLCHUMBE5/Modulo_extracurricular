@@ -1,4 +1,4 @@
-import { Alert as MantineAlert, Badge, Group, ActionIcon, Tooltip } from "@mantine/core";
+import { Alert as MantineAlert, Badge, Group, ActionIcon, Tooltip, TextInput, Select, Button } from "@mantine/core";
 import {
   IconAlertCircle as AlertCircle,
   IconBook as BookOpen,
@@ -16,6 +16,9 @@ import {
   IconLanguage as Language,
   IconSun as Sun,
   IconBookmark as Bookmark,
+  IconSearch as Search,
+  IconX as X,
+  IconFilter as Filter,
 } from "@tabler/icons-react";
 import { formatearSoles } from "../utils/coordinacionFormatters";
 import { CuposTabla, GradosTabla, HorarioTabla, VigenciaTabla } from "./ProgramTableCells";
@@ -55,7 +58,24 @@ function ProgramasView({
   tipoMsg,
   toggleEstado,
   verInvitados,
+  busqueda,
+  setBusqueda,
+  categorias,
+  filtroCategoria,
+  setFiltroCategoria,
+  filtroEstado,
+  setFiltroEstado,
+  todosLosProgramas = [],
 }) {
+  const limpiarTodosFiltros = () => {
+    setBusqueda("");
+    setFiltroCategoria("todos");
+    setFiltroPeriodo("todos");
+    setFiltroEstado("todos");
+  };
+
+  const hasActiveFilters = busqueda.trim() !== "" || filtroCategoria !== "todos" || filtroPeriodo !== "todos" || filtroEstado !== "todos";
+
   return (
     <>
       <header className="coord-topbar">
@@ -64,31 +84,163 @@ function ProgramasView({
       </header>
       <section className="coord-workspace coord-workspace-single">
         <article className="coord-card coord-search-card">
-          <div className="coord-card-title">
-            <span className="coord-title-icon"><BookOpen size={21} /></span>
-            <div>
-              <h2>Programas registrados</h2>
-              <p>Consulte, cree o administre programas y talleres.</p>
+          <div className="coord-card-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+              <span className="coord-title-icon"><BookOpen size={21} /></span>
+              <div>
+                <h2>Programas registrados</h2>
+                <p>Consulte, cree o administre programas y talleres.</p>
+              </div>
+            </div>
+            <div className="coord-stats-badges" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <Badge variant="light" color="blue" size="md">
+                {todosLosProgramas.length} en total
+              </Badge>
+              <Badge variant="light" color="green" size="md">
+                {todosLosProgramas.filter(p => p.estado === "Habilitado").length} disponibles
+              </Badge>
+              {programas.length !== todosLosProgramas.length && (
+                <Badge variant="filled" color="orange" size="md">
+                  {programas.length} filtrados
+                </Badge>
+              )}
             </div>
           </div>
 
-          <div className="coord-form">
-            <div className="coord-filtros-row">
-              <div className="coord-field">
-                <label><CalendarDays size={14} /> Periodo</label>
-                <select value={filtroPeriodo} onChange={(event) => setFiltroPeriodo(event.target.value)}>
-                  <option value="todos">Todos</option>
-                  <option value="escolar">Año escolar</option>
-                  <option value="verano">Ciclo verano</option>
-                </select>
+          <div className="coord-filtros-card-mantine" style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
+            <div className="coord-filtros-row-mantine" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "12px" }}>
+              {/* Buscador */}
+              <div className="coord-filter-search" style={{ flex: "2 1 200px" }}>
+                <TextInput
+                  label={
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                      <Search size={14} style={{ color: "#176c60" }} /> Buscar taller
+                    </span>
+                  }
+                  placeholder="Nombre o código..."
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  leftSection={<Search size={16} color="#94a3b8" />}
+                  rightSection={
+                    busqueda && (
+                      <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => setBusqueda("")}>
+                        <X size={16} />
+                      </ActionIcon>
+                    )
+                  }
+                  size="md"
+                  style={{ width: "100%" }}
+                />
               </div>
 
+              {/* Categorías */}
+              <div className="coord-filter-category" style={{ flex: "1 1 140px" }}>
+                <Select
+                  label={
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                      <Filter size={14} style={{ color: "#176c60" }} /> Categoría
+                    </span>
+                  }
+                  value={filtroCategoria}
+                  onChange={(value) => setFiltroCategoria(value || "todos")}
+                  data={[
+                    { value: "todos", label: "Todas" },
+                    ...categorias.map((cat) => ({ value: cat, label: cat }))
+                  ]}
+                  size="md"
+                  style={{ width: "100%" }}
+                  allowDeselect={false}
+                />
+              </div>
+
+              {/* Periodo */}
+              <div className="coord-filter-period" style={{ flex: "1 1 130px" }}>
+                <Select
+                  label={
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                      <CalendarDays size={14} style={{ color: "#176c60" }} /> Periodo
+                    </span>
+                  }
+                  value={filtroPeriodo}
+                  onChange={(value) => setFiltroPeriodo(value || "todos")}
+                  data={[
+                    { value: "todos", label: "Todos" },
+                    { value: "escolar", label: "Año escolar" },
+                    { value: "verano", label: "Ciclo verano" }
+                  ]}
+                  size="md"
+                  style={{ width: "100%" }}
+                  allowDeselect={false}
+                />
+              </div>
+
+              {/* Disponibilidad */}
+              <div className="coord-filter-status" style={{ flex: "1 1 130px" }}>
+                <Select
+                  label={
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                      <Filter size={14} style={{ color: "#176c60" }} /> Disponibilidad
+                    </span>
+                  }
+                  value={filtroEstado}
+                  onChange={(value) => setFiltroEstado(value || "todos")}
+                  data={[
+                    { value: "todos", label: "Todos" },
+                    { value: "disponibles", label: "Solo disponibles" },
+                    { value: "deshabilitados", label: "Deshabilitados" },
+                    { value: "finalizados", label: "Finalizados" }
+                  ]}
+                  size="md"
+                  style={{ width: "100%" }}
+                  allowDeselect={false}
+                />
+              </div>
+
+              {/* Botón de Registro */}
               {puedeCrearProgramas ? (
-                <button className="coord-register-button" type="button" onClick={abrirCrear}>
-                  <Plus size={17} /><span>Nuevo programa</span>
-                </button>
+                <div style={{ flex: "0 0 auto", height: "42px", display: "flex", alignItems: "flex-end" }}>
+                  <Button
+                    color="sanrafael"
+                    onClick={abrirCrear}
+                    leftSection={<Plus size={17} />}
+                    size="md"
+                    style={{ height: "42px" }}
+                  >
+                    Nuevo programa
+                  </Button>
+                </div>
               ) : null}
             </div>
+
+            {/* Filtros Activos Resumen */}
+            {hasActiveFilters && (
+              <Group gap="xs" style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px dashed #e2e8f0" }}>
+                <span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Filtros activos:</span>
+                {busqueda.trim() && (
+                  <Badge color="sanrafael" variant="light" rightSection={<X size={12} onClick={() => setBusqueda("")} style={{ cursor: "pointer" }} />}>
+                    Búsqueda: {busqueda}
+                  </Badge>
+                )}
+                {filtroCategoria !== "todos" && (
+                  <Badge color="sanrafael" variant="light" rightSection={<X size={12} onClick={() => setFiltroCategoria("todos")} style={{ cursor: "pointer" }} />}>
+                    Categoría: {filtroCategoria}
+                  </Badge>
+                )}
+                {filtroPeriodo !== "todos" && (
+                  <Badge color="sanrafael" variant="light" rightSection={<X size={12} onClick={() => setFiltroPeriodo("todos")} style={{ cursor: "pointer" }} />}>
+                    Periodo: {filtroPeriodo === "escolar" ? "Año escolar" : "Ciclo verano"}
+                  </Badge>
+                )}
+                {filtroEstado !== "todos" && (
+                  <Badge color="sanrafael" variant="light" rightSection={<X size={12} onClick={() => setFiltroEstado("todos")} style={{ cursor: "pointer" }} />}>
+                    Estado: {filtroEstado === "disponibles" ? "Habilitado" : filtroEstado === "deshabilitados" ? "Deshabilitado" : "Finalizado"}
+                  </Badge>
+                )}
+                <Button variant="subtle" size="xs" color="red" onClick={limpiarTodosFiltros} style={{ padding: "0 8px", height: "24px" }}>
+                  Limpiar filtros
+                </Button>
+              </Group>
+            )}
           </div>
 
           {mensaje && (

@@ -29,7 +29,7 @@ export function normalizarListaGrados(lista) {
     })
     .filter(Boolean);
 
-  return [...new Set(normalizados)];
+  return ordenarGrados([...new Set(normalizados)]);
 }
 
 export function normalizarListaTexto(lista) {
@@ -187,6 +187,8 @@ export function normalizarHorariosPorGrupo(grupos, gradosAplicables = null) {
       horaInicio: grupo.horaInicio || "",
       horaFin: grupo.horaFin || "",
       aula: String(grupo.aula || "").trim(),
+      responsable: String(grupo.responsable || "").trim(),
+      tutora: String(grupo.tutora || "").trim(),
     };
   }).filter((grupo) => grupo.grados.length > 0);
 }
@@ -287,6 +289,22 @@ export function resumenGrados(grados) {
     })
     .filter(Boolean)
     .join(" / ");
+}
+
+function ordenarGrados(grados) {
+  const orden = new Map();
+  nivelesGrados.forEach(({ nivel, grados: gradosNivel }, nivelIndex) => {
+    (Array.isArray(gradosNivel) ? gradosNivel : []).forEach((grado, gradoIndex) => {
+      orden.set(`${nivel}:${grado}`, nivelIndex * 100 + gradoIndex);
+    });
+  });
+
+  return [...grados].sort((a, b) => {
+    const ordenA = orden.has(a) ? orden.get(a) : Number.MAX_SAFE_INTEGER;
+    const ordenB = orden.has(b) ? orden.get(b) : Number.MAX_SAFE_INTEGER;
+    if (ordenA !== ordenB) return ordenA - ordenB;
+    return String(a).localeCompare(String(b), "es", { numeric: true });
+  });
 }
 
 function etiquetaGradoCorta(grado) {

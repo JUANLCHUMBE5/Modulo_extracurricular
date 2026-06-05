@@ -198,7 +198,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
     categoria: programa.categoria || "",
     alcanceInvitacionMasiva: programa.alcanceInvitacionMasiva || "",
     horario: horarioRegistro,
-    docente: programa.responsable || programa.docente || "No definido",
+    docente: resolverDocentePorGrado(programa, gradoRegistro),
     costo: Number(programa.costo ?? 0),
     modalidadCobro: programa.modalidadCobro || "",
     fechaInicio: programa.fechaInicio || "",
@@ -382,7 +382,7 @@ function obtenerInvitaciones(dni, estudiante = null) {
         alcanceInvitacionMasiva: programa.alcanceInvitacionMasiva || "colegio",
         periodo: normalizarPeriodoTexto(programa.periodo),
         horario: resolverHorarioPorGrado(programa, estudiante?.grado) || programa.horario || "Horario por confirmar",
-        responsable: programa.responsable || programa.docente || "Responsable por definir",
+        responsable: resolverDocentePorGrado(programa, estudiante?.grado),
         costo: Number(programa.costo || 0),
         modalidadCobro: programa.modalidadCobro || "No definido",
         requisitos: programa.requisitos || "Sin requisitos adicionales",
@@ -425,7 +425,7 @@ function obtenerInvitaciones(dni, estudiante = null) {
           alcanceInvitacionMasiva: programa.alcanceInvitacionMasiva || "colegio",
           periodo: normalizarPeriodoTexto(programa.periodo),
           horario: resolverHorarioPorGrado(programa, invitado.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar",
-          responsable: programa.responsable || programa.docente || "Responsable por definir",
+          responsable: resolverDocentePorGrado(programa, invitado.grado || estudiante?.grado),
           costo: Number(programa.costo || 0),
           modalidadCobro: programa.modalidadCobro || "No definido",
           requisitos: programa.requisitos || "Sin requisitos adicionales",
@@ -550,7 +550,7 @@ function sincronizarInscripcionConPrograma(inscripcion) {
     ...inscripcion,
     programa: programa.nombre || inscripcion.programa,
     horario: resolverHorarioPorGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado) || (programa.invitacionMasiva ? programa.horario : "") || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || inscripcion.horario,
-    docente: programa.responsable || programa.docente || inscripcion.docente,
+    docente: resolverDocentePorGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado) || inscripcion.docente || "No definido",
     costo: Number(programa.costo ?? inscripcion.costo ?? 0),
     modalidadCobro: programa.modalidadCobro || inscripcion.modalidadCobro,
     fechaInicio: programa.fechaInicio || inscripcion.fechaInicio,
@@ -602,6 +602,22 @@ function resolverHorarioPorGrado(programa, gradoAlumno = "") {
   const grados = formatearGrado(gradoDelTurno || gradoAlumno);
   const aula = grupo.aula ? ` · Aula ${grupo.aula}` : "";
   return `${grados ? `${grados}: ` : ""}${grupo.dia} almuerzo ${grupo.almuerzoInicio || "14:20"}-${grupo.almuerzoFin || "15:10"}, clase ${grupo.horaInicio || ""}-${grupo.horaFin || ""}${aula}`;
+}
+
+function resolverDocentePorGrado(programa, gradoAlumno = "") {
+  const grupos = programa?.horariosPorGrupo || [];
+  if (!Array.isArray(grupos) || grupos.length === 0) return programa.responsable || programa.docente || "No definido";
+
+  const gradoNormalizado = descomponerGrado(gradoAlumno);
+  if (!gradoNormalizado.numero) return programa.responsable || programa.docente || "No definido";
+  const grupo = grupos.find((item) =>
+    (item.grados || []).some((grado) => coincideGrado(grado, gradoNormalizado))
+  );
+
+  if (grupo && grupo.responsable && grupo.responsable.trim()) {
+    return grupo.responsable;
+  }
+  return programa.responsable || programa.docente || "No definido";
 }
 
 function coincideGrado(gradoGrupo, gradoAlumnoNormalizado) {

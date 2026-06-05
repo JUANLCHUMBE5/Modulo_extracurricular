@@ -1,4 +1,4 @@
-import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
+﻿import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
 import { isApiMode, apiClient } from "../../../services/apiClient";
 import {
   adaptarPrograma,
@@ -120,6 +120,7 @@ export async function crearPrograma(datos) {
       responsable: datos.responsable || datos.docente || "",
       periodo: datos.periodo || "escolar",
       modalidad_cobro: datos.modalidadCobro || "Mensual",
+      duracion_aviso_dias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
       requiere_uniforme: Boolean(datos.requiereUniforme),
       requiere_indumentaria: Boolean(datos.requiereIndumentaria),
       anuncio_imagen: datos.anuncioImagen || "",
@@ -201,6 +202,7 @@ export async function crearProgramaDesdeDocumento(datos) {
       creado_desde_documento: true,
       periodo: datos.periodo || "escolar",
       modalidad_cobro: datos.modalidadCobro || "Mensual",
+      duracion_aviso_dias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
       requiere_uniforme: Boolean(datos.requiereUniforme),
       requiere_indumentaria: Boolean(datos.requiereIndumentaria),
       grados: datos.gradosAplicables || [],
@@ -668,6 +670,64 @@ function claveRegistroPreview(registro) {
   if (registro.dni) return `${registro.programaId}:dni:${registro.dni}`;
   const nombre = `${registro.nombres || ""} ${registro.apellidos || ""}`.trim().toLowerCase();
   return nombre ? `${registro.programaId}:nombre:${nombre}:${registro.grado}:${registro.seccion}` : "";
+}
+
+export async function registrarAlumnoIndividualCarga({ periodo, programaId, dni, nombre, grado }) {
+  await syncApiDb();
+  normalizarPeriodosGuardados();
+
+  const programa = (apiDb.programas || []).find((item) => String(item.id) === String(programaId));
+  if (!programa) throw new Error("Seleccione un programa o curso.");
+  if (!esCategoriaAcademica(programa)) throw new Error("La carga de alumnos solo permite programas de categoría Académico.");
+
+  const dniLimpio = limpiarTexto(dni).replace(/\D/g, "");
+  const nombreLimpio = limpiarTexto(nombre);
+  const gradoLimpio = limpiarTexto(grado);
+  const errores = [];
+
+  if (!/^\d{8}$/.test(dniLimpio)) errores.push("DNI inválido. Debe tener 8 dígitos.");
+  if (!textoSeguro(nombreLimpio)) errores.push("Falta nombre.");
+  if (!textoSeguro(gradoLimpio)) errores.push("Falta grado.");
+
+  const existente = (apiDb.invitadosPorPrograma?.[programa.id] || []).find((item) =>
+    String(item.dni || "").replace(/\D/g, "") === dniLimpio
+  );
+  if (existente) errores.push("El alumno ya existe en este programa.");
+  if (String(programa.estado || "Habilitado") !== "Habilitado") {
+    errores.push(`El programa ${programa.nombre || "seleccionado"} está ${programa.estado}. Habilítelo antes de registrar alumnos.`);
+  }
+  if (errores.length) throw new Error(errores.join(" "));
+
+  const preview = {
+    id: `PREVIEW-INDIVIDUAL-${Date.now()}`,
+    periodo: normalizarPeriodo(periodo),
+    archivoNombre: "Registro individual",
+    archivos: ["Registro individual"],
+    registros: [{
+      fila: 1,
+      dni: dniLimpio,
+      nombres: nombreLimpio,
+      apellidos: "",
+      grado: gradoLimpio,
+      seccion: "",
+      seleccion: "",
+      curso: "",
+      nivelCambridge: "",
+      programaId: programa.id,
+      programaNombre: programa.nombre,
+      estado: "Valido",
+      errores: [],
+      estadoAlumno: "Invitado",
+    }],
+    resumen: {
+      total: 1,
+      validos: 1,
+      errores: 0,
+      duplicados: 0,
+    },
+  };
+
+  return confirmarCargaAlumnos(preview);
 }
 
 export async function confirmarCargaAlumnos(preview) {
@@ -1144,3 +1204,4 @@ function obtenerMensajeConexionApi() {
 
   return "No se pudo conectar con el servidor. Verifique que la API este ejecutandose.";
 }
+

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Adaptadores de datos para migración de API
  * Módulo Extracurricular - IEP San Rafael S.A.C.
  * 
@@ -25,11 +25,13 @@ export function adaptarPrograma(apiPrograma) {
     cuposOcupados: apiPrograma.cupos_ocupados !== undefined ? Number(apiPrograma.cupos_ocupados) : Number(apiPrograma.cuposOcupados || 0),
     cuposDisponibles: (apiPrograma.cupos_disponibles !== undefined ? Number(apiPrograma.cupos_disponibles) : Number(apiPrograma.cupos || 0)) - (apiPrograma.cupos_ocupados !== undefined ? Number(apiPrograma.cupos_ocupados) : Number(apiPrograma.cuposOcupados || 0)),
     estado: apiPrograma.estado_programa || apiPrograma.estado || "Habilitado",
+    requiereReconfiguracion: Boolean(apiPrograma.requiere_reconfiguracion ?? apiPrograma.requiereReconfiguracion),
     gradosAplicables: apiPrograma.grados || apiPrograma.gradosAplicables || (apiPrograma.grado ? [apiPrograma.grado] : []),
     responsable: apiPrograma.responsable || apiPrograma.docente || "",
     horario: apiPrograma.horario || "",
     periodo: apiPrograma.periodo || "escolar",
     modalidadCobro: apiPrograma.modalidad_cobro || apiPrograma.modalidadCobro || "Mensual",
+    duracionAvisoDias: apiPrograma.duracion_aviso_dias || apiPrograma.duracionAvisoDias || "",
     requiereUniforme: apiPrograma.requiere_uniforme !== undefined ? Boolean(apiPrograma.requiere_uniforme) : Boolean(apiPrograma.requiereUniforme),
     requiereIndumentaria: apiPrograma.requiere_indumentaria !== undefined ? Boolean(apiPrograma.requiere_indumentaria) : Boolean(apiPrograma.requiereIndumentaria),
     anuncioImagen: apiPrograma.anuncio_imagen || apiPrograma.anuncioImagen || "",
@@ -215,3 +217,4 @@ export function adaptarAsistencia(apiAsistencia) {
     estadoPago: apiAsistencia.estado_pago || apiAsistencia.estadoPago || "Pendiente"
   };
 }
+
