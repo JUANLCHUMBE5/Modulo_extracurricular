@@ -26,11 +26,13 @@ function obtenerTalleresEstructurados(programa) {
   // 1. Si tiene talleresDeportivos (arreglo estructurado)
   if (tieneTalleres) {
     return programa.talleresDeportivos.map(taller => {
-      const label = `${taller.deporte} (${taller.edadMinima}-${taller.edadMaxima} a.) (${taller.horaInicio}-${taller.horaFin})`;
-      const horarioCompleto = `${taller.dia}: ${taller.deporte} (${taller.edadMinima}-${taller.edadMaxima} a.): ${taller.horaInicio}-${taller.horaFin}`;
+      const nivelLabel = taller.nivel ? ` [${taller.nivel}]` : "";
+      const label = `${taller.deporte}${nivelLabel} (${taller.edadMinima}-${taller.edadMaxima} a.) (${taller.horaInicio}-${taller.horaFin})`;
+      const horarioCompleto = `${taller.dia}: ${taller.deporte}${nivelLabel} (${taller.edadMinima}-${taller.edadMaxima} a.): ${taller.horaInicio}-${taller.horaFin}`;
       return {
         dia: taller.dia,
         deporte: taller.deporte,
+        nivel: taller.nivel || "",
         edadMinima: taller.edadMinima,
         edadMaxima: taller.edadMaxima,
         horaInicio: taller.horaInicio,
@@ -323,7 +325,7 @@ export default function ComunicadoStep({
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ fontSize: "20px" }}>{emoji}</span>
                         <strong style={{ fontSize: "15px", color: seleccionado ? "#ea580c" : "#1e293b", fontWeight: "800" }}>
-                          {opc.deporte}
+                          {opc.deporte}{opc.nivel ? ` [${opc.nivel}]` : ""}
                         </strong>
                       </div>
 

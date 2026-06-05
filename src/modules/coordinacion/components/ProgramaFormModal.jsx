@@ -69,6 +69,7 @@ function ProgramaFormModal({
   setTallerDepMaxEdad,
   setTallerDepMinEdad,
   setTallerDepCupos,
+  setTallerDepNivel,
   show,
   tallerDepCustom,
   tallerDepDeporte,
@@ -78,6 +79,7 @@ function ProgramaFormModal({
   tallerDepMaxEdad,
   tallerDepMinEdad,
   tallerDepCupos,
+  tallerDepNivel,
   toggleDia,
   toggleGrado,
   toggleGradoGrupo,
@@ -400,6 +402,14 @@ function ProgramaFormModal({
                                 </div>
                                 
                                 <div className="coord-field">
+                                  <label>Nivel *</label>
+                                  <select value={tallerDepNivel} onChange={e => setTallerDepNivel(e.target.value)}>
+                                    <option value="Formativo">Formativo</option>
+                                    <option value="Competitivo">Competitivo</option>
+                                  </select>
+                                </div>
+                                
+                                <div className="coord-field">
                                   <label>Edad mínima *</label>
                                   <select value={tallerDepMinEdad} onChange={e => setTallerDepMinEdad(e.target.value)}>
                                     {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
@@ -476,7 +486,9 @@ function ProgramaFormModal({
                                       <tbody>
                                         {form.talleresDeportivos.map((taller, idx) => (
                                           <tr key={idx} style={{ borderBottom: "1px solid #e2ece9" }}>
-                                            <td style={{ padding: "8px", fontWeight: "bold" }}>{taller.deporte}</td>
+                                            <td style={{ padding: "8px", fontWeight: "bold" }}>
+                                              {taller.deporte} {taller.nivel ? <span style={{ fontSize: "11.5px", fontWeight: "normal", color: "#475569", marginLeft: "4px" }}>({taller.nivel})</span> : ""}
+                                            </td>
                                             <td style={{ padding: "8px" }}>{taller.edadMinima} a {taller.edadMaxima} años</td>
                                             <td style={{ padding: "8px" }}>
                                               <span style={{ background: "#e8f7ef", color: "#006b5b", padding: "2px 6px", borderRadius: "4px", fontSize: "11px", fontWeight: 700, marginRight: "6px" }}>{taller.dia}</span>

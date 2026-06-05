@@ -146,6 +146,7 @@ function Coordinacion({
   const [tallerDepHoraInicio, setTallerDepHoraInicio] = useState("15:50");
   const [tallerDepHoraFin, setTallerDepHoraFin] = useState("16:50");
   const [tallerDepCupos, setTallerDepCupos] = useState("20");
+  const [tallerDepNivel, setTallerDepNivel] = useState("Formativo");
   const [programaDocsId, setProgramaDocsId] = useState("");
   const [lecturaDocumento, setLecturaDocumento] = useState(null);
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
@@ -737,6 +738,7 @@ function Coordinacion({
       horaInicio: tallerDepHoraInicio,
       horaFin: tallerDepHoraFin,
       cupos: cuposTaller,
+      nivel: tallerDepNivel,
     };
 
     const listaActual = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
@@ -751,6 +753,7 @@ function Coordinacion({
 
     setTallerDepCustom("");
     setTallerDepCupos("20");
+    setTallerDepNivel("Formativo");
   };
 
   const quitarTallerDeportivo = (index) => {
@@ -1413,15 +1416,16 @@ function Coordinacion({
           setCatAEliminar={setCatAEliminar}
           setMostrarGestorCategorias={setMostrarGestorCategorias}
           setNuevaCat={setNuevaCat}
+          setTallerDepMaxEdad={setTallerDepMaxEdad}
+          setTallerDepMinEdad={setTallerDepMinEdad}
+          setTallerDepCupos={setTallerDepCupos}
+          setTallerDepNivel={setTallerDepNivel}
           setShowModal={setShowModal}
           setTallerDepCustom={setTallerDepCustom}
           setTallerDepDeporte={setTallerDepDeporte}
           setTallerDepDia={setTallerDepDia}
           setTallerDepHoraFin={setTallerDepHoraFin}
           setTallerDepHoraInicio={setTallerDepHoraInicio}
-          setTallerDepMaxEdad={setTallerDepMaxEdad}
-          setTallerDepMinEdad={setTallerDepMinEdad}
-          setTallerDepCupos={setTallerDepCupos}
           show={showModal}
           tallerDepCustom={tallerDepCustom}
           tallerDepDeporte={tallerDepDeporte}
@@ -1431,6 +1435,7 @@ function Coordinacion({
           tallerDepMaxEdad={tallerDepMaxEdad}
           tallerDepMinEdad={tallerDepMinEdad}
           tallerDepCupos={tallerDepCupos}
+          tallerDepNivel={tallerDepNivel}
           toggleDia={toggleDia}
           toggleGrado={toggleGrado}
           toggleGradoGrupo={toggleGradoGrupo}

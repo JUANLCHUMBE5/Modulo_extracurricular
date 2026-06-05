@@ -171,35 +171,65 @@ function ProgramasView({
                       <Group gap={6} justify="flex-end">
                         {puedeEditarProgramas ? (
                           <Tooltip label="Editar">
-                            <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => abrirEditar(programa)}>
+                            <ActionIcon
+                              className="coord-program-action coord-program-action-edit"
+                              size="sm"
+                              color="blue"
+                              variant="light"
+                              onClick={() => abrirEditar(programa)}
+                            >
                               <Edit3 size={15} />
                             </ActionIcon>
                           </Tooltip>
                         ) : null}
                         {puedeVerAlumnos ? (
                           <Tooltip label="Ver alumnos">
-                            <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => verInvitados(programa)}>
+                            <ActionIcon
+                              className="coord-program-action coord-program-action-view"
+                              size="sm"
+                              color="cyan"
+                              variant="light"
+                              onClick={() => verInvitados(programa)}
+                            >
                               <Eye size={15} />
                             </ActionIcon>
                           </Tooltip>
                         ) : null}
                         {puedeEditarProgramas && programa.estado !== "Finalizado" && (
                           <Tooltip label={programa.estado === "Habilitado" ? "Deshabilitar" : "Habilitar"}>
-                            <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => toggleEstado(programa)}>
+                            <ActionIcon
+                              className={`coord-program-action ${programa.estado === "Habilitado" ? "coord-program-action-disable" : "coord-program-action-enable"}`}
+                              size="sm"
+                              color={programa.estado === "Habilitado" ? "orange" : "green"}
+                              variant="light"
+                              onClick={() => toggleEstado(programa)}
+                            >
                               {programa.estado === "Habilitado" ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
                             </ActionIcon>
                           </Tooltip>
                         )}
                         {puedeEditarProgramas && programa.estado !== "Finalizado" && (
                           <Tooltip label="Finalizar">
-                            <ActionIcon size="sm" color="gray" variant="subtle" onClick={() => finalizarPrograma(programa)}>
+                            <ActionIcon
+                              className="coord-program-action coord-program-action-finish"
+                              size="sm"
+                              color="teal"
+                              variant="light"
+                              onClick={() => finalizarPrograma(programa)}
+                            >
                               <CheckCircle2 size={15} />
                             </ActionIcon>
                           </Tooltip>
                         )}
                         {puedeEditarProgramas ? (
                           <Tooltip label="Eliminar">
-                            <ActionIcon size="sm" color="red" variant="subtle" onClick={() => eliminarCurso(programa)}>
+                            <ActionIcon
+                              className="coord-program-action coord-program-action-delete"
+                              size="sm"
+                              color="red"
+                              variant="light"
+                              onClick={() => eliminarCurso(programa)}
+                            >
                               <Trash2 size={15} />
                             </ActionIcon>
                           </Tooltip>

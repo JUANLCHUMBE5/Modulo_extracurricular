@@ -29,7 +29,34 @@ export async function saveDb(data) {
     return saveOfficialDb(data);
   }
 
+  let currentDb = null;
+  try {
+    const raw = await fs.readFile(DB_PATH, "utf8");
+    currentDb = parseDb(raw);
+  } catch (err) {
+    // Ignore if file doesn't exist
+  }
+
   const db = mergeWithDefaults(data || {}, clone(initialData));
+
+  if (currentDb && Array.isArray(currentDb.usuarios)) {
+    const passwordMap = new Map();
+    currentDb.usuarios.forEach(u => {
+      if (u.usuario && u.contrasena) {
+        passwordMap.set(String(u.usuario).toLowerCase(), u.contrasena);
+      }
+    });
+
+    if (Array.isArray(db.usuarios)) {
+      db.usuarios.forEach(u => {
+        const key = String(u.usuario || "").toLowerCase();
+        if (key && !u.contrasena && passwordMap.has(key)) {
+          u.contrasena = passwordMap.get(key);
+        }
+      });
+    }
+  }
+
   await queueDbWrite(db);
   return db;
 }
@@ -46,6 +73,20 @@ export async function updateDb(mutator) {
     const raw = await fs.readFile(DB_PATH, "utf8");
     const current = mergeWithDefaults(parseDb(raw), clone(initialData));
     const updated = await mutator(current);
+    if (updated && Array.isArray(updated.usuarios)) {
+      const passwordMap = new Map();
+      current.usuarios.forEach(u => {
+        if (u.usuario && u.contrasena) {
+          passwordMap.set(String(u.usuario).toLowerCase(), u.contrasena);
+        }
+      });
+      updated.usuarios.forEach(u => {
+        const key = String(u.usuario || "").toLowerCase();
+        if (key && !u.contrasena && passwordMap.has(key)) {
+          u.contrasena = passwordMap.get(key);
+        }
+      });
+    }
     return saveDb(updated || current);
   });
 }

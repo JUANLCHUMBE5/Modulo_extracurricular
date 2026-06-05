@@ -135,7 +135,8 @@ export function resumenGrupoDeportivo(talleres) {
   if (!Array.isArray(talleres) || talleres.length === 0) return "Por definir";
   const talleresUnicos = [];
   talleres.forEach((taller) => {
-    const label = `${taller.deporte} (${taller.edadMinima}-${taller.edadMaxima} años)`;
+    const nivelLabel = taller.nivel ? ` [${taller.nivel}]` : "";
+    const label = `${taller.deporte}${nivelLabel} (${taller.edadMinima}-${taller.edadMaxima} años)`;
     if (!talleresUnicos.includes(label)) talleresUnicos.push(label);
   });
   return talleresUnicos.join(" / ");
@@ -146,7 +147,8 @@ export function resumenHorarioDeportivo(talleres) {
   const porDia = {};
   talleres.forEach((taller) => {
     if (!porDia[taller.dia]) porDia[taller.dia] = [];
-    porDia[taller.dia].push(`${taller.deporte} (${taller.edadMinima}-${taller.edadMaxima} a.): ${taller.horaInicio}-${taller.horaFin}`);
+    const nivelLabel = taller.nivel ? ` [${taller.nivel}]` : "";
+    porDia[taller.dia].push(`${taller.deporte}${nivelLabel} (${taller.edadMinima}-${taller.edadMaxima} a.): ${taller.horaInicio}-${taller.horaFin}`);
   });
   return Object.keys(porDia).map((dia) => `${dia}: ${porDia[dia].join(", ")}`).join(" / ");
 }

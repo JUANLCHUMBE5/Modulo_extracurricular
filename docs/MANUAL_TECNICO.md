@@ -37,7 +37,7 @@ graph TD
     *   Ubicado en la carpeta `server/`.
     *   Maneja un servidor HTTP en el puerto `5175` que expone los endpoints para interactuar con la base de datos simulada.
 3.  **Persistencia Local:**
-    *   Los datos se almacenan en un archivo JSON estructurado (`server/db.json`). Esto permite que el sistema funcione 100% de manera local sin conexión a internet durante la etapa de desarrollo y pruebas.
+    *   El archivo db.json se utiliza únicamente como fuente de datos local para pruebas funcionales durante la etapa de desarrollo. El frontend no accede directamente a dicho archivo, sino que consume la API local mediante services y apiClient. En una etapa posterior, db.json será reemplazado por una base de datos real o por la base de datos del sistema principal, según la arquitectura definida con el responsable del sistema institucional.
 
 ---
 

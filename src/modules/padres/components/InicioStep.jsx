@@ -205,7 +205,8 @@ function obtenerOpcionesDeGrupo(programa) {
   if (tieneTalleres) {
     const mapGrupos = new Map(); // key: "Vóley (6-9 a.)" -> list of { day, time }
     programa.talleresDeportivos.forEach((taller) => {
-      const key = `${taller.deporte} (${taller.edadMinima}-${taller.edadMaxima} a.)`;
+      const nivelLabel = taller.nivel ? ` [${taller.nivel}]` : "";
+      const key = `${taller.deporte}${nivelLabel} (${taller.edadMinima}-${taller.edadMaxima} a.)`;
       const time = `${taller.horaInicio}-${taller.horaFin}`;
       if (!mapGrupos.has(key)) {
         mapGrupos.set(key, []);

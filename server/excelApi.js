@@ -292,7 +292,12 @@ app.get("/api/health", (_req, res) => {
 
 app.get("/api/db", requireLocalDbAccess, async (_req, res) => {
   try {
-    res.json(await getDb());
+    const db = await getDb();
+    const sanitizedDb = {
+      ...db,
+      usuarios: (db.usuarios || []).map(({ contrasena, ...u }) => u)
+    };
+    res.json(sanitizedDb);
   } catch (error) {
     console.error("No se pudo leer la base local:", error);
     res.status(500).json({ message: "No se pudo leer la base local." });
@@ -395,7 +400,8 @@ app.get("/api/pagos", async (_req, res) => {
 app.get("/api/usuarios", async (_req, res) => {
   try {
     const db = await getDb();
-    res.json(db.usuarios || []);
+    const sanitizedUsuarios = (db.usuarios || []).map(({ contrasena, ...u }) => u);
+    res.json(sanitizedUsuarios);
   } catch {
     res.status(500).json({ message: "No se pudieron listar los usuarios." });
   }
@@ -2786,7 +2792,8 @@ app.use("/api/v1/usuarios", requireAuth, requireRole(["administrador"]));
 app.get("/api/v1/usuarios", async (req, res) => {
   try {
     const db = await getDb();
-    res.json({ success: true, data: db.usuarios || [] });
+    const sanitizedUsuarios = (db.usuarios || []).map(({ contrasena, ...u }) => u);
+    res.json({ success: true, data: sanitizedUsuarios });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -2811,7 +2818,8 @@ app.post("/api/v1/usuarios", async (req, res) => {
 
     await registrarAuditoria(req.user.username, req.user.role, "USUARIO_CREAR", { usuarioId: nuevo.id, usuario: nuevo.usuario });
 
-    res.json({ success: true, data: nuevo });
+    const { contrasena, ...sanitizedNuevo } = nuevo;
+    res.json({ success: true, data: sanitizedNuevo });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -2846,7 +2854,8 @@ app.put("/api/v1/usuarios/:id", async (req, res) => {
 
     await registrarAuditoria(req.user.username, req.user.role, "USUARIO_EDITAR", { usuarioId: req.params.id });
 
-    res.json({ success: true, data: updated });
+    const { contrasena: _, ...sanitizedUpdated } = updated;
+    res.json({ success: true, data: sanitizedUpdated });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -2863,7 +2872,8 @@ app.put("/api/v1/usuarios/:id/estado", async (req, res) => {
 
     await registrarAuditoria(req.user.username, req.user.role, "USUARIO_ESTADO", { usuarioId: req.params.id, estado: req.body.estado });
 
-    res.json({ success: true, data: db.usuarios[idx] });
+    const { contrasena, ...sanitizedUser } = db.usuarios[idx];
+    res.json({ success: true, data: sanitizedUser });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -2880,7 +2890,8 @@ app.post("/api/v1/usuarios/:id/resetear-contrasena", async (req, res) => {
 
     await registrarAuditoria(req.user.username, req.user.role, "USUARIO_RESET_CONTRASENA", { usuarioId: req.params.id });
 
-    res.json({ success: true, data: db.usuarios[idx] });
+    const { contrasena, ...sanitizedUser } = db.usuarios[idx];
+    res.json({ success: true, data: sanitizedUser });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
