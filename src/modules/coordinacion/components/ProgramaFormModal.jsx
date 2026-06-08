@@ -10,15 +10,15 @@ import {
   IconPhoto as Photo,
   IconPlus as Plus,
   IconTrash as Trash2,
-  IconUpload as Upload,
   IconUsers as Users,
   IconX as X,
   IconEdit as Edit3,
 } from "@tabler/icons-react";
 import GradeSelector from "./GradeSelector";
+import ProgramaGrupoHorarioModal from "./ProgramaGrupoHorarioModal";
+import ProgramaInvitacionMasivaModal, { obtenerEtiquetaAlcance } from "./ProgramaInvitacionMasivaModal";
 import { formatearHora12 } from "../utils/coordinacionFormatters";
 import {
-  formatearPesoArchivo,
   normalizarPeriodoVista,
   obtenerGradosDeportivos,
   resumenGrados,
@@ -144,16 +144,6 @@ function ProgramaFormModal({
 
     agregarGrupoHorario({ ...grupoDraft, id: `grupo-${Date.now()}` });
     cerrarGrupoModal();
-  }
-
-  function obtenerEtiquetaAlcance(valor) {
-    const etiquetas = {
-      colegio: "Todo el colegio",
-      primaria: "Solo nivel Primaria",
-      secundaria: "Solo nivel Secundaria",
-      grados: "Solo grados habilitados arriba",
-    };
-    return etiquetas[valor || "colegio"] || etiquetas.colegio;
   }
 
   return (
@@ -645,72 +635,17 @@ function ProgramaFormModal({
                                 <p className="coord-field-hint">Si todos los grados usan el horario base, deje esta parte vacía.</p>
                               )}
                               {mostrarGrupoModal ? (
-                                <div className="coord-modal-overlay" style={{ zIndex: 2200 }}>
-                                  {grupoDraftError ? (
-                                    <div className="coord-floating-error" role="alert" key={grupoDraftErrorTick}>
-                                      <AlertCircle size={15} />
-                                      {grupoDraftError}
-                                    </div>
-                                  ) : null}
-                                  <div className="coord-modal coord-nested-turn-modal" onClick={e => e.stopPropagation()}>
-                                    <div className="coord-modal-header">
-                                      <div className="coord-modal-title">
-                                        <span className="coord-modal-icon"><CalendarDays size={20} /></span>
-                                        <div>
-                                          <h2>Añadir día para otros grados</h2>
-                                          <p>Registre solo los grados que no usan el horario base.</p>
-                                        </div>
-                                      </div>
-                                      <button className="coord-modal-close" type="button" onClick={cerrarGrupoModal}><X size={20} /></button>
-                                    </div>
-                                    <div className="coord-program-form-main coord-nested-turn-body" style={{ padding: "16px 20px" }}>
-                                      <section className="coord-form-section coord-nested-turn-section">
-                                        <div className="coord-section-grid">
-                                          <div className="coord-field coord-field-full">
-                                            <label>Grados del turno *</label>
-                                            <GradeSelector niveles={nivelesGrados} seleccionados={grupoDraft.grados || []} onToggle={toggleGradoDraft} />
-                                          </div>
-                                          <div className="coord-field">
-                                            <label>Días del turno *</label>
-                                            <div className="coord-day-list coord-day-list-sm">
-                                              {diasSemana.map((dia) => {
-                                                const diasSeleccionados = String(grupoDraft.dia || "").split(",").map(d => d.trim()).filter(Boolean);
-                                                const isSelected = diasSeleccionados.includes(dia);
-                                                return (
-                                                  <label className={`coord-day-chip coord-day-chip-sm ${isSelected ? "is-selected" : ""}`} key={dia}>
-                                                    <input
-                                                      type="checkbox"
-                                                      checked={isSelected}
-                                                      onChange={() => {
-                                                        const nuevosDias = isSelected ? diasSeleccionados.filter((d) => d !== dia) : [...diasSeleccionados, dia];
-                                                        const diasOrdenados = diasSemana.filter(d => nuevosDias.includes(d));
-                                                        actualizarGrupoDraft("dia", diasOrdenados.join(", "));
-                                                      }}
-                                                    />
-                                                    <span title={dia}>{dia.substring(0, 2)}</span>
-                                                  </label>
-                                                );
-                                              })}
-                                            </div>
-                                          </div>
-                                          <div className="coord-field"><label>Aula</label><input value={grupoDraft.aula || ""} onChange={e => actualizarGrupoDraft("aula", e.target.value)} placeholder="Ej: A-204" /></div>
-                                          <div className="coord-field"><label>Clase inicio</label><input type="time" value={grupoDraft.horaInicio || "15:20"} onChange={e => actualizarGrupoDraft("horaInicio", e.target.value)} /></div>
-                                          <div className="coord-field"><label>Clase fin</label><input type="time" value={grupoDraft.horaFin || "17:20"} onChange={e => actualizarGrupoDraft("horaFin", e.target.value)} /></div>
-                                          <div className="coord-field"><label>Almuerzo inicio</label><input type="time" value={grupoDraft.almuerzoInicio || "14:20"} onChange={e => actualizarGrupoDraft("almuerzoInicio", e.target.value)} /></div>
-                                          <div className="coord-field"><label>Almuerzo fin</label><input type="time" value={grupoDraft.almuerzoFin || "15:10"} onChange={e => actualizarGrupoDraft("almuerzoFin", e.target.value)} /></div>
-                                          <div className="coord-field"><label>Responsable del turno</label><input value={grupoDraft.responsable || ""} onChange={e => actualizarGrupoDraft("responsable", e.target.value)} placeholder="Ej: Prof. Ana Torres" /></div>
-                                          <div className="coord-field"><label>Tutora / apoyo del turno</label><input value={grupoDraft.tutora || ""} onChange={e => actualizarGrupoDraft("tutora", e.target.value)} placeholder="Ej: Srta. Lucia Vega" /></div>
-                                        </div>
-                                      </section>
-                                    </div>
-                                    <div className="coord-modal-actions">
-                                      <button type="button" className="coord-secondary-button" onClick={cerrarGrupoModal}>Cancelar</button>
-                                      <button type="button" className="coord-register-button" onClick={guardarGrupoDraft}>
-                                        <CheckCircle2 size={17} /> <span>Guardar turno</span>
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
+                                <ProgramaGrupoHorarioModal
+                                  actualizarGrupoDraft={actualizarGrupoDraft}
+                                  cerrarGrupoModal={cerrarGrupoModal}
+                                  diasSemana={diasSemana}
+                                  grupoDraft={grupoDraft}
+                                  grupoDraftError={grupoDraftError}
+                                  grupoDraftErrorTick={grupoDraftErrorTick}
+                                  guardarGrupoDraft={guardarGrupoDraft}
+                                  nivelesGrados={nivelesGrados}
+                                  toggleGradoDraft={toggleGradoDraft}
+                                />
                               ) : null}
                             </div>
                           ) : null}
@@ -785,79 +720,13 @@ function ProgramaFormModal({
                               </div>
                             ) : null}
                             {mostrarInvitacionModal && form.invitacionMasiva ? (
-                              <div className="coord-modal-overlay" style={{ zIndex: 2200 }}>
-                                <div className="coord-modal" style={{ maxWidth: "720px" }} onClick={e => e.stopPropagation()}>
-                                  <div className="coord-modal-header">
-                                    <div className="coord-modal-title">
-                                      <span className="coord-modal-icon"><Photo size={20} /></span>
-                                      <div>
-                                        <h2>Configurar invitación masiva</h2>
-                                        <p>Defina a qué padres se mostrará el curso y agregue una imagen si corresponde.</p>
-                                      </div>
-                                    </div>
-                                    <button className="coord-modal-close" type="button" onClick={() => setMostrarInvitacionModal(false)}><X size={20} /></button>
-                                  </div>
-                                  <div className="coord-program-form-main" style={{ padding: "16px 20px" }}>
-                                    <section className="coord-form-section">
-                                      <div className="coord-section-grid">
-                                        <div className="coord-field coord-field-full">
-                                          <label>Alcance de la invitación masiva</label>
-                                          <select
-                                            value={form.alcanceInvitacionMasiva || "colegio"}
-                                            onChange={e => actualizarForm("alcanceInvitacionMasiva", e.target.value)}
-                                          >
-                                            <option value="colegio">Todo el colegio</option>
-                                            <option value="primaria">Solo nivel Primaria</option>
-                                            <option value="secundaria">Solo nivel Secundaria</option>
-                                            <option value="grados">Solo grados habilitados arriba</option>
-                                          </select>
-                                          <small>
-                                            Use Primaria o Secundaria cuando el anuncio sea masivo para un nivel completo; use grados habilitados si debe respetar la selección del formulario.
-                                          </small>
-                                        </div>
-                                        <div className="coord-field coord-field-full">
-                                          <div className="coord-announcement-image-field">
-                                            <div className="coord-announcement-copy">
-                                              <Photo size={18} />
-                                              <div>
-                                                <strong>Imagen de anuncio para Padres</strong>
-                                              </div>
-                                            </div>
-                                            {form.anuncioImagen ? (
-                                              <div className="coord-announcement-preview">
-                                                <img src={form.anuncioImagen} alt="Anuncio para portal de padres" />
-                                                <div>
-                                                  <strong>{form.anuncioImagenNombre || "Imagen de anuncio"}</strong>
-                                                  <span>
-                                                    {formatearPesoArchivo(form.anuncioImagenTamano)}
-                                                    {form.anuncioImagenComprimida ? " · comprimida" : ""}
-                                                  </span>
-                                                  <button type="button" onClick={quitarImagenAnuncio}>
-                                                    Quitar imagen
-                                                  </button>
-                                                </div>
-                                              </div>
-                                            ) : (
-                                              <label className="coord-announcement-upload">
-                                                <input type="file" accept="image/*" onChange={seleccionarImagenAnuncio} />
-                                                <Upload size={18} />
-                                                <span>Agregar imagen</span>
-                                              </label>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </section>
-                                  </div>
-                                  <div className="coord-modal-actions">
-                                    <button type="button" className="coord-secondary-button" onClick={() => setMostrarInvitacionModal(false)}>Cerrar</button>
-                                    <button type="button" className="coord-register-button" onClick={() => setMostrarInvitacionModal(false)}>
-                                      <CheckCircle2 size={17} />
-                                      <span>Guardar configuración</span>
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
+                              <ProgramaInvitacionMasivaModal
+                                actualizarForm={actualizarForm}
+                                form={form}
+                                quitarImagenAnuncio={quitarImagenAnuncio}
+                                seleccionarImagenAnuncio={seleccionarImagenAnuncio}
+                                setMostrarInvitacionModal={setMostrarInvitacionModal}
+                              />
                             ) : null}
                           </div>
                           ) : (

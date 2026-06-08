@@ -2,17 +2,12 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   IconBook as BookOpen,
-  IconChevronRight as ChevronRight,
   IconFileText as FileText,
-  IconLogout as LogOut,
   IconUpload as Upload,
-  IconX as X,
-  IconAlertTriangle as AlertTriangle,
   IconUserCheck as UserCheck,
 } from "@tabler/icons-react";
 import {
   diasSemana,
-  LOGO_COLEGIO_SRC,
   nivelesGrados,
   variablesPlantillaAceptadas,
   variablesPlantillaRequeridas,
@@ -27,11 +22,15 @@ import {
 import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias } from "../../services/dateService";
 import AlumnosProgramaModal from "./components/AlumnosProgramaModal";
 import CargaExcelView from "./components/CargaExcelView";
+import CoordinacionSidebar from "./components/CoordinacionSidebar";
 import DocumentosView from "./components/DocumentosView";
+import FinalizarProgramaModal from "./components/FinalizarProgramaModal";
 import ProgramaFormModal from "./components/ProgramaFormModal";
 import ProgramasView from "./components/ProgramasView";
 import AsistenciasView from "./components/AsistenciasView";
+import { formInicial, horarioGrupoInicial } from "./constants/coordinacionFormDefaults";
 import { esCostoValido } from "./utils/coordinacionFormatters";
+import { puedeVerVista, tienePermisoAsignado } from "./utils/coordinacionPermissions";
 import {
   calcularRangoEdades,
   comprimirImagenAnuncio,
@@ -62,55 +61,12 @@ import {
 import { apiDb } from "../../services/dbApi";
 import "./Coordinacion.css";
 
-const formInicial = {
-  nombre: "", periodo: "escolar", categoria: "", grupo: "", horario: "",
-  grupoEtario: "",
-  gradosAplicables: [], edadMinima: "", edadMaxima: "", fechaNacimientoDesde: "", fechaNacimientoHasta: "", dias: [], horaInicio: "", horaFin: "",
-  almuerzoInicio: "", almuerzoFin: "",
-  horariosPorGrupo: [],
-  talleresDeportivos: [],
-  fechaInicio: "", fechaFin: "", duracionAvisoDias: "7", cupos: "", costo: "", modalidadCobro: "Mensual",
-  cicloI: "", cicloII: "",
-  responsable: "", tutora: "", plantilla: "", plantillaBase64: "", plantillaVariables: [],
-  plantillaValidada: false, plantillaActualizadaEn: "", requisitos: "",
-  comunicado: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
-  requiereUniforme: false, requiereIndumentaria: false, invitacionMasiva: false, alcanceInvitacionMasiva: "colegio",
-  anuncioImagen: "", anuncioImagenNombre: "", anuncioImagenTamano: 0, anuncioImagenComprimida: false,
-};
-
-const horarioGrupoInicial = {
-  grados: [],
-  dia: "Jueves",
-  almuerzoInicio: "14:20",
-  almuerzoFin: "15:10",
-  horaInicio: "15:20",
-  horaFin: "17:20",
-  aula: "",
-  responsable: "",
-  tutora: "",
-};
-
 const vistasNav = [
   { id: "programas", label: "Gestion de Programas", icon: BookOpen, permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"] },
   { id: "carga", label: "Carga Excel", icon: Upload, permissions: ["grupos.crear", "grupos.editar"] },
   { id: "documentos", label: "Plantillas / Documentos", icon: FileText, permissions: ["programas.crear", "programas.editar"] },
   { id: "asistencias", label: "Asistencia y Control", icon: UserCheck, permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"] },
 ];
-
-function tienePermisoAsignado(user, permiso) {
-  if (!user) return false;
-  if (user.role === "administrador") return true;
-  const permisos = Array.isArray(user.permisos)
-    ? user.permisos
-    : Array.isArray(user.permissions)
-      ? user.permissions
-      : [];
-  return permisos.includes(permiso);
-}
-
-function puedeVerVista(user, vista) {
-  return !vista.permissions?.length || vista.permissions.some((permiso) => tienePermisoAsignado(user, permiso));
-}
 
 function Coordinacion({
   delegatedContent,
@@ -1377,40 +1333,19 @@ function Coordinacion({
     <div className={embedded ? "coord-embedded" : `coord-layout ${esProfesor ? "coord-layout-profesor" : ""} ${sidebarAbierta ? "" : "coord-layout-collapsed"}`}>
       {/* ── SIDEBAR ── */}
       {!embedded ? (
-      <aside className="coord-sidebar">
-        <button
-          className="coord-sidebar-toggle"
-          type="button"
-          onClick={() => setSidebarAbierta((abierta) => !abierta)}
-          aria-label={sidebarAbierta ? "Cerrar menu lateral" : "Abrir menu lateral"}
-          title={sidebarAbierta ? "Cerrar menú" : "Abrir menú"}
-        >
-          <ChevronRight size={18} />
-        </button>
-        <div className="coord-brand" aria-label="Colegio San Rafael">
-          <img className="coord-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
-        </div>
-        <p className="coord-module-label">{esProfesor ? "Módulo Profesores" : "Módulo Coordinación"}</p>
-        <nav className="coord-nav">
-          {vistasDisponibles.map(({ id, label, icon: Icon }) => (
-            <button key={id}
-              type="button"
-              className={`coord-nav-item ${!delegatedContent && vista === id ? "coord-nav-item-active" : ""}`}
-              onClick={() => { onClearDelegatedModule?.(); setVista(id); setMensaje(""); }}
-              title={label}>
-              <Icon size={18} /><span>{label}</span><ChevronRight className="coord-nav-arrow" size={16} />
-            </button>
-          ))}
-        </nav>
-        {moduleSwitcher ? (
-          <div className="pt-3">
-            {moduleSwitcher}
-          </div>
-        ) : null}
-        <button className="coord-logout" type="button" onClick={onLogout} title="Cerrar sesión">
-          <LogOut size={18} /><span>Cerrar sesion</span>
-        </button>
-      </aside>
+        <CoordinacionSidebar
+          delegatedContent={delegatedContent}
+          esProfesor={esProfesor}
+          moduleSwitcher={moduleSwitcher}
+          onClearDelegatedModule={onClearDelegatedModule}
+          onLogout={onLogout}
+          setMensaje={setMensaje}
+          setSidebarAbierta={setSidebarAbierta}
+          setVista={setVista}
+          sidebarAbierta={sidebarAbierta}
+          vista={vista}
+          vistasDisponibles={vistasDisponibles}
+        />
       ) : null}
 
       {/* ── MAIN ── */}
@@ -1595,111 +1530,11 @@ function Coordinacion({
           />
         )}
 
-        {programaAFinalizar && (
-          <div className="coord-modal-overlay" onClick={() => setProgramaAFinalizar(null)}>
-            <div className="coord-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "480px", borderRadius: "16px", overflow: "hidden" }}>
-              <div style={{ position: "relative", padding: "24px 24px 20px" }}>
-                <button
-                  type="button"
-                  onClick={() => setProgramaAFinalizar(null)}
-                  style={{
-                    position: "absolute",
-                    top: "20px",
-                    right: "20px",
-                    background: "none",
-                    border: "none",
-                    color: "#9ca3af",
-                    cursor: "pointer",
-                    padding: "4px",
-                    borderRadius: "6px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.15s ease"
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.color = "#4b5563"}
-                  onMouseLeave={(e) => e.currentTarget.style.color = "#9ca3af"}
-                >
-                  <X size={20} />
-                </button>
-
-                <div style={{ display: "flex", gap: "16px", alignItems: "flex-start", marginBottom: "20px" }}>
-                  <div style={{
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    background: "#fee2e2",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "#ef4444",
-                    flexShrink: 0
-                  }}>
-                    <AlertTriangle size={20} />
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 800, color: "#111827", lineHeight: "1.3" }}>
-                      ¿Finalizar programa?
-                    </h3>
-                    <p style={{ margin: "6px 0 0", fontSize: "14px", color: "#4b5563", lineHeight: "1.4" }}>
-                      ¿Está seguro de que desea finalizar el programa <strong>{programaAFinalizar.nombre}</strong>?
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{
-                  background: "#fffbeb",
-                  borderLeft: "4px solid #f59e0b",
-                  borderRadius: "8px",
-                  padding: "14px 16px",
-                  marginBottom: "24px"
-                }}>
-                  <strong style={{ display: "block", color: "#b45309", fontSize: "12.5px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.03em", marginBottom: "6px" }}>
-                    ⚠️ ¡Advertencia Importante!
-                  </strong>
-                  <ul style={{ margin: 0, paddingLeft: "16px", fontSize: "13px", color: "#6b5930", display: "grid", gap: "4px", lineHeight: "1.4" }}>
-                    <li>Se cerrará el programa de forma definitiva en el historial.</li>
-                    <li>Secretaría ya no podrá registrar nuevas inscripciones.</li>
-                    <li>Si desea abrir este taller nuevamente en el futuro, tendrá que crear un nuevo programa.</li>
-                  </ul>
-                </div>
-
-                <div style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: "10px",
-                  borderTop: "1px solid #f3f4f6",
-                  paddingTop: "16px"
-                }}>
-                  <button
-                    className="coord-secondary-button"
-                    type="button"
-                    onClick={() => setProgramaAFinalizar(null)}
-                    style={{ height: "38px", minWidth: "90px", borderRadius: "8px" }}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    className="coord-danger-button"
-                    type="button"
-                    onClick={confirmarFinalizar}
-                    style={{
-                      height: "38px",
-                      minWidth: "120px",
-                      borderRadius: "8px",
-                      background: "#dc2626",
-                      border: "1px solid #dc2626",
-                      color: "#ffffff",
-                      fontWeight: 600
-                    }}
-                  >
-                    Sí, finalizar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <FinalizarProgramaModal
+          onClose={() => setProgramaAFinalizar(null)}
+          onConfirm={confirmarFinalizar}
+          programa={programaAFinalizar}
+        />
           </>
         )}
       </main>

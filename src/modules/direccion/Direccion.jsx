@@ -19,39 +19,12 @@ import {
   IconClick as Click,
   IconUserCheck as UserCheck,
 } from "@tabler/icons-react";
+import { StatCard, EmptyChart } from "./components/DireccionCards";
+import { columnasDisponiblesMap, opcionesReportesPorModulo } from "./constants/direccionReports";
 import { descargarReporteDireccion, descargarReportePersonalizado, obtenerPanelDireccion } from "./direccionService";
+import { calcularMetricasAnalisis, filtrarRegistrosReporte } from "./utils/direccionAnalytics";
+import { formatearSoles, puedeExportar } from "./utils/direccionFormatters";
 import "./Direccion.css";
-
-const permisosExportar = ["reportes.exportar"];
-
-function puedeExportar(user) {
-  if (user?.role === "administrador") return true;
-  const permisos = Array.isArray(user?.permisos) ? user.permisos : Array.isArray(user?.permissions) ? user.permissions : [];
-  return permisosExportar.some((permiso) => permisos.includes(permiso));
-}
-
-function formatearSoles(valor) {
-  return `S/ ${Number(valor || 0).toFixed(2)}`;
-}
-
-function StatCard({ icon: Icon, label, value, detail, tone = "green" }) {
-  return (
-    <article className={`dir-stat is-${tone}`}>
-      <div className="dir-stat-icon">
-        <Icon size={18} />
-      </div>
-      <div>
-        <span>{label}</span>
-        <strong>{value}</strong>
-        <p>{detail}</p>
-      </div>
-    </article>
-  );
-}
-
-function EmptyChart({ text }) {
-  return <div className="dir-empty-chart">{text}</div>;
-}
 
 export default function Direccion({ onLogout, user }) {
   const [vista, setVista] = useState("resumen");
@@ -74,47 +47,6 @@ export default function Direccion({ onLogout, user }) {
   const recargaTimerRef = useRef(null);
 
   const exportarHabilitado = puedeExportar(user);
-
-  const columnasDisponiblesMap = {
-    inscripciones: [
-      { key: "id", label: "Código de Inscripción" },
-      { key: "dni", label: "DNI Estudiante" },
-      { key: "estudiante", label: "Nombres Estudiante" },
-      { key: "grado", label: "Grado Aplicable" },
-      { key: "programa", label: "Programa / Taller" },
-      { key: "estadoInscripcion", label: "Estado Inscripción" },
-      { key: "estadoPago", label: "Estado de Pago" },
-      { key: "costo", label: "Costo / Monto" },
-      { key: "origen", label: "Canal / Origen" },
-      { key: "fechaRegistro", label: "Fecha de Registro" },
-      { key: "apoderado", label: "Nombre Apoderado" },
-      { key: "telefono", label: "Teléfono Apoderado" },
-    ],
-    programas: [
-      { key: "id", label: "Código de Programa" },
-      { key: "nombre", label: "Nombre Programa" },
-      { key: "periodo", label: "Periodo / Ciclo" },
-      { key: "estado", label: "Estado Programa" },
-      { key: "categoria", label: "Categoría" },
-      { key: "responsable", label: "Profesor Responsable" },
-      { key: "inscritos", label: "Total Inscritos" },
-      { key: "cupos", label: "Cupos Totales" },
-      { key: "avance", label: "Porcentaje Ocupación (%)" },
-      { key: "costo", label: "Costo Individual" },
-      { key: "proyectado", label: "Monto Proyectado" },
-      { key: "recaudado", label: "Monto Recaudado" },
-    ],
-    pagos: [
-      { key: "id", label: "Código Transacción" },
-      { key: "dni", label: "DNI Estudiante" },
-      { key: "estudiante", label: "Nombre Estudiante" },
-      { key: "programa", label: "Programa / Taller" },
-      { key: "monto", label: "Monto Pagado" },
-      { key: "estado", label: "Estado Pago" },
-      { key: "medio", label: "Medio de Pago" },
-      { key: "fecha", label: "Fecha Pago" },
-    ],
-  };
 
   // Cambiar el modulo activo y pre-seleccionar el primer reporte de esa categoria
   const cambiarModulo = (mod) => {
@@ -215,108 +147,14 @@ export default function Direccion({ onLogout, user }) {
     return Math.round((Number(resumen.ocupados || 0) / cupos) * 100);
   }, [resumen.cupos, resumen.ocupados]);
 
-  // Cálculos analíticos en vivo
-  const metricasAnalisis = useMemo(() => {
-    const inscripcionesPeriodo = panel?.reportes?.inscripciones || [];
-    
-    let webCount = 0;
-    let secCount = 0;
-    inscripcionesPeriodo.forEach((item) => {
-      const o = String(item.origen || "").toLowerCase();
-      if (o.includes("web") || o.includes("padres")) {
-        webCount++;
-      } else {
-        secCount++;
-      }
-    });
-    
-    const totalInscripciones = inscripcionesPeriodo.length;
-    const webPct = totalInscripciones ? Math.round((webCount / totalInscripciones) * 100) : 0;
-    const secPct = totalInscripciones ? Math.round((secCount / totalInscripciones) * 100) : 0;
-    
-    let cursoEstrella = "Ninguno";
-    let cursoEstrellaCount = 0;
-    const counts = {};
-    inscripcionesPeriodo.forEach((item) => {
-      const prog = item.programa || "Sin programa";
-      counts[prog] = (counts[prog] || 0) + 1;
-      if (counts[prog] > cursoEstrellaCount) {
-        cursoEstrella = prog;
-        cursoEstrellaCount = counts[prog];
-      }
-    });
-    
-    const estrellaPct = totalInscripciones ? Math.round((cursoEstrellaCount / totalInscripciones) * 100) : 0;
-    
-    return {
-      webCount,
-      secCount,
-      webPct,
-      secPct,
-      cursoEstrella,
-      cursoEstrellaCount,
-      estrellaPct,
-      totalInscripciones,
-    };
-  }, [panel]);
+  const metricasAnalisis = useMemo(() => calcularMetricasAnalisis(panel), [panel]);
 
-  // Registros que coinciden con los filtros del constructor
-  const registrosFiltrados = useMemo(() => {
-    if (!panel?.reportes) return [];
-    
-    let raw = [];
-    if (customTipo === "inscripciones") {
-      raw = panel.reportes.inscripciones || [];
-    } else if (customTipo === "programas") {
-      raw = panel.reportes.programas || [];
-    } else if (customTipo === "pagos") {
-      raw = panel.reportes.pagos || [];
-    }
-    
-    let filtered = [...raw];
-    
-    if (customTipo === "inscripciones") {
-      if (customFiltroOrigen !== "todos") {
-        filtered = filtered.filter((item) => {
-          const o = String(item.origen || "").toLowerCase();
-          if (customFiltroOrigen === "web") {
-            return o.includes("web") || o.includes("padres");
-          }
-          if (customFiltroOrigen === "secretaria") {
-            return o.includes("sec") || o.includes("presencial") || o.includes("carga") || o.includes("excel") || o === "";
-          }
-          return true;
-        });
-      }
-      if (customFiltroPago !== "todos") {
-        filtered = filtered.filter((item) => {
-          const ep = String(item.estadoPago || "").toLowerCase();
-          if (customFiltroPago === "Pagado") {
-            return ep.includes("pag") || ep === "completado";
-          }
-          if (customFiltroPago === "Pendiente") {
-            return !ep.includes("pag") && ep !== "completado" && !ep.includes("anul");
-          }
-          return true;
-        });
-      }
-    } else if (customTipo === "pagos") {
-      if (customFiltroPago !== "todos") {
-        filtered = filtered.filter((item) => {
-          const ep = String(item.estado || "").toLowerCase();
-          if (customFiltroPago === "Pagado") {
-            return ep.includes("pag") || ep === "completado";
-          }
-          if (customFiltroPago === "Pendiente") {
-            return !ep.includes("pag") && ep !== "completado";
-          }
-          return true;
-        });
-      }
-    }
-    
-    return filtered;
-  }, [panel, customTipo, customFiltroOrigen, customFiltroPago]);
+  const registrosFiltrados = useMemo(() => filtrarRegistrosReporte({
+    customFiltroOrigen,
+    customFiltroPago,
+    customTipo,
+    panel,
+  }), [panel, customTipo, customFiltroOrigen, customFiltroPago]);
 
   const ejecutarDescargaCustom = async () => {
     if (!exportarHabilitado) {
@@ -344,22 +182,6 @@ export default function Direccion({ onLogout, user }) {
     } finally {
       setExportandoCustom(false);
     }
-  };
-
-  // Opciones de reporte según el módulo activo
-  const opcionesReportesPorModulo = {
-    caja: [
-      { value: "pagos_historial", label: "Historial de Transacciones Financieras (Pagos)" },
-      { value: "pagos_resumen", label: "Resumen de Cobros por Alumno" },
-    ],
-    coordinacion: [
-      { value: "programas_catalogo", label: "Catálogo General de Talleres (Programas)" },
-      { value: "programas_capacidad", label: "Capacidad de Aulas y Ocupación" },
-    ],
-    padres: [
-      { value: "padres_matriculas", label: "Matrículas y Estado de Pago de Alumnos" },
-      { value: "padres_apoderados", label: "Directorio Telefónico de Apoderados" },
-    ],
   };
 
   return (

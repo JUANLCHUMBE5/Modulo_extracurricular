@@ -1,0 +1,55 @@
+export const columnasDisponiblesMap = {
+  inscripciones: [
+    { key: "id", label: "Código de Inscripción" },
+    { key: "dni", label: "DNI Estudiante" },
+    { key: "estudiante", label: "Nombres Estudiante" },
+    { key: "grado", label: "Grado Aplicable" },
+    { key: "programa", label: "Programa / Taller" },
+    { key: "estadoInscripcion", label: "Estado Inscripción" },
+    { key: "estadoPago", label: "Estado de Pago" },
+    { key: "costo", label: "Costo / Monto" },
+    { key: "origen", label: "Canal / Origen" },
+    { key: "fechaRegistro", label: "Fecha de Registro" },
+    { key: "apoderado", label: "Nombre Apoderado" },
+    { key: "telefono", label: "Teléfono Apoderado" },
+  ],
+  programas: [
+    { key: "id", label: "Código de Programa" },
+    { key: "nombre", label: "Nombre Programa" },
+    { key: "periodo", label: "Periodo / Ciclo" },
+    { key: "estado", label: "Estado Programa" },
+    { key: "categoria", label: "Categoría" },
+    { key: "responsable", label: "Profesor Responsable" },
+    { key: "inscritos", label: "Total Inscritos" },
+    { key: "cupos", label: "Cupos Totales" },
+    { key: "avance", label: "Porcentaje Ocupación (%)" },
+    { key: "costo", label: "Costo Individual" },
+    { key: "proyectado", label: "Monto Proyectado" },
+    { key: "recaudado", label: "Monto Recaudado" },
+  ],
+  pagos: [
+    { key: "id", label: "Código Transacción" },
+    { key: "dni", label: "DNI Estudiante" },
+    { key: "estudiante", label: "Nombre Estudiante" },
+    { key: "programa", label: "Programa / Taller" },
+    { key: "monto", label: "Monto Pagado" },
+    { key: "estado", label: "Estado Pago" },
+    { key: "medio", label: "Medio de Pago" },
+    { key: "fecha", label: "Fecha Pago" },
+  ],
+};
+
+export const opcionesReportesPorModulo = {
+  caja: [
+    { value: "pagos_historial", label: "Historial de Transacciones Financieras (Pagos)" },
+    { value: "pagos_resumen", label: "Resumen de Cobros por Alumno" },
+  ],
+  coordinacion: [
+    { value: "programas_catalogo", label: "Catálogo General de Talleres (Programas)" },
+    { value: "programas_capacidad", label: "Capacidad de Aulas y Ocupación" },
+  ],
+  padres: [
+    { value: "padres_matriculas", label: "Matrículas y Estado de Pago de Alumnos" },
+    { value: "padres_apoderados", label: "Directorio Telefónico de Apoderados" },
+  ],
+};

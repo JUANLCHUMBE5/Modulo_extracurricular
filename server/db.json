@@ -546,6 +546,22 @@
   ],
   "auditLogs": [
     {
+      "id": "AUD-711854-08aa",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-06T04:38:31.854Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Coordinacion\"}"
+    },
+    {
+      "id": "AUD-705927-1c33",
+      "usuario": "secretaria",
+      "rol": "secretaria",
+      "fecha": "2026-06-06T04:38:25.927Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Secretaria\"}"
+    },
+    {
       "id": "AUD-023349-3a8d",
       "usuario": "coordinacion",
       "rol": "coordinacion",

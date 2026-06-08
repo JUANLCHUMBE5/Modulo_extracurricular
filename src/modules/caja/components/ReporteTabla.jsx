@@ -8,23 +8,11 @@ import {
 } from "@tabler/icons-react";
 import { formatearFechaPeru } from "../../../services/dateService";
 import { formatearSoles } from "../utils/cajaFormatters";
-
-function esPagoWebPadres(fila = {}) {
-  const origen = String(fila.origen || "").toLowerCase();
-  const formaPago = String(fila.formaPago || "").toLowerCase();
-  const tienePago = Boolean(fila.pagoId || fila.numeroOperacion || ["pagado", "verificando", "observado"].includes(fila.estadoPago));
-  return (origen.includes("portal") || origen.includes("web")) && tienePago && !formaPago.includes("sin pago");
-}
-
-function obtenerMedioCanalWeb(fila = {}) {
-  if (!esPagoWebPadres(fila)) return "-";
-  return `${fila.formaPago || "Yape"} / Web`;
-}
-
-function obtenerTelefonoPagoWeb(fila = {}) {
-  if (!esPagoWebPadres(fila)) return "-";
-  return fila.telefonoOperacion || fila.telefono || "-";
-}
+import {
+  esPagoWebPadresCaja,
+  obtenerMedioCanalWebCaja,
+  obtenerTelefonoPagoWebCaja,
+} from "../utils/cajaReportUtils";
 
 export default function ReporteTabla({
   filas,
@@ -104,13 +92,13 @@ export default function ReporteTabla({
                   </span>
                 </Table.Td>
                 <Table.Td>
-                  <span className={esPagoWebPadres(fila) ? "caja-phone-channel" : "caja-row-muted"}>
-                    {obtenerTelefonoPagoWeb(fila)}
+                  <span className={esPagoWebPadresCaja(fila) ? "caja-phone-channel" : "caja-row-muted"}>
+                    {obtenerTelefonoPagoWebCaja(fila)}
                   </span>
                 </Table.Td>
                 <Table.Td>
-                  <span className={esPagoWebPadres(fila) ? "caja-phone-channel" : "caja-row-muted"}>
-                    {obtenerMedioCanalWeb(fila)}
+                  <span className={esPagoWebPadresCaja(fila) ? "caja-phone-channel" : "caja-row-muted"}>
+                    {obtenerMedioCanalWebCaja(fila)}
                   </span>
                 </Table.Td>
                 <Table.Td>{formatearFechaPeru(fila.fecha || fila.fechaRegistro)}</Table.Td>

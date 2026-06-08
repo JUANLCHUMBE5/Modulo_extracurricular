@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Button, Group, Modal, Select, Textarea, Text } from "@mantine/core";
+﻿import { useEffect, useMemo, useState } from "react";
+import { Button, Group, Modal, Select } from "@mantine/core";
 import { toast } from "sonner";
 import {
   IconChartBar as ChartBar,
@@ -7,10 +7,10 @@ import {
   IconDownload as Download,
   IconLogout as LogOut,
   IconReceipt2 as Receipt,
-  IconEye as Eye,
   IconX as X,
 } from "@tabler/icons-react";
 import CajaFields from "./components/CajaFields";
+import CajaPagoWebModals from "./components/CajaPagoWebModals";
 import ReporteFiltros from "./components/ReporteFiltros";
 import ReporteResumenCards from "./components/ReporteResumenCards";
 import ReporteTabla from "./components/ReporteTabla";
@@ -31,42 +31,15 @@ import {
   observarPagoWeb,
   obtenerPagoPorId,
 } from "./cajaService";
-import { fechaActualInput, formatearFechaPeru } from "../../services/dateService";
+import { fechaActualInput } from "../../services/dateService";
 import { validarDni } from "../../services/validators";
 import { formatearSoles } from "./utils/cajaFormatters";
+import {
+  descargarArchivoCsv,
+  generarCSVReporteCaja,
+  normalizarEstadoPagoVista,
+} from "./utils/cajaReportUtils";
 import "./Caja.css";
-
-function normalizarEstadoPagoVista(...valores) {
-  const texto = valores
-    .filter(Boolean)
-    .join(" ")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-
-  if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
-  if (["verificando", "verificacion", "por verificar", "revision"].some((item) => texto.includes(item))) return "verificando";
-  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) return "observado";
-  if (["cancelado", "anulado"].some((item) => texto.includes(item))) return "anulado";
-  return "pendiente";
-}
-
-function esPagoWebPadresCaja(fila = {}) {
-  const origen = String(fila.origen || "").toLowerCase();
-  const formaPago = String(fila.formaPago || "").toLowerCase();
-  const tienePago = Boolean(fila.pagoId || fila.numeroOperacion || ["pagado", "verificando", "observado"].includes(fila.estadoPago));
-  return (origen.includes("portal") || origen.includes("web")) && tienePago && !formaPago.includes("sin pago");
-}
-
-function obtenerMedioCanalWebCaja(fila = {}) {
-  if (!esPagoWebPadresCaja(fila)) return "-";
-  return `${fila.formaPago || "Yape"} / Web`;
-}
-
-function obtenerTelefonoPagoWebCaja(fila = {}) {
-  if (!esPagoWebPadresCaja(fila)) return "-";
-  return fila.telefonoOperacion || fila.telefono || "-";
-}
 
 export default function Caja({
   delegatedContent,
@@ -105,7 +78,7 @@ export default function Caja({
     estadoPago: "todos",
   });
 
-  // Estados de verificación de pagos web Yape
+  // Estados de verificaciÃ³n de pagos web Yape
   const [modalVerificacionAbierto, setModalVerificacionAbierto] = useState(false);
   const [modalObservarAbierto, setModalObservarAbierto] = useState(false);
   const [pagoVerificar, setPagoVerificar] = useState(null);
@@ -250,7 +223,7 @@ export default function Caja({
       if (estaPagado) {
         setEstudiante(null);
         setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
-        setMensaje(`El estudiante ya cuenta con un pago registrado y aprobado para el programa "${inscripcion.programa}". No se puede registrar el pago nuevamente a menos que se genere una nueva derivación.`);
+        setMensaje(`El estudiante ya cuenta con un pago registrado y aprobado para el programa "${inscripcion.programa}". No se puede registrar el pago nuevamente a menos que se genere una nueva derivaciÃ³n.`);
         return;
       }
 
@@ -435,7 +408,7 @@ export default function Caja({
       });
       setModalVerificacionAbierto(true);
     } catch (error) {
-      toast.error("Error", { description: error.message || "Error al cargar detalles de verificación." });
+      toast.error("Error", { description: error.message || "Error al cargar detalles de verificaciÃ³n." });
     } finally {
       setCargando(false);
     }
@@ -443,7 +416,7 @@ export default function Caja({
 
   async function aprobarPagoWebDirecto(fila) {
     const nombreEstudiante = fila.estudiante || fila.estudianteNombre || "el estudiante";
-    if (!window.confirm(`¿Está seguro de aprobar el pago de Yape para ${nombreEstudiante}?`)) return;
+    if (!window.confirm(`Â¿EstÃ¡ seguro de aprobar el pago de Yape para ${nombreEstudiante}?`)) return;
     try {
       setCargando(true);
       await validarPagoWeb(fila.pagoId);
@@ -488,7 +461,7 @@ export default function Caja({
   async function rechazarPagoWeb() {
     if (!pagoVerificar) return;
     if (!observacionTexto.trim()) {
-      toast.error("Rechazar pago", { description: "Debe ingresar una observación para rechazar el pago." });
+      toast.error("Rechazar pago", { description: "Debe ingresar una observaciÃ³n para rechazar el pago." });
       return;
     }
     try {
@@ -525,9 +498,9 @@ export default function Caja({
         medioPago: filtrosReporte.medioPago,
         estadoPago: filtrosReporte.estadoPago,
       });
-      const csv = generarCSVReporte(datos);
+      const csv = generarCSVReporteCaja(datos);
       const nombre = `reporte-caja-${periodo}-${fechaActualInput()}.csv`;
-      descargarArchivo(csv, nombre);
+      descargarArchivoCsv(csv, nombre);
       toast.success("Reporte descargado", { description: "El archivo CSV se genero correctamente." });
     } catch (error) {
       toast.error("No se pudo descargar", { description: error.message || "Intente nuevamente." });
@@ -536,37 +509,6 @@ export default function Caja({
 
   function actualizarFiltroReporte(campo, valor) {
     setFiltrosReporte((actual) => ({ ...actual, [campo]: valor || "" }));
-  }
-
-  function generarCSVReporte(datos) {
-    const encabezados = ["DNI", "Estudiante", "Programa", "Monto", "Estado pago", "Codigo operacion", "Telefono", "Medio / canal", "Fecha registro", "Fecha pago", "Apoderado", "Telefono apoderado"];
-    const filas = datos.map((fila) => [
-      fila.dniEstudiante,
-      fila.estudiante,
-      fila.programa,
-      Number(fila.monto || 0).toFixed(2),
-      fila.estadoPago,
-      fila.numeroOperacion,
-      obtenerTelefonoPagoWebCaja(fila),
-      obtenerMedioCanalWebCaja(fila),
-      formatearFechaPeru(fila.fechaRegistro),
-      formatearFechaPeru(fila.fechaPago),
-      fila.apoderado,
-      fila.telefono,
-    ]);
-    const csvContent = [encabezados, ...filas]
-      .map((fila) => fila.map((valor) => `"${String(valor || "").replace(/"/g, '""')}"`).join(";"))
-      .join("\n");
-    return "sep=;\n" + csvContent;
-  }
-
-  function descargarArchivo(contenido, nombreArchivo) {
-    const blob = new Blob(["\uFEFF" + contenido], { type: "text/csv;charset=utf-8;" });
-    const enlace = document.createElement("a");
-    enlace.href = URL.createObjectURL(blob);
-    enlace.download = nombreArchivo;
-    enlace.click();
-    URL.revokeObjectURL(enlace.href);
   }
 
   return (
@@ -582,7 +524,7 @@ export default function Caja({
             <Receipt size={17} /> Registrar Cobro
           </button>
           <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button">
-            <ChartBar size={17} /> Control y Exportación
+            <ChartBar size={17} /> Control y ExportaciÃ³n
           </button>
         </nav>
         {moduleSwitcher ? (
@@ -604,7 +546,7 @@ export default function Caja({
         {vista === "reportes" ? (
         <header className="caja-header">
           <div>
-            <span>Control y exportación</span>
+            <span>Control y exportaciÃ³n</span>
             <h1>Consulta de Transacciones</h1>
             <p>Visualice el estado de los cobros, gestione pendientes y descargue reportes en CSV.</p>
           </div>
@@ -613,7 +555,7 @@ export default function Caja({
               aria-label="Periodo"
               className="caja-period"
               data={[
-                { value: "escolar", label: "Año escolar" },
+                { value: "escolar", label: "AÃ±o escolar" },
                 { value: "verano", label: "Ciclo verano" },
               ]}
               onChange={(valor) => setPeriodo(valor || "escolar")}
@@ -760,117 +702,22 @@ export default function Caja({
         </Group>
       </Modal>
 
-      <Modal
-        centered
-        opened={modalVerificacionAbierto}
-        onClose={() => { setModalVerificacionAbierto(false); setPagoVerificar(null); }}
-        title="Verificar Pago Web (Yape)"
-        size="lg"
-      >
-        {pagoVerificar && (
-          <div className="caja-verification-details">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 15 }}>
-              <div>
-                <strong>Estudiante:</strong>
-                <Text size="sm">{pagoVerificar.estudiante || pagoVerificar.estudianteNombre}</Text>
-              </div>
-              <div>
-                <strong>DNI:</strong>
-                <Text size="sm">{pagoVerificar.dniEstudiante || pagoVerificar.estudianteDni}</Text>
-              </div>
-              <div>
-                <strong>Programa:</strong>
-                <Text size="sm">{pagoVerificar.programa || pagoVerificar.programaNombre}</Text>
-              </div>
-              <div>
-                <strong>Monto del Programa:</strong>
-                <Text size="sm" fw="bold" color="green">{formatearSoles(pagoVerificar.monto)}</Text>
-              </div>
-              <div>
-                <strong>Celular de Operación:</strong>
-                <Text size="sm">{pagoVerificar.telefonoOperacion || "No ingresado"}</Text>
-              </div>
-              <div>
-                <strong>Código de Operación:</strong>
-                <Text size="sm" fw="bold">{pagoVerificar.numeroOperacion || pagoVerificar.referenciaPago}</Text>
-              </div>
-            </div>
-
-            {pagoVerificar.capturaPagoBase64 ? (
-              <div style={{ marginTop: 15, border: "1px solid #eaeaea", borderRadius: 8, padding: 8, textAlign: "center" }}>
-                <Text size="xs" color="dimmed" mb={4}>Captura de pantalla Yape:</Text>
-                <img
-                  src={pagoVerificar.capturaPagoBase64}
-                  alt="Captura Yape"
-                  style={{ maxWidth: "100%", maxHeight: 300, objectFit: "contain", borderRadius: 4 }}
-                />
-              </div>
-            ) : (
-              <div style={{ padding: 20, textAlign: "center", background: "#f9f9f9", borderRadius: 8 }}>
-                <Text color="dimmed" size="sm">No se adjuntó captura de pantalla de Yape.</Text>
-              </div>
-            )}
-
-            <Group justify="flex-end" mt="xl">
-              <Button variant="default" onClick={() => { setModalVerificacionAbierto(false); setPagoVerificar(null); }}>
-                Cerrar
-              </Button>
-              <Button
-                color="red"
-                leftSection={<X size={15} />}
-                onClick={() => {
-                  setObservacionTexto("");
-                  setModalObservarAbierto(true);
-                }}
-              >
-                Observar / Rechazar
-              </Button>
-              <Button
-                color="green"
-                leftSection={<Check size={15} />}
-                loading={guardandoVerificacion}
-                onClick={aprobarPagoWebDesdeModal}
-              >
-                Aprobar Pago
-              </Button>
-            </Group>
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        centered
-        opened={modalObservarAbierto}
-        onClose={() => setModalObservarAbierto(false)}
-        title="Observar / Rechazar Pago Web"
-        size="md"
-      >
-        <div style={{ padding: 4 }}>
-          <Text size="sm" mb={10} color="dimmed">
-            Ingrese el motivo por el cual se está rechazando u observando este pago. El apoderado podrá ver este mensaje desde su portal para corregir el registro.
-          </Text>
-          <Textarea
-            label="Motivo del Rechazo"
-            placeholder="Ej: El número de operación no coincide con el Yape recibido."
-            required
-            rows={4}
-            value={observacionTexto}
-            onChange={(event) => setObservacionTexto(event.currentTarget.value)}
-          />
-          <Group justify="flex-end" mt="lg">
-            <Button variant="default" onClick={() => setModalObservarAbierto(false)}>
-              Cancelar
-            </Button>
-            <Button
-              color="red"
-              loading={guardandoVerificacion}
-              onClick={rechazarPagoWeb}
-            >
-              Rechazar y Notificar
-            </Button>
-          </Group>
-        </div>
-      </Modal>
+      <CajaPagoWebModals
+        guardandoVerificacion={guardandoVerificacion}
+        modalObservarAbierto={modalObservarAbierto}
+        modalVerificacionAbierto={modalVerificacionAbierto}
+        observacionTexto={observacionTexto}
+        onAprobarPagoWeb={aprobarPagoWebDesdeModal}
+        onCerrarObservacion={() => setModalObservarAbierto(false)}
+        onCerrarVerificacion={() => { setModalVerificacionAbierto(false); setPagoVerificar(null); }}
+        onRechazarPagoWeb={rechazarPagoWeb}
+        onSetObservacionTexto={setObservacionTexto}
+        onSolicitarObservacion={() => {
+          setObservacionTexto("");
+          setModalObservarAbierto(true);
+        }}
+        pagoVerificar={pagoVerificar}
+      />
     </main>
   );
 }

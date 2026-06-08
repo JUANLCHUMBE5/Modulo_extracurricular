@@ -1,4 +1,4 @@
-import { apiDb, saveApiDb, syncApiDb } from "../../../services/dbApi";
+﻿import { apiDb, saveApiDb, syncApiDb } from "../../../services/dbApi";
 import { isApiMode, apiClient } from "../../../services/apiClient";
 import {
   adaptarEstudiante,
@@ -12,6 +12,21 @@ import {
   normalizarDuracionAvisoDias,
   obtenerVentanaInscripcion,
 } from "../../../services/dateService";
+import {
+  calcularEstadoGeneral,
+  extraerDiasHorario,
+  limpiarTexto,
+  normalizarEstadoPagoPadres,
+  normalizarPeriodoTexto,
+  normalizarTexto,
+  obtenerDiasCruzados,
+  obtenerProgramaPrincipalPadres,
+  programaDisponibleParaGrado,
+  programaVisibleEnPortalPadres,
+  resolverDocentePorGrado,
+  resolverHorarioPorGrado,
+  tieneHorariosPorGrupo,
+} from "./padresServiceUtils";
 
 const delay = (ms = 350) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -48,7 +63,7 @@ export async function obtenerResumenPadre(dni) {
   const estudiante = apiDb.estudiantes[dniLimpio] || null;
 
   if (!estudiante) {
-    throw new Error("No se encontró información del estudiante.");
+    throw new Error("No se encontrÃ³ informaciÃ³n del estudiante.");
   }
 
   const invitaciones = obtenerInvitaciones(dniLimpio, estudiante);
@@ -88,7 +103,7 @@ export async function guardarDatosApoderadoPadres(dni, datos) {
 
   const dniLimpio = String(dni || "").replace(/\D/g, "");
   const estudiante = apiDb.estudiantes[dniLimpio];
-  if (!estudiante) throw new Error("No se encontró información del estudiante.");
+  if (!estudiante) throw new Error("No se encontrÃ³ informaciÃ³n del estudiante.");
 
   estudiante.apoderado = limpiarTexto(datos.apoderado);
   estudiante.telefonoApoderado = limpiarTexto(datos.telefono);
@@ -126,7 +141,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
       talla_short: tallas.tallaShort || "",
     };
     const res = await apiClient.post("/api/v1/extracurricular/inscripciones", payload);
-    if (!res.success) throw new Error(res.message || "Error al registrar inscripción");
+    if (!res.success) throw new Error(res.message || "Error al registrar inscripciÃ³n");
     return adaptarInscripcion(res.data);
   }
 
@@ -135,7 +150,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
 
   const dniLimpio = String(dni || "").replace(/\D/g, "");
   const estudiante = apiDb.estudiantes[dniLimpio];
-  if (!estudiante) throw new Error("No se encontró información del estudiante.");
+  if (!estudiante) throw new Error("No se encontrÃ³ informaciÃ³n del estudiante.");
 
   const invitaciones = obtenerInvitaciones(dniLimpio, estudiante);
   const invitacionPrincipal = invitaciones[0] || null;
@@ -144,8 +159,8 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
   const invitacion = invitaciones.find((item) => item.programaId === programaSeleccionadoId) || null;
 
   const programa = apiDb.programas.find((item) => item.id === programaSeleccionadoId);
-  if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
-  if (programa.estado !== "Habilitado") throw new Error("El programa no está habilitado.");
+  if (!programa) throw new Error("El programa ya no existe. CoordinaciÃ³n debe revisarlo.");
+  if (programa.estado !== "Habilitado") throw new Error("El programa no estÃ¡ habilitado.");
   const gradoRegistro = invitacion?.grado || estudiante.grado;
   const seccionRegistro = invitacion?.seccion || estudiante.seccion;
   const codigoRegistro = invitacion?.codigoEstudiante || estudiante.codigoEstudiante || "";
@@ -183,7 +198,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
       throw new Error("El estudiante ya esta matriculado y cancelado en este programa. No se puede volver a matricular.");
     }
   }
-  if (duplicada) throw new Error("El estudiante ya tiene una inscripción registrada en este programa.");
+  if (duplicada) throw new Error("El estudiante ya tiene una inscripciÃ³n registrada en este programa.");
 
   const horarioRegistro = horarioPersonalizado || invitacion?.horario || resolverHorarioPorGrado(programa, gradoRegistro) || (programa.invitacionMasiva ? programa.horario : "") || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar";
   if (!programa.invitacionMasiva) {
@@ -478,29 +493,6 @@ function obtenerInscripciones(estudiante, dni) {
     .sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0));
 }
 
-function esProgramaCortoPadres(programa = {}) {
-  const nombre = normalizarTexto(programa.programa || programa.nombre);
-  if (nombre.includes("expres") || nombre.includes("express") || nombre.includes("maraton")) return true;
-
-  const inicio = crearFechaLocal(programa.fechaInicio);
-  const fin = crearFechaLocal(programa.fechaFin);
-  if (!inicio || !fin) return false;
-
-  const dias = Math.floor((fin.getTime() - inicio.getTime()) / 86400000) + 1;
-  return dias > 0 && dias < 28;
-}
-
-function obtenerProgramaPrincipalPadres(programas = []) {
-  return programas.find((item) => !esProgramaCortoPadres(item)) || programas[0] || null;
-}
-
-function crearFechaLocal(valor) {
-  if (!valor) return null;
-  const partes = String(valor).split("-").map(Number);
-  if (partes.length !== 3 || partes.some((parte) => Number.isNaN(parte))) return null;
-  return new Date(partes[0], partes[1] - 1, partes[2]);
-}
-
 function obtenerPagos(dni, inscripciones) {
   const idsInscripcion = new Set(inscripciones.map((item) => item.id));
   return [...(apiDb.pagos || [])]
@@ -580,137 +572,8 @@ function normalizarInscripcion(inscripcion) {
 
 function obtenerEstadoInscripcion(inscripcion) {
   return inscripcion.estadoInscripcion ||
-    inscripcion.estadoInscripción ||
-    inscripcion.estadoInscripción ||
-    inscripcion.estadoInscripción ||
+    inscripcion["estadoInscripciÃ³n"] ||
     "Pendiente";
-}
-
-function resolverHorarioPorGrado(programa, gradoAlumno = "") {
-  const grupos = programa?.horariosPorGrupo || [];
-  if (!Array.isArray(grupos) || grupos.length === 0) return "";
-
-  const gradoNormalizado = descomponerGrado(gradoAlumno);
-  if (!gradoNormalizado.numero) return "";
-  let gradoDelTurno = "";
-  const grupo = grupos.find((item) => {
-    gradoDelTurno = (item.grados || []).find((grado) => coincideGrado(grado, gradoNormalizado)) || "";
-    return Boolean(gradoDelTurno);
-  });
-
-  if (!grupo) return "";
-  const grados = formatearGrado(gradoDelTurno || gradoAlumno);
-  const aula = grupo.aula ? ` · Aula ${grupo.aula}` : "";
-  return `${grados ? `${grados}: ` : ""}${grupo.dia} almuerzo ${grupo.almuerzoInicio || "14:20"}-${grupo.almuerzoFin || "15:10"}, clase ${grupo.horaInicio || ""}-${grupo.horaFin || ""}${aula}`;
-}
-
-function resolverDocentePorGrado(programa, gradoAlumno = "") {
-  const grupos = programa?.horariosPorGrupo || [];
-  if (!Array.isArray(grupos) || grupos.length === 0) return programa.responsable || programa.docente || "No definido";
-
-  const gradoNormalizado = descomponerGrado(gradoAlumno);
-  if (!gradoNormalizado.numero) return programa.responsable || programa.docente || "No definido";
-  const grupo = grupos.find((item) =>
-    (item.grados || []).some((grado) => coincideGrado(grado, gradoNormalizado))
-  );
-
-  if (grupo && grupo.responsable && grupo.responsable.trim()) {
-    return grupo.responsable;
-  }
-  return programa.responsable || programa.docente || "No definido";
-}
-
-function coincideGrado(gradoGrupo, gradoAlumnoNormalizado) {
-  const grupo = descomponerGrado(gradoGrupo);
-  if (!grupo.numero || !gradoAlumnoNormalizado?.numero) return false;
-  if (grupo.numero !== gradoAlumnoNormalizado.numero) return false;
-  return !grupo.nivel || !gradoAlumnoNormalizado.nivel || grupo.nivel === gradoAlumnoNormalizado.nivel;
-}
-
-function formatearGrado(valor) {
-  const [nivel, grado] = String(valor || "").split(":");
-  if (!nivel || !grado) return valor;
-  return `${nivel} ${grado}`;
-}
-
-function tieneHorariosPorGrupo(programa) {
-  return Array.isArray(programa?.horariosPorGrupo) && programa.horariosPorGrupo.length > 0;
-}
-
-function programaDisponibleParaGrado(programa, gradoAlumno = "") {
-  if (programa?.invitacionMasiva) return programaDisponibleParaAlcanceMasivo(programa, gradoAlumno);
-
-  if (tieneHorariosPorGrupo(programa)) {
-    return Boolean(resolverHorarioPorGrado(programa, gradoAlumno));
-  }
-
-  const gradosAplicables = Array.isArray(programa?.gradosAplicables) ? programa.gradosAplicables : [];
-  if (!gradosAplicables.length) return true;
-
-  const gradoNormalizado = descomponerGrado(gradoAlumno);
-  if (!gradoNormalizado.numero) return false;
-
-  return gradosAplicables.some((grado) => coincideGrado(grado, gradoNormalizado));
-}
-
-function programaDisponibleParaAlcanceMasivo(programa, gradoAlumno = "") {
-  const alcance = normalizarTexto(programa?.alcanceInvitacionMasiva || "colegio");
-  if (!alcance || alcance === "colegio" || alcance === "todos") return true;
-
-  const gradoNormalizado = descomponerGrado(gradoAlumno);
-  if (!gradoNormalizado.nivel) return false;
-
-  if (alcance === "primaria" || alcance === "secundaria" || alcance === "inicial") {
-    return gradoNormalizado.nivel === alcance;
-  }
-
-  if (alcance === "grados" || alcance === "seleccionados") {
-    const gradosAplicables = Array.isArray(programa?.gradosAplicables) ? programa.gradosAplicables : [];
-    if (!gradosAplicables.length || !gradoNormalizado.numero) return false;
-    return gradosAplicables.some((grado) => coincideGrado(grado, gradoNormalizado));
-  }
-
-  return true;
-}
-
-function programaVisibleEnPortalPadres(programa) {
-  return Boolean(programa) && programa.estado === "Habilitado";
-}
-
-function calcularEstadoGeneral(inscripcion, invitacion) {
-  if (inscripcion) {
-    if (String(inscripcion.estadoPago || "").toLowerCase().includes("pag")) {
-      return { texto: "Inscrito con pago registrado", tono: "success" };
-    }
-    return { texto: "Inscripción pendiente de pago", tono: "warning" };
-  }
-
-  if (invitacion) {
-    return { texto: "Invitación disponible", tono: "info" };
-  }
-
-  return { texto: "Sin programa asignado", tono: "neutral" };
-}
-
-function normalizarPeriodoTexto(periodo) {
-  return String(periodo || "").toLowerCase().includes("verano") ? "Ciclo verano" : "Año escolar";
-}
-
-function normalizarTexto(texto) {
-  return String(texto || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function normalizarEstadoPagoPadres(...valores) {
-  const texto = normalizarTexto(valores.filter(Boolean).join(" "));
-  if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
-  if (["verificando", "verificacion", "por verificar", "revision"].some((item) => texto.includes(item))) return "verificando";
-  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) return "observado";
-  if (["cancelado", "anulado"].some((item) => texto.includes(item))) return "anulado";
-  return "pendiente";
 }
 
 function encontrarPagoActivoPadres(inscripcion = {}) {
@@ -728,13 +591,6 @@ function encontrarPagoActivoPadres(inscripcion = {}) {
     if (pago.programaId && pago.programaId === registro.programaId) return true;
     return programaNombre && normalizarTexto(pago.programa || pago.programaNombre) === programaNombre;
   }) || null;
-}
-
-function descomponerGrado(valor) {
-  const texto = normalizarTexto(valor).replace(":", " ");
-  const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
-  const numero = texto.match(/\d+/)?.[0] || "";
-  return { nivel, numero };
 }
 
 function validarCruceHorarioPadres(dni, programaId, periodo, horarioNuevo = "") {
@@ -758,24 +614,6 @@ function validarCruceHorarioPadres(dni, programaId, periodo, horarioNuevo = "") 
   if (cruce) {
     throw new Error(`El estudiante ya tiene una inscripcion con cruce de dia (${cruce.diasCruzados.join(", ")}) en ${cruce.item.programa || "otro programa"}.`);
   }
-}
-
-function obtenerDiasCruzados(a, b) {
-  const dias = [];
-  for (const dia of a) {
-    if (b.has(dia)) dias.push(dia);
-  }
-  return dias;
-}
-
-function extraerDiasHorario(horario = "") {
-  const texto = normalizarTexto(horario);
-  const dias = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
-  return new Set(dias.filter((dia) => texto.includes(dia)));
-}
-
-function limpiarTexto(texto) {
-  return String(texto || "").trim().replace(/\s+/g, " ");
 }
 
 export async function obtenerProgramasCoordinacion() {
