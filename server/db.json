@@ -309,7 +309,9 @@
       "costo": 0,
       "cupos": 0,
       "cuposOcupados": 0,
-      "gradosAplicables": [],
+      "gradosAplicables": [
+        "Inicial:4"
+      ],
       "periodo": "escolar",
       "modalidadCobro": "Mensual",
       "requiereUniforme": false,
@@ -348,7 +350,9 @@
       "costo": 0,
       "cupos": 0,
       "cuposOcupados": 0,
-      "gradosAplicables": [],
+      "gradosAplicables": [
+        "Inicial:5"
+      ],
       "periodo": "escolar",
       "modalidadCobro": "Mensual",
       "requiereUniforme": false,
@@ -468,12 +472,108 @@
       "estado": "Habilitado"
     }
   ],
-  "invitadosPorPrograma": {},
+  "invitadosPorPrograma": {
+    "PROG-002": [
+      {
+        "cargaId": "CARGA-44675220-9cd3",
+        "codigoEstudiante": "",
+        "dni": "11112222",
+        "nombres": "Luciana Torres Rojas",
+        "grado": "4 inicial",
+        "seccion": "",
+        "nivelEducativo": "",
+        "seleccion": "",
+        "nivelCambridge": "",
+        "periodo": "escolar",
+        "telefonoApoderado": "",
+        "correo": "",
+        "observacion": "",
+        "archivoNombre": "Registro individual",
+        "estado": "Invitado"
+      }
+    ],
+    "PROG-003": [
+      {
+        "cargaId": "CARGA-44865949-3c13",
+        "codigoEstudiante": "",
+        "dni": "22223333",
+        "nombres": "Mateo Quispe Huaman",
+        "grado": "5 Inicial",
+        "seccion": "",
+        "nivelEducativo": "",
+        "seleccion": "",
+        "nivelCambridge": "",
+        "periodo": "escolar",
+        "telefonoApoderado": "",
+        "correo": "",
+        "observacion": "",
+        "archivoNombre": "Registro individual",
+        "estado": "Invitado"
+      }
+    ]
+  },
   "inscripciones": [],
   "documentosGenerados": [],
   "pagos": [],
   "asistencias": [],
-  "historialCargas": [],
+  "historialCargas": [
+    {
+      "id": "CARGA-44865949-3c13",
+      "fecha": "2026-06-08T18:54:25.949Z",
+      "periodo": "escolar",
+      "archivoNombre": "Registro individual",
+      "archivos": [
+        "Registro individual"
+      ],
+      "usuario": "coordinacion",
+      "resumen": {
+        "importados": 1,
+        "total": 1,
+        "errores": 0,
+        "duplicados": 0
+      },
+      "registros": [
+        {
+          "programaId": "PROG-003",
+          "programaNombre": "Reforzamiento Circular 2026 Inicial Primaria Variables",
+          "archivoNombre": "Registro individual",
+          "dni": "22223333",
+          "codigoEstudiante": "",
+          "nombres": "Mateo Quispe Huaman",
+          "grado": "5 Inicial",
+          "seccion": ""
+        }
+      ]
+    },
+    {
+      "id": "CARGA-44675220-9cd3",
+      "fecha": "2026-06-08T18:51:15.219Z",
+      "periodo": "escolar",
+      "archivoNombre": "Registro individual",
+      "archivos": [
+        "Registro individual"
+      ],
+      "usuario": "coordinacion",
+      "resumen": {
+        "importados": 1,
+        "total": 1,
+        "errores": 0,
+        "duplicados": 0
+      },
+      "registros": [
+        {
+          "programaId": "PROG-002",
+          "programaNombre": "Invitacion Preparacion Cambridge 2026 Digital",
+          "archivoNombre": "Registro individual",
+          "dni": "11112222",
+          "codigoEstudiante": "",
+          "nombres": "Luciana Torres Rojas",
+          "grado": "4 inicial",
+          "seccion": ""
+        }
+      ]
+    }
+  ],
   "usuarios": [
     {
       "id": "1",
@@ -545,6 +645,54 @@
     }
   ],
   "auditLogs": [
+    {
+      "id": "AUD-657260-a698",
+      "usuario": "caja",
+      "rol": "caja",
+      "fecha": "2026-06-08T19:24:17.263Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Caja\"}"
+    },
+    {
+      "id": "AUD-865974-5ebb",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-08T18:54:25.974Z",
+      "accion": "CARGAR_EXCEL",
+      "detalles": "{\"cargaIds\":[\"CARGA-44865949-3c13\"],\"cantidad\":1,\"periodo\":\"escolar\",\"total\":1,\"errores\":0,\"duplicados\":0}"
+    },
+    {
+      "id": "AUD-675253-bd90",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-08T18:51:15.254Z",
+      "accion": "CARGAR_EXCEL",
+      "detalles": "{\"cargaIds\":[\"CARGA-44675220-9cd3\"],\"cantidad\":1,\"periodo\":\"escolar\",\"total\":1,\"errores\":0,\"duplicados\":0}"
+    },
+    {
+      "id": "AUD-296863-ce6e",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-08T18:28:16.865Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Coordinacion\"}"
+    },
+    {
+      "id": "AUD-703873-ba78",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-08T13:18:23.873Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Coordinacion\"}"
+    },
+    {
+      "id": "AUD-698858-8de0",
+      "usuario": "secretaria",
+      "rol": "secretaria",
+      "fecha": "2026-06-08T13:18:18.858Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Secretaria\"}"
+    },
     {
       "id": "AUD-711854-08aa",
       "usuario": "coordinacion",

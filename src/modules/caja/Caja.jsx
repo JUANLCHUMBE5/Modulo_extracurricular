@@ -78,7 +78,7 @@ export default function Caja({
     estadoPago: "todos",
   });
 
-  // Estados de verificaciÃ³n de pagos web Yape
+  // Estados de verificacion de pagos web Yape
   const [modalVerificacionAbierto, setModalVerificacionAbierto] = useState(false);
   const [modalObservarAbierto, setModalObservarAbierto] = useState(false);
   const [pagoVerificar, setPagoVerificar] = useState(null);
@@ -223,7 +223,7 @@ export default function Caja({
       if (estaPagado) {
         setEstudiante(null);
         setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
-        setMensaje(`El estudiante ya cuenta con un pago registrado y aprobado para el programa "${inscripcion.programa}". No se puede registrar el pago nuevamente a menos que se genere una nueva derivaciÃ³n.`);
+        setMensaje(`El estudiante ya cuenta con un pago registrado y aprobado para el programa "${inscripcion.programa}". No se puede registrar el pago nuevamente a menos que se genere una nueva derivacion.`);
         return;
       }
 
@@ -408,7 +408,7 @@ export default function Caja({
       });
       setModalVerificacionAbierto(true);
     } catch (error) {
-      toast.error("Error", { description: error.message || "Error al cargar detalles de verificaciÃ³n." });
+      toast.error("Error", { description: error.message || "Error al cargar detalles de verificacion." });
     } finally {
       setCargando(false);
     }
@@ -416,7 +416,7 @@ export default function Caja({
 
   async function aprobarPagoWebDirecto(fila) {
     const nombreEstudiante = fila.estudiante || fila.estudianteNombre || "el estudiante";
-    if (!window.confirm(`Â¿EstÃ¡ seguro de aprobar el pago de Yape para ${nombreEstudiante}?`)) return;
+    if (!window.confirm(`¿Esta seguro de aprobar el pago de Yape para ${nombreEstudiante}?`)) return;
     try {
       setCargando(true);
       await validarPagoWeb(fila.pagoId);
@@ -461,7 +461,7 @@ export default function Caja({
   async function rechazarPagoWeb() {
     if (!pagoVerificar) return;
     if (!observacionTexto.trim()) {
-      toast.error("Rechazar pago", { description: "Debe ingresar una observaciÃ³n para rechazar el pago." });
+      toast.error("Rechazar pago", { description: "Debe ingresar una observacion para rechazar el pago." });
       return;
     }
     try {
@@ -524,7 +524,7 @@ export default function Caja({
             <Receipt size={17} /> Registrar Cobro
           </button>
           <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button">
-            <ChartBar size={17} /> Control y ExportaciÃ³n
+            <ChartBar size={17} /> Control y Exportacion
           </button>
         </nav>
         {moduleSwitcher ? (
@@ -546,7 +546,7 @@ export default function Caja({
         {vista === "reportes" ? (
         <header className="caja-header">
           <div>
-            <span>Control y exportaciÃ³n</span>
+            <span>Control y exportacion</span>
             <h1>Consulta de Transacciones</h1>
             <p>Visualice el estado de los cobros, gestione pendientes y descargue reportes en CSV.</p>
           </div>
@@ -555,7 +555,7 @@ export default function Caja({
               aria-label="Periodo"
               className="caja-period"
               data={[
-                { value: "escolar", label: "AÃ±o escolar" },
+                { value: "escolar", label: "Año escolar" },
                 { value: "verano", label: "Ciclo verano" },
               ]}
               onChange={(valor) => setPeriodo(valor || "escolar")}

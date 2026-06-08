@@ -47,11 +47,11 @@ export default function CajaPagoWebModals({
                 <Text size="sm" fw="bold" color="green">{formatearSoles(pagoVerificar.monto)}</Text>
               </div>
               <div>
-                <strong>Celular de OperaciÃ³n:</strong>
+                <strong>Celular de Operacion:</strong>
                 <Text size="sm">{pagoVerificar.telefonoOperacion || "No ingresado"}</Text>
               </div>
               <div>
-                <strong>CÃ³digo de OperaciÃ³n:</strong>
+                <strong>Codigo de Operacion:</strong>
                 <Text size="sm" fw="bold">{pagoVerificar.numeroOperacion || pagoVerificar.referenciaPago}</Text>
               </div>
             </div>
@@ -67,7 +67,7 @@ export default function CajaPagoWebModals({
               </div>
             ) : (
               <div style={{ padding: 20, textAlign: "center", background: "#f9f9f9", borderRadius: 8 }}>
-                <Text color="dimmed" size="sm">No se adjuntÃ³ captura de pantalla de Yape.</Text>
+                <Text color="dimmed" size="sm">No se adjunto captura de pantalla de Yape.</Text>
               </div>
             )}
 
@@ -104,11 +104,11 @@ export default function CajaPagoWebModals({
       >
         <div style={{ padding: 4 }}>
           <Text size="sm" mb={10} color="dimmed">
-            Ingrese el motivo por el cual se estÃ¡ rechazando u observando este pago. El apoderado podrÃ¡ ver este mensaje desde su portal para corregir el registro.
+            Ingrese el motivo por el cual se esta rechazando u observando este pago. El apoderado podra ver este mensaje desde su portal para corregir el registro.
           </Text>
           <Textarea
-            label="Motivo del Rechazo"
-            placeholder="Ej: El nÃºmero de operaciÃ³n no coincide con el Yape recibido."
+            label="Motivo del rechazo"
+            placeholder="Ej: El numero de operacion no coincide con el Yape recibido."
             required
             rows={4}
             value={observacionTexto}
@@ -123,7 +123,7 @@ export default function CajaPagoWebModals({
               loading={guardandoVerificacion}
               onClick={onRechazarPagoWeb}
             >
-              Rechazar y Notificar
+              Rechazar y notificar
             </Button>
           </Group>
         </div>

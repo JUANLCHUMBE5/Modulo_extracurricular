@@ -160,7 +160,7 @@ function resolverDocentePorGradoApi(programa, gradoAlumno = "") {
   return programa.responsable || programa.docente || "No definido";
 }
 
-function obtenerPlantillaProgramaApi(db, programa = {}) {
+export function obtenerPlantillaProgramaApi(db, programa = {}) {
   const guardada = db?.plantillasPorPrograma?.[programa?.id] || {};
   const variablesPrograma = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
   const variablesGuardadas = Array.isArray(guardada.plantillaVariables) ? guardada.plantillaVariables : [];
@@ -254,7 +254,7 @@ function normalizarGradoAplicableDesdeAlumnoApi(grado = "") {
     : `${nivelFormateado}:${numero}`;
 }
 
-function agregarGradoProgramaDesdeAlumnoApi(programa, gradoAlumno) {
+export function agregarGradoProgramaDesdeAlumnoApi(programa, gradoAlumno) {
   if (!programa) return;
   const gradoAplicable = normalizarGradoAplicableDesdeAlumnoApi(gradoAlumno);
   if (!gradoAplicable) return;
@@ -264,6 +264,24 @@ function agregarGradoProgramaDesdeAlumnoApi(programa, gradoAlumno) {
   if (!existe) {
     programa.gradosAplicables = [...actuales, gradoAplicable];
   }
+}
+
+export function gradoCorrespondeAlProgramaApi(programa = {}, gradoAlumno = "") {
+  const gradoNormalizado = descomponerGradoApi(gradoAlumno);
+  if (!gradoNormalizado.numero) return false;
+
+  const gradosConfigurados = [];
+  if (Array.isArray(programa.gradosAplicables)) {
+    gradosConfigurados.push(...programa.gradosAplicables);
+  }
+  if (Array.isArray(programa.horariosPorGrupo)) {
+    programa.horariosPorGrupo.forEach((grupo) => {
+      if (Array.isArray(grupo.grados)) gradosConfigurados.push(...grupo.grados);
+    });
+  }
+
+  if (!gradosConfigurados.length) return true;
+  return gradosConfigurados.some((grado) => coincideGradoApi(grado, gradoNormalizado));
 }
 
 export function sincronizarGradosProgramaConInvitadosApi(db, programaId) {

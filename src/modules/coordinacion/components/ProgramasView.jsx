@@ -84,15 +84,15 @@ function ProgramasView({
       </header>
       <section className="coord-workspace coord-workspace-single">
         <article className="coord-card coord-search-card">
-          <div className="coord-card-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div className="coord-card-title coord-programs-clean-title">
+            <div className="coord-programs-clean-heading">
               <span className="coord-title-icon"><BookOpen size={21} /></span>
               <div>
                 <h2>Programas registrados</h2>
                 <p>Consulte, cree o administre programas y talleres.</p>
               </div>
             </div>
-            <div className="coord-stats-badges" style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <div className="coord-stats-badges coord-programs-clean-badges">
               <Badge variant="light" color="blue" size="md">
                 {todosLosProgramas.length} en total
               </Badge>
@@ -107,10 +107,10 @@ function ProgramasView({
             </div>
           </div>
 
-          <div className="coord-filtros-card-mantine" style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
-            <div className="coord-filtros-row-mantine" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "12px" }}>
+          <div className="coord-filtros-card-mantine coord-programs-clean-filters">
+            <div className="coord-filtros-row-mantine coord-programs-clean-filter-row">
               {/* Buscador */}
-              <div className="coord-filter-search" style={{ flex: "2 1 200px" }}>
+              <div className="coord-filter-search">
                 <TextInput
                   label={
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
@@ -129,12 +129,11 @@ function ProgramasView({
                     )
                   }
                   size="md"
-                  style={{ width: "100%" }}
                 />
               </div>
 
               {/* Categorías */}
-              <div className="coord-filter-category" style={{ flex: "1 1 140px" }}>
+              <div className="coord-filter-category">
                 <Select
                   label={
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
@@ -148,13 +147,12 @@ function ProgramasView({
                     ...categorias.map((cat) => ({ value: cat, label: cat }))
                   ]}
                   size="md"
-                  style={{ width: "100%" }}
                   allowDeselect={false}
                 />
               </div>
 
               {/* Periodo */}
-              <div className="coord-filter-period" style={{ flex: "1 1 130px" }}>
+              <div className="coord-filter-period">
                 <Select
                   label={
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
@@ -169,13 +167,12 @@ function ProgramasView({
                     { value: "verano", label: "Ciclo verano" }
                   ]}
                   size="md"
-                  style={{ width: "100%" }}
                   allowDeselect={false}
                 />
               </div>
 
               {/* Disponibilidad */}
-              <div className="coord-filter-status" style={{ flex: "1 1 130px" }}>
+              <div className="coord-filter-status">
                 <Select
                   label={
                     <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
@@ -191,20 +188,18 @@ function ProgramasView({
                     { value: "finalizados", label: "Finalizados" }
                   ]}
                   size="md"
-                  style={{ width: "100%" }}
                   allowDeselect={false}
                 />
               </div>
 
               {/* Botón de Registro */}
               {puedeCrearProgramas ? (
-                <div style={{ flex: "0 0 auto", height: "42px", display: "flex", alignItems: "flex-end" }}>
+                <div className="coord-programs-clean-action">
                   <Button
                     color="sanrafael"
                     onClick={abrirCrear}
                     leftSection={<Plus size={17} />}
                     size="md"
-                    style={{ height: "42px" }}
                   >
                     Nuevo programa
                   </Button>

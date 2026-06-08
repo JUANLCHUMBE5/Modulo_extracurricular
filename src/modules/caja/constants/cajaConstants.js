@@ -29,8 +29,8 @@ export const estadoColors = {
 };
 
 export const tiposReporte = [
-  { value: "todos", label: "Todos los registros (Padres y Secretaría)" },
-  { value: "registro_secretaria", label: "Inscritos por Secretaría" },
+  { value: "todos", label: "Todos los registros (Padres y Secretaria)" },
+  { value: "registro_secretaria", label: "Inscritos por Secretaria" },
   { value: "registro_web", label: "Inscritos por Padres / Web" },
   { value: "pagos_pendientes", label: "Solo pendientes de pago" },
   { value: "pagos_realizados", label: "Solo pagos realizados / validados" },

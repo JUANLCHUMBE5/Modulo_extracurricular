@@ -37,6 +37,20 @@ function resumirProgramasCarga(carga = {}) {
   return Array.from(nombres).join(", ");
 }
 
+function resumirCampoCarga(carga = {}, resolver) {
+  const valores = new Set((carga.registros || []).map(resolver).filter(Boolean));
+  if (!valores.size) return "-";
+  return Array.from(valores).join(", ");
+}
+
+function obtenerNivelDesdeGrado(grado = "") {
+  const texto = normalizarTexto(grado);
+  if (texto.includes("inicial")) return "Inicial";
+  if (texto.includes("primaria")) return "Primaria";
+  if (texto.includes("secundaria")) return "Secundaria";
+  return "";
+}
+
 function normalizarTexto(valor = "") {
   return String(valor || "")
     .trim()
@@ -74,6 +88,7 @@ function CargaExcelView({
   mensaje,
   modoCargaAlumnos,
   alumnoIndividual = { dni: "", nombre: "", grado: "" },
+  estadoAlumnoIndividual = { buscando: false, mensaje: "", encontrado: false },
   previewCarga,
   programaCargaId,
   programas = [],
@@ -121,33 +136,99 @@ function CargaExcelView({
             </button>
           </div>
 
-          <div className="coord-form">
-            <div className="coord-upload-grid">
-              <div className="coord-field coord-field-full">
-                <label htmlFor="coord-programa-carga">Codigo del programa o curso</label>
-                <select
-                  id="coord-programa-carga"
-                  value={programaCargaId}
-                  onChange={(event) => {
-                    setProgramaCargaId(event.target.value);
-                    setPreviewCarga(null);
-                    setProgresoCarga(null);
-                    setMensaje("");
-                  }}
-                >
-                  <option value="">Seleccione programa academico</option>
-                  {programasCarga.map((programa) => (
-                    <option key={programa.id} value={programa.id}>
-                      {programa.id} - {programa.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {modoCargaAlumnos === "individual" ? (
+          <div className="coord-form coord-individual-clean-form">
+            <div className="coord-field coord-individual-clean-program">
+              <label htmlFor="coord-programa-carga">Codigo del programa o curso</label>
+              <select
+                id="coord-programa-carga"
+                value={programaCargaId}
+                onChange={(event) => {
+                  setProgramaCargaId(event.target.value);
+                  setPreviewCarga(null);
+                  setProgresoCarga(null);
+                  setMensaje("");
+                }}
+              >
+                <option value="">Seleccione programa academico</option>
+                {programasCarga.map((programa) => (
+                  <option key={programa.id} value={programa.id}>
+                    {programa.id} - {programa.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              {modoCargaAlumnos === "masiva" ? (
-              <div className="coord-field coord-field-full">
+            <div className="coord-individual-clean-row">
+              <div className="coord-field coord-individual-clean-dni">
+                <label htmlFor="coord-individual-dni">DNI</label>
+                <input
+                  id="coord-individual-dni"
+                  value={alumnoIndividual.dni}
+                  onChange={(event) => actualizarAlumnoIndividual("dni", event.target.value)}
+                  placeholder="8 digitos"
+                  inputMode="numeric"
+                  maxLength="8"
+                />
+              </div>
+              <div className="coord-field coord-individual-clean-name">
+                <label htmlFor="coord-individual-nombre">Nombre</label>
+                <input
+                  id="coord-individual-nombre"
+                  value={alumnoIndividual.nombre}
+                  onChange={(event) => actualizarAlumnoIndividual("nombre", event.target.value)}
+                  placeholder="Nombre completo"
+                  disabled={estadoAlumnoIndividual.buscando}
+                />
+              </div>
+              <div className="coord-field coord-individual-clean-grade">
+                <label htmlFor="coord-individual-grado">Grado</label>
+                <input
+                  id="coord-individual-grado"
+                  value={alumnoIndividual.grado}
+                  onChange={(event) => actualizarAlumnoIndividual("grado", event.target.value)}
+                  placeholder="Ej: Primaria 4"
+                  disabled={estadoAlumnoIndividual.buscando}
+                />
+              </div>
+              <button className="coord-register-button coord-individual-clean-submit" type="button" onClick={guardarAlumnoIndividual} disabled={guardandoIndividual}>
+                {guardandoIndividual ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
+                <span>{guardandoIndividual ? "Guardando" : "Agregar alumno"}</span>
+              </button>
+            </div>
+            {estadoAlumnoIndividual.mensaje ? (
+              <p className={`coord-individual-clean-status ${estadoAlumnoIndividual.encontrado ? "is-success" : "is-warning"}`}>
+                {estadoAlumnoIndividual.mensaje}
+              </p>
+            ) : null}
+          </div>
+          ) : (
+          <div className="coord-form coord-massive-clean-form">
+            <div className="coord-field coord-massive-clean-program">
+              <label htmlFor="coord-programa-carga">Codigo del programa o curso</label>
+              <select
+                id="coord-programa-carga"
+                value={programaCargaId}
+                onChange={(event) => {
+                  setProgramaCargaId(event.target.value);
+                  setPreviewCarga(null);
+                  setProgresoCarga(null);
+                  setMensaje("");
+                }}
+              >
+                <option value="">Seleccione programa academico</option>
+                {programasCarga.map((programa) => (
+                  <option key={programa.id} value={programa.id}>
+                    {programa.id} - {programa.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="coord-massive-clean-row">
+              <div className="coord-field coord-massive-clean-file">
                 <label>Archivo</label>
-                <div className="coord-file-picker">
+                <div className="coord-file-picker coord-massive-clean-picker">
                   <input
                     id="coord-excel-upload"
                     key={archivoInputKey}
@@ -167,73 +248,33 @@ function CargaExcelView({
                   </label>
                   <span>{obtenerResumenArchivos(archivosExcel)}</span>
                 </div>
-                <small>Formato esperado: DNI, NOMBRE y GRADO. No se requiere seccion ni curso en el Excel.</small>
               </div>
-              ) : (
-                <>
-                  <div className="coord-field">
-                    <label htmlFor="coord-individual-dni">DNI</label>
-                    <input
-                      id="coord-individual-dni"
-                      value={alumnoIndividual.dni}
-                      onChange={(event) => actualizarAlumnoIndividual("dni", event.target.value)}
-                      placeholder="8 digitos"
-                      maxLength="8"
-                    />
-                  </div>
-                  <div className="coord-field">
-                    <label htmlFor="coord-individual-nombre">Nombre</label>
-                    <input
-                      id="coord-individual-nombre"
-                      value={alumnoIndividual.nombre}
-                      onChange={(event) => actualizarAlumnoIndividual("nombre", event.target.value)}
-                      placeholder="Nombre completo"
-                    />
-                  </div>
-                  <div className="coord-field">
-                    <label htmlFor="coord-individual-grado">Grado</label>
-                    <input
-                      id="coord-individual-grado"
-                      value={alumnoIndividual.grado}
-                      onChange={(event) => actualizarAlumnoIndividual("grado", event.target.value)}
-                      placeholder="Ej: Primaria 4"
-                    />
-                  </div>
-                </>
-              )}
-            </div>
 
-            <div className="coord-upload-actions">
-              {modoCargaAlumnos === "masiva" ? (
-              <>
-              <button className="coord-primary-button" type="button" onClick={generarPreviewExcel} disabled={!programaCargaId || !archivosExcel.length || cargandoPreview}>
-                {cargandoPreview ? <Loader2 className="coord-spin" size={17} /> : <Eye size={17} />}
-                <span>{cargandoPreview ? "Validando" : "Vista previa"}</span>
-              </button>
-              {(archivosExcel.length > 0 || previewCarga) ? (
-                <button
-                  className={previewCarga ? "coord-danger-button" : "coord-secondary-button"}
-                  type="button"
-                  onClick={cancelarCargaExcel}
-                  disabled={cargandoPreview || confirmandoCarga}
-                >
-                  <X size={17} />
-                  <span>Cancelar carga</span>
+              <div className="coord-massive-clean-actions">
+                <button className="coord-primary-button" type="button" onClick={generarPreviewExcel} disabled={!programaCargaId || !archivosExcel.length || cargandoPreview}>
+                  {cargandoPreview ? <Loader2 className="coord-spin" size={17} /> : <Eye size={17} />}
+                  <span>{cargandoPreview ? "Validando" : "Vista previa"}</span>
                 </button>
-              ) : null}
-              <button className="coord-register-button" type="button" onClick={confirmarCargaExcel} disabled={!previewCarga || confirmandoCarga}>
-                {confirmandoCarga ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
-                <span>{confirmandoCarga ? "Guardando" : "Guardar carga"}</span>
-              </button>
-              </>
-              ) : (
-                <button className="coord-register-button" type="button" onClick={guardarAlumnoIndividual} disabled={guardandoIndividual}>
-                  {guardandoIndividual ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
-                  <span>{guardandoIndividual ? "Guardando" : "Agregar alumno"}</span>
+                {(archivosExcel.length > 0 || previewCarga) ? (
+                  <button
+                    className={previewCarga ? "coord-danger-button" : "coord-secondary-button"}
+                    type="button"
+                    onClick={cancelarCargaExcel}
+                    disabled={cargandoPreview || confirmandoCarga}
+                  >
+                    <X size={17} />
+                    <span>Cancelar</span>
+                  </button>
+                ) : null}
+                <button className="coord-register-button" type="button" onClick={confirmarCargaExcel} disabled={!previewCarga || confirmandoCarga}>
+                  {confirmandoCarga ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
+                  <span>{confirmandoCarga ? "Guardando" : "Guardar carga"}</span>
                 </button>
-              )}
+              </div>
             </div>
+            <p className="coord-massive-clean-hint">Formato esperado: DNI, NOMBRE y GRADO. No se requiere seccion ni curso en el Excel.</p>
           </div>
+          )}
 
           {mensaje && (
             <MantineAlert
@@ -320,7 +361,10 @@ function CargaExcelView({
                     <tr>
                       <th>Fecha</th>
                       <th>Archivo</th>
-                      <th>Programa</th>
+                      <th>Nombre</th>
+                      <th>Grado</th>
+                      <th>Taller</th>
+                      <th>Nivel</th>
                       <th>Importados</th>
                       <th>Errores</th>
                       <th>Acción</th>
@@ -331,7 +375,10 @@ function CargaExcelView({
                       <tr key={carga.id}>
                         <td>{formatearFechaCarga(carga.fecha)}</td>
                         <td>{Array.isArray(carga.archivos) && carga.archivos.length ? carga.archivos.join(", ") : carga.archivoNombre || carga.id}</td>
+                        <td>{resumirCampoCarga(carga, (item) => item.nombres)}</td>
+                        <td>{resumirCampoCarga(carga, (item) => item.grado)}</td>
                         <td>{resumirProgramasCarga(carga)}</td>
+                        <td>{resumirCampoCarga(carga, (item) => item.nivelEducativo || obtenerNivelDesdeGrado(item.grado))}</td>
                         <td>{carga.resumen?.importados ?? carga.resumen?.validos ?? carga.registros?.length ?? 0}</td>
                         <td>{carga.resumen?.errores ?? 0}</td>
                         <td>

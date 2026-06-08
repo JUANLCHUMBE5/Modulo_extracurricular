@@ -25,9 +25,12 @@ import {
   mapDbEnrollmentToApi,
   mapDbPaymentToApi,
   mapDbProgramToApi,
+  agregarGradoProgramaDesdeAlumnoApi,
+  gradoCorrespondeAlProgramaApi,
   normalizarPeriodoApi,
   normalizarTextoApi,
   obtenerCamposProgramaInvitacionApi,
+  obtenerPlantillaProgramaApi,
   sincronizarGradosProgramaConInvitadosApi,
   sincronizarPlantillaProgramaApi,
 } from "./apiMappers.js";
@@ -850,6 +853,9 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
       const cargaId = grupoArchivo.cargaId;
       const existentes = db.invitadosPorPrograma[item.programaId] || [];
       const programaCarga = db.programas.find(p => p.id === item.programaId);
+      if (!gradoCorrespondeAlProgramaApi(programaCarga, item.grado)) {
+        throw new Error("El alumno no esta dentro de su grado correspondiente para este taller.");
+      }
       agregarGradoProgramaDesdeAlumnoApi(programaCarga, item.grado);
       programasTocados.add(item.programaId);
       const invitado = {

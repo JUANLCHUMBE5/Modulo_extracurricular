@@ -17,7 +17,7 @@ import {
   eliminarPrograma,
   listarCategorias, crearCategoria, eliminarCategoria, listarInvitados, listarMatriculados, listarAsistenciasPrograma,
   previsualizarCargaAlumnosMasiva, confirmarCargaAlumnos, listarHistorialCargas, eliminarCargaAlumnos, obtenerActividadPrograma,
-  registrarAlumnoIndividualCarga,
+  registrarAlumnoIndividualCarga, buscarAlumnoCargaPorDni,
 } from "./services/coordinacionService";
 import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias } from "../../services/dateService";
 import AlumnosProgramaModal from "./components/AlumnosProgramaModal";
@@ -138,10 +138,55 @@ function Coordinacion({
   const [alumnoIndividual, setAlumnoIndividual] = useState({ dni: "", nombre: "", grado: "" });
   const [programaCargaId, setProgramaCargaId] = useState("");
   const [guardandoIndividual, setGuardandoIndividual] = useState(false);
+  const [estadoAlumnoIndividual, setEstadoAlumnoIndividual] = useState({ buscando: false, mensaje: "", encontrado: false });
 
   function actualizarAlumnoIndividual(campo, valor) {
+    if (campo === "dni") {
+      const dni = String(valor || "").replace(/\D/g, "").slice(0, 8);
+      setAlumnoIndividual((prev) => ({ ...prev, dni }));
+      return;
+    }
     setAlumnoIndividual((prev) => ({ ...prev, [campo]: valor }));
   }
+
+  useEffect(() => {
+    if (modoCargaAlumnos !== "individual") return;
+    const dni = String(alumnoIndividual.dni || "").replace(/\D/g, "");
+    if (dni.length !== 8) {
+      setEstadoAlumnoIndividual({ buscando: false, mensaje: "", encontrado: false });
+      return;
+    }
+
+    let activo = true;
+    const timer = setTimeout(async () => {
+      setEstadoAlumnoIndividual({ buscando: true, mensaje: "Buscando alumno en la base de datos...", encontrado: false });
+      try {
+        const alumno = await buscarAlumnoCargaPorDni(dni, cargaPeriodo);
+        if (!activo) return;
+        if (alumno) {
+          setAlumnoIndividual((prev) => {
+            if (String(prev.dni || "").replace(/\D/g, "") !== dni) return prev;
+            return {
+              ...prev,
+              nombre: alumno.nombre || prev.nombre,
+              grado: alumno.grado || prev.grado,
+            };
+          });
+          setEstadoAlumnoIndividual({ buscando: false, mensaje: "Datos encontrados y completados automaticamente.", encontrado: true });
+          return;
+        }
+        setEstadoAlumnoIndividual({ buscando: false, mensaje: "DNI no encontrado. Complete nombre y grado manualmente.", encontrado: false });
+      } catch (err) {
+        if (!activo) return;
+        setEstadoAlumnoIndividual({ buscando: false, mensaje: err.message || "No se pudo consultar el DNI.", encontrado: false });
+      }
+    }, 250);
+
+    return () => {
+      activo = false;
+      clearTimeout(timer);
+    };
+  }, [alumnoIndividual.dni, modoCargaAlumnos]);
 
   async function guardarAlumnoIndividual() {
     if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para registrar alumnos.");
@@ -167,6 +212,7 @@ function Coordinacion({
       });
       await cargarDatos();
       setAlumnoIndividual({ dni: "", nombre: "", grado: "" });
+      setEstadoAlumnoIndividual({ buscando: false, mensaje: "", encontrado: false });
       mostrarMsg("Alumno registrado individualmente con éxito.", "success");
     } catch (err) {
       mostrarMsg(err.message || "Error al registrar el alumno.");
@@ -1406,6 +1452,7 @@ function Coordinacion({
             modoCargaAlumnos={modoCargaAlumnos}
             setModoCargaAlumnos={setModoCargaAlumnos}
             alumnoIndividual={alumnoIndividual}
+            estadoAlumnoIndividual={estadoAlumnoIndividual}
             actualizarAlumnoIndividual={actualizarAlumnoIndividual}
             guardarAlumnoIndividual={guardarAlumnoIndividual}
             guardandoIndividual={guardandoIndividual}

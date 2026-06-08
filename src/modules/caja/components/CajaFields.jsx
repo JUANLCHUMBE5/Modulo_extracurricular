@@ -85,7 +85,7 @@ export default function CajaFields({
             <Receipt size={18} />
             <div>
               <h3>Datos del pago</h3>
-              <p>Información cargada desde la inscripción.</p>
+              <p>Informacion cargada desde la inscripcion.</p>
             </div>
           </div>
 
@@ -98,8 +98,8 @@ export default function CajaFields({
             ))}
             <label className="caja-payment-method">
               Forma de pago
-              <select 
-                value={formulario.formaPago} 
+              <select
+                value={formulario.formaPago}
                 onChange={(event) => actualizar("formaPago", event.currentTarget.value)}
                 disabled={esPorVerificar}
               >
@@ -117,32 +117,32 @@ export default function CajaFields({
                 border: "1px solid #fde68a",
                 borderRadius: "6px",
                 padding: "12px",
-                marginTop: "10px"
+                marginTop: "10px",
               }}>
                 <h4 style={{ margin: "0 0 8px 0", color: "#b45309", fontSize: "13px" }}>
                   Detalles del Yape (Web)
                 </h4>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "8px" }}>
                   <div>
-                    <span style={{ fontSize: "11px", color: "#6b7280", display: "block" }}>Celular de Operación:</span>
+                    <span style={{ fontSize: "11px", color: "#6b7280", display: "block" }}>Celular de Operacion:</span>
                     <strong style={{ fontSize: "13px", color: "#1f2937" }}>{formulario.telefonoOperacion || "No ingresado"}</strong>
                   </div>
                   <div>
-                    <span style={{ fontSize: "11px", color: "#6b7280", display: "block" }}>Código de Operación:</span>
+                    <span style={{ fontSize: "11px", color: "#6b7280", display: "block" }}>Codigo de Operacion:</span>
                     <strong style={{ fontSize: "13px", color: "#1f2937" }}>{formulario.numeroOperacion || "No ingresado"}</strong>
                   </div>
                 </div>
                 {formulario.capturaPagoBase64 ? (
                   <div style={{ textAlign: "center" }}>
                     <span style={{ fontSize: "11px", color: "#b45309", display: "block", marginBottom: "4px" }}>Captura de pantalla:</span>
-                    <img 
-                      src={formulario.capturaPagoBase64} 
-                      alt="Captura Yape" 
-                      style={{ maxWidth: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "4px", border: "1px solid #eaeaea" }} 
+                    <img
+                      src={formulario.capturaPagoBase64}
+                      alt="Captura Yape"
+                      style={{ maxWidth: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "4px", border: "1px solid #eaeaea" }}
                     />
                   </div>
                 ) : (
-                  <span style={{ fontSize: "11px", color: "#9ca3af", fontStyle: "italic" }}>No se adjuntó captura de pantalla.</span>
+                  <span style={{ fontSize: "11px", color: "#9ca3af", fontStyle: "italic" }}>No se adjunto captura de pantalla.</span>
                 )}
               </div>
             ) : null}

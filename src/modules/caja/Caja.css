@@ -5,6 +5,15 @@
   grid-template-columns: var(--caja-sidebar) minmax(0, 1fr);
   color: #101828;
   background: #ffffff;
+  font-family: var(--font-body);
+}
+
+.caja-page *,
+.caja-page button,
+.caja-page input,
+.caja-page select,
+.caja-page textarea {
+  font-family: var(--font-body);
 }
 
 .caja-sidebar {
@@ -42,7 +51,7 @@
   margin: 0 0 8px;
   color: #176c60;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 800;
   text-align: center;
   text-transform: uppercase;
 }
@@ -125,8 +134,8 @@
 .caja-header span {
   color: #04735f;
   font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
+  font-weight: 800;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
@@ -134,7 +143,7 @@
   margin: 4px 0 0;
   color: #111827;
   font-size: 25px;
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1.05;
 }
 
@@ -177,7 +186,7 @@
   gap: 4px;
   color: #344054;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .caja-report-filters input,
@@ -190,7 +199,7 @@
   color: #101828;
   background: #ffffff;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 650;
 }
 
 .caja-report-filters input:disabled {

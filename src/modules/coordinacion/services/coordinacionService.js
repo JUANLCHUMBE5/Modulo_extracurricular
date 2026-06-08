@@ -2,6 +2,7 @@
 import { isApiMode, apiClient } from "../../../services/apiClient";
 import {
   adaptarPrograma,
+  adaptarEstudiante,
   adaptarInscripcion,
   adaptarPago,
   adaptarAsistencia
@@ -36,6 +37,8 @@ const normalizarTextoSimple = (valor = "") =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+const esCategoriaAcademica = (programa = {}) =>
+  normalizarTextoSimple(programa.categoria).includes("academ");
 const obtenerApiBase = () => String(
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? import.meta.env.VITE_LOCAL_API_URL : "") ||
@@ -702,6 +705,9 @@ export async function registrarAlumnoIndividualCarga({ periodo, programaId, dni,
   if (!/^\d{8}$/.test(dniLimpio)) errores.push("DNI inválido. Debe tener 8 dígitos.");
   if (!textoSeguro(nombreLimpio)) errores.push("Falta nombre.");
   if (!textoSeguro(gradoLimpio)) errores.push("Falta grado.");
+  if (gradoLimpio && !gradoCorrespondeAlPrograma(programa, gradoLimpio)) {
+    errores.push("El alumno no está dentro de su grado correspondiente para este taller.");
+  }
 
   const existente = (apiDb.invitadosPorPrograma?.[programa.id] || []).find((item) =>
     String(item.dni || "").replace(/\D/g, "") === dniLimpio
@@ -742,6 +748,74 @@ export async function registrarAlumnoIndividualCarga({ periodo, programaId, dni,
   };
 
   return confirmarCargaAlumnos(preview);
+}
+
+export async function buscarAlumnoCargaPorDni(dni, periodo = "escolar") {
+  const dniLimpio = limpiarTexto(dni).replace(/\D/g, "");
+  if (!/^\d{8}$/.test(dniLimpio)) return null;
+
+  if (isApiMode()) {
+    const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes/${dniLimpio}`, {
+      params: { periodo: normalizarPeriodo(periodo) },
+    });
+    if (!res.success || !res.data) return null;
+    return normalizarAlumnoCarga(adaptarEstudiante(res.data));
+  }
+
+  await syncApiDb();
+  const estudiante = apiDb.estudiantes?.[dniLimpio];
+  if (!estudiante) return null;
+  return normalizarAlumnoCarga(estudiante);
+}
+
+function normalizarAlumnoCarga(estudiante = {}) {
+  const nombres = limpiarTexto(estudiante.nombres);
+  const apellidos = limpiarTexto(estudiante.apellidos);
+  const nombreCompleto = [nombres, apellidos].filter(Boolean).join(" ").trim() || nombres;
+
+  return {
+    dni: limpiarTexto(estudiante.dni).replace(/\D/g, ""),
+    nombre: nombreCompleto,
+    grado: limpiarTexto(estudiante.grado || estudiante.gradoNombre || estudiante.grado_nombre),
+  };
+}
+
+function gradoCorrespondeAlPrograma(programa = {}, gradoAlumno = "") {
+  const gradoNormalizado = descomponerGradoCarga(gradoAlumno);
+  if (!gradoNormalizado.numero) return false;
+
+  const gradosConfigurados = obtenerGradosConfiguradosPrograma(programa);
+  if (!gradosConfigurados.length) return true;
+
+  return gradosConfigurados.some((grado) =>
+    gradosCoincidenCarga(descomponerGradoCarga(grado), gradoNormalizado)
+  );
+}
+
+function obtenerGradosConfiguradosPrograma(programa = {}) {
+  const grados = [];
+  if (Array.isArray(programa.gradosAplicables)) {
+    grados.push(...programa.gradosAplicables);
+  }
+  if (Array.isArray(programa.horariosPorGrupo)) {
+    programa.horariosPorGrupo.forEach((grupo) => {
+      if (Array.isArray(grupo.grados)) grados.push(...grupo.grados);
+    });
+  }
+  return grados.filter(Boolean);
+}
+
+function descomponerGradoCarga(valor = "") {
+  const texto = normalizarTextoSimple(valor).replace(":", " ");
+  const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
+  const numero = texto.match(/\d+/)?.[0] || "";
+  return { nivel, numero };
+}
+
+function gradosCoincidenCarga(gradoPrograma, gradoAlumno) {
+  if (!gradoPrograma.numero || !gradoAlumno.numero) return false;
+  if (gradoPrograma.numero !== gradoAlumno.numero) return false;
+  return !gradoPrograma.nivel || !gradoAlumno.nivel || gradoPrograma.nivel === gradoAlumno.nivel;
 }
 
 export async function confirmarCargaAlumnos(preview) {
