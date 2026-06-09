@@ -45,7 +45,10 @@ function obtenerEstadoPagoPadres(inscripcion = {}) {
 }
 
 function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirProgramaPrincipal }) {
+  if (!programa) return null;
   if (!programa) {
+    if (tieneCursosDisponibles) return null;
+
     return (
       <article className="padres-flow-panel padres-flow-empty-program">
         <AlertCircle size={24} />
@@ -458,12 +461,12 @@ export default function InicioStep({
 
   return (
     <>
-      <ProgramaPrincipal
-        programa={programa}
-        inscripcion={inscripcion}
-        setPasoActivo={setPasoActivo}
-        onInscribirProgramaPrincipal={onInscribirProgramaPrincipal}
-      />
+        <ProgramaPrincipal
+          programa={programa}
+          inscripcion={inscripcion}
+          setPasoActivo={setPasoActivo}
+          onInscribirProgramaPrincipal={onInscribirProgramaPrincipal}
+        />
 
       <CatalogoProgramas
         cargandoProgramas={cargandoProgramas}

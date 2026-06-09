@@ -138,6 +138,22 @@ function usePadres(user) {
   const inscripciones = Array.isArray(resumen?.inscripciones) ? resumen.inscripciones : [];
   const pagos = Array.isArray(resumen?.pagos) ? resumen.pagos : [];
   const programa = inscripcion || invitacion;
+
+  useEffect(() => {
+    if (!pagoConfirmado) return;
+
+    const inscripcionesActuales = new Set(inscripciones.map((item) => item.id).filter(Boolean));
+    const pagoSigueEnResumen = pagos.some((item) =>
+      (pagoConfirmado.id && item.id === pagoConfirmado.id) ||
+      (pagoConfirmado.inscripcionId && item.inscripcionId === pagoConfirmado.inscripcionId)
+    );
+    const inscripcionSigueEnResumen = pagoConfirmado.inscripcionId && inscripcionesActuales.has(pagoConfirmado.inscripcionId);
+
+    if (!pagoSigueEnResumen && !inscripcionSigueEnResumen) {
+      setPagoConfirmado(null);
+    }
+  }, [inscripciones, pagoConfirmado, pagos]);
+
   const tipoReforzamiento = useMemo(() => obtenerTipoReforzamiento(programa), [programa]);
   const nombreCorto = obtenerNombreCorto(estudiante?.nombres);
   const iniciales = obtenerIniciales(estudiante?.nombres);

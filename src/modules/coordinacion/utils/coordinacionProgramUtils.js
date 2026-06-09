@@ -193,8 +193,25 @@ export function normalizarHorariosPorGrupo(grupos, gradosAplicables = null) {
   }).filter((grupo) => grupo.grados.length > 0);
 }
 
-export function obtenerGradosFinales(gradosBase) {
+export function obtenerGradosFinales(gradosBase, gruposHorario = []) {
+  const gradosPorGrupo = (Array.isArray(gruposHorario) ? gruposHorario : [])
+    .flatMap((grupo) => normalizarListaGrados(grupo.grados));
+  if (gradosPorGrupo.length > 0) return normalizarListaGrados(gradosPorGrupo);
   return normalizarListaGrados(gradosBase);
+}
+
+export function resumenResponsablesPorGrupo(gruposHorario = [], fallback = "") {
+  const responsables = obtenerValoresUnicosGrupo(gruposHorario, "responsable");
+  if (responsables.length === 0) return String(fallback || "").trim();
+  if (responsables.length === 1) return responsables[0];
+  return `Varios docentes (${responsables.length})`;
+}
+
+export function resumenTutoraPorGrupo(gruposHorario = [], fallback = "") {
+  const tutoras = obtenerValoresUnicosGrupo(gruposHorario, "tutora");
+  if (tutoras.length === 0) return String(fallback || "").trim();
+  if (tutoras.length === 1) return tutoras[0];
+  return `Varios apoyos (${tutoras.length})`;
 }
 
 export function resumenHorariosPorGrupo(gruposHorario) {
@@ -305,6 +322,13 @@ function ordenarGrados(grados) {
     if (ordenA !== ordenB) return ordenA - ordenB;
     return String(a).localeCompare(String(b), "es", { numeric: true });
   });
+}
+
+function obtenerValoresUnicosGrupo(gruposHorario, campo) {
+  const valores = (Array.isArray(gruposHorario) ? gruposHorario : [])
+    .map((grupo) => String(grupo?.[campo] || "").trim())
+    .filter(Boolean);
+  return [...new Set(valores)];
 }
 
 function etiquetaGradoCorta(grado) {

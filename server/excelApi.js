@@ -31,8 +31,12 @@ import {
   normalizarTextoApi,
   obtenerCamposProgramaInvitacionApi,
   obtenerPlantillaProgramaApi,
+  programaListoParaPortalPadresApi,
+  resolverDocentePorGradoApi,
+  resolverHorarioPorGradoApi,
   sincronizarGradosProgramaConInvitadosApi,
   sincronizarPlantillaProgramaApi,
+  tieneHorariosPorGrupoApi,
 } from "./apiMappers.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
@@ -42,6 +46,29 @@ const app = express();
 const PORT = Number(process.env.PORT || process.env.EXCEL_API_PORT || 5175);
 const API_HOST = process.env.API_HOST || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 const JWT_SECRET = process.env.JWT_SECRET || "secreto-local-san-rafael-extracurricular-2026";
+
+function normalizarEstadoPagoReporteCaja(pago = null, inscripcion = null) {
+  if (pago) {
+    const estadoPago = normalizarTextoApi(pago.estado);
+    if (["completado", "pagado", "validado"].includes(estadoPago)) return "pagado";
+    if (["por verificar", "verificando", "verificacion"].includes(estadoPago)) return "verificando";
+    if (["observado", "rechazado", "no coincide"].includes(estadoPago)) return "observado";
+    if (["anulado", "cancelado"].includes(estadoPago)) return "anulado";
+
+    const origen = normalizarTextoApi(pago.origenRegistro);
+    const tieneComprobante = Boolean(
+      pago.numeroOperacion ||
+      pago.telefonoOperacion ||
+      pago.capturaPagoBase64 ||
+      pago.capturaPagoNombre
+    );
+    if (origen.includes("portal") && tieneComprobante) return "verificando";
+  }
+
+  const estadoInscripcion = normalizarTextoApi(inscripcion?.estadoPago);
+  if (["pagado", "completado", "validado"].includes(estadoInscripcion)) return "pagado";
+  return "pendiente";
+}
 
 const allowedOrigins = new Set(
   [
@@ -1549,6 +1576,8 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
     const invitations = [];
     const programs = db.programas || [];
     for (const prog of programs) {
+      if (prog.estado !== "Habilitado" || !programaListoParaPortalPadresApi(prog)) continue;
+
       const invitados = db.invitadosPorPrograma[prog.id] || [];
       const inv = invitados.find(item => item.dni === dni);
       if (inv) {
@@ -1657,20 +1686,32 @@ app.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), u
     if (req.file) {
       base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
     }
+    if (!base64Image) {
+      base64Image = req.body.comprobante_base64 || "";
+    }
+
+    const inscrip = (db.inscripciones || []).find(item => item.id === req.body.inscripcion_id);
+    if (!inscrip) {
+      return res.status(404).json({ success: false, message: "No se encontro la inscripcion para registrar el pago." });
+    }
     
     const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
     const nuevoPago = {
       id: pagoId,
       inscripcionId: req.body.inscripcion_id || "",
-      dniEstudiante: req.body.dni_estudiante || "",
-      programa: req.body.nombre_programa || "",
-      periodo: req.body.periodo || "escolar",
-      monto: Number(req.body.monto_pago || 0),
+      dniEstudiante: req.body.dni_estudiante || inscrip.dniEstudiante || "",
+      nombresEstudiante: inscrip.nombresEstudiante || "",
+      programaId: inscrip.programaId || "",
+      programa: req.body.nombre_programa || inscrip.programa || "",
+      periodo: req.body.periodo || inscrip.periodo || "escolar",
+      monto: Number(req.body.monto_pago || inscrip.costo || 0),
       formaPago: req.body.metodo_pago || "Yape",
-      numeroOperacion: req.body.numero_operacion || "",
-      telefonoOperacion: req.body.telefono_operacion || "",
+      numeroOperacion: req.body.numero_operacion || req.body.referencia || "",
+      telefonoOperacion: req.body.telefono_operacion || req.body.telefono || "",
+      capturaPagoNombre: req.body.comprobante_nombre || "",
       capturaPagoBase64: base64Image,
-      estado: "pendiente", // estado normalizado
+      estado: "Por Verificar",
+      estadoVerificacion: "pendiente",
       fecha: new Date().toISOString(),
       fechaPago: new Date().toISOString(),
       origenRegistro: "Portal padres"
@@ -1679,12 +1720,12 @@ app.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), u
     db.pagos = db.pagos || [];
     db.pagos.push(nuevoPago);
     
-    const inscrip = (db.inscripciones || []).find(item => item.id === req.body.inscripcion_id);
-    if (inscrip) {
-      inscrip.estadoPago = "pendiente"; // estado normalizado
-      inscrip.estadoInscripcion = "pendiente_validacion"; // estado normalizado
-      inscrip.pagoId = pagoId;
-    }
+    inscrip.estadoPago = "pendiente"; // estado normalizado
+    inscrip.estadoInscripcion = "pendiente_validacion"; // estado normalizado
+    inscrip.pagoId = pagoId;
+    inscrip.pagoReferencia = nuevoPago.numeroOperacion;
+    inscrip.pagoTelefono = nuevoPago.telefonoOperacion;
+    inscrip.pagoCapturaNombre = nuevoPago.capturaPagoNombre;
     
     await saveDb(db);
 
@@ -2164,7 +2205,7 @@ app.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"
           programa: prog ? prog.nombre : p.programa || "",
           periodo: period,
           monto: p.monto,
-          estadoPago: p.estado === "completado" ? "pagado" : p.estado === "Por Verificar" ? "verificando" : p.estado === "observado" ? "observado" : "pendiente",
+          estadoPago: normalizarEstadoPagoReporteCaja(p),
           estadoInscripcion: "",
           formaPago: p.formaPago,
           numeroOperacion: p.numeroOperacion || "",
@@ -2185,7 +2226,7 @@ app.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"
         const student = db.estudiantes?.[e.dniEstudiante];
         
         const monto = p ? p.monto : e.costo;
-        const statePay = p ? (p.estado === "completado" ? "pagado" : p.estado === "Por Verificar" ? "verificando" : p.estado === "observado" ? "observado" : "pendiente") : (e.estadoPago === "Pagado" ? "pagado" : "pendiente");
+        const statePay = normalizarEstadoPagoReporteCaja(p, e);
         
         return {
           id: e.id,

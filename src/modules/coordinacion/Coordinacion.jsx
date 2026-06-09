@@ -47,6 +47,8 @@ import {
   resumenHorario,
   resumenHorarioDeportivo,
   resumenHorariosPorGrupo,
+  resumenResponsablesPorGrupo,
+  resumenTutoraPorGrupo,
 } from "./utils/coordinacionProgramUtils";
 import { descargarListaAlumnosExcel } from "./utils/excelUtils";
 import { descargarListaAlumnosPdf } from "./utils/pdfUtils";
@@ -343,6 +345,7 @@ function Coordinacion({
       almuerzoInicio: prog.almuerzoInicio || "",
       almuerzoFin: prog.almuerzoFin || "",
       horariosPorGrupo: normalizarHorariosPorGrupo(prog.horariosPorGrupo),
+      usaHorariosPorBloque: Boolean(prog.usaHorariosPorBloque || normalizarHorariosPorGrupo(prog.horariosPorGrupo).length),
       talleresDeportivos: talleres,
       fechaFin: prog.fechaFin,
       cicloI: prog.cicloI || "",
@@ -405,7 +408,8 @@ function Coordinacion({
         : "Revise: talleres deportivos, edades y horarios.");
     }
 
-    const gruposHorario = usaTalleresPorEdad ? [] : normalizarHorariosPorGrupo(form.horariosPorGrupo, form.gradosAplicables);
+    const gruposHorario = usaTalleresPorEdad ? [] : normalizarHorariosPorGrupo(form.horariosPorGrupo);
+    const usaHorariosPorBloqueGuardar = !usaTalleresPorEdad && Boolean(form.usaHorariosPorBloque);
     
     let gradosFinales = [];
     if (esDeportivoGuardar) {
@@ -428,9 +432,11 @@ function Coordinacion({
     if (!form.modalidadCobro) camposFaltantes.push("modalidad de cobro");
     if (esVeranoGuardar) {
       if (diasFinales.length !== 3) camposFaltantes.push("3 dias de atencion");
-    } else if (!esDeportivoGuardar && gruposHorario.length === 0) {
+    } else if (!esDeportivoGuardar && !usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
       if (diasFinales.length === 0) camposFaltantes.push("dias del programa");
       if (!form.horaInicio || !form.horaFin) camposFaltantes.push("horario");
+    } else if (!esDeportivoGuardar && usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
+      camposFaltantes.push("bloques por grado");
     }
     if (camposFaltantes.length > 0) {
       return mostrarAlertaConfiguracion(`Revise: ${camposFaltantes.join(", ")}.`);
@@ -444,7 +450,11 @@ function Coordinacion({
     }
 
 
-    if (!esDeportivoGuardar && gruposHorario.length === 0) {
+    if (!esDeportivoGuardar && usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
+      return mostrarAlertaConfiguracion("Revise: agregue al menos un bloque con grados, docente y horario.");
+    }
+
+    if (!esDeportivoGuardar && !usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
       if (diasFinales.length === 0) return mostrarMsg("Seleccione los días del programa.");
       if (!form.horaInicio || !form.horaFin) return mostrarMsg("Seleccione hora de inicio y fin del programa.");
       if (form.horaInicio >= form.horaFin) return mostrarMsg("La hora de inicio debe ser menor a la hora de fin.");
@@ -461,6 +471,14 @@ function Coordinacion({
         grupo.grados.length === 0 || !grupo.dia || !grupo.horaInicio || !grupo.horaFin || grupo.horaInicio >= grupo.horaFin
       );
       if (grupoInvalido) return mostrarAlertaConfiguracion("Revise los grupos por dia: cada grupo debe tener grados, dia y hora valida.");
+      const grupoAlmuerzoInvalido = gruposHorario.find((grupo) =>
+        (grupo.almuerzoInicio && !grupo.almuerzoFin) ||
+        (!grupo.almuerzoInicio && grupo.almuerzoFin) ||
+        (grupo.almuerzoInicio && grupo.almuerzoFin && grupo.almuerzoInicio >= grupo.almuerzoFin)
+      );
+      if (grupoAlmuerzoInvalido) return mostrarAlertaConfiguracion("Revise los grupos por grado: complete horarios de almuerzo validos.");
+      const grupoSinDocente = gruposHorario.find((grupo) => !grupo.responsable);
+      if (grupoSinDocente) return mostrarAlertaConfiguracion("Revise los grupos por grado: cada grupo debe tener docente o tutor responsable.");
     }
 
     if (!form.fechaInicio || !form.fechaFin) return mostrarAlertaConfiguracion("Revise: fechas de inicio y fin.");
@@ -475,14 +493,13 @@ function Coordinacion({
     if (form.plantilla && !form.plantillaValidada) return mostrarMsg("La plantilla Word debe estar validada antes de guardar.");
 
     setGuardando(true);
-    const primerGrupo = gruposHorario[0] || {};
     const edadesTalleres = talleres.flatMap((taller) => [Number(taller.edadMinima), Number(taller.edadMaxima)]).filter(Number.isFinite);
     const edadMinimaVerano = edadesTalleres.length ? Math.min(...edadesTalleres) : "";
     const edadMaximaVerano = edadesTalleres.length ? Math.max(...edadesTalleres) : "";
     const datosGuardar = {
       ...form,
-      responsable: gruposHorario.length > 0 ? (primerGrupo.responsable || "") : form.responsable,
-      tutora: gruposHorario.length > 0 ? (primerGrupo.tutora || "") : form.tutora,
+      responsable: gruposHorario.length > 0 ? resumenResponsablesPorGrupo(gruposHorario, form.responsable) : form.responsable,
+      tutora: gruposHorario.length > 0 ? resumenTutoraPorGrupo(gruposHorario, form.tutora) : form.tutora,
       costo: Number(form.costo).toFixed(2),
       gradosAplicables: gradosFinales,
       edadMinima: esVeranoGuardar ? edadMinimaVerano : "",
@@ -495,6 +512,7 @@ function Coordinacion({
       duracionAvisoDias,
       dias: diasFinales,
       horariosPorGrupo: gruposHorario,
+      usaHorariosPorBloque: gruposHorario.length > 0,
       grupo: esVeranoGuardar
         ? resumenGrupoDeportivo(talleres)
         : esDeportivoGuardar
@@ -1161,6 +1179,7 @@ function Coordinacion({
       invitacionMasiva: periodoNormalizado === "verano" ? false : f.invitacionMasiva,
       requiereIndumentaria: periodoNormalizado === "verano" ? false : f.requiereIndumentaria,
       horariosPorGrupo: periodoNormalizado === "verano" ? [] : f.horariosPorGrupo,
+      usaHorariosPorBloque: periodoNormalizado === "verano" ? false : f.usaHorariosPorBloque,
     }));
   }
 
@@ -1220,6 +1239,11 @@ function Coordinacion({
   function agregarGrupoHorario(grupo = horarioGrupoInicial) {
     setForm((actual) => ({
       ...actual,
+      usaHorariosPorBloque: true,
+      gradosAplicables: normalizarListaGrados([
+        ...normalizarListaGrados(actual.gradosAplicables),
+        ...normalizarListaGrados(grupo.grados),
+      ]),
       horariosPorGrupo: [
         ...(Array.isArray(actual.horariosPorGrupo) ? actual.horariosPorGrupo : []),
         { ...grupo, id: grupo.id || `grupo-${Date.now()}` },

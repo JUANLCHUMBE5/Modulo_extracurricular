@@ -634,7 +634,7 @@ export async function obtenerProgramasCoordinacion() {
       return {
         ...programa,
         requiereGradoCompatible,
-        registrable: Boolean(programa.invitacionMasiva) && programa.estado === "Habilitado" && cuposDisponibles > 0 && ventanaInscripcion.permitida,
+        registrable: Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0 && ventanaInscripcion.permitida,
       };
     });
   }
@@ -664,6 +664,9 @@ export async function obtenerProgramasCoordinacion() {
       talleresDeportivos: programa.talleresDeportivos || [],
       requiereUniforme: Boolean(programa.requiereUniforme),
       requiereIndumentaria: Boolean(programa.requiereIndumentaria),
+      creadoDesdeDocumento: Boolean(programa.creadoDesdeDocumento),
+      plantilla: programa.plantilla || "",
+      plantillaValidada: Boolean(programa.plantillaValidada),
       requiereGradoCompatible,
       periodo: normalizarPeriodoTexto(programa.periodo),
       estado: programa.estado || "Habilitado",
@@ -681,7 +684,7 @@ export async function obtenerProgramasCoordinacion() {
       duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
       duracionAvisoDias,
       ventanaInscripcion,
-      registrable: Boolean(programa.invitacionMasiva) && programa.estado === "Habilitado" && cuposDisponibles > 0 && ventanaInscripcion.permitida,
+      registrable: Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0 && ventanaInscripcion.permitida,
     };
   });
 }

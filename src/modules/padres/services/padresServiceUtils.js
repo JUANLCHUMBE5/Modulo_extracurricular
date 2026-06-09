@@ -93,7 +93,25 @@ export function descomponerGrado(valor) {
 }
 
 export function programaVisibleEnPortalPadres(programa) {
-  return Boolean(programa) && programa.estado === "Habilitado";
+  return Boolean(programa) && programa.estado === "Habilitado" && programaListoParaPortalPadres(programa);
+}
+
+export function programaListoParaPortalPadres(programa = {}) {
+  const esBorradorDeDocumento = Boolean(programa.creadoDesdeDocumento || programa.plantilla || programa.plantillaValidada);
+  if (!esBorradorDeDocumento) return true;
+
+  const horario = normalizarTexto(programa.horario);
+  const grupo = normalizarTexto(programa.grupo);
+  const tieneHorarioReal = Boolean(
+    (Array.isArray(programa.horariosPorGrupo) && programa.horariosPorGrupo.length > 0) ||
+    (horario && !["por definir", "por confirmar", "no definido"].includes(horario)) ||
+    (grupo && !["por definir", "por confirmar", "no definido"].includes(grupo))
+  );
+  const tieneVigencia = Boolean(programa.fechaInicio && programa.fechaFin);
+  const tieneCupos = Number(programa.cupos || 0) > 0;
+  const tieneCosto = Number(programa.costo || programa.precio || 0) > 0;
+
+  return tieneHorarioReal || tieneVigencia || tieneCupos || tieneCosto;
 }
 
 export function calcularEstadoGeneral(inscripcion, invitacion) {

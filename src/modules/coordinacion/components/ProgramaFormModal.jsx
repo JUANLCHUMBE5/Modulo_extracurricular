@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert as MantineAlert } from "@mantine/core";
 import {
   IconAlertCircle as AlertCircle,
@@ -106,8 +106,27 @@ function ProgramaFormModal({
   const [grupoDraftError, setGrupoDraftError] = useState("");
   const [grupoDraftErrorTick, setGrupoDraftErrorTick] = useState(0);
   const [formTab, setFormTab] = useState("general"); // general, horarios, cobros
+  const usaHorariosPorBloque = Array.isArray(formHorariosPorGrupo) && formHorariosPorGrupo.length > 0;
+  const requiereHorariosPorBloque = Boolean(form.usaHorariosPorBloque || usaHorariosPorBloque);
+  const [modoHorario, setModoHorario] = useState(requiereHorariosPorBloque ? "bloques" : "unico");
+  const usaFormularioPorBloques = modoHorario === "bloques";
+
+  useEffect(() => {
+    if (!show) return;
+    setModoHorario(requiereHorariosPorBloque ? "bloques" : "unico");
+  }, [show, form.id]);
 
   if (!show) return null;
+
+  function seleccionarModoHorario(modo) {
+    if (modo === "unico" && usaHorariosPorBloque) {
+      const confirmado = window.confirm("Se quitarán los bloques por grado para usar un solo docente y horario.");
+      if (!confirmado) return;
+      actualizarForm("horariosPorGrupo", []);
+    }
+    actualizarForm("usaHorariosPorBloque", modo === "bloques");
+    setModoHorario(modo);
+  }
 
   function actualizarGrupoDraft(campo, valor) {
     setGrupoDraftError("");
@@ -138,7 +157,28 @@ function ProgramaFormModal({
     const dias = String(grupoDraft.dia || "").split(",").map(d => d.trim()).filter(Boolean);
 
     if (!grados.length || !dias.length || !grupoDraft.horaInicio || !grupoDraft.horaFin) {
-      setGrupoDraftError("Faltan grados, días u horario del turno.");
+      setGrupoDraftError("Faltan grados, días u horario del bloque.");
+      setGrupoDraftErrorTick((actual) => actual + 1);
+      return;
+    }
+
+    if (grupoDraft.horaInicio >= grupoDraft.horaFin) {
+      setGrupoDraftError("La hora de inicio de clase debe ser menor a la hora de fin.");
+      setGrupoDraftErrorTick((actual) => actual + 1);
+      return;
+    }
+    if ((grupoDraft.almuerzoInicio && !grupoDraft.almuerzoFin) || (!grupoDraft.almuerzoInicio && grupoDraft.almuerzoFin)) {
+      setGrupoDraftError("Complete hora de inicio y fin del almuerzo.");
+      setGrupoDraftErrorTick((actual) => actual + 1);
+      return;
+    }
+    if (grupoDraft.almuerzoInicio && grupoDraft.almuerzoFin && grupoDraft.almuerzoInicio >= grupoDraft.almuerzoFin) {
+      setGrupoDraftError("La hora de inicio del almuerzo debe ser menor a la hora de fin.");
+      setGrupoDraftErrorTick((actual) => actual + 1);
+      return;
+    }
+    if (!String(grupoDraft.responsable || "").trim()) {
+      setGrupoDraftError("Ingrese el docente o tutor responsable del bloque.");
       setGrupoDraftErrorTick((actual) => actual + 1);
       return;
     }
@@ -309,10 +349,31 @@ function ProgramaFormModal({
                               </div>
                             </div>
                           :
+                            <div className="coord-schedule-builder coord-field-full">
+                              <div className="coord-schedule-mode-grid">
+                                <button
+                                  type="button"
+                                  className={`coord-schedule-mode ${!usaFormularioPorBloques ? "is-selected" : ""}`}
+                                  onClick={() => seleccionarModoHorario("unico")}
+                                >
+                                  <strong>Un docente para todos</strong>
+                                  <span>Mismo día, almuerzo y clase</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className={`coord-schedule-mode ${usaFormularioPorBloques ? "is-selected" : ""}`}
+                                  onClick={() => seleccionarModoHorario("bloques")}
+                                  disabled={!puedeGestionarGruposFormulario}
+                                >
+                                  <strong>Docentes por grado/bloque</strong>
+                                  <span>Filas separadas como los formatos Word</span>
+                                </button>
+                              </div>
+                              {!usaFormularioPorBloques ? (
                             <div className="coord-schedule-block-grid coord-schedule-unified coord-field-full">
                               <div className="coord-schedule-block-column coord-schedule-block-main">
                                 <div className="coord-field coord-field-full">
-                                  <label>Horario base: grados aplicables *</label>
+                                  <label>{usaHorariosPorBloque ? "Grados cubiertos por los bloques" : "Horario único: grados aplicables *"}</label>
                                   <GradeSelector
                                     niveles={nivelesGrados}
                                     seleccionados={formGradosAplicables}
@@ -320,8 +381,8 @@ function ProgramaFormModal({
                                   />
                                   <p className="coord-field-hint">
                                     {formGradosAplicables.length
-                                      ? `${resumenGrados(formGradosAplicables)} · Configure abajo el horario que comparten estos grados.`
-                                      : "Seleccione los grados que comparten este horario principal."}
+                                      ? `${resumenGrados(formGradosAplicables)} · Use bloques si algún grado tiene otro docente, día u horario.`
+                                      : "Seleccione los grados que comparten un mismo docente, día y horario."}
                                   </p>
                                 </div>
 
@@ -400,6 +461,8 @@ function ProgramaFormModal({
                                   </div>
                                 </div>
                               </div>
+                            </div>
+                              ) : null}
                             </div>
                           }
     
@@ -593,16 +656,16 @@ function ProgramaFormModal({
                             </div>
                           )}
     
-                          {puedeGestionarGruposFormulario && !esFormularioVerano && !esDeportivoForm ? (
-                            <div className="coord-field coord-field-full">
+                          {usaFormularioPorBloques && puedeGestionarGruposFormulario && !esFormularioVerano && !esDeportivoForm ? (
+                            <div className="coord-field coord-field-full coord-block-form-panel">
                               <div className="coord-group-schedule-head">
                                 <div>
-                                  <strong>Turnos adicionales por grado</strong>
-                                  <p>Úselo solo si algunos grados tienen otro día, aula u horario distinto al horario base.</p>
+                                  <strong>Docentes y horarios por grado/bloque</strong>
+                                  <p>Agregue una fila por grado o por bloque cuando el docente, día, almuerzo o clase cambie.</p>
                                 </div>
                                 <button type="button" className="coord-template-autofill" onClick={() => setMostrarGrupoModal(true)}>
                                   <Plus size={14} />
-                                  Añadir turno
+                                  Añadir bloque
                                 </button>
                               </div>
                               {formHorariosPorGrupo.length ? (
@@ -616,14 +679,14 @@ function ProgramaFormModal({
                                       </div>
                                       <div className="coord-group-schedule-cell">
                                         <span>Días y hora</span>
-                                        <p>{grupo.dia || "Sin día"} · {formatearHora12(grupo.horaInicio || "15:20")} a {formatearHora12(grupo.horaFin || "17:20")}</p>
+                                        <p>{grupo.dia || "Sin día"} · Almuerzo {formatearHora12(grupo.almuerzoInicio || "14:20")} a {formatearHora12(grupo.almuerzoFin || "15:10")} · Clase {formatearHora12(grupo.horaInicio || "15:20")} a {formatearHora12(grupo.horaFin || "17:20")}</p>
                                       </div>
                                       <div className="coord-group-schedule-cell">
-                                        <span>Responsable / aula</span>
+                                        <span>Docente / aula</span>
                                         <p>
                                           {[grupo.responsable, grupo.tutora, grupo.aula ? `Aula: ${grupo.aula}` : ""]
                                             .filter(Boolean)
-                                            .join(" · ") || "Sin responsable"}
+                                            .join(" · ") || "Sin docente"}
                                         </p>
                                       </div>
                                       <button type="button" onClick={() => quitarGrupoHorario(index)} aria-label="Quitar grupo">
@@ -633,7 +696,7 @@ function ProgramaFormModal({
                                   ))}
                                 </div>
                               ) : (
-                                <p className="coord-field-hint">Si todos los grados usan el horario base, deje esta parte vacía.</p>
+                                <p className="coord-field-hint">Si el programa tiene docentes distintos, agregue un bloque para cada grado o grupo de grados.</p>
                               )}
                               {mostrarGrupoModal ? (
                                 <ProgramaGrupoHorarioModal
@@ -648,6 +711,34 @@ function ProgramaFormModal({
                                   toggleGradoDraft={toggleGradoDraft}
                                 />
                               ) : null}
+                              <div className="coord-schedule-flow-row coord-schedule-flow-row-wide coord-block-validity-row">
+                                <div className="coord-schedule-mini-title">Vigencia</div>
+                                <div className="coord-field">
+                                  <label>Fecha inicio *</label>
+                                  <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
+                                </div>
+                                <div className="coord-field">
+                                  <label>Fecha fin *</label>
+                                  <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
+                                </div>
+                                <div className="coord-field">
+                                  <label>Duracion del taller</label>
+                                  <div className="coord-readonly-field">
+                                    {duracionTallerFormulario || "Seleccione fechas"}
+                                  </div>
+                                </div>
+                                <div className="coord-field">
+                                  <label>Aviso abierto (dias) *</label>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="7"
+                                    value={form.duracionAvisoDias}
+                                    onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
+                                    placeholder="Max 7 dias"
+                                  />
+                                </div>
+                              </div>
                             </div>
                           ) : null}
                         </div>

@@ -10,6 +10,7 @@ import { formatearFechaPeru } from "../../../services/dateService";
 import { formatearSoles } from "../utils/cajaFormatters";
 import {
   esPagoWebPadresCaja,
+  esPagoWebPorVerificarCaja,
   obtenerMedioCanalWebCaja,
   obtenerTelefonoPagoWebCaja,
 } from "../utils/cajaReportUtils";
@@ -50,7 +51,7 @@ export default function ReporteTabla({
         <Table.Tbody>
           {filas.map((fila) => {
             const puedePagar = fila.estadoPago === "pendiente" && fila.inscripcionId && fila.puedePagarCaja;
-            const esPagoWebVerificar = fila.estadoPago === "verificando" && fila.pagoId;
+            const esPagoWebVerificar = esPagoWebPorVerificarCaja(fila);
             const esObservado = fila.estadoPago === "observado";
             const esAnulado = fila.estadoPago === "anulado";
 

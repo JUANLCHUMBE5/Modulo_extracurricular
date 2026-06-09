@@ -1,11 +1,5 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import Login from "./components/Login/Login";
-import Coordinacion from "./modules/coordinacion/Coordinacion";
-import Secretaria from "./modules/secretaria/Secretaria";
-import Administrador from "./modules/administrador/Administrador";
-import Padres from "./modules/padres";
-import Auxiliar from "./modules/auxiliar/Auxiliar";
-import Caja from "./modules/caja/Caja";
 import { apiDb, syncApiDb } from "./services/dbApi";
 import { isApiMode, apiClient } from "./services/apiClient";
 import { normalizeUser } from "./modules/administrador/models/usuarioModel";
@@ -17,7 +11,13 @@ import {
   IconUpload as Upload,
 } from "@tabler/icons-react";
 
+const Administrador = React.lazy(() => import("./modules/administrador/Administrador"));
+const Auxiliar = React.lazy(() => import("./modules/auxiliar/Auxiliar"));
+const Caja = React.lazy(() => import("./modules/caja/Caja"));
+const Coordinacion = React.lazy(() => import("./modules/coordinacion/Coordinacion"));
 const Direccion = React.lazy(() => import("./modules/direccion/Direccion"));
+const Padres = React.lazy(() => import("./modules/padres"));
+const Secretaria = React.lazy(() => import("./modules/secretaria/Secretaria"));
 
 const moduleLabels = {
   administrador: "Administrador",
@@ -464,11 +464,7 @@ function App() {
       case "auxiliar":
         return <Auxiliar onLogout={handleLogout} />;
       case "direccion":
-        return (
-          <Suspense fallback={<div className="module-placeholder">Cargando Direccion...</div>}>
-            <Direccion onLogout={handleLogout} user={user} />
-          </Suspense>
-        );
+        return <Direccion onLogout={handleLogout} user={user} />;
       default:
         return (
           <div className="module-placeholder">
@@ -486,9 +482,9 @@ function App() {
   };
 
   return (
-    <>
+    <Suspense fallback={<div className="module-placeholder">Cargando modulo...</div>}>
       {renderModule()}
-    </>
+    </Suspense>
   );
 }
 

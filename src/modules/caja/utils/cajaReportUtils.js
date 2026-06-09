@@ -22,6 +22,20 @@ export function esPagoWebPadresCaja(fila = {}) {
   return (origen.includes("portal") || origen.includes("web")) && tienePago && !formaPago.includes("sin pago");
 }
 
+export function esPagoWebPorVerificarCaja(fila = {}) {
+  if (!esPagoWebPadresCaja(fila)) return false;
+  if (fila.estadoPago === "verificando") return true;
+  if (fila.estadoPago !== "pendiente") return false;
+
+  return Boolean(
+    fila.pagoId ||
+    fila.numeroOperacion ||
+    fila.telefonoOperacion ||
+    fila.capturaPagoBase64 ||
+    fila.capturaPagoNombre
+  );
+}
+
 export function obtenerMedioCanalWebCaja(fila = {}) {
   if (!esPagoWebPadresCaja(fila)) return "-";
   return `${fila.formaPago || "Yape"} / Web`;

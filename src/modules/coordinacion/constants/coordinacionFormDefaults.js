@@ -3,7 +3,7 @@ export const formInicial = {
   grupoEtario: "",
   gradosAplicables: [], edadMinima: "", edadMaxima: "", fechaNacimientoDesde: "", fechaNacimientoHasta: "", dias: [], horaInicio: "", horaFin: "",
   almuerzoInicio: "", almuerzoFin: "",
-  horariosPorGrupo: [], talleresDeportivos: [],
+  horariosPorGrupo: [], usaHorariosPorBloque: false, talleresDeportivos: [],
   fechaInicio: "", fechaFin: "", duracionAvisoDias: "7", cupos: "", costo: "", modalidadCobro: "Mensual",
   cicloI: "", cicloII: "",
   responsable: "", tutora: "", plantilla: "", plantillaBase64: "", plantillaVariables: [],

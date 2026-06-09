@@ -17,6 +17,21 @@ function resolverHorarioPorGradoLocal(programa, gradoAlumno = "") {
   return `${grado ? `${grado}: ` : ""}${grupo.dia} almuerzo ${grupo.almuerzoInicio || "14:20"}-${grupo.almuerzoFin || "15:10"}, clase ${grupo.horaInicio || ""}-${grupo.horaFin || ""}${aula}`;
 }
 
+function resolverDocentePorGradoLocal(programa, gradoAlumno = "") {
+  const grupos = programa?.horariosPorGrupo || [];
+  const fallback = programa?.docente || programa?.responsable || "No definido";
+  if (!Array.isArray(grupos) || grupos.length === 0) return fallback;
+
+  const gradoNormalizado = descomponerGradoLocal(gradoAlumno);
+  if (!gradoNormalizado.numero) return fallback;
+
+  const grupo = grupos.find((item) =>
+    (item.grados || []).some((grado) => coincideGradoLocal(grado, gradoNormalizado))
+  );
+
+  return grupo?.responsable?.trim() || fallback;
+}
+
 function coincideGradoLocal(gradoGrupo, gradoAlumnoNormalizado) {
   const grupo = descomponerGradoLocal(gradoGrupo);
   if (!grupo.numero || !gradoAlumnoNormalizado?.numero) return false;
@@ -45,4 +60,4 @@ function normalizarComparacion(valor) {
     .trim();
 }
 
-export { resolverHorarioPorGradoLocal };
+export { resolverDocentePorGradoLocal, resolverHorarioPorGradoLocal };

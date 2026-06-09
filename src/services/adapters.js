@@ -49,6 +49,7 @@ export function adaptarPrograma(apiPrograma) {
     plantillaBase64: apiPrograma.plantilla_base64 || apiPrograma.plantillaBase64 || "",
     plantillaVariables: apiPrograma.plantilla_variables || apiPrograma.plantillaVariables || [],
     plantillaValidada: Boolean(apiPrograma.plantilla_validada ?? apiPrograma.plantillaValidada),
+    creadoDesdeDocumento: Boolean(apiPrograma.creado_desde_documento ?? apiPrograma.creadoDesdeDocumento),
     codigoEstudiante: apiPrograma.codigo_estudiante || apiPrograma.codigoEstudiante || "",
     dni: apiPrograma.dni || apiPrograma.dni_estudiante || "",
     grado: apiPrograma.grado || apiPrograma.grado_nombre || "",
@@ -144,6 +145,10 @@ export function adaptarInscripcion(apiInscripcion) {
     estadoInscripcion: apiInscripcion.estado_inscripcion || apiInscripcion.estadoInscripcion || "Pendiente de pago",
     estadoPago: apiInscripcion.estado_pago || apiInscripcion.estadoPago || "Pendiente",
     pagoId: apiInscripcion.pago_id || apiInscripcion.pagoId || "",
+    pagoReferencia: apiInscripcion.pago_referencia || apiInscripcion.pagoReferencia || "",
+    pagoTelefono: apiInscripcion.pago_telefono || apiInscripcion.pagoTelefono || "",
+    pagoCapturaNombre: apiInscripcion.pago_captura_nombre || apiInscripcion.pagoCapturaNombre || "",
+    pagoObservacionCaja: apiInscripcion.pago_observacion_caja || apiInscripcion.pagoObservacionCaja || "",
     fechaPago: apiInscripcion.fecha_pago || apiInscripcion.fechaPago || "",
     origenRegistro: apiInscripcion.origen_inscripcion || apiInscripcion.origen || apiInscripcion.origenRegistro || "Portal padres",
     requisitos: apiInscripcion.requisitos || "",
@@ -163,15 +168,25 @@ export function adaptarInscripcion(apiInscripcion) {
  */
 export function adaptarPago(apiPago) {
   if (!apiPago) return null;
+  const idPago = apiPago.pago_id || apiPago.pagoId || apiPago.id || "";
+  const nombreEstudiante = apiPago.estudiante || apiPago.nombres_estudiante || apiPago.nombresEstudiante || apiPago.estudianteNombre || "";
+  const estadoPago = apiPago.estadoPago || apiPago.estado_pago || apiPago.estado || "pendiente";
+  const origen = apiPago.origen || apiPago.origen_registro || apiPago.origenRegistro || "Portal padres";
+
   return {
-    id: apiPago.pago_id || apiPago.id || "",
+    id: idPago,
+    pagoId: apiPago.pago_id || apiPago.pagoId || "",
     inscripcionId: apiPago.inscripcion_id || apiPago.inscripcionId || "",
     monto: apiPago.monto_pago !== undefined ? Number(apiPago.monto_pago) : Number(apiPago.monto || 0),
     metodo: apiPago.metodo_pago || apiPago.metodo || apiPago.formaPago || apiPago.medioPago || "Yape",
     formaPago: apiPago.metodo_pago || apiPago.metodo || apiPago.formaPago || apiPago.medioPago || "Yape",
-    estado: apiPago.estado_pago || apiPago.estado || "pendiente",
+    estado: estadoPago,
+    estadoPago,
+    estadoInscripcion: apiPago.estadoInscripcion || apiPago.estado_inscripcion || "",
+    estadoVerificacion: apiPago.estadoVerificacion || apiPago.estado_verificacion || "",
     comprobante: apiPago.comprobante_url || apiPago.comprobante || apiPago.capturaPagoBase64 || "",
     capturaPagoBase64: apiPago.comprobante_url || apiPago.comprobante || apiPago.capturaPagoBase64 || "",
+    capturaPagoNombre: apiPago.capturaPagoNombre || apiPago.captura_pago_nombre || "",
     observacion: apiPago.motivo_observacion || apiPago.observacion || apiPago.observaciones || "",
     observaciones: apiPago.motivo_observacion || apiPago.observacion || apiPago.observaciones || "",
     validadoPor: apiPago.usuario_validacion || apiPago.validadoPor || "",
@@ -180,17 +195,24 @@ export function adaptarPago(apiPago) {
     // Campos extendidos para bandeja y reportes de Caja
     dniEstudiante: apiPago.dni_estudiante || apiPago.dniEstudiante || apiPago.estudianteDni || "",
     estudianteDni: apiPago.dni_estudiante || apiPago.dniEstudiante || apiPago.estudianteDni || "",
-    nombresEstudiante: apiPago.nombres_estudiante || apiPago.nombresEstudiante || apiPago.estudianteNombre || "",
-    estudianteNombre: apiPago.nombres_estudiante || apiPago.nombresEstudiante || apiPago.estudianteNombre || "",
+    estudiante: nombreEstudiante,
+    nombresEstudiante: nombreEstudiante,
+    estudianteNombre: nombreEstudiante,
     programaId: apiPago.programa_id || apiPago.programaId || "",
     programa: apiPago.nombre_programa || apiPago.programa || apiPago.programaNombre || "",
     programaNombre: apiPago.nombre_programa || apiPago.programa || apiPago.programaNombre || "",
     periodo: apiPago.periodo || "escolar",
     fecha: apiPago.fecha || apiPago.fechaPago || apiPago.creado_en || "",
+    fechaRegistro: apiPago.fechaRegistro || apiPago.fecha_registro || apiPago.creado_en || "",
     fechaPago: apiPago.fecha || apiPago.fechaPago || "",
     numeroOperacion: apiPago.numero_operacion || apiPago.numeroOperacion || apiPago.referenciaPago || "",
     telefonoOperacion: apiPago.telefono_operacion || apiPago.telefonoOperacion || "",
-    origenRegistro: apiPago.origen_registro || apiPago.origenRegistro || "Portal padres"
+    origen,
+    origenRegistro: origen,
+    fuente: apiPago.fuente || "",
+    apoderado: apiPago.apoderado || "",
+    telefono: apiPago.telefono || apiPago.telefono_apoderado || "",
+    puedePagarCaja: Boolean(apiPago.puedePagarCaja)
   };
 }
 

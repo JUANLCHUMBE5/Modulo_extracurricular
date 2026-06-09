@@ -215,11 +215,14 @@ function inferirSexoDemo(nombre) {
 
 export function prepararProgramaParaGrado(programa, gradoEstudiante) {
   const horarioDelGrado = resolverHorarioCatalogoPorGrado(programa, gradoEstudiante);
+  const docenteDelGrado = resolverDocenteCatalogoPorGrado(programa, gradoEstudiante);
   const disponibleParaGrado = programaDisponibleCatalogoParaGrado(programa, gradoEstudiante, horarioDelGrado);
 
   return {
     ...programa,
     horario: disponibleParaGrado ? repararTexto(horarioDelGrado || programa.horario) : "",
+    responsable: disponibleParaGrado ? docenteDelGrado : programa.responsable,
+    docente: disponibleParaGrado ? docenteDelGrado : programa.docente,
     disponibleParaGrado,
   };
 }
@@ -278,6 +281,20 @@ function resolverHorarioCatalogoPorGrado(programa, gradoEstudiante = "") {
   const grado = formatearGradoCatalogo(gradoDelTurno || gradoEstudiante);
   const aula = grupo.aula ? ` - Aula ${grupo.aula}` : "";
   return `${grado ? `${grado}: ` : ""}${grupo.dia} almuerzo ${grupo.almuerzoInicio || "14:20"}-${grupo.almuerzoFin || "15:10"}, clase ${grupo.horaInicio || ""}-${grupo.horaFin || ""}${aula}`;
+}
+
+function resolverDocenteCatalogoPorGrado(programa, gradoEstudiante = "") {
+  const grupos = programa?.horariosPorGrupo || [];
+  const fallback = programa?.responsable || programa?.docente || "Por definir";
+  if (!Array.isArray(grupos) || grupos.length === 0) return fallback;
+
+  const gradoNormalizado = descomponerGradoCatalogo(gradoEstudiante);
+  if (!gradoNormalizado.numero) return fallback;
+
+  const grupo = grupos.find((item) =>
+    (item.grados || []).some((grado) => coincideGradoCatalogo(grado, gradoNormalizado))
+  );
+  return grupo?.responsable?.trim() || fallback;
 }
 
 function coincideGradoCatalogo(gradoGrupo, gradoEstudiante) {

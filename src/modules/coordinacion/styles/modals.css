@@ -549,6 +549,83 @@
   background: #f5fbf8;
 }
 
+.coord-schedule-builder {
+  display: grid;
+  gap: 12px;
+}
+
+.coord-schedule-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.coord-schedule-mode {
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--coord-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.coord-schedule-mode strong,
+.coord-schedule-mode span {
+  display: block;
+}
+
+.coord-schedule-mode strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.coord-schedule-mode span {
+  margin-top: 4px;
+  color: var(--coord-muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.coord-schedule-mode.is-selected {
+  border-color: #1f8f73;
+  background: #eefaf5;
+  box-shadow: 0 0 0 3px rgba(31, 143, 115, 0.12);
+}
+
+.coord-schedule-mode:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.coord-block-form-panel {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #d8e0e8;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.coord-block-form-panel .coord-group-schedule-head {
+  background: #ffffff;
+}
+
+.coord-block-validity-row {
+  margin-top: 0;
+  padding: 12px;
+  border: 1px solid #d8e7df;
+  border-radius: 8px;
+  background: #f5fbf8;
+}
+
+@media (max-width: 720px) {
+  .coord-schedule-mode-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .coord-compact-schedule-row {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));

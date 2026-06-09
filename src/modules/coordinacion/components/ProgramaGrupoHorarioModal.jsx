@@ -30,8 +30,8 @@ export default function ProgramaGrupoHorarioModal({
           <div className="coord-modal-title">
             <span className="coord-modal-icon"><CalendarDays size={20} /></span>
             <div>
-              <h2>Añadir día para otros grados</h2>
-              <p>Registre solo los grados que no usan el horario base.</p>
+              <h2>Añadir grado o bloque</h2>
+              <p>Registre los grados que comparten docente, días, almuerzo y horario.</p>
             </div>
           </div>
           <button className="coord-modal-close" type="button" onClick={cerrarGrupoModal}><X size={20} /></button>
@@ -40,11 +40,11 @@ export default function ProgramaGrupoHorarioModal({
           <section className="coord-form-section coord-nested-turn-section">
             <div className="coord-section-grid">
               <div className="coord-field coord-field-full">
-                <label>Grados del turno *</label>
+                <label>Grados del bloque *</label>
                 <GradeSelector niveles={nivelesGrados} seleccionados={grupoDraft.grados || []} onToggle={toggleGradoDraft} />
               </div>
               <div className="coord-field">
-                <label>Días del turno *</label>
+                <label>Días del bloque *</label>
                 <div className="coord-day-list coord-day-list-sm">
                   {diasSemana.map((dia) => {
                     const diasSeleccionados = String(grupoDraft.dia || "").split(",").map(d => d.trim()).filter(Boolean);
@@ -71,15 +71,15 @@ export default function ProgramaGrupoHorarioModal({
               <div className="coord-field"><label>Clase fin</label><input type="time" value={grupoDraft.horaFin || "17:20"} onChange={e => actualizarGrupoDraft("horaFin", e.target.value)} /></div>
               <div className="coord-field"><label>Almuerzo inicio</label><input type="time" value={grupoDraft.almuerzoInicio || "14:20"} onChange={e => actualizarGrupoDraft("almuerzoInicio", e.target.value)} /></div>
               <div className="coord-field"><label>Almuerzo fin</label><input type="time" value={grupoDraft.almuerzoFin || "15:10"} onChange={e => actualizarGrupoDraft("almuerzoFin", e.target.value)} /></div>
-              <div className="coord-field"><label>Responsable del turno</label><input value={grupoDraft.responsable || ""} onChange={e => actualizarGrupoDraft("responsable", e.target.value)} placeholder="Ej: Prof. Ana Torres" /></div>
-              <div className="coord-field"><label>Tutora / apoyo del turno</label><input value={grupoDraft.tutora || ""} onChange={e => actualizarGrupoDraft("tutora", e.target.value)} placeholder="Ej: Srta. Lucia Vega" /></div>
+              <div className="coord-field"><label>Docente/Tutor responsable *</label><input value={grupoDraft.responsable || ""} onChange={e => actualizarGrupoDraft("responsable", e.target.value)} placeholder="Ej: Prof. Ana Torres" /></div>
+              <div className="coord-field"><label>Apoyo / auxiliar</label><input value={grupoDraft.tutora || ""} onChange={e => actualizarGrupoDraft("tutora", e.target.value)} placeholder="Ej: Srta. Lucia Vega" /></div>
             </div>
           </section>
         </div>
         <div className="coord-modal-actions">
           <button type="button" className="coord-secondary-button" onClick={cerrarGrupoModal}>Cancelar</button>
           <button type="button" className="coord-register-button" onClick={guardarGrupoDraft}>
-            <CheckCircle2 size={17} /> <span>Guardar turno</span>
+            <CheckCircle2 size={17} /> <span>Guardar bloque</span>
           </button>
         </div>
       </div>

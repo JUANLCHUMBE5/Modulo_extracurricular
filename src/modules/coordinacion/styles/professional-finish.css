@@ -630,3 +630,350 @@
     justify-content: stretch;
   }
 }
+
+.coord-documents-card {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.coord-documents-title {
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2ece9;
+}
+
+.coord-documents-title p {
+  display: block;
+  margin-top: 2px;
+  color: #5a6b7b;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.coord-documents-simple-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px 12px 12px;
+  border: 1px solid #dbe7e4;
+  border-radius: 10px;
+  background: #f8fcfa;
+}
+
+.coord-documents-upload-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "archivo archivo"
+    "nombre accion";
+  align-items: end;
+  gap: 10px 12px;
+}
+
+.coord-documents-upload-row > .coord-field-full {
+  grid-area: archivo;
+  width: 100%;
+}
+
+.coord-documents-upload-row .coord-template-file,
+.coord-documents-upload-panel .coord-template-file,
+.coord-template-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.coord-documents-upload-row .coord-template-file-control > label {
+  color: #132335;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.coord-documents-upload-row .coord-template-file-row {
+  min-height: 38px;
+  padding: 4px 7px;
+  border-color: #bfd9d1;
+  background: #ffffff;
+}
+
+.coord-documents-upload-row .coord-template-file-button {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+
+.coord-documents-upload-row .coord-template-file-name {
+  min-width: 0;
+}
+
+.coord-documents-upload-row .coord-template-file-name span {
+  max-width: 100%;
+  font-size: 13px;
+}
+
+.coord-documents-upload-row .coord-template-autofill {
+  width: fit-content;
+}
+
+.coord-documents-upload-row .coord-register-button {
+  grid-area: accion;
+  width: auto;
+  min-width: 176px;
+  min-height: 36px;
+  padding: 0 18px;
+}
+
+.coord-documents-upload-row .coord-register-button:disabled {
+  opacity: 0.62;
+}
+
+.coord-documents-edit-button {
+  width: fit-content;
+}
+
+.coord-documents-setup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.coord-documents-upload-panel,
+.coord-documents-action-panel,
+.coord-documents-history {
+  border: 1px solid #dbe7e4;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.coord-documents-upload-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.coord-documents-section-head,
+.coord-documents-history-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.coord-documents-section-head div,
+.coord-documents-history-head div {
+  display: grid;
+  gap: 3px;
+}
+
+.coord-documents-section-head strong,
+.coord-documents-history-head strong {
+  color: #132335;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.coord-documents-section-head span,
+.coord-documents-history-head span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.coord-documents-upload-panel .coord-field {
+  gap: 8px;
+}
+
+.coord-documents-upload-panel .coord-template-compact-row {
+  gap: 8px;
+}
+
+.coord-documents-upload-panel .coord-template-file-control > label {
+  display: none;
+}
+
+.coord-documents-upload-panel .coord-template-file-row {
+  min-height: 44px;
+  border-color: #cfdedb;
+  background: #fbfdfc;
+}
+
+.coord-documents-upload-panel .coord-template-autofill {
+  width: fit-content;
+}
+
+.coord-documents-program-field {
+  display: grid;
+  grid-area: nombre;
+  gap: 5px;
+}
+
+.coord-documents-program-field label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.coord-documents-program-field input {
+  min-height: 36px;
+  border: 1px solid #cfdedb;
+  border-radius: 7px;
+  padding: 0 11px;
+  color: #132335;
+  background: #ffffff;
+  font-size: 14px;
+}
+
+.coord-documents-action-panel {
+  display: grid;
+  gap: 10px;
+  align-content: end;
+  padding: 14px;
+  background: #f8fbfc;
+}
+
+.coord-documents-action-panel button {
+  width: 100%;
+  justify-content: center;
+}
+
+.coord-documents-status {
+  display: grid;
+  gap: 8px;
+  margin-bottom: auto;
+}
+
+.coord-documents-status strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #132335;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coord-documents-validation {
+  padding: 14px;
+}
+
+.coord-documents-history {
+  gap: 0;
+  margin-top: 0;
+  padding: 12px;
+  border-top: 1px solid #dbe7e4;
+}
+
+.coord-documents-history-list {
+  gap: 7px;
+}
+
+.coord-documents-history .coord-template-history-item {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  min-height: 46px;
+  padding: 8px 10px;
+  background: #fbfcfd;
+}
+
+.coord-documents-history .coord-template-history-delete {
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+.coord-template-history-table {
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.coord-template-history-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1.1fr) minmax(220px, 1.4fr) minmax(86px, 0.45fr) minmax(118px, 0.55fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #e7eef2;
+  border-radius: 0;
+  background: #ffffff;
+}
+
+.coord-template-history-row:last-child {
+  border-bottom: 0;
+}
+
+.coord-template-history-row-head {
+  min-height: 36px;
+  color: #64748b;
+  background: #f6f9fb;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.coord-template-history-row-head span:last-child {
+  text-align: right;
+}
+
+.coord-template-history-file {
+  min-width: 0;
+  overflow: hidden;
+  color: #52647a;
+  font-size: 12px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coord-template-history-row .coord-pill {
+  justify-self: start;
+}
+
+.coord-template-history-row .coord-template-history-delete {
+  justify-self: end;
+  min-height: 34px;
+}
+
+@media (max-width: 920px) {
+  .coord-documents-setup {
+    grid-template-columns: 1fr;
+  }
+
+  .coord-documents-upload-row {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "archivo"
+      "nombre"
+      "accion";
+  }
+
+  .coord-documents-upload-row .coord-register-button {
+    width: 100%;
+  }
+
+  .coord-documents-action-panel {
+    align-content: start;
+  }
+
+  .coord-template-history-row,
+  .coord-template-history-row-head {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .coord-template-history-row-head {
+    display: none;
+  }
+
+  .coord-template-history-row .coord-template-history-delete,
+  .coord-template-history-row .coord-pill {
+    justify-self: start;
+  }
+}

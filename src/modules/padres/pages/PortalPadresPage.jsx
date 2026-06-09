@@ -167,6 +167,17 @@ export default function Padres({ user, onLogout }) {
   }, [pasoActivo, pasoMaximo, pasoObjetivo]);
 
   useEffect(() => {
+    if (cargando || guardando || pasoActivo !== 3 || inscripcionPago) return;
+
+    setMantenerPasoPago(false);
+    setPasoObjetivo(null);
+    setProgramaAdicional(null);
+    setInscripcionPagoId("");
+    guardarPasoPago(user?.dni, null);
+    setPasoActivo(0);
+  }, [cargando, guardando, inscripcionPago, pasoActivo, user?.dni]);
+
+  useEffect(() => {
     setAnuncioCerrado(false);
   }, [anuncioPadres?.id]);
 

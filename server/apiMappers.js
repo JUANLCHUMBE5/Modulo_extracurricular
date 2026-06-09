@@ -102,7 +102,25 @@ export function normalizarTextoApi(valor) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function tieneHorariosPorGrupoApi(programa) {
+export function programaListoParaPortalPadresApi(programa = {}) {
+  const esBorradorDeDocumento = Boolean(programa.creadoDesdeDocumento || programa.plantilla || programa.plantillaValidada);
+  if (!esBorradorDeDocumento) return true;
+
+  const horario = normalizarTextoApi(programa.horario);
+  const grupo = normalizarTextoApi(programa.grupo);
+  const tieneHorarioReal = Boolean(
+    (Array.isArray(programa.horariosPorGrupo) && programa.horariosPorGrupo.length > 0) ||
+    (horario && !["por definir", "por confirmar", "no definido"].includes(horario)) ||
+    (grupo && !["por definir", "por confirmar", "no definido"].includes(grupo))
+  );
+  const tieneVigencia = Boolean(programa.fechaInicio && programa.fechaFin);
+  const tieneCupos = Number(programa.cupos || 0) > 0;
+  const tieneCosto = Number(programa.costo || programa.precio || 0) > 0;
+
+  return tieneHorarioReal || tieneVigencia || tieneCupos || tieneCosto;
+}
+
+export function tieneHorariosPorGrupoApi(programa) {
   return Array.isArray(programa?.horariosPorGrupo) && programa.horariosPorGrupo.length > 0;
 }
 
@@ -126,7 +144,7 @@ function formatearGradoApi(valor) {
   return `${nivel} ${grado}`;
 }
 
-function resolverHorarioPorGradoApi(programa, gradoAlumno = "") {
+export function resolverHorarioPorGradoApi(programa, gradoAlumno = "") {
   const grupos = programa?.horariosPorGrupo || [];
   if (!Array.isArray(grupos) || grupos.length === 0) return "";
 
@@ -144,7 +162,7 @@ function resolverHorarioPorGradoApi(programa, gradoAlumno = "") {
   return `${grados ? `${grados}: ` : ""}${grupo.dia} almuerzo ${grupo.almuerzoInicio || "14:20"}-${grupo.almuerzoFin || "15:10"}, clase ${grupo.horaInicio || ""}-${grupo.horaFin || ""}${aula}`;
 }
 
-function resolverDocentePorGradoApi(programa, gradoAlumno = "") {
+export function resolverDocentePorGradoApi(programa, gradoAlumno = "") {
   const grupos = programa?.horariosPorGrupo || [];
   if (!Array.isArray(grupos) || grupos.length === 0) return programa.responsable || programa.docente || "No definido";
 
@@ -394,7 +412,8 @@ export function mapDbProgramToApi(p, db = null) {
     plantilla: plantilla.plantilla,
     plantilla_base64: plantilla.plantillaBase64,
     plantilla_variables: plantilla.plantillaVariables,
-    plantilla_validada: plantilla.plantillaValidada
+    plantilla_validada: plantilla.plantillaValidada,
+    creado_desde_documento: Boolean(p.creadoDesdeDocumento)
   };
 }
 
@@ -435,7 +454,12 @@ export function mapDbEnrollmentToApi(item, db = null) {
     telefono_apoderado: item.telefono || "",
     correo_apoderado: item.correo || "",
     estado_pago: normalizePaymentStateToFrontend(item.estadoPago || "Pendiente"),
+    estado_inscripcion: item.estadoInscripcion || "",
     pago_id: item.pagoId || "",
+    pago_referencia: item.pagoReferencia || "",
+    pago_telefono: item.pagoTelefono || "",
+    pago_captura_nombre: item.pagoCapturaNombre || "",
+    pago_observacion_caja: item.pagoObservacionCaja || "",
     fecha_pago: item.fechaPago || ""
   };
 }

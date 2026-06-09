@@ -13,15 +13,15 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, "db.json");
 let writeQueue = Promise.resolve();
 let mutationQueue = Promise.resolve();
+let cachedDb = null;
+let cachedDbMtimeMs = 0;
 
 export async function getDb() {
   if (isOfficialApiEnabled()) {
     return getOfficialDb();
   }
 
-  await ensureDb();
-  const raw = await fs.readFile(DB_PATH, "utf8");
-  return parseDb(raw);
+  return readLocalDb();
 }
 
 export async function saveDb(data) {
@@ -31,10 +31,9 @@ export async function saveDb(data) {
 
   let currentDb = null;
   try {
-    const raw = await fs.readFile(DB_PATH, "utf8");
-    currentDb = parseDb(raw);
-  } catch (err) {
-    // Ignore if file doesn't exist
+    currentDb = await readLocalDb();
+  } catch {
+    // Ignore if file doesn't exist.
   }
 
   const db = mergeWithDefaults(data || {}, clone(initialData));
@@ -69,9 +68,7 @@ export async function updateDb(mutator) {
   }
 
   return queueDbMutation(async () => {
-    await ensureDb();
-    const raw = await fs.readFile(DB_PATH, "utf8");
-    const current = mergeWithDefaults(parseDb(raw), clone(initialData));
+    const current = mergeWithDefaults(await readLocalDb(), clone(initialData));
     const updated = await mutator(current);
     if (updated && Array.isArray(updated.usuarios)) {
       const passwordMap = new Map();
@@ -110,6 +107,20 @@ async function ensureDb() {
   } catch {
     await saveDb(clone(initialData));
   }
+}
+
+async function readLocalDb() {
+  await ensureDb();
+
+  const stats = await fs.stat(DB_PATH);
+  if (cachedDb && cachedDbMtimeMs === stats.mtimeMs) {
+    return cachedDb;
+  }
+
+  const raw = await fs.readFile(DB_PATH, "utf8");
+  cachedDb = parseDb(raw);
+  cachedDbMtimeMs = stats.mtimeMs;
+  return cachedDb;
 }
 
 function mergeWithDefaults(stored, defaults) {
@@ -164,6 +175,9 @@ async function writeDbFile(db) {
   const tmpPath = `${DB_PATH}.${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}.tmp`;
   await fs.writeFile(tmpPath, `${JSON.stringify(db, null, 2)}\n`, "utf8");
   await fs.rename(tmpPath, DB_PATH);
+  const stats = await fs.stat(DB_PATH);
+  cachedDb = db;
+  cachedDbMtimeMs = stats.mtimeMs;
 }
 
 function queueDbWrite(db) {
