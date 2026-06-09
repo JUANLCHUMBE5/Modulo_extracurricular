@@ -1,0 +1,142 @@
+@startuml
+title FLUJO GENERAL DEL SISTEMA - MÓDULO EXTRACURRICULAR
+
+skinparam defaultFontName Arial
+skinparam shadowing false
+skinparam roundcorner 14
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #222222
+skinparam ArrowThickness 1.35
+
+skinparam activity {
+  BackgroundColor #EEF5FF
+  BorderColor #1E5BBF
+  FontColor #0B1F4D
+}
+
+skinparam partition {
+  BackgroundColor #FAFAFA
+  BorderColor #BDBDBD
+  FontColor #111111
+}
+
+|#DCEBFF|ADMINISTRADOR|
+start
+:Gestionar usuarios;
+:Asignar roles y permisos;
+
+|#E0F7F4|COORDINACIÓN ACADÉMICA|
+:Crear / configurar talleres;
+:Definir cupos, horarios,\ncostos y docentes;
+:Cargar lista de estudiantes;
+:Publicar programas;
+
+if (¿Programa publicado\ncon cupos?) then (Sí)
+
+  |#EDF7FF|SISTEMA|
+  :Mostrar programa disponible\nen los módulos;
+
+  |#FFF3D9|ASISTENTE|
+  :Consultar estudiante por DNI;
+  :Visualizar datos y programa;
+
+  |#F1E5FF|PADRES|
+  :Ingresar DNI;
+  :Visualizar programas;
+
+  |#FFE3EA|CAJERA|
+  :Visualizar pagos pendientes;
+
+  |#F1E5FF|PADRES|
+  :Seleccionar programa / taller;
+
+  |#FFF3D9|ASISTENTE|
+  :Verificar datos;
+
+  while (¿Datos válidos?) is (No)
+    :Solicitar corrección;
+
+    |#F1E5FF|PADRES|
+    :Corregir datos;
+
+    |#FFF3D9|ASISTENTE|
+    :Revisar nuevamente;
+  endwhile (Sí)
+
+  :Registrar inscripción;
+
+  |#F1E5FF|PADRES|
+  :Elegir modalidad de pago;
+
+  if (¿Pago virtual?) then (Sí)
+    :Ver comunicado / costo;
+    :Registrar datos del apoderado;
+    :Ver QR / Yape;
+    :Enviar operación y captura;
+
+    |#EDF7FF|SISTEMA|
+    :Validar pago automáticamente;
+
+    if (¿Pago coincide?) then (Sí)
+      :Aprobar pago;
+    else (No)
+      |#FFE3EA|CAJERA|
+      :Revisar pago observado;
+
+      if (¿Aprueba pago?) then (Sí)
+        :Aprobar pago;
+      else (No)
+        :Observar pago;
+
+        |#F1E5FF|PADRES|
+        :Corregir / reenviar comprobante;
+
+        |#EDF7FF|SISTEMA|
+        :Revalidar pago;
+      endif
+    endif
+
+  else (Presencial)
+    |#FFE3EA|CAJERA|
+    :Buscar inscripción;
+    :Registrar pago presencial;
+    :Confirmar pago;
+  endif
+
+  |#EDF7FF|SISTEMA|
+  :Confirmar inscripción;
+  :Generar constancia / QR;
+
+  |#F1E5FF|PADRES|
+  :Visualizar confirmación y QR;
+
+  |#E8F8E8|AUXILIAR|
+  :Escanear QR del estudiante;
+
+  |#EDF7FF|SISTEMA|
+  :Validar inscripción y pago;
+
+  if (¿Acceso válido?) then (Sí)
+    |#E8F8E8|AUXILIAR|
+    :Mostrar bienvenida;
+    :Registrar asistencia;
+  else (No)
+    |#E8F8E8|AUXILIAR|
+    :Mostrar alerta;
+    :Informar motivo;
+  endif
+
+  |#EAF2FF|DIRECCIÓN|
+  :Consultar reportes;
+  :Revisar inscripciones,\npagos y asistencias;
+  :Generar reportes;
+
+  stop
+
+else (No)
+  |#E0F7F4|COORDINACIÓN ACADÉMICA|
+  :Ajustar programa /\ncupos / horarios;
+  stop
+endif
+
+@enduml

@@ -24,6 +24,7 @@ import {
 import {
   ALL_PERMISSIONS,
   ROLES,
+  getRoleLabel,
   getRequiredPermissionsByRole,
   normalizeUser,
 } from "./models/usuarioModel";
@@ -347,7 +348,7 @@ export default function Administrador({ onLogout }) {
                   <div className="adm-select-wrap adm-filter-select">
                     <select value={filtroRol} onChange={e => setFiltroRol(e.target.value)}>
                       <option value="todos">Todos los roles</option>
-                      {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                      {ROLES.map(r => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
                     </select>
                     <ChevronDown size={14} className="adm-select-arrow" />
                   </div>

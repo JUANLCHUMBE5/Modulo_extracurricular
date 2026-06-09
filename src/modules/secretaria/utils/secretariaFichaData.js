@@ -107,7 +107,7 @@ export function crearMapaVariablesDocumento(estudiante, inscripcion) {
     FECHA_CARTA: fechaActual,
     ANIO_CARTA: anioActual,
     ANIO_CERT: anioActual,
-    AREA: "Coordinación de Actividades Extracurriculares",
+    AREA: "Coordinación Académica de Actividades Extracurriculares",
     PROG: programa,
     CICLO: estudiante?.periodo || obtenerNombrePeriodo(inscripcion.periodo),
     CICLO_I: inscripcion.cicloI || fechaInicio || rangoFechas,

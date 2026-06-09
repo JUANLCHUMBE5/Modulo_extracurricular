@@ -277,7 +277,14 @@ app.post("/api/v1/auth/login", async (req, res) => {
     const { username, password } = req.body;
     const db = await getDb();
     const cleanUser = String(username || "").trim().toLowerCase();
-    const aliases = { secre: "secretaria", coord: "coordinacion" };
+    const aliases = {
+      asistente: "secretaria",
+      cajera: "caja",
+      secre: "secretaria",
+      coord: "coordinacion",
+      "coordinacion-academica": "coordinacion",
+      coordinacionacademica: "coordinacion",
+    };
     const userToFind = aliases[cleanUser] || cleanUser;
     const userObj = (db.usuarios || []).find(u => String(u.usuario || "").trim().toLowerCase() === userToFind);
     
@@ -304,10 +311,15 @@ app.post("/api/v1/auth/login", async (req, res) => {
         const rolesMap = {
           Administrador: "administrador",
           Secretaria: "secretaria",
+          Asistente: "secretaria",
           Caja: "caja",
+          Cajera: "caja",
           Coordinacion: "coordinacion",
+          "Coordinación Académica": "coordinacion",
+          "Coordinacion Academica": "coordinacion",
           Auxiliar: "auxiliar",
-          Direccion: "direccion"
+          Direccion: "direccion",
+          Dirección: "direccion"
         };
         const role = rolesMap[userObj.rol] || String(userObj.rol || "").toLowerCase();
         
@@ -550,7 +562,7 @@ app.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), asy
     sincronizarPlantillaProgramaApi(db, nuevo);
     db.programas.push(nuevo);
     await saveDb(db);
-    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "PROGRAMA_CREAR", {
+    await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "PROGRAMA_CREAR", {
       id,
       nombre: nuevo.nombre,
       costo: nuevo.costo,
@@ -596,7 +608,7 @@ app.post("/api/v1/extracurricular/programas/documento", requireRole(["secretaria
     sincronizarPlantillaProgramaApi(db, nuevo);
     db.programas.push(nuevo);
     await saveDb(db);
-    await registrarAuditoria(req.user?.username || "Secretaria", req.user?.role || "secretaria", "PROGRAMA_CREAR", {
+    await registrarAuditoria(req.user?.username || "Asistente", req.user?.role || "secretaria", "PROGRAMA_CREAR", {
       id,
       nombre: nuevo.nombre,
       creadoDesdeDocumento: true
@@ -662,7 +674,7 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
     sincronizarPlantillaProgramaApi(db, updated);
     db.programas[idx] = updated;
     await saveDb(db);
-    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "PROGRAMA_EDITAR", {
+    await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "PROGRAMA_EDITAR", {
       id: req.params.id,
       nombre: updated.nombre,
       costo: updated.costo,
@@ -692,7 +704,7 @@ app.put("/api/v1/extracurricular/programas/:id/estado", requireRole(["coordinaci
     const estadoAnterior = db.programas[idx].estado;
     db.programas[idx].estado = req.body.estado;
     await saveDb(db);
-    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "PROGRAMA_ESTADO", {
+    await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "PROGRAMA_ESTADO", {
       id: req.params.id,
       nombre: db.programas[idx].nombre,
       estadoAnterior,
@@ -713,7 +725,7 @@ app.delete("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
       delete db.invitadosPorPrograma[req.params.id];
     }
     await saveDb(db);
-    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "PROGRAMA_ELIMINAR", {
+    await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "PROGRAMA_ELIMINAR", {
       id: req.params.id,
       nombre: progAEliminar?.nombre || ""
     });
@@ -806,7 +818,7 @@ app.post("/api/v1/extracurricular/programas/:programaId/invitados", requireRole(
       }))
     ];
     await saveDb(db);
-    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "INVITACION_MASIVA", {
+    await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "INVITACION_MASIVA", {
       programaId,
       programaNombre: prog?.nombre || "",
       cantidad: nuevos.length,
@@ -904,7 +916,7 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
         periodo: normalizarPeriodoApi(preview.periodo),
         archivoNombre,
         archivos: [archivoNombre],
-        usuario: req.user?.username || "Coordinacion",
+        usuario: req.user?.username || "Coordinación Académica",
         resumen: {
           importados: grupoArchivo.length,
           total: registrosArchivo.length,
@@ -919,7 +931,7 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
     db.historialCargas = [...nuevasCargas, ...db.historialCargas];
 
     await saveDb(db);
-    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "CARGAR_EXCEL", {
+    await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "CARGAR_EXCEL", {
       cargaIds: nuevasCargas.map(carga => carga.id),
       cantidad: validos.length,
       periodo: preview.periodo,
@@ -992,7 +1004,7 @@ app.delete("/api/v1/extracurricular/coordinacion/cargas/:cargaId", requireRole([
 
     db.historialCargas = db.historialCargas.filter(item => item.id !== cargaId);
     await saveDb(db);
-    await registrarAuditoria(req.user?.username || "Coordinacion", req.user?.role || "coordinacion", "CARGA_EXCEL_REVERTIR", {
+    await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "CARGA_EXCEL_REVERTIR", {
       cargaId,
       eliminados,
       archivos: carga.archivos || []
@@ -1260,7 +1272,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretar
             nivelCambridge: invitado.nivelCambridge || "",
             estadoInscripcion: "Invitado",
             estadoPago: "Pendiente",
-            origenRegistro: "Excel carga Coordinacion"
+            origenRegistro: "Excel carga Coordinación Académica"
           });
         }
       });
@@ -1420,7 +1432,7 @@ app.post("/api/v1/extracurricular/inscripciones/:id/documento", requireRole(["se
       programa: inscrip.programa,
       programaId: inscrip.programaId,
       fecha: new Date().toISOString(),
-      usuario: usuario || "Secretaría",
+      usuario: usuario || "Asistente",
       tipoDocumento: tipo_documento || "Comunicado personalizado",
       plantilla: plantilla || ""
     };
@@ -1464,7 +1476,7 @@ app.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", req
     }
     
     await saveDb(db);
-    await registrarAuditoria(req.user?.username || "Secretaria", req.user?.role || "secretaria", "INSCRIPCION_ESTADO", {
+    await registrarAuditoria(req.user?.username || "Asistente", req.user?.role || "secretaria", "INSCRIPCION_ESTADO", {
       inscripcionId,
       alumno: updated.nombresEstudiante,
       taller: updated.programa,
@@ -1701,7 +1713,7 @@ app.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar"]), a
     let result = {
       accesoPermitido: false,
       mensajeAcceso: "No registrado",
-      accion: "Estudiante no registrado en este programa. Dirigirse a Secretaria.",
+      accion: "Estudiante no registrado en este programa. Dirigirse a Asistente.",
       color: "rojo",
       nombres: student ? student.nombres : "",
       dni: dni,
@@ -1737,7 +1749,7 @@ app.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar"]), a
       } else {
         result.accesoPermitido = false;
         result.mensajeAcceso = "Pago pendiente";
-        result.accion = "Tiene pagos pendientes. Dirigirse a Caja antes de ingresar.";
+        result.accion = "Tiene pagos pendientes. Dirigirse a Cajera antes de ingresar.";
         result.color = "rojo";
         result.estadoPago = "Pendiente";
       }
@@ -1762,7 +1774,7 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"])
     let result = {
       accesoPermitido: false,
       mensajeAcceso: "No registrado",
-      accion: "Estudiante no registrado en este programa. Dirigirse a Secretaria.",
+      accion: "Estudiante no registrado en este programa. Dirigirse a Asistente.",
       color: "rojo",
       nombres: student ? student.nombres : "",
       dni: dni,
@@ -1798,7 +1810,7 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"])
       } else {
         result.accesoPermitido = false;
         result.mensajeAcceso = "Pago pendiente";
-        result.accion = "Tiene pagos pendientes. Dirigirse a Caja antes de ingresar.";
+        result.accion = "Tiene pagos pendientes. Dirigirse a Cajera antes de ingresar.";
         result.color = "rojo";
         result.estadoPago = "Pendiente";
       }
@@ -1886,8 +1898,8 @@ app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res
       estado: "validado", // estado normalizado
       fecha: fecha_pago || new Date().toISOString(),
       fechaPago: fecha_pago || new Date().toISOString(),
-      origenRegistro: "Caja",
-      validadoPor: usuario_registro || "Caja",
+      origenRegistro: "Cajera",
+      validadoPor: usuario_registro || "Cajera",
       validadoEn: new Date().toISOString()
     };
     
@@ -1908,7 +1920,7 @@ app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res
     
     await saveDb(db);
 
-    await registrarAuditoria(usuario_registro || "Caja", "caja", "PAGO_REGISTRAR", {
+    await registrarAuditoria(usuario_registro || "Cajera", "caja", "PAGO_REGISTRAR", {
       pagoId,
       inscripcionId: inscripcion_id,
       monto: nuevoPago.monto
@@ -2061,7 +2073,7 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]), 
     
     db.pagos[idx].estado = "validado"; // estado normalizado
     db.pagos[idx].observaciones = observaciones || "";
-    db.pagos[idx].validadoPor = req.user?.username || "Caja";
+    db.pagos[idx].validadoPor = req.user?.username || "Cajera";
     db.pagos[idx].validadoEn = new Date().toISOString();
     
     const inscrip = (db.inscripciones || []).find(item => item.id === db.pagos[idx].inscripcionId);
@@ -2078,7 +2090,7 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]), 
     
     await saveDb(db);
 
-    await registrarAuditoria(req.user?.username || "Caja", req.user?.role || "caja", "PAGO_VALIDAR", {
+    await registrarAuditoria(req.user?.username || "Cajera", req.user?.role || "caja", "PAGO_VALIDAR", {
       pagoId,
       observaciones
     });
@@ -2100,7 +2112,7 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/observar", requireRole(["caja"]),
     
     db.pagos[idx].estado = "observado"; // estado normalizado
     db.pagos[idx].observaciones = observaciones || "";
-    db.pagos[idx].validadoPor = req.user?.username || "Caja";
+    db.pagos[idx].validadoPor = req.user?.username || "Cajera";
     db.pagos[idx].validadoEn = new Date().toISOString();
     
     const inscrip = (db.inscripciones || []).find(item => item.id === db.pagos[idx].inscripcionId);
@@ -2116,7 +2128,7 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/observar", requireRole(["caja"]),
     
     await saveDb(db);
 
-    await registrarAuditoria(req.user?.username || "Caja", req.user?.role || "caja", "PAGO_OBSERVAR", {
+    await registrarAuditoria(req.user?.username || "Cajera", req.user?.role || "caja", "PAGO_OBSERVAR", {
       pagoId,
       observaciones
     });

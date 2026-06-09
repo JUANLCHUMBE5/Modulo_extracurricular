@@ -172,7 +172,7 @@ export async function registrarInscripcion(payload) {
       estudiante_id: payload.dniEstudiante,
       programa_id: payload.programaId,
       origen_inscripcion: "presencial",
-      usuario_registro: payload.usuarioRegistro || "Secretaria",
+      usuario_registro: payload.usuarioRegistro || "Asistente",
       seccion: payload.seccionEstudiante || payload.seccion || "",
       grado: payload.gradoEstudiante || payload.grado || "",
       apoderado: payload.apoderado || "",
@@ -215,11 +215,11 @@ export async function registrarInscripcion(payload) {
       throw new Error("Ingrese la edad del alumno para validar el programa de verano.");
     }
     if (!programaDisponibleParaEdad(programa, edadRegistro)) {
-      throw new Error("El programa no esta disponible para la edad del alumno. Coordinacion debe revisar el rango de edades.");
+      throw new Error("El programa no esta disponible para la edad del alumno. Coordinación Académica debe revisar el rango de edades.");
     }
   }
   if (periodoPayload !== "verano" && !programaDisponibleParaGrado(programa, payload.gradoEstudiante)) {
-    throw new Error("El programa no esta disponible para el grado del alumno. Coordinacion debe revisar los grados habilitados.");
+    throw new Error("El programa no esta disponible para el grado del alumno. Coordinación Académica debe revisar los grados habilitados.");
   }
 
   const clavesPayload = clavesAlumnoInscripcion(payload);
@@ -292,7 +292,7 @@ export async function registrarInscripcion(payload) {
       medioEnvio: payload.medioEnvio || "Impreso",
       colegioProcedencia: payload.colegioProcedencia || "",
       periodo: "Ciclo verano",
-      origenRegistro: "Secretaria - alumno externo verano",
+      origenRegistro: "Asistente - alumno externo verano",
     };
   }
 
@@ -353,7 +353,7 @@ export async function registrarDocumentoGenerado({
 export async function derivarInscripcionCaja(inscripcionId, datos = {}) {
   if (isApiMode()) {
     const res = await apiClient.put(`/api/v1/extracurricular/inscripciones/${inscripcionId}/derivar-caja`, datos);
-    if (!res.success) throw new Error(res.message || "Error al derivar inscripciÃ³n a Caja");
+    if (!res.success) throw new Error(res.message || "Error al derivar inscripción a Cajera");
     return adaptarInscripcion(res.data);
   }
 
@@ -362,10 +362,10 @@ export async function derivarInscripcionCaja(inscripcionId, datos = {}) {
 
   const inscripcion = apiDb.inscripciones.find((item) => item.id === inscripcionId);
   if (!inscripcion) {
-    throw new Error("No se encontro la inscripcion para derivar a Caja.");
+    throw new Error("No se encontro la inscripcion para derivar a Cajera.");
   }
   if (inscripcion.derivadoCaja) {
-    throw new Error("Esta inscripcion ya fue derivada a Caja. Para cobrar otro taller, registre una nueva inscripcion.");
+    throw new Error("Esta inscripcion ya fue derivada a Cajera. Para cobrar otro taller, registre una nueva inscripcion.");
   }
   const pagoActivo = encontrarPagoActivoInscripcion(inscripcion);
   if (pagoActivo) {
@@ -379,15 +379,15 @@ export async function derivarInscripcionCaja(inscripcionId, datos = {}) {
     if (estado.includes("pag") || estado.includes("completado") || estado.includes("validado")) {
       throw new Error("Esta inscripcion ya tiene un pago web aprobado. No se puede derivar ni cobrar nuevamente.");
     }
-    throw new Error("El padre ya envio un pago web para esta inscripcion. Caja debe validarlo u observarlo, no crear otro cobro.");
+    throw new Error("El padre ya envio un pago web para esta inscripcion. Cajera debe validarlo u observarlo, no crear otro cobro.");
   }
 
   const actualizada = {
     ...inscripcion,
     ...datos,
     derivadoCaja: true,
-    estadoCaja: "Derivado a Caja",
-    estadoInscripcion: inscripcion.estadoPago === "Pagado" ? "Pago validado" : "Derivado a Caja",
+    estadoCaja: "Derivado a Cajera",
+    estadoInscripcion: inscripcion.estadoPago === "Pagado" ? "Pago validado" : "Derivado a Cajera",
     fechaDerivacionCaja: fechaActualIso(),
   };
 
@@ -713,7 +713,7 @@ function validarVentanaInscripcionRegular(programa, payload = {}) {
   const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias);
   if (ventana.permitida) return;
 
-  throw new Error("El aviso de inscripcion regular cerro. Derive al padre a Caja para evaluar y registrar la matricula.");
+  throw new Error("El aviso de inscripcion regular cerro. Derive al padre a Cajera para evaluar y registrar la matricula.");
 }
 
 function obtenerEstadoInscripcionPorPeriodo(dni, periodo) {

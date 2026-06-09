@@ -21,9 +21,9 @@ const Direccion = React.lazy(() => import("./modules/direccion/Direccion"));
 
 const moduleLabels = {
   administrador: "Administrador",
-  coordinacion: "Coordinación",
-  secretaria: "Secretaría",
-  caja: "Caja",
+  coordinacion: "Coordinación Académica",
+  secretaria: "Asistente",
+  caja: "Cajera",
   auxiliar: "Auxiliar",
   padres: "Padres",
   direccion: "Dirección",
@@ -53,7 +53,7 @@ const moduleAccessRules = {
 const moduleShortcutGroups = [
   {
     id: "coordinacion",
-    title: "Modulo Coordinacion",
+    title: "Módulo Coordinación Académica",
     items: [
       { id: "coordinacion-programas", label: "Gestion de Programas", module: "coordinacion", view: "programas", permissions: ["programas.crear", "programas.editar"], icon: BookOpen },
       { id: "coordinacion-carga", label: "Carga Excel", module: "coordinacion", view: "carga", permissions: ["grupos.crear", "grupos.editar"], icon: Upload },
@@ -62,7 +62,7 @@ const moduleShortcutGroups = [
   },
   {
     id: "caja",
-    title: "Modulo Caja",
+    title: "Módulo Cajera",
     items: [
       { id: "caja-pagos", label: "Pagos", module: "caja", view: "pagos", permissions: ["pagos.ver", "pagos.registrar", "pagos.editar"], icon: ChartBar },
     ],
@@ -72,10 +72,15 @@ const moduleShortcutGroups = [
 const rolesSistema = {
   Administrador: "administrador",
   Secretaria: "secretaria",
+  Asistente: "secretaria",
   Caja: "caja",
+  Cajera: "caja",
   Coordinacion: "coordinacion",
+  "Coordinación Académica": "coordinacion",
+  "Coordinacion Academica": "coordinacion",
   Auxiliar: "auxiliar",
   Direccion: "direccion",
+  Dirección: "direccion",
 };
 
 const rolesApiASistema = Object.fromEntries(
@@ -289,8 +294,7 @@ function App() {
             setUser((actual) => {
               if (!actual) return actual;
               const apiUser = res.data.user;
-              const role = apiUser.role;
-              const rol = apiUser.rol || rolesApiASistema[role] || "Secretaria";
+              const rol = apiUser.rol || rolesApiASistema[apiUser.role] || "Secretaria";
               const normalizado = normalizeUser({
                 usuario: apiUser.username || actual.username,
                 nombre: apiUser.name,
@@ -298,6 +302,7 @@ function App() {
                 estado: apiUser.estado || actual.estado,
                 permisos: apiUser.permissions || apiUser.permisos,
               });
+              const role = apiUser.role || rolesSistema[normalizado.rol] || "secretaria";
               const permisos = normalizado.permisos;
               if (
                 actual.role === role &&

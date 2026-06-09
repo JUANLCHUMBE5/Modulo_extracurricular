@@ -196,7 +196,7 @@ function resolverValidacion(identificadores = {}) {
       estadoPago: "Anulado",
       accesoPermitido: false,
       mensajeAcceso: "Pago anulado",
-      accion: "Registro anulado. Verificar en Secretaria o Caja antes de permitir el ingreso.",
+      accion: "Registro anulado. Verificar en Asistente o Cajera antes de permitir el ingreso.",
       color: "rojo",
     });
   }
@@ -209,7 +209,7 @@ function resolverValidacion(identificadores = {}) {
     estadoPago: "Pendiente",
     accesoPermitido: false,
     mensajeAcceso: "Pago pendiente",
-    accion: "Pago pendiente. Indicar que se acerque a Caja.",
+    accion: "Pago pendiente. Indicar que se acerque a Cajera.",
     color: "amarillo",
   });
 }
@@ -264,7 +264,7 @@ function crearRespuestaNoRegistrado(ids, estudiante) {
     estadoAcceso: "no_registrado",
     accesoPermitido: false,
     mensajeAcceso: "No registrado",
-    accion: "No esta registrado en un programa activo. Verificar en Secretaria antes de permitir el ingreso.",
+    accion: "No esta registrado en un programa activo. Verificar en Asistente antes de permitir el ingreso.",
     color: "rojo",
     pagoId: "",
     fechaPago: "",

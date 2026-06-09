@@ -335,7 +335,7 @@ export function crearHtmlImpresionFicha(ficha) {
           <p>Por medio de la presente, se deja constancia de que el padre o apoderado acepta la inscripcion del estudiante en el programa indicado, de acuerdo con las condiciones establecidas por la institución.</p>
           ${bloquesHtml}
           <h4>Aceptación</h4>
-          <p>El padre o apoderado declara haber leído y aceptado las condiciones del programa. Esta ficha sera presentada en Caja para continuar con el proceso de pago.</p>
+          <p>El padre o apoderado declara haber leído y aceptado las condiciones del programa. Esta ficha sera presentada en Cajera para continuar con el proceso de pago.</p>
           <p><strong>Observación:</strong> ${escaparHtml(ficha.observacion)}</p>
         </main>
       </body>
@@ -413,7 +413,7 @@ export function descargarFichaPdf(ficha) {
   doc.text("Aceptación", margen, y);
   y += 6;
   doc.setFont("helvetica", "normal");
-  y = agregarParrafoPdf(doc, "El padre o apoderado declara haber leído y aceptado las condiciones del programa. Esta ficha sera presentada en Caja para continuar con el proceso de pago.", margen, y, anchoTexto);
+  y = agregarParrafoPdf(doc, "El padre o apoderado declara haber leído y aceptado las condiciones del programa. Esta ficha sera presentada en Cajera para continuar con el proceso de pago.", margen, y, anchoTexto);
   agregarParrafoPdf(doc, `Observación: ${ficha.observacion}`, margen, y, anchoTexto);
 
   doc.save(`ficha-aceptacion-${normalizarNombreArchivo(ficha.codigo)}.pdf`);

@@ -24,7 +24,7 @@ const pasosPortal = [
   },
   {
     titulo: "Pago",
-    detalle: "Caja",
+    detalle: "Cajera",
     icon: CreditCard,
   },
 ];

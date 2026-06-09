@@ -107,7 +107,7 @@ export default function PagoStep({
             <div style={{ marginTop: "8px" }}>
               <strong style={{ fontSize: "17px", display: "block", fontWeight: 800 }}>¡Inscripción y Pago Confirmados!</strong>
               <span style={{ fontSize: "14px", display: "block", color: "#14532d", marginTop: "6px", lineHeight: "1.5" }}>
-                El pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido validado y aprobado exitosamente por el área de Caja. 
+                El pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido validado y aprobado exitosamente por el área de Cajera. 
                 El estudiante se encuentra debidamente inscrito.
               </span>
             </div>
@@ -156,7 +156,7 @@ export default function PagoStep({
       return;
     }
     if (requiereCaja) {
-      setErrorFormulario("Este registro debe revisarse directamente en Caja.");
+      setErrorFormulario("Este registro debe revisarse directamente en Cajera.");
       return;
     }
     if (!puedeEnviarVerificacion) return;
@@ -184,7 +184,7 @@ export default function PagoStep({
           <h2>{pagoVerificando ? "Pago pendiente de verificacion" : "Registrar pago"}</h2>
           <p>
             {pagoVerificando
-              ? "El comprobante fue recibido. Caja validara la operacion y actualizara el estado cuando corresponda."
+              ? "El comprobante fue recibido. Cajera validara la operacion y actualizara el estado cuando corresponda."
               : "Por ahora solo se acepta pago por Yape. Ingrese el numero de operacion y adjunte la captura."}
           </p>
         </div>
@@ -246,7 +246,7 @@ export default function PagoStep({
               <ClockHour4 size={18} />
               <div>
                 <strong>Pago pendiente de verificacion</strong>
-                <span>La captura y el numero de operacion ya fueron enviados. Caja confirmara el pago.</span>
+                <span>La captura y el numero de operacion ya fueron enviados. Cajera confirmara el pago.</span>
               </div>
             </section>
           ) : null}

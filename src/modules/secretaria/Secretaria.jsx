@@ -65,7 +65,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
 
   function mostrarMensaje(texto, tipo = "error") {
     setMensaje(texto);
-    const titulo = tipo === "success" ? "Secretaría" : "Revisar atención";
+    const titulo = tipo === "success" ? "Asistente" : "Revisar atención";
     if (tipo === "success") {
       toast.success(titulo, { description: texto });
     } else {
@@ -327,7 +327,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       return;
     }
     if (encontrado.tieneInvitacion && encontrado.programaDisponible === false) {
-      setMensaje("El alumno esta cargado por Coordinacion, pero el programa no tiene horario para su grado. Coordinacion debe agregar el turno antes de inscribir.");
+      setMensaje("El alumno esta cargado por Coordinación Académica, pero el programa no tiene horario para su grado. Coordinación Académica debe agregar el turno antes de inscribir.");
       return;
     }
     setMensaje("");
@@ -417,7 +417,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
 
     if (requiereSeleccionPrograma && !formulario.programa) {
       setMensaje(programas.length === 0
-        ? "No hay programas habilitados para este periodo. Coordinación debe registrar o habilitar uno."
+        ? "No hay programas habilitados para este periodo. Coordinación Académica debe registrar o habilitar uno."
         : "Seleccione el programa o taller disponible para este periodo.");
       return;
     }
@@ -529,8 +529,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
           : esCicloVerano
           ? "Alumno interno de ciclo verano"
           : estudiante.tieneInvitacion
-          ? "Alumno invitado por Coordinación"
-          : "Registro excepcional por Secretaría",
+          ? "Alumno invitado por Coordinación Académica"
+          : "Registro excepcional por Asistente",
       });
 
       setInscripción(registro);
@@ -555,7 +555,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       setModoRegistro(false);
       setModalExito(true);
       setMensaje("");
-      toast.success("Secretaría", {
+      toast.success("Asistente", {
         description: "Inscripción registrada correctamente.",
       });
     } catch (err) {
@@ -567,7 +567,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
 
   async function abrirRegistro() {
     if (invitacionSinHorario && !registroAdicional) {
-      mostrarMensaje("El alumno esta cargado por Coordinacion, pero falta configurar un horario para su grado antes de inscribirlo.");
+      mostrarMensaje("El alumno esta cargado por Coordinación Académica, pero falta configurar un horario para su grado antes de inscribirlo.");
       return;
     }
 
@@ -577,7 +577,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       : null;
 
     if (tieneInvitacionOperativa && !registroAdicional && !programaAsignadoActual) {
-      mostrarMensaje("El programa asignado por Coordinación no está habilitado o no tiene cupos disponibles.");
+      mostrarMensaje("El programa asignado por Coordinación Académica no está habilitado o no tiene cupos disponibles.");
       return;
     }
     const primerProgramaPeriodo = programasActualizados[0]?.id || "";
@@ -676,8 +676,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         medioEnvio: inscripcion.medioEnvio || "Impreso",
         seleccion: registrarDatosCambridge ? estudiante.seleccion || "" : "",
         nivelCambridge: registrarDatosCambridge ? estudiante.nivelCambridge || "" : "",
-        observacion: "Curso adicional registrado por Secretaria.",
-        origenRegistro: "Curso adicional por Secretaria",
+        observacion: "Curso adicional registrado por Asistente.",
+        origenRegistro: "Curso adicional por Asistente",
       });
 
       setInscripción(registro);
@@ -685,7 +685,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       setModalCursoAdicional(false);
       setCursoAdicionalId("");
       setModalExito(true);
-      toast.success("Secretaría", {
+      toast.success("Asistente", {
         description: "Curso adicional registrado correctamente.",
       });
     } catch (err) {
@@ -723,17 +723,17 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   async function derivarACaja() {
     if (!inscripcion || derivandoCaja) return;
     if (inscripcion.derivadoCaja) {
-      mostrarMensaje("Este taller ya fue derivado a Caja. Registre un curso adicional si necesita derivar otro taller.");
+      mostrarMensaje("Este taller ya fue derivado a Cajera. Registre un curso adicional si necesita derivar otro taller.");
       return;
     }
     if (!inscripcion.fichaGenerada && !inscripcion.documentoGenerado) {
-      mostrarMensaje("Primero imprima o genere la ficha de inscripción antes de derivar a Caja.");
+      mostrarMensaje("Primero imprima o genere la ficha de inscripción antes de derivar a Cajera.");
       return;
     }
 
     const programaDerivacion = inscripcion.programa || "el taller seleccionado";
     const confirmarDerivacion = window.confirm(
-      `Se derivara a Caja la inscripcion de ${estudiante?.nombres || "este estudiante"} en ${programaDerivacion}. ¿Desea continuar?`
+      `Se derivara a Cajera la inscripcion de ${estudiante?.nombres || "este estudiante"} en ${programaDerivacion}. ¿Desea continuar?`
     );
     if (!confirmarDerivacion) return;
 
@@ -754,9 +754,9 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         seccionEstudiante: registroCompleto.seccionEstudiante || estudiante?.seccion,
       });
       setInscripción(derivada);
-      mostrarMensaje("Derivado exitosamente a Caja.", "success");
+      mostrarMensaje("Derivado exitosamente a Cajera.", "success");
     } catch (err) {
-      mostrarMensaje(err.message || "No se pudo derivar la inscripcion a Caja.");
+      mostrarMensaje(err.message || "No se pudo derivar la inscripcion a Cajera.");
     } finally {
       setDerivandoCaja(false);
     }
@@ -809,11 +809,11 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         <div className="secretaria-sidebar-brand" aria-label="Colegio San Rafael">
           <img src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
           <div>
-            <span>Secretaria</span>
+            <span>Asistente</span>
           </div>
         </div>
 
-        <nav className="secretaria-nav" aria-label="Menu del modulo secretaria">
+        <nav className="secretaria-nav" aria-label="Menu del modulo asistente">
           <button
             className={`secretaria-nav-item ${!mostrarVistaDelegada ? "secretaria-nav-item-active" : ""}`}
             type="button"

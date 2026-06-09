@@ -70,7 +70,7 @@ export function obtenerVentanaInscripcion(fechaInicio, fechaBase = new Date(), d
     duracionAvisoDias: diasAviso,
     mensaje: permitida
       ? `Aviso de inscripcion habilitado hasta el ${format(limite, "dd/MM/yyyy", { locale: es })}.`
-      : "El aviso de inscripcion regular cerro. Derive al padre a Caja para evaluar el registro.",
+      : "El aviso de inscripcion regular cerro. Derive al padre a Cajera para evaluar el registro.",
   };
 }
 

@@ -3,11 +3,11 @@ import { updateDb } from "./localDb.js";
 
 const modulosAuditables = {
   administrador: "Administrador",
-  secretaria: "Secretaria",
-  caja: "Caja",
-  coordinacion: "Coordinacion",
+  secretaria: "Asistente",
+  caja: "Cajera",
+  coordinacion: "Coordinación Académica",
   auxiliar: "Auxiliar",
-  direccion: "Direccion",
+  direccion: "Dirección",
   padres: "Padres",
   desconocido: "Desconocido",
 };

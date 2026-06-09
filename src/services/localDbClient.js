@@ -245,9 +245,9 @@ export const initialData = {
   historialCargas: [],
   usuarios: [
     { id: "1", nombre: "Admin Principal", usuario: "admin", rol: "Administrador", estado: "Activo", contrasena: "1234" },
-    { id: "2", nombre: "Maria Secretaria", usuario: "secretaria", rol: "Secretaria", estado: "Activo", contrasena: "1234" },
-    { id: "3", nombre: "Jose Caja", usuario: "caja", rol: "Caja", estado: "Activo", contrasena: "1234" },
-    { id: "4", nombre: "Ana Coordinadora", usuario: "coordinacion", rol: "Coordinacion", estado: "Activo", contrasena: "1234" },
+    { id: "2", nombre: "Maria Asistente", usuario: "secretaria", rol: "Secretaria", estado: "Activo", contrasena: "1234" },
+    { id: "3", nombre: "Rosa Cajera", usuario: "caja", rol: "Caja", estado: "Activo", contrasena: "1234" },
+    { id: "4", nombre: "Ana Coordinacion Academica", usuario: "coordinacion", rol: "Coordinacion", estado: "Activo", contrasena: "1234" },
     { id: "5", nombre: "Auxiliar de Ingreso", usuario: "aux", rol: "Auxiliar", estado: "Activo", contrasena: "1234" },
     { id: "6", nombre: "Direccion General", usuario: "dir", rol: "Direccion", estado: "Activo", contrasena: "1234" },
     { id: "7", nombre: "Profesor Responsable", usuario: "profe", rol: "Coordinacion", estado: "Activo", contrasena: "1234" },

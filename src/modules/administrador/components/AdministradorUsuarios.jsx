@@ -18,6 +18,7 @@ import {
   ALL_PERMISSIONS,
   PERMISSION_GROUPS,
   ROLES,
+  getRoleLabel,
   getRequiredPermissionsByRole,
   isSuperAdmin,
   normalizeUser,
@@ -38,7 +39,7 @@ const StatCard = ({ label, value, icon: Icon, delay = 0 }) => (
 const RolBadge = ({ rol }) => (
   <span className="adm-rol-badge" data-rol={rol}>
     <span className="adm-rol-dot" />
-    {rol}
+    {getRoleLabel(rol)}
   </span>
 );
 
@@ -311,7 +312,7 @@ const ModalUsuario = ({ show, modoEditar, form, setForm, guardar, guardando, cer
                 <label className={labelClass}>Rol asignado <span className="text-red-600">*</span></label>
                 <div className="relative flex items-center">
                   <select className={selectClass} value={form.rol} onChange={e => actualizarRol(e.target.value)} disabled={isSuperAdmin(form)}>
-                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                    {ROLES.map(r => <option key={r} value={r}>{getRoleLabel(r)}</option>)}
                   </select>
                   <ChevronDown size={14} className="pointer-events-none absolute right-3 text-slate-500" />
                 </div>

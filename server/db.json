@@ -585,7 +585,7 @@
     },
     {
       "id": "2",
-      "nombre": "Maria Secretaria",
+      "nombre": "Maria Asistente",
       "usuario": "secretaria",
       "rol": "Secretaria",
       "estado": "Activo",
@@ -593,7 +593,7 @@
     },
     {
       "id": "3",
-      "nombre": "Jose Caja",
+      "nombre": "Rosa Cajera",
       "usuario": "caja",
       "rol": "Caja",
       "estado": "Activo",
@@ -606,7 +606,7 @@
     },
     {
       "id": "4",
-      "nombre": "Ana Coordinadora",
+      "nombre": "Ana Coordinacion Academica",
       "usuario": "coordinacion",
       "rol": "Coordinacion",
       "estado": "Activo",
@@ -645,6 +645,54 @@
     }
   ],
   "auditLogs": [
+    {
+      "id": "AUD-275472-1a6d",
+      "usuario": "caja",
+      "rol": "caja",
+      "fecha": "2026-06-09T01:57:55.472Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Caja\"}"
+    },
+    {
+      "id": "AUD-257536-a85d",
+      "usuario": "secretaria",
+      "rol": "secretaria",
+      "fecha": "2026-06-09T01:57:37.536Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Secretaria\"}"
+    },
+    {
+      "id": "AUD-706874-94da",
+      "usuario": "secretaria",
+      "rol": "secretaria",
+      "fecha": "2026-06-09T01:31:46.875Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Secretaria\"}"
+    },
+    {
+      "id": "AUD-319972-5dfe",
+      "usuario": "coordinacion",
+      "rol": "coordinacion",
+      "fecha": "2026-06-08T20:41:59.972Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Coordinacion\"}"
+    },
+    {
+      "id": "AUD-294726-0e37",
+      "usuario": "caja",
+      "rol": "caja",
+      "fecha": "2026-06-08T20:41:34.726Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Caja\"}"
+    },
+    {
+      "id": "AUD-285298-793a",
+      "usuario": "secretaria",
+      "rol": "secretaria",
+      "fecha": "2026-06-08T20:41:25.298Z",
+      "accion": "INICIO_SESION",
+      "detalles": "{\"modulo\":\"Secretaria\"}"
+    },
     {
       "id": "AUD-657260-a698",
       "usuario": "caja",

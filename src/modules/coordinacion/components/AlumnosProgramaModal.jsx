@@ -78,7 +78,7 @@ function AlumnosProgramaModal({
               onClick={() => setSubVistaAlumnos("matriculados")}
               style={tabStyle(subVistaAlumnos === "matriculados")}
             >
-              Matriculados (Caja / Padres) ({matriculados.length})
+              Matriculados (Cajera / Padres) ({matriculados.length})
             </button>
             <button
               type="button"

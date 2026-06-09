@@ -17,7 +17,7 @@ function describirSeleccionCambridge(valor = "") {
     B: "B - Ingresante por Admission Test",
     C: "C - Ingresante por desempeno academico",
   };
-  return opciones[seleccion] || "Pendiente de definir en Coordinacion";
+  return opciones[seleccion] || "Pendiente de definir en Coordinación Académica";
 }
 
 function obtenerPillEstadoInscripcion(estado = "") {
@@ -197,45 +197,45 @@ function SecretariaStudentPanel({
         <CheckCircle2 size={19} />
         {inscripcion?.derivadoCaja ? (
           <p>
-            Derivado exitosamente a Caja: {inscripcion.programa || "taller seleccionado"}. Este mismo taller ya no se puede derivar otra vez.
+            Derivado exitosamente a Cajera: {inscripcion.programa || "taller seleccionado"}. Este mismo taller ya no se puede derivar otra vez.
             {cursosAdicionalesDisponibles > 0
               ? " Si necesita otro cobro, registre un curso adicional."
               : " No hay cursos adicionales disponibles para este grado."}
           </p>
         ) : inscripcion && programas.length > 0 ? (
           <p>
-            Taller actual para Caja: {inscripcion.programa || "No definido"}. Secretaría puede registrar
+            Taller actual para Cajera: {inscripcion.programa || "No definido"}. Asistente puede registrar
             un curso adicional si corresponde, cuidando no derivar otro taller por error.
           </p>
         ) : inscripcion ? (
           <p>
-            Inscripcion registrada para {inscripcion.programa || "este taller"}. Derivar a Caja para validar el pago.
+            Inscripcion registrada para {inscripcion.programa || "este taller"}. Derivar a Cajera para validar el pago.
           </p>
         ) : esCicloVerano && programas.length > 0 ? (
           <p>
-            Ciclo verano no usa invitación. Secretaría debe seleccionar el programa de verano al registrar.
+            Ciclo verano no usa invitación. Asistente debe seleccionar el programa de verano al registrar.
           </p>
         ) : esCicloVerano ? (
           <p>
-            Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
+            Coordinación Académica debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
           </p>
         ) : invitacionSinHorario ? (
           <p>
-            El estudiante si esta cargado por Coordinacion, pero falta configurar un horario para su grado antes de inscribirlo.
+            El estudiante si esta cargado por Coordinación Académica, pero falta configurar un horario para su grado antes de inscribirlo.
           </p>
         ) : tieneInvitacionOperativa ? (
           <p>
-            El estudiante tiene invitación registrada. Secretaria solo
-            podrá inscribirlo en el programa asignado por Coordinación.
+            El estudiante tiene invitación registrada. Asistente solo
+            podrá inscribirlo en el programa asignado por Coordinación Académica.
           </p>
         ) : programas.length > 0 ? (
           <p>
-            No tiene invitación individual. Secretaría puede registrarlo
-            en los programas marcados por Coordinación como invitación masiva.
+            No tiene invitación individual. Asistente puede registrarlo
+            en los programas marcados por Coordinación Académica como invitación masiva.
           </p>
         ) : (
           <p>
-            No tiene invitación registrada. Coordinación debe habilitar una
+            No tiene invitación registrada. Coordinación Académica debe habilitar una
             invitación masiva o registrar una invitación individual.
           </p>
         )}
@@ -249,7 +249,7 @@ function SecretariaStudentPanel({
           disabled={invitacionSinHorario && !inscripcion}
         >
           <ClipboardCheck size={17} />
-          <span>{invitacionSinHorario ? "Falta horario en Coordinacion" : "Registrar inscripcion"}</span>
+          <span>{invitacionSinHorario ? "Falta horario en Coordinación Académica" : "Registrar inscripcion"}</span>
         </button>
       ) : (
         <div className="secretaria-final-actions">
@@ -274,7 +274,7 @@ function SecretariaStudentPanel({
                 ? "Derivado exitosamente"
                 : derivandoCaja
                   ? "Derivando"
-                : `Derivar: ${inscripcion.programa || "Caja"}`}
+                : `Derivar: ${inscripcion.programa || "Cajera"}`}
             </span>
           </button>
           {cursosAdicionalesDisponibles > 0 ? (

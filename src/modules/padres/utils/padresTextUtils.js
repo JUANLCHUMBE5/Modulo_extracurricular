@@ -120,7 +120,7 @@ export function describirSeleccionCambridgePadres(valor = "") {
     B: "B - Ingresante por Admission Test",
     C: "C - Ingresante por desempeno academico",
   };
-  return opciones[seleccion] || "Pendiente de definir en Coordinacion";
+  return opciones[seleccion] || "Pendiente de definir en Coordinación Académica";
 }
 
 function crearComunicadoCambridgePadres(programa, estudiante, titulo) {

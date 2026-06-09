@@ -162,7 +162,7 @@ export default function Caja({
       setPagos(datosPagos);
       setResumen(datosResumen);
     } catch (error) {
-      toast.error("Caja", { description: error.message || "No se pudo cargar la informacion." });
+      toast.error("Cajera", { description: error.message || "No se pudo cargar la informacion." });
     } finally {
       setCargando(false);
     }
@@ -211,8 +211,8 @@ export default function Caja({
         setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
         setMensaje(
           encontrado.requiereDerivacionCaja
-            ? "El estudiante tiene inscripcion, pero Secretaria aun no la derivo a Caja."
-            : "El estudiante aun no paso por Secretaria. Primero debe existir una inscripcion registrada."
+            ? "El estudiante tiene inscripcion, pero Asistente aun no la derivo a Cajera."
+            : "El estudiante aun no paso por Asistente. Primero debe existir una inscripcion registrada."
         );
         return;
       }
@@ -248,7 +248,7 @@ export default function Caja({
         return;
       }
       if (estadoPagoSistema === "verificando") {
-        setMensaje(`El padre ya envio un pago web para "${inscripcion.programa}". Caja debe aprobarlo u observarlo, no cobrarlo nuevamente.`);
+        setMensaje(`El padre ya envio un pago web para "${inscripcion.programa}". Cajera debe aprobarlo u observarlo, no cobrarlo nuevamente.`);
       }
 
       const nombre = `${encontrado.nombres || ""} ${encontrado.apellidos || ""}`.trim();
@@ -309,7 +309,7 @@ export default function Caja({
       } else {
         const pago = await registrarPago(payload);
         setPagoConfirmado(pago);
-        toast.success("Pago aprobado", { description: "El pago quedo confirmado y guardado en Caja." });
+        toast.success("Pago aprobado", { description: "El pago quedo confirmado y guardado en Cajera." });
       }
       await cargarDatos();
       await cargarReporteCaja();
@@ -321,7 +321,7 @@ export default function Caja({
   }
 
   function validarPago() {
-    if (!modoEdicion && !formulario.inscripcionId) return "Primero busque un estudiante con inscripcion registrada por Secretaria.";
+    if (!modoEdicion && !formulario.inscripcionId) return "Primero busque un estudiante con inscripcion registrada por Asistente.";
     if (!validarDni(formulario.estudianteDni)) return "Seleccione o ingrese un DNI valido.";
     if (!formulario.estudianteNombre.trim()) return "Ingrese el nombre del estudiante.";
     if (!Number.isFinite(Number(formulario.monto)) || Number(formulario.monto) <= 0) return "Ingrese un monto mayor a cero.";
@@ -518,8 +518,8 @@ export default function Caja({
         <div className="caja-brand" aria-label="Colegio San Rafael">
           <img className="caja-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
         </div>
-        <p className="caja-module-label">Modulo Caja</p>
-        <nav className="caja-nav" aria-label="Modulo de caja">
+        <p className="caja-module-label">Módulo Cajera</p>
+        <nav className="caja-nav" aria-label="Modulo de cajera">
           <button className={!delegatedContent && vista === "pagos" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("pagos"); }} type="button">
             <Receipt size={17} /> Registrar Cobro
           </button>

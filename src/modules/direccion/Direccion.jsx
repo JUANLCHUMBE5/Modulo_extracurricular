@@ -208,7 +208,7 @@ export default function Direccion({ onLogout, user }) {
         <header className="dir-header">
           <div>
             <span>Panel institucional</span>
-            <h1>{vista === "reportes" ? "Descarga de reportes" : "Direccion y reportes"}</h1>
+            <h1>{vista === "reportes" ? "Descarga de reportes" : "Dirección y reportes"}</h1>
             {vista !== "reportes" && (
               <p>Seguimiento de programas, inscripciones, pagos y capacidad operativa.</p>
             )}
@@ -252,7 +252,7 @@ export default function Direccion({ onLogout, user }) {
               >
                 <Wallet size={18} />
                 <div>
-                  <strong>Módulo Caja</strong>
+                  <strong>Módulo Cajera</strong>
                 </div>
               </button>
 
@@ -265,7 +265,7 @@ export default function Direccion({ onLogout, user }) {
               >
                 <School size={18} />
                 <div>
-                  <strong>Módulo Coordinación</strong>
+                  <strong>Módulo Coordinación Académica</strong>
                 </div>
               </button>
 
@@ -486,7 +486,7 @@ export default function Direccion({ onLogout, user }) {
                   />
                   <StatCard
                     icon={Building}
-                    label="Vía Secretaría"
+                    label="Vía Asistente"
                     value={`${metricasAnalisis.secCount} (${metricasAnalisis.secPct}%)`}
                     detail="Registros ingresados presencialmente"
                     tone="orange"
@@ -526,7 +526,7 @@ export default function Direccion({ onLogout, user }) {
                           <strong className="dir-stat-value">{metricasAnalisis.webCount} <span className="dir-stat-sub">({metricasAnalisis.webPct}%)</span></strong>
                         </div>
                         <div className="dir-analysis-stat-item">
-                          <span className="dir-stat-label"><Building size={14} /> Secretaría</span>
+                          <span className="dir-stat-label"><Building size={14} /> Asistente</span>
                           <strong className="dir-stat-value">{metricasAnalisis.secCount} <span className="dir-stat-sub">({metricasAnalisis.secPct}%)</span></strong>
                         </div>
                       </div>
@@ -539,7 +539,7 @@ export default function Direccion({ onLogout, user }) {
                         <div 
                           className="dir-progress-bar-sec" 
                           style={{ width: `${metricasAnalisis.secPct}%` }}
-                          title={`Secretaría: ${metricasAnalisis.secPct}%`}
+                          title={`Asistente: ${metricasAnalisis.secPct}%`}
                         />
                       </div>
                     </div>
@@ -679,7 +679,7 @@ export default function Direccion({ onLogout, user }) {
                         <strong className="dir-stat-value">{metricasAnalisis.webCount} <span className="dir-stat-sub">({metricasAnalisis.webPct}%)</span></strong>
                       </div>
                       <div className="dir-analysis-stat-item">
-                        <span className="dir-stat-label"><Building size={14} /> Secretaría</span>
+                        <span className="dir-stat-label"><Building size={14} /> Asistente</span>
                         <strong className="dir-stat-value">{metricasAnalisis.secCount} <span className="dir-stat-sub">({metricasAnalisis.secPct}%)</span></strong>
                       </div>
                     </div>
@@ -692,7 +692,7 @@ export default function Direccion({ onLogout, user }) {
                       <div 
                         className="dir-progress-bar-sec" 
                         style={{ width: `${metricasAnalisis.secPct}%` }}
-                        title={`Secretaría: ${metricasAnalisis.secPct}%`}
+                        title={`Asistente: ${metricasAnalisis.secPct}%`}
                       />
                     </div>
                   </div>
@@ -768,7 +768,7 @@ export default function Direccion({ onLogout, user }) {
                 >
                   <Wallet size={18} />
                   <div>
-                    <strong>Módulo Caja</strong>
+                    <strong>Módulo Cajera</strong>
                   </div>
                 </button>
 
@@ -781,7 +781,7 @@ export default function Direccion({ onLogout, user }) {
                 >
                   <School size={18} />
                   <div>
-                    <strong>Módulo Coordinación</strong>
+                    <strong>Módulo Coordinación Académica</strong>
                   </div>
                 </button>
 
@@ -821,7 +821,7 @@ export default function Direccion({ onLogout, user }) {
                             data={[
                               { value: "todos", label: "Todos los canales" },
                               { value: "web", label: "Solo vía Web / Padres" },
-                              { value: "secretaria", label: "Solo vía Secretaría" },
+                              { value: "secretaria", label: "Solo vía Asistente" },
                             ]}
                             value={customFiltroOrigen}
                             onChange={(val) => setCustomFiltroOrigen(val || "todos")}

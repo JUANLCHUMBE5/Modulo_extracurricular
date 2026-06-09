@@ -3,6 +3,7 @@ import {
   IconFileText as FileText,
   IconX as X,
 } from "@tabler/icons-react";
+import { getRoleLabel } from "../models/usuarioModel";
 
 const formatearFecha = (fechaStr) => {
   if (!fechaStr) return "";
@@ -37,12 +38,12 @@ const obtenerModuloLog = (log) => {
   if (log?.detalles) {
     try {
       const detalles = JSON.parse(log.detalles);
-      if (detalles?.modulo) return detalles.modulo;
+      if (detalles?.modulo) return getRoleLabel(detalles.modulo);
     } catch (e) {
       // Mantener fallback cuando el detalle no es JSON.
     }
   }
-  return String(log?.rol || "").replace(/^\w/, (letra) => letra.toUpperCase());
+  return getRoleLabel(log?.rol);
 };
 
 const formatearAccionLog = (accion) => {

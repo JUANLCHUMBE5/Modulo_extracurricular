@@ -1,16 +1,16 @@
 import { apiDb, nextApiId, saveApiDb, syncApiDb, resetApiDb } from "../../services/dbApi";
 import { isApiMode, apiClient } from "../../services/apiClient";
-import { ALL_PERMISSIONS, isSuperAdmin } from "./models/usuarioModel";
+import { ALL_PERMISSIONS, getRoleLabel, isSuperAdmin } from "./models/usuarioModel";
 
 const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const modulosAuditables = {
   administrador: "Administrador",
-  secretaria: "Secretaria",
-  caja: "Caja",
-  coordinacion: "Coordinacion",
+  secretaria: "Asistente",
+  caja: "Cajera",
+  coordinacion: "Coordinación Académica",
   auxiliar: "Auxiliar",
-  direccion: "Direccion",
+  direccion: "Dirección",
   padres: "Padres",
   desconocido: "Desconocido"
 };
@@ -20,7 +20,7 @@ function normalizarRolAuditoria(rol) {
 }
 
 function crearDetalleAcceso(rol) {
-  return JSON.stringify({ modulo: modulosAuditables[rol] || rol });
+  return JSON.stringify({ modulo: modulosAuditables[rol] || getRoleLabel(rol) });
 }
 
 function filtrarLogsAcceso(logs = []) {

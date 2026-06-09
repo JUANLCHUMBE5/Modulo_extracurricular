@@ -261,7 +261,7 @@ function Coordinacion({
       setCategorias(cats);
       setHistorialCargas(cargas);
     } catch (err) {
-      mostrarMsg(err.message || "No se pudieron cargar los datos de Coordinación.");
+      mostrarMsg(err.message || "No se pudieron cargar los datos de Coordinación Académica.");
     } finally {
       setCargando(false);
     }
@@ -272,7 +272,7 @@ function Coordinacion({
   function mostrarMsg(texto, tipo = "error") {
     setMensaje(texto);
     setTipoMsg(tipo);
-    const titulo = tipo === "success" ? "Coordinación" : "Revisar datos";
+    const titulo = tipo === "success" ? "Coordinación Académica" : "Revisar datos";
     if (tipo === "success") {
       toast.success(titulo, { description: texto });
     } else {

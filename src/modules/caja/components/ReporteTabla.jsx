@@ -26,7 +26,7 @@ export default function ReporteTabla({
       <div className="caja-empty">
         <ChartBar size={28} />
         <strong>No hay datos para este reporte</strong>
-        <span>Ajuste los filtros o revise si existen matriculas en Secretaria/Padres.</span>
+        <span>Ajuste los filtros o revise si existen matriculas en Asistente/Padres.</span>
       </div>
     );
   }

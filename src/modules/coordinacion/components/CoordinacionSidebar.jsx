@@ -31,7 +31,7 @@ export default function CoordinacionSidebar({
       <div className="coord-brand" aria-label="Colegio San Rafael">
         <img className="coord-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
       </div>
-      <p className="coord-module-label">{esProfesor ? "Modulo Profesores" : "Modulo Coordinacion"}</p>
+      <p className="coord-module-label">{esProfesor ? "Modulo Profesores" : "Módulo Coordinación Académica"}</p>
       <nav className="coord-nav">
         {vistasDisponibles.map(({ id, label, icon: Icon }) => (
           <button

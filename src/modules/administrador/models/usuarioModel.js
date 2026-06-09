@@ -7,6 +7,44 @@ export const ROLES = [
   "Direccion",
 ];
 
+export const ROLE_LABELS = {
+  Administrador: "Administrador",
+  Secretaria: "Asistente",
+  Caja: "Cajera",
+  Coordinacion: "Coordinación Académica",
+  Auxiliar: "Auxiliar",
+  Direccion: "Dirección",
+};
+
+const ROLE_ALIASES = {
+  administrador: "Administrador",
+  secretaria: "Secretaria",
+  asistente: "Secretaria",
+  caja: "Caja",
+  cajera: "Caja",
+  coordinacion: "Coordinacion",
+  coordinacionacademica: "Coordinacion",
+  auxiliar: "Auxiliar",
+  direccion: "Direccion",
+};
+
+function normalizarClaveRol(rol = "") {
+  return String(rol)
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+}
+
+export function normalizeRoleValue(rol = "") {
+  return ROLE_ALIASES[normalizarClaveRol(rol)] || (ROLES.includes(rol) ? rol : "Secretaria");
+}
+
+export function getRoleLabel(rol = "") {
+  const normalized = normalizeRoleValue(rol);
+  return ROLE_LABELS[normalized] || normalized;
+}
+
 export const PERMISSION_GROUPS = [
   {
     id: "usuarios",
@@ -20,7 +58,7 @@ export const PERMISSION_GROUPS = [
   },
   {
     id: "coordinacion",
-    label: "Coordinacion",
+    label: "Coordinación Académica",
     permissions: [
       { id: "programas.crear", label: "Crear programas" },
       { id: "programas.editar", label: "Editar programas" },
@@ -31,7 +69,7 @@ export const PERMISSION_GROUPS = [
   },
   {
     id: "direccion",
-    label: "Direccion y reportes",
+    label: "Dirección y reportes",
     permissions: [
       { id: "presupuesto.ver", label: "Ver presupuesto" },
       { id: "direccion.resumen.ver", label: "Ver resumen de direccion" },
@@ -41,7 +79,7 @@ export const PERMISSION_GROUPS = [
   },
   {
     id: "caja",
-    label: "Caja",
+    label: "Cajera",
     permissions: [
       { id: "pagos.ver", label: "Ver pagos" },
       { id: "pagos.registrar", label: "Registrar pagos" },
@@ -112,7 +150,7 @@ export function normalizePermissions(permisos = []) {
 }
 
 export function normalizeUser(usuario = {}) {
-  const rol = ROLES.includes(usuario.rol) ? usuario.rol : "Secretaria";
+  const rol = normalizeRoleValue(usuario.rol);
   const permisosBase = usuario.rol === "Administrador" || rol === "Administrador"
     ? ALL_PERMISSIONS
     : Array.isArray(usuario.permisos)

@@ -51,7 +51,7 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
         <AlertCircle size={24} />
         <div>
           <h2>Sin programa asignado</h2>
-          <p>Cuando Coordinacion habilite una invitacion o un curso disponible, aparecera en este portal.</p>
+          <p>Cuando Coordinación Académica habilite una invitacion o un curso disponible, aparecera en este portal.</p>
         </div>
       </article>
     );
@@ -345,7 +345,7 @@ function CatalogoProgramas({
           <p>
             {programa
               ? "Puede inscribir a su hijo si aplica a su grado y no cruza el horario."
-              : "Coordinacion publica aqui los cursos habilitados para el grado del estudiante."}
+              : "Coordinación Académica publica aqui los cursos habilitados para el grado del estudiante."}
           </p>
         </div>
         {carruselActivo && !cargandoProgramas ? (

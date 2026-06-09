@@ -252,7 +252,7 @@ export default function SecretariaRegistroModal({
                           radius="md"
                           icon={<AlertCircle size={18} />}
                         >
-                          Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
+                          Coordinación Académica debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
                         </MantineAlert>
                       ) : mostrarDetallePrograma ? (
                         <div className="secretaria-program-details-card secretaria-field-full">
@@ -414,8 +414,8 @@ export default function SecretariaRegistroModal({
                     icon={<AlertCircle size={18} />}
                   >
                     {esCicloVerano
-                      ? "Coordinación debe registrar y habilitar un programa de ciclo verano disponible para el estudiante."
-                      : "Coordinación debe registrar y habilitar un programa disponible para el grado del estudiante."}
+                      ? "Coordinación Académica debe registrar y habilitar un programa de ciclo verano disponible para el estudiante."
+                      : "Coordinación Académica debe registrar y habilitar un programa disponible para el grado del estudiante."}
                   </MantineAlert>
                 ) : null}
 

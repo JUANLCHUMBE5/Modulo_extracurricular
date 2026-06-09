@@ -74,7 +74,7 @@ export default function FinalizarProgramaModal({
             </strong>
             <ul style={{ margin: 0, paddingLeft: "16px", fontSize: "13px", color: "#6b5930", display: "grid", gap: "4px", lineHeight: "1.4" }}>
               <li>Se cerrará el programa de forma definitiva en el historial.</li>
-              <li>Secretaría ya no podrá registrar nuevas inscripciones.</li>
+              <li>Asistente ya no podrá registrar nuevas inscripciones.</li>
               <li>Si desea abrir este taller nuevamente en el futuro, tendrá que crear un nuevo programa.</li>
             </ul>
           </div>

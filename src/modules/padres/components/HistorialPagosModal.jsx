@@ -171,7 +171,7 @@ export default function HistorialPagosModal({
               <div className="padres-history-empty">
                 <Receipt size={28} />
                 <strong>Sin pagos registrados</strong>
-                <span>Cuando envie o Caja confirme un pago, aparecera aqui.</span>
+                <span>Cuando envie o Cajera confirme un pago, aparecera aqui.</span>
               </div>
             )}
           </>

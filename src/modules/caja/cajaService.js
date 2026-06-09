@@ -59,7 +59,7 @@ export async function registrarPago(datosPago) {
       estado_pago: datosPago.estado || "completado",
       numero_operacion: datosPago.numeroOperacion || datosPago.referenciaPago || "",
       telefono_operacion: datosPago.telefonoOperacion || "",
-      origen_registro: "Caja"
+      origen_registro: "Cajera"
     };
     const res = await apiClient.post("/api/v1/extracurricular/pagos", apiPayload);
     if (!res.success) throw new Error(res.message || "Error al registrar pago");
@@ -82,7 +82,7 @@ export async function registrarPago(datosPago) {
       throw new Error("Este estudiante ya tiene un pago aprobado para este taller. No se puede cobrar nuevamente.");
     }
     if (estadoDuplicado === "verificando") {
-      throw new Error("El padre ya envio un pago web para este taller. Caja debe validarlo u observarlo, no registrar otro cobro.");
+      throw new Error("El padre ya envio un pago web para este taller. Cajera debe validarlo u observarlo, no registrar otro cobro.");
     }
     throw new Error("Ya existe un pago activo para esta inscripcion. No se puede registrar un pago duplicado.");
   }
@@ -90,7 +90,7 @@ export async function registrarPago(datosPago) {
   const pago = {
     id: generarPagoId(),
     ...datosPago,
-    origenRegistro: datosPago.origenRegistro || "Caja",
+    origenRegistro: datosPago.origenRegistro || "Cajera",
     estudianteDni: datosPago.estudianteDni || dniEstudiante,
     estudianteNombre: datosPago.estudianteNombre || nombresEstudiante,
     dniEstudiante,
@@ -470,7 +470,7 @@ export async function generarReporteCaja(filtros = {}) {
       formaPago: pago?.formaPago || pago?.medioPago || "Sin pago",
       numeroOperacion: pago?.numeroOperacion || pago?.referenciaPago || inscripcion.pagoReferencia || "",
       telefonoOperacion: pago?.telefonoOperacion || inscripcion.pagoTelefono || "",
-      origen: (pago ? (pago.origenRegistro || (pago.formaPago === "Yape" ? "Portal padres" : "Caja")) : inscripcion.origenRegistro) || "Sin origen",
+      origen: (pago ? (pago.origenRegistro || (pago.formaPago === "Yape" ? "Portal padres" : "Cajera")) : inscripcion.origenRegistro) || "Sin origen",
       fuente: "inscripcion",
       pagoId: pago?.id || "",
       fecha: fechaBase,
@@ -596,7 +596,7 @@ function crearFilaPago(pago, programasVigentes = null) {
     formaPago: pago.formaPago || pago.medioPago || "Sin medio",
     numeroOperacion: pago.numeroOperacion || pago.referenciaPago || "",
     telefonoOperacion: pago.telefonoOperacion || "",
-    origen: "Caja",
+    origen: "Cajera",
     fuente: "pago",
     fecha: pago.fechaPago || pago.fecha || "",
     fechaRegistro: "",

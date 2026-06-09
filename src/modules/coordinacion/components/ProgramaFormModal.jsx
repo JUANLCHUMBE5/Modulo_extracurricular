@@ -105,6 +105,7 @@ function ProgramaFormModal({
   const [grupoDraft, setGrupoDraft] = useState(grupoHorarioDraftInicial);
   const [grupoDraftError, setGrupoDraftError] = useState("");
   const [grupoDraftErrorTick, setGrupoDraftErrorTick] = useState(0);
+  const [formTab, setFormTab] = useState("general"); // general, horarios, cobros
 
   if (!show) return null;
 
@@ -243,7 +244,7 @@ function ProgramaFormModal({
                               <label>{esFormularioVerano ? "Talleres habilitados" : "Grados habilitados"}</label>
                               <p className="coord-field-hint" style={{ marginTop: "4px" }}>
                                 {esFormularioVerano
-                                  ? "Configure abajo cada taller de verano con edad, día, horario y cupos. Secretaría registrará a los alumnos."
+                                  ? "Configure abajo cada taller de verano con edad, día, horario y cupos. Asistente registrará a los alumnos."
                                   : "Los grados escolares aplicables se calculan automáticamente a partir de los rangos de edad de los talleres de abajo."}
                               </p>
                               {form.talleresDeportivos?.length > 0 && (
@@ -262,7 +263,7 @@ function ProgramaFormModal({
                               <label>Grados aplicables</label>
                               <div className="coord-readonly-field">Asignados desde la lista Excel</div>
                               <p className="coord-field-hint">
-                                Para Ingles/Cambridge no seleccione grados del programa. Coordinacion los cargara por alumno en el Excel de invitados.
+                                Para Ingles/Cambridge no seleccione grados del programa. Coordinación Académica los cargara por alumno en el Excel de invitados.
                               </p>
                             </div>
                           ) : null}
@@ -732,7 +733,7 @@ function ProgramaFormModal({
                           ) : (
                             <div className="coord-summer-payment-note coord-field-full">
                               <CheckCircle2 size={16} />
-                              <span>Secretaría verá este programa como opción de ciclo verano y registrará el tipo de alumno al momento de la inscripción.</span>
+                              <span>Asistente verá este programa como opción de ciclo verano y registrará el tipo de alumno al momento de la inscripción.</span>
                             </div>
                           )}
                         </div>

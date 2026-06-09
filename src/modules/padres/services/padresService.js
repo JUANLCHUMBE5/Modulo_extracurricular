@@ -167,11 +167,11 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
   const nombresRegistro = invitacion?.nombres || estudiante.nombres;
 
   if (!invitacion && !programa.invitacionMasiva) {
-    throw new Error("Este programa requiere invitacion de Coordinacion.");
+    throw new Error("Este programa requiere invitacion de Coordinación Académica.");
   }
 
   const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias);
-  if (!ventana.permitida) throw new Error("El aviso de inscripcion web cerro. Acerquese a Caja para evaluar el registro.");
+  if (!ventana.permitida) throw new Error("El aviso de inscripcion web cerro. Acerquese a Cajera para evaluar el registro.");
   if (Number(programa.cuposOcupados || 0) >= Number(programa.cupos || 0)) {
     throw new Error("El programa no tiene cupos disponibles.");
   }
@@ -310,7 +310,7 @@ export async function registrarPagoVerificacionPadres(dni, inscripcionId, datosP
     pagoActivo?.estadoVerificacion
   );
   if (estadoActual === "pagado") {
-    throw new Error("Caja ya registro este pago como cancelado. No puede enviar otro pago web.");
+    throw new Error("Cajera ya registro este pago como cancelado. No puede enviar otro pago web.");
   }
   if (estadoActual === "verificando") {
     throw new Error("Ya existe un pago web en verificacion para esta inscripcion.");
@@ -522,7 +522,7 @@ function sincronizarInscripcionConPrograma(inscripcion) {
       estadoInscripcion: "Requiere revision",
       estadoPago: inscripcion.estadoPago || "Pendiente",
       estadoPrograma: "Programa eliminado",
-      horario: "Programa eliminado por Coordinacion",
+      horario: "Programa eliminado por Coordinación Académica",
     });
   }
 

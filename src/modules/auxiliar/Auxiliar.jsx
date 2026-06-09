@@ -450,7 +450,7 @@ export default function Auxiliar({ onLogout }) {
               <p className="kiosk-status-message">
                 {registrando 
                   ? "Guardando la asistencia del estudiante para su taller." 
-                  : "Verificando estado de matrícula y reportes de pagos en Caja."}
+                  : "Verificando estado de matrícula y reportes de pagos en Cajera."}
               </p>
             </div>
           )}
@@ -544,7 +544,7 @@ export default function Auxiliar({ onLogout }) {
               <div className="kiosk-alert-explanation">
                 <p><strong>Usted o el alumno no ha realizado el pago.</strong></p>
                 <p className="sub-msg">
-                  Para poder ingresar a la clase del taller, el apoderado debe regularizar el pago pendiente (en Caja o Web).
+                  Para poder ingresar a la clase del taller, el apoderado debe regularizar el pago pendiente (en Cajera o Web).
                 </p>
               </div>
 
@@ -578,7 +578,7 @@ export default function Auxiliar({ onLogout }) {
               <div className="kiosk-alert-explanation">
                 <p><strong>Estás inscrito en el colegio, pero no matriculado en este taller.</strong></p>
                 <p className="sub-msg">
-                  Por favor, acércate con tu apoderado a Secretaría para regularizar la matrícula en este programa.
+                  Por favor, acércate con tu apoderado a Asistente para regularizar la matrícula en este programa.
                 </p>
               </div>
 
@@ -612,7 +612,7 @@ export default function Auxiliar({ onLogout }) {
               <div className="kiosk-alert-explanation">
                 <p><strong>Este código QR o DNI no figura en el sistema del colegio.</strong></p>
                 <p className="sub-msg">
-                  No se ha encontrado ninguna inscripción o registro de alumno. Por favor, consulta con el auxiliar o acércate a Secretaría.
+                  No se ha encontrado ninguna inscripción o registro de alumno. Por favor, consulta con el auxiliar o acércate a Asistente.
                 </p>
               </div>
 

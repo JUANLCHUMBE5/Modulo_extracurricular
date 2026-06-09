@@ -7,26 +7,35 @@ import bcrypt from "bcryptjs";
 const delay = (ms = 650) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const aliasesUsuario = {
+  asistente: "secretaria",
+  cajera: "caja",
   secre: "secretaria",
   coord: "coordinacion",
+  "coordinacion-academica": "coordinacion",
+  coordinacionacademica: "coordinacion",
 };
 
 const rolesSistema = {
   Administrador: "administrador",
   Secretaria: "secretaria",
+  Asistente: "secretaria",
   Caja: "caja",
+  Cajera: "caja",
   Coordinacion: "coordinacion",
+  "Coordinación Académica": "coordinacion",
+  "Coordinacion Academica": "coordinacion",
   Auxiliar: "auxiliar",
   Direccion: "direccion",
+  Dirección: "direccion",
 };
 
 const modulosAuditables = {
   administrador: "Administrador",
-  secretaria: "Secretaria",
-  caja: "Caja",
-  coordinacion: "Coordinacion",
+  secretaria: "Asistente",
+  caja: "Cajera",
+  coordinacion: "Coordinación Académica",
   auxiliar: "Auxiliar",
-  direccion: "Direccion",
+  direccion: "Dirección",
 };
 
 const rolesApiASistema = Object.fromEntries(
@@ -111,7 +120,7 @@ export const loginPersonal = async (username, password) => {
 
   if (usuario && usuario.estado !== "Inactivo" && passwordValido) {
     const usuarioConPermisos = normalizeUser(usuario);
-    const role = rolesSistema[usuario.rol] || String(usuario.rol || "").toLowerCase();
+    const role = rolesSistema[usuarioConPermisos.rol] || String(usuarioConPermisos.rol || "").toLowerCase();
     await registrarAccesoLocal(usuario.usuario, role);
     return {
       success: true,
