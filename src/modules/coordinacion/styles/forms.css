@@ -87,7 +87,7 @@
 
 .coord-field {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .coord-field-grow {

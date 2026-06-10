@@ -34,6 +34,7 @@ import { puedeVerVista, tienePermisoAsignado } from "./utils/coordinacionPermiss
 import {
   calcularRangoEdades,
   comprimirImagenAnuncio,
+  esProgramaCambridge,
   esProgramaDeportivo,
   nombreProgramaDesdeArchivo,
   normalizarHorariosPorGrupo,
@@ -69,6 +70,49 @@ const vistasNav = [
   { id: "documentos", label: "Plantillas / Documentos", icon: FileText, permissions: ["programas.crear", "programas.editar"] },
   { id: "asistencias", label: "Asistencia y Control", icon: UserCheck, permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"] },
 ];
+
+const mesesCambridge = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
+
+function leerFechaInput(valor) {
+  const partes = String(valor || "").split("-").map(Number);
+  if (partes.length !== 3 || partes.some((parte) => !Number.isFinite(parte))) return null;
+  const [anio, mes, dia] = partes;
+  return new Date(anio, mes - 1, dia);
+}
+
+function calcularTextoCiclosCambridge(fechaInicio, fechaFin) {
+  const inicio = leerFechaInput(fechaInicio);
+  const fin = leerFechaInput(fechaFin);
+  if (!inicio || !fin || inicio > fin) return { cicloI: "", cicloII: "" };
+
+  const anio = inicio.getFullYear();
+  const calcularRango = (mesInicio, mesFin) => {
+    const rangoInicio = new Date(anio, mesInicio - 1, 1);
+    const rangoFin = new Date(anio, mesFin, 0);
+    const desde = inicio > rangoInicio ? inicio : rangoInicio;
+    const hasta = fin < rangoFin ? fin : rangoFin;
+    if (desde > hasta) return "";
+    return `De ${mesesCambridge[desde.getMonth()]} a ${mesesCambridge[hasta.getMonth()]}`;
+  };
+
+  return {
+    cicloI: calcularRango(4, 7),
+    cicloII: calcularRango(8, 11),
+  };
+}
 
 function Coordinacion({
   delegatedContent,
@@ -326,11 +370,37 @@ function Coordinacion({
   function datosProgramaAFormulario(prog) {
     const talleres = Array.isArray(prog.talleresDeportivos) ? prog.talleresDeportivos : [];
     const esVerano = normalizarPeriodoVista(prog.periodo) === "verano";
-    const esDeportivo = !esVerano && (String(prog.categoria).toLowerCase() === "deportivo" || esProgramaDeportivo(prog.nombre, prog.categoria));
+    const catLower = String(prog.categoria || "").toLowerCase();
+    const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(prog.nombre, prog.categoria);
+    const usaTalleresPorEdad = esVerano ? (catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés") : esDeportivo;
+
     let cuposCalculados = prog.cupos;
-    if ((esVerano || esDeportivo) && talleres.length > 0) {
+    if (usaTalleresPorEdad && talleres.length > 0) {
       cuposCalculados = String(talleres.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0));
     }
+
+    let horariosPorGrupo = normalizarHorariosPorGrupo(prog.horariosPorGrupo);
+    if (!usaTalleresPorEdad && horariosPorGrupo.length === 0 && prog.horaInicio && prog.horaFin) {
+      const diasArray = normalizarListaTexto(prog.dias);
+      horariosPorGrupo = [{
+        id: `grupo-migrado-${Date.now()}`,
+        grados: normalizarListaGrados(prog.gradosAplicables),
+        dia: diasArray.length > 0 ? diasArray.join(", ") : "Lunes",
+        almuerzoInicio: prog.almuerzoInicio || "14:20",
+        almuerzoFin: prog.almuerzoFin || "15:10",
+        horaInicio: prog.horaInicio,
+        horaFin: prog.horaFin,
+        aula: prog.aula || "",
+        responsable: prog.responsable || "",
+        tutora: prog.tutora || "",
+        cupos: Number(prog.cupos) || 20,
+      }];
+    }
+
+    if (!usaTalleresPorEdad && horariosPorGrupo.length > 0) {
+      cuposCalculados = String(horariosPorGrupo.reduce((sum, g) => sum + (Number(g.cupos) || 20), 0));
+    }
+
     return {
       nombre: prog.nombre, periodo: normalizarPeriodoVista(prog.periodo), categoria: prog.categoria,
       grupo: prog.grupo, grupoEtario: prog.grupoEtario || "", horario: prog.horario, fechaInicio: prog.fechaInicio,
@@ -344,8 +414,8 @@ function Coordinacion({
       horaFin: prog.horaFin || "",
       almuerzoInicio: prog.almuerzoInicio || "",
       almuerzoFin: prog.almuerzoFin || "",
-      horariosPorGrupo: normalizarHorariosPorGrupo(prog.horariosPorGrupo),
-      usaHorariosPorBloque: Boolean(prog.usaHorariosPorBloque || normalizarHorariosPorGrupo(prog.horariosPorGrupo).length),
+      horariosPorGrupo: horariosPorGrupo,
+      usaHorariosPorBloque: !usaTalleresPorEdad,
       talleresDeportivos: talleres,
       fechaFin: prog.fechaFin,
       cicloI: prog.cicloI || "",
@@ -398,8 +468,10 @@ function Coordinacion({
     if (!form.categoria) return mostrarAlertaConfiguracion("Revise: categoria.");
     
     const esVeranoGuardar = normalizarPeriodoVista(form.periodo) === "verano";
-    const esDeportivoGuardar = !esVeranoGuardar && (String(form.categoria).toLowerCase() === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria));
-    const usaTalleresPorEdad = esVeranoGuardar || esDeportivoGuardar;
+    const catLower = String(form.categoria || "").toLowerCase();
+    const esCambridgeGuardar = esProgramaCambridge(form);
+    const esDeportivoGuardar = catLower === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
+    const usaTalleresPorEdad = esVeranoGuardar ? (catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés") : esDeportivoGuardar;
     
     const talleres = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
     if (usaTalleresPorEdad && talleres.length === 0) {
@@ -409,12 +481,12 @@ function Coordinacion({
     }
 
     const gruposHorario = usaTalleresPorEdad ? [] : normalizarHorariosPorGrupo(form.horariosPorGrupo);
-    const usaHorariosPorBloqueGuardar = !usaTalleresPorEdad && Boolean(form.usaHorariosPorBloque);
+    const usaHorariosPorBloqueGuardar = !usaTalleresPorEdad;
     
     let gradosFinales = [];
-    if (esDeportivoGuardar) {
+    if (usaTalleresPorEdad) {
       gradosFinales = obtenerGradosDeportivos(talleres);
-    } else if (!esVeranoGuardar) {
+    } else {
       gradosFinales = obtenerGradosFinales(form.gradosAplicables, gruposHorario);
     }
 
@@ -430,31 +502,31 @@ function Coordinacion({
     if (!form.cupos || Number(form.cupos) <= 0) camposFaltantes.push("cupos");
     if (!String(form.costo || "").trim()) camposFaltantes.push("costo");
     if (!form.modalidadCobro) camposFaltantes.push("modalidad de cobro");
-    if (esVeranoGuardar) {
+    if (esVeranoGuardar && usaTalleresPorEdad) {
       if (diasFinales.length !== 3) camposFaltantes.push("3 dias de atencion");
-    } else if (!esDeportivoGuardar && !usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
+    } else if (!esCambridgeGuardar && !usaTalleresPorEdad && !usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
       if (diasFinales.length === 0) camposFaltantes.push("dias del programa");
       if (!form.horaInicio || !form.horaFin) camposFaltantes.push("horario");
-    } else if (!esDeportivoGuardar && usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
+    } else if (!esCambridgeGuardar && !usaTalleresPorEdad && usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
       camposFaltantes.push("bloques por grado");
     }
     if (camposFaltantes.length > 0) {
       return mostrarAlertaConfiguracion(`Revise: ${camposFaltantes.join(", ")}.`);
     }
 
-    if (!esVeranoGuardar && gradosFinales.length === 0) {
+    if (!esCambridgeGuardar && !usaTalleresPorEdad && gradosFinales.length === 0) {
       return mostrarAlertaConfiguracion("Revise: grados aplicables.");
     }
-    if (esVeranoGuardar && diasFinales.length !== 3) {
+    if (esVeranoGuardar && usaTalleresPorEdad && diasFinales.length !== 3) {
       return mostrarAlertaConfiguracion("Revise: seleccione exactamente 3 dias de atencion para verano.");
     }
 
 
-    if (!esDeportivoGuardar && usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
+    if (!esCambridgeGuardar && !usaTalleresPorEdad && usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
       return mostrarAlertaConfiguracion("Revise: agregue al menos un bloque con grados, docente y horario.");
     }
 
-    if (!esDeportivoGuardar && !usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
+    if (!esCambridgeGuardar && !usaTalleresPorEdad && !usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
       if (diasFinales.length === 0) return mostrarMsg("Seleccione los días del programa.");
       if (!form.horaInicio || !form.horaFin) return mostrarMsg("Seleccione hora de inicio y fin del programa.");
       if (form.horaInicio >= form.horaFin) return mostrarMsg("La hora de inicio debe ser menor a la hora de fin.");
@@ -466,7 +538,7 @@ function Coordinacion({
       }
     }
 
-    if (!usaTalleresPorEdad) {
+    if (!esCambridgeGuardar && !usaTalleresPorEdad) {
       const grupoInvalido = gruposHorario.find((grupo) =>
         grupo.grados.length === 0 || !grupo.dia || !grupo.horaInicio || !grupo.horaFin || grupo.horaInicio >= grupo.horaFin
       );
@@ -493,6 +565,7 @@ function Coordinacion({
     if (form.plantilla && !form.plantillaValidada) return mostrarMsg("La plantilla Word debe estar validada antes de guardar.");
 
     setGuardando(true);
+    const ciclosCambridgeGuardar = calcularTextoCiclosCambridge(form.fechaInicio, form.fechaFin);
     const edadesTalleres = talleres.flatMap((taller) => [Number(taller.edadMinima), Number(taller.edadMaxima)]).filter(Number.isFinite);
     const edadMinimaVerano = edadesTalleres.length ? Math.min(...edadesTalleres) : "";
     const edadMaximaVerano = edadesTalleres.length ? Math.max(...edadesTalleres) : "";
@@ -502,23 +575,23 @@ function Coordinacion({
       tutora: gruposHorario.length > 0 ? resumenTutoraPorGrupo(gruposHorario, form.tutora) : form.tutora,
       costo: Number(form.costo).toFixed(2),
       gradosAplicables: gradosFinales,
-      edadMinima: esVeranoGuardar ? edadMinimaVerano : "",
-      edadMaxima: esVeranoGuardar ? edadMaximaVerano : "",
+      edadMinima: usaTalleresPorEdad ? edadMinimaVerano : "",
+      edadMaxima: usaTalleresPorEdad ? edadMaximaVerano : "",
       fechaNacimientoDesde: "",
       fechaNacimientoHasta: "",
       duracionTaller: calcularDuracionTexto(form.fechaInicio, form.fechaFin),
-      cicloI: form.cicloI || "",
-      cicloII: form.cicloII || "",
+      cicloI: esCambridgeGuardar ? ciclosCambridgeGuardar.cicloI : form.cicloI || "",
+      cicloII: esCambridgeGuardar ? ciclosCambridgeGuardar.cicloII : form.cicloII || "",
       duracionAvisoDias,
       dias: diasFinales,
       horariosPorGrupo: gruposHorario,
       usaHorariosPorBloque: gruposHorario.length > 0,
-      grupo: esVeranoGuardar
+      grupo: esCambridgeGuardar
+        ? "Asignado por Excel"
+        : usaTalleresPorEdad
         ? resumenGrupoDeportivo(talleres)
-        : esDeportivoGuardar
-          ? resumenGrupoDeportivo(talleres)
-          : resumenGrados(gradosFinales),
-      grupoEtario: esVeranoGuardar ? `Edades ${edadMinimaVerano} a ${edadMaximaVerano} anios` : "",
+        : resumenGrados(gradosFinales),
+      grupoEtario: usaTalleresPorEdad ? `Edades ${edadMinimaVerano} a ${edadMaximaVerano} anios` : "",
       requiereUniforme: false,
       requiereIndumentaria: Boolean(form.requiereIndumentaria),
       alcanceInvitacionMasiva: form.invitacionMasiva ? form.alcanceInvitacionMasiva || "colegio" : "",
@@ -526,7 +599,9 @@ function Coordinacion({
       anuncioImagenNombre: form.invitacionMasiva ? form.anuncioImagenNombre : "",
       anuncioImagenTamano: form.invitacionMasiva ? form.anuncioImagenTamano : 0,
       anuncioImagenComprimida: form.invitacionMasiva ? Boolean(form.anuncioImagenComprimida) : false,
-      horario: usaTalleresPorEdad
+      horario: esCambridgeGuardar
+        ? "Asignado por carga Excel"
+        : usaTalleresPorEdad
         ? resumenHorarioDeportivo(talleres)
         : gruposHorario.length
           ? resumenHorariosPorGrupo(gruposHorario)
@@ -882,8 +957,9 @@ function Coordinacion({
   function actualizarNombrePrograma(valor) {
     setForm((actual) => {
       const esVerano = normalizarPeriodoVista(actual.periodo) === "verano";
-      const esDeportivo = !esVerano && (String(actual.categoria).toLowerCase() === "deportivo" || esProgramaDeportivo(valor, actual.categoria));
-      const usaTalleresPorEdad = esVerano || esDeportivo;
+      const catLower = String(actual.categoria || "").toLowerCase();
+      const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(valor, actual.categoria);
+      const usaTalleresPorEdad = esVerano ? (catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés") : esDeportivo;
       const talleres = Array.isArray(actual.talleresDeportivos) ? actual.talleresDeportivos : [];
       let nuevosCupos = actual.cupos;
       if (usaTalleresPorEdad && talleres.length > 0) {
@@ -901,8 +977,9 @@ function Coordinacion({
   function actualizarCategoriaPrograma(valor) {
     setForm((actual) => {
       const esVerano = normalizarPeriodoVista(actual.periodo) === "verano";
-      const esDeportivo = !esVerano && (String(valor).toLowerCase() === "deportivo" || esProgramaDeportivo(actual.nombre, valor));
-      const usaTalleresPorEdad = esVerano || esDeportivo;
+      const catLower = String(valor || "").toLowerCase();
+      const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(actual.nombre, valor);
+      const usaTalleresPorEdad = esVerano ? (catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés") : esDeportivo;
       const talleres = Array.isArray(actual.talleresDeportivos) ? actual.talleresDeportivos : [];
       let nuevosCupos = actual.cupos;
       if (usaTalleresPorEdad && talleres.length > 0) {
@@ -1167,6 +1244,10 @@ function Coordinacion({
 
   function cambiarPeriodoFormulario(valor) {
     const periodoNormalizado = normalizarPeriodoVista(valor);
+    const catLower = String(form.categoria || "").toLowerCase();
+    const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
+    const usaTalleresPorEdad = periodoNormalizado === "verano" ? (catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés") : esDeportivo;
+
     if (periodoNormalizado === "verano") {
       setTallerDepDeporte("Danza");
     } else if (!["Vóley", "Fútbol", "Básquet", "Otro"].includes(tallerDepDeporte)) {
@@ -1178,8 +1259,8 @@ function Coordinacion({
       modalidadCobro: periodoNormalizado === "verano" ? "Unico" : f.modalidadCobro,
       invitacionMasiva: periodoNormalizado === "verano" ? false : f.invitacionMasiva,
       requiereIndumentaria: periodoNormalizado === "verano" ? false : f.requiereIndumentaria,
-      horariosPorGrupo: periodoNormalizado === "verano" ? [] : f.horariosPorGrupo,
-      usaHorariosPorBloque: periodoNormalizado === "verano" ? false : f.usaHorariosPorBloque,
+      horariosPorGrupo: usaTalleresPorEdad ? [] : f.horariosPorGrupo,
+      usaHorariosPorBloque: usaTalleresPorEdad ? false : f.usaHorariosPorBloque,
     }));
   }
 
@@ -1223,7 +1304,10 @@ function Coordinacion({
     setForm(f => {
       const actuales = normalizarListaTexto(f.dias);
       const yaExiste = actuales.includes(valor);
-      if (!yaExiste && normalizarPeriodoVista(f.periodo) === "verano" && actuales.length >= 3) {
+      const catLower = String(f.categoria || "").toLowerCase();
+      const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(f.nombre, f.categoria);
+      const usaTalleresPorEdad = normalizarPeriodoVista(f.periodo) === "verano" ? (catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés") : esDeportivo;
+      if (!yaExiste && normalizarPeriodoVista(f.periodo) === "verano" && usaTalleresPorEdad && actuales.length >= 3) {
         mostrarMsg("El taller de verano debe tener 3 dias de atencion.");
         return f;
       }
@@ -1237,34 +1321,54 @@ function Coordinacion({
   }
 
   function agregarGrupoHorario(grupo = horarioGrupoInicial) {
-    setForm((actual) => ({
-      ...actual,
-      usaHorariosPorBloque: true,
-      gradosAplicables: normalizarListaGrados([
-        ...normalizarListaGrados(actual.gradosAplicables),
-        ...normalizarListaGrados(grupo.grados),
-      ]),
-      horariosPorGrupo: [
+    setForm((actual) => {
+      const nuevaLista = [
         ...(Array.isArray(actual.horariosPorGrupo) ? actual.horariosPorGrupo : []),
         { ...grupo, id: grupo.id || `grupo-${Date.now()}` },
-      ],
-    }));
+      ];
+      const totalCupos = nuevaLista.reduce((sum, g) => sum + (Number(g.cupos) || 20), 0);
+      return {
+        ...actual,
+        usaHorariosPorBloque: true,
+        gradosAplicables: normalizarListaGrados([
+          ...normalizarListaGrados(actual.gradosAplicables),
+          ...normalizarListaGrados(grupo.grados),
+        ]),
+        horariosPorGrupo: nuevaLista,
+        cupos: String(totalCupos),
+      };
+    });
   }
 
   function quitarGrupoHorario(index) {
-    setForm((actual) => ({
-      ...actual,
-      horariosPorGrupo: (Array.isArray(actual.horariosPorGrupo) ? actual.horariosPorGrupo : []).filter((_, itemIndex) => itemIndex !== index),
-    }));
+    setForm((actual) => {
+      const nuevaLista = (Array.isArray(actual.horariosPorGrupo) ? actual.horariosPorGrupo : []).filter((_, itemIndex) => itemIndex !== index);
+      const totalCupos = nuevaLista.reduce((sum, g) => sum + (Number(g.cupos) || 20), 0);
+      return {
+        ...actual,
+        horariosPorGrupo: nuevaLista,
+        cupos: nuevaLista.length > 0 ? String(totalCupos) : actual.cupos,
+      };
+    });
   }
 
   function actualizarGrupoHorario(index, campo, valor) {
-    setForm((actual) => ({
-      ...actual,
-      horariosPorGrupo: (Array.isArray(actual.horariosPorGrupo) ? actual.horariosPorGrupo : []).map((grupo, itemIndex) =>
-        itemIndex === index ? { ...grupo, [campo]: valor } : grupo
-      ),
-    }));
+    setForm((actual) => {
+      const lista = Array.isArray(actual.horariosPorGrupo) ? actual.horariosPorGrupo : [];
+      const nuevaLista = lista.map((grupo, itemIndex) => {
+        if (itemIndex !== index) return grupo;
+        if (campo && typeof campo === "object") {
+          return { ...campo, id: grupo.id || campo.id || `grupo-${Date.now()}` };
+        }
+        return { ...grupo, [campo]: valor };
+      });
+      const totalCupos = nuevaLista.reduce((sum, g) => sum + (Number(g.cupos) || 20), 0);
+      return {
+        ...actual,
+        horariosPorGrupo: nuevaLista,
+        cupos: String(totalCupos),
+      };
+    });
   }
 
   function toggleGradoGrupo(index, valor) {
@@ -1395,7 +1499,11 @@ function Coordinacion({
   const formDias = normalizarListaTexto(form.dias);
   const formHorariosPorGrupo = Array.isArray(form.horariosPorGrupo) ? form.horariosPorGrupo : [];
   const esFormularioVerano = normalizarPeriodoVista(form.periodo) === "verano";
-  const esDeportivoForm = !esFormularioVerano && (String(form.categoria).toLowerCase() === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria));
+  const esDeportivoForm = String(form.categoria || "").toLowerCase() === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
+  const esCambridgeForm = esProgramaCambridge(form);
+  const ciclosCambridgeFormulario = calcularTextoCiclosCambridge(form.fechaInicio, form.fechaFin);
+  const catLower = String(form.categoria || "").toLowerCase();
+  const usaTalleresPorEdad = esFormularioVerano ? (catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés") : esDeportivoForm;
   const duracionTallerFormulario = calcularDuracionTexto(form.fechaInicio, form.fechaFin);
   const mostrarIndumentariaDeportiva = esDeportivoForm;
 
@@ -1534,13 +1642,14 @@ function Coordinacion({
           cambiarPeriodoFormulario={cambiarPeriodoFormulario}
           catAEliminar={catAEliminar}
           categorias={categorias}
+          ciclosCambridgeFormulario={ciclosCambridgeFormulario}
           diasSemana={diasSemana}
           duracionTallerFormulario={duracionTallerFormulario}
           esDeportivoForm={esDeportivoForm}
+          esCambridgeForm={esCambridgeForm}
           esFormularioVerano={esFormularioVerano}
+          usaTalleresPorEdad={usaTalleresPorEdad}
           form={form}
-          formDias={formDias}
-          formGradosAplicables={formGradosAplicables}
           formHorariosPorGrupo={formHorariosPorGrupo}
           formatearCostoFormulario={formatearCostoFormulario}
           guardar={guardar}
@@ -1582,8 +1691,6 @@ function Coordinacion({
           tallerDepMinEdad={tallerDepMinEdad}
           tallerDepCupos={tallerDepCupos}
           tallerDepNivel={tallerDepNivel}
-          toggleDia={toggleDia}
-          toggleGrado={toggleGrado}
           toggleGradoGrupo={toggleGradoGrupo}
         />
 

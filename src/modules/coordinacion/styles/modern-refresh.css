@@ -261,7 +261,7 @@
 
 .coord-general-grid {
   grid-template-columns: 2.2fr 0.9fr 0.9fr !important;
-  gap: 16px !important;
+  gap: 8px 12px !important;
 }
 
 .coord-general-grid > .coord-program-name-field {
@@ -292,22 +292,22 @@
 .coord-schedule-block-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: 12px;
   background: #ffffff;
 }
 
 @media (max-width: 860px) {
   .coord-schedule-block-grid {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
   }
 }
 
 .coord-schedule-block-column {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  padding: 16px;
+  gap: 10px;
+  padding: 12px;
   background: #fcfdfe;
   border: 1px solid #eef2f6;
   border-radius: 12px;
@@ -319,15 +319,15 @@
 }
 
 .coord-schedule-unified .coord-schedule-block-main {
-  gap: 16px;
+  gap: 10px;
 }
 
 .coord-schedule-flow-row {
   display: grid;
   grid-template-columns: minmax(96px, 0.55fr) repeat(2, minmax(150px, 1fr));
-  gap: 12px;
+  gap: 8px 12px;
   align-items: end;
-  padding-top: 12px;
+  padding-top: 8px;
   border-top: 1px dashed #e2e8f0;
 }
 
@@ -382,13 +382,13 @@
 /* Turn schedule dynamic groups layout override */
 .coord-group-schedule-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 14px !important;
+  gap: 10px !important;
 }
 
 .coord-group-schedule {
   border: 1px solid #e2e8f0 !important;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
-  padding: 18px !important;
+  padding: 12px !important;
   background: #fafbfd !important;
 }
 
@@ -534,7 +534,7 @@
 }
 
 .coord-group-schedule-compact {
-  grid-template-columns: 86px minmax(150px, 1fr) minmax(190px, 1.2fr) minmax(170px, 1fr) 34px;
+  grid-template-columns: 86px minmax(130px, 1fr) minmax(190px, 1.2fr) minmax(150px, 1fr) 60px 72px;
   align-items: center;
   gap: 10px !important;
   padding: 9px 10px !important;
@@ -572,21 +572,37 @@
   white-space: nowrap;
 }
 
-.coord-group-schedule-compact > button {
+.coord-group-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.coord-group-actions button {
   width: 30px;
   height: 30px;
   display: grid;
   place-items: center;
-  border: 1px solid #f3c6c6;
   border-radius: 8px;
+  cursor: pointer;
+}
+
+.coord-group-actions button.coord-edit-btn {
+  border: 1px solid #bfd9d1;
+  color: #006b5b;
+  background: #f5fbf8;
+}
+
+.coord-group-actions button.coord-delete-btn {
+  border: 1px solid #f3c6c6;
   color: #b42318;
   background: #fff7f7;
-  cursor: pointer;
 }
 
 @media (max-width: 980px) {
   .coord-group-schedule-compact {
-    grid-template-columns: minmax(0, 1fr) 34px;
+    grid-template-columns: minmax(0, 1fr) 72px;
   }
 
   .coord-group-schedule-compact .coord-group-schedule-badge,
@@ -594,9 +610,10 @@
     grid-column: 1;
   }
 
-  .coord-group-schedule-compact > button {
+  .coord-group-schedule-compact .coord-group-actions {
     grid-column: 2;
-    grid-row: 1;
+    grid-row: 1 / 4;
+    align-self: center;
   }
 }
 

@@ -1,4 +1,4 @@
-﻿import cors from "cors";
+import cors from "cors";
 import "./loadEnv.js";
 import { randomUUID } from "crypto";
 import express from "express";
@@ -68,6 +68,21 @@ function normalizarEstadoPagoReporteCaja(pago = null, inscripcion = null) {
   const estadoInscripcion = normalizarTextoApi(inscripcion?.estadoPago);
   if (["pagado", "completado", "validado"].includes(estadoInscripcion)) return "pagado";
   return "pendiente";
+}
+
+function esProgramaCambridgeApi(programa = {}) {
+  const texto = normalizarTextoApi([
+    programa.nombre,
+    programa.categoria,
+    programa.plantilla,
+    ...(programa.plantillaVariables || []),
+  ].filter(Boolean).join(" "));
+  return texto.includes("cambridge") ||
+    texto.includes("certificacion") ||
+    texto.includes("preparacion") ||
+    (programa.plantillaVariables || []).some((variable) =>
+      ["anio_cert", "nivel_cambridge", "chk_a", "chk_b", "chk_c"].includes(variable)
+    );
 }
 
 const allowedOrigins = new Set(
@@ -260,6 +275,7 @@ app.post("/api/coordinacion/cargas/preview", upload.single("archivo"), async (re
     const programas = parseJsonArray(req.body.programas);
     const existentes = parseJsonObject(req.body.existentes);
     const estudiantes = parseJsonObject(req.body.estudiantes);
+    const programaId = req.body.programaId || req.body.programa_id || "";
 
     const preview = await generarPreviewCargaExcel({
       periodo,
@@ -267,6 +283,7 @@ app.post("/api/coordinacion/cargas/preview", upload.single("archivo"), async (re
       programas,
       existentes,
       estudiantes,
+      programaId,
     });
     res.json(preview);
   } catch (error) {
@@ -886,13 +903,24 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
       const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
       const grupoArchivo = validosPorArchivo.get(archivoNombre) || [];
       if (!grupoArchivo.cargaId) {
-        grupoArchivo.cargaId = `CARGA-${Date.now().toString().slice(-8)}-${randomUUID().slice(0, 4)}`;
+        const todayStr = new Date().toDateString();
+        const existing = (db.historialCargas || []).find(
+          c =>
+            c.archivoNombre === "Registro individual" &&
+            c.fecha &&
+            new Date(c.fecha).toDateString() === todayStr
+        );
+        if (archivoNombre === "Registro individual" && existing) {
+          grupoArchivo.cargaId = existing.id;
+        } else {
+          grupoArchivo.cargaId = `CARGA-${Date.now().toString().slice(-8)}-${randomUUID().slice(0, 4)}`;
+        }
         grupoArchivo.registrosHistorial = [];
       }
       const cargaId = grupoArchivo.cargaId;
       const existentes = db.invitadosPorPrograma[item.programaId] || [];
       const programaCarga = db.programas.find(p => p.id === item.programaId);
-      if (!gradoCorrespondeAlProgramaApi(programaCarga, item.grado)) {
+      if (!esProgramaCambridgeApi(programaCarga) && !gradoCorrespondeAlProgramaApi(programaCarga, item.grado)) {
         throw new Error("El alumno no esta dentro de su grado correspondiente para este taller.");
       }
       agregarGradoProgramaDesdeAlumnoApi(programaCarga, item.grado);
@@ -937,27 +965,51 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
     validosPorArchivo.forEach((grupoArchivo, archivoNombre) => {
       if (!grupoArchivo.cargaId) return;
       const registrosArchivo = registrosPorArchivo.get(archivoNombre) || grupoArchivo;
-      nuevasCargas.push({
-        id: grupoArchivo.cargaId,
-        fecha: fechaCarga,
-        periodo: normalizarPeriodoApi(preview.periodo),
-        archivoNombre,
-        archivos: [archivoNombre],
-        usuario: req.user?.username || "Coordinación Académica",
-        resumen: {
-          importados: grupoArchivo.length,
-          total: registrosArchivo.length,
-          errores: registrosArchivo.filter(item => item.estado === "Error").length,
-          duplicados: registrosArchivo.filter(item => item.estado === "Duplicado").length
-        },
-        registros: grupoArchivo.registrosHistorial || []
-      });
+
+      const todayStr = new Date().toDateString();
+      const existingIndex = (db.historialCargas || []).findIndex(
+        c =>
+          c.archivoNombre === "Registro individual" &&
+          c.fecha &&
+          new Date(c.fecha).toDateString() === todayStr
+      );
+
+      if (archivoNombre === "Registro individual" && existingIndex !== -1) {
+        const ec = db.historialCargas[existingIndex];
+        ec.registros = [...(ec.registros || []), ...(grupoArchivo.registrosHistorial || [])];
+        ec.resumen = {
+          importados: (ec.resumen?.importados || 0) + grupoArchivo.length,
+          total: (ec.resumen?.total || 0) + registrosArchivo.length,
+          errores: (ec.resumen?.errores || 0) + registrosArchivo.filter(item => item.estado === "Error").length,
+          duplicados: (ec.resumen?.duplicados || 0) + registrosArchivo.filter(item => item.estado === "Duplicado").length
+        };
+      } else {
+        nuevasCargas.push({
+          id: grupoArchivo.cargaId,
+          fecha: fechaCarga,
+          periodo: normalizarPeriodoApi(preview.periodo),
+          archivoNombre,
+          archivos: [archivoNombre],
+          usuario: req.user?.username || "Coordinación Académica",
+          resumen: {
+            importados: grupoArchivo.length,
+            total: registrosArchivo.length,
+            errores: registrosArchivo.filter(item => item.estado === "Error").length,
+            duplicados: registrosArchivo.filter(item => item.estado === "Duplicado").length
+          },
+          registros: grupoArchivo.registrosHistorial || []
+        });
+      }
     });
 
     db.historialCargas = Array.isArray(db.historialCargas) ? db.historialCargas : [];
     db.historialCargas = [...nuevasCargas, ...db.historialCargas];
 
     await saveDb(db);
+
+    const primerArchivoNombre = validos[0] ? (validos[0].archivoNombre || preview.archivoNombre || "Carga Excel") : "";
+    const returnedCargaId = primerArchivoNombre ? (validosPorArchivo.get(primerArchivoNombre)?.cargaId || "") : "";
+
     await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "CARGAR_EXCEL", {
       cargaIds: nuevasCargas.map(carga => carga.id),
       cantidad: validos.length,
@@ -969,7 +1021,7 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
     res.json({
       success: true,
       data: {
-        cargaId: nuevasCargas[0]?.id || "",
+        cargaId: returnedCargaId,
         cargaIds: nuevasCargas.map(carga => carga.id),
         cargas: nuevasCargas,
         importados: validos.length,
@@ -1235,8 +1287,8 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretar
         
         const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === student.dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
         const inscrip = inscripciones[0];
-        const camposProgramaInvitacion = obtenerCamposProgramaInvitacionApi(db, invitacion ? invitacion.programa : null, invitadoExcel.grado || student.grado);
         const invitadoExcel = invitacion?.invitado || {};
+        const camposProgramaInvitacion = obtenerCamposProgramaInvitacionApi(db, invitacion ? invitacion.programa : null, invitadoExcel.grado || student.grado);
         
         results.push({
           id: student.dni,
@@ -1307,6 +1359,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretar
     
     res.json({ success: true, data: results.slice(0, 10) });
   } catch (error) {
+    console.error("STUDENT SEARCH ERROR STACK:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 });

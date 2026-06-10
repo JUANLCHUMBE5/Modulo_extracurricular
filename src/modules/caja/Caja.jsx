@@ -421,11 +421,11 @@ export default function Caja({
       setCargando(true);
       await validarPagoWeb(fila.pagoId);
       toast.success("Pago aprobado", { description: "El pago web ha sido validado correctamente." });
-      
+
       if (formulario.pagoId === fila.pagoId) {
         limpiarPagoActual();
       }
-      
+
       await cargarDatos();
       await cargarReporteCaja();
     } catch (error) {
@@ -471,13 +471,13 @@ export default function Caja({
       toast.success("Pago rechazado", { description: "El pago ha sido marcado como observado." });
       setModalObservarAbierto(false);
       setModalVerificacionAbierto(false);
-      
+
       if (formulario.pagoId === pagoId) {
         limpiarPagoActual();
       } else {
         setPagoVerificar(null);
       }
-      
+
       await cargarDatos();
       await cargarReporteCaja();
     } catch (error) {
@@ -514,28 +514,28 @@ export default function Caja({
   return (
     <main className={embedded ? "caja-page caja-page-embedded" : "caja-page"}>
       {!embedded ? (
-      <aside className="caja-sidebar">
-        <div className="caja-brand" aria-label="Colegio San Rafael">
-          <img className="caja-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
-        </div>
-        <p className="caja-module-label">Módulo Cajera</p>
-        <nav className="caja-nav" aria-label="Modulo de cajera">
-          <button className={!delegatedContent && vista === "pagos" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("pagos"); }} type="button">
-            <Receipt size={17} /> Registrar Cobro
-          </button>
-          <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button">
-            <ChartBar size={17} /> Control y Exportacion
-          </button>
-        </nav>
-        {moduleSwitcher ? (
-          <div className="pt-3">
-            {moduleSwitcher}
+        <aside className="caja-sidebar">
+          <div className="caja-brand" aria-label="Colegio San Rafael">
+            <img className="caja-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
           </div>
-        ) : null}
-        <button className="caja-logout" onClick={onLogout} type="button">
-          <LogOut size={17} /> Cerrar sesion
-        </button>
-      </aside>
+          <p className="caja-module-label">Módulo Cajera</p>
+          <nav className="caja-nav" aria-label="Modulo de cajera">
+            <button className={!delegatedContent && vista === "pagos" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("pagos"); }} type="button">
+              <Receipt size={17} /> Registrar Cobro
+            </button>
+            <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button">
+              <ChartBar size={17} /> Control y Exportacion
+            </button>
+          </nav>
+          {moduleSwitcher ? (
+            <div className="pt-3">
+              {moduleSwitcher}
+            </div>
+          ) : null}
+          <button className="caja-logout" onClick={onLogout} type="button">
+            <LogOut size={17} /> Cerrar sesion
+          </button>
+        </aside>
       ) : null}
 
       <section className={embedded ? "caja-main caja-main-embedded" : "caja-main"}>
@@ -543,116 +543,116 @@ export default function Caja({
           delegatedContent
         ) : (
           <>
-        {vista === "reportes" ? (
-        <header className="caja-header">
-          <div>
-            <span>Control y exportacion</span>
-            <h1>Consulta de Transacciones</h1>
-            <p>Visualice el estado de los cobros, gestione pendientes y descargue reportes en CSV.</p>
-          </div>
-          <div className="caja-header-actions">
-            <Select
-              aria-label="Periodo"
-              className="caja-period"
-              data={[
-                { value: "escolar", label: "Año escolar" },
-                { value: "verano", label: "Ciclo verano" },
-              ]}
-              onChange={(valor) => setPeriodo(valor || "escolar")}
-              value={periodo}
-            />
-            <Button leftSection={<Download size={17} />} onClick={descargarReporte}>
-              Descargar CSV
-            </Button>
-          </div>
-        </header>
-        ) : null}
-
-        {vista === "pagos" ? (
-          <>
-            <section className="caja-payment-workspace">
-              {pagoConfirmado ? (
-                <div className="caja-payment-approved" role="status">
-                  <Check size={20} />
-                  <div>
-                    <strong>Pago aprobado</strong>
-                    <span>
-                      {formulario.estudianteNombre} quedo como pagado por {formatearSoles(formulario.monto)}.
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-              <CajaFields
-                buscando={buscando}
-                dni={dni}
-                estudiante={estudiante}
-                formulario={formulario}
-                modoEdicion={false}
-                onBuscar={buscarEstudiante}
-                setDni={setDni}
-                setFormulario={setFormulario}
-                mensaje={mensaje}
-              />
-              {formulario.inscripcionId ? (
-                formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar" ? (
-                  <Group className="caja-payment-actions" justify="flex-end">
-                    <Button onClick={limpiarPagoActual} variant="default">
-                      Limpiar
-                    </Button>
-                    <Button
-                      color="red"
-                      leftSection={<X size={15} />}
-                      onClick={() => abrirObservarModal(formulario)}
-                    >
-                      Observar / Rechazar
-                    </Button>
-                    <Button
-                      color="green"
-                      leftSection={<Check size={15} />}
-                      onClick={() => aprobarPagoWebDirecto(formulario)}
-                    >
-                      Aprobar Pago
-                    </Button>
-                  </Group>
-                ) : (
-                  <Group className="caja-payment-actions" justify="flex-end">
-                    <Button onClick={limpiarPagoActual} variant="default">
-                      Limpiar
-                    </Button>
-                    <Button leftSection={<Check size={17} />} loading={guardando} onClick={guardarPago}>
-                      Registrar pago
-                    </Button>
-                  </Group>
-                )
-              ) : null}
-            </section>
-          </>
-        ) : (
-          <section className="caja-report-layout">
-            <ReporteResumenCards reporte={reporte} totalRegistros={reporteCaja.length} />
-            <ReporteFiltros
-              filtros={filtrosReporte}
-              mediosPago={opcionesReporte.mediosPago}
-              onChange={actualizarFiltroReporte}
-              programas={opcionesReporte.programas}
-            />
-            <section className="caja-panel">
-              <div className="caja-panel-header">
+            {vista === "reportes" ? (
+              <header className="caja-header">
                 <div>
-                  <h2>Resultado del reporte</h2>
-                  <p>{reporteCaja.length} registros encontrados</p>
+                  <span>Control y exportacion</span>
+                  <h1>Consulta de Transacciones</h1>
+                  <p></p>
                 </div>
-              </div>
-              <ReporteTabla
-                filas={reporteCaja}
-                onPagar={abrirPagoDesdeReporte}
-                onValidarWebPago={aprobarPagoWebDirecto}
-                onObservarWebPago={abrirObservarModal}
-                onVerCapturaWebPago={verificarPagoWeb}
-              />
-            </section>
-          </section>
-        )}
+                <div className="caja-header-actions">
+                  <Select
+                    aria-label="Periodo"
+                    className="caja-period"
+                    data={[
+                      { value: "escolar", label: "Año escolar" },
+                      { value: "verano", label: "Ciclo verano" },
+                    ]}
+                    onChange={(valor) => setPeriodo(valor || "escolar")}
+                    value={periodo}
+                  />
+                  <Button leftSection={<Download size={17} />} onClick={descargarReporte}>
+                    Descargar CSV
+                  </Button>
+                </div>
+              </header>
+            ) : null}
+
+            {vista === "pagos" ? (
+              <>
+                <section className="caja-payment-workspace">
+                  {pagoConfirmado ? (
+                    <div className="caja-payment-approved" role="status">
+                      <Check size={20} />
+                      <div>
+                        <strong>Pago aprobado</strong>
+                        <span>
+                          {formulario.estudianteNombre} quedo como pagado por {formatearSoles(formulario.monto)}.
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
+                  <CajaFields
+                    buscando={buscando}
+                    dni={dni}
+                    estudiante={estudiante}
+                    formulario={formulario}
+                    modoEdicion={false}
+                    onBuscar={buscarEstudiante}
+                    setDni={setDni}
+                    setFormulario={setFormulario}
+                    mensaje={mensaje}
+                  />
+                  {formulario.inscripcionId ? (
+                    formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar" ? (
+                      <Group className="caja-payment-actions" justify="flex-end">
+                        <Button onClick={limpiarPagoActual} variant="default">
+                          Limpiar
+                        </Button>
+                        <Button
+                          color="red"
+                          leftSection={<X size={15} />}
+                          onClick={() => abrirObservarModal(formulario)}
+                        >
+                          Observar / Rechazar
+                        </Button>
+                        <Button
+                          color="green"
+                          leftSection={<Check size={15} />}
+                          onClick={() => aprobarPagoWebDirecto(formulario)}
+                        >
+                          Aprobar Pago
+                        </Button>
+                      </Group>
+                    ) : (
+                      <Group className="caja-payment-actions" justify="flex-end">
+                        <Button onClick={limpiarPagoActual} variant="default">
+                          Limpiar
+                        </Button>
+                        <Button leftSection={<Check size={17} />} loading={guardando} onClick={guardarPago}>
+                          Registrar pago
+                        </Button>
+                      </Group>
+                    )
+                  ) : null}
+                </section>
+              </>
+            ) : (
+              <section className="caja-report-layout">
+                <ReporteResumenCards reporte={reporte} totalRegistros={reporteCaja.length} />
+                <ReporteFiltros
+                  filtros={filtrosReporte}
+                  mediosPago={opcionesReporte.mediosPago}
+                  onChange={actualizarFiltroReporte}
+                  programas={opcionesReporte.programas}
+                />
+                <section className="caja-panel">
+                  <div className="caja-panel-header">
+                    <div>
+                      <h2>Resultado del reporte</h2>
+                      <p>{reporteCaja.length} registros encontrados</p>
+                    </div>
+                  </div>
+                  <ReporteTabla
+                    filas={reporteCaja}
+                    onPagar={abrirPagoDesdeReporte}
+                    onValidarWebPago={aprobarPagoWebDirecto}
+                    onObservarWebPago={abrirObservarModal}
+                    onVerCapturaWebPago={verificarPagoWeb}
+                  />
+                </section>
+              </section>
+            )}
           </>
         )}
       </section>

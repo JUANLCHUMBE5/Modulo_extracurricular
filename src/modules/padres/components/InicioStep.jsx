@@ -6,7 +6,6 @@ import {
   IconChevronLeft as ChevronLeft,
   IconChevronRight as ChevronRight,
   IconLoader2 as Loader2,
-  IconSchool as School,
   IconUserCircle as UserRound,
   IconX as X,
   IconSearch as Search,
@@ -44,6 +43,20 @@ function obtenerEstadoPagoPadres(inscripcion = {}) {
   return "pendiente";
 }
 
+function obtenerDestinoProgramaPadres(programa = {}) {
+  const desdeHorario = dividirHorarioPadres(programa.horario)?.grados || "";
+  const normalizar = (valor = "") => {
+    const texto = String(valor || "").trim();
+    const partes = texto.match(/^(Inicial|Primaria|Secundaria)\s+(.+)$/i);
+    return partes ? `${partes[2].trim()} ${partes[1].trim()}` : texto;
+  };
+  if (desdeHorario) return normalizar(desdeHorario);
+  const grado = String(programa.grado || programa.gradoEstudiante || "").trim();
+  const nivel = String(programa.nivelEducativo || "").trim();
+  if (nivel && grado && !nivel.includes(grado)) return `${grado} ${nivel}`;
+  return normalizar(nivel || grado || "");
+}
+
 function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirProgramaPrincipal }) {
   if (!programa) return null;
   if (!programa) {
@@ -64,6 +77,10 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
   let buttonText = "Inscribir";
   let buttonDisabled = false;
   let buttonAction = onInscribirProgramaPrincipal;
+  const duracion = String(programa.duracionTaller || "").trim();
+  const mostrarDuracion = duracion && !/por definir/i.test(duracion);
+  const nombrePrograma = programa.programa || programa.nombre || "Invitacion disponible";
+  const destinoPrograma = obtenerDestinoProgramaPadres(programa);
 
   if (inscripcion) {
     const estadoPago = obtenerEstadoPagoPadres(inscripcion);
@@ -93,25 +110,31 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
           <PortalBadge tone={inscripcion ? "green" : "orange"}>
             Invitacion
           </PortalBadge>
-          <h2>{programa.programa}</h2>
+          <h2>{nombrePrograma}</h2>
+          {destinoPrograma ? (
+            <p className="padres-flow-program-subtitle">Para {destinoPrograma}</p>
+          ) : null}
         </div>
       </div>
 
       <div className="padres-flow-program-grid">
-        <InfoTile icon={UserRound} label="Profesor(a)" value={programa.docente || programa.responsable || "Por definir"} />
         <InfoTile icon={CalendarDays} label="Horario">
           <HorarioProgramaPadres horario={programa.horario || "Por confirmar"} />
         </InfoTile>
         <InfoTile icon={CalendarDays} label="Vigencia" value={formatearRangoFechasPadres(programa.fechaInicio, programa.fechaFin)} />
+        <InfoTile icon={UserRound} label="Profesor(a)" value={programa.docente || programa.responsable || "Por definir"} />
+        <InfoTile icon={BookOpen} label="Costo" value={formatearSoles(programa.costo)} />
+        {mostrarDuracion ? (
         <InfoTile
           icon={CalendarDays}
           label="Duración"
-          value={programa.duracionTaller || "Por definir"}
+          value={duracion}
         />
-        <InfoTile icon={School} label="Grupo" value={programa.periodo || "Escolar"} />
+        ) : null}
       </div>
 
       <div className="padres-flow-program-note">
+        <p>{inscripcion ? "Revise el estado de su registro para continuar." : "Confirme la participacion de su hijo(a) en este programa."}</p>
         <button 
           className="padres-flow-primary-button" 
           type="button" 

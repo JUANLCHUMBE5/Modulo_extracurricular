@@ -432,6 +432,11 @@ function normalizarEncabezado(valor) {
     apellido: "apellidos",
     apellidos_y_nombres: "alumno",
     cod_estudiante: "codigo_estudiante",
+    codigo: "codigo_estudiante",
+    cod_alumno: "codigo_estudiante",
+    codigo_alumno: "codigo_estudiante",
+    cod_est: "codigo_estudiante",
+    codigoestudiante: "codigo_estudiante",
     curso: "curso_programa",
     curso_taller: "curso_programa",
     id: "dni",
@@ -440,6 +445,9 @@ function normalizarEncabezado(valor) {
     programa: "curso_programa",
     selecci_n: "seleccion",
     taller: "curso_programa",
+    nivel: "nivel_educativo",
+    nivel_educativo: "nivel_educativo",
+    niveleducativo: "nivel_educativo",
   };
   return alias[encabezado] || encabezado;
 }

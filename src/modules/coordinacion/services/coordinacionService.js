@@ -1,4 +1,4 @@
-﻿import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
+import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
 import { isApiMode, apiClient } from "../../../services/apiClient";
 import {
   adaptarPrograma,
@@ -563,7 +563,7 @@ export async function importarInvitados(programaId, lista) {
   return { importados: nuevos.length, duplicados };
 }
 
-export async function previsualizarCargaAlumnos({ periodo, archivoNombre, archivo }) {
+export async function previsualizarCargaAlumnos({ periodo, archivoNombre, archivo, programaId }) {
   await syncApiDb();
   normalizarPeriodosGuardados();
 
@@ -576,6 +576,7 @@ export async function previsualizarCargaAlumnos({ periodo, archivoNombre, archiv
   formData.append("programas", JSON.stringify(prepararProgramasParaPreview(apiDb.programas)));
   formData.append("existentes", JSON.stringify(apiDb.invitadosPorPrograma));
   formData.append("estudiantes", JSON.stringify(apiDb.estudiantes || {}));
+  if (programaId) formData.append("programaId", programaId);
 
   const response = await fetch(`${obtenerApiBase()}/api/coordinacion/cargas/preview`, {
     method: "POST",
@@ -604,7 +605,7 @@ function prepararProgramasParaPreview(programas = []) {
   }));
 }
 
-export async function previsualizarCargaAlumnosMasiva({ periodo, archivos, onProgress }) {
+export async function previsualizarCargaAlumnosMasiva({ periodo, archivos, programaId, onProgress }) {
   const lista = Array.from(archivos || []);
   if (!lista.length) throw new Error("Seleccione al menos un archivo Excel.");
   if (lista.length > 6) throw new Error("Puede subir hasta 6 archivos Excel por carga.");
@@ -628,6 +629,7 @@ export async function previsualizarCargaAlumnosMasiva({ periodo, archivos, onPro
       periodo,
       archivoNombre: archivo.name,
       archivo,
+      programaId,
     });
     previews.push(preview);
 
@@ -811,7 +813,6 @@ function descomponerGradoCarga(valor = "") {
   const numero = texto.match(/\d+/)?.[0] || "";
   return { nivel, numero };
 }
-
 function gradosCoincidenCarga(gradoPrograma, gradoAlumno) {
   if (!gradoPrograma.numero || !gradoAlumno.numero) return false;
   if (gradoPrograma.numero !== gradoAlumno.numero) return false;
@@ -849,7 +850,18 @@ export async function confirmarCargaAlumnos(preview) {
     const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
     const grupoArchivo = validosPorArchivo.get(archivoNombre) || [];
     if (!grupoArchivo.cargaId) {
-      grupoArchivo.cargaId = `CARGA-${Date.now().toString().slice(-8)}-${Math.random().toString(16).slice(2, 6)}`;
+      const todayStr = new Date().toDateString();
+      const existing = (apiDb.historialCargas || []).find(
+        (c) =>
+          c.archivoNombre === "Registro individual" &&
+          c.fecha &&
+          new Date(c.fecha).toDateString() === todayStr
+      );
+      if (archivoNombre === "Registro individual" && existing) {
+        grupoArchivo.cargaId = existing.id;
+      } else {
+        grupoArchivo.cargaId = `CARGA-${Date.now().toString().slice(-8)}-${Math.random().toString(16).slice(2, 6)}`;
+      }
       grupoArchivo.registrosHistorial = [];
     }
     const cargaId = grupoArchivo.cargaId;
@@ -897,28 +909,52 @@ export async function confirmarCargaAlumnos(preview) {
   validosPorArchivo.forEach((grupoArchivo, archivoNombre) => {
     if (!grupoArchivo.cargaId) return;
     const registrosArchivo = registrosPorArchivo.get(archivoNombre) || grupoArchivo;
-    nuevasCargas.push({
-      id: grupoArchivo.cargaId,
-      fecha: fechaActualIso(),
-      periodo: normalizarPeriodo(preview.periodo),
-      archivoNombre,
-      archivos: [archivoNombre],
-      resumen: {
-        importados: grupoArchivo.length,
-        total: registrosArchivo.length,
-        errores: registrosArchivo.filter((item) => item.estado === "Error").length,
-        duplicados: registrosArchivo.filter((item) => item.estado === "Duplicado").length,
-      },
-      registros: grupoArchivo.registrosHistorial || [],
-    });
+    
+    const todayStr = new Date().toDateString();
+    const existingIndex = (apiDb.historialCargas || []).findIndex(
+      (c) =>
+        c.archivoNombre === "Registro individual" &&
+        c.fecha &&
+        new Date(c.fecha).toDateString() === todayStr
+    );
+
+    if (archivoNombre === "Registro individual" && existingIndex !== -1) {
+      const ec = apiDb.historialCargas[existingIndex];
+      ec.registros = [...(ec.registros || []), ...(grupoArchivo.registrosHistorial || [])];
+      ec.resumen = {
+        importados: (ec.resumen?.importados || 0) + grupoArchivo.length,
+        total: (ec.resumen?.total || 0) + registrosArchivo.length,
+        errores: (ec.resumen?.errores || 0) + registrosArchivo.filter((item) => item.estado === "Error").length,
+        duplicados: (ec.resumen?.duplicados || 0) + registrosArchivo.filter((item) => item.estado === "Duplicado").length,
+      };
+    } else {
+      nuevasCargas.push({
+        id: grupoArchivo.cargaId,
+        fecha: fechaActualIso(),
+        periodo: normalizarPeriodo(preview.periodo),
+        archivoNombre,
+        archivos: [archivoNombre],
+        resumen: {
+          importados: grupoArchivo.length,
+          total: registrosArchivo.length,
+          errores: registrosArchivo.filter((item) => item.estado === "Error").length,
+          duplicados: registrosArchivo.filter((item) => item.estado === "Duplicado").length,
+        },
+        registros: grupoArchivo.registrosHistorial || [],
+      });
+    }
   });
 
   apiDb.historialCargas = Array.isArray(apiDb.historialCargas) ? apiDb.historialCargas : [];
   apiDb.historialCargas = [...nuevasCargas, ...apiDb.historialCargas];
 
   await saveApiDb();
+
+  const primerArchivoNombre = validos[0] ? (validos[0].archivoNombre || preview.archivoNombre || "Carga Excel") : "";
+  const returnedCargaId = primerArchivoNombre ? (validosPorArchivo.get(primerArchivoNombre)?.cargaId || "") : "";
+
   return {
-    cargaId: nuevasCargas[0]?.id || "",
+    cargaId: returnedCargaId,
     cargaIds: nuevasCargas.map((carga) => carga.id),
     cargas: nuevasCargas,
     importados: validos.length,

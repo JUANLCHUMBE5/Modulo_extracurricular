@@ -131,7 +131,12 @@ function validarColumnasObligatorias(encabezados) {
   const formatoCambridgeLista = esFormatoCambridgeLista(disponibles);
   const formatoCargaMasiva = esFormatoCargaMasiva(disponibles);
   const obligatorias = formatoCargaMasiva
-    ? ["dni", disponibles.has("alumno") ? "alumno" : "nombres", "grado"]
+    ? [
+        disponibles.has("dni") ? "dni" : "codigo_estudiante",
+        disponibles.has("alumno") ? "alumno" : "nombres",
+        "grado",
+        "nivel_educativo"
+      ]
     : formatoEstandar
     ? ["dni", "alumno", "nivel_educativo", "grado", "seccion", "curso_programa"]
     : formatoCambridgeLista
@@ -251,7 +256,11 @@ function normalizarFila(fila) {
 function validarFilaCarga(fila, programaDetectado, opciones = {}) {
   const errores = [...(fila.erroresDatos || [])];
   const esCambridge = programaDetectado && esProgramaCambridge(programaDetectado);
-  if (fila.dni && !/^\d{8}$/.test(fila.dni)) errores.push("DNI invalido. Debe tener 8 digitos.");
+  if (!fila.dni) {
+    errores.push("Falta DNI y no se pudo resolver con el codigo de estudiante.");
+  } else if (!/^\d{8}$/.test(fila.dni)) {
+    errores.push("DNI invalido. Debe tener 8 digitos.");
+  }
   if (!textoSeguro(fila.alumno || `${fila.nombres} ${fila.apellidos}`)) errores.push("Falta alumno.");
   if (!textoSeguro(fila.grado)) errores.push("Falta grado.");
   if (!opciones.programaSeleccionado) {
@@ -314,9 +323,10 @@ function coincideCurso(curso, programa) {
 }
 
 function esFormatoCargaMasiva(disponibles) {
-  return disponibles.has("dni") &&
+  return (disponibles.has("dni") || disponibles.has("codigo_estudiante")) &&
     disponibles.has("grado") &&
-    (disponibles.has("alumno") || disponibles.has("nombres"));
+    (disponibles.has("alumno") || disponibles.has("nombres")) &&
+    disponibles.has("nivel_educativo");
 }
 
 function crearIndiceEstudiantes(estudiantes = {}) {
@@ -364,8 +374,28 @@ function resolverEstudianteBase(fila, indice) {
     };
   }
 
+  const updatedFila = { ...fila };
+  if (!updatedFila.dni && estudiante.dni) {
+    updatedFila.dni = estudiante.dni;
+  }
+  if (!updatedFila.codigoEstudiante && estudiante.codigoEstudiante) {
+    updatedFila.codigoEstudiante = estudiante.codigoEstudiante;
+  }
+  if (!updatedFila.nivelEducativo && (estudiante.nivel || estudiante.nivelEducativo)) {
+    updatedFila.nivelEducativo = estudiante.nivel || estudiante.nivelEducativo;
+  }
+  if (!updatedFila.seccion && estudiante.seccion) {
+    updatedFila.seccion = estudiante.seccion;
+  }
+  if (estudiante.nombres) {
+    const parts = separarAlumnoCompleto(estudiante.nombres);
+    updatedFila.nombres = parts.nombres;
+    updatedFila.apellidos = parts.apellidos;
+    updatedFila.alumno = estudiante.nombres;
+  }
+
   return {
-    ...fila,
+    ...updatedFila,
     estudianteRegistradoDni: estudiante.dni || "",
     estudianteRegistradoCodigo: estudiante.codigoEstudiante || "",
     estudianteRegistradoNombre: estudiante.nombres || "",
@@ -412,8 +442,16 @@ function normalizarEncabezado(valor) {
   const alias = {
     apellido: "apellidos",
     apellidos_y_nombres: "alumno",
+    nombre_y_apellido: "alumno",
+    nombre_y_apellidos: "alumno",
+    nombre_apellido: "alumno",
+    nombre_apellidos: "alumno",
     cod_estudiante: "codigo_estudiante",
     codigo: "codigo_estudiante",
+    cod_alumno: "codigo_estudiante",
+    codigo_alumno: "codigo_estudiante",
+    cod_est: "codigo_estudiante",
+    codigoestudiante: "codigo_estudiante",
     curso: "curso_programa",
     curso_taller: "curso_programa",
     nombre: "nombres",
@@ -421,6 +459,9 @@ function normalizarEncabezado(valor) {
     programa: "curso_programa",
     selecci_n: "seleccion",
     taller: "curso_programa",
+    nivel: "nivel_educativo",
+    nivel_educativo: "nivel_educativo",
+    niveleducativo: "nivel_educativo",
   };
   return alias[encabezado] || encabezado;
 }

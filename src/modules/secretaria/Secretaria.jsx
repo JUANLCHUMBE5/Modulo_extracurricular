@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   IconLogout as LogOut,
@@ -322,10 +322,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       tipoAlumnoVerano: periodo === "verano" ? "Alumno interno" : formularioInicial.tipoAlumnoVerano,
       colegioProcedencia: periodo === "verano" ? (registroExistente?.colegioProcedencia || "Colegio San Rafael") : "",
     });
-    if (!encontrado.tieneInvitacion && periodo === "escolar" && programasCompatibles.length === 0) {
-      setMensaje("No hay programas de invitación masiva disponibles para el grado del estudiante.");
-      return;
-    }
     if (encontrado.tieneInvitacion && encontrado.programaDisponible === false) {
       setMensaje("El alumno esta cargado por Coordinación Académica, pero el programa no tiene horario para su grado. Coordinación Académica debe agregar el turno antes de inscribir.");
       return;

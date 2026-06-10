@@ -8,13 +8,16 @@ export function prepararComunicadoPadres(programa, estudiante) {
   const area = obtenerAreaPrograma(programa?.area || titulo);
   const alumno = estudiante?.nombres || "el estudiante";
   const esCambridge = esProgramaCambridgePadres(programa);
+  const esClubTareas = esProgramaClubTareasPadres(programa);
   const textoWord = limpiarComunicadoWord(programa?.comunicado || "", { area, programa: titulo, alumno });
   const parrafos = textoWord
     ? textoWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
     : esCambridge
       ? crearComunicadoCambridgePadres(programa, estudiante, titulo)
+      : esClubTareas
+        ? crearComunicadoClubTareasPadres(programa, estudiante, titulo, area)
       : crearComunicadoBasicoPadres(programa, estudiante, titulo);
-  const indicaciones = obtenerIndicacionesProgramaPadres(programa, { esCambridge });
+  const indicaciones = obtenerIndicacionesProgramaPadres(programa, { esCambridge, esClubTareas });
   const detalleFormato = obtenerDetalleFormatoPadres(programa);
   const resumenParrafos = resumirComunicadoPadres(parrafos, programa, detalleFormato);
   const datosCambridge = esCambridge ? obtenerDatosCambridgePadres(programa, estudiante) : null;
@@ -113,6 +116,16 @@ export function esProgramaCambridgePadres(programa) {
   return texto.includes("cambridge");
 }
 
+function esProgramaClubTareasPadres(programa) {
+  const texto = normalizarTextoPadres([
+    programa?.programa,
+    programa?.nombre,
+    programa?.categoria,
+    programa?.plantilla,
+  ].filter(Boolean).join(" "));
+  return texto.includes("club de tareas") || texto.includes("club tareas");
+}
+
 export function describirSeleccionCambridgePadres(valor = "") {
   const seleccion = String(valor || "").trim().toUpperCase();
   const opciones = {
@@ -162,6 +175,26 @@ function crearComunicadoBasicoPadres(programa, estudiante, titulo) {
   ];
 }
 
+function crearComunicadoClubTareasPadres(programa, estudiante, titulo, area) {
+  const alumno = estudiante?.nombres || "el estudiante";
+  const grado = [estudiante?.grado, estudiante?.seccion ? `Seccion ${estudiante.seccion}` : ""]
+    .filter(Boolean)
+    .join(" - ");
+  const vigencia = formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin);
+  const horario = repararTexto(String(programa?.horario || "").trim()) || "Por confirmar";
+  const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
+  const modalidad = programa?.modalidadCobro ? ` Modalidad de cobro: ${programa.modalidadCobro}.` : "";
+  const responsable = repararTexto(String(programa?.responsable || programa?.docente || "").trim());
+
+  return [
+    `El colegio informa que ${alumno}${grado ? ` del aula ${grado}` : ""} tiene disponible el ${titulo}, orientado al acompanamiento y refuerzo de tareas del area de ${area}.`,
+    `El programa se desarrollara del ${vigencia.replace(/^Del\s+/i, "")}. Horario asignado: ${horario}.`,
+    `Costo del programa: ${costo}.${modalidad}`,
+    responsable ? `Responsable del programa: ${responsable}.` : "Coordinacion Academica comunicara el responsable asignado antes del inicio.",
+    "La familia debe revisar esta informacion y confirmar la aceptacion para continuar con la inscripcion.",
+  ];
+}
+
 function obtenerDatosCambridgePadres(programa, estudiante) {
   const seleccion = String(programa?.seleccion || estudiante?.seleccion || "").trim().toUpperCase();
   const nivelCambridge = String(programa?.nivelCambridge || estudiante?.nivelCambridge || "").trim();
@@ -169,7 +202,7 @@ function obtenerDatosCambridgePadres(programa, estudiante) {
   return { seleccion, nivelCambridge };
 }
 
-function obtenerIndicacionesProgramaPadres(programa, { esCambridge = false } = {}) {
+function obtenerIndicacionesProgramaPadres(programa, { esCambridge = false, esClubTareas = false } = {}) {
   const desdeFormato = [
     ...extraerIndicacionesDesdeTexto(programa?.requisitos),
     ...extraerIndicacionesDesdeTexto(programa?.detalleAlmuerzo, { soloSeccion: true }),
@@ -183,6 +216,14 @@ function obtenerIndicacionesProgramaPadres(programa, { esCambridge = false } = {
     return [
       "Debe revisar y llevar los materiales de preparación Cambridge solicitados por el docente.",
       "Debe participar en los simulacros y actividades programadas para la certificación.",
+    ];
+  }
+
+  if (esClubTareas) {
+    return [
+      "El estudiante debe asistir con sus cuadernos, libros o tareas pendientes del area correspondiente.",
+      "La familia debe verificar el horario asignado antes de confirmar la inscripcion.",
+      "El pago se registra segun la modalidad indicada por el colegio.",
     ];
   }
 

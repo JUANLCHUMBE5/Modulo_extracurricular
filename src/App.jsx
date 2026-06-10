@@ -56,8 +56,8 @@ const moduleShortcutGroups = [
     title: "Módulo Coordinación Académica",
     items: [
       { id: "coordinacion-programas", label: "Gestion de Programas", module: "coordinacion", view: "programas", permissions: ["programas.crear", "programas.editar"], icon: BookOpen },
-      { id: "coordinacion-carga", label: "Carga Excel", module: "coordinacion", view: "carga", permissions: ["grupos.crear", "grupos.editar"], icon: Upload },
-      { id: "coordinacion-documentos", label: "Plantillas / Documentos", module: "coordinacion", view: "documentos", permissions: ["programas.crear", "programas.editar"], icon: FileText },
+      { id: "coordinacion-carga", label: "Cargar Invitados", module: "coordinacion", view: "carga", permissions: ["grupos.crear", "grupos.editar"], icon: Upload },
+      { id: "coordinacion-documentos", label: "Plantillas y Documentos", module: "coordinacion", view: "documentos", permissions: ["programas.crear", "programas.editar"], icon: FileText },
     ],
   },
   {

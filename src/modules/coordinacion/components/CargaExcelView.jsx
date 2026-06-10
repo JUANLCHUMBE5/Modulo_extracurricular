@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Alert as MantineAlert } from "@mantine/core";
 import {
   IconAlertCircle as AlertCircle,
@@ -104,9 +105,36 @@ function CargaExcelView({
 }) {
   const programasCarga = programasDisponibles(programas);
 
+  const [paginaActual, setPaginaActual] = useState(1);
+
+  const historialFiltrado = historialCargas.filter((carga) => {
+    const esIndividual =
+      carga.archivoNombre === "Registro individual" ||
+      (Array.isArray(carga.archivos) && carga.archivos.includes("Registro individual"));
+    return modoCargaAlumnos === "individual" ? esIndividual : !esIndividual;
+  });
+
+  const itemsPorPagina = 10;
+  const totalPaginas = Math.ceil(historialFiltrado.length / itemsPorPagina);
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [modoCargaAlumnos]);
+
+  useEffect(() => {
+    if (paginaActual > totalPaginas && totalPaginas > 0) {
+      setPaginaActual(totalPaginas);
+    }
+  }, [totalPaginas, paginaActual]);
+
+  const historialPaginado = historialFiltrado.slice(
+    (paginaActual - 1) * itemsPorPagina,
+    paginaActual * itemsPorPagina
+  );
+
   return (
     <>
-      <header className="coord-topbar"><h1>CARGA MASIVA</h1></header>
+      <header className="coord-topbar"><h1>CARGAR INVITADOS</h1></header>
       <section className="coord-workspace coord-workspace-single coord-workspace-upload">
         <article className="coord-card coord-search-card coord-upload-card">
           <div className="coord-upload-tabs" role="tablist" aria-label="Tipo de carga de alumnos">
@@ -354,49 +382,74 @@ function CargaExcelView({
               </div>
             </div>
 
-            {historialCargas.length ? (
-              <div className="coord-table-wrap">
-                <table className="coord-table">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Archivo</th>
-                      <th>Nombre</th>
-                      <th>Grado</th>
-                      <th>Taller</th>
-                      <th>Nivel</th>
-                      <th>Importados</th>
-                      <th>Errores</th>
-                      <th>Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historialCargas.map((carga) => (
-                      <tr key={carga.id}>
-                        <td>{formatearFechaCarga(carga.fecha)}</td>
-                        <td>{Array.isArray(carga.archivos) && carga.archivos.length ? carga.archivos.join(", ") : carga.archivoNombre || carga.id}</td>
-                        <td>{resumirCampoCarga(carga, (item) => item.nombres)}</td>
-                        <td>{resumirCampoCarga(carga, (item) => item.grado)}</td>
-                        <td>{resumirProgramasCarga(carga)}</td>
-                        <td>{resumirCampoCarga(carga, (item) => item.nivelEducativo || obtenerNivelDesdeGrado(item.grado))}</td>
-                        <td>{carga.resumen?.importados ?? carga.resumen?.validos ?? carga.registros?.length ?? 0}</td>
-                        <td>{carga.resumen?.errores ?? 0}</td>
-                        <td>
-                          <button
-                            className="coord-danger-button coord-upload-history-delete"
-                            type="button"
-                            onClick={() => eliminarCargaExcel(carga)}
-                            disabled={eliminandoCargaId === carga.id}
-                          >
-                            {eliminandoCargaId === carga.id ? <Loader2 className="coord-spin" size={15} /> : <Trash size={15} />}
-                            <span>{eliminandoCargaId === carga.id ? "Borrando" : "Borrar"}</span>
-                          </button>
-                        </td>
+            {historialFiltrado.length ? (
+              <>
+                <div className="coord-table-wrap">
+                  <table className="coord-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Archivo</th>
+                        <th>Grado</th>
+                        <th>Taller</th>
+                        <th>Nivel</th>
+                        <th>Importados</th>
+                        <th>Errores</th>
+                        <th>Acción</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {historialPaginado.map((carga) => (
+                        <tr key={carga.id}>
+                          <td>{formatearFechaCarga(carga.fecha)}</td>
+                          <td>{Array.isArray(carga.archivos) && carga.archivos.length ? carga.archivos.join(", ") : carga.archivoNombre || carga.id}</td>
+                          <td>{resumirCampoCarga(carga, (item) => item.grado)}</td>
+                          <td>{resumirProgramasCarga(carga)}</td>
+                          <td>{resumirCampoCarga(carga, (item) => item.nivelEducativo || obtenerNivelDesdeGrado(item.grado))}</td>
+                          <td>{carga.resumen?.importados ?? carga.resumen?.validos ?? carga.registros?.length ?? 0}</td>
+                          <td>{carga.resumen?.errores ?? 0}</td>
+                          <td>
+                            <button
+                              className="coord-danger-button coord-upload-history-delete"
+                              type="button"
+                              onClick={() => eliminarCargaExcel(carga)}
+                              disabled={eliminandoCargaId === carga.id}
+                            >
+                              {eliminandoCargaId === carga.id ? <Loader2 className="coord-spin" size={15} /> : <Trash size={15} />}
+                              <span>{eliminandoCargaId === carga.id ? "Borrando" : "Borrar"}</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {totalPaginas > 1 && (
+                  <div className="coord-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", marginTop: "20px" }}>
+                    <button
+                      type="button"
+                      className="coord-secondary-button"
+                      style={{ minWidth: "100px", padding: "6px 12px" }}
+                      onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
+                      disabled={paginaActual === 1}
+                    >
+                      Anterior
+                    </button>
+                    <span style={{ fontSize: "14px", fontWeight: "500", color: "#4b5563" }}>
+                      Página {paginaActual} de {totalPaginas}
+                    </span>
+                    <button
+                      type="button"
+                      className="coord-secondary-button"
+                      style={{ minWidth: "100px", padding: "6px 12px" }}
+                      onClick={() => setPaginaActual((prev) => Math.min(prev + 1, totalPaginas))}
+                      disabled={paginaActual === totalPaginas}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="coord-empty coord-upload-history-empty">
                 <ListCheck size={18} />

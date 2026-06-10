@@ -13,6 +13,7 @@ export default function ProgramaGrupoHorarioModal({
   grupoDraftError,
   grupoDraftErrorTick,
   guardarGrupoDraft,
+  esCambridgeForm = false,
   nivelesGrados,
   toggleGradoDraft,
   actualizarGrupoDraft,
@@ -40,7 +41,7 @@ export default function ProgramaGrupoHorarioModal({
           <section className="coord-form-section coord-nested-turn-section">
             <div className="coord-section-grid">
               <div className="coord-field coord-field-full">
-                <label>Grados del bloque *</label>
+                <label>Grados del bloque{esCambridgeForm ? "" : " *"}</label>
                 <GradeSelector niveles={nivelesGrados} seleccionados={grupoDraft.grados || []} onToggle={toggleGradoDraft} />
               </div>
               <div className="coord-field">
@@ -73,6 +74,16 @@ export default function ProgramaGrupoHorarioModal({
               <div className="coord-field"><label>Almuerzo fin</label><input type="time" value={grupoDraft.almuerzoFin || "15:10"} onChange={e => actualizarGrupoDraft("almuerzoFin", e.target.value)} /></div>
               <div className="coord-field"><label>Docente/Tutor responsable *</label><input value={grupoDraft.responsable || ""} onChange={e => actualizarGrupoDraft("responsable", e.target.value)} placeholder="Ej: Prof. Ana Torres" /></div>
               <div className="coord-field"><label>Apoyo / auxiliar</label><input value={grupoDraft.tutora || ""} onChange={e => actualizarGrupoDraft("tutora", e.target.value)} placeholder="Ej: Srta. Lucia Vega" /></div>
+              <div className="coord-field">
+                <label>Cupos *</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={grupoDraft.cupos !== undefined ? grupoDraft.cupos : ""}
+                  onChange={e => actualizarGrupoDraft("cupos", e.target.value)}
+                  placeholder="Ej: 20"
+                />
+              </div>
             </div>
           </section>
         </div>
