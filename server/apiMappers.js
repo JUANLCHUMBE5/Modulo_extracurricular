@@ -455,7 +455,14 @@ export function mapDbEnrollmentToApi(item, db = null) {
     apoderado: item.apoderado || "",
     telefono_apoderado: item.telefono || "",
     correo_apoderado: item.correo || "",
-    estado_pago: normalizePaymentStateToFrontend(item.estadoPago || "Pendiente"),
+    estado_pago: (() => {
+      const payments = db?.pagos || [];
+      const p = payments.find(pay => pay.inscripcionId === item.id) || payments.find(pay => pay.dniEstudiante === item.dniEstudiante && (pay.programaId === item.programaId || normalizarTextoApi(pay.programa) === normalizarTextoApi(item.programa)));
+      if (p) {
+        return normalizePaymentStateToFrontend(p.estado || "pendiente");
+      }
+      return "pendiente";
+    })(),
     estado_inscripcion: item.estadoInscripcion || "",
     pago_id: item.pagoId || "",
     pago_referencia: item.pagoReferencia || "",

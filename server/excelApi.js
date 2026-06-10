@@ -2345,7 +2345,8 @@ app.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"
           fechaRegistro: e.fechaRegistro || "",
           fechaPago: p ? (p.fechaPago || p.fecha) : "",
           apoderado: e.apoderado || "",
-          telefono: e.telefono || ""
+          telefono: e.telefono || "",
+          puedePagarCaja: true
         };
       });
     }
