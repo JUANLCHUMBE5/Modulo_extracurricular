@@ -734,6 +734,37 @@
   width: fit-content;
 }
 
+.coord-documents-saved-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 12px 14px;
+  border: 1px solid #b9dcd4;
+  border-radius: 10px;
+  color: #0f766e;
+  background: #f0fdfa;
+}
+
+.coord-documents-saved-state svg {
+  flex: 0 0 auto;
+}
+
+.coord-documents-saved-state strong {
+  display: block;
+  color: #0f3f3a;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.coord-documents-saved-state span {
+  display: block;
+  margin-top: 2px;
+  color: #48645f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .coord-documents-setup {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);

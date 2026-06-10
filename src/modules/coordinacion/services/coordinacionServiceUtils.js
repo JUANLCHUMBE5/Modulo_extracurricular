@@ -215,9 +215,19 @@ export function ordenarGradosAplicables(grados) {
 }
 
 export function claveAlumno(alumno) {
-  if (alumno.dni) return `dni:${alumno.dni}`;
-  const nombre = `${alumno.nombres || ""} ${alumno.apellidos || ""}`.trim().toLowerCase();
-  return nombre ? `nombre:${nombre}:${alumno.grado}:${alumno.seccion}` : "";
+  const dni = String(alumno.dni || "").replace(/\D/g, "");
+  if (dni) return `dni:${dni}`;
+  if (alumno.codigoEstudiante) return `codigo:${normalizarTextoClaveAlumno(alumno.codigoEstudiante)}`;
+  const nombre = normalizarTextoClaveAlumno(`${alumno.nombres || ""} ${alumno.apellidos || ""}`.trim());
+  return nombre ? `nombre:${nombre}:${normalizarTextoClaveAlumno(alumno.grado)}:${normalizarTextoClaveAlumno(alumno.seccion)}` : "";
+}
+
+function normalizarTextoClaveAlumno(valor = "") {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 function coincideCurso(curso, programa) {

@@ -85,6 +85,21 @@ function esProgramaCambridgeApi(programa = {}) {
     );
 }
 
+function claveAlumnoInvitadoApi(alumno = {}) {
+  const dni = limpiarDni(alumno.dni);
+  if (dni) return `dni:${dni}`;
+  const codigo = normalizarTextoApi(alumno.codigoEstudiante || alumno.codigo_estudiante);
+  if (codigo) return `codigo:${codigo}`;
+  const nombre = normalizarTextoApi(
+    alumno.nombres ||
+    alumno.alumno ||
+    `${alumno.nombre || ""} ${alumno.apellidos || ""}`.trim()
+  );
+  const grado = normalizarTextoApi(alumno.grado);
+  const seccion = normalizarTextoApi(alumno.seccion);
+  return nombre ? `nombre:${nombre}:${grado}:${seccion}` : "";
+}
+
 const allowedOrigins = new Set(
   [
     process.env.FRONTEND_URL,
@@ -591,6 +606,7 @@ app.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), asy
       horariosPorGrupo: req.body.horarios_por_grupo || [],
       requisitos: req.body.requisitos || "",
       comunicado: req.body.comunicado || "",
+      comunicadoCompleto: req.body.comunicado_completo || "",
       detalleCosto: req.body.detalle_costo || "",
       detalleAlmuerzo: req.body.detalle_almuerzo || "",
       concesionarios: req.body.concesionarios || "",
@@ -645,6 +661,12 @@ app.post("/api/v1/extracurricular/programas/documento", requireRole(["secretaria
       plantillaBase64: req.body.plantilla_base64 || "",
       plantillaVariables: req.body.plantilla_variables || [],
       plantillaValidada: true,
+      requisitos: req.body.requisitos || "",
+      comunicado: req.body.comunicado || "",
+      comunicadoCompleto: req.body.comunicado_completo || "",
+      detalleCosto: req.body.detalle_costo || "",
+      detalleAlmuerzo: req.body.detalle_almuerzo || "",
+      concesionarios: req.body.concesionarios || "",
       creadoDesdeDocumento: true,
       estado: "Deshabilitado"
     };
@@ -703,6 +725,7 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
       horariosPorGrupo: req.body.horarios_por_grupo || [],
       requisitos: req.body.requisitos || "",
       comunicado: req.body.comunicado || "",
+      comunicadoCompleto: req.body.comunicado_completo || "",
       detalleCosto: req.body.detalle_costo || "",
       detalleAlmuerzo: req.body.detalle_almuerzo || "",
       concesionarios: req.body.concesionarios || "",
@@ -923,6 +946,16 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
       if (!esProgramaCambridgeApi(programaCarga) && !gradoCorrespondeAlProgramaApi(programaCarga, item.grado)) {
         throw new Error("El alumno no esta dentro de su grado correspondiente para este taller.");
       }
+      const claveAlumno = claveAlumnoInvitadoApi(item);
+      const alumnoYaExiste = Boolean(claveAlumno && existentes.some(existente =>
+        claveAlumnoInvitadoApi(existente) === claveAlumno
+      ));
+      if (alumnoYaExiste) {
+        item.estado = "Duplicado";
+        item.errores = [...(item.errores || []), "Alumno ya existe en este taller vigente."];
+        grupoArchivo.duplicadosConfirmacion = (grupoArchivo.duplicadosConfirmacion || 0) + 1;
+        return;
+      }
       agregarGradoProgramaDesdeAlumnoApi(programaCarga, item.grado);
       programasTocados.add(item.programaId);
       const invitado = {
@@ -962,9 +995,15 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
       sincronizarGradosProgramaConInvitadosApi(db, programaId);
     });
 
+    const duplicadosConfirmacionTotal = Array.from(validosPorArchivo.values()).reduce(
+      (total, grupoArchivo) => total + (grupoArchivo.duplicadosConfirmacion || 0),
+      0
+    );
+
     validosPorArchivo.forEach((grupoArchivo, archivoNombre) => {
       if (!grupoArchivo.cargaId) return;
       const registrosArchivo = registrosPorArchivo.get(archivoNombre) || grupoArchivo;
+      const importadosArchivo = (grupoArchivo.registrosHistorial || []).length;
 
       const todayStr = new Date().toDateString();
       const existingIndex = (db.historialCargas || []).findIndex(
@@ -978,12 +1017,13 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
         const ec = db.historialCargas[existingIndex];
         ec.registros = [...(ec.registros || []), ...(grupoArchivo.registrosHistorial || [])];
         ec.resumen = {
-          importados: (ec.resumen?.importados || 0) + grupoArchivo.length,
+          importados: (ec.resumen?.importados || 0) + importadosArchivo,
           total: (ec.resumen?.total || 0) + registrosArchivo.length,
           errores: (ec.resumen?.errores || 0) + registrosArchivo.filter(item => item.estado === "Error").length,
           duplicados: (ec.resumen?.duplicados || 0) + registrosArchivo.filter(item => item.estado === "Duplicado").length
         };
       } else {
+        if (importadosArchivo === 0) return;
         nuevasCargas.push({
           id: grupoArchivo.cargaId,
           fecha: fechaCarga,
@@ -992,7 +1032,7 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
           archivos: [archivoNombre],
           usuario: req.user?.username || "Coordinación Académica",
           resumen: {
-            importados: grupoArchivo.length,
+            importados: importadosArchivo,
             total: registrosArchivo.length,
             errores: registrosArchivo.filter(item => item.estado === "Error").length,
             duplicados: registrosArchivo.filter(item => item.estado === "Duplicado").length
@@ -1012,11 +1052,11 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
 
     await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "CARGAR_EXCEL", {
       cargaIds: nuevasCargas.map(carga => carga.id),
-      cantidad: validos.length,
+      cantidad: validos.length - duplicadosConfirmacionTotal,
       periodo: preview.periodo,
       total: preview.resumen?.total || validos.length,
       errores: preview.resumen?.errores || 0,
-      duplicados: preview.resumen?.duplicados || 0
+      duplicados: (preview.resumen?.duplicados || 0) + duplicadosConfirmacionTotal
     });
     res.json({
       success: true,
@@ -1024,10 +1064,10 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
         cargaId: returnedCargaId,
         cargaIds: nuevasCargas.map(carga => carga.id),
         cargas: nuevasCargas,
-        importados: validos.length,
+        importados: validos.length - duplicadosConfirmacionTotal,
         total: preview.resumen?.total || validos.length,
         errores: preview.resumen?.errores || 0,
-        duplicados: preview.resumen?.duplicados || 0
+        duplicados: (preview.resumen?.duplicados || 0) + duplicadosConfirmacionTotal
       }
     });
   } catch (error) {
@@ -1227,6 +1267,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["sec
         programaCuposDisponibles: cuposDisponiblesInvitado,
         programaModalidadCobro: programaInvitado?.modalidadCobro || "",
         programaRequisitos: programaInvitado?.requisitos || "",
+        programaComunicadoCompleto: programaInvitado?.comunicadoCompleto || "",
         programaFechaInicio: programaInvitado?.fechaInicio || "",
         programaFechaFin: programaInvitado?.fechaFin || "",
         programaDuracionTaller: programaInvitado?.duracionTaller || "",
@@ -1447,6 +1488,7 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       fechaFin: prog.fechaFin,
       requisitos: prog.requisitos || "",
       comunicado: prog.comunicado || "",
+      comunicadoCompleto: prog.comunicadoCompleto || "",
       detalleCosto: prog.detalleCosto || "",
       detalleAlmuerzo: prog.detalleAlmuerzo || "",
       concesionarios: prog.concesionarios || "",
@@ -1655,6 +1697,7 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
           modalidad_cobro: prog.modalidadCobro || "",
           requisitos: prog.requisitos || "",
           comunicado: prog.comunicado || "",
+          comunicado_completo: prog.comunicadoCompleto || "",
           detalle_costo: prog.detalleCosto || "",
           detalle_almuerzo: prog.detalleAlmuerzo || "",
           concesionarios: prog.concesionarios || "",

@@ -146,6 +146,7 @@ export async function crearPrograma(datos) {
       horarios_por_grupo: datos.horariosPorGrupo || [],
       requisitos: datos.requisitos || "",
       comunicado: datos.comunicado || "",
+      comunicado_completo: datos.comunicadoCompleto || "",
       detalle_costo: datos.detalleCosto || "",
       detalle_almuerzo: datos.detalleAlmuerzo || "",
       concesionarios: datos.concesionarios || "",
@@ -187,6 +188,7 @@ export async function crearPrograma(datos) {
     plantillaValidada: Boolean(datos.plantillaValidada),
     requisitos: datos.requisitos || "",
     comunicado: datos.comunicado || "",
+    comunicadoCompleto: datos.comunicadoCompleto || "",
     detalleCosto: datos.detalleCosto || "",
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
@@ -216,6 +218,12 @@ export async function crearProgramaDesdeDocumento(datos) {
       plantilla: datos.plantilla || "",
       plantilla_base64: datos.plantillaBase64 || "",
       plantilla_variables: datos.plantillaVariables || [],
+      comunicado: datos.comunicado || "",
+      comunicado_completo: datos.comunicadoCompleto || "",
+      requisitos: datos.requisitos || "",
+      detalle_costo: datos.detalleCosto || "",
+      detalle_almuerzo: datos.detalleAlmuerzo || "",
+      concesionarios: datos.concesionarios || "",
       creado_desde_documento: true,
       periodo: datos.periodo || "escolar",
       modalidad_cobro: datos.modalidadCobro || "Mensual",
@@ -274,6 +282,7 @@ export async function crearProgramaDesdeDocumento(datos) {
     plantillaValidada: true,
     requisitos: datos.requisitos || "",
     comunicado: datos.comunicado || "",
+    comunicadoCompleto: datos.comunicadoCompleto || "",
     detalleCosto: datos.detalleCosto || "",
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
@@ -316,6 +325,7 @@ export async function editarPrograma(id, datos) {
       horarios_por_grupo: datos.horariosPorGrupo || [],
       requisitos: datos.requisitos || "",
       comunicado: datos.comunicado || "",
+      comunicado_completo: datos.comunicadoCompleto || "",
       detalle_costo: datos.detalleCosto || "",
       detalle_almuerzo: datos.detalleAlmuerzo || "",
       concesionarios: datos.concesionarios || "",
@@ -367,6 +377,7 @@ export async function editarPrograma(id, datos) {
     plantillaValidada: Boolean(datos.plantillaValidada),
     requisitos: datos.requisitos || "",
     comunicado: datos.comunicado || "",
+    comunicadoCompleto: datos.comunicadoCompleto || "",
     detalleCosto: datos.detalleCosto || "",
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
@@ -867,6 +878,14 @@ export async function confirmarCargaAlumnos(preview) {
     const cargaId = grupoArchivo.cargaId;
     const existentes = apiDb.invitadosPorPrograma[item.programaId] || [];
     const programaCarga = apiDb.programas.find((programa) => programa.id === item.programaId);
+    const clave = claveAlumno(item);
+    const alumnoYaExiste = Boolean(clave && existentes.some((existente) => claveAlumno(existente) === clave));
+    if (alumnoYaExiste) {
+      item.estado = "Duplicado";
+      item.errores = [...(item.errores || []), "Alumno ya existe en este taller vigente."];
+      grupoArchivo.duplicadosConfirmacion = (grupoArchivo.duplicadosConfirmacion || 0) + 1;
+      return;
+    }
     agregarGradoProgramaDesdeAlumno(programaCarga, item.grado);
     programasTocados.add(item.programaId);
     const invitado = {
@@ -906,9 +925,15 @@ export async function confirmarCargaAlumnos(preview) {
     sincronizarGradosProgramaConInvitados(programaId);
   });
 
+  const duplicadosConfirmacionTotal = Array.from(validosPorArchivo.values()).reduce(
+    (total, grupoArchivo) => total + (grupoArchivo.duplicadosConfirmacion || 0),
+    0
+  );
+
   validosPorArchivo.forEach((grupoArchivo, archivoNombre) => {
     if (!grupoArchivo.cargaId) return;
     const registrosArchivo = registrosPorArchivo.get(archivoNombre) || grupoArchivo;
+    const importadosArchivo = (grupoArchivo.registrosHistorial || []).length;
     
     const todayStr = new Date().toDateString();
     const existingIndex = (apiDb.historialCargas || []).findIndex(
@@ -922,12 +947,13 @@ export async function confirmarCargaAlumnos(preview) {
       const ec = apiDb.historialCargas[existingIndex];
       ec.registros = [...(ec.registros || []), ...(grupoArchivo.registrosHistorial || [])];
       ec.resumen = {
-        importados: (ec.resumen?.importados || 0) + grupoArchivo.length,
+        importados: (ec.resumen?.importados || 0) + importadosArchivo,
         total: (ec.resumen?.total || 0) + registrosArchivo.length,
         errores: (ec.resumen?.errores || 0) + registrosArchivo.filter((item) => item.estado === "Error").length,
         duplicados: (ec.resumen?.duplicados || 0) + registrosArchivo.filter((item) => item.estado === "Duplicado").length,
       };
     } else {
+      if (importadosArchivo === 0) return;
       nuevasCargas.push({
         id: grupoArchivo.cargaId,
         fecha: fechaActualIso(),
@@ -935,7 +961,7 @@ export async function confirmarCargaAlumnos(preview) {
         archivoNombre,
         archivos: [archivoNombre],
         resumen: {
-          importados: grupoArchivo.length,
+          importados: importadosArchivo,
           total: registrosArchivo.length,
           errores: registrosArchivo.filter((item) => item.estado === "Error").length,
           duplicados: registrosArchivo.filter((item) => item.estado === "Duplicado").length,
@@ -957,10 +983,10 @@ export async function confirmarCargaAlumnos(preview) {
     cargaId: returnedCargaId,
     cargaIds: nuevasCargas.map((carga) => carga.id),
     cargas: nuevasCargas,
-    importados: validos.length,
+    importados: validos.length - duplicadosConfirmacionTotal,
     total: preview.resumen?.total || validos.length,
     errores: preview.resumen?.errores || 0,
-    duplicados: preview.resumen?.duplicados || 0,
+    duplicados: (preview.resumen?.duplicados || 0) + duplicadosConfirmacionTotal,
   };
 }
 

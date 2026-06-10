@@ -9,17 +9,29 @@ export function prepararComunicadoPadres(programa, estudiante) {
   const alumno = estudiante?.nombres || "el estudiante";
   const esCambridge = esProgramaCambridgePadres(programa);
   const esClubTareas = esProgramaClubTareasPadres(programa);
-  const textoWord = limpiarComunicadoWord(programa?.comunicado || "", { area, programa: titulo, alumno });
-  const parrafos = textoWord
-    ? textoWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
-    : esCambridge
-      ? crearComunicadoCambridgePadres(programa, estudiante, titulo)
-      : esClubTareas
-        ? crearComunicadoClubTareasPadres(programa, estudiante, titulo, area)
+  const datosComunicado = crearDatosComunicadoPadres(programa, estudiante, titulo);
+  const textoCompletoWord = limpiarComunicadoWord(
+    programa?.comunicadoCompleto || programa?.comunicado_completo || programa?.comunicado || "",
+    { area, programa: titulo, alumno, datos: datosComunicado }
+  );
+  const textoResumenWord = limpiarComunicadoWord(
+    programa?.comunicado || textoCompletoWord,
+    { area, programa: titulo, alumno, datos: datosComunicado }
+  );
+  const parrafosFallback = esCambridge
+    ? crearComunicadoCambridgePadres(programa, estudiante, titulo)
+    : esClubTareas
+      ? crearComunicadoClubTareasPadres(programa, estudiante, titulo, area)
       : crearComunicadoBasicoPadres(programa, estudiante, titulo);
+  const parrafos = textoCompletoWord
+    ? textoCompletoWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
+    : parrafosFallback;
+  const parrafosResumenBase = textoResumenWord
+    ? textoResumenWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
+    : parrafosFallback;
   const indicaciones = obtenerIndicacionesProgramaPadres(programa, { esCambridge, esClubTareas });
   const detalleFormato = obtenerDetalleFormatoPadres(programa);
-  const resumenParrafos = resumirComunicadoPadres(parrafos, programa, detalleFormato);
+  const resumenParrafos = resumirComunicadoPadres(parrafosResumenBase, programa, detalleFormato);
   const datosCambridge = esCambridge ? obtenerDatosCambridgePadres(programa, estudiante) : null;
 
   return {
@@ -406,8 +418,79 @@ function normalizarTextoPadres(valor) {
     .toLowerCase();
 }
 
+function crearDatosComunicadoPadres(programa, estudiante, titulo) {
+  const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
+  const grado = programa?.grado || programa?.gradoEstudiante || estudiante?.grado || "";
+  const seccion = programa?.seccion || estudiante?.seccion || "";
+  const gradoSeccion = [grado, seccion ? `Seccion ${seccion}` : ""].filter(Boolean).join(" - ");
+  return {
+    TITULO: titulo,
+    FECHA: "",
+    FECHA_CARTA: "",
+    ANIO_CARTA: new Date().getFullYear(),
+    ANIO_CERT: new Date().getFullYear(),
+    AREA: obtenerAreaPrograma(programa?.area || titulo),
+    PROG: titulo,
+    PROGRAMA: titulo,
+    ALU: estudiante?.nombres || programa?.nombresEstudiante || "el estudiante",
+    ALUMNO: estudiante?.nombres || programa?.nombresEstudiante || "el estudiante",
+    AUL: gradoSeccion || grado || "Por definir",
+    AULA: gradoSeccion || grado || "Por definir",
+    GR_SEC: gradoSeccion || grado || "Por definir",
+    GRADO: grado || "Por definir",
+    NIV: programa?.nivelEducativo || estudiante?.nivel || estudiante?.nivelEducativo || "",
+    NIVEL: programa?.nivelEducativo || estudiante?.nivel || estudiante?.nivelEducativo || "",
+    HORARIO: repararTexto(programa?.horario || "Por confirmar"),
+    DIA: repararTexto(programa?.dia || ""),
+    DIAS: repararTexto(programa?.dias || ""),
+    ALM: "",
+    ALM_1: "",
+    ALM_2: "",
+    CLASE: repararTexto(programa?.horario || ""),
+    CLASE_1: repararTexto(programa?.horario || ""),
+    CLASE_2: "",
+    HOR_ALM: "",
+    HOR_ALM_1: "",
+    HOR_ALM_2: "",
+    DOCENTE: programa?.responsable || programa?.docente || "Por definir",
+    RESPONSABLE: programa?.responsable || programa?.docente || "Por definir",
+    COSTO: costo,
+    PAGO: programa?.modalidadCobro || "Por confirmar",
+    INI: programa?.fechaInicio ? formatearFechaPeru(programa.fechaInicio, programa.fechaInicio) : "",
+    FIN: programa?.fechaFin ? formatearFechaPeru(programa.fechaFin, programa.fechaFin) : "",
+    DUR: programa?.duracionTaller || formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin),
+    CICLO: programa?.cicloI || "",
+    CICLO_I: programa?.cicloI || "",
+    CICLO_II: programa?.cicloII || "",
+    MES_EVAL: "",
+    N1: gradoSeccion || grado || "",
+    N2: "",
+    N3: "",
+    N4: "",
+    NIVEL_1: gradoSeccion || grado || "",
+    NIVEL_2: "",
+    NIVEL_CAMBRIDGE: programa?.nivelCambridge || estudiante?.nivelCambridge || "",
+    SELECCION: describirSeleccionCambridgePadres(programa?.seleccion || estudiante?.seleccion || ""),
+    CHK_A: String(programa?.seleccion || estudiante?.seleccion || "").trim().toUpperCase() === "A" ? "X" : "",
+    CHK_B: String(programa?.seleccion || estudiante?.seleccion || "").trim().toUpperCase() === "B" ? "X" : "",
+    CHK_C: String(programa?.seleccion || estudiante?.seleccion || "").trim().toUpperCase() === "C" ? "X" : "",
+    APOD: "",
+    CEL: "",
+  };
+}
+
+function reemplazarVariablesComunicado(texto, datos = {}) {
+  let salida = String(texto || "");
+  Object.entries(datos).forEach(([clave, valor]) => {
+    const seguro = valor == null ? "" : String(valor);
+    const patron = new RegExp(`\\{\\{\\s*${clave}\\s*\\}\\}|\\[\\[\\s*${clave}\\s*\\]\\]|\\{\\s*${clave}\\s*\\}`, "gi");
+    salida = salida.replace(patron, seguro);
+  });
+  return salida.replace(/\{\{[^}]+\}\}|\[\[[^\]]+\]\]|\{[A-Z0-9_]+\}/gi, "");
+}
+
 function limpiarComunicadoWord(texto, datos) {
-  return repararTexto(texto)
+  return repararTexto(reemplazarVariablesComunicado(texto, datos.datos || {}))
     .replace(/\{\{\s*TITULO\s*\}\}/gi, datos.programa)
     .replace(/\{\{\s*FECHA\s*\}\}/gi, "")
     .replace(/\{\{\s*AREA\s*\}\}/gi, datos.area)

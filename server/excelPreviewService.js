@@ -403,9 +403,11 @@ function resolverEstudianteBase(fila, indice) {
 }
 
 function claveAlumno(alumno) {
-  if (alumno.dni) return `dni:${alumno.dni}`;
-  const nombre = `${alumno.nombres || ""} ${alumno.apellidos || ""}`.trim().toLowerCase();
-  return nombre ? `nombre:${nombre}:${alumno.grado}` : "";
+  const dni = String(alumno.dni || "").replace(/\D/g, "");
+  if (dni) return `dni:${dni}`;
+  if (alumno.codigoEstudiante) return `codigo:${normalizarComparacion(alumno.codigoEstudiante)}`;
+  const nombre = normalizarComparacion(`${alumno.nombres || ""} ${alumno.apellidos || ""}`.trim());
+  return nombre ? `nombre:${nombre}:${normalizarComparacion(alumno.grado)}:${normalizarComparacion(alumno.seccion)}` : "";
 }
 
 function limpiarTexto(valor) {

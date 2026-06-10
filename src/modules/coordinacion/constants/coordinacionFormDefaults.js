@@ -8,7 +8,7 @@ export const formInicial = {
   cicloI: "", cicloII: "",
   responsable: "", tutora: "", plantilla: "", plantillaBase64: "", plantillaVariables: [],
   plantillaValidada: false, plantillaActualizadaEn: "", requisitos: "",
-  comunicado: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
+  comunicado: "", comunicadoCompleto: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
   requiereUniforme: false, requiereIndumentaria: false, invitacionMasiva: false, alcanceInvitacionMasiva: "colegio",
   anuncioImagen: "", anuncioImagenNombre: "", anuncioImagenTamano: 0, anuncioImagenComprimida: false,
 };

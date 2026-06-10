@@ -11,6 +11,14 @@ import SummaryBox from "./SummaryBox";
 import TemplateUploadField from "./TemplateUploadField";
 import { etiquetaCampoDocumento, resumirTextoDocumento } from "../utils/wordTemplateUtils";
 
+function normalizarNombrePlantilla(valor = "") {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
 function DocumentosView({
   abrirEditar,
   autocompletarDesdePlantilla,
@@ -37,6 +45,9 @@ function DocumentosView({
   const variablesListasDocumento = lecturaDocumento?.variablesListasModelo ||
     (lecturaDocumento?.variables || []).filter((variable) => variablesRequeridasDocumento.includes(variable));
   const variablesFaltantesDocumento = lecturaDocumento?.variablesFaltantes || [];
+  const plantillaYaGuardada = Boolean(form.plantilla && historialPlantillas.some((programa) =>
+    normalizarNombrePlantilla(programa.plantilla) === normalizarNombrePlantilla(form.plantilla)
+  ));
   const variablesPendientesTexto = variablesFaltantesDocumento.length
     ? `Faltan: ${variablesFaltantesDocumento.join(", ").toUpperCase()}`
     : "Formato completo";
@@ -66,38 +77,48 @@ function DocumentosView({
 
           <div className="coord-template-workspace">
             <div className="coord-documents-simple-panel">
-              <div className="coord-documents-upload-row">
-                <TemplateUploadField
-                  plantillaInputKey={plantillaInputKey}
-                  form={form}
-                  programas={programas}
-                  variablesPlantillaRequeridas={variablesPlantillaAceptadas}
-                  onSelect={seleccionarPlantilla}
-                  onRemove={quitarPlantilla}
-                  onAutoFill={autocompletarDesdePlantilla}
-                  onUseExisting={usarPlantillaExistente}
-                  modoDocumentos
-                />
-                <div className="coord-documents-program-field">
-                  <label>Nombre para guardar</label>
-                  <input
-                    value={form.nombre}
-                    onChange={(event) => setForm((actual) => ({ ...actual, nombre: event.target.value }))}
-                    placeholder="Ejemplo: Club de tareas Matematica"
-                  />
+              {plantillaYaGuardada ? (
+                <div className="coord-documents-saved-state">
+                  <CheckCircle2 size={18} />
+                  <div>
+                    <strong>Plantilla ya guardada</strong>
+                    <span>Este documento ya figura en el historial de plantillas subidas.</span>
+                  </div>
                 </div>
-                <button
-                  className="coord-register-button"
-                  type="button"
-                  onClick={programaDocs ? guardarDocumentosPrograma : guardarDocumentoComoPrograma}
-                  disabled={guardando || !form.plantillaValidada}
-                >
-                  {guardando ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
-                  <span>{guardando ? "Guardando" : programaDocs ? "Actualizar documento" : "Guardar plantilla"}</span>
-                </button>
-              </div>
+              ) : (
+                <div className="coord-documents-upload-row">
+                  <TemplateUploadField
+                    plantillaInputKey={plantillaInputKey}
+                    form={form}
+                    programas={programas}
+                    variablesPlantillaRequeridas={variablesPlantillaAceptadas}
+                    onSelect={seleccionarPlantilla}
+                    onRemove={quitarPlantilla}
+                    onAutoFill={autocompletarDesdePlantilla}
+                    onUseExisting={usarPlantillaExistente}
+                    modoDocumentos
+                  />
+                  <div className="coord-documents-program-field">
+                    <label>Nombre para guardar</label>
+                    <input
+                      value={form.nombre}
+                      onChange={(event) => setForm((actual) => ({ ...actual, nombre: event.target.value }))}
+                      placeholder="Ejemplo: Club de tareas Matematica"
+                    />
+                  </div>
+                  <button
+                    className="coord-register-button"
+                    type="button"
+                    onClick={programaDocs ? guardarDocumentosPrograma : guardarDocumentoComoPrograma}
+                    disabled={guardando || !form.plantillaValidada}
+                  >
+                    {guardando ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
+                    <span>{guardando ? "Guardando" : programaDocs ? "Actualizar documento" : "Guardar plantilla"}</span>
+                  </button>
+                </div>
+              )}
 
-              {programaDocs ? (
+              {programaDocs && !plantillaYaGuardada ? (
                 <button className="coord-secondary-button coord-documents-edit-button" type="button" onClick={() => abrirEditar(programaDocs)}>
                   <Edit3 size={17} />
                   <span>Editar datos del programa</span>

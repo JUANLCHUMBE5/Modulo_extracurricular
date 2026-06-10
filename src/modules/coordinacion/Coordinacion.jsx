@@ -29,7 +29,7 @@ import ProgramaFormModal from "./components/ProgramaFormModal";
 import ProgramasView from "./components/ProgramasView";
 import AsistenciasView from "./components/AsistenciasView";
 import { formInicial, horarioGrupoInicial } from "./constants/coordinacionFormDefaults";
-import { esCostoValido } from "./utils/coordinacionFormatters";
+import { esCostoValido, normalizarComparacion } from "./utils/coordinacionFormatters";
 import { puedeVerVista, tienePermisoAsignado } from "./utils/coordinacionPermissions";
 import {
   calcularRangoEdades,
@@ -430,6 +430,7 @@ function Coordinacion({
       plantillaActualizadaEn: prog.plantillaActualizadaEn || "",
       requisitos: prog.requisitos || "",
       comunicado: prog.comunicado || "",
+      comunicadoCompleto: prog.comunicadoCompleto || "",
       detalleCosto: prog.detalleCosto || "",
       detalleAlmuerzo: prog.detalleAlmuerzo || "",
       concesionarios: prog.concesionarios || "",
@@ -1040,7 +1041,13 @@ function Coordinacion({
       const plantillaBase64 = await leerArchivoBase64(archivo);
       const datosDetectados = extraerDatosProgramaDesdeWord(textoPlano, archivo.name, categorias);
       const datosAplicables = vista === "documentos" ? filtrarDatosDocumento(datosDetectados) : datosDetectados;
+      if (vista === "documentos" && textoPlano) datosAplicables.comunicadoCompleto = textoPlano;
       const nombreDocumento = datosDetectados.nombre || nombreProgramaDesdeArchivo(archivo.name);
+      const plantillaExistente = vista === "documentos"
+        ? programas.find((programa) =>
+            normalizarComparacion(programa.plantilla) === normalizarComparacion(archivo.name)
+          )
+        : null;
       const totalDetectados = contarDatosDetectados(datosAplicables);
       if (vista === "documentos") {
         setLecturaDocumento({
@@ -1054,13 +1061,18 @@ function Coordinacion({
           plantillaModelo: lectura.plantillaModelo,
         });
       }
+      if (plantillaExistente) {
+        setProgramaDocsId(plantillaExistente.id);
+        setModoEditar(true);
+      }
       setForm((actual) => ({
         ...actual,
+        ...(plantillaExistente ? datosProgramaAFormulario(plantillaExistente) : {}),
         ...datosAplicables,
         nombre: vista === "documentos" && !programaDocsId
-          ? nombreDocumento || actual.nombre
-          : actual.nombre || nombreDocumento,
-        categoria: actual.categoria || datosDetectados.categoria || categorias[0] || "",
+          ? plantillaExistente?.nombre || nombreDocumento || actual.nombre
+          : actual.nombre || plantillaExistente?.nombre || nombreDocumento,
+        categoria: plantillaExistente?.categoria || actual.categoria || datosDetectados.categoria || categorias[0] || "",
         plantilla: archivo.name,
         plantillaBase64,
         plantillaVariables: variablesDetectadas,
@@ -1068,7 +1080,9 @@ function Coordinacion({
         plantillaActualizadaEn: fechaActualIso(),
       }));
       mostrarMsg(
-        totalDetectados > 0
+        plantillaExistente
+          ? `La plantilla ya estaba guardada como ${plantillaExistente.nombre}. No es necesario volver a subirla.`
+          : totalDetectados > 0
           ? `Plantilla validada. Se autocompletaron ${totalDetectados} dato(s) del programa.`
           : "Plantilla validada. No se encontraron datos del programa para autocompletar.",
         "success"
@@ -1097,6 +1111,7 @@ function Coordinacion({
       const { textoPlano, variablesDetectadas } = lectura;
       const datosDetectados = extraerDatosProgramaDesdeWord(textoPlano, form.plantilla, categorias);
       const datosAplicables = vista === "documentos" ? filtrarDatosDocumento(datosDetectados) : datosDetectados;
+      if (vista === "documentos" && textoPlano) datosAplicables.comunicadoCompleto = textoPlano;
       const totalDetectados = contarDatosDetectados(datosAplicables);
       if (vista === "documentos") {
         setLecturaDocumento({
@@ -1145,6 +1160,7 @@ function Coordinacion({
       plantillaActualizadaEn: "",
       requisitos: "",
       comunicado: "",
+      comunicadoCompleto: "",
       detalleCosto: "",
       detalleAlmuerzo: "",
       concesionarios: "",
@@ -1189,6 +1205,7 @@ function Coordinacion({
       plantillaActualizadaEn: "",
       requisitos: "",
       comunicado: "",
+      comunicadoCompleto: "",
       detalleCosto: "",
       detalleAlmuerzo: "",
       concesionarios: "",

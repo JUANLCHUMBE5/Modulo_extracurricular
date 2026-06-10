@@ -109,7 +109,7 @@ export function contarDatosDetectados(datos) {
 }
 
 export function filtrarDatosDocumento(datos) {
-  const camposDocumento = ["requisitos", "comunicado", "detalleCosto", "detalleAlmuerzo", "concesionarios"];
+  const camposDocumento = ["requisitos", "comunicado", "comunicadoCompleto", "detalleCosto", "detalleAlmuerzo", "concesionarios"];
   return Object.fromEntries(Object.entries(datos).filter(([key]) => camposDocumento.includes(key)));
 }
 
@@ -117,6 +117,7 @@ export function etiquetaCampoDocumento(campo) {
   const etiquetas = {
     requisitos: "Requisitos",
     comunicado: "Comunicado",
+    comunicadoCompleto: "Comunicado completo",
     detalleCosto: "Detalle de costo",
     detalleAlmuerzo: "Almuerzo",
     concesionarios: "Concesionarios",

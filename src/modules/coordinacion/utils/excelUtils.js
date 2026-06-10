@@ -50,7 +50,6 @@ const columnasPreinscritos = [
   { header: "Código", key: "codigoEstudiante", width: 15 },
   { header: "Estudiante", key: "nombres", width: 35 },
   { header: "Grado", key: "grado", width: 15 },
-  { header: "Sección", key: "seccion", width: 15 },
   { header: "Observación", key: "observacion", width: 30 },
 ];
 

@@ -143,7 +143,6 @@ function TablaPreinscritos({ alumnos }) {
             <th>Código</th>
             <th>Estudiante</th>
             <th>Grado</th>
-            <th>Sección</th>
             {mostrarCambridge ? <th>Ingreso Cambridge</th> : null}
             {mostrarCambridge ? <th>Nivel Cambridge</th> : null}
           </tr>
@@ -155,7 +154,6 @@ function TablaPreinscritos({ alumnos }) {
               <td>{alumno.codigoEstudiante || "—"}</td>
               <td>{alumno.nombres}</td>
               <td>{alumno.grado}</td>
-              <td>{alumno.seccion}</td>
               {mostrarCambridge ? <td>{describirSeleccionCambridge(alumno.seleccion)}</td> : null}
               {mostrarCambridge ? <td>{alumno.nivelCambridge || "Pendiente"}</td> : null}
             </tr>
