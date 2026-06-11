@@ -198,8 +198,13 @@ function usePadres(user) {
     }
   }, [programa?.programaId, programa?.id]);
 
-  async function guardarDatos(event) {
-    event?.preventDefault?.();
+  async function guardarDatos(eventOrOptions) {
+    const isEvent = eventOrOptions && (typeof eventOrOptions.preventDefault === "function" || eventOrOptions.nativeEvent);
+    const options = isEvent ? {} : (eventOrOptions || {});
+    if (isEvent) {
+      eventOrOptions.preventDefault();
+    }
+
     if (!form.apoderado.trim()) {
       avisar("Ingrese el nombre del padre o apoderado.");
       return false;
@@ -221,9 +226,11 @@ function usePadres(user) {
     try {
       await guardarDatosApoderadoPadres(user.dni, form);
       formularioEditadoRef.current = false;
-      toast.success("Padres", {
-        description: "Datos del apoderado guardados.",
-      });
+      if (!options.silencioso) {
+        toast.success("Padres", {
+          description: "Datos del apoderado guardados.",
+        });
+      }
       await cargarResumen({ silencioso: true });
       return true;
     } catch (err) {

@@ -131,7 +131,7 @@ function descomponerGradoApi(valor) {
   return { nivel, numero };
 }
 
-function obtenerGradoCompletoApi(grado, nivel, respaldoGrado = "") {
+export function obtenerGradoCompletoApi(grado, nivel, respaldoGrado = "") {
   let g = String(grado || "").trim();
   if (!g) return String(respaldoGrado || "").trim();
   const gLower = g.toLowerCase();
@@ -406,6 +406,10 @@ export function mapDbProgramToApi(p, db = null) {
     grados: p.gradosAplicables || [],
     responsable: p.responsable || p.docente || "",
     horario: p.horario || "",
+    grupo: p.grupo || "",
+    edad_minima: p.edadMinima || "",
+    edad_maxima: p.edadMaxima || "",
+    grupo_etario: p.grupoEtario || "",
     periodo: p.periodo || "escolar",
     modalidad_cobro: p.modalidadCobro || "Mensual",
     duracion_aviso_dias: p.duracionAvisoDias || 7,

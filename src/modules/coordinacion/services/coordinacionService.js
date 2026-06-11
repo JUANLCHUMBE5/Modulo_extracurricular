@@ -147,6 +147,11 @@ export async function crearPrograma(datos) {
       anuncio_imagen_nombre: datos.anuncioImagenNombre || "",
       talleres_deportivos: datos.talleresDeportivos || [],
       horarios_por_grupo: datos.horariosPorGrupo || [],
+      horario: datos.horario || "Por definir",
+      grupo: datos.grupo || "Por definir",
+      edad_minima: datos.edadMinima || "",
+      edad_maxima: datos.edadMaxima || "",
+      grupo_etario: datos.grupoEtario || "",
       requisitos: datos.requisitos || "",
       comunicado: datos.comunicado || "",
       comunicado_completo: datos.comunicadoCompleto || "",
@@ -238,6 +243,9 @@ export async function crearProgramaDesdeDocumento(datos) {
       grados: datos.gradosAplicables || [],
       horario: datos.horario || "Por definir",
       grupo: datos.grupo || "Por definir",
+      edad_minima: datos.edadMinima || "",
+      edad_maxima: datos.edadMaxima || "",
+      grupo_etario: datos.grupoEtario || "",
     };
     const res = await apiClient.post("/api/v1/extracurricular/programas/documento", payload);
     if (!res.success) throw new Error(res.message || "Error al crear programa desde documento");
@@ -332,6 +340,11 @@ export async function editarPrograma(id, datos) {
       anuncio_imagen_nombre: datos.anuncioImagenNombre || "",
       talleres_deportivos: datos.talleresDeportivos || [],
       horarios_por_grupo: datos.horariosPorGrupo || [],
+      horario: datos.horario || "Por definir",
+      grupo: datos.grupo || "Por definir",
+      edad_minima: datos.edadMinima || "",
+      edad_maxima: datos.edadMaxima || "",
+      grupo_etario: datos.grupoEtario || "",
       requisitos: datos.requisitos || "",
       comunicado: datos.comunicado || "",
       comunicado_completo: datos.comunicadoCompleto || "",
@@ -398,6 +411,94 @@ export async function editarPrograma(id, datos) {
     anuncioImagenComprimida: datos.invitacionMasiva ? Boolean(datos.anuncioImagenComprimida) : false,
     requiereIndumentaria: Boolean(datos.requiereIndumentaria),
   };
+
+  const oldName = apiDb.programas[index].nombre;
+
+  // Sincronizar todos los módulos y "ramas" conectadas en Mock DB
+  if (Array.isArray(apiDb.inscripciones)) {
+    apiDb.inscripciones = apiDb.inscripciones.map(item => {
+      if (item.programaId === id) {
+        return {
+          ...item,
+          programa: apiDb.programas[index].nombre,
+          categoria: apiDb.programas[index].categoria,
+          periodo: apiDb.programas[index].periodo || "escolar",
+          costo: apiDb.programas[index].costo,
+          modalidadCobro: apiDb.programas[index].modalidadCobro || "Mensual",
+          fechaInicio: apiDb.programas[index].fechaInicio,
+          fechaFin: apiDb.programas[index].fechaFin,
+          requisitos: apiDb.programas[index].requisitos || "",
+          comunicado: apiDb.programas[index].comunicado || "",
+          comunicadoCompleto: apiDb.programas[index].comunicadoCompleto || "",
+          detalleCosto: apiDb.programas[index].detalleCosto || "",
+          detalleAlmuerzo: apiDb.programas[index].detalleAlmuerzo || "",
+          concesionarios: apiDb.programas[index].concesionarios || "",
+          plantilla: apiDb.programas[index].plantilla || "",
+          plantillaBase64: apiDb.programas[index].plantillaBase64 || "",
+          plantillaVariables: apiDb.programas[index].plantillaVariables || [],
+          plantillaValidada: apiDb.programas[index].plantillaValidada
+        };
+      }
+      return item;
+    });
+  }
+
+  if (Array.isArray(apiDb.pagos)) {
+    apiDb.pagos = apiDb.pagos.map(item => {
+      const isLinkedToInscripcion = item.inscripcionId && (apiDb.inscripciones || []).some(ins => ins.id === item.inscripcionId && ins.programaId === id);
+      const isLinkedByProgramId = item.programaId === id;
+      const isLinkedByProgramName = oldName && String(item.programa).trim().toLowerCase() === String(oldName).trim().toLowerCase();
+      
+      if (isLinkedToInscripcion || isLinkedByProgramId || isLinkedByProgramName) {
+        return {
+          ...item,
+          programaId: id,
+          programa: apiDb.programas[index].nombre,
+          periodo: apiDb.programas[index].periodo || "escolar"
+        };
+      }
+      return item;
+    });
+  }
+
+  if (Array.isArray(apiDb.asistencias)) {
+    apiDb.asistencias = apiDb.asistencias.map(item => {
+      const isLinkedByProgramId = item.programaId === id;
+      const isLinkedByProgramName = oldName && String(item.programa).trim().toLowerCase() === String(oldName).trim().toLowerCase();
+      
+      if (isLinkedByProgramId || isLinkedByProgramName) {
+        return {
+          ...item,
+          programaId: id,
+          programa: apiDb.programas[index].nombre
+        };
+      }
+      return item;
+    });
+  }
+
+  if (Array.isArray(apiDb.documentosGenerados)) {
+    apiDb.documentosGenerados = apiDb.documentosGenerados.map(item => {
+      const isLinkedByProgramId = item.programaId === id;
+      const isLinkedByProgramName = oldName && String(item.programa).trim().toLowerCase() === String(oldName).trim().toLowerCase();
+      
+      if (isLinkedByProgramId || isLinkedByProgramName) {
+        return {
+          ...item,
+          programaId: id,
+          programa: apiDb.programas[index].nombre
+        };
+      }
+      return item;
+    });
+  }
+
+  if (apiDb.invitadosPorPrograma && apiDb.invitadosPorPrograma[id]) {
+    apiDb.invitadosPorPrograma[id] = apiDb.invitadosPorPrograma[id].map(invitado => ({
+      ...invitado,
+      periodo: apiDb.programas[index].periodo || "escolar"
+    }));
+  }
 
   await saveApiDb();
   window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
@@ -627,6 +728,8 @@ function prepararProgramasParaPreview(programas = []) {
     estado: programa.estado,
     plantilla: programa.plantilla,
     plantillaVariables: programa.plantillaVariables || [],
+    gradosAplicables: programa.gradosAplicables || [],
+    horariosPorGrupo: programa.horariosPorGrupo || [],
   }));
 }
 

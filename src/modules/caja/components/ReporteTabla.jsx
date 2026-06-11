@@ -151,7 +151,15 @@ export default function ReporteTabla({
                         Pagar
                       </Button>
                     ) : (
-                      <span className="caja-row-muted">Listo</span>
+                      <span className="caja-row-muted">
+                        {fila.estadoPago === "pagado"
+                          ? "Aprobado"
+                          : fila.estadoPago === "observado"
+                          ? "Observado"
+                          : fila.estadoPago === "anulado"
+                          ? "Anulado"
+                          : "Listo"}
+                      </span>
                     )}
                   </Table.Td>
                 ) : null}

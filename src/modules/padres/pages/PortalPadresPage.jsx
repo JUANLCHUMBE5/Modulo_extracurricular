@@ -250,7 +250,7 @@ export default function Padres({ user, onLogout }) {
     setPasoObjetivo(3);
     guardarPasoPago(user?.dni, 3);
 
-    const guardado = await guardarDatos();
+    const guardado = await guardarDatos({ silencioso: true });
     if (!guardado) {
       setMantenerPasoPago(false);
       setPasoObjetivo(null);

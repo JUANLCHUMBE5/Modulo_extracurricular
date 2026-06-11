@@ -329,7 +329,7 @@ export default function PagoStep({
     setErrorFormulario("");
 
     if (!inscripcion) {
-      setErrorFormulario("Primero debe quedar registrada la inscripcion de este taller.");
+      setErrorFormulario("Primero debe quedar registrada la inscripción de este taller.");
       return;
     }
     if (!datosConfirmados) {
@@ -340,17 +340,21 @@ export default function PagoStep({
       setErrorFormulario("Este registro debe revisarse directamente en Cajera.");
       return;
     }
-    if (!puedeEnviarVerificacion) return;
+
     if (!referencia.trim()) {
-      setErrorFormulario("Ingrese el numero de operacion de Yape.");
+      setErrorFormulario("Por favor, ingrese el número de operación Yape.");
+      return;
+    }
+    if (!telefonoPago.trim()) {
+      setErrorFormulario("Por favor, ingrese el número de teléfono celular usado en Yape.");
       return;
     }
     if (!/^\d{9}$/.test(telefonoPago.trim())) {
-      setErrorFormulario("Ingrese el telefono usado en Yape con 9 digitos.");
+      setErrorFormulario("El número de teléfono de Yape debe tener exactamente 9 dígitos.");
       return;
     }
     if (!captura?.base64) {
-      setErrorFormulario("Adjunte la captura de pantalla del pago.");
+      setErrorFormulario("Por favor, adjunte la captura de pantalla del pago Yape.");
       return;
     }
 
@@ -633,7 +637,7 @@ export default function PagoStep({
                 <button
                   className="padres-flow-primary-button"
                   type="submit"
-                  disabled={guardando || !puedeEnviarVerificacion}
+                  disabled={guardando}
                 >
                   {guardando ? <Loader2 className="padres-spin" size={16} /> : pagoVerificando ? <ClockHour4 size={16} /> : <CreditCard size={16} />}
                   {textoBoton}

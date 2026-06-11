@@ -307,7 +307,18 @@ app.post("/api/coordinacion/cargas/preview", upload.single("archivo"), async (re
   try {
     const periodo = normalizarPeriodo(req.body.periodo);
     const archivo = req.file;
-    const programas = parseJsonArray(req.body.programas);
+    const db = await getDb();
+    const frontendProgramas = parseJsonArray(req.body.programas);
+    const dbProgramasMap = new Map((db.programas || []).map(p => [p.id, p]));
+    const programas = frontendProgramas.map(fp => {
+      const dbProg = dbProgramasMap.get(fp.id);
+      return {
+        ...fp,
+        gradosAplicables: fp.gradosAplicables || dbProg?.gradosAplicables || [],
+        horariosPorGrupo: fp.horariosPorGrupo || dbProg?.horariosPorGrupo || []
+      };
+    });
+
     const existentes = parseJsonObject(req.body.existentes);
     const estudiantes = parseJsonObject(req.body.estudiantes);
     const programaId = req.body.programaId || req.body.programa_id || "";
@@ -315,9 +326,9 @@ app.post("/api/coordinacion/cargas/preview", upload.single("archivo"), async (re
     const preview = await generarPreviewCargaExcel({
       periodo,
       archivo,
-      programas,
-      existentes,
-      estudiantes,
+      programas: programas.length ? programas : (db.programas || []),
+      existentes: existentes && Object.keys(existentes).length ? existentes : (db.invitadosPorPrograma || {}),
+      estudiantes: estudiantes && Object.keys(estudiantes).length ? estudiantes : (db.estudiantes || {}),
       programaId,
     });
     res.json(preview);
@@ -624,6 +635,11 @@ app.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), asy
       anuncioImagenNombre: req.body.anuncio_imagen_nombre || "",
       talleresDeportivos: req.body.talleres_deportivos || [],
       horariosPorGrupo: req.body.horarios_por_grupo || [],
+      horario: req.body.horario || "Por definir",
+      grupo: req.body.grupo || "Por definir",
+      edadMinima: req.body.edad_minima || "",
+      edadMaxima: req.body.edad_maxima || "",
+      grupoEtario: req.body.grupo_etario || "",
       requisitos: req.body.requisitos || "",
       comunicado: req.body.comunicado || "",
       comunicadoCompleto: req.body.comunicado_completo || "",
@@ -677,6 +693,9 @@ app.post("/api/v1/extracurricular/programas/documento", requireRole(["secretaria
       requiereIndumentaria: Boolean(req.body.requiere_indumentaria),
       horario: req.body.horario || "Por definir",
       grupo: req.body.grupo || "Por definir",
+      edadMinima: req.body.edad_minima || "",
+      edadMaxima: req.body.edad_maxima || "",
+      grupoEtario: req.body.grupo_etario || "",
       plantilla: req.body.plantilla || "",
       plantillaBase64: req.body.plantilla_base64 || "",
       plantillaVariables: req.body.plantilla_variables || [],
@@ -743,6 +762,11 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
       anuncioImagenNombre: req.body.anuncio_imagen_nombre || "",
       talleresDeportivos: req.body.talleres_deportivos || [],
       horariosPorGrupo: req.body.horarios_por_grupo || [],
+      horario: req.body.horario ?? db.programas[idx].horario ?? "Por definir",
+      grupo: req.body.grupo ?? db.programas[idx].grupo ?? "Por definir",
+      edadMinima: req.body.edad_minima ?? db.programas[idx].edadMinima ?? "",
+      edadMaxima: req.body.edad_maxima ?? db.programas[idx].edadMaxima ?? "",
+      grupoEtario: req.body.grupo_etario ?? db.programas[idx].grupoEtario ?? "",
       requisitos: req.body.requisitos || "",
       comunicado: req.body.comunicado || "",
       comunicadoCompleto: req.body.comunicado_completo || "",
@@ -758,8 +782,102 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
       estado: nuevoEstado
     };
     
+    const oldName = db.programas[idx].nombre;
+
     sincronizarPlantillaProgramaApi(db, updated);
     db.programas[idx] = updated;
+
+    // Sincronizar todos los módulos y "ramas" conectadas
+    if (Array.isArray(db.inscripciones)) {
+      db.inscripciones = db.inscripciones.map(item => {
+        if (item.programaId === req.params.id) {
+          const gradoEst = item.gradoEstudiante || item.grado || "";
+          return {
+            ...item,
+            programa: updated.nombre,
+            categoria: updated.categoria,
+            periodo: updated.periodo || "escolar",
+            horario: resolverHorarioPorGradoApi(updated, gradoEst) || (tieneHorariosPorGrupoApi(updated) ? "Horario no configurado para este grado" : updated.horario) || "",
+            docente: resolverDocentePorGradoApi(updated, gradoEst),
+            costo: updated.costo,
+            modalidadCobro: updated.modalidadCobro || "Mensual",
+            fechaInicio: updated.fechaInicio,
+            fechaFin: updated.fechaFin,
+            requisitos: updated.requisitos || "",
+            comunicado: updated.comunicado || "",
+            comunicadoCompleto: updated.comunicadoCompleto || "",
+            detalleCosto: updated.detalleCosto || "",
+            detalleAlmuerzo: updated.detalleAlmuerzo || "",
+            concesionarios: updated.concesionarios || "",
+            plantilla: updated.plantilla || "",
+            plantillaBase64: updated.plantillaBase64 || "",
+            plantillaVariables: updated.plantillaVariables || [],
+            plantillaValidada: updated.plantillaValidada
+          };
+        }
+        return item;
+      });
+    }
+
+    if (Array.isArray(db.pagos)) {
+      db.pagos = db.pagos.map(item => {
+        const isLinkedToInscripcion = item.inscripcionId && (db.inscripciones || []).some(ins => ins.id === item.inscripcionId && ins.programaId === req.params.id);
+        const isLinkedByProgramId = item.programaId === req.params.id;
+        const isLinkedByProgramName = oldName && normalizarTextoApi(item.programa) === normalizarTextoApi(oldName);
+        
+        if (isLinkedToInscripcion || isLinkedByProgramId || isLinkedByProgramName) {
+          return {
+            ...item,
+            programaId: req.params.id,
+            programa: updated.nombre,
+            periodo: updated.periodo || "escolar"
+          };
+        }
+        return item;
+      });
+    }
+
+    if (Array.isArray(db.asistencias)) {
+      db.asistencias = db.asistencias.map(item => {
+        const isLinkedByProgramId = item.programaId === req.params.id;
+        const isLinkedByProgramName = oldName && normalizarTextoApi(item.programa) === normalizarTextoApi(oldName);
+        
+        if (isLinkedByProgramId || isLinkedByProgramName) {
+          const gradoEst = item.gradoEstudiante || item.grado || "";
+          return {
+            ...item,
+            programaId: req.params.id,
+            programa: updated.nombre,
+            horario: resolverHorarioPorGradoApi(updated, gradoEst) || (tieneHorariosPorGrupoApi(updated) ? "Horario no configurado para este grado" : updated.horario) || ""
+          };
+        }
+        return item;
+      });
+    }
+
+    if (Array.isArray(db.documentosGenerados)) {
+      db.documentosGenerados = db.documentosGenerados.map(item => {
+        const isLinkedByProgramId = item.programaId === req.params.id;
+        const isLinkedByProgramName = oldName && normalizarTextoApi(item.programa) === normalizarTextoApi(oldName);
+        
+        if (isLinkedByProgramId || isLinkedByProgramName) {
+          return {
+            ...item,
+            programaId: req.params.id,
+            programa: updated.nombre
+          };
+        }
+        return item;
+      });
+    }
+
+    if (db.invitadosPorPrograma && db.invitadosPorPrograma[req.params.id]) {
+      db.invitadosPorPrograma[req.params.id] = db.invitadosPorPrograma[req.params.id].map(invitado => ({
+        ...invitado,
+        periodo: normalizarPeriodoApi(updated.periodo)
+      }));
+    }
+
     await saveDb(db);
     await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "PROGRAMA_EDITAR", {
       id: req.params.id,
@@ -941,6 +1059,19 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
       validosPorArchivo.get(archivoNombre).push(item);
     });
 
+    // Primera pasada: validación estricta de grados sin mutar la base de datos
+    validos.forEach(item => {
+      if (!item.programaId) return;
+      const programaCarga = db.programas.find(p => p.id === item.programaId);
+      if (!programaCarga) return;
+      const student = db.estudiantes?.[item.dni];
+      const nivelEstudiante = student?.nivel || student?.nivelEducativo || item.nivelEducativo || item.nivel;
+      const gradoCompleto = obtenerGradoCompletoApi(item.grado, nivelEstudiante, student?.grado || item.grado);
+      if (!esProgramaCambridgeApi(programaCarga) && !gradoCorrespondeAlProgramaApi(programaCarga, gradoCompleto)) {
+        throw new Error(`El alumno ${item.alumno || `${item.nombres || ''} ${item.apellidos || ''}`.trim()} no esta dentro de su grado correspondiente para este taller.`);
+      }
+    });
+
     validos.forEach(item => {
       if (!item.programaId) return;
       const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
@@ -963,7 +1094,10 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
       const cargaId = grupoArchivo.cargaId;
       const existentes = db.invitadosPorPrograma[item.programaId] || [];
       const programaCarga = db.programas.find(p => p.id === item.programaId);
-      if (!esProgramaCambridgeApi(programaCarga) && !gradoCorrespondeAlProgramaApi(programaCarga, item.grado)) {
+      const student = db.estudiantes?.[item.dni];
+      const nivelEstudiante = student?.nivel || student?.nivelEducativo || item.nivelEducativo || item.nivel;
+      const gradoCompleto = obtenerGradoCompletoApi(item.grado, nivelEstudiante, student?.grado || item.grado);
+      if (!esProgramaCambridgeApi(programaCarga) && !gradoCorrespondeAlProgramaApi(programaCarga, gradoCompleto)) {
         throw new Error("El alumno no esta dentro de su grado correspondiente para este taller.");
       }
       const claveAlumno = claveAlumnoInvitadoApi(item);
@@ -976,16 +1110,16 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
         grupoArchivo.duplicadosConfirmacion = (grupoArchivo.duplicadosConfirmacion || 0) + 1;
         return;
       }
-      agregarGradoProgramaDesdeAlumnoApi(programaCarga, item.grado);
+      agregarGradoProgramaDesdeAlumnoApi(programaCarga, gradoCompleto);
       programasTocados.add(item.programaId);
       const invitado = {
         cargaId,
         codigoEstudiante: item.codigoEstudiante || "",
         dni: item.dni,
         nombres: `${item.nombres || ""} ${item.apellidos || ""}`.trim(),
-        grado: item.grado,
+        grado: gradoCompleto,
         seccion: item.seccion,
-        nivelEducativo: item.nivelEducativo || "",
+        nivelEducativo: nivelEstudiante || item.nivelEducativo || "",
         seleccion: item.seleccion || "",
         nivelCambridge: item.nivelCambridge || "",
         periodo: normalizarPeriodoApi(preview.periodo),
@@ -1006,7 +1140,7 @@ app.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["
         dni: item.dni,
         codigoEstudiante: item.codigoEstudiante || "",
         nombres: invitado.nombres,
-        grado: item.grado,
+        grado: gradoCompleto,
         seccion: item.seccion
       });
     });

@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { gradoCorrespondeAlProgramaApi, obtenerGradoCompletoApi } from "./apiMappers.js";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -268,6 +269,13 @@ function validarFilaCarga(fila, programaDetectado, opciones = {}) {
   }
   if (programaDetectado && String(programaDetectado.estado || "Habilitado") !== "Habilitado") {
     errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} esta ${programaDetectado.estado}. Habilitelo antes de cargar alumnos.`);
+  }
+  if (programaDetectado && !esCambridge) {
+    const nivelEstudiante = fila.nivelEducativo || fila.nivel;
+    const gradoCompleto = obtenerGradoCompletoApi(fila.grado, nivelEstudiante, fila.grado);
+    if (!gradoCorrespondeAlProgramaApi(programaDetectado, gradoCompleto)) {
+      errores.push("El alumno no esta dentro de su grado correspondiente para este taller.");
+    }
   }
   if (fila.observacion && /[<>]/.test(fila.observacion)) errores.push("Observacion contiene caracteres no permitidos.");
   return errores;
