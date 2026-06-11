@@ -265,7 +265,7 @@ export async function saveMockDb() {
   });
   Object.assign(mockDb, mergeWithDefaults(db || mockDb, structuredCloneSafe(initialData)));
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(mockDb));
-  window.dispatchEvent(new CustomEvent("mock-db-updated"));
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "global" } }));
 }
 
 export async function syncMockDbFromStorage() {

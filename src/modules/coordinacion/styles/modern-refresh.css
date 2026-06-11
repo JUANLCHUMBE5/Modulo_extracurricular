@@ -48,7 +48,7 @@
 
 .coord-search-card {
   position: relative;
-  min-height: 640px;
+  min-height: auto;
   overflow: hidden;
   padding: 34px;
 }

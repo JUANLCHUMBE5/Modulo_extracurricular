@@ -13,9 +13,9 @@ export function normalizarTexto(valor) {
 
 export function normalizarEstadoPago(valor) {
   const texto = normalizarTexto(valor);
-  if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
-  if (["verificando", "verificacion", "por verificar"].some((item) => texto.includes(item))) return "verificando";
-  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) return "observado";
+  if (["completado", "pagado", "validado", "pago validado", "exitoso"].some((item) => texto.includes(item))) return "pagado";
+  if (["verificando", "verificacion", "por verificar", "proceso", "pendiente_validacion"].some((item) => texto.includes(item))) return "verificando";
+  if (["observado", "rechazado", "no coincide", "observada"].some((item) => texto.includes(item))) return "observado";
   if (["cancelado", "anulado"].some((item) => texto.includes(item))) return "anulado";
   return "pendiente";
 }
@@ -30,9 +30,9 @@ export function obtenerEstadoRevisionWeb(inscripcion, pago) {
     inscripcion.estadoPago,
   ].join(" "));
 
-  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) return "observado";
-  if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
-  if (["verificando", "verificacion", "por verificar"].some((item) => texto.includes(item))) return "verificando";
+  if (["observado", "rechazado", "no coincide", "observada"].some((item) => texto.includes(item))) return "observado";
+  if (["completado", "pagado", "validado", "pago validado", "exitoso"].some((item) => texto.includes(item))) return "pagado";
+  if (["verificando", "verificacion", "por verificar", "proceso", "pendiente_validacion"].some((item) => texto.includes(item))) return "verificando";
   return "pendiente";
 }
 

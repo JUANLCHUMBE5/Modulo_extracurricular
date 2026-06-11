@@ -177,12 +177,17 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       setProgramas(programasActualizados);
     }
 
-    window.addEventListener("mock-db-updated", refrescarDesdeBase);
+    const handleMockDbUpdated = (e) => {
+      const mod = e.detail?.modulo;
+      if (!mod || mod === "secretaria" || mod === "global") refrescarDesdeBase();
+    };
+
+    window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("api-db-updated", refrescarDesdeBase);
     window.addEventListener("storage", refrescarDesdeBase);
 
     return () => {
-      window.removeEventListener("mock-db-updated", refrescarDesdeBase);
+      window.removeEventListener("mock-db-updated", handleMockDbUpdated);
       window.removeEventListener("api-db-updated", refrescarDesdeBase);
       window.removeEventListener("storage", refrescarDesdeBase);
     };

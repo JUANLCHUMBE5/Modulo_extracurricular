@@ -143,9 +143,9 @@ export function normalizarTexto(texto) {
 
 export function normalizarEstadoPagoPadres(...valores) {
   const texto = normalizarTexto(valores.filter(Boolean).join(" "));
-  if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
-  if (["verificando", "verificacion", "por verificar", "revision"].some((item) => texto.includes(item))) return "verificando";
-  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) return "observado";
+  if (["completado", "pagado", "validado", "pago validado", "exitoso"].some((item) => texto.includes(item))) return "pagado";
+  if (["verificando", "verificacion", "por verificar", "revision", "proceso", "pendiente_validacion"].some((item) => texto.includes(item))) return "verificando";
+  if (["observado", "rechazado", "no coincide", "observada"].some((item) => texto.includes(item))) return "observado";
   if (["cancelado", "anulado"].some((item) => texto.includes(item))) return "anulado";
   return "pendiente";
 }

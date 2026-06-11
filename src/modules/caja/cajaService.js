@@ -379,7 +379,7 @@ export async function listarBandejaPagosWeb(periodo = "escolar") {
         capturaPagoBase64: pago?.capturaPagoBase64 || "",
         capturaPagoNombre: pago?.capturaPagoNombre || inscripcion.pagoCapturaNombre || "",
         monto: Number(pago?.monto ?? inscripcion.costo ?? programa.costo ?? 0),
-        formaPago: pago?.formaPago || pago?.medioPago || (pago ? "Yape" : "Sin pago"),
+        formaPago: pago?.formaPago || pago?.medioPago || (inscripcion.derivadoCaja ? "Reserva Web" : (pago ? "Yape" : "Sin pago")),
         estadoRevision,
         estadoPago: normalizarEstadoPago(pago?.estado || inscripcion.estadoPago),
         estadoVerificacion: pago?.estadoVerificacion || "",
@@ -425,6 +425,21 @@ export async function observarPagoWeb(pagoId, observaciones = "Operacion no coin
   });
 }
 
+export async function rechazarPagoWeb(pagoId, observaciones = "Pago rechazado por Cajera.") {
+  if (isApiMode()) {
+    const res = await apiClient.put(`/api/v1/extracurricular/pagos/${pagoId}/rechazar`, { observaciones });
+    if (!res.success) throw new Error(res.message || "Error al rechazar pago web");
+    return adaptarPago(res.data);
+  }
+  return actualizarEstadoPagoWeb(pagoId, {
+    estado: "anulado",
+    estadoVerificacion: "anulado",
+    estadoInscripcion: "pendiente_pago",
+    estadoPago: "Pendiente",
+    observaciones,
+  });
+}
+
 export async function generarReporteCaja(filtros = {}) {
   if (isApiMode()) {
     const res = await apiClient.get("/api/v1/extracurricular/caja/reporte", {
@@ -455,6 +470,13 @@ export async function generarReporteCaja(filtros = {}) {
     const monto = Number(pago?.monto ?? inscripcion.costo ?? programa.costo ?? 0);
     const estadoPago = normalizarEstadoPago(pago?.estado || inscripcion.estadoPago);
     const fechaBase = pago?.fechaPago || pago?.fecha || inscripcion.fechaRegistro || "";
+    const esWebReserva = inscripcion.derivadoCaja || inscripcion.estadoCaja === "reservado_caja" || String(inscripcion.estadoInscripcion).toLowerCase().includes("reserva");
+
+    const formaPago = esWebReserva
+      ? (pago ? `Reserva / Web / ${pago.formaPago || pago.medioPago || "Efectivo"}` : "Reserva / Web")
+      : (pago?.formaPago || pago?.medioPago || "Sin pago");
+
+    const origen = (pago ? (pago.origenRegistro || (pago.formaPago === "Yape" ? "Portal padres" : "Cajera")) : (inscripcion.origenRegistro || (esWebReserva ? "Portal padres" : "Sin origen"))) || "Sin origen";
 
     return {
       id: inscripcion.id,
@@ -467,10 +489,10 @@ export async function generarReporteCaja(filtros = {}) {
       monto,
       estadoPago,
       estadoInscripcion: inscripcion.estadoInscripcion || "",
-      formaPago: pago?.formaPago || pago?.medioPago || "Sin pago",
+      formaPago,
       numeroOperacion: pago?.numeroOperacion || pago?.referenciaPago || inscripcion.pagoReferencia || "",
       telefonoOperacion: pago?.telefonoOperacion || inscripcion.pagoTelefono || "",
-      origen: (pago ? (pago.origenRegistro || (pago.formaPago === "Yape" ? "Portal padres" : "Cajera")) : inscripcion.origenRegistro) || "Sin origen",
+      origen,
       fuente: "inscripcion",
       pagoId: pago?.id || "",
       fecha: fechaBase,
@@ -578,8 +600,15 @@ function obtenerInscripcionesCaja(periodoNormalizado) {
 }
 
 function crearFilaPago(pago, programasVigentes = null) {
-  const programa = resolverProgramaVigenteCaja(pago, programasVigentes || obtenerProgramasVigentesCaja(normalizarPeriodo(pago.periodo)));
-  if (!programa) return null;
+  const program = resolverProgramaVigenteCaja(pago, programasVigentes || obtenerProgramasVigentesCaja(normalizarPeriodo(pago.periodo)));
+  if (!program) return null;
+
+  const inscripcion = (apiDb.inscripciones || []).find((ins) => ins.id === pago.inscripcionId) || null;
+  const esWebReserva = inscripcion ? (inscripcion.derivadoCaja || inscripcion.estadoCaja === "reservado_caja" || String(inscripcion.estadoInscripcion).toLowerCase().includes("reserva")) : false;
+
+  const formaPago = esWebReserva
+    ? `Reserva / Web / ${pago.formaPago || pago.medioPago || "Efectivo"}`
+    : (pago.formaPago || pago.medioPago || "Sin medio");
 
   return {
     id: pago.id,
@@ -587,16 +616,16 @@ function crearFilaPago(pago, programasVigentes = null) {
     inscripcionId: pago.inscripcionId || "",
     dniEstudiante: pago.dniEstudiante || pago.estudianteDni || "",
     estudiante: pago.nombresEstudiante || pago.estudianteNombre || "",
-    programaId: programa.id,
-    programa: programa.nombre || pago.programa || pago.programaNombre || "",
+    programaId: program.id,
+    programa: program.nombre || pago.programa || pago.programaNombre || "",
     periodo: normalizarPeriodo(pago.periodo),
     monto: Number(pago.monto || 0),
     estadoPago: normalizarEstadoPago(pago.estado),
     estadoInscripcion: "",
-    formaPago: pago.formaPago || pago.medioPago || "Sin medio",
+    formaPago,
     numeroOperacion: pago.numeroOperacion || pago.referenciaPago || "",
     telefonoOperacion: pago.telefonoOperacion || "",
-    origen: "Cajera",
+    origen: esWebReserva ? "Portal padres" : "Cajera",
     fuente: "pago",
     fecha: pago.fechaPago || pago.fecha || "",
     fechaRegistro: "",

@@ -5,6 +5,7 @@ import {
   IconEye,
   IconCheck,
   IconX,
+  IconAlertTriangle,
 } from "@tabler/icons-react";
 import { formatearFechaPeru } from "../../../services/dateService";
 import { formatearSoles } from "../utils/cajaFormatters";
@@ -20,6 +21,7 @@ export default function ReporteTabla({
   onPagar,
   onValidarWebPago,
   onObservarWebPago,
+  onRechazarWebPago,
   onVerCapturaWebPago,
 }) {
   if (filas.length === 0) {
@@ -63,7 +65,7 @@ export default function ReporteTabla({
               badgeText = "Pagado";
             } else if (esPagoWebVerificar) {
               badgeColor = "orange";
-              badgeText = "Por Verificar";
+              badgeText = "Pago en Proceso";
             } else if (esObservado) {
               badgeColor = "red";
               badgeText = "Observado";
@@ -107,16 +109,6 @@ export default function ReporteTabla({
                   <Table.Td>
                     {esPagoWebVerificar ? (
                       <Group gap={6} wrap="nowrap">
-                        <Tooltip label="Ver captura y detalles">
-                          <ActionIcon
-                            color="blue"
-                            onClick={() => onVerCapturaWebPago?.(fila)}
-                            size="sm"
-                            variant="light"
-                          >
-                            <IconEye size={15} />
-                          </ActionIcon>
-                        </Tooltip>
                         <Tooltip label="Aprobar pago">
                           <ActionIcon
                             color="green"
@@ -127,10 +119,20 @@ export default function ReporteTabla({
                             <IconCheck size={15} />
                           </ActionIcon>
                         </Tooltip>
-                        <Tooltip label="Rechazar / Observar">
+                        <Tooltip label="Observar pago">
+                          <ActionIcon
+                            color="orange"
+                            onClick={() => onObservarWebPago?.(fila)}
+                            size="sm"
+                            variant="light"
+                          >
+                            <IconAlertTriangle size={15} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Rechazar pago">
                           <ActionIcon
                             color="red"
-                            onClick={() => onObservarWebPago?.(fila)}
+                            onClick={() => onRechazarWebPago?.(fila)}
                             size="sm"
                             variant="light"
                           >

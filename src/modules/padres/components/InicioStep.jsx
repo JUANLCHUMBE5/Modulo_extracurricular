@@ -32,14 +32,17 @@ function InfoTile({ icon: Icon, label, value, children }) {
 }
 
 function obtenerEstadoPagoPadres(inscripcion = {}) {
+  if (inscripcion?.derivadoCaja || inscripcion?.estadoCaja === "reservado_caja") {
+    return "pendiente_caja";
+  }
   const registro = inscripcion || {};
   const texto = String(`${registro.estadoPago || ""} ${registro.estadoInscripcion || ""}`)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
 
-  if (["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
-  if (["verificando", "verificacion", "por verificar", "revision"].some((item) => texto.includes(item))) return "verificando";
+  if (["completado", "pagado", "validado", "pago validado", "exitoso"].some((item) => texto.includes(item))) return "pagado";
+  if (["verificando", "verificacion", "por verificar", "revision", "proceso", "pendiente_validacion"].some((item) => texto.includes(item))) return "verificando";
   return "pendiente";
 }
 
@@ -86,12 +89,16 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
     const estadoPago = obtenerEstadoPagoPadres(inscripcion);
     const esPagado = estadoPago === "pagado";
     const esVerificando = estadoPago === "verificando";
+    const esPendienteCaja = estadoPago === "pendiente_caja";
 
     if (esPagado) {
-      buttonText = "Pagado";
+      buttonText = "Pago exitoso";
       buttonDisabled = true;
     } else if (esVerificando) {
-      buttonText = "En aprobación";
+      buttonText = "Pago en proceso";
+      buttonDisabled = true;
+    } else if (esPendienteCaja) {
+      buttonText = "Reserva pendiente";
       buttonDisabled = true;
     } else {
       // Pending payment
@@ -402,17 +409,20 @@ function CatalogoProgramas({
             const estadoPago = obtenerEstadoPagoPadres(prog.inscripcionRegistrada);
             const pagoValidado = estadoPago === "pagado";
             const pagoEnRevision = estadoPago === "verificando";
-            const puedeContinuarPago = prog.registrado && !pagoValidado && !pagoEnRevision;
+            const pagoPendienteCaja = estadoPago === "pendiente_caja";
+            const puedeContinuarPago = prog.registrado && !pagoValidado && !pagoEnRevision && !pagoPendienteCaja;
             const botonDeshabilitado = registrando || sinCupos || (prog.registrado && !puedeContinuarPago);
             const textoAccion = sinCupos
               ? "Sin cupos"
               : pagoValidado
-                ? "Pagado"
+                ? "Pago exitoso"
                 : pagoEnRevision
-                  ? "En aprobacion"
-                  : puedeContinuarPago
-                    ? "Continuar al pago"
-                    : "Inscribir";
+                  ? "Pago en proceso"
+                  : pagoPendienteCaja
+                    ? "Reserva pendiente"
+                    : puedeContinuarPago
+                      ? "Continuar al pago"
+                      : "Inscribir";
             return (
               <article className="padres-flow-course-card" key={prog.id}>
 

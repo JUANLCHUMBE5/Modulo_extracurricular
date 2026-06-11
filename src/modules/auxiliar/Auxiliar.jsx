@@ -20,6 +20,31 @@ import { toast } from "sonner";
 import { registrarAsistencia, validarDni, validarQR } from "./auxiliarService";
 import "./Auxiliar.css";
 
+function parsearHorario(horarioStr) {
+  if (!horarioStr) return { nivel: "", dias: "", hora: "" };
+  
+  let cleaned = String(horarioStr).trim();
+  // Limpiar almuerzo y clase
+  cleaned = cleaned.replace(/almuerzo\s+\d{2}:\d{2}-\d{2}:\d{2},?\s*/gi, "");
+  cleaned = cleaned.replace(/clase\s+/gi, "");
+  
+  const parts = cleaned.split(":");
+  if (parts.length >= 2) {
+    const nivel = parts[0].trim();
+    const rest = parts.slice(1).join(":").trim();
+    
+    const hourRegex = /(\d{2}:\d{2}\s*-\s*\d{2}:\d{2})/g;
+    const hours = rest.match(hourRegex);
+    if (hours && hours.length > 0) {
+      const hora = hours[0];
+      const dias = rest.replace(hora, "").trim().replace(/,$/, "").trim();
+      return { nivel, dias, hora };
+    }
+    return { nivel, dias: rest, hora: "" };
+  }
+  return { nivel: cleaned, dias: "", hora: "" };
+}
+
 export default function Auxiliar({ onLogout }) {
   const [modo, setModo] = useState("QR");
   const [inputValue, setInputValue] = useState("");
@@ -104,7 +129,6 @@ export default function Auxiliar({ onLogout }) {
     if (!data.accesoPermitido) {
       const detalle = data.accion || "No se puede registrar el ingreso. Verifique el estado del estudiante.";
       agregarHistorial(data, data.estadoAcceso || "no_registrado", detalle);
-      mostrarMsg(detalle);
       return;
     }
 
@@ -112,12 +136,10 @@ export default function Auxiliar({ onLogout }) {
     try {
       await registrarAsistencia(data, observacion);
       agregarHistorial(data, "registrado", "Ingreso registrado correctamente.");
-      mostrarMsg(`Ingreso registrado para ${data.nombres}.`, "success");
       setInputValue("");
       setObservacion("");
     } catch (err) {
       agregarHistorial(data, "observado", err.message);
-      mostrarMsg(err.message);
     } finally {
       setRegistrando(false);
     }
@@ -156,11 +178,6 @@ export default function Auxiliar({ onLogout }) {
 
       if (modoValidacion === "QR" && autoRegistro) {
         await ejecutarRegistro(data);
-      } else {
-        mostrarMsg(
-          data.accesoPermitido ? "Pago validado. Puede registrar el ingreso." : data.accion,
-          data.accesoPermitido ? "success" : "warning"
-        );
       }
     } catch (err) {
       setUltimoEvento({
@@ -171,7 +188,6 @@ export default function Auxiliar({ onLogout }) {
         estado: "no_registrado",
         detalle: err.message
       });
-      mostrarMsg(err.message);
     } finally {
       setCargando(false);
     }
@@ -287,6 +303,7 @@ export default function Auxiliar({ onLogout }) {
     if (registrando) return "registrando";
     if (cargando) return "cargando";
     if (ultimoEvento?.estado === "registrado") return "registrado-exito";
+    if (ultimoEvento?.estado === "observado") return "observado";
     if (!estudiante) return "esperando";
     if (estudiante.estadoAcceso === "pagado") return "autorizado";
     if (estudiante.estadoAcceso === "pendiente") return "pendiente";
@@ -486,6 +503,42 @@ export default function Auxiliar({ onLogout }) {
             </div>
           )}
 
+          {kioskState === "observado" && (
+            <div className="kiosk-status-card state-pendiente">
+              <div className="kiosk-status-header-icon error-shake">
+                <AlertTriangle size={72} />
+              </div>
+              <span className="kiosk-badge-tag error">ATENCIÓN</span>
+              <h2 className="student-name">{ultimoEvento?.estudiante || estudiante?.nombres || "Estudiante"} ⚠️</h2>
+              
+              <div className="kiosk-alert-explanation">
+                <p><strong>{ultimoEvento?.detalle || "No se pudo completar el registro."}</strong></p>
+                <p className="sub-msg">
+                  Si necesita ayuda, consulte con el personal de Caja o Asistente.
+                </p>
+              </div>
+
+              {estudiante && (
+                <div className="kiosk-student-details-box">
+                  <div className="detail-item">
+                    <span className="label">TALLER</span>
+                    <strong className="value">📚 {estudiante.programa}</strong>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">ESTADO</span>
+                    <strong className="value badge-error">⚠️ Observado</strong>
+                  </div>
+                </div>
+              )}
+
+              <div className="kiosk-actions-panel">
+                <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+                  Siguiente Estudiante 🔄
+                </button>
+              </div>
+            </div>
+          )}
+
           {kioskState === "autorizado" && (
             <div className="kiosk-status-card state-autorizado">
               <div className="kiosk-status-header-icon success-pop">
@@ -496,7 +549,7 @@ export default function Auxiliar({ onLogout }) {
                 <span className="sparkle s2">✨</span>
                 <span className="sparkle s3">🌟</span>
               </div>
-              <span className="kiosk-badge-tag success">ACCESO PERMITIDO</span>
+              <span className="kiosk-badge-tag success">BIENVENIDO / ACEPTADO</span>
               <h2 className="student-name">¡Hola, {estudiante.nombres}! 👋</h2>
               <p className="kiosk-status-message-highlight">
                 ¡Tu pago está al día y tu matrícula activa! Que tengas una excelente clase.
@@ -509,7 +562,19 @@ export default function Auxiliar({ onLogout }) {
                 </div>
                 <div className="detail-item">
                   <span className="label">HORARIO</span>
-                  <strong className="value">⏰ {estudiante.horario}</strong>
+                  <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3" }}>
+                    {(() => {
+                      const infoHorario = parsearHorario(estudiante.horario);
+                      return (
+                        <>
+                          {infoHorario.nivel && <div style={{ fontWeight: 800 }}>{infoHorario.nivel}</div>}
+                          {infoHorario.dias && <div style={{ color: "#475569", marginTop: "2px", fontWeight: 700 }}>{infoHorario.dias}</div>}
+                          {infoHorario.hora && <div style={{ color: "#0ea5e9", marginTop: "2px", fontWeight: 700 }}>⏰ {infoHorario.hora}</div>}
+                          {!infoHorario.nivel && !infoHorario.dias && !infoHorario.hora && <div>{estudiante.horario || "No registrado"}</div>}
+                        </>
+                      );
+                    })()}
+                  </strong>
                 </div>
                 <div className="detail-item">
                   <span className="label">ESTADO PAGO</span>
@@ -535,16 +600,16 @@ export default function Auxiliar({ onLogout }) {
 
           {kioskState === "pendiente" && (
             <div className="kiosk-status-card state-pendiente">
-              <div className="kiosk-status-header-icon warning-shake">
-                <AlertTriangle size={72} />
+              <div className="kiosk-status-header-icon error-shake">
+                <XCircle size={72} />
               </div>
-              <span className="kiosk-badge-tag warning">PAGO PENDIENTE</span>
+              <span className="kiosk-badge-tag error">FALTA PAGAR</span>
               <h2 className="student-name">¡Hola, {estudiante.nombres}! ⏳</h2>
               
               <div className="kiosk-alert-explanation">
-                <p><strong>Usted o el alumno no ha realizado el pago.</strong></p>
+                <p><strong>El alumno tiene pagos pendientes o en proceso de verificación.</strong></p>
                 <p className="sub-msg">
-                  Para poder ingresar a la clase del taller, el apoderado debe regularizar el pago pendiente (en Cajera o Web).
+                  Para poder ingresar al taller, el apoderado debe acercarse a Caja para regularizar o aprobar el pago y permitir el ingreso.
                 </p>
               </div>
 
@@ -555,7 +620,7 @@ export default function Auxiliar({ onLogout }) {
                 </div>
                 <div className="detail-item">
                   <span className="label">ESTADO PAGO</span>
-                  <strong className="value badge-warning">⚠️ {estudiante.estadoPago}</strong>
+                  <strong className="value badge-error">❌ {estudiante.estadoPago}</strong>
                 </div>
               </div>
 
@@ -648,13 +713,13 @@ export default function Auxiliar({ onLogout }) {
               const histState = ev.estado === "registrado" 
                 ? "success" 
                 : ev.estado === "pendiente" 
-                  ? "warning" 
+                  ? "error" 
                   : "error";
               
               return (
                 <div key={ev.id} className={`historial-bubble-card border-${histState}`}>
                   <div className={`historial-badge-icon bg-${histState}`}>
-                    {histState === "success" ? "✅" : histState === "warning" ? "⏳" : "❌"}
+                    {histState === "success" ? "✅" : "❌"}
                   </div>
                   <div className="historial-card-info">
                     <strong className="student-name-small">{ev.estudiante}</strong>
@@ -662,7 +727,7 @@ export default function Auxiliar({ onLogout }) {
                       ⚽ {ev.programa} • ⏰ {ev.hora}
                     </span>
                     <span className={`historial-status-text text-${histState}`}>
-                      {ev.estado === "registrado" ? "Ingresó" : ev.estado === "pendiente" ? "Pago Pendiente" : "No Autorizado"}
+                      {ev.estado === "registrado" ? "Ingresó" : ev.estado === "pendiente" ? "Falta Pagar" : "No Autorizado"}
                     </span>
                   </div>
                 </div>

@@ -580,15 +580,56 @@
 }
 
 .kiosk-state-pendiente .kiosk-status-card {
-  background: var(--color-warning-bg);
-  border-color: #fbbf24;
-  box-shadow: 0 20px 45px var(--color-warning-glow);
+  background: var(--color-error-bg);
+  border-color: #fda4af;
+  box-shadow: 0 20px 45px var(--color-error-glow);
 }
 
 .kiosk-state-no-matriculado .kiosk-status-card {
   background: linear-gradient(135deg, #faf5ff 0%, #e9d5ff 100%);
   border-color: #d8b4fe;
   box-shadow: 0 20px 45px rgba(168, 85, 247, 0.15);
+}
+
+.kiosk-state-observado .kiosk-status-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #fde68a 100%);
+  border-color: #f59e0b;
+  box-shadow: 0 20px 45px rgba(245, 158, 11, 0.2);
+  animation: observado-entrada 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards,
+             observado-borde-pulso 2s ease-in-out infinite 0.5s;
+}
+
+.kiosk-state-observado .kiosk-status-header-icon {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #d97706;
+  animation: observado-icono-shake 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards,
+             observado-icono-pulso 2.5s ease-in-out infinite 0.7s;
+  box-shadow: 0 10px 24px rgba(217, 119, 6, 0.2);
+}
+
+.kiosk-state-observado .kiosk-badge-tag.error {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  animation: observado-badge-entrada 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) 0.2s both;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+.kiosk-state-observado .kiosk-alert-explanation {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  animation: observado-texto-entrada 0.5s ease-out 0.3s both;
+}
+
+.kiosk-state-observado .student-name {
+  animation: observado-texto-entrada 0.5s ease-out 0.15s both;
+}
+
+.kiosk-state-observado .kiosk-student-details-box {
+  animation: observado-texto-entrada 0.5s ease-out 0.4s both;
+}
+
+.kiosk-state-observado .kiosk-actions-panel {
+  animation: observado-texto-entrada 0.5s ease-out 0.5s both;
 }
 
 .kiosk-state-no-registrado .kiosk-status-card {
@@ -828,6 +869,7 @@
 
 .badge-success { color: var(--color-success-main); }
 .badge-warning { color: var(--color-warning-main); }
+.badge-error { color: var(--color-error-main); }
 
 /* Panel de Acciones Quiosco */
 .kiosk-actions-panel {
@@ -1074,6 +1116,42 @@
 @keyframes slide-in {
   from { transform: translateX(-20px); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+/* Animaciones para estado Observado */
+@keyframes observado-entrada {
+  0% { transform: scale(0.85) translateY(30px); opacity: 0; }
+  60% { transform: scale(1.03) translateY(-4px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes observado-icono-shake {
+  0% { transform: scale(0.3) rotate(0deg); opacity: 0; }
+  30% { transform: scale(1.2) rotate(-12deg); opacity: 1; }
+  50% { transform: scale(0.95) rotate(8deg); }
+  70% { transform: scale(1.08) rotate(-5deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes observado-icono-pulso {
+  0%, 100% { transform: scale(1); box-shadow: 0 10px 24px rgba(217, 119, 6, 0.2); }
+  50% { transform: scale(1.08); box-shadow: 0 12px 30px rgba(217, 119, 6, 0.35); }
+}
+
+@keyframes observado-badge-entrada {
+  0% { transform: scale(0) translateY(10px); opacity: 0; }
+  70% { transform: scale(1.15) translateY(-2px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+@keyframes observado-texto-entrada {
+  0% { transform: translateY(15px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes observado-borde-pulso {
+  0%, 100% { box-shadow: 0 20px 45px rgba(245, 158, 11, 0.2); border-color: #f59e0b; }
+  50% { box-shadow: 0 20px 50px rgba(245, 158, 11, 0.35), 0 0 0 4px rgba(245, 158, 11, 0.1); border-color: #d97706; }
 }
 
 /* Responsividad de entrada */

@@ -469,7 +469,9 @@ export function mapDbEnrollmentToApi(item, db = null) {
     pago_telefono: item.pagoTelefono || "",
     pago_captura_nombre: item.pagoCapturaNombre || "",
     pago_observacion_caja: item.pagoObservacionCaja || "",
-    fecha_pago: item.fechaPago || ""
+    fecha_pago: item.fechaPago || "",
+    derivado_caja: Boolean(item.derivadoCaja),
+    estado_caja: item.estadoCaja || ""
   };
 }
 

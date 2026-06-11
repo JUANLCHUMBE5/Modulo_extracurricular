@@ -1,4 +1,4 @@
-﻿import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
+import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
 import { isApiMode, apiClient } from "../../../services/apiClient";
 import {
   adaptarEstudiante,
@@ -304,6 +304,7 @@ export async function registrarInscripcion(payload) {
   }
 
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "secretaria" } }));
   return registro;
 }
 
@@ -347,6 +348,7 @@ export async function registrarDocumentoGenerado({
     registro.ultimoDocumentoGeneradoEn = documento.fecha;
   }
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "secretaria" } }));
   return documento;
 }
 
@@ -400,6 +402,7 @@ export async function derivarInscripcionCaja(inscripcionId, datos = {}) {
   }
 
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "secretaria" } }));
   return actualizada;
 }
 
@@ -704,7 +707,10 @@ function finalizarProgramasVencidos() {
     cambio = true;
   });
 
-  if (cambio) saveApiDb();
+  if (cambio) {
+    saveApiDb();
+    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "secretaria" } }));
+  }
 }
 
 function validarVentanaInscripcionRegular(programa, payload = {}) {

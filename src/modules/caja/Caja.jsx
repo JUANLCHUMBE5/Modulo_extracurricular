@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Group, Modal, Select } from "@mantine/core";
 import { toast } from "sonner";
 import {
@@ -8,6 +8,8 @@ import {
   IconLogout as LogOut,
   IconReceipt2 as Receipt,
   IconX as X,
+  IconAlertTriangle as AlertTriangle,
+  IconEye as Eye,
 } from "@tabler/icons-react";
 import CajaFields from "./components/CajaFields";
 import CajaPagoWebModals from "./components/CajaPagoWebModals";
@@ -29,6 +31,7 @@ import {
   registrarPago,
   validarPagoWeb,
   observarPagoWeb,
+  rechazarPagoWeb,
   obtenerPagoPorId,
 } from "./cajaService";
 import { fechaActualInput } from "../../services/dateService";
@@ -81,8 +84,10 @@ export default function Caja({
   // Estados de verificacion de pagos web Yape
   const [modalVerificacionAbierto, setModalVerificacionAbierto] = useState(false);
   const [modalObservarAbierto, setModalObservarAbierto] = useState(false);
+  const [modalRechazarAbierto, setModalRechazarAbierto] = useState(false);
   const [pagoVerificar, setPagoVerificar] = useState(null);
   const [observacionTexto, setObservacionTexto] = useState("");
+  const [rechazoTexto, setRechazoTexto] = useState("");
   const [guardandoVerificacion, setGuardandoVerificacion] = useState(false);
 
   useEffect(() => {
@@ -102,15 +107,20 @@ export default function Caja({
       if (!event?.key || event.key === "san_rafael_db_updated_at") refrescarCaja();
     };
 
+    const handleMockDbUpdated = (e) => {
+      const mod = e.detail?.modulo;
+      if (!mod || mod === "caja" || mod === "padres" || mod === "global") refrescarCaja();
+    };
+
     window.addEventListener("api-db-updated", refrescarCaja);
-    window.addEventListener("mock-db-updated", refrescarCaja);
+    window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("storage", refrescarPorStorage);
     window.addEventListener("focus", refrescarCaja);
     const intervalo = window.setInterval(refrescarCaja, 30000);
 
     return () => {
       window.removeEventListener("api-db-updated", refrescarCaja);
-      window.removeEventListener("mock-db-updated", refrescarCaja);
+      window.removeEventListener("mock-db-updated", handleMockDbUpdated);
       window.removeEventListener("storage", refrescarPorStorage);
       window.removeEventListener("focus", refrescarCaja);
       window.clearInterval(intervalo);
@@ -415,8 +425,6 @@ export default function Caja({
   }
 
   async function aprobarPagoWebDirecto(fila) {
-    const nombreEstudiante = fila.estudiante || fila.estudianteNombre || "el estudiante";
-    if (!window.confirm(`¿Esta seguro de aprobar el pago de Yape para ${nombreEstudiante}?`)) return;
     try {
       setCargando(true);
       await validarPagoWeb(fila.pagoId);
@@ -452,24 +460,97 @@ export default function Caja({
     }
   }
 
-  function abrirObservarModal(fila) {
-    setPagoVerificar(fila);
-    setObservacionTexto("");
-    setModalObservarAbierto(true);
+  async function abrirObservarModal(fila) {
+    if (!fila) return;
+    try {
+      setCargando(true);
+      const pagoId = fila.pagoId || fila.id;
+      let pago = null;
+      if (pagoId) {
+        pago = await obtenerPagoPorId(pagoId);
+      }
+      setPagoVerificar({
+        ...fila,
+        ...(pago || {}),
+        estudiante: fila.estudiante || fila.estudianteNombre,
+        dniEstudiante: fila.dniEstudiante || fila.estudianteDni,
+        programa: fila.programa || fila.programaNombre,
+      });
+      setObservacionTexto("");
+      setModalObservarAbierto(true);
+    } catch (error) {
+      toast.error("Error", { description: "No se pudo cargar la captura del pago." });
+    } finally {
+      setCargando(false);
+    }
   }
 
-  async function rechazarPagoWeb() {
+  async function abrirRechazarModal(fila) {
+    if (!fila) return;
+    try {
+      setCargando(true);
+      const pagoId = fila.pagoId || fila.id;
+      let pago = null;
+      if (pagoId) {
+        pago = await obtenerPagoPorId(pagoId);
+      }
+      setPagoVerificar({
+        ...fila,
+        ...(pago || {}),
+        estudiante: fila.estudiante || fila.estudianteNombre,
+        dniEstudiante: fila.dniEstudiante || fila.estudianteDni,
+        programa: fila.programa || fila.programaNombre,
+      });
+      setRechazoTexto("");
+      setModalRechazarAbierto(true);
+    } catch (error) {
+      toast.error("Error", { description: "No se pudo cargar la captura del pago." });
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  async function observarPagoWebDesdeModal() {
     if (!pagoVerificar) return;
     if (!observacionTexto.trim()) {
-      toast.error("Rechazar pago", { description: "Debe ingresar una observacion para rechazar el pago." });
+      toast.error("Observar pago", { description: "Debe ingresar una observacion para observar el pago." });
       return;
     }
     try {
       setGuardandoVerificacion(true);
       const pagoId = pagoVerificar.pagoId || pagoVerificar.id;
       await observarPagoWeb(pagoId, observacionTexto);
-      toast.success("Pago rechazado", { description: "El pago ha sido marcado como observado." });
+      toast.success("Pago observado", { description: "El pago ha sido marcado como observado." });
       setModalObservarAbierto(false);
+      setModalVerificacionAbierto(false);
+
+      if (formulario.pagoId === pagoId) {
+        limpiarPagoActual();
+      } else {
+        setPagoVerificar(null);
+      }
+
+      await cargarDatos();
+      await cargarReporteCaja();
+    } catch (error) {
+      toast.error("Error", { description: error.message || "No se pudo observar el pago." });
+    } finally {
+      setGuardandoVerificacion(false);
+    }
+  }
+
+  async function confirmarRechazoPagoWeb() {
+    if (!pagoVerificar) return;
+    if (!rechazoTexto.trim()) {
+      toast.error("Rechazar pago", { description: "Debe ingresar una observacion para rechazar el pago." });
+      return;
+    }
+    try {
+      setGuardandoVerificacion(true);
+      const pagoId = pagoVerificar.pagoId || pagoVerificar.id;
+      await rechazarPagoWeb(pagoId, rechazoTexto);
+      toast.success("Pago rechazado", { description: "El pago ha sido rechazado correctamente." });
+      setModalRechazarAbierto(false);
       setModalVerificacionAbierto(false);
 
       if (formulario.pagoId === pagoId) {
@@ -602,9 +683,16 @@ export default function Caja({
                         <Button
                           color="red"
                           leftSection={<X size={15} />}
+                          onClick={() => abrirRechazarModal(formulario)}
+                        >
+                          Rechazar Pago
+                        </Button>
+                        <Button
+                          color="orange"
+                          leftSection={<AlertTriangle size={15} />}
                           onClick={() => abrirObservarModal(formulario)}
                         >
-                          Observar / Rechazar
+                          Observar Pago
                         </Button>
                         <Button
                           color="green"
@@ -648,6 +736,7 @@ export default function Caja({
                     onPagar={abrirPagoDesdeReporte}
                     onValidarWebPago={aprobarPagoWebDirecto}
                     onObservarWebPago={abrirObservarModal}
+                    onRechazarWebPago={abrirRechazarModal}
                     onVerCapturaWebPago={verificarPagoWeb}
                   />
                 </section>
@@ -705,16 +794,25 @@ export default function Caja({
       <CajaPagoWebModals
         guardandoVerificacion={guardandoVerificacion}
         modalObservarAbierto={modalObservarAbierto}
+        modalRechazarAbierto={modalRechazarAbierto}
         modalVerificacionAbierto={modalVerificacionAbierto}
         observacionTexto={observacionTexto}
+        rechazoTexto={rechazoTexto}
         onAprobarPagoWeb={aprobarPagoWebDesdeModal}
         onCerrarObservacion={() => setModalObservarAbierto(false)}
+        onCerrarRechazo={() => setModalRechazarAbierto(false)}
         onCerrarVerificacion={() => { setModalVerificacionAbierto(false); setPagoVerificar(null); }}
-        onRechazarPagoWeb={rechazarPagoWeb}
+        onRechazarPagoWeb={confirmarRechazoPagoWeb}
+        onObservarPagoWeb={observarPagoWebDesdeModal}
         onSetObservacionTexto={setObservacionTexto}
+        onSetRechazoTexto={setRechazoTexto}
         onSolicitarObservacion={() => {
           setObservacionTexto("");
           setModalObservarAbierto(true);
+        }}
+        onSolicitarRechazo={() => {
+          setRechazoTexto("");
+          setModalRechazarAbierto(true);
         }}
         pagoVerificar={pagoVerificar}
       />

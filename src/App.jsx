@@ -357,17 +357,20 @@ function App() {
       }
     };
 
+    // App escucha TODOS los módulos — necesita sincronizar permisos del usuario activo
+    const handleMockDbUpdated = () => actualizarUsuarioActivo();
+
     actualizarUsuarioActivo();
     const intervaloPermisos = window.setInterval(actualizarUsuarioActivo, 8000);
     window.addEventListener("api-db-updated", actualizarUsuarioActivo);
-    window.addEventListener("mock-db-updated", actualizarUsuarioActivo);
+    window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("storage", actualizarUsuarioActivo);
     window.addEventListener("focus", actualizarUsuarioActivo);
     document.addEventListener("visibilitychange", actualizarUsuarioActivo);
     return () => {
       window.clearInterval(intervaloPermisos);
       window.removeEventListener("api-db-updated", actualizarUsuarioActivo);
-      window.removeEventListener("mock-db-updated", actualizarUsuarioActivo);
+      window.removeEventListener("mock-db-updated", handleMockDbUpdated);
       window.removeEventListener("storage", actualizarUsuarioActivo);
       window.removeEventListener("focus", actualizarUsuarioActivo);
       document.removeEventListener("visibilitychange", actualizarUsuarioActivo);

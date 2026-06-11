@@ -193,7 +193,7 @@
 }
 
 .coord-workspace-single .coord-search-card {
-  min-height: calc(100vh - 150px);
+  min-height: auto;
 }
 
 /* ── CARDS ────────────────────────────────────────────── */

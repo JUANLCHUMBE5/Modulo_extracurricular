@@ -70,6 +70,7 @@ export async function crearUsuario(datos) {
 
   apiDb.usuarios.push(nuevoUsuario);
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "administrador" } }));
   return nuevoUsuario;
 }
 
@@ -104,6 +105,7 @@ export async function editarUsuario(id, datos) {
   };
 
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "administrador" } }));
   return apiDb.usuarios[index];
 }
 
@@ -132,6 +134,7 @@ export async function cambiarEstadoUsuario(id, nuevoEstado) {
 
   usuario.estado = nuevoEstado;
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "administrador" } }));
   return usuario;
 }
 
@@ -149,6 +152,7 @@ export async function resetearContrasenaUsuario(id) {
 
   usuario.contrasena = "123456";
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "administrador" } }));
   return usuario;
 }
 
@@ -179,6 +183,7 @@ export async function eliminarUsuario(id) {
 
   const [eliminado] = apiDb.usuarios.splice(index, 1);
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "administrador" } }));
   return eliminado;
 }
 

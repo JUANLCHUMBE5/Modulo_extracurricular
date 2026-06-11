@@ -1,4 +1,4 @@
-﻿import { apiDb, saveApiDb, syncApiDb } from "../../../services/dbApi";
+import { apiDb, saveApiDb, syncApiDb } from "../../../services/dbApi";
 import { isApiMode, apiClient } from "../../../services/apiClient";
 import {
   adaptarEstudiante,
@@ -122,6 +122,9 @@ export async function guardarDatosApoderadoPadres(dni, datos) {
   });
 
   await saveApiDb();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "padres" } }));
+  }
   return estudiante;
 }
 
@@ -265,6 +268,9 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
   apiDb.inscripciones.push(registro);
   programa.cuposOcupados = Number(programa.cuposOcupados || 0) + 1;
   await saveApiDb();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "padres" } }));
+  }
   return registro;
 }
 
@@ -360,7 +366,7 @@ export async function registrarPagoVerificacionPadres(dni, inscripcionId, datosP
   apiDb.inscripciones[inscripcionIndex] = {
     ...inscripcion,
     estadoPago: "Pendiente",
-    estadoInscripcion: "Pago en verificacion",
+    estadoInscripcion: "Pago en proceso",
     pagoId: pago.id,
     pagoReferencia: referencia,
     pagoTelefono: telefono,
@@ -369,9 +375,52 @@ export async function registrarPagoVerificacionPadres(dni, inscripcionId, datosP
 
   await saveApiDb();
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new Event("mock-db-updated"));
+    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "padres" } }));
   }
   return pago;
+}
+
+export async function reservarCupoCajaPadres(dni, inscripcionId) {
+  if (isApiMode()) {
+    const res = await apiClient.put(`/api/v1/extracurricular/inscripciones/${inscripcionId}/reservar-caja`, {
+      dni_estudiante: dni,
+    });
+    if (!res.success) throw new Error(res.message || "Error al reservar cupo para pago en Caja");
+    return adaptarInscripcion(res.data);
+  }
+
+  await delay(350);
+  await syncApiDb();
+
+  const dniLimpio = String(dni || "").replace(/\D/g, "");
+  const index = (apiDb.inscripciones || []).findIndex((item) =>
+    item.id === inscripcionId &&
+    item.dniEstudiante === dniLimpio &&
+    item.estadoInscripcion !== "Anulada"
+  );
+  if (index === -1) throw new Error("No se encontro la inscripcion para reservar el pago en Caja.");
+
+  apiDb.inscripciones[index] = {
+    ...apiDb.inscripciones[index],
+    derivadoCaja: true,
+    estadoCaja: "reservado_caja",
+    estadoPago: "pendiente",
+    estadoInscripcion: "Reserva pendiente",
+    fechaReservaCaja: fechaActualIso(),
+    observacionCaja: "Reserva generada desde portal de padres para pago presencial en Caja.",
+  };
+
+  const estudiante = apiDb.estudiantes?.[dniLimpio];
+  if (estudiante) {
+    estudiante.estadoInscripcion = "Reserva pendiente";
+    estudiante.estadoCaja = "reservado_caja";
+  }
+
+  await saveApiDb();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "padres" } }));
+  }
+  return apiDb.inscripciones[index];
 }
 
 function generarPagoIdPadres() {
@@ -588,10 +637,12 @@ function encontrarPagoActivoPadres(inscripcion = {}) {
     const estado = normalizarEstadoPagoPadres(pago.estado, pago.estadoPago, pago.estadoVerificacion);
     if (["observado", "anulado"].includes(estado)) return false;
     if (pago.inscripcionId && pago.inscripcionId === registro.id) return true;
+    if (pago.inscripcionId && registro.id && pago.inscripcionId !== registro.id) return false;
 
     const mismoDni = (pago.dniEstudiante || pago.estudianteDni) === registro.dniEstudiante;
     if (!mismoDni) return false;
     if (pago.programaId && pago.programaId === registro.programaId) return true;
+    if (pago.programaId && registro.programaId && pago.programaId !== registro.programaId) return false;
     return programaNombre && normalizarTexto(pago.programa || pago.programaNombre) === programaNombre;
   }) || null;
 }

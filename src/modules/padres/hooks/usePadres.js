@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   guardarDatosApoderadoPadres,
@@ -6,6 +6,7 @@ import {
   obtenerResumenPadre,
   registrarInscripcionPadres,
   registrarPagoVerificacionPadres,
+  reservarCupoCajaPadres,
 } from "../services/padresService";
 import {
   obtenerBannerEstudiante,
@@ -142,15 +143,15 @@ function usePadres(user) {
   useEffect(() => {
     if (!pagoConfirmado) return;
 
-    const inscripcionesActuales = new Set(inscripciones.map((item) => item.id).filter(Boolean));
-    const pagoSigueEnResumen = pagos.some((item) =>
+    const freshPago = pagos.find((item) =>
       (pagoConfirmado.id && item.id === pagoConfirmado.id) ||
       (pagoConfirmado.inscripcionId && item.inscripcionId === pagoConfirmado.inscripcionId)
     );
-    const inscripcionSigueEnResumen = pagoConfirmado.inscripcionId && inscripcionesActuales.has(pagoConfirmado.inscripcionId);
 
-    if (!pagoSigueEnResumen && !inscripcionSigueEnResumen) {
+    if (!freshPago) {
       setPagoConfirmado(null);
+    } else if (JSON.stringify(freshPago) !== JSON.stringify(pagoConfirmado)) {
+      setPagoConfirmado(freshPago);
     }
   }, [inscripciones, pagoConfirmado, pagos]);
 
@@ -171,14 +172,14 @@ function usePadres(user) {
   const programasDisponibles = useMemo(
     () => programasCoordinacion
       .map((item) => prepararProgramaParaGrado(item, estudiante?.grado))
-      .filter((item) => item.id !== programa?.programaId)
+      .filter((item) => item.id !== (programa?.programaId || programa?.id))
       .filter((item) => item.registrable && item.disponibleParaGrado)
       .map((item) => ({
         ...item,
         registrado: programasYaRegistrados.has(item.id),
         inscripcionRegistrada: inscripcionesPorPrograma.get(item.id) || null,
       })),
-    [programa?.programaId, programasCoordinacion, programasYaRegistrados, inscripcionesPorPrograma, estudiante?.grado]
+    [programa?.programaId, programa?.id, programasCoordinacion, programasYaRegistrados, inscripcionesPorPrograma, estudiante?.grado]
   );
 
   const programaIdAnteriorRef = useRef(programa?.programaId || programa?.id || null);
@@ -252,10 +253,16 @@ function usePadres(user) {
       return false;
     }
 
+    const targetProgramaId = programaId || programa?.programaId || programa?.id || "";
+    if (!targetProgramaId) {
+      avisar("No se encontro el programa para registrar.");
+      return false;
+    }
+
     setGuardando(true);
-    if (programaId) setProgramaSeleccionadoId(programaId);
+    setProgramaSeleccionadoId(targetProgramaId);
     try {
-      const registro = await registrarInscripcionPadres(user.dni, form, programaId, horarioPersonalizado, tallas);
+      const registro = await registrarInscripcionPadres(user.dni, form, targetProgramaId, horarioPersonalizado, tallas);
       toast.success("Padres", {
         description: "Inscripcion registrada como pendiente de pago. Acerquese a Cajera para validar el pago.",
       });
@@ -264,7 +271,7 @@ function usePadres(user) {
     } catch (err) {
       if (String(err.message || "").toLowerCase().includes("ya tiene una inscrip")) {
         await cargarResumen({ silencioso: true });
-        return inscripcionesPorPrograma.get(programaId) || true;
+        return inscripcionesPorPrograma.get(targetProgramaId) || true;
       }
       avisar(err.message || "No se pudo registrar la inscripcion.");
       return false;
@@ -355,6 +362,29 @@ function usePadres(user) {
     }
   }
 
+  async function reservarCupoCaja(inscripcionObjetivoId = "") {
+    const inscripcionId = inscripcionObjetivoId || inscripcion?.id || "";
+    if (!inscripcionId) {
+      avisar("Primero registre la inscripcion para reservar.");
+      return false;
+    }
+
+    setGuardando(true);
+    try {
+      await reservarCupoCajaPadres(user.dni, inscripcionId);
+      toast.success("Cupo reservado", {
+        description: "Tu cupo ha sido reservado. Acercate a Caja para realizar el pago.",
+      });
+      await cargarResumen({ silencioso: true });
+      return true;
+    } catch (err) {
+      avisar(err.message || "No se pudo reservar el cupo.");
+      return false;
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   return {
     abrirPago,
     actualizar,
@@ -392,6 +422,7 @@ function usePadres(user) {
     siguientePaso,
     solicitarInscripcionPadres,
     guardarDatos,
+    reservarCupoCaja,
   };
 }
 

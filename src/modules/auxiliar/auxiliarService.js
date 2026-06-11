@@ -11,6 +11,10 @@ import { fechaActualIso } from "../../services/dateService";
 
 const esperar = (ms = 220) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Mapa en memoria para bloquear registros duplicados (no depende de apiDb)
+const MINUTOS_BLOQUEO = 15;
+const registrosRecientes = new Map(); // clave: dni o código → timestamp
+
 export async function validarDni(busqueda) {
   if (isApiMode()) {
     const res = await apiClient.get("/api/v1/extracurricular/auxiliar/validar", {
@@ -102,6 +106,23 @@ export async function validarQR(codigo) {
 }
 
 export async function registrarAsistencia(data, observacion = "") {
+  // ─── Protección anti-duplicado (en memoria, funciona en ambos modos) ───
+  const claveEstudiante = obtenerClaveDuplicado(data);
+  if (claveEstudiante) {
+    const ultimoRegistro = registrosRecientes.get(claveEstudiante);
+    if (ultimoRegistro) {
+      const ahora = Date.now();
+      const limiteMs = MINUTOS_BLOQUEO * 60 * 1000;
+      const transcurrido = ahora - ultimoRegistro;
+      if (transcurrido < limiteMs) {
+        const minutosRestantes = Math.ceil((limiteMs - transcurrido) / 60000);
+        throw new Error(
+          `Este estudiante ya fue registrado hace poco. Podrá registrarse nuevamente en ${minutosRestantes} minuto(s).`
+        );
+      }
+    }
+  }
+
   if (isApiMode()) {
     const apiPayload = {
       inscripcion_id: data.inscripcionId || "",
@@ -113,6 +134,8 @@ export async function registrarAsistencia(data, observacion = "") {
     };
     const res = await apiClient.post("/api/v1/extracurricular/asistencia", apiPayload);
     if (!res.success) throw new Error(res.message || "Error al registrar asistencia");
+    // Marcar como registrado en memoria
+    if (claveEstudiante) registrosRecientes.set(claveEstudiante, Date.now());
     return adaptarAsistencia(res.data);
   }
 
@@ -154,11 +177,22 @@ export async function registrarAsistencia(data, observacion = "") {
   apiDb.asistencias.push(registro);
   await saveApiDb();
 
+  // Marcar como registrado en memoria
+  if (claveEstudiante) registrosRecientes.set(claveEstudiante, Date.now());
+
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("mock-db-updated"));
   }
 
   return registro;
+}
+
+function obtenerClaveDuplicado(data) {
+  const dni = limpiarDni(data?.dni || data?.dniEstudiante || "");
+  if (dni) return `dni:${dni}`;
+  const codigo = limpiarCodigo(data?.codigoEstudiante || "");
+  if (codigo) return `cod:${codigo}`;
+  return "";
 }
 
 function resolverValidacion(identificadores = {}) {
@@ -201,16 +235,19 @@ function resolverValidacion(identificadores = {}) {
     });
   }
 
+  const esProceso = pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar" || pago.estado === "Pago en proceso");
   return crearRespuestaInscripcion({
     inscripcion,
     estudiante,
     pago,
     estadoAcceso: "pendiente",
-    estadoPago: "Pendiente",
+    estadoPago: esProceso ? "Pago en proceso" : "Pendiente",
     accesoPermitido: false,
-    mensajeAcceso: "Pago pendiente",
-    accion: "Pago pendiente. Indicar que se acerque a Cajera.",
-    color: "amarillo",
+    mensajeAcceso: esProceso ? "Pago en proceso" : "Pago pendiente",
+    accion: esProceso 
+      ? "Tiene un pago en proceso de verificación. Debe acercarse a Caja para su aprobación."
+      : "Falta pagar. Debe acercarse a Caja para regularizar el pago.",
+    color: "rojo",
   });
 }
 
@@ -295,7 +332,26 @@ function buscarInscripcion(ids) {
     if (porPrograma.length) return ordenarPorFecha(porPrograma)[0] || null;
   }
 
-  return ordenarPorFecha(candidatas)[0] || null;
+  if (candidatas.length > 0) {
+    // Priorizar inscripciones pagadas
+    const paid = candidatas.filter(ins => {
+      const p = encontrarPagoInscripcion(ins, ids);
+      const estNorm = resolverEstadoPago(ins, p);
+      return estNorm === "pagado";
+    });
+    if (paid.length > 0) return ordenarPorFecha(paid)[0];
+
+    // Luego en proceso / Por verificar
+    const processing = candidatas.filter(ins => {
+      const p = encontrarPagoInscripcion(ins, ids);
+      return p && (p.estado === "Por Verificar" || p.estado === "Por verificar" || p.estado === "Pago en proceso");
+    });
+    if (processing.length > 0) return ordenarPorFecha(processing)[0];
+
+    return ordenarPorFecha(candidatas)[0] || null;
+  }
+
+  return null;
 }
 
 function coincideInscripcion(inscripcion, ids) {

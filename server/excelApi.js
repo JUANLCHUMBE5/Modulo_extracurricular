@@ -70,6 +70,14 @@ function normalizarEstadoPagoReporteCaja(pago = null, inscripcion = null) {
   return "pendiente";
 }
 
+function pagoPerteneceAInscripcionReporte(pay = {}, item = {}) {
+  if (pay.inscripcionId && item.id) return pay.inscripcionId === item.id;
+  if (pay.inscripcionId && item.inscripcionId) return pay.inscripcionId === item.inscripcionId;
+  if (pay.dniEstudiante !== item.dniEstudiante) return false;
+  if (pay.programaId && item.programaId) return pay.programaId === item.programaId;
+  return normalizarTextoApi(pay.programa) === normalizarTextoApi(item.programa);
+}
+
 function esProgramaCambridgeApi(programa = {}) {
   const texto = normalizarTextoApi([
     programa.nombre,
@@ -1611,6 +1619,54 @@ app.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", req
   }
 });
 
+app.put("/api/v1/extracurricular/inscripciones/:inscripcionId/reservar-caja", requireRole(["padres"]), async (req, res) => {
+  try {
+    const { inscripcionId } = req.params;
+    const dni = String(req.body.dni_estudiante || req.user?.username || "").replace(/\D/g, "");
+    const db = await getDb();
+    const idx = (db.inscripciones || []).findIndex(item =>
+      item.id === inscripcionId &&
+      item.dniEstudiante === dni &&
+      item.estadoInscripcion !== "Anulada"
+    );
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: "No se encontro la inscripcion para reservar el pago en Caja." });
+    }
+
+    const estadoAnterior = db.inscripciones[idx].estadoInscripcion;
+    const updated = {
+      ...db.inscripciones[idx],
+      derivadoCaja: true,
+      estadoCaja: "reservado_caja",
+      estadoPago: "pendiente",
+      estadoInscripcion: "Reserva pendiente",
+      fechaReservaCaja: new Date().toISOString(),
+      observacionCaja: "Reserva generada desde portal de padres para pago presencial en Caja."
+    };
+
+    db.inscripciones[idx] = updated;
+
+    const student = db.estudiantes?.[updated.dniEstudiante];
+    if (student) {
+      student.estadoInscripcion = "Reserva pendiente";
+      student.estadoCaja = "reservado_caja";
+    }
+
+    await saveDb(db);
+    await registrarAuditoria(req.user?.username || dni || "padre", req.user?.role || "padres", "RESERVA_CAJA_PADRES", {
+      inscripcionId,
+      alumno: updated.nombresEstudiante,
+      taller: updated.programa,
+      estadoAnterior,
+      estadoNuevo: updated.estadoInscripcion
+    });
+
+    res.json({ success: true, data: mapDbEnrollmentToApi(updated, db) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 app.get("/api/v1/extracurricular/secretaria/inscripciones/buscar", requireRole(["secretaria"]), async (req, res) => {
   try {
     const { dni, periodo } = req.query;
@@ -1806,7 +1862,7 @@ app.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), u
       telefonoOperacion: req.body.telefono_operacion || req.body.telefono || "",
       capturaPagoNombre: req.body.comprobante_nombre || "",
       capturaPagoBase64: base64Image,
-      estado: "Por Verificar",
+      estado: "verificando",
       estadoVerificacion: "pendiente",
       fecha: new Date().toISOString(),
       fechaPago: new Date().toISOString(),
@@ -1817,7 +1873,7 @@ app.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), u
     db.pagos.push(nuevoPago);
     
     inscrip.estadoPago = "pendiente"; // estado normalizado
-    inscrip.estadoInscripcion = "pendiente_validacion"; // estado normalizado
+    inscrip.estadoInscripcion = "Pago en proceso"; // estado normalizado
     inscrip.pagoId = pagoId;
     inscrip.pagoReferencia = nuevoPago.numeroOperacion;
     inscrip.pagoTelefono = nuevoPago.telefonoOperacion;
@@ -1840,26 +1896,85 @@ app.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), u
 // 8. Auxiliar
 app.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar"]), async (req, res) => {
   try {
-    const { dni, programa_id } = req.query;
+    const { dni, busqueda, programa_id } = req.query;
     const db = await getDb();
     
-    const inscripcion = (db.inscripciones || []).find(item => item.dniEstudiante === dni && item.programaId === programa_id && item.estadoInscripcion !== "Anulada");
-    const student = db.estudiantes?.[dni];
+    // Resolve search parameters
+    const query = String(dni || busqueda || "").trim();
+    let studentDni = "";
+    let student = null;
+    
+    if (/^\d+$/.test(query)) {
+      studentDni = query.replace(/\D/g, "").slice(0, 8);
+      student = db.estudiantes?.[studentDni];
+    } else if (query) {
+      // Búsqueda por nombre
+      const queryNormalizada = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const studentMatch = Object.values(db.estudiantes || {}).find(est => {
+        const full = `${est.nombres || ""} ${est.apellidos || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return full.includes(queryNormalizada);
+      });
+      if (studentMatch) {
+        student = studentMatch;
+        studentDni = student.dni;
+      } else {
+        const insMatch = (db.inscripciones || []).find(ins => {
+          const name = String(ins.nombresEstudiante || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          return name.includes(queryNormalizada) && ins.estadoInscripcion !== "Anulada";
+        });
+        if (insMatch) {
+          studentDni = insMatch.dniEstudiante;
+          student = db.estudiantes?.[studentDni];
+        }
+      }
+    }
+    
+    let inscripcion = null;
+    if (studentDni) {
+      const inscripcionesEstudiante = (db.inscripciones || []).filter(item => 
+        item.dniEstudiante === studentDni && item.estadoInscripcion !== "Anulada"
+      );
+      
+      if (programa_id) {
+        inscripcion = inscripcionesEstudiante.find(item => item.programaId === programa_id);
+      } else if (inscripcionesEstudiante.length > 0) {
+        // Priorizar pagado, luego en proceso, luego último
+        const paid = inscripcionesEstudiante.filter(ins => {
+          const p = (db.pagos || []).find(p => p.inscripcionId === ins.id && p.estado !== "anulado" && p.estado !== "observado");
+          return (p && (p.estado === "completado" || p.estado === "validado")) || ins.estadoPago === "Pagado";
+        });
+        if (paid.length > 0) {
+          inscripcion = paid[0];
+        } else {
+          const processing = inscripcionesEstudiante.filter(ins => {
+            const p = (db.pagos || []).find(p => p.inscripcionId === ins.id && p.estado !== "anulado" && p.estado !== "observado");
+            return p && (p.estado === "Por Verificar" || p.estado === "Por verificar");
+          });
+          if (processing.length > 0) {
+            inscripcion = processing[0];
+          } else {
+            inscripcion = inscripcionesEstudiante.sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0))[0];
+          }
+        }
+      }
+    }
+    
     const pago = inscripcion ? (db.pagos || []).find(p => p.inscripcionId === inscripcion.id && p.estado !== "anulado" && p.estado !== "observado") : null;
     
     let result = {
       accesoPermitido: false,
       mensajeAcceso: "No registrado",
-      accion: "Estudiante no registrado en este programa. Dirigirse a Asistente.",
+      accion: "Estudiante no registrado en un programa activo. Dirigirse a Asistente.",
       color: "rojo",
-      nombres: student ? student.nombres : "",
-      dni: dni,
+      nombres: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : "",
+      dni: studentDni || query,
       codigoEstudiante: student ? student.codigoEstudiante : "",
       grado: student ? student.grado : "",
       seccion: student ? student.seccion : "",
       programa: "",
       horario: "",
       estadoPago: "Pendiente",
+      estadoAcceso: "no_registrado",
       pagoId: "",
       inscripcionId: ""
     };
@@ -1877,18 +1992,21 @@ app.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar"]), a
         result.accion = "Ingreso permitido.";
         result.color = "verde";
         result.estadoPago = "Pagado";
-      } else if (pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar")) {
-        result.accesoPermitido = true;
-        result.mensajeAcceso = "Por verificar";
-        result.accion = "Ingreso permitido condicional (Pago web por verificar).";
-        result.color = "amarillo";
-        result.estadoPago = "Por Verificar";
+        result.estadoAcceso = "pagado";
+      } else if (pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar" || pago.estado === "Pago en proceso")) {
+        result.accesoPermitido = false;
+        result.mensajeAcceso = "Pago en proceso";
+        result.accion = "Tiene un pago en proceso de verificación. Debe acercarse a Caja para su aprobación.";
+        result.color = "rojo";
+        result.estadoPago = "Pago en proceso";
+        result.estadoAcceso = "pendiente";
       } else {
         result.accesoPermitido = false;
         result.mensajeAcceso = "Pago pendiente";
-        result.accion = "Tiene pagos pendientes. Dirigirse a Cajera antes de ingresar.";
+        result.accion = "Falta pagar. Debe acercarse a Caja para regularizar el pago.";
         result.color = "rojo";
         result.estadoPago = "Pendiente";
+        result.estadoAcceso = "pendiente";
       }
     }
     
@@ -1901,26 +2019,72 @@ app.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar"]), a
 app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"]), async (req, res) => {
   try {
     const { codigo, programa_id } = req.query;
-    const dni = String(codigo || "").replace(/\D/g, "");
     const db = await getDb();
     
-    const inscripcion = (db.inscripciones || []).find(item => item.dniEstudiante === dni && item.programaId === programa_id && item.estadoInscripcion !== "Anulada");
+    let dni = "";
+    let inscripcionId = "";
+    
+    const texto = String(codigo || "").trim();
+    if (texto.startsWith("INS-")) {
+      inscripcionId = texto;
+      const ins = (db.inscripciones || []).find(item => item.id === inscripcionId);
+      if (ins) {
+        dni = ins.dniEstudiante;
+      }
+    } else {
+      dni = texto.replace(/\D/g, "").slice(0, 8);
+    }
+    
     const student = db.estudiantes?.[dni];
+    
+    let inscripcion = null;
+    if (inscripcionId) {
+      inscripcion = (db.inscripciones || []).find(item => item.id === inscripcionId && item.estadoInscripcion !== "Anulada");
+    } else if (dni) {
+      const inscripcionesEstudiante = (db.inscripciones || []).filter(item => 
+        item.dniEstudiante === dni && item.estadoInscripcion !== "Anulada"
+      );
+      
+      if (programa_id) {
+        inscripcion = inscripcionesEstudiante.find(item => item.programaId === programa_id);
+      } else if (inscripcionesEstudiante.length > 0) {
+        // Priorizar pagado, luego en proceso, luego último
+        const paid = inscripcionesEstudiante.filter(ins => {
+          const p = (db.pagos || []).find(p => p.inscripcionId === ins.id && p.estado !== "anulado" && p.estado !== "observado");
+          return (p && (p.estado === "completado" || p.estado === "validado")) || ins.estadoPago === "Pagado";
+        });
+        if (paid.length > 0) {
+          inscripcion = paid[0];
+        } else {
+          const processing = inscripcionesEstudiante.filter(ins => {
+            const p = (db.pagos || []).find(p => p.inscripcionId === ins.id && p.estado !== "anulado" && p.estado !== "observado");
+            return p && (p.estado === "Por Verificar" || p.estado === "Por verificar");
+          });
+          if (processing.length > 0) {
+            inscripcion = processing[0];
+          } else {
+            inscripcion = inscripcionesEstudiante.sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0))[0];
+          }
+        }
+      }
+    }
+    
     const pago = inscripcion ? (db.pagos || []).find(p => p.inscripcionId === inscripcion.id && p.estado !== "anulado" && p.estado !== "observado") : null;
     
     let result = {
       accesoPermitido: false,
       mensajeAcceso: "No registrado",
-      accion: "Estudiante no registrado en este programa. Dirigirse a Asistente.",
+      accion: "Estudiante no registrado en un programa activo. Dirigirse a Asistente.",
       color: "rojo",
-      nombres: student ? student.nombres : "",
-      dni: dni,
+      nombres: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : "",
+      dni: dni || (inscripcion ? inscripcion.dniEstudiante : ""),
       codigoEstudiante: student ? student.codigoEstudiante : "",
       grado: student ? student.grado : "",
       seccion: student ? student.seccion : "",
       programa: "",
       horario: "",
       estadoPago: "Pendiente",
+      estadoAcceso: "no_registrado",
       pagoId: "",
       inscripcionId: ""
     };
@@ -1938,18 +2102,21 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"])
         result.accion = "Ingreso permitido.";
         result.color = "verde";
         result.estadoPago = "Pagado";
-      } else if (pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar")) {
-        result.accesoPermitido = true;
-        result.mensajeAcceso = "Por verificar";
-        result.accion = "Ingreso permitido condicional (Pago web por verificar).";
-        result.color = "amarillo";
-        result.estadoPago = "Por Verificar";
+        result.estadoAcceso = "pagado";
+      } else if (pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar" || pago.estado === "Pago en proceso")) {
+        result.accesoPermitido = false;
+        result.mensajeAcceso = "Pago en proceso";
+        result.accion = "Tiene un pago en proceso de verificación. Debe acercarse a Caja para su aprobación.";
+        result.color = "rojo";
+        result.estadoPago = "Pago en proceso";
+        result.estadoAcceso = "pendiente";
       } else {
         result.accesoPermitido = false;
         result.mensajeAcceso = "Pago pendiente";
-        result.accion = "Tiene pagos pendientes. Dirigirse a Cajera antes de ingresar.";
+        result.accion = "Falta pagar. Debe acercarse a Caja para regularizar el pago.";
         result.color = "rojo";
         result.estadoPago = "Pendiente";
+        result.estadoAcceso = "pendiente";
       }
     }
     
@@ -2216,13 +2383,13 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]), 
     const inscrip = (db.inscripciones || []).find(item => item.id === db.pagos[idx].inscripcionId);
     if (inscrip) {
       inscrip.estadoPago = "validado"; // estado normalizado
-      inscrip.estadoInscripcion = "confirmada"; // estado normalizado
+      inscrip.estadoInscripcion = "Pago exitoso"; // estado normalizado
       inscrip.fechaPago = db.pagos[idx].validadoEn;
       inscrip.pagoObservacionCaja = observaciones || "";
     }
     
     if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
-      db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "confirmada";
+      db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "Pago exitoso";
     }
     
     await saveDb(db);
@@ -2276,6 +2443,44 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/observar", requireRole(["caja"]),
   }
 });
 
+app.put("/api/v1/extracurricular/pagos/:pagoId/rechazar", requireRole(["caja"]), async (req, res) => {
+  try {
+    const { pagoId } = req.params;
+    const { observaciones } = req.body;
+    const db = await getDb();
+    
+    const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
+    if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    
+    db.pagos[idx].estado = "anulado"; // estado normalizado: anulado
+    db.pagos[idx].observaciones = observaciones || "Pago rechazado por Cajera.";
+    db.pagos[idx].validadoPor = req.user?.username || "Cajera";
+    db.pagos[idx].validadoEn = new Date().toISOString();
+    
+    const inscrip = (db.inscripciones || []).find(item => item.id === db.pagos[idx].inscripcionId);
+    if (inscrip) {
+      inscrip.estadoPago = "pendiente";
+      inscrip.estadoInscripcion = "pendiente_pago"; // Regresa a pendiente de pago
+      inscrip.pagoObservacionCaja = observaciones || "Pago rechazado por Cajera.";
+    }
+    
+    if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
+      db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "pendiente_pago";
+    }
+    
+    await saveDb(db);
+
+    await registrarAuditoria(req.user?.username || "Cajera", req.user?.role || "caja", "PAGO_RECHAZAR", {
+      pagoId,
+      observaciones
+    });
+
+    res.json({ success: true, data: mapDbPaymentToApi(db.pagos[idx]) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 app.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"]), async (req, res) => {
   try {
     const { periodo, tipoReporte, desde, hasta, programa, medioPago, estadoPago } = req.query;
@@ -2317,7 +2522,7 @@ app.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"
       });
     } else {
       reportList = enrollments.map(e => {
-        const p = payments.find(pay => pay.inscripcionId === e.id) || payments.find(pay => pay.dniEstudiante === e.dniEstudiante && (pay.programaId === e.programaId || normalizarTextoApi(pay.programa) === normalizarTextoApi(e.programa)));
+        const p = payments.find(pay => pagoPerteneceAInscripcionReporte(pay, e));
         const prog = db.programas.find(progItem => progItem.id === e.programaId);
         const student = db.estudiantes?.[e.dniEstudiante];
         

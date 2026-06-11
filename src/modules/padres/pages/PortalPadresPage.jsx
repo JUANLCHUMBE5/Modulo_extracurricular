@@ -1,4 +1,4 @@
-﻿import { Alert } from "@mantine/core";
+import { Alert } from "@mantine/core";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   IconAlertCircle as AlertCircle,
@@ -107,6 +107,7 @@ export default function Padres({ user, onLogout }) {
     setInfoProgramaAceptada,
     solicitarInscripcionPadres,
     guardarDatos,
+    reservarCupoCaja,
   } = usePadres(user);
 
   const programaActual = programaAdicional || programa;
@@ -135,9 +136,10 @@ export default function Padres({ user, onLogout }) {
       }
     : null;
   const datosConfirmados = Boolean(
-    form.apoderado.trim() &&
+    (form.apoderado.trim() &&
     /^\d{9}$/.test(form.telefono.trim()) &&
-    form.acepta
+    form.acepta) ||
+    inscripcionPago
   );
   const contextoAsistente = useMemo(() => ({
     datosConfirmados,
@@ -303,6 +305,20 @@ export default function Padres({ user, onLogout }) {
     await enviarPagoVerificacionPadres(datosPago, inscripcionPago?.id);
   }
 
+  function manejarFinalizarPago() {
+    setMantenerPasoPago(false);
+    setPasoObjetivo(null);
+    setProgramaAdicional(null);
+    setInscripcionPagoId("");
+    guardarPasoPago(user?.dni, null);
+    setPasoActivo(0);
+  }
+
+  async function manejarReservaCaja() {
+    if (!inscripcionPago?.id) return false;
+    return await reservarCupoCaja(inscripcionPago.id);
+  }
+
   function marcarComunicadoVistoSiCorresponde(event) {
     const modal = event.currentTarget;
     const llegoAlFinal = modal.scrollTop + modal.clientHeight >= modal.scrollHeight - 24;
@@ -370,6 +386,8 @@ export default function Padres({ user, onLogout }) {
           programa={programaActual}
           requiereCaja={requiereCaja}
           setPasoActivo={cambiarPaso}
+          onFinalizarPago={manejarFinalizarPago}
+          onReservarCupoCaja={manejarReservaCaja}
         />
       );
     }

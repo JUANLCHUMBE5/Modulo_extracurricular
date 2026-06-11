@@ -66,6 +66,7 @@ export async function crearCategoria(nombre) {
   if (apiDb.categorias.includes(nombre)) throw new Error("La categoría ya existe.");
   apiDb.categorias.push(nombre);
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
   return nombre;
 }
 
@@ -91,6 +92,7 @@ export async function eliminarCategoria(nombre) {
     String(item).toLowerCase() !== categoria.toLowerCase()
   );
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
   return categoria;
 }
 
@@ -203,6 +205,7 @@ export async function crearPrograma(datos) {
 
   apiDb.programas.push(nuevo);
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
   return conCuposDisponibles(nuevo);
 }
 
@@ -299,6 +302,7 @@ export async function crearProgramaDesdeDocumento(datos) {
 
   apiDb.programas.push(nuevo);
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
   return conCuposDisponibles(nuevo);
 }
 
@@ -391,6 +395,7 @@ export async function editarPrograma(id, datos) {
   };
 
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
   return conCuposDisponibles(apiDb.programas[index]);
 }
 
@@ -413,10 +418,12 @@ export async function cambiarEstadoPrograma(id, nuevoEstado) {
     programa.estado = "Finalizado";
     programa.finalizadoAutomaticamenteEn = programa.finalizadoAutomaticamenteEn || fechaActualIso();
     await saveApiDb();
+    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
     throw new Error("El programa ya cumplió su fecha fin. Cree un nuevo ciclo para continuar.");
   }
   programa.estado = nuevoEstado;
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
   return conCuposDisponibles(programa);
 }
 
@@ -434,6 +441,7 @@ export async function eliminarPrograma(id) {
   apiDb.programas.splice(index, 1);
   delete apiDb.invitadosPorPrograma[id];
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
   return true;
 }
 
@@ -571,6 +579,7 @@ export async function importarInvitados(programaId, lista) {
     })),
   ];
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
   return { importados: nuevos.length, duplicados };
 }
 
@@ -975,6 +984,7 @@ export async function confirmarCargaAlumnos(preview) {
   apiDb.historialCargas = [...nuevasCargas, ...apiDb.historialCargas];
 
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
 
   const primerArchivoNombre = validos[0] ? (validos[0].archivoNombre || preview.archivoNombre || "Carga Excel") : "";
   const returnedCargaId = primerArchivoNombre ? (validosPorArchivo.get(primerArchivoNombre)?.cargaId || "") : "";
@@ -1037,6 +1047,7 @@ export async function eliminarCargaAlumnos(cargaId) {
 
   apiDb.historialCargas = apiDb.historialCargas.filter((item) => item.id !== cargaId);
   await saveApiDb();
+  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
   return { cargaId, eliminados };
 }
 
@@ -1093,7 +1104,10 @@ function normalizarPeriodosGuardados() {
       cambio = true;
     }
   });
-  if (cambio) saveApiDb();
+  if (cambio) {
+    saveApiDb();
+    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
+  }
 }
 
 function finalizarProgramasVencidos() {
@@ -1108,7 +1122,10 @@ function finalizarProgramasVencidos() {
     cambio = true;
   });
 
-  if (cambio) saveApiDb();
+  if (cambio) {
+    saveApiDb();
+    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
+  }
 }
 
 function obtenerMensajeConexionApi() {

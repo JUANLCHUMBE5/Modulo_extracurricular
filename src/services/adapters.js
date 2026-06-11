@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Adaptadores de datos para migración de API
  * Módulo Extracurricular - IEP San Rafael S.A.C.
  * 
@@ -13,6 +13,7 @@ export function adaptarPrograma(apiPrograma) {
   if (!apiPrograma) return null;
   return {
     id: apiPrograma.id || apiPrograma.programa_id || apiPrograma.programaId || "",
+    programaId: apiPrograma.programa_id || apiPrograma.programaId || apiPrograma.id || "",
     nombre: apiPrograma.nombre_programa || apiPrograma.nombre || apiPrograma.programa || "",
     categoria: apiPrograma.categoria || "General",
     fechaInicio: apiPrograma.fecha_inicio || apiPrograma.fechaInicio || "",
@@ -161,7 +162,9 @@ export function adaptarInscripcion(apiInscripcion) {
     plantilla: apiInscripcion.plantilla || "",
     plantillaBase64: apiInscripcion.plantilla_base64 || apiInscripcion.plantillaBase64 || "",
     plantillaVariables: apiInscripcion.plantilla_variables || apiInscripcion.plantillaVariables || [],
-    plantillaValidada: Boolean(apiInscripcion.plantilla_validada ?? apiInscripcion.plantillaValidada)
+    plantillaValidada: Boolean(apiInscripcion.plantilla_validada ?? apiInscripcion.plantillaValidada),
+    derivadoCaja: Boolean(apiInscripcion.derivado_caja ?? apiInscripcion.derivadoCaja),
+    estadoCaja: apiInscripcion.estado_caja || apiInscripcion.estadoCaja || ""
   };
 }
 
