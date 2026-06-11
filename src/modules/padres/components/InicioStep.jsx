@@ -157,8 +157,9 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
   );
 }
 
-function HorarioCompactoPadres({ horario }) {
+function HorarioCompactoPadres({ horario, talleresDeportivos }) {
   const texto = repararTexto(String(horario || "")).trim();
+
   if (!texto) {
     return (
       <div className="padres-flow-course-schedule">
@@ -177,14 +178,31 @@ function HorarioCompactoPadres({ horario }) {
   const isComplex = sessions.some(s => s.includes(":"));
 
   if (isComplex) {
-    return (
-      <div className="padres-flow-course-schedule is-simplified" style={{ padding: "10px 12px" }}>
-        <div className="padres-schedule-item" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <CalendarDays size={15} style={{ color: "#0ea5e9" }} />
-          <span style={{ fontWeight: 800, color: "#1e293b", fontSize: "13.5px" }}>Fútbol, Vóley y Básquet</span>
+    // If we have structured talleresDeportivos, list the sports names
+    if (Array.isArray(talleresDeportivos) && talleresDeportivos.length > 0) {
+      const deportesUnicos = [...new Set(talleresDeportivos.map(t => t.deporte).filter(Boolean))];
+      const etiqueta = deportesUnicos.length > 0
+        ? deportesUnicos.join(", ")
+        : "Horario por confirmar";
+      return (
+        <div className="padres-flow-course-schedule is-simplified" style={{ padding: "10px 12px" }}>
+          <div className="padres-schedule-item" style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <CalendarDays size={15} style={{ color: "#0ea5e9" }} />
+            <span style={{ fontWeight: 800, color: "#1e293b", fontSize: "13.5px" }}>{etiqueta}</span>
+          </div>
+          <div className="padres-schedule-item-subtitle" style={{ fontSize: "11px", color: "#64748b", fontWeight: 700, paddingLeft: "23px", marginTop: "1px" }}>
+            Para todas las edades (se elige al inscribir)
+          </div>
         </div>
-        <div className="padres-schedule-item-subtitle" style={{ fontSize: "11px", color: "#64748b", fontWeight: 700, paddingLeft: "23px", marginTop: "1px" }}>
-          Para todas las edades (se elige al inscribir)
+      );
+    }
+
+    // Fallback: show the raw schedule text without hardcoded sports names
+    return (
+      <div className="padres-flow-course-schedule is-simple">
+        <div className="padres-schedule-item">
+          <CalendarDays size={14} />
+          <span>{texto}</span>
         </div>
       </div>
     );
@@ -436,7 +454,7 @@ function CatalogoProgramas({
                   </div>
                 </div>
 
-                <HorarioCompactoPadres horario={prog.horario} />
+                <HorarioCompactoPadres horario={prog.horario} talleresDeportivos={prog.talleresDeportivos} />
 
                 <div className="padres-flow-course-details-grid">
                   <div className="padres-course-detail-item">
