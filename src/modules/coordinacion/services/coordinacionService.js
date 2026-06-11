@@ -140,6 +140,7 @@ export async function crearPrograma(datos) {
       periodo: datos.periodo || "escolar",
       modalidad_cobro: datos.modalidadCobro || "Mensual",
       duracion_aviso_dias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
+      hora_limite_aviso: datos.horaLimiteAviso || "23:59",
       requiere_uniforme: Boolean(datos.requiereUniforme),
       requiere_indumentaria: Boolean(datos.requiereIndumentaria),
       anuncio_imagen: datos.anuncioImagen || "",
@@ -231,6 +232,7 @@ export async function crearProgramaDesdeDocumento(datos) {
       periodo: datos.periodo || "escolar",
       modalidad_cobro: datos.modalidadCobro || "Mensual",
       duracion_aviso_dias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
+      hora_limite_aviso: datos.horaLimiteAviso || "23:59",
       requiere_uniforme: Boolean(datos.requiereUniforme),
       requiere_indumentaria: Boolean(datos.requiereIndumentaria),
       grados: datos.gradosAplicables || [],
@@ -276,6 +278,7 @@ export async function crearProgramaDesdeDocumento(datos) {
     cicloI: datos.cicloI || "",
     cicloII: datos.cicloII || "",
     duracionAvisoDias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
+    horaLimiteAviso: datos.horaLimiteAviso || "23:59",
     cupos: Number(datos.cupos) > 0 ? Number(datos.cupos) : 1,
     cuposOcupados: 0,
     costo: Number(datos.costo) > 0 ? Number(Number(datos.costo).toFixed(2)) : 1,
@@ -321,6 +324,8 @@ export async function editarPrograma(id, datos) {
       responsable: datos.responsable || datos.docente || "",
       periodo: datos.periodo || "escolar",
       modalidad_cobro: datos.modalidadCobro || "Mensual",
+      duracion_aviso_dias: normalizarDuracionAvisoDias(datos.duracionAvisoDias, 7),
+      hora_limite_aviso: datos.horaLimiteAviso || "23:59",
       requiere_uniforme: Boolean(datos.requiereUniforme),
       requiere_indumentaria: Boolean(datos.requiereIndumentaria),
       anuncio_imagen: datos.anuncioImagen || "",
@@ -708,7 +713,7 @@ function claveRegistroPreview(registro) {
   if (!registro.programaId) return "";
   if (registro.dni) return `${registro.programaId}:dni:${registro.dni}`;
   const nombre = `${registro.nombres || ""} ${registro.apellidos || ""}`.trim().toLowerCase();
-  return nombre ? `${registro.programaId}:nombre:${nombre}:${registro.grado}:${registro.seccion}` : "";
+  return nombre ? `${registro.programaId}:nombre:${nombre}:${registro.grado}` : "";
 }
 
 export async function registrarAlumnoIndividualCarga({ periodo, programaId, dni, nombre, grado }) {

@@ -95,12 +95,12 @@ export default function ReporteTabla({
                   </span>
                 </Table.Td>
                 <Table.Td>
-                  <span className={esPagoWebPadresCaja(fila) ? "caja-phone-channel" : "caja-row-muted"}>
+                  <span className={esPagoWebPadresCaja(fila) || (String(fila.origen || fila.origenRegistro || "").toLowerCase() === "caja" && fila.estadoPago === "pagado") ? "caja-phone-channel" : "caja-row-muted"}>
                     {obtenerTelefonoPagoWebCaja(fila)}
                   </span>
                 </Table.Td>
                 <Table.Td>
-                  <span className={esPagoWebPadresCaja(fila) ? "caja-phone-channel" : "caja-row-muted"}>
+                  <span className={esPagoWebPadresCaja(fila) || (String(fila.origen || fila.origenRegistro || "").toLowerCase() === "caja" && fila.estadoPago === "pagado") ? "caja-phone-channel" : "caja-row-muted"}>
                     {obtenerMedioCanalWebCaja(fila)}
                   </span>
                 </Table.Td>

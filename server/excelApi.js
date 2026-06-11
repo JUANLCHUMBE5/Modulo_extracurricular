@@ -104,8 +104,7 @@ function claveAlumnoInvitadoApi(alumno = {}) {
     `${alumno.nombre || ""} ${alumno.apellidos || ""}`.trim()
   );
   const grado = normalizarTextoApi(alumno.grado);
-  const seccion = normalizarTextoApi(alumno.seccion);
-  return nombre ? `nombre:${nombre}:${grado}:${seccion}` : "";
+  return nombre ? `nombre:${nombre}:${grado}` : "";
 }
 
 const allowedOrigins = new Set(
@@ -1473,7 +1472,7 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
     const codigoRegistro = invitacionRegistro?.codigoEstudiante || student.codigoEstudiante || "";
     const nombresRegistro = invitacionRegistro?.nombres || `${student.nombres || ""} ${student.apellidos || ""}`.trim();
     const gradoRegistro = grado || invitacionRegistro?.grado || student.grado || "";
-    const seccionRegistro = seccion || invitacionRegistro?.seccion || student.seccion || "";
+    const seccionRegistro = seccion || "";
     const plantillaPrograma = obtenerPlantillaProgramaApi(db, prog);
     
     // Almacenar estados normalizados internamente en base de datos
@@ -2184,17 +2183,32 @@ app.get("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res)
 app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res) => {
   try {
     const db = await getDb();
-    const { inscripcion_id, monto, forma_pago, numero_operacion, telefono_operacion, fecha_pago, usuario_registro, dni_estudiante, nombres_estudiante, programa, periodo } = req.body;
+    const body = req.body;
+    
+    const inscripcion_id = body.inscripcion_id || body.inscripcionId || "";
+    const monto = body.monto !== undefined ? body.monto : (body.monto_pago !== undefined ? body.monto_pago : 0);
+    const forma_pago = body.forma_pago || body.metodo_pago || body.formaPago || "Efectivo";
+    const numero_operacion = body.numero_operacion || body.numeroOperacion || "";
+    const telefono_operacion = body.telefono_operacion || body.telefonoOperacion || "";
+    const fecha_pago = body.fecha_pago || body.fechaPago || body.fecha || new Date().toISOString();
+    const usuario_registro = body.usuario_registro || body.origen_registro || "Cajera";
+    const dni_estudiante = body.dni_estudiante || body.dniEstudiante || "";
+    const nombres_estudiante = body.nombres_estudiante || body.nombresEstudiante || "";
+    const programa = body.programa || body.programaNombre || "";
+    const periodo = body.periodo || "escolar";
     
     const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
+    const inscrip = (db.inscripciones || []).find(item => item.id === inscripcion_id);
+    
     const nuevoPago = {
       id: pagoId,
       inscripcionId: inscripcion_id || "",
-      dniEstudiante: dni_estudiante || "",
-      nombresEstudiante: nombres_estudiante || "",
-      programa: programa || "",
-      periodo: periodo || "escolar",
-      monto: Number(monto || 0),
+      dniEstudiante: dni_estudiante || (inscrip ? inscrip.dniEstudiante : ""),
+      nombresEstudiante: nombres_estudiante || (inscrip ? inscrip.nombresEstudiante : ""),
+      programa: programa || (inscrip ? inscrip.programa : ""),
+      programaId: (inscrip ? inscrip.programaId : ""),
+      periodo: periodo || (inscrip ? inscrip.periodo : "escolar"),
+      monto: Number(monto || (inscrip ? inscrip.costo : 0) || 0),
       formaPago: forma_pago || "Efectivo",
       numeroOperacion: numero_operacion || "",
       telefonoOperacion: telefono_operacion || "",
@@ -2202,7 +2216,7 @@ app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res
       estado: "validado", // estado normalizado
       fecha: fecha_pago || new Date().toISOString(),
       fechaPago: fecha_pago || new Date().toISOString(),
-      origenRegistro: "Cajera",
+      origenRegistro: "Caja", // Marcar origen como Caja
       validadoPor: usuario_registro || "Cajera",
       validadoEn: new Date().toISOString()
     };
@@ -2210,7 +2224,6 @@ app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res
     db.pagos = db.pagos || [];
     db.pagos.push(nuevoPago);
     
-    const inscrip = (db.inscripciones || []).find(item => item.id === inscripcion_id);
     if (inscrip) {
       inscrip.estadoPago = "validado"; // estado normalizado
       inscrip.estadoInscripcion = "confirmada"; // estado normalizado
@@ -2311,6 +2324,7 @@ app.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]), 
         data: {
           nombres: student.nombres,
           apellidos: student.apellidos || "",
+          codigoEstudiante: student.codigoEstudiante || "",
           grado: student.grado,
           seccion: student.seccion,
           tipoAlumno: student.tipoAlumno || "Alumno interno",
@@ -2329,6 +2343,7 @@ app.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]), 
         data: {
           nombres: student.nombres,
           apellidos: student.apellidos || "",
+          codigoEstudiante: student.codigoEstudiante || "",
           grado: student.grado,
           seccion: student.seccion,
           tipoAlumno: student.tipoAlumno || "Alumno interno",

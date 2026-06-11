@@ -30,6 +30,19 @@ import {
 
 const delay = (ms = 350) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function obtenerGradoCompleto(grado, nivel, respaldoGrado = "") {
+  let g = String(grado || "").trim();
+  if (!g) return String(respaldoGrado || "").trim();
+  const gLower = g.toLowerCase();
+  if (!gLower.includes("primaria") && !gLower.includes("secundaria") && !gLower.includes("inicial")) {
+    const n = String(nivel || "").trim();
+    if (n) {
+      g = `${g} ${n}`;
+    }
+  }
+  return g;
+}
+
 export async function obtenerResumenPadre(dni) {
   if (isApiMode()) {
     const res = await apiClient.get(`/api/v1/extracurricular/padres/resumen/${dni}`);
@@ -173,7 +186,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
     throw new Error("Este programa requiere invitacion de Coordinación Académica.");
   }
 
-  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias);
+  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso);
   if (!ventana.permitida) throw new Error("El aviso de inscripcion web cerro. Acerquese a Cajera para evaluar el registro.");
   if (Number(programa.cuposOcupados || 0) >= Number(programa.cupos || 0)) {
     throw new Error("El programa no tiene cupos disponibles.");
@@ -471,7 +484,7 @@ function obtenerInvitaciones(dni, estudiante = null) {
         cicloII: programa.cicloII || "",
         duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
         duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
-        ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias),
+        ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso),
       });
     }
 
@@ -480,7 +493,7 @@ function obtenerInvitaciones(dni, estudiante = null) {
       .filter((invitado) => invitado.dni === dni)
       .forEach((invitado) => {
         if (resultado.some((item) => item.programaId === programa.id)) return;
-        const gradoEstudiante = invitado.grado || estudiante?.grado;
+        const gradoEstudiante = obtenerGradoCompleto(invitado.grado, invitado.nivelEducativo || invitado.nivel, estudiante?.grado);
         if (!programaDisponibleParaGrado(programa, gradoEstudiante)) return;
 
         resultado.push({
@@ -490,8 +503,8 @@ function obtenerInvitaciones(dni, estudiante = null) {
           categoria: programa.categoria || "",
           alcanceInvitacionMasiva: programa.alcanceInvitacionMasiva || "colegio",
           periodo: normalizarPeriodoTexto(programa.periodo),
-          horario: resolverHorarioPorGrado(programa, invitado.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar",
-          responsable: resolverDocentePorGrado(programa, invitado.grado || estudiante?.grado),
+          horario: resolverHorarioPorGrado(programa, gradoEstudiante) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar",
+          responsable: resolverDocentePorGrado(programa, gradoEstudiante),
           costo: Number(programa.costo || 0),
           modalidadCobro: programa.modalidadCobro || "No definido",
           requisitos: programa.requisitos || "Sin requisitos adicionales",
@@ -514,8 +527,9 @@ function obtenerInvitaciones(dni, estudiante = null) {
           cicloI: programa.cicloI || "",
           cicloII: programa.cicloII || "",
           duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
+          grado: gradoEstudiante,
           duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
-          ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias),
+          ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso),
         });
       });
   });

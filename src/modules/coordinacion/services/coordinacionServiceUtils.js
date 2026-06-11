@@ -37,6 +37,9 @@ export function validarDatosPrograma(datos) {
   if (!Number.isInteger(duracionAviso) || duracionAviso < 1 || duracionAviso > 7) {
     throw new Error("El aviso de inscripcion debe durar entre 1 y 7 dias.");
   }
+  if (datos.horaLimiteAviso && !/^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/.test(datos.horaLimiteAviso)) {
+    throw new Error("La hora límite de aviso debe tener el formato HH:MM (24 horas).");
+  }
   if (!Number.isFinite(Number(datos.cupos)) || Number(datos.cupos) <= 0) {
     throw new Error("Los cupos deben ser un número positivo.");
   }

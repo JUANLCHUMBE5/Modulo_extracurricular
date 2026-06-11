@@ -286,6 +286,9 @@
   .coord-general-grid > .coord-category-field {
     grid-column: 1 / -1 !important;
   }
+  .coord-time-fields-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* Reorganized Schedule Block Grid (Horarios vs Vigencia) */
@@ -372,7 +375,12 @@
 }
 
 /* Time and Dates sub-grids */
-.coord-time-fields-grid,
+.coord-time-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
 .coord-vigencia-fields-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

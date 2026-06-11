@@ -138,16 +138,16 @@ function validarColumnasObligatorias(encabezados) {
         "nivel_educativo"
       ]
     : formatoEstandar
-    ? ["dni", "alumno", "nivel_educativo", "grado", "seccion", "curso_programa"]
+    ? ["dni", "alumno", "nivel_educativo", "grado", "curso_programa"]
     : formatoCambridgeLista
-      ? ["dni", "grado", "seccion", "seleccion", "curso_programa"]
+      ? ["dni", "grado", "seleccion", "curso_programa"]
       : esFormatoCargaCambridge(disponibles) && !esFormatoCargaGeneral(disponibles)
-      ? ["dni", "alumno", "grado", "seccion", "seleccion"]
+      ? ["dni", "alumno", "grado", "seleccion"]
       : formatoDocenteTalleres
-        ? ["alumno", "nivel_educativo", "grado", "seccion", "curso_programa"]
+        ? ["alumno", "nivel_educativo", "grado", "curso_programa"]
       : formatoNombreCompleto
-        ? ["nombres", "grado", "seccion", "curso_programa"]
-      : ["dni", "nombres", "apellidos", "grado", "seccion", "curso_programa"];
+        ? ["nombres", "grado", "curso_programa"]
+      : ["dni", "nombres", "apellidos", "grado", "curso_programa"];
   const faltantes = obligatorias.filter((columna) => !disponibles.has(columna));
   if (faltantes.length) lanzar(`Faltan columnas obligatorias: ${faltantes.join(", ")}.`);
 }
@@ -157,7 +157,6 @@ function esFormatoEstandar(disponibles) {
     disponibles.has("alumno") &&
     disponibles.has("nivel_educativo") &&
     disponibles.has("grado") &&
-    disponibles.has("seccion") &&
     disponibles.has("curso_programa");
 }
 
@@ -170,14 +169,12 @@ function esFormatoDocenteTalleres(disponibles) {
   return disponibles.has("alumno") &&
     disponibles.has("nivel_educativo") &&
     disponibles.has("grado") &&
-    disponibles.has("seccion") &&
     disponibles.has("curso_programa");
 }
 
 function esFormatoNombreCompleto(disponibles) {
   return disponibles.has("nombres") &&
     disponibles.has("grado") &&
-    disponibles.has("seccion") &&
     disponibles.has("curso_programa") &&
     !disponibles.has("apellidos");
 }
@@ -264,7 +261,6 @@ function validarFilaCarga(fila, programaDetectado, opciones = {}) {
   if (!textoSeguro(fila.alumno || `${fila.nombres} ${fila.apellidos}`)) errores.push("Falta alumno.");
   if (!textoSeguro(fila.grado)) errores.push("Falta grado.");
   if (!opciones.programaSeleccionado) {
-    if (!textoSeguro(fila.seccion)) errores.push("Falta seccion.");
     if (!textoSeguro(fila.curso) && !textoSeguro(fila.nivelCambridge)) errores.push("Falta curso o nivel Cambridge.");
     if (fila.curso && !programaDetectado) errores.push("El programa indicado no existe en el periodo seleccionado.");
     if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
@@ -384,9 +380,6 @@ function resolverEstudianteBase(fila, indice) {
   if (!updatedFila.nivelEducativo && (estudiante.nivel || estudiante.nivelEducativo)) {
     updatedFila.nivelEducativo = estudiante.nivel || estudiante.nivelEducativo;
   }
-  if (!updatedFila.seccion && estudiante.seccion) {
-    updatedFila.seccion = estudiante.seccion;
-  }
   if (estudiante.nombres) {
     const parts = separarAlumnoCompleto(estudiante.nombres);
     updatedFila.nombres = parts.nombres;
@@ -407,7 +400,7 @@ function claveAlumno(alumno) {
   if (dni) return `dni:${dni}`;
   if (alumno.codigoEstudiante) return `codigo:${normalizarComparacion(alumno.codigoEstudiante)}`;
   const nombre = normalizarComparacion(`${alumno.nombres || ""} ${alumno.apellidos || ""}`.trim());
-  return nombre ? `nombre:${nombre}:${normalizarComparacion(alumno.grado)}:${normalizarComparacion(alumno.seccion)}` : "";
+  return nombre ? `nombre:${nombre}:${normalizarComparacion(alumno.grado)}` : "";
 }
 
 function limpiarTexto(valor) {

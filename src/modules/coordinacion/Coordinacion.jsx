@@ -93,6 +93,23 @@ function leerFechaInput(valor) {
   return new Date(anio, mes - 1, dia);
 }
 
+function obtenerDiasEntreFechas(fechaInicio, fechaFin) {
+  const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const inicio = leerFechaInput(fechaInicio);
+  const fin = leerFechaInput(fechaFin);
+  if (!inicio || !fin || inicio > fin) return [];
+  const diasSet = new Set();
+  let act = new Date(inicio);
+  let limit = 0;
+  while (act <= fin && limit < 15) {
+    diasSet.add(diasSemana[act.getDay()]);
+    act.setDate(act.getDate() + 1);
+    limit++;
+  }
+  const orden = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+  return orden.filter(d => diasSet.has(d));
+}
+
 function calcularTextoCiclosCambridge(fechaInicio, fechaFin) {
   const inicio = leerFechaInput(fechaInicio);
   const fin = leerFechaInput(fechaFin);
@@ -157,6 +174,7 @@ function Coordinacion({
   const [tallerDepHoraFin, setTallerDepHoraFin] = useState("16:50");
   const [tallerDepCupos, setTallerDepCupos] = useState("20");
   const [tallerDepNivel, setTallerDepNivel] = useState("Formativo");
+  const [tallerDepDocente, setTallerDepDocente] = useState("");
   const [programaDocsId, setProgramaDocsId] = useState("");
   const [lecturaDocumento, setLecturaDocumento] = useState(null);
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
@@ -421,6 +439,7 @@ function Coordinacion({
       cicloI: prog.cicloI || "",
       cicloII: prog.cicloII || "",
       duracionAvisoDias: String(normalizarDuracionAvisoDias(prog.duracionAvisoDias, 7)),
+      horaLimiteAviso: prog.horaLimiteAviso || "23:59",
       cupos: String(cuposCalculados), costo: String(prog.costo),
       modalidadCobro: prog.modalidadCobro, responsable: prog.responsable,
       tutora: prog.tutora, plantilla: prog.plantilla || "",
@@ -472,6 +491,7 @@ function Coordinacion({
     const catLower = String(form.categoria || "").toLowerCase();
     const esCambridgeGuardar = esProgramaCambridge(form);
     const esDeportivoGuardar = catLower === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
+    const esMaratonGuardar = catLower === "maraton" || catLower === "maratón";
     const usaTalleresPorEdad = esVeranoGuardar ? (catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés") : esDeportivoGuardar;
     
     const talleres = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
@@ -481,12 +501,14 @@ function Coordinacion({
         : "Revise: talleres deportivos, edades y horarios.");
     }
 
-    const gruposHorario = usaTalleresPorEdad ? [] : normalizarHorariosPorGrupo(form.horariosPorGrupo);
-    const usaHorariosPorBloqueGuardar = !usaTalleresPorEdad;
+    const gruposHorario = (usaTalleresPorEdad || esMaratonGuardar) ? [] : normalizarHorariosPorGrupo(form.horariosPorGrupo);
+    const usaHorariosPorBloqueGuardar = !usaTalleresPorEdad && !esMaratonGuardar;
     
     let gradosFinales = [];
     if (usaTalleresPorEdad) {
       gradosFinales = obtenerGradosDeportivos(talleres);
+    } else if (esMaratonGuardar) {
+      gradosFinales = normalizarListaGrados(form.gradosAplicables);
     } else {
       gradosFinales = obtenerGradosFinales(form.gradosAplicables, gruposHorario);
     }
@@ -494,6 +516,8 @@ function Coordinacion({
     let diasFinales = [];
     if (usaTalleresPorEdad) {
       diasFinales = Array.from(new Set(talleres.map(t => t.dia)));
+    } else if (esMaratonGuardar) {
+      diasFinales = obtenerDiasEntreFechas(form.fechaInicio, form.fechaFin);
     } else {
       diasFinales = normalizarListaTexto(form.dias);
     }
@@ -503,7 +527,9 @@ function Coordinacion({
     if (!form.cupos || Number(form.cupos) <= 0) camposFaltantes.push("cupos");
     if (!String(form.costo || "").trim()) camposFaltantes.push("costo");
     if (!form.modalidadCobro) camposFaltantes.push("modalidad de cobro");
-    if (esVeranoGuardar && usaTalleresPorEdad) {
+    if (esMaratonGuardar) {
+      if (!form.horaInicio || !form.horaFin) camposFaltantes.push("horario");
+    } else if (esVeranoGuardar && usaTalleresPorEdad) {
       if (diasFinales.length !== 3) camposFaltantes.push("3 dias de atencion");
     } else if (!esCambridgeGuardar && !usaTalleresPorEdad && !usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
       if (diasFinales.length === 0) camposFaltantes.push("dias del programa");
@@ -522,8 +548,13 @@ function Coordinacion({
       return mostrarAlertaConfiguracion("Revise: seleccione exactamente 3 dias de atencion para verano.");
     }
 
+    if (esMaratonGuardar) {
+      if (form.horaInicio >= form.horaFin) {
+        return mostrarMsg("La hora de inicio de la maratón debe ser menor a la hora de fin.");
+      }
+    }
 
-    if (!esCambridgeGuardar && !usaTalleresPorEdad && usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
+    if (!esCambridgeGuardar && !usaTalleresPorEdad && !esMaratonGuardar && usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
       return mostrarAlertaConfiguracion("Revise: agregue al menos un bloque con grados, docente y horario.");
     }
 
@@ -572,7 +603,9 @@ function Coordinacion({
     const edadMaximaVerano = edadesTalleres.length ? Math.max(...edadesTalleres) : "";
     const datosGuardar = {
       ...form,
-      responsable: gruposHorario.length > 0 ? resumenResponsablesPorGrupo(gruposHorario, form.responsable) : form.responsable,
+      responsable: usaTalleresPorEdad
+        ? (Array.from(new Set(talleres.map(t => t.docente).filter(Boolean))).join(" · ") || form.responsable)
+        : (gruposHorario.length > 0 ? resumenResponsablesPorGrupo(gruposHorario, form.responsable) : form.responsable),
       tutora: gruposHorario.length > 0 ? resumenTutoraPorGrupo(gruposHorario, form.tutora) : form.tutora,
       costo: Number(form.costo).toFixed(2),
       gradosAplicables: gradosFinales,
@@ -916,6 +949,11 @@ function Coordinacion({
       mostrarMsg("Ingrese un número de cupos válido para el taller.");
       return;
     }
+    const docenteFinal = tallerDepDocente.trim();
+    if (!docenteFinal) {
+      mostrarMsg("Ingrese el tutor o docente a cargo del taller.");
+      return;
+    }
 
     const nuevoTaller = {
       deporte: deporteFinal,
@@ -926,6 +964,7 @@ function Coordinacion({
       horaFin: tallerDepHoraFin,
       cupos: cuposTaller,
       nivel: tallerDepNivel,
+      docente: docenteFinal,
     };
 
     const listaActual = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
@@ -941,6 +980,7 @@ function Coordinacion({
     setTallerDepCustom("");
     setTallerDepCupos("20");
     setTallerDepNivel("Formativo");
+    setTallerDepDocente("");
   };
 
   const quitarTallerDeportivo = (index) => {
@@ -1689,6 +1729,7 @@ function Coordinacion({
           setTallerDepMinEdad={setTallerDepMinEdad}
           setTallerDepCupos={setTallerDepCupos}
           setTallerDepNivel={setTallerDepNivel}
+          setTallerDepDocente={setTallerDepDocente}
           setShowModal={(visible) => {
             if (!visible) setAlertaConfiguracion("");
             setShowModal(visible);
@@ -1708,7 +1749,10 @@ function Coordinacion({
           tallerDepMinEdad={tallerDepMinEdad}
           tallerDepCupos={tallerDepCupos}
           tallerDepNivel={tallerDepNivel}
+          tallerDepDocente={tallerDepDocente}
           toggleGradoGrupo={toggleGradoGrupo}
+          toggleGrado={toggleGrado}
+          toggleDia={toggleDia}
         />
 
         {showInvitados && (

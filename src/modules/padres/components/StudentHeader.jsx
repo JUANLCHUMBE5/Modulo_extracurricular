@@ -5,9 +5,7 @@ export default function StudentHeader({ estudiante, nombreCorto, bannerEstudiant
         <div>
           <span>Bienvenido familia de</span>
           <h1>{estudiante?.nombres || nombreCorto}</h1>
-          <p>
-            {estudiante?.grado || "Grado por registrar"} - Seccion {estudiante?.seccion || "-"}
-          </p>
+          <p>{estudiante?.grado || "Grado por registrar"}</p>
         </div>
       </div>
 

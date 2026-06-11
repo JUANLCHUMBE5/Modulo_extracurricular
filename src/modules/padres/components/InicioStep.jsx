@@ -446,7 +446,11 @@ function CatalogoProgramas({
                   <div className="padres-course-detail-item">
                     <span className="detail-label">Límite Aviso</span>
                     <strong className="detail-value">
-                      {prog.ventanaInscripcion?.fechaLimite || `${prog.duracionAvisoDias || 7} días`}
+                      {prog.ventanaInscripcion?.fechaLimite ? (
+                        `${prog.ventanaInscripcion.fechaLimite}${prog.ventanaInscripcion.horaLimite ? ` a las ${prog.ventanaInscripcion.horaLimite}` : ""}`
+                      ) : (
+                        `${prog.duracionAvisoDias || 7} días`
+                      )}
                     </strong>
                   </div>
                   <div className="padres-course-detail-item is-price">

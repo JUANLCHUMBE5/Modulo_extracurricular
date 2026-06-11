@@ -178,7 +178,6 @@ function TablaMatriculados({ alumnos }) {
             <th>Código</th>
             <th>Estudiante</th>
             <th>Grado</th>
-            <th>Sección</th>
             <th>Estado Inscripción</th>
             <th>Estado Pago</th>
             <th>Canal</th>
@@ -192,7 +191,6 @@ function TablaMatriculados({ alumnos }) {
               <td>{alumno.codigoEstudiante || "—"}</td>
               <td><strong>{alumno.nombres}</strong></td>
               <td>{alumno.grado}</td>
-              <td>{alumno.seccion}</td>
               <td>
                 <span style={badgeStyle(alumno.estadoInscripcion === "Pago validado", "warning")}>
                   {alumno.estadoInscripcion}

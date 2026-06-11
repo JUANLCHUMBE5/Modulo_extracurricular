@@ -123,7 +123,9 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
 
   // Sort matriculados alphabetically
   const matriculadosOrdenados = useMemo(() => {
-    return [...matriculados].sort((a, b) => String(a.nombres).localeCompare(String(b.nombres)));
+    return [...matriculados].sort((a, b) =>
+      String(a.nombres || a.nombresEstudiante || "").localeCompare(String(b.nombres || b.nombresEstudiante || ""))
+    );
   }, [matriculados]);
 
   // Active date group for daily view
@@ -158,7 +160,8 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
 
   // Excel Export Handler (Daily View)
   const handleExportExcelDaily = async () => {
-    if (!programaSeleccionado || !grupoActivo) return;
+    if (!programaSeleccionado || (!grupoActivo && asistencias.length > 0)) return;
+    if (asistencias.length === 0 && !hasMatriculados) return;
 
     try {
       const workbook = new ExcelJS.Workbook();
@@ -180,22 +183,42 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       ];
 
       // Rows
-      const rows = grupoActivo.filas.map((asist, idx) => {
-        const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asist);
-        const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
-        const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
+      let rows;
+      if (grupoActivo) {
+        rows = grupoActivo.filas.map((asist, idx) => {
+          const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asist);
+          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
+          const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
 
-        return {
-          nro: idx + 1,
-          hora: formatearHoraAsistencia(obtenerFechaAsistencia(asist)),
-          dni: obtenerDniAsistencia(asist) || "Sin DNI",
-          codigo: asist.codigoEstudiante || "—",
-          nombres: obtenerNombreAsistencia(asist) || "—",
-          pago: asist.estadoPago || "Pendiente",
-          acceso: textoAcceso,
-          observacion: asist.observacion || "—",
-        };
-      });
+          return {
+            nro: idx + 1,
+            hora: formatearHoraAsistencia(obtenerFechaAsistencia(asist)),
+            dni: obtenerDniAsistencia(asist) || "Sin DNI",
+            codigo: asist.codigoEstudiante || "—",
+            nombres: obtenerNombreAsistencia(asist) || "—",
+            pago: asist.estadoPago || "Pendiente",
+            acceso: textoAcceso,
+            observacion: asist.observacion || "—",
+          };
+        });
+      } else {
+        // Template mode
+        rows = matriculadosOrdenados.map((alumno, idx) => {
+          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(alumno.estadoPago).toLowerCase());
+          const textoAcceso = esAccesoPermitido ? "Permitido" : (String(alumno.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
+
+          return {
+            nro: idx + 1,
+            hora: "—",
+            dni: alumno.dni || alumno.dniEstudiante || "Sin DNI",
+            codigo: alumno.codigoEstudiante || "—",
+            nombres: alumno.nombres || alumno.nombresEstudiante || "—",
+            pago: alumno.estadoPago || "Pendiente",
+            acceso: textoAcceso,
+            observacion: "", // Blank for physical writing/signature
+          };
+        });
+      }
 
       worksheet.addRows(rows);
 
@@ -232,7 +255,8 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Asistencia_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}_${grupoActivo.clave}.xlsx`;
+      const dateSuffix = grupoActivo ? grupoActivo.clave : "PLANTILLA";
+      link.download = `Asistencia_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}_${dateSuffix}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -245,7 +269,8 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
 
   // PDF Export Handler (Daily View)
   const handleExportPdfDaily = () => {
-    if (!programaSeleccionado || !grupoActivo) return;
+    if (!programaSeleccionado || (!grupoActivo && asistencias.length > 0)) return;
+    if (asistencias.length === 0 && !hasMatriculados) return;
 
     try {
       const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -253,6 +278,11 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       const anchoPagina = doc.internal.pageSize.getWidth();
       const altoPagina = doc.internal.pageSize.getHeight();
       let y = 16;
+
+      const isTemplate = !grupoActivo;
+      const subtitle = isTemplate
+        ? "Plantilla de Control Físico (Sin asistencias registradas)"
+        : `Fecha de asistencia: ${grupoActivo.titulo}`;
 
       doc.setTextColor(23, 108, 96);
       doc.setFont("helvetica", "bold");
@@ -263,7 +293,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       doc.setFont("helvetica", "normal");
       doc.setFontSize(10);
       doc.setTextColor(82, 97, 115);
-      doc.text(`Fecha de asistencia: ${grupoActivo.titulo}`, anchoPagina / 2, y, { align: "center" });
+      doc.text(subtitle, anchoPagina / 2, y, { align: "center" });
       y += 10;
 
       // Box details
@@ -309,10 +339,12 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       doc.text("ESTUDIANTE", margen + 45, y + 5.3);
       doc.text("PAGO", margen + 115, y + 5.3);
       doc.text("ACCESO", margen + 140, y + 5.3);
-      doc.text("OBSERVACIÓN", margen + 165, y + 5.3);
+      doc.text(isTemplate ? "FIRMA / NOTAS" : "OBSERVACIÓN", margen + 165, y + 5.3);
       y += 12;
 
-      grupoActivo.filas.forEach((asist, idx) => {
+      const itemsToExport = grupoActivo ? grupoActivo.filas : matriculadosOrdenados;
+
+      itemsToExport.forEach((item, idx) => {
         if (y > altoPagina - 18) {
           doc.addPage();
           y = 16;
@@ -328,19 +360,30 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
           doc.text("ESTUDIANTE", margen + 45, y + 5.3);
           doc.text("PAGO", margen + 115, y + 5.3);
           doc.text("ACCESO", margen + 140, y + 5.3);
-          doc.text("OBSERVACIÓN", margen + 165, y + 5.3);
+          doc.text(isTemplate ? "FIRMA / NOTAS" : "OBSERVACIÓN", margen + 165, y + 5.3);
           y += 12;
         }
 
-        const hora = formatearHoraAsistencia(obtenerFechaAsistencia(asist));
-        const dni = obtenerDniAsistencia(asist) || "Sin DNI";
-        const nombre = obtenerNombreAsistencia(asist) || "—";
-        const pago = asist.estadoPago || "Pendiente";
-        
-        const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asist);
-        const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
-        const acceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (acceso || "Sin validar"));
-        const obs = asist.observacion || "—";
+        let hora, dni, nombre, pago, acceso, obs;
+
+        if (grupoActivo) {
+          hora = formatearHoraAsistencia(obtenerFechaAsistencia(item));
+          dni = obtenerDniAsistencia(item) || "Sin DNI";
+          nombre = obtenerNombreAsistencia(item) || "—";
+          pago = item.estadoPago || "Pendiente";
+          const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(item);
+          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
+          acceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
+          obs = item.observacion || "—";
+        } else {
+          hora = "—";
+          dni = item.dni || item.dniEstudiante || "Sin DNI";
+          nombre = item.nombres || item.nombresEstudiante || "—";
+          pago = item.estadoPago || "Pendiente";
+          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(item.estadoPago).toLowerCase());
+          acceso = esAccesoPermitido ? "Permitido" : (String(item.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
+          obs = "_________________";
+        }
 
         doc.setDrawColor(237, 242, 245);
         doc.line(margen, y - 2, anchoPagina - margen, y - 2);
@@ -363,8 +406,12 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8);
       doc.setTextColor(82, 97, 115);
-      doc.text(`Total de alumnos registrados hoy: ${grupoActivo.filas.length}`, margen, altoPagina - 10);
-      doc.save(`asistencia_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}_${grupoActivo.clave}.pdf`);
+      const countLabel = isTemplate
+        ? `Total de alumnos matriculados: ${matriculados.length}`
+        : `Total de alumnos registrados hoy: ${grupoActivo.filas.length}`;
+      doc.text(countLabel, margen, altoPagina - 10);
+      const fileSuffix = isTemplate ? "plantilla" : grupoActivo.clave;
+      doc.save(`asistencia_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}_${fileSuffix}.pdf`);
     } catch (err) {
       setMensaje(err.message || "No se pudo exportar a PDF.");
       setTipoMsg("error");
@@ -390,10 +437,16 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
         { header: "N° Teléfono", key: "telefono", width: 18 },
       ];
 
-      // Add dynamic date columns
-      fechasColumnas.forEach((fechaCol) => {
-        cols.push({ header: fechaCol.labelDDMM, key: fechaCol.clave, width: 10 });
-      });
+      // Add dynamic or template date columns
+      if (fechasColumnas.length > 0) {
+        fechasColumnas.forEach((fechaCol) => {
+          cols.push({ header: fechaCol.labelDDMM, key: fechaCol.clave, width: 10 });
+        });
+      } else {
+        for (let i = 1; i <= 5; i++) {
+          cols.push({ header: `Clase ${i}`, key: `clase_${i}`, width: 12 });
+        }
+      }
 
       worksheet.columns = cols;
 
@@ -403,13 +456,19 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
         const edad = birthdate ? calcularEdad(birthdate) : "—";
         const rowData = {
           nro: idx + 1,
-          nombres: alumno.nombres,
+          nombres: alumno.nombres || alumno.nombresEstudiante || "—",
           edad,
           telefono: alumno.telefono || "—",
         };
-        fechasColumnas.forEach((fechaCol) => {
-          rowData[fechaCol.clave] = checkMap.has(`${alumno.dni}:${fechaCol.clave}`) ? "✓" : "—";
-        });
+        if (fechasColumnas.length > 0) {
+          fechasColumnas.forEach((fechaCol) => {
+            rowData[fechaCol.clave] = checkMap.has(`${alumno.dni}:${fechaCol.clave}`) ? "✓" : "—";
+          });
+        } else {
+          for (let i = 1; i <= 5; i++) {
+            rowData[`clase_${i}`] = "—";
+          }
+        }
         return rowData;
       });
 
@@ -448,7 +507,8 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Consolidado_Asistencias_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}.xlsx`;
+      const fileSuffix = fechasColumnas.length > 0 ? "" : "_Plantilla";
+      link.download = `Consolidado_Asistencias_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}${fileSuffix}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -501,7 +561,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       doc.text(programaSeleccionado.nombre || "—", margen + 20, y);
       doc.text(programaSeleccionado.responsable || "—", margen + 122, y);
       doc.text(programaSeleccionado.horario || "—", margen + 222, y);
-      
+
       y += 15;
 
       // Horizontal spacing widths
@@ -517,11 +577,11 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
         doc.setFillColor(234, 246, 242);
         doc.setDrawColor(216, 229, 226);
         doc.roundedRect(margen, yy, anchoPagina - margen * 2, 8, 2, 2, "FD");
-        
+
         doc.setFont("helvetica", "bold");
         doc.setFontSize(7.5);
         doc.setTextColor(23, 108, 96);
-        
+
         let cx = margen + 2;
         doc.text("#", cx, yy + 5.3);
         cx += colWidths.nro;
@@ -532,10 +592,17 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
         doc.text("TELÉFONO", cx, yy + 5.3);
         cx += colWidths.telefono;
 
-        fechasColumnas.forEach((fechaCol) => {
-          doc.text(fechaCol.labelDDMM, cx + 1, yy + 5.3);
-          cx += colWidths.fecha;
-        });
+        if (fechasColumnas.length > 0) {
+          fechasColumnas.forEach((fechaCol) => {
+            doc.text(fechaCol.labelDDMM, cx + 1, yy + 5.3);
+            cx += colWidths.fecha;
+          });
+        } else {
+          for (let i = 1; i <= 5; i++) {
+            doc.text(`CLASE ${i}`, cx + 1, yy + 5.3);
+            cx += colWidths.fecha;
+          }
+        }
 
         return yy + 12;
       };
@@ -572,24 +639,31 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
         let cx = margen + 2;
         doc.text(String(idx + 1), cx, y + 3);
         cx += colWidths.nro;
-        doc.text(doc.splitTextToSize(alumno.nombres, 75), cx, y + 3);
+        doc.text(doc.splitTextToSize(alumno.nombres || alumno.nombresEstudiante || "", 75), cx, y + 3);
         cx += colWidths.nombres;
         doc.text(edad, cx, y + 3);
         cx += colWidths.edad;
         doc.text(telefono, cx, y + 3);
         cx += colWidths.telefono;
 
-        fechasColumnas.forEach((fechaCol) => {
-          const asistio = checkMap.has(`${alumno.dni}:${fechaCol.clave}`);
-          if (asistio) {
-            dibujarCheck(doc, cx + 2, y + 1);
-          } else {
+        if (fechasColumnas.length > 0) {
+          fechasColumnas.forEach((fechaCol) => {
+            const asistio = checkMap.has(`${alumno.dni}:${fechaCol.clave}`);
+            if (asistio) {
+              dibujarCheck(doc, cx + 2, y + 1);
+            } else {
+              doc.text("—", cx + 3, y + 3);
+            }
+            cx += colWidths.fecha;
+          });
+        } else {
+          for (let i = 1; i <= 5; i++) {
             doc.text("—", cx + 3, y + 3);
+            cx += colWidths.fecha;
           }
-          cx += colWidths.fecha;
-        });
+        }
 
-        const altoFila = Math.max(8, doc.splitTextToSize(alumno.nombres, 75).length * 4.2 + 4);
+        const altoFila = Math.max(8, doc.splitTextToSize(alumno.nombres || alumno.nombresEstudiante || "", 75).length * 4.2 + 4);
         y += altoFila;
       });
 
@@ -597,7 +671,8 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       doc.setFontSize(8);
       doc.setTextColor(82, 97, 115);
       doc.text(`Matriculados: ${matriculados.length} alumnos`, margen, altoPagina - 10);
-      doc.save(`consolidado_asistencias_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}.pdf`);
+      const fileSuffix = fechasColumnas.length > 0 ? "" : "_plantilla";
+      doc.save(`consolidado_asistencias_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}${fileSuffix}.pdf`);
     } catch (err) {
       setMensaje(err.message || "No se pudo exportar consolidado a PDF.");
       setTipoMsg("error");
@@ -681,9 +756,9 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
               )}
 
               {/* Export Buttons */}
-              {tallerId && (
+              {tallerId && hasMatriculados && (
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", flexShrink: 0 }}>
-                  {vistaTipo === "diario" && grupoActivo && (
+                  {vistaTipo === "diario" && (
                     <>
                       <Button
                         color="sanrafael"
@@ -706,7 +781,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                       </Button>
                     </>
                   )}
-                  {vistaTipo === "mensual" && hasAsistencias && hasMatriculados && (
+                  {vistaTipo === "mensual" && (
                     <>
                       <Button
                         color="sanrafael"
@@ -768,113 +843,156 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
               <h3 style={{ color: "#475569", margin: 0 }}>Seleccione un taller</h3>
               <p style={{ color: "#64748b", fontSize: "14px", marginTop: "4px" }}>Elija un taller del listado para comenzar a explorar las asistencias.</p>
             </div>
-          ) : asistencias.length === 0 ? (
+          ) : (asistencias.length === 0 && !hasMatriculados) ? (
             <div className="coord-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 20px" }}>
               <AlertCircle size={48} style={{ color: "#cbd5e1", marginBottom: "12px" }} />
               <h3 style={{ color: "#475569", margin: 0 }}>Sin registros de asistencia</h3>
-              <p style={{ color: "#64748b", fontSize: "14px", marginTop: "4px" }}>Este taller aún no cuenta con asistencias registradas por el auxiliar.</p>
+              <p style={{ color: "#64748b", fontSize: "14px", marginTop: "4px" }}>Este taller no cuenta con alumnos matriculados ni asistencias registradas.</p>
             </div>
           ) : vistaTipo === "diario" ? (
-            grupoActivo ? (
+            (grupoActivo || (asistencias.length === 0 && hasMatriculados)) ? (
               <div style={{ marginTop: "8px" }}>
+                {asistencias.length === 0 && (
+                  <MantineAlert color="teal" radius="md" style={{ marginBottom: "16px" }}>
+                    <strong>Plantilla de asistencia:</strong> Mostrando los estudiantes matriculados. Aún no se han registrado asistencias para este taller. Puede descargar el listado en PDF o Excel.
+                  </MantineAlert>
+                )}
                 {/* Pagination-style Date Picker Bar */}
-                <div style={{ display: "flex", alignItems: "center", gap: "12px", justifyContent: "space-between", flexWrap: "wrap", padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
-                  <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Navegar Fechas:</span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <button
-                      type="button"
-                      onClick={irAnterior}
-                      disabled={indiceActivo >= gruposFecha.length - 1}
-                      title="Día anterior"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "8px",
-                        border: "1px solid #d0d5dd",
-                        background: "#ffffff",
-                        color: "#344054",
-                        cursor: indiceActivo >= gruposFecha.length - 1 ? "not-allowed" : "pointer",
-                        opacity: indiceActivo >= gruposFecha.length - 1 ? 0.5 : 1,
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
-                    <span style={{ fontSize: "14px", fontWeight: 700, color: "#1e293b", padding: "0 10px" }}>
-                      {grupoActivo.titulo}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={irSiguiente}
-                      disabled={indiceActivo <= 0}
-                      title="Día siguiente"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "36px",
-                        height: "36px",
-                        borderRadius: "8px",
-                        border: "1px solid #d0d5dd",
-                        background: "#ffffff",
-                        color: "#344054",
-                        cursor: indiceActivo <= 0 ? "not-allowed" : "pointer",
-                        opacity: indiceActivo <= 0 ? 0.5 : 1,
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <ChevronRight size={18} />
-                    </button>
+                {grupoActivo ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", justifyContent: "space-between", flexWrap: "wrap", padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
+                    <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Navegar Fechas:</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <button
+                        type="button"
+                        onClick={irAnterior}
+                        disabled={indiceActivo >= gruposFecha.length - 1}
+                        title="Día anterior"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "8px",
+                          border: "1px solid #d0d5dd",
+                          background: "#ffffff",
+                          color: "#344054",
+                          cursor: indiceActivo >= gruposFecha.length - 1 ? "not-allowed" : "pointer",
+                          opacity: indiceActivo >= gruposFecha.length - 1 ? 0.5 : 1,
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                      <span style={{ fontSize: "14px", fontWeight: 700, color: "#1e293b", padding: "0 10px" }}>
+                        {grupoActivo.titulo}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={irSiguiente}
+                        disabled={indiceActivo <= 0}
+                        title="Día siguiente"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: "36px",
+                          height: "36px",
+                          borderRadius: "8px",
+                          border: "1px solid #d0d5dd",
+                          background: "#ffffff",
+                          color: "#344054",
+                          cursor: indiceActivo <= 0 ? "not-allowed" : "pointer",
+                          opacity: indiceActivo <= 0 ? 0.5 : 1,
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    </div>
+                    <Badge color="sanrafael" size="md">
+                      {grupoActivo.filas.length} alumno{grupoActivo.filas.length === 1 ? "" : "s"} registrados hoy
+                    </Badge>
                   </div>
-                  <Badge color="sanrafael" size="md">
-                    {grupoActivo.filas.length} alumno{grupoActivo.filas.length === 1 ? "" : "s"} registrados hoy
-                  </Badge>
-                </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
+                    <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Fecha:</span>
+                    <span style={{ fontSize: "14px", fontWeight: 500, color: "#64748b" }}>
+                      Plantilla de control físico (Sin registros de asistencia)
+                    </span>
+                    <Badge color="teal" size="md">
+                      {matriculados.length} alumno{matriculados.length === 1 ? "" : "s"} matriculados
+                    </Badge>
+                  </div>
+                )}
 
                 {/* Table */}
                 <div className="coord-table-wrap">
                   <table className="coord-table">
                     <thead>
                       <tr>
-                        <th>Hora</th>
+                        {grupoActivo && <th>Hora</th>}
                         <th>DNI</th>
                         <th>Código</th>
                         <th>Estudiante</th>
                         <th>Pago</th>
                         <th>Acceso</th>
-                        <th>Observación</th>
+                        <th>{grupoActivo ? "Observación" : "Observación / Firma"}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {grupoActivo.filas.map((asist, index) => {
-                        const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asist);
-                        const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
-                        const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
-                        const toneAcceso = String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "warning" : "error";
+                      {grupoActivo ? (
+                        grupoActivo.filas.map((asist, index) => {
+                          const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asist);
+                          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
+                          const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
+                          const toneAcceso = String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "warning" : "error";
 
-                        return (
-                          <tr key={`${asist.id || obtenerDniAsistencia(asist) || obtenerNombreAsistencia(asist)}-${index}`}>
-                            <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asist))}</td>
-                            <td>{obtenerDniAsistencia(asist) || "Sin DNI"}</td>
-                            <td>{asist.codigoEstudiante || "—"}</td>
-                            <td><strong>{obtenerNombreAsistencia(asist) || "—"}</strong></td>
-                            <td>
-                              <span style={badgeStyle(String(asist.estadoPago).toLowerCase() === "pagado", "warning")}>
-                                {asist.estadoPago || "Pendiente"}
-                              </span>
-                            </td>
-                            <td>
-                              <span style={badgeStyle(esAccesoPermitido, toneAcceso)}>
-                                {textoAcceso}
-                              </span>
-                            </td>
-                            <td>{asist.observacion || "—"}</td>
-                          </tr>
-                        );
-                      })}
+                          return (
+                            <tr key={`${asist.id || obtenerDniAsistencia(asist) || obtenerNombreAsistencia(asist)}-${index}`}>
+                              <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asist))}</td>
+                              <td>{obtenerDniAsistencia(asist) || "Sin DNI"}</td>
+                              <td>{asist.codigoEstudiante || "—"}</td>
+                              <td><strong>{obtenerNombreAsistencia(asist) || "—"}</strong></td>
+                              <td>
+                                <span style={badgeStyle(String(asist.estadoPago).toLowerCase() === "pagado", "warning")}>
+                                  {asist.estadoPago || "Pendiente"}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={badgeStyle(esAccesoPermitido, toneAcceso)}>
+                                  {textoAcceso}
+                                </span>
+                              </td>
+                              <td>{asist.observacion || "—"}</td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        matriculadosOrdenados.map((alumno, index) => {
+                          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(alumno.estadoPago).toLowerCase());
+                          const textoAcceso = esAccesoPermitido ? "Permitido" : (String(alumno.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
+
+                          return (
+                            <tr key={`${alumno.dni || alumno.id || index}-${index}`}>
+                              <td>{alumno.dni || alumno.dniEstudiante || "Sin DNI"}</td>
+                              <td>{alumno.codigoEstudiante || "—"}</td>
+                              <td><strong>{alumno.nombres || alumno.nombresEstudiante || "—"}</strong></td>
+                              <td>
+                                <span style={badgeStyle(String(alumno.estadoPago).toLowerCase() === "pagado", "warning")}>
+                                  {alumno.estadoPago || "Pendiente"}
+                                </span>
+                              </td>
+                              <td>
+                                <span style={badgeStyle(esAccesoPermitido, "warning")}>
+                                  {textoAcceso}
+                                </span>
+                              </td>
+                              <td><span style={{ color: "#cbd5e1" }}>_________________</span></td>
+                            </tr>
+                          );
+                        })
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -890,12 +1008,17 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 </div>
               ) : (
                 <>
+                  {asistencias.length === 0 && (
+                    <MantineAlert color="teal" radius="md" style={{ marginBottom: "16px" }}>
+                      <strong>Plantilla de consolidado mensual:</strong> Aún no se han registrado asistencias para este taller. Se muestran las columnas vacías para control manual. Puede exportarla en PDF o Excel.
+                    </MantineAlert>
+                  )}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
                     <span style={{ fontSize: "14px", color: "#64748b" }}>
                       Consolidado mensual de asistencias registradas por el auxiliar.
                     </span>
                     <Badge color="sanrafael" size="md">
-                      {fechasColumnas.length} fechas registradas
+                      {fechasColumnas.length > 0 ? `${fechasColumnas.length} fechas registradas` : "Plantilla de control físico"}
                     </Badge>
                   </div>
 
@@ -907,20 +1030,38 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                           <th style={{ minWidth: "220px" }}>Apellidos y Nombres</th>
                           <th style={{ width: "80px", textAlign: "center" }}>Edad</th>
                           <th style={{ minWidth: "120px" }}>Teléfono</th>
-                          {fechasColumnas.map((fechaCol) => (
-                            <th
-                              key={fechaCol.clave}
-                              style={{
-                                width: "60px",
-                                textAlign: "center",
-                                padding: "6px",
-                                fontSize: "11px",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {fechaCol.labelDDMM}
-                            </th>
-                          ))}
+                          {fechasColumnas.length > 0 ? (
+                            fechasColumnas.map((fechaCol) => (
+                              <th
+                                key={fechaCol.clave}
+                                style={{
+                                  width: "60px",
+                                  textAlign: "center",
+                                  padding: "6px",
+                                  fontSize: "11px",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {fechaCol.labelDDMM}
+                              </th>
+                            ))
+                          ) : (
+                            [1, 2, 3, 4, 5].map((num) => (
+                              <th
+                                key={`blank-${num}`}
+                                style={{
+                                  width: "70px",
+                                  textAlign: "center",
+                                  padding: "6px",
+                                  fontSize: "11px",
+                                  whiteSpace: "nowrap",
+                                  color: "#94a3b8",
+                                }}
+                              >
+                                Clase {num}
+                              </th>
+                            ))
+                          )}
                         </tr>
                       </thead>
                       <tbody>
@@ -931,25 +1072,39 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                           return (
                             <tr key={alumno.dni || index}>
                               <td style={{ textAlign: "center" }}>{index + 1}</td>
-                              <td><strong>{alumno.nombres}</strong></td>
+                              <td><strong>{alumno.nombres || alumno.nombresEstudiante || "—"}</strong></td>
                               <td style={{ textAlign: "center" }}>{edad}</td>
                               <td>{alumno.telefono || "—"}</td>
-                              {fechasColumnas.map((fechaCol) => {
-                                const asistio = checkMap.has(`${alumno.dni}:${fechaCol.clave}`);
-                                return (
+                              {fechasColumnas.length > 0 ? (
+                                fechasColumnas.map((fechaCol) => {
+                                  const asistio = checkMap.has(`${alumno.dni}:${fechaCol.clave}`);
+                                  return (
+                                    <td
+                                      key={fechaCol.clave}
+                                      style={{
+                                        textAlign: "center",
+                                        fontWeight: "bold",
+                                        color: asistio ? "#12b886" : "#ced4da",
+                                        fontSize: "16px",
+                                      }}
+                                    >
+                                      {asistio ? "✓" : "—"}
+                                    </td>
+                                  );
+                                })
+                              ) : (
+                                [1, 2, 3, 4, 5].map((num) => (
                                   <td
-                                    key={fechaCol.clave}
+                                    key={`blank-${num}`}
                                     style={{
                                       textAlign: "center",
-                                      fontWeight: "bold",
-                                      color: asistio ? "#12b886" : "#ced4da",
-                                      fontSize: "16px",
+                                      color: "#cbd5e1",
                                     }}
                                   >
-                                    {asistio ? "✓" : "—"}
+                                    —
                                   </td>
-                                );
-                              })}
+                                ))
+                              )}
                             </tr>
                           );
                         })}

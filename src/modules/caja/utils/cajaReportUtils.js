@@ -16,7 +16,7 @@ export function normalizarEstadoPagoVista(...valores) {
 }
 
 export function esPagoWebPadresCaja(fila = {}) {
-  const origen = String(fila.origen || "").toLowerCase();
+  const origen = String(fila.origen || fila.origenRegistro || "").toLowerCase();
   const formaPago = String(fila.formaPago || "").toLowerCase();
   const tienePago = Boolean(
     fila.pagoId ||
@@ -44,14 +44,32 @@ export function esPagoWebPorVerificarCaja(fila = {}) {
 }
 
 export function obtenerMedioCanalWebCaja(fila = {}) {
-  if (!esPagoWebPadresCaja(fila)) return "-";
-  if (String(fila.formaPago || "").toLowerCase().includes("web")) {
-    return fila.formaPago || "Reserva / Web";
+  const estado = String(fila.estadoPago || "").toLowerCase();
+  const esPagado = ["pagado", "completado", "pago validado", "validado"].includes(estado);
+  
+  const origen = String(fila.origen || fila.origenRegistro || "").toLowerCase();
+  const formaPago = fila.formaPago || "";
+  
+  if (origen === "caja") {
+    if (!esPagado) return "-";
+    return `${formaPago || "Efectivo"} / Caja`;
   }
-  return `${fila.formaPago || "Yape"} / Web`;
+  
+  if (!esPagoWebPadresCaja(fila)) return "-";
+  if (String(formaPago).toLowerCase().includes("web")) {
+    return formaPago || "Reserva / Web";
+  }
+  return `${formaPago || "Yape"} / Web`;
 }
 
 export function obtenerTelefonoPagoWebCaja(fila = {}) {
+  const origen = String(fila.origen || fila.origenRegistro || "").toLowerCase();
+  if (origen === "caja") {
+    const estado = String(fila.estadoPago || "").toLowerCase();
+    const esPagado = ["pagado", "completado", "pago validado", "validado"].includes(estado);
+    if (!esPagado) return "-";
+    return fila.telefonoOperacion || "-";
+  }
   if (!esPagoWebPadresCaja(fila)) return "-";
   return fila.telefonoOperacion || fila.telefono || "-";
 }

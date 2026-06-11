@@ -37,6 +37,19 @@ import {
   tieneHorariosPorGrupo,
 } from "./secretariaServiceUtils";
 
+function obtenerGradoCompleto(grado, nivel, respaldoGrado = "") {
+  let g = String(grado || "").trim();
+  if (!g) return String(respaldoGrado || "").trim();
+  const gLower = g.toLowerCase();
+  if (!gLower.includes("primaria") && !gLower.includes("secundaria") && !gLower.includes("inicial")) {
+    const n = String(nivel || "").trim();
+    if (n) {
+      g = `${g} ${n}`;
+    }
+  }
+  return g;
+}
+
 export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
   if (isApiMode()) {
     const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes/${dni}`, {
@@ -254,6 +267,7 @@ export async function registrarInscripcion(payload) {
     cicloII: programa.cicloII || "",
     duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
     duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+    horaLimiteAviso: programa.horaLimiteAviso || "23:59",
     gradosAplicables: programa.gradosAplicables || [],
     horariosPorGrupo: programa.horariosPorGrupo || [],
     grupo: programa.grupo || "",
@@ -503,6 +517,7 @@ function sincronizarInscripcionConProgramaActual(inscripcion) {
     cicloII: programa.cicloII || inscripcion.cicloII || "",
     duracionTaller: programa.duracionTaller || inscripcion.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
     duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias || inscripcion.duracionAvisoDias, 7),
+    horaLimiteAviso: programa.horaLimiteAviso || inscripcion.horaLimiteAviso || "23:59",
     gradosAplicables: programa.gradosAplicables || inscripcion.gradosAplicables || [],
     horariosPorGrupo: programa.horariosPorGrupo || inscripcion.horariosPorGrupo || [],
     grupo: programa.grupo || inscripcion.grupo || "",
@@ -569,6 +584,7 @@ function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
     cicloII: programa.cicloII || "",
     duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
     duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+    horaLimiteAviso: programa.horaLimiteAviso || "23:59",
     edadMinima: programa.edadMinima || "",
     edadMaxima: programa.edadMaxima || "",
     fechaNacimientoDesde: programa.fechaNacimientoDesde || "",
@@ -585,7 +601,7 @@ function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
 
 function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo) {
   const { programa, invitado = {} } = invitacionPeriodo;
-  const gradoInvitacion = invitado.grado || estudiante.grado;
+  const gradoInvitacion = obtenerGradoCompleto(invitado.grado, invitado.nivelEducativo || invitado.nivel, estudiante.grado);
   const seccionInvitacion = invitado.seccion || estudiante.seccion;
   const nivelInvitacion = invitado.nivelEducativo || estudiante.nivel || "";
   const horarioResuelto = resolverHorarioPorGrado(programa, gradoInvitacion);
@@ -622,6 +638,7 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
     programaFechaFin: programa.fechaFin || "",
     programaDuracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
     programaDuracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+    programaHoraLimiteAviso: programa.horaLimiteAviso || "23:59",
     seleccion: invitado.seleccion || "",
     nivelCambridge: invitado.nivelCambridge || "",
     plantilla: plantillaPrograma.plantilla,
@@ -635,7 +652,8 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
 
 function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
   const { programa, invitado } = invitacionPeriodo;
-  const horarioResuelto = resolverHorarioPorGrado(programa, invitado.grado);
+  const gradoInvitado = obtenerGradoCompleto(invitado.grado, invitado.nivelEducativo || invitado.nivel);
+  const horarioResuelto = resolverHorarioPorGrado(programa, gradoInvitado);
   const horarioConfigurado = Boolean(horarioResuelto || !tieneHorariosPorGrupo(programa));
   const cuposDisponibles = calcularCuposDisponibles(programa);
   const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
@@ -643,7 +661,7 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
     dni: invitado.dni || "",
     codigoEstudiante: invitado.codigoEstudiante || "",
     nombres: invitado.nombres,
-    grado: invitado.grado || "No definido",
+    grado: gradoInvitado || "No definido",
     seccion: invitado.seccion || "No definido",
     tipoAlumno: "Alumno invitado",
     periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "AÃ±o escolar",
@@ -656,9 +674,9 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
     programaGrupo: programa.grupo || "",
     programaGrupoEtario: programa.grupoEtario || programa.grupo || "",
     programaHorario: horarioResuelto || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario),
-    programaDisponible: programaDisponibleParaGrado(programa, invitado.grado),
+    programaDisponible: programaDisponibleParaGrado(programa, gradoInvitado),
     programaHorarioConfigurado: horarioConfigurado,
-    programaDocente: resolverDocentePorGrado(programa, invitado.grado),
+    programaDocente: resolverDocentePorGrado(programa, gradoInvitado),
     programaCosto: Number(programa.costo ?? 0),
     programaCupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
     programaCuposDisponibles: cuposDisponibles,
@@ -668,6 +686,7 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
     programaFechaFin: programa.fechaFin || "",
     programaDuracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
     programaDuracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+    programaHoraLimiteAviso: programa.horaLimiteAviso || "23:59",
     seleccion: invitado.seleccion || "",
     nivelCambridge: invitado.nivelCambridge || "",
     plantilla: plantillaPrograma.plantilla,
@@ -716,7 +735,7 @@ function finalizarProgramasVencidos() {
 function validarVentanaInscripcionRegular(programa, payload = {}) {
   if (payload.registroCaja) return;
 
-  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias);
+  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso);
   if (ventana.permitida) return;
 
   throw new Error("El aviso de inscripcion regular cerro. Derive al padre a Cajera para evaluar y registrar la matricula.");

@@ -150,9 +150,7 @@ export function describirSeleccionCambridgePadres(valor = "") {
 
 function crearComunicadoCambridgePadres(programa, estudiante, titulo) {
   const alumno = estudiante?.nombres || "su menor hijo(a)";
-  const aula = [estudiante?.grado, estudiante?.seccion ? `Sección ${estudiante.seccion}` : ""]
-    .filter(Boolean)
-    .join(" - ");
+  const aula = estudiante?.grado || "";
   const vigencia = formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin);
   const horario = repararTexto(String(programa?.horario || "").trim()) || "Por confirmar";
   const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
@@ -189,9 +187,7 @@ function crearComunicadoBasicoPadres(programa, estudiante, titulo) {
 
 function crearComunicadoClubTareasPadres(programa, estudiante, titulo, area) {
   const alumno = estudiante?.nombres || "el estudiante";
-  const grado = [estudiante?.grado, estudiante?.seccion ? `Seccion ${estudiante.seccion}` : ""]
-    .filter(Boolean)
-    .join(" - ");
+  const grado = estudiante?.grado || "";
   const vigencia = formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin);
   const horario = repararTexto(String(programa?.horario || "").trim()) || "Por confirmar";
   const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
@@ -421,8 +417,6 @@ function normalizarTextoPadres(valor) {
 function crearDatosComunicadoPadres(programa, estudiante, titulo) {
   const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
   const grado = programa?.grado || programa?.gradoEstudiante || estudiante?.grado || "";
-  const seccion = programa?.seccion || estudiante?.seccion || "";
-  const gradoSeccion = [grado, seccion ? `Seccion ${seccion}` : ""].filter(Boolean).join(" - ");
   return {
     TITULO: titulo,
     FECHA: "",
@@ -434,9 +428,9 @@ function crearDatosComunicadoPadres(programa, estudiante, titulo) {
     PROGRAMA: titulo,
     ALU: estudiante?.nombres || programa?.nombresEstudiante || "el estudiante",
     ALUMNO: estudiante?.nombres || programa?.nombresEstudiante || "el estudiante",
-    AUL: gradoSeccion || grado || "Por definir",
-    AULA: gradoSeccion || grado || "Por definir",
-    GR_SEC: gradoSeccion || grado || "Por definir",
+    AUL: grado || "Por definir",
+    AULA: grado || "Por definir",
+    GR_SEC: grado || "Por definir",
     GRADO: grado || "Por definir",
     NIV: programa?.nivelEducativo || estudiante?.nivel || estudiante?.nivelEducativo || "",
     NIVEL: programa?.nivelEducativo || estudiante?.nivel || estudiante?.nivelEducativo || "",
@@ -463,11 +457,11 @@ function crearDatosComunicadoPadres(programa, estudiante, titulo) {
     CICLO_I: programa?.cicloI || "",
     CICLO_II: programa?.cicloII || "",
     MES_EVAL: "",
-    N1: gradoSeccion || grado || "",
+    N1: grado || "",
     N2: "",
     N3: "",
     N4: "",
-    NIVEL_1: gradoSeccion || grado || "",
+    NIVEL_1: grado || "",
     NIVEL_2: "",
     NIVEL_CAMBRIDGE: programa?.nivelCambridge || estudiante?.nivelCambridge || "",
     SELECCION: describirSeleccionCambridgePadres(programa?.seleccion || estudiante?.seleccion || ""),
