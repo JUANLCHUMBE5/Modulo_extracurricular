@@ -36,7 +36,7 @@ function coincideGradoLocal(gradoGrupo, gradoAlumnoNormalizado) {
   const grupo = descomponerGradoLocal(gradoGrupo);
   if (!grupo.numero || !gradoAlumnoNormalizado?.numero) return false;
   if (grupo.numero !== gradoAlumnoNormalizado.numero) return false;
-  return !grupo.nivel || !gradoAlumnoNormalizado.nivel || grupo.nivel === gradoAlumnoNormalizado.nivel;
+  return !grupo.nivel || grupo.nivel === gradoAlumnoNormalizado.nivel;
 }
 
 function formatearGradoLocal(valor) {

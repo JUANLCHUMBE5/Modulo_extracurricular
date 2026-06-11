@@ -1,4 +1,4 @@
-import { formatearFechaPeru } from "../../../services/dateService";
+import { formatearFechaPeru, obtenerVentanaInscripcion } from "../../../services/dateService";
 
 export function prepararComunicadoPadres(programa, estudiante) {
   const titulo = programa?.programa || programa?.nombre || "Comunicado del programa";
@@ -29,7 +29,18 @@ export function prepararComunicadoPadres(programa, estudiante) {
   const parrafosResumenBase = textoResumenWord
     ? textoResumenWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
     : parrafosFallback;
+  const ventana = obtenerVentanaInscripcion(
+    programa?.fechaInicio,
+    new Date(),
+    programa?.duracionAvisoDias,
+    programa?.horaLimiteAviso
+  );
   const indicaciones = obtenerIndicacionesProgramaPadres(programa, { esCambridge, esClubTareas });
+  if (ventana.fechaLimite) {
+    indicaciones.unshift(
+      `Confirmar la inscripción en línea a más tardar el ${ventana.fechaLimite} a las ${ventana.horaLimite} (cierre de inscripciones regulares).`
+    );
+  }
   const detalleFormato = obtenerDetalleFormatoPadres(programa);
   const resumenParrafos = resumirComunicadoPadres(parrafosResumenBase, programa, detalleFormato);
   const datosCambridge = esCambridge ? obtenerDatosCambridgePadres(programa, estudiante) : null;
@@ -161,10 +172,20 @@ function crearComunicadoCambridgePadres(programa, estudiante, titulo) {
     ? ` Modalidad Cambridge A/B/C asignada: ${describirSeleccionCambridgePadres(datosCambridge.seleccion)}.`
     : "";
 
+  const ventana = obtenerVentanaInscripcion(
+    programa?.fechaInicio,
+    new Date(),
+    programa?.duracionAvisoDias,
+    programa?.horaLimiteAviso
+  );
+  const limiteTexto = ventana.fechaLimite
+    ? ` La inscripción en línea estará disponible hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
+    : "";
+
   return [
     `En nuestra institución estamos comprometidos con la formación integral de nuestros estudiantes y con una enseñanza sólida del idioma inglés. Por ello, invitamos a ${alumno}${aula ? ` del aula ${aula}` : ""} a participar en ${titulo}${nivelCambridge}.${ingresoCambridge}`,
     "El programa de Preparación Cambridge fortalece las habilidades necesarias para rendir una certificación internacional reconocida y brinda acompañamiento mediante clases especializadas, materiales de preparación y simulacros del examen.",
-    `La vigencia registrada es ${vigencia}. El horario asignado es: ${horario}.`,
+    `La vigencia registrada es ${vigencia}. El horario asignado es: ${horario}.${limiteTexto}`,
     `El costo registrado para este programa es ${costo}. ${modalidad}`.trim(),
     "Para completar la inscripción, la familia debe revisar y aceptar esta información antes de confirmar los datos del apoderado y continuar con el pago.",
   ];
@@ -177,9 +198,19 @@ function crearComunicadoBasicoPadres(programa, estudiante, titulo) {
   const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
   const responsable = repararTexto(String(programa?.responsable || programa?.docente || "").trim());
 
+  const ventana = obtenerVentanaInscripcion(
+    programa?.fechaInicio,
+    new Date(),
+    programa?.duracionAvisoDias,
+    programa?.horaLimiteAviso
+  );
+  const limiteTexto = ventana.fechaLimite
+    ? ` Plazo de inscripción: Habilitado para confirmación en línea hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
+    : "";
+
   return [
     `El colegio informa que ${alumno} tiene disponible el programa ${titulo}.`,
-    `Vigencia: ${vigencia}. Horario: ${horario}. Costo: ${costo}.`,
+    `Vigencia: ${vigencia}. Horario: ${horario}. Costo: ${costo}.${limiteTexto}`,
     responsable ? `Responsable del programa: ${responsable}.` : "La coordinacion del programa brindara las indicaciones necesarias antes del inicio.",
     "Revise esta informacion y confirme la aceptacion para continuar con la inscripcion.",
   ];
@@ -194,9 +225,19 @@ function crearComunicadoClubTareasPadres(programa, estudiante, titulo, area) {
   const modalidad = programa?.modalidadCobro ? ` Modalidad de cobro: ${programa.modalidadCobro}.` : "";
   const responsable = repararTexto(String(programa?.responsable || programa?.docente || "").trim());
 
+  const ventana = obtenerVentanaInscripcion(
+    programa?.fechaInicio,
+    new Date(),
+    programa?.duracionAvisoDias,
+    programa?.horaLimiteAviso
+  );
+  const limiteTexto = ventana.fechaLimite
+    ? ` Inscripción regular habilitada en línea hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
+    : "";
+
   return [
     `El colegio informa que ${alumno}${grado ? ` del aula ${grado}` : ""} tiene disponible el ${titulo}, orientado al acompanamiento y refuerzo de tareas del area de ${area}.`,
-    `El programa se desarrollara del ${vigencia.replace(/^Del\s+/i, "")}. Horario asignado: ${horario}.`,
+    `El programa se desarrollara del ${vigencia.replace(/^Del\s+/i, "")}. Horario asignado: ${horario}.${limiteTexto}`,
     `Costo del programa: ${costo}.${modalidad}`,
     responsable ? `Responsable del programa: ${responsable}.` : "Coordinacion Academica comunicara el responsable asignado antes del inicio.",
     "La familia debe revisar esta informacion y confirmar la aceptacion para continuar con la inscripcion.",
@@ -415,6 +456,12 @@ function normalizarTextoPadres(valor) {
 }
 
 function crearDatosComunicadoPadres(programa, estudiante, titulo) {
+  const ventana = obtenerVentanaInscripcion(
+    programa?.fechaInicio,
+    new Date(),
+    programa?.duracionAvisoDias,
+    programa?.horaLimiteAviso
+  );
   const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
   const grado = programa?.grado || programa?.gradoEstudiante || estudiante?.grado || "";
   return {
@@ -468,6 +515,8 @@ function crearDatosComunicadoPadres(programa, estudiante, titulo) {
     CHK_A: String(programa?.seleccion || estudiante?.seleccion || "").trim().toUpperCase() === "A" ? "X" : "",
     CHK_B: String(programa?.seleccion || estudiante?.seleccion || "").trim().toUpperCase() === "B" ? "X" : "",
     CHK_C: String(programa?.seleccion || estudiante?.seleccion || "").trim().toUpperCase() === "C" ? "X" : "",
+    FECHA_LIMITE: ventana?.fechaLimite || "",
+    HORA_LIMITE: ventana?.horaLimite || "",
     APOD: "",
     CEL: "",
   };

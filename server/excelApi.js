@@ -107,6 +107,19 @@ function claveAlumnoInvitadoApi(alumno = {}) {
   return nombre ? `nombre:${nombre}:${grado}` : "";
 }
 
+function obtenerGradoCompletoApi(grado, nivel, respaldoGrado = "") {
+  let g = String(grado || "").trim();
+  if (!g) return String(respaldoGrado || "").trim();
+  const gLower = g.toLowerCase();
+  if (!gLower.includes("primaria") && !gLower.includes("secundaria") && !gLower.includes("inicial")) {
+    const n = String(nivel || "").trim();
+    if (n) {
+      g = `${g} ${n}`;
+    }
+  }
+  return g;
+}
+
 const allowedOrigins = new Set(
   [
     process.env.FRONTEND_URL,
@@ -1471,7 +1484,10 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
     };
     const codigoRegistro = invitacionRegistro?.codigoEstudiante || student.codigoEstudiante || "";
     const nombresRegistro = invitacionRegistro?.nombres || `${student.nombres || ""} ${student.apellidos || ""}`.trim();
-    const gradoRegistro = grado || invitacionRegistro?.grado || student.grado || "";
+    const gradoInvitacion = invitacionRegistro
+      ? obtenerGradoCompletoApi(invitacionRegistro.grado, invitacionRegistro.nivelEducativo || invitacionRegistro.nivel, student.grado)
+      : "";
+    const gradoRegistro = obtenerGradoCompletoApi(grado || gradoInvitacion || student.grado, student.nivel || student.nivelEducativo);
     const seccionRegistro = seccion || "";
     const plantillaPrograma = obtenerPlantillaProgramaApi(db, prog);
     
@@ -1731,6 +1747,7 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
       const invitados = db.invitadosPorPrograma[prog.id] || [];
       const inv = invitados.find(item => item.dni === dni);
       if (inv) {
+        const gradoCompletoInvitado = obtenerGradoCompletoApi(inv.grado, inv.nivelEducativo || inv.nivel, student?.grado);
         invitations.push({
           id: prog.id,
           nombre: prog.nombre,
@@ -1747,8 +1764,8 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
           programa: prog.nombre,
           categoria: prog.categoria || "",
           costo: prog.costo,
-          horario: resolverHorarioPorGradoApi(prog, inv.grado) || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario) || "",
-          responsable: resolverDocentePorGradoApi(prog, inv.grado),
+          horario: resolverHorarioPorGradoApi(prog, gradoCompletoInvitado) || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario) || "",
+          responsable: resolverDocentePorGradoApi(prog, gradoCompletoInvitado),
           modalidad_cobro: prog.modalidadCobro || "",
           requisitos: prog.requisitos || "",
           comunicado: prog.comunicado || "",
@@ -2316,7 +2333,11 @@ app.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]), 
     if (!student) return res.json({ success: true, data: null });
     
     const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
-    const activeInscrip = inscripciones.find(item => item.derivadoCaja && item.estadoPago !== "Pagado") || inscripciones[0] || null;
+    const activeInscrip = inscripciones.find(item => item.derivadoCaja && String(item.estadoPago || "").toLowerCase() !== "pagado" && String(item.estadoInscripcion || "").toLowerCase() !== "pago validado")
+      || inscripciones.find(item => String(item.estadoPago || "").toLowerCase() !== "pagado" && String(item.estadoInscripcion || "").toLowerCase() !== "pago validado")
+      || inscripciones.find(item => item.derivadoCaja)
+      || inscripciones[0]
+      || null;
     
     if (activeInscrip) {
       res.json({
@@ -2611,32 +2632,209 @@ app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), 
   try {
     const { periodo } = req.query;
     const db = await getDb();
-    const period = normalizarPeriodoApi(periodo);
     
-    const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
-    const payments = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && p.estado === "completado");
+    const period = normalizarPeriodoApi(periodo || "todos");
     
-    const totalMatriculados = enrollments.length;
-    const totalRecaudado = payments.reduce((sum, p) => sum + Number(p.monto || 0), 0);
-    const pagosPendientesVerificar = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && p.estado === "Por Verificar").length;
-    
-    const porPrograma = {};
-    (db.programas || [])
-      .filter(p => normalizarPeriodoApi(p.periodo) === period)
-      .forEach(p => {
-        porPrograma[p.nombre] = enrollments.filter(e => e.programaId === p.id).length;
+    const filtrarPorPeriodo = (items) => {
+      if (period === "todos") return [...items];
+      return [...items].filter((item) => normalizarPeriodoApi(item.periodo || "escolar") === period);
+    };
+
+    const normalizarEstadoPago = (estado) => {
+      const texto = normalizarTextoApi(estado);
+      if (texto.includes("pag") || texto === "completado" || texto === "validado") return "Pagado";
+      if (texto.includes("anul") || texto === "cancelado") return "Anulado";
+      return "Pendiente";
+    };
+
+    const contarPor = (items, resolver) => {
+      const conteo = new Map();
+      items.forEach((item) => {
+        const key = resolver(item) || "Sin dato";
+        conteo.set(key, (conteo.get(key) || 0) + 1);
       });
-      
+      const colores = ["teal.6", "orange.6", "blue.6", "grape.6", "yellow.6", "red.6"];
+      return [...conteo.entries()].map(([name, value], index) => ({
+        name,
+        value,
+        color: colores[index % colores.length],
+      }));
+    };
+
+    const abreviar = (valor) => {
+      const texto = String(valor || "Sin nombre").trim();
+      return texto.length > 20 ? `${texto.slice(0, 19)}...` : texto;
+    };
+
+    const crearFilaInscripcion = (item) => {
+      return {
+        id: item.id || "",
+        dni: item.dniEstudiante || "",
+        estudiante: item.nombresEstudiante || "",
+        grado: item.gradoEstudiante || item.grado || "",
+        programa: item.programa || "",
+        estadoInscripcion: item.estadoInscripcion || "",
+        estadoPago: normalizarEstadoPago(item.estadoPago),
+        costo: Number(item.costo || 0),
+        origen: item.origenRegistro || "",
+        fechaRegistro: item.fechaRegistro || "",
+        apoderado: item.apoderado || "",
+        telefono: item.telefono || "",
+      };
+    };
+
+    const crearFilaPago = (item) => {
+      return {
+        id: item.id || "",
+        dni: item.dniEstudiante || item.estudianteDni || "",
+        estudiante: item.nombresEstudiante || item.estudianteNombre || "",
+        programa: item.programa || item.programaNombre || "",
+        monto: Number(item.monto || 0),
+        estado: normalizarEstadoPago(item.estado),
+        medio: item.formaPago || item.medioPago || "",
+        fecha: item.fechaPago || item.fecha || "",
+      };
+    };
+
+    const programas = filtrarPorPeriodo(db.programas || []);
+    const inscripciones = filtrarPorPeriodo(db.inscripciones || [])
+      .filter((item) => item.estadoInscripcion !== "Anulada" && item.estadoInscripcion !== "anulada");
+    const pagos = filtrarPorPeriodo(db.pagos || []);
+
+    const filasProgramas = programas.map((programa) => {
+      const inscripcionesPrograma = inscripciones.filter((item) =>
+        item.programaId === programa.id || normalizarTextoApi(item.programa) === normalizarTextoApi(programa.nombre)
+      );
+      const pagosPrograma = pagos.filter((item) =>
+        item.programaId === programa.id || normalizarTextoApi(item.programa || item.programaNombre) === normalizarTextoApi(programa.nombre)
+      );
+      const inscritos = inscripcionesPrograma.length;
+      const cupos = Number(programa.cupos || programa.cuposDisponibles || 0);
+      const ocupados = Math.max(Number(programa.cuposOcupados || 0), inscritos);
+      const proyectado = inscripcionesPrograma.reduce((sum, item) => sum + Number(item.costo ?? programa.costo ?? 0), 0);
+      const recaudado = pagosPrograma
+        .filter((item) => normalizarEstadoPago(item.estado) === "Pagado")
+        .reduce((sum, item) => sum + Number(item.monto || 0), 0);
+
+      return {
+        id: programa.id,
+        nombre: programa.nombre || "Programa sin nombre",
+        periodo: normalizarPeriodoApi(programa.periodo || "escolar"),
+        estado: programa.estado || "Sin estado",
+        categoria: programa.categoria || "Sin categoria",
+        responsable: programa.responsable || programa.docente || programa.tutora || "Sin responsable",
+        cupos,
+        ocupados,
+        inscritos,
+        costo: Number(programa.costo || 0),
+        proyectado,
+        recaudado,
+        avance: cupos > 0 ? Math.round((ocupados / cupos) * 100) : 0,
+      };
+    }).sort((a, b) => b.inscritos - a.inscritos);
+
+    const totalRecaudado = pagos
+      .filter((item) => normalizarEstadoPago(item.estado) === "Pagado")
+      .reduce((sum, item) => sum + Number(item.monto || 0), 0);
+    const totalProyectado = inscripciones.reduce((sum, item) => sum + Number(item.costo || 0), 0);
+    const pendientesPago = inscripciones.filter((item) => normalizarEstadoPago(item.estadoPago) !== "Pagado");
+    const familias = new Set(inscripciones.map((item) => item.telefono || item.apoderado || item.dniEstudiante).filter(Boolean));
+
+    // --- Procesamiento de Asistencia ---
+    const asistencias = db.asistencias || [];
+    
+    // Obtener la fecha de hoy en formato YYYY-MM-DD (GMT-5 local Peru)
+    const localDate = new Date(new Date().getTime() - 5 * 60 * 60 * 1000);
+    const hoyStr = localDate.toISOString().slice(0, 10);
+
+    const asistenciasHoy = asistencias.filter(item => {
+      if (!item.fechaRegistro) return false;
+      return item.fechaRegistro.slice(0, 10) === hoyStr;
+    });
+
+    const asistidosHoyUnicos = new Set(
+      asistenciasHoy.map(item => item.dniEstudiante || item.codigoEstudiante || item.nombresEstudiante).filter(Boolean)
+    ).size;
+
+    const asistenciaPorPrograma = filasProgramas.slice(0, 8).map((prog) => {
+      const asistidosHoy = new Set(
+        asistenciasHoy
+          .filter(item => {
+            const idCoincide = item.programaId && prog.id && String(item.programaId) === String(prog.id);
+            const nombreCoincide = item.programa && prog.nombre && normalizarTextoApi(item.programa) === normalizarTextoApi(prog.nombre);
+            return idCoincide || nombreCoincide;
+          })
+          .map(item => item.dniEstudiante || item.codigoEstudiante || item.nombresEstudiante).filter(Boolean)
+      ).size;
+
+      return {
+        programa: abreviar(prog.nombre),
+        matriculados: prog.inscritos,
+        asistidos: asistidosHoy,
+      };
+    });
+
+    const ultimosIngresos = [...asistencias]
+      .sort((a, b) => new Date(b.fechaRegistro || 0).getTime() - new Date(a.fechaRegistro || 0).getTime())
+      .slice(0, 15)
+      .map(item => {
+        let horaFormateada = "—";
+        if (item.fechaRegistro) {
+          try {
+            const date = new Date(item.fechaRegistro);
+            horaFormateada = date.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Lima" });
+          } catch {
+            horaFormateada = String(item.fechaRegistro).slice(11, 16);
+          }
+        }
+        return {
+          id: item.id || "",
+          hora: horaFormateada,
+          estudiante: item.nombresEstudiante || "Estudiante",
+          dni: item.dniEstudiante || "",
+          programa: item.programa || "Sin programa",
+          estadoPago: item.estadoPago || "Pendiente",
+          estadoAcceso: item.estadoAcceso || "no_registrado",
+          observacion: item.observacion || "",
+        };
+      });
+
     res.json({
       success: true,
       data: {
-        resumenGeneral: {
-          totalMatriculados,
+        resumen: {
+          programas: programas.length,
+          programasHabilitados: programas.filter((item) => item.estado === "Habilitado").length,
+          inscripciones: inscripciones.length,
+          familias: familias.size,
           totalRecaudado,
-          pagosPendientesVerificar
+          totalProyectado,
+          totalPendiente: pendientesPago.reduce((sum, item) => sum + Number(item.costo || 0), 0),
+          cupos: filasProgramas.reduce((sum, item) => sum + Number(item.cupos || 0), 0),
+          ocupados: filasProgramas.reduce((sum, item) => sum + Number(item.ocupados || 0), 0),
+          asistidosHoy: asistidosHoyUnicos,
         },
-        matriculadosPorPrograma: porPrograma,
-        recaudacionPorPrograma: {}
+        filasProgramas,
+        ultimosIngresos,
+        graficos: {
+          inscripcionesPorPrograma: filasProgramas.slice(0, 8).map((item) => ({
+            programa: abreviar(item.nombre),
+            inscripciones: item.inscritos,
+          })),
+          ingresosPorPrograma: filasProgramas.slice(0, 8).map((item) => ({
+            programa: abreviar(item.nombre),
+            proyectado: item.proyectado,
+            recaudado: item.recaudado,
+          })),
+          estadoPago: contarPor(inscripciones, (item) => normalizarEstadoPago(item.estadoPago)),
+          origen: contarPor(inscripciones, (item) => item.origenRegistro || "Sin origen"),
+          asistenciaPorPrograma,
+        },
+        reportes: {
+          programas: filasProgramas,
+          inscripciones: inscripciones.map(crearFilaInscripcion),
+          pagos: pagos.map(crearFilaPago),
+        },
       }
     });
   } catch (error) {

@@ -264,7 +264,7 @@ function usePadres(user) {
     try {
       const registro = await registrarInscripcionPadres(user.dni, form, targetProgramaId, horarioPersonalizado, tallas);
       toast.success("Padres", {
-        description: "Inscripcion registrada como pendiente de pago. Acerquese a Cajera para validar el pago.",
+        description: "Inscripción registrada. Seleccione su método de pago.",
       });
       await cargarResumen({ silencioso: true });
       return registro;

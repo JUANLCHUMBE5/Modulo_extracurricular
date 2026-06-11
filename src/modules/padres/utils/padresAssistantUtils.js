@@ -301,7 +301,7 @@ function coincideGradoCatalogo(gradoGrupo, gradoEstudiante) {
   const grupo = descomponerGradoCatalogo(gradoGrupo);
   if (!grupo.numero || !gradoEstudiante?.numero) return false;
   if (grupo.numero !== gradoEstudiante.numero) return false;
-  return !grupo.nivel || !gradoEstudiante.nivel || grupo.nivel === gradoEstudiante.nivel;
+  return !grupo.nivel || grupo.nivel === gradoEstudiante.nivel;
 }
 
 function formatearGradoCatalogo(valor) {

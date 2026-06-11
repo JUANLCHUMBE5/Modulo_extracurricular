@@ -428,7 +428,7 @@ function coincideGradoDocumento(valorGrupo, gradoAlumno) {
   const alumno = descomponerGradoDocumento(gradoAlumno);
   if (!grupo.numero || !alumno.numero) return false;
   if (grupo.numero !== alumno.numero) return false;
-  return !grupo.nivel || !alumno.nivel || grupo.nivel === alumno.nivel;
+  return !grupo.nivel || grupo.nivel === alumno.nivel;
 }
 
 function descomponerGradoDocumento(valor) {

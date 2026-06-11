@@ -131,11 +131,24 @@ function descomponerGradoApi(valor) {
   return { nivel, numero };
 }
 
+function obtenerGradoCompletoApi(grado, nivel, respaldoGrado = "") {
+  let g = String(grado || "").trim();
+  if (!g) return String(respaldoGrado || "").trim();
+  const gLower = g.toLowerCase();
+  if (!gLower.includes("primaria") && !gLower.includes("secundaria") && !gLower.includes("inicial")) {
+    const n = String(nivel || "").trim();
+    if (n) {
+      g = `${g} ${n}`;
+    }
+  }
+  return g;
+}
+
 function coincideGradoApi(gradoGrupo, gradoAlumnoNormalizado) {
   const grupo = descomponerGradoApi(gradoGrupo);
   if (!grupo.numero || !gradoAlumnoNormalizado?.numero) return false;
   if (grupo.numero !== gradoAlumnoNormalizado.numero) return false;
-  return !grupo.nivel || !gradoAlumnoNormalizado.nivel || grupo.nivel === gradoAlumnoNormalizado.nivel;
+  return !grupo.nivel || grupo.nivel === gradoAlumnoNormalizado.nivel;
 }
 
 function formatearGradoApi(valor) {
@@ -422,6 +435,8 @@ export function mapDbEnrollmentToApi(item, db = null) {
   if (!item) return null;
   const plantilla = obtenerPlantillaInscripcionApi(db, item);
   const programa = plantilla.programa || {};
+  const student = db?.estudiantes?.[item.dniEstudiante] || {};
+  const gradoEstudiante = obtenerGradoCompletoApi(item.gradoEstudiante || item.grado || student.grado, student.nivel || student.nivelEducativo || student.grado);
   return {
     inscripcion_id: item.id,
     estudiante_id: item.dniEstudiante || "",
@@ -432,12 +447,12 @@ export function mapDbEnrollmentToApi(item, db = null) {
     dni_estudiante: item.dniEstudiante || "",
     codigo_estudiante: item.codigoEstudiante || "",
     nombres_estudiante: item.nombresEstudiante || "",
-    grado_estudiante: item.gradoEstudiante || item.grado || "",
+    grado_estudiante: gradoEstudiante,
     seccion: item.seccion || "",
     nombre_programa: item.programa || programa.nombre || "",
     categoria: item.categoria || programa.categoria || "",
-    horario: item.horario || resolverHorarioPorGradoApi(programa, item.gradoEstudiante || item.grado) || (tieneHorariosPorGrupoApi(programa) ? "Horario no configurado para este grado" : programa.horario) || "",
-    docente: item.docente || item.responsable || resolverDocentePorGradoApi(programa, item.gradoEstudiante || item.grado) || "No definido",
+    horario: item.horario || resolverHorarioPorGradoApi(programa, gradoEstudiante) || (tieneHorariosPorGrupoApi(programa) ? "Horario no configurado para este grado" : programa.horario) || "",
+    docente: item.docente || item.responsable || resolverDocentePorGradoApi(programa, gradoEstudiante) || "No definido",
     monto: item.costo ?? programa.costo ?? 0,
     modalidad_cobro: item.modalidadCobro || programa.modalidadCobro || "Mensual",
     fecha_inicio: item.fechaInicio || programa.fechaInicio || "",

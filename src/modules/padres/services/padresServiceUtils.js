@@ -76,7 +76,7 @@ function coincideGrado(gradoGrupo, gradoAlumnoNormalizado) {
   const grupo = descomponerGrado(gradoGrupo);
   if (!grupo.numero || !gradoAlumnoNormalizado?.numero) return false;
   if (grupo.numero !== gradoAlumnoNormalizado.numero) return false;
-  return !grupo.nivel || !gradoAlumnoNormalizado.nivel || grupo.nivel === gradoAlumnoNormalizado.nivel;
+  return !grupo.nivel || grupo.nivel === gradoAlumnoNormalizado.nivel;
 }
 
 function formatearGrado(valor) {
