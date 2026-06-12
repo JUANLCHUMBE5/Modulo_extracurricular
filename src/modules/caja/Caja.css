@@ -866,6 +866,51 @@
   white-space: nowrap;
 }
 
+/* Custom Highlight colors for Programa and Estado fields */
+.caja-readonly-field.field-programa {
+  background: #f0fdfa !important;
+  border-color: #99f6e4 !important;
+}
+.caja-readonly-field.field-programa span {
+  color: #0d9488 !important;
+}
+.caja-readonly-field.field-programa strong {
+  color: #0f766e !important;
+}
+
+.caja-readonly-field.status-pagado {
+  background: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+}
+.caja-readonly-field.status-pagado span {
+  color: #059669 !important;
+}
+.caja-readonly-field.status-pagado strong {
+  color: #047857 !important;
+}
+
+.caja-readonly-field.status-verificando {
+  background: #fffbeb !important;
+  border-color: #fde68a !important;
+}
+.caja-readonly-field.status-verificando span {
+  color: #d97706 !important;
+}
+.caja-readonly-field.status-verificando strong {
+  color: #b45309 !important;
+}
+
+.caja-readonly-field.status-pendiente {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+.caja-readonly-field.status-pendiente span {
+  color: #dc2626 !important;
+}
+.caja-readonly-field.status-pendiente strong {
+  color: #b91c1c !important;
+}
+
 .caja-payment-method {
   min-height: 54px;
 }

@@ -56,7 +56,14 @@ export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
       params: { periodo }
     });
     if (!res.success) return null;
-    return res.data ? adaptarEstudiante(res.data) : null;
+    if (res.data) {
+      const student = adaptarEstudiante(res.data);
+      if (student) {
+        student.periodo = normalizarPeriodo(periodo) === "verano" ? "Ciclo verano" : "Año escolar";
+      }
+      return student;
+    }
+    return null;
   }
 
   await esperar(350);
@@ -97,7 +104,13 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
       params: { nombre, periodo }
     });
     if (!res.success || !Array.isArray(res.data)) return [];
-    return res.data.map(adaptarEstudiante);
+    return res.data.map((item) => {
+      const student = adaptarEstudiante(item);
+      if (student) {
+        student.periodo = normalizarPeriodo(periodo) === "verano" ? "Ciclo verano" : "Año escolar";
+      }
+      return student;
+    });
   }
 
   await esperar(350);
@@ -444,11 +457,9 @@ export async function buscarInscripcionEstudiante(estudiante, periodo = "escolar
       clavesAlumnoInscripcion(item).some((clave) => clavesEstudiante.includes(clave))
     );
 
-  const pendienteCaja = inscripciones.find((item) =>
-    !item.derivadoCaja &&
-    normalizarEstadoPagoSecretaria(item.estadoPago) !== "pagado"
-  );
-  const inscripcion = pendienteCaja || inscripciones.find((item) => item.programaId === estudiante?.programaAsignado) || inscripciones[0] || null;
+  const isPaid = (item) => ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(est => String(item.estadoPago || "").toLowerCase().includes(est) || String(item.estadoInscripcion || "").toLowerCase().includes(est));
+  const pendiente = inscripciones.find((item) => !isPaid(item));
+  const inscripcion = pendiente || inscripciones.find((item) => item.programaId === estudiante?.programaAsignado) || inscripciones[0] || null;
   return sincronizarInscripcionConProgramaActual(inscripcion);
 }
 

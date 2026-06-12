@@ -45,6 +45,70 @@ function parsearHorario(horarioStr) {
   return { nivel: cleaned, dias: "", hora: "" };
 }
 
+function verificarLlegadaTemprano(horarioStr) {
+  if (!horarioStr) return { esTemprano: false, horaInicio: "" };
+  
+  // Extraer la primera hora (hora de inicio)
+  const match = String(horarioStr).match(/(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
+  if (!match) return { esTemprano: false, horaInicio: "" };
+  
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const meridian = match[3] ? match[3].toLowerCase().replace(/\s/g, "") : null;
+  
+  const horaOriginalTexto = match[0].trim();
+  
+  // Convertir a formato de 24 horas para comparación
+  if (meridian) {
+    if (meridian.includes("p") && hours < 12) {
+      hours += 12;
+    } else if (meridian.includes("a") && hours === 12) {
+      hours = 0;
+    }
+  }
+  
+  const inicioMinutos = hours * 60 + minutes;
+  
+  // Obtener hora actual del sistema
+  const ahora = new Date();
+  const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
+  
+  const diferenciaMinutos = inicioMinutos - ahoraMinutos;
+  
+  // Si falta más de 10 minutos para la hora de inicio, es muy temprano
+  if (diferenciaMinutos > 10) {
+    return {
+      esTemprano: true,
+      horaInicio: horaOriginalTexto
+    };
+  }
+  
+  return {
+    esTemprano: false,
+    horaInicio: horaOriginalTexto
+  };
+}
+
+function esDiaCorrecto(horarioStr) {
+  if (!horarioStr) return true;
+  
+  const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+  const hoyEsp = diasSemana[new Date().getDay()];
+  
+  const normalizar = (txt) => String(txt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+    
+  const horarioNorm = normalizar(horarioStr);
+  const diasEncontrados = diasSemana.filter(dia => horarioNorm.includes(dia));
+  
+  if (diasEncontrados.length === 0) return true;
+  
+  return horarioNorm.includes(hoyEsp);
+}
+
+
 export default function Auxiliar({ onLogout }) {
   const [modo, setModo] = useState("QR");
   const [inputValue, setInputValue] = useState("");
@@ -305,7 +369,17 @@ export default function Auxiliar({ onLogout }) {
     if (ultimoEvento?.estado === "registrado") return "registrado-exito";
     if (ultimoEvento?.estado === "observado") return "observado";
     if (!estudiante) return "esperando";
-    if (estudiante.estadoAcceso === "pagado") return "autorizado";
+    if (estudiante.estadoAcceso === "pre_inscrito") return "pre-inscrito";
+    if (estudiante.estadoAcceso === "pagado") {
+      if (!esDiaCorrecto(estudiante.horario)) {
+        return "dia-incorrecto";
+      }
+      const infoTemprano = verificarLlegadaTemprano(estudiante.horario);
+      if (infoTemprano.esTemprano) {
+        return "temprano";
+      }
+      return "autorizado";
+    }
     if (estudiante.estadoAcceso === "pendiente") return "pendiente";
     if (esInscritoNoMatriculado) return "no-matriculado";
     return "no-registrado";
@@ -598,6 +672,102 @@ export default function Auxiliar({ onLogout }) {
             </div>
           )}
 
+          {kioskState === "temprano" && (
+            <div className="kiosk-status-card state-temprano">
+              <div className="kiosk-status-header-icon warning-shake">
+                <Clock size={72} />
+              </div>
+              <span className="kiosk-badge-tag warning">ESPERE POR FAVOR</span>
+              <h2 className="student-name">¡Hola, {estudiante.nombres}! 👋</h2>
+              <p className="kiosk-status-message-highlight" style={{ color: "#d97706" }}>
+                Espere por favor, ingreso permitido a las {verificarLlegadaTemprano(estudiante.horario).horaInicio}.
+              </p>
+              
+              <div className="kiosk-student-details-box">
+                <div className="detail-item">
+                  <span className="label">TALLER</span>
+                  <strong className="value">🎨 {estudiante.programa}</strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">HORARIO</span>
+                  <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3" }}>
+                    {(() => {
+                      const infoHorario = parsearHorario(estudiante.horario);
+                      return (
+                        <>
+                          {infoHorario.nivel && <div style={{ fontWeight: 800 }}>{infoHorario.nivel}</div>}
+                          {infoHorario.dias && <div style={{ color: "#475569", marginTop: "2px", fontWeight: 700 }}>{infoHorario.dias}</div>}
+                          {infoHorario.hora && <div style={{ color: "#0ea5e9", marginTop: "2px", fontWeight: 700 }}>⏰ {infoHorario.hora}</div>}
+                          {!infoHorario.nivel && !infoHorario.dias && !infoHorario.hora && <div>{estudiante.horario || "No registrado"}</div>}
+                        </>
+                      );
+                    })()}
+                  </strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">ESTADO PAGO</span>
+                  <strong className="value badge-success">✅ {estudiante.estadoPago}</strong>
+                </div>
+              </div>
+
+              <div className="kiosk-actions-panel">
+                <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+                  Limpiar / Nuevo Escaneo
+                </button>
+              </div>
+            </div>
+          )}
+
+          {kioskState === "dia-incorrecto" && (
+            <div className="kiosk-status-card state-pendiente">
+              <div className="kiosk-status-header-icon error-shake">
+                <XCircle size={72} />
+              </div>
+              <span className="kiosk-badge-tag error">DÍA INCORRECTO</span>
+              <h2 className="student-name">¡Hola, {estudiante.nombres}! 📅</h2>
+              
+              <div className="kiosk-alert-explanation">
+                <p><strong>Hoy no le toca este taller.</strong></p>
+                <p className="sub-msg">
+                  El alumno está matriculado en este taller, pero las clases corresponden a otros días de la semana según el horario establecido.
+                </p>
+              </div>
+
+              <div className="kiosk-student-details-box">
+                <div className="detail-item">
+                  <span className="label">TALLER</span>
+                  <strong className="value">🎨 {estudiante.programa}</strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">HORARIO</span>
+                  <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3" }}>
+                    {(() => {
+                      const infoHorario = parsearHorario(estudiante.horario);
+                      return (
+                        <>
+                          {infoHorario.nivel && <div style={{ fontWeight: 800 }}>{infoHorario.nivel}</div>}
+                          {infoHorario.dias && <div style={{ color: "#475569", marginTop: "2px", fontWeight: 700 }}>{infoHorario.dias}</div>}
+                          {infoHorario.hora && <div style={{ color: "#0ea5e9", marginTop: "2px", fontWeight: 700 }}>⏰ {infoHorario.hora}</div>}
+                          {!infoHorario.nivel && !infoHorario.dias && !infoHorario.hora && <div>{estudiante.horario || "No registrado"}</div>}
+                        </>
+                      );
+                    })()}
+                  </strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">ESTADO PAGO</span>
+                  <strong className="value badge-success">✅ {estudiante.estadoPago}</strong>
+                </div>
+              </div>
+
+              <div className="kiosk-actions-panel">
+                <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+                  Siguiente Estudiante 🔄
+                </button>
+              </div>
+            </div>
+          )}
+
           {kioskState === "pendiente" && (
             <div className="kiosk-status-card state-pendiente">
               <div className="kiosk-status-header-icon error-shake">
@@ -632,29 +802,63 @@ export default function Auxiliar({ onLogout }) {
             </div>
           )}
 
-          {kioskState === "no-matriculado" && (
-            <div className="kiosk-status-card state-no-matriculado">
-              <div className="kiosk-status-header-icon info-bounce">
+          {kioskState === "pre-inscrito" && (
+            <div className="kiosk-status-card state-pendiente">
+              <div className="kiosk-status-header-icon error-shake">
                 <School size={72} />
               </div>
-              <span className="kiosk-badge-tag info">INSCRITO NO MATRICULADO</span>
+              <span className="kiosk-badge-tag error">PRE-INSCRITO</span>
               <h2 className="student-name">¡Hola, {estudiante.nombres}! 🏫</h2>
               
               <div className="kiosk-alert-explanation">
-                <p><strong>Estás inscrito en el colegio, pero no matriculado en este taller.</strong></p>
+                <p><strong>No está inscrito. Acercarse a Caja o Asistente para proceder con la matrícula.</strong></p>
                 <p className="sub-msg">
-                  Por favor, acércate con tu apoderado a Asistente para regularizar la matrícula en este programa.
+                  El alumno figura como pre-inscrito en el taller <strong>{estudiante.programa}</strong>, pero aún no tiene una matrícula activa ni registro de pago.
                 </p>
               </div>
 
               <div className="kiosk-student-details-box">
                 <div className="detail-item">
-                  <span className="label">GRADO / SECCIÓN</span>
-                  <strong className="value">🏫 {estudiante.grado} "{estudiante.seccion}"</strong>
+                  <span className="label">GRADO</span>
+                  <strong className="value">🏫 {estudiante.grado}</strong>
                 </div>
                 <div className="detail-item">
                   <span className="label">TALLER ASOCIADO</span>
-                  <strong className="value text-rose-500">❌ Sin Matrícula Activa</strong>
+                  <strong className="value badge-error">❌ Sin Matrícula Activa</strong>
+                </div>
+              </div>
+
+              <div className="kiosk-actions-panel">
+                <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+                  Siguiente Estudiante 🔄
+                </button>
+              </div>
+            </div>
+          )}
+
+          {kioskState === "no-matriculado" && (
+            <div className="kiosk-status-card state-pendiente">
+              <div className="kiosk-status-header-icon error-shake">
+                <School size={72} />
+              </div>
+              <span className="kiosk-badge-tag error">NO MATRICULADO</span>
+              <h2 className="student-name">¡Hola, {estudiante.nombres}! 🏫</h2>
+              
+              <div className="kiosk-alert-explanation">
+                <p><strong>No está matriculado a ninguno de los cursos / No está asignado a ningún taller.</strong></p>
+                <p className="sub-msg">
+                  El alumno no registra ninguna matrícula activa en los talleres del programa extracurricular.
+                </p>
+              </div>
+
+              <div className="kiosk-student-details-box">
+                <div className="detail-item">
+                  <span className="label">GRADO</span>
+                  <strong className="value">🏫 {estudiante.grado}</strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">TALLER ASOCIADO</span>
+                  <strong className="value badge-error">❌ Sin Matrícula Activa</strong>
                 </div>
               </div>
 

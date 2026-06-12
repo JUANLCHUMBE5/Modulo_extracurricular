@@ -238,8 +238,9 @@ export async function obtenerEstudiantePorDni(dni, periodo = "") {
       (!periodoNormalizado || normalizarPeriodo(item.periodo || periodoNormalizado) === periodoNormalizado)
     )
     .sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0));
-  const inscripcion = inscripciones.find((item) => item.derivadoCaja && String(item.estadoPago || "").toLowerCase() !== "pagado" && String(item.estadoInscripcion || "").toLowerCase() !== "pago validado")
-    || inscripciones.find((item) => String(item.estadoPago || "").toLowerCase() !== "pagado" && String(item.estadoInscripcion || "").toLowerCase() !== "pago validado")
+  const isPaid = (item) => ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(est => String(item.estadoPago || "").toLowerCase().includes(est) || String(item.estadoInscripcion || "").toLowerCase().includes(est));
+  const inscripcion = inscripciones.find((item) => item.derivadoCaja && !isPaid(item))
+    || inscripciones.find((item) => !isPaid(item))
     || inscripciones.find((item) => item.derivadoCaja)
     || inscripciones[0];
   const estudiante = apiDb.estudiantes[dni] || crearEstudianteDesdeInscripcion(inscripcion);

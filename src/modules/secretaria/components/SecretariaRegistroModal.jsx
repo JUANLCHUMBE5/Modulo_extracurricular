@@ -569,18 +569,25 @@ export default function SecretariaRegistroModal({
                   >
                     Cancelar
                   </button>
-                  <button
-                    className="secretaria-register-button"
-                    type="submit"
-                    disabled={guardando}
-                  >
-                    {guardando ? (
-                      <Loader2 className="secretaria-spin" size={17} />
-                    ) : (
-                      <ClipboardCheck size={17} />
-                    )}
-                    <span>{guardando ? "Guardando" : "Confirmar inscripcion"}</span>
-                  </button>
+                  {(() => {
+                    const tieneProgramaValido = requiereSeleccionPrograma
+                      ? Boolean(formulario.programa)
+                      : Boolean(programaParaRegistro);
+                    return (
+                      <button
+                        className="secretaria-register-button"
+                        type="submit"
+                        disabled={guardando || !tieneProgramaValido}
+                      >
+                        {guardando ? (
+                          <Loader2 className="secretaria-spin" size={17} />
+                        ) : (
+                          <ClipboardCheck size={17} />
+                        )}
+                        <span>{guardando ? "Guardando" : "Confirmar inscripcion"}</span>
+                      </button>
+                    );
+                  })()}
                 </div>
               </form>
             </section>

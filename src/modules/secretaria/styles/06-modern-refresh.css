@@ -2785,3 +2785,96 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Eye-catching custom overrides for pills */
+.secretaria-student-panel .secretaria-pill {
+  padding: 3px 10px !important;
+  font-weight: 800 !important;
+  border-radius: 20px !important;
+  letter-spacing: 0.2px;
+}
+
+.secretaria-student-panel .secretaria-pill.secretaria-pill-success {
+  color: #1e7e34 !important;
+  background-color: #d4edda !important;
+  border: 1px solid #c3e6cb !important;
+}
+
+.secretaria-student-panel .secretaria-pill.secretaria-pill-warning {
+  color: #856404 !important;
+  background-color: #fff3cd !important;
+  border: 1px solid #ffeeba !important;
+}
+
+.secretaria-student-panel .secretaria-pill.secretaria-pill-danger {
+  color: #721c24 !important;
+  background-color: #f8d7da !important;
+  border: 1px solid #f5c6cb !important;
+}
+
+.secretaria-student-panel .secretaria-pill.secretaria-pill-info {
+  color: #0c5460 !important;
+  background-color: #d1ecf1 !important;
+  border: 1px solid #bee5eb !important;
+}
+
+/* Dynamic styling for the info box */
+.secretaria-student-panel .secretaria-info-box {
+  border-radius: 12px !important;
+  padding: 12px 14px !important;
+  font-weight: 500 !important;
+  border-width: 1.5px !important;
+  transition: all 0.2s ease;
+}
+
+/* Info Box Success */
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-success {
+  border-color: #c3e6cb !important;
+  background-color: #d4edda !important;
+  color: #155724 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-success p {
+  color: #155724 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-success svg {
+  color: #28a745 !important;
+}
+
+/* Info Box Warning */
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-warning {
+  border-color: #ffeeba !important;
+  background-color: #fff3cd !important;
+  color: #856404 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-warning p {
+  color: #856404 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-warning svg {
+  color: #e0a800 !important;
+}
+
+/* Info Box Danger */
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-danger {
+  border-color: #f5c6cb !important;
+  background-color: #f8d7da !important;
+  color: #721c24 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-danger p {
+  color: #721c24 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-danger svg {
+  color: #dc3545 !important;
+}
+
+/* Info Box Info (Default/Notice) */
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-info {
+  border-color: #bee5eb !important;
+  background-color: #d1ecf1 !important;
+  color: #0c5460 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-info p {
+  color: #0c5460 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-info svg {
+  color: #17a2b8 !important;
+}

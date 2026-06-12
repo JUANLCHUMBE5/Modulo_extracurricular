@@ -85,6 +85,7 @@ export function adaptarEstudiante(apiEstudiante) {
     nivel: apiEstudiante.nivel_nombre || apiEstudiante.nivel || "",
     sexo: apiEstudiante.sexo || "",
     tipoAlumno: apiEstudiante.tipo_alumno || apiEstudiante.tipoAlumno || "Alumno interno",
+    periodo: apiEstudiante.periodo || "",
     estadoMatricula: apiEstudiante.estado_matricula || apiEstudiante.estadoMatricula || "Activo",
     apoderado: apiEstudiante.apoderado || "",
     telefonoApoderado: apiEstudiante.telefono_apoderado || apiEstudiante.telefonoApoderado || "",
@@ -170,7 +171,8 @@ export function adaptarInscripcion(apiInscripcion) {
     plantillaVariables: apiInscripcion.plantilla_variables || apiInscripcion.plantillaVariables || [],
     plantillaValidada: Boolean(apiInscripcion.plantilla_validada ?? apiInscripcion.plantillaValidada),
     derivadoCaja: Boolean(apiInscripcion.derivado_caja ?? apiInscripcion.derivadoCaja),
-    estadoCaja: apiInscripcion.estado_caja || apiInscripcion.estadoCaja || ""
+    estadoCaja: apiInscripcion.estado_caja || apiInscripcion.estadoCaja || "",
+    periodo: apiInscripcion.periodo || ""
   };
 }
 

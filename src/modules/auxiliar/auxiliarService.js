@@ -199,8 +199,50 @@ function resolverValidacion(identificadores = {}) {
   const ids = normalizarIdentificadores(identificadores);
   const inscripcion = buscarInscripcion(ids);
   const estudiante = buscarEstudiante(ids, inscripcion);
-
   if (!inscripcion) {
+    const studentDni = ids.dni || estudiante?.dni;
+    let programaPreInscrito = null;
+    if (studentDni) {
+      for (const [progId, listaInvitados] of Object.entries(apiDb.invitadosPorPrograma || {})) {
+        const esInvitado = (listaInvitados || []).some(inv => {
+          const invDni = String(inv?.dni || "").replace(/\D/g, "");
+          const targetDniStr = String(studentDni || "").replace(/\D/g, "");
+          return invDni === targetDniStr && invDni !== "";
+        });
+        if (esInvitado) {
+          const prog = (apiDb.programas || []).find(p => p.id === progId);
+          if (prog) {
+            programaPreInscrito = prog;
+            break;
+          }
+        }
+      }
+    }
+
+    if (programaPreInscrito) {
+      return {
+        dni: studentDni || ids.codigoOriginal || "",
+        codigoEstudiante: ids.codigoEstudiante || estudiante?.codigoEstudiante || "",
+        nombres: estudiante?.nombres || ids.codigoOriginal || "Estudiante",
+        grado: estudiante?.grado || "",
+        seccion: estudiante?.seccion || "",
+        programa: programaPreInscrito.nombre,
+        programaId: programaPreInscrito.id,
+        horario: programaPreInscrito.horario || "No registrado",
+        inscripcionId: "",
+        estadoInscripcion: "Pre-inscrito",
+        estadoPago: "Pendiente",
+        estadoAcceso: "pre_inscrito",
+        accesoPermitido: false,
+        mensajeAcceso: "No inscrito",
+        accion: `No está inscrito. Acercarse a Caja o Asistente para proceder con la matrícula en ${programaPreInscrito.nombre}.`,
+        color: "rojo",
+        pagoId: "",
+        fechaPago: "",
+        monto: Number(programaPreInscrito.costo || 0),
+      };
+    }
+
     return crearRespuestaNoRegistrado(ids, estudiante);
   }
 

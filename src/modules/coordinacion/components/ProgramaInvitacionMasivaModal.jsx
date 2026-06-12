@@ -9,6 +9,7 @@ import { formatearPesoArchivo } from "../utils/coordinacionProgramUtils";
 export function obtenerEtiquetaAlcance(valor) {
   const etiquetas = {
     colegio: "Todo el colegio",
+    inicial: "Solo nivel Inicial",
     primaria: "Solo nivel Primaria",
     secundaria: "Solo nivel Secundaria",
     grados: "Solo grados habilitados arriba",
@@ -48,12 +49,13 @@ export default function ProgramaInvitacionMasivaModal({
                   onChange={e => actualizarForm("alcanceInvitacionMasiva", e.target.value)}
                 >
                   <option value="colegio">Todo el colegio</option>
+                  <option value="inicial">Solo nivel Inicial</option>
                   <option value="primaria">Solo nivel Primaria</option>
                   <option value="secundaria">Solo nivel Secundaria</option>
                   <option value="grados">Solo grados habilitados arriba</option>
                 </select>
                 <small>
-                  Use Primaria o Secundaria cuando el anuncio sea masivo para un nivel completo; use grados habilitados si debe respetar la selección del formulario.
+                  Use Inicial, Primaria o Secundaria cuando el anuncio sea masivo para un nivel completo; use grados habilitados si debe respetar la selección del formulario.
                 </small>
               </div>
               <div className="coord-field coord-field-full">

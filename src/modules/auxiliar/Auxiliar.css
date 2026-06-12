@@ -58,7 +58,7 @@
   border: 2px solid #bae6fd;
   backdrop-filter: blur(10px);
   width: 100%;
-  max-width: 1280px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -143,7 +143,7 @@
   flex: 1;
   align-items: stretch;
   width: 100%;
-  max-width: 1280px;
+  max-width: 100%;
   margin: 10px auto 0;
 }
 
@@ -663,7 +663,38 @@
   animation: observado-texto-entrada 0.5s ease-out 0.5s both;
 }
 
-.kiosk-state-no-registrado .kiosk-status-card {
+/* Estado Temprano (Amarillo) */
+.kiosk-state-temprano .kiosk-status-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 40%, #fde68a 100%);
+  border-color: #f59e0b;
+  box-shadow: 0 20px 45px rgba(245, 158, 11, 0.2);
+}
+
+.kiosk-state-temprano .kiosk-status-header-icon {
+  background: #ffffff;
+  color: #d97706;
+  animation: observado-icono-shake 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+  box-shadow: 0 10px 24px rgba(217, 119, 6, 0.15);
+}
+
+.kiosk-state-temprano .kiosk-badge-tag.warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4);
+}
+
+.kiosk-state-temprano .student-name {
+  color: #92400e !important;
+}
+
+.kiosk-state-temprano .kiosk-status-message {
+  color: #b45309;
+}
+
+.kiosk-state-no-registrado .kiosk-status-card,
+.kiosk-state-no-matriculado .kiosk-status-card,
+.kiosk-state-dia-incorrecto .kiosk-status-card,
+.kiosk-state-pre-inscrito .kiosk-status-card {
   background: var(--color-error-bg);
   border-color: #fda4af;
   box-shadow: 0 20px 45px var(--color-error-glow);
@@ -976,7 +1007,7 @@
   box-shadow: 0 10px 30px rgba(2, 132, 199, 0.08);
   backdrop-filter: blur(10px);
   width: 100%;
-  max-width: 1280px;
+  max-width: 100%;
   margin: 10px auto 0;
 }
 
@@ -1266,24 +1297,25 @@
 }
 
 .kiosk-state-pendiente .student-name,
-.kiosk-state-no-registrado .student-name {
+.kiosk-state-no-registrado .student-name,
+.kiosk-state-no-matriculado .student-name,
+.kiosk-state-dia-incorrecto .student-name,
+.kiosk-state-pre-inscrito .student-name {
   color: #9f1239 !important;
 }
 .kiosk-state-pendiente .kiosk-status-message,
-.kiosk-state-no-registrado .kiosk-status-message {
+.kiosk-state-no-registrado .kiosk-status-message,
+.kiosk-state-no-matriculado .kiosk-status-message,
+.kiosk-state-dia-incorrecto .kiosk-status-message,
+.kiosk-state-pre-inscrito .kiosk-status-message {
   color: #b91c1c;
 }
 
-.kiosk-state-observado .student-name {
+.kiosk-state-observado .student-name,
+.kiosk-state-temprano .student-name {
   color: #92400e !important;
 }
-.kiosk-state-observado .kiosk-status-message {
+.kiosk-state-observado .kiosk-status-message,
+.kiosk-state-temprano .kiosk-status-message {
   color: #b45309;
-}
-
-.kiosk-state-no-matriculado .student-name {
-  color: #581c87 !important;
-}
-.kiosk-state-no-matriculado .kiosk-status-message {
-  color: #6b21a8;
 }

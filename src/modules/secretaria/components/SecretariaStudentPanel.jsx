@@ -46,6 +46,56 @@ function obtenerPillEstadoInscripcion(estado = "") {
   };
 }
 
+function obtenerInfoBoxConfig({ inscripcion, programas, esCicloVerano, invitacionSinHorario, tieneInvitacionOperativa }) {
+  if (inscripcion?.derivadoCaja) {
+    return {
+      clase: "secretaria-info-box-success",
+      Icono: CheckCircle2,
+    };
+  }
+  if (inscripcion) {
+    return {
+      clase: "secretaria-info-box-info",
+      Icono: InfoCircle,
+    };
+  }
+  if (esCicloVerano) {
+    if (programas.length > 0) {
+      return {
+        clase: "secretaria-info-box-info",
+        Icono: InfoCircle,
+      };
+    } else {
+      return {
+        clase: "secretaria-info-box-danger",
+        Icono: AlertTriangle,
+      };
+    }
+  }
+  if (invitacionSinHorario) {
+    return {
+      clase: "secretaria-info-box-warning",
+      Icono: AlertTriangle,
+    };
+  }
+  if (tieneInvitacionOperativa) {
+    return {
+      clase: "secretaria-info-box-success",
+      Icono: CheckCircle2,
+    };
+  }
+  if (programas.length > 0) {
+    return {
+      clase: "secretaria-info-box-info",
+      Icono: InfoCircle,
+    };
+  }
+  return {
+    clase: "secretaria-info-box-danger",
+    Icono: AlertTriangle,
+  };
+}
+
 function SecretariaStudentPanel({
   abrirFichaGenerada,
   abrirCursoAdicional,
@@ -73,6 +123,9 @@ function SecretariaStudentPanel({
   ].filter(Boolean).join(" "));
   const seleccionCambridge = inscripcion?.seleccion || estudiante.seleccion || "";
   const nivelCambridge = inscripcion?.nivelCambridge || estudiante.nivelCambridge || "";
+  const esPagoCompletado = ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(
+    (est) => String(inscripcion?.estadoPago || "").toLowerCase().includes(est) || String(inscripcion?.estadoInscripcion || "").toLowerCase().includes(est)
+  );
 
   return (
     <section className="secretaria-student-panel">
@@ -114,16 +167,42 @@ function SecretariaStudentPanel({
         </div>
         <div className="secretaria-data-status secretaria-data-process">
           <dt>Periodo</dt>
-          <dd>{estudiante.periodo}</dd>
+          <dd>
+            {(() => {
+              const normalizar = (p) => String(p || "").toLowerCase().includes("verano") ? "Ciclo verano" : "Año escolar";
+              if (inscripcion?.periodo) return normalizar(inscripcion.periodo);
+              if (estudiante?.programaPeriodo) return normalizar(estudiante.programaPeriodo);
+              if (estudiante?.periodo) return normalizar(estudiante.periodo);
+              return esCicloVerano ? "Ciclo verano" : "Año escolar";
+            })()}
+          </dd>
         </div>
         {!esCicloVerano ? (
           <div className="secretaria-data-status secretaria-data-process">
             <dt>Invitacion</dt>
             <dd>
-              <span className={`secretaria-pill ${tieneInvitacionOperativa && !invitacionSinHorario ? "secretaria-pill-success" : "secretaria-pill-warning"}`}>
-                <CheckCircle2 size={13} />
-                {invitacionSinHorario ? "Falta horario" : tieneInvitacionOperativa ? "Registrada" : "Sin invitación"}
-              </span>
+              {(() => {
+                let pillClass = "secretaria-pill-danger";
+                let Icon = AlertTriangle;
+                let text = "Sin invitación";
+                
+                if (tieneInvitacionOperativa && !invitacionSinHorario) {
+                  pillClass = "secretaria-pill-success";
+                  Icon = CheckCircle2;
+                  text = "Registrada";
+                } else if (invitacionSinHorario) {
+                  pillClass = "secretaria-pill-warning";
+                  Icon = AlertTriangle;
+                  text = "Falta horario";
+                }
+                
+                return (
+                  <span className={`secretaria-pill ${pillClass}`}>
+                    <Icon size={13} />
+                    {text}
+                  </span>
+                );
+              })()}
             </dd>
           </div>
         ) : null}
@@ -193,53 +272,65 @@ function SecretariaStudentPanel({
         ) : null}
       </dl>
 
-      <div className="secretaria-info-box">
-        <CheckCircle2 size={19} />
-        {inscripcion?.derivadoCaja ? (
-          <p>
-            Derivado exitosamente a Cajera: {inscripcion.programa || "taller seleccionado"}. Este mismo taller ya no se puede derivar otra vez.
-            {cursosAdicionalesDisponibles > 0
-              ? " Si necesita otro cobro, registre un curso adicional."
-              : " No hay cursos adicionales disponibles para este grado."}
-          </p>
-        ) : inscripcion && programas.length > 0 ? (
-          <p>
-            Taller actual para Cajera: {inscripcion.programa || "No definido"}. Asistente puede registrar
-            un curso adicional si corresponde, cuidando no derivar otro taller por error.
-          </p>
-        ) : inscripcion ? (
-          <p>
-            Inscripcion registrada para {inscripcion.programa || "este taller"}. Derivar a Cajera para validar el pago.
-          </p>
-        ) : esCicloVerano && programas.length > 0 ? (
-          <p>
-            Ciclo verano no usa invitación. Asistente debe seleccionar el programa de verano al registrar.
-          </p>
-        ) : esCicloVerano ? (
-          <p>
-            Coordinación Académica debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
-          </p>
-        ) : invitacionSinHorario ? (
-          <p>
-            El estudiante si esta cargado por Coordinación Académica, pero falta configurar un horario para su grado antes de inscribirlo.
-          </p>
-        ) : tieneInvitacionOperativa ? (
-          <p>
-            El estudiante tiene invitación registrada. Asistente solo
-            podrá inscribirlo en el programa asignado por Coordinación Académica.
-          </p>
-        ) : programas.length > 0 ? (
-          <p>
-            No tiene invitación individual. Asistente puede registrarlo
-            en los programas marcados por Coordinación Académica como invitación masiva.
-          </p>
-        ) : (
-          <p>
-            No tiene invitación registrada. Coordinación Académica debe habilitar una
-            invitación masiva o registrar una invitación individual.
-          </p>
-        )}
-      </div>
+      {(() => {
+        const config = obtenerInfoBoxConfig({
+          inscripcion,
+          programas,
+          esCicloVerano,
+          invitacionSinHorario,
+          tieneInvitacionOperativa,
+        });
+        const IconoBox = config.Icono;
+        return (
+          <div className={`secretaria-info-box ${config.clase}`}>
+            <IconoBox size={19} />
+            {inscripcion?.derivadoCaja ? (
+              <p>
+                Derivado exitosamente a Cajera: {inscripcion.programa || "taller seleccionado"}. Este mismo taller ya no se puede derivar otra vez.
+                {cursosAdicionalesDisponibles > 0
+                  ? " Si necesita otro cobro, registre un curso adicional."
+                  : " No hay cursos adicionales disponibles para este grado."}
+              </p>
+            ) : inscripcion && programas.length > 0 ? (
+              <p>
+                Taller actual para Cajera: {inscripcion.programa || "No definido"}. Asistente puede registrar
+                un curso adicional si corresponde, cuidando no derivar otro taller por error.
+              </p>
+            ) : inscripcion ? (
+              <p>
+                Inscripcion registrada para {inscripcion.programa || "este taller"}. Derivar a Cajera para validar el pago.
+              </p>
+            ) : esCicloVerano && programas.length > 0 ? (
+              <p>
+                Ciclo verano no usa invitación. Asistente debe seleccionar el programa de verano al registrar.
+              </p>
+            ) : esCicloVerano ? (
+              <p>
+                Coordinación Académica debe registrar y habilitar un programa de ciclo verano disponible para el estudiante.
+              </p>
+            ) : invitacionSinHorario ? (
+              <p>
+                El estudiante si esta cargado por Coordinación Académica, pero falta configurar un horario para su grado antes de inscribirlo.
+              </p>
+            ) : tieneInvitacionOperativa ? (
+              <p>
+                El estudiante tiene invitación registrada. Asistente solo
+                podrá inscribirlo en el programa asignado por Coordinación Académica.
+              </p>
+            ) : programas.length > 0 ? (
+              <p>
+                No tiene invitación individual. Asistente puede registrarlo
+                en los programas marcados por Coordinación Académica como invitación masiva.
+              </p>
+            ) : (
+              <p>
+                No tiene invitación registrada. Coordinación Académica debe habilitar una
+                invitación masiva o registrar una invitación individual.
+              </p>
+            )}
+          </div>
+        );
+      })()}
 
       {!inscripcion ? (
         <button
@@ -266,15 +357,23 @@ function SecretariaStudentPanel({
             className="secretaria-register-button"
             type="button"
             onClick={derivarACaja}
-            disabled={derivandoCaja || inscripcion.derivadoCaja}
+            disabled={derivandoCaja || inscripcion.derivadoCaja || esPagoCompletado}
           >
-            {derivandoCaja ? <Loader2 className="secretaria-spin" size={17} /> : <Send size={17} />}
+            {derivandoCaja ? (
+              <Loader2 className="secretaria-spin" size={17} />
+            ) : esPagoCompletado ? (
+              <CheckCircle2 size={17} />
+            ) : (
+              <Send size={17} />
+            )}
             <span>
               {inscripcion.derivadoCaja
                 ? "Derivado exitosamente"
-                : derivandoCaja
-                  ? "Derivando"
-                : `Derivar: ${inscripcion.programa || "Cajera"}`}
+                : esPagoCompletado
+                  ? "Pago completado"
+                  : derivandoCaja
+                    ? "Derivando"
+                  : `Derivar: ${inscripcion.programa || "Cajera"}`}
             </span>
           </button>
           {cursosAdicionalesDisponibles > 0 ? (

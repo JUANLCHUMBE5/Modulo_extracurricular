@@ -729,10 +729,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       mostrarMensaje("Este taller ya fue derivado a Cajera. Registre un curso adicional si necesita derivar otro taller.");
       return;
     }
-    if (!inscripcion.fichaGenerada && !inscripcion.documentoGenerado) {
-      mostrarMensaje("Primero imprima o genere la ficha de inscripción antes de derivar a Cajera.");
-      return;
-    }
+
 
     const programaDerivacion = inscripcion.programa || "el taller seleccionado";
     const confirmarDerivacion = window.confirm(

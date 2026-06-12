@@ -1,4 +1,5 @@
-import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
+import { apiDb, nextApiId, saveApiDb, syncApiDb, dispatchApiDbUpdated } from "../../../services/dbApi";
+import { resolverHorarioPorGrado, resolverDocentePorGrado } from "../../secretaria/services/secretariaServiceUtils";
 import { isApiMode, apiClient } from "../../../services/apiClient";
 import {
   adaptarPrograma,
@@ -167,6 +168,7 @@ export async function crearPrograma(datos) {
     };
     const res = await apiClient.post("/api/v1/extracurricular/programas", payload);
     if (!res.success) throw new Error(res.message || "Error al crear programa");
+    dispatchApiDbUpdated();
     return adaptarPrograma(res.data);
   }
   await delay(700);
@@ -249,6 +251,7 @@ export async function crearProgramaDesdeDocumento(datos) {
     };
     const res = await apiClient.post("/api/v1/extracurricular/programas/documento", payload);
     if (!res.success) throw new Error(res.message || "Error al crear programa desde documento");
+    dispatchApiDbUpdated();
     return adaptarPrograma(res.data);
   }
   await delay(700);
@@ -360,6 +363,7 @@ export async function editarPrograma(id, datos) {
     };
     const res = await apiClient.put(`/api/v1/extracurricular/programas/${id}`, payload);
     if (!res.success) throw new Error(res.message || "Error al editar programa");
+    dispatchApiDbUpdated();
     return adaptarPrograma(res.data);
   }
   await delay(700);
@@ -423,6 +427,8 @@ export async function editarPrograma(id, datos) {
           programa: apiDb.programas[index].nombre,
           categoria: apiDb.programas[index].categoria,
           periodo: apiDb.programas[index].periodo || "escolar",
+          horario: resolverHorarioPorGrado(apiDb.programas[index], item.gradoEstudiante || item.grado || "") || apiDb.programas[index].horario || "",
+          docente: resolverDocentePorGrado(apiDb.programas[index], item.gradoEstudiante || item.grado || ""),
           costo: apiDb.programas[index].costo,
           modalidadCobro: apiDb.programas[index].modalidadCobro || "Mensual",
           fechaInicio: apiDb.programas[index].fechaInicio,
@@ -470,7 +476,8 @@ export async function editarPrograma(id, datos) {
         return {
           ...item,
           programaId: id,
-          programa: apiDb.programas[index].nombre
+          programa: apiDb.programas[index].nombre,
+          horario: resolverHorarioPorGrado(apiDb.programas[index], item.gradoEstudiante || item.grado || "") || apiDb.programas[index].horario || ""
         };
       }
       return item;
@@ -509,6 +516,7 @@ export async function cambiarEstadoPrograma(id, nuevoEstado) {
   if (isApiMode()) {
     const res = await apiClient.put(`/api/v1/extracurricular/programas/${id}/estado`, { estado: nuevoEstado });
     if (!res.success) throw new Error(res.message || "Error al cambiar estado de programa");
+    dispatchApiDbUpdated();
     return adaptarPrograma(res.data);
   }
   await delay(400);
@@ -537,6 +545,7 @@ export async function eliminarPrograma(id) {
   if (isApiMode()) {
     const res = await apiClient.delete(`/api/v1/extracurricular/programas/${id}`);
     if (!res.success) throw new Error(res.message || "Error al eliminar programa");
+    dispatchApiDbUpdated();
     return true;
   }
   await delay(400);

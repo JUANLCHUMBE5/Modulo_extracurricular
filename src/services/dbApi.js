@@ -72,7 +72,7 @@ function replaceMockDb(db) {
   Object.assign(mockDb, db || {});
 }
 
-function dispatchApiDbUpdated() {
+export function dispatchApiDbUpdated() {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent("api-db-updated"));
   try {

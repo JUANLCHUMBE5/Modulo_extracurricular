@@ -23,8 +23,14 @@ export default function CajaFields({
     setFormulario((actual) => ({ ...actual, [campo]: valor }));
   }
 
-  const esPorVerificar = formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar";
-  const labelEstado = esPorVerificar ? "Por Verificar" : "Pagado";
+  let labelEstado = "Pendiente";
+  const estPago = String(formulario.estadoPago || "").toLowerCase().trim();
+  if (["completado", "pagado", "validado", "pago validado"].some(item => estPago.includes(item))) {
+    labelEstado = "Pagado";
+  } else if (["verificando", "verificacion", "por verificar", "proceso"].some(item => estPago.includes(item))) {
+    labelEstado = "Por Verificar";
+  }
+  const esPorVerificar = labelEstado === "Por Verificar";
 
   const datosLectura = [
     ["DNI", formulario.estudianteDni || "Sin DNI"],
@@ -90,12 +96,23 @@ export default function CajaFields({
           </div>
 
           <div className="caja-payment-summary">
-            {datosLectura.map(([etiqueta, valor]) => (
-              <div className="caja-readonly-field" key={etiqueta}>
-                <span>{etiqueta}</span>
-                <strong>{valor}</strong>
-              </div>
-            ))}
+            {datosLectura.map(([etiqueta, valor]) => {
+              const isPrograma = etiqueta === "Programa";
+              const isEstado = etiqueta === "Estado";
+              let extraClass = "";
+              if (isPrograma) extraClass = "field-programa";
+              if (isEstado) {
+                if (valor === "Pagado") extraClass = "status-pagado";
+                else if (valor === "Por Verificar") extraClass = "status-verificando";
+                else extraClass = "status-pendiente";
+              }
+              return (
+                <div className={`caja-readonly-field ${extraClass}`} key={etiqueta}>
+                  <span>{etiqueta}</span>
+                  <strong>{valor}</strong>
+                </div>
+              );
+            })}
             <label className="caja-payment-method">
               Forma de pago
               <select
