@@ -522,6 +522,10 @@ function Coordinacion({
       diasFinales = normalizarListaTexto(form.dias);
     }
 
+    if (form.fechaInicio && form.fechaFin && form.fechaInicio > form.fechaFin) {
+      return mostrarAlertaConfiguracion("Revise: la fecha de inicio no puede ser posterior a la fecha de fin.");
+    }
+
     const camposFaltantes = [];
     if (!form.fechaInicio || !form.fechaFin) camposFaltantes.push("fechas de vigencia");
     if (!form.cupos || Number(form.cupos) <= 0) camposFaltantes.push("cupos");
@@ -1673,6 +1677,7 @@ function Coordinacion({
             usarPlantillaExistente={usarPlantillaExistente}
             variablesPlantillaAceptadas={variablesPlantillaAceptadas}
             variablesPlantillaRequeridas={variablesPlantillaRequeridas}
+            categorias={categorias}
           />
         )}
 

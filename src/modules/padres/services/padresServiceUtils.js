@@ -93,7 +93,7 @@ export function descomponerGrado(valor) {
 }
 
 export function programaVisibleEnPortalPadres(programa) {
-  return Boolean(programa) && programa.estado === "Habilitado" && programaListoParaPortalPadres(programa);
+  return Boolean(programa) && (programa.estado || "Habilitado") === "Habilitado" && programaListoParaPortalPadres(programa);
 }
 
 export function programaListoParaPortalPadres(programa = {}) {

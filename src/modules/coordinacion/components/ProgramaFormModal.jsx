@@ -13,6 +13,7 @@ import {
   IconUsers as Users,
   IconX as X,
   IconEdit as Edit3,
+  IconCopy as CopyIcon,
 } from "@tabler/icons-react";
 import ProgramaGrupoHorarioModal from "./ProgramaGrupoHorarioModal";
 import GradeSelector from "./GradeSelector";
@@ -586,6 +587,20 @@ function ProgramaFormModal({
                                 <p>{grupo.cupos || 20}</p>
                               </div>
                               <div className="coord-group-actions">
+                                <button
+                                  type="button"
+                                  className="coord-duplicate-btn"
+                                  onClick={() => {
+                                    const copia = {
+                                      ...grupo,
+                                      id: `grupo-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`
+                                    };
+                                    agregarGrupoHorario(copia);
+                                  }}
+                                  title="Duplicar bloque"
+                                >
+                                  <CopyIcon size={14} />
+                                </button>
                                 <button
                                   type="button"
                                   className="coord-edit-btn"

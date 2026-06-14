@@ -32,6 +32,8 @@ export function calcularDuracionTexto(inicio, fin) {
   const fechaFin = normalizarFecha(fin);
   if (!fechaInicio || !fechaFin) return "";
 
+  if (fechaInicio > fechaFin) return "Rango de fechas inválido";
+
   const dias = Math.max(1, differenceInCalendarDays(fechaFin, fechaInicio) + 1);
   if (dias < 30) return `${dias} días`;
 

@@ -662,10 +662,10 @@
 
 .coord-documents-upload-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(140px, 180px) auto;
   grid-template-areas:
-    "archivo archivo"
-    "nombre accion";
+    "archivo archivo archivo"
+    "nombre categoria accion";
   align-items: end;
   gap: 10px 12px;
 }
@@ -858,6 +858,29 @@
   font-size: 14px;
 }
 
+.coord-documents-category-field {
+  display: grid;
+  grid-area: categoria;
+  gap: 5px;
+}
+
+.coord-documents-category-field label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.coord-documents-category-field select {
+  min-height: 36px;
+  border: 1px solid #cfdedb;
+  border-radius: 7px;
+  padding: 0 11px;
+  color: #132335;
+  background: #ffffff;
+  font-size: 14px;
+  outline: none;
+}
+
 .coord-documents-action-panel {
   display: grid;
   gap: 10px;
@@ -982,6 +1005,7 @@
     grid-template-areas:
       "archivo"
       "nombre"
+      "categoria"
       "accion";
   }
 

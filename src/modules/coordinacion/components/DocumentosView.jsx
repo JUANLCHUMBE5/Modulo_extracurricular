@@ -40,6 +40,7 @@ function DocumentosView({
   usarPlantillaExistente,
   variablesPlantillaAceptadas,
   variablesPlantillaRequeridas,
+  categorias = [],
 }) {
   const variablesRequeridasDocumento = lecturaDocumento?.variablesRequeridasModelo || variablesPlantillaRequeridas.map((item) => item.id);
   const variablesListasDocumento = lecturaDocumento?.variablesListasModelo ||
@@ -105,6 +106,18 @@ function DocumentosView({
                       onChange={(event) => setForm((actual) => ({ ...actual, nombre: event.target.value }))}
                       placeholder="Ejemplo: Club de tareas Matematica"
                     />
+                  </div>
+                  <div className="coord-documents-category-field">
+                    <label>Categoría</label>
+                    <select
+                      value={form.categoria}
+                      onChange={(event) => setForm((actual) => ({ ...actual, categoria: event.target.value }))}
+                    >
+                      <option value="">Seleccione una categoría</option>
+                      {categorias.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
                   </div>
                   <button
                     className="coord-register-button"

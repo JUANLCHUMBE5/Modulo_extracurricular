@@ -87,6 +87,17 @@ function hydrateDbTemplates(db) {
   const programas = Array.isArray(db.programas)
     ? db.programas.map((programa) => {
         const plantilla = templates[programa.id];
+        
+        // Si la plantilla está marcada explícitamente como vacía, limpiamos campos
+        if (programa.plantilla === "") {
+          return {
+            ...programa,
+            plantillaBase64: "",
+            plantillaVariables: [],
+            plantillaActualizadaEn: "",
+          };
+        }
+
         if (!plantilla) return programa;
 
         return {
@@ -111,7 +122,9 @@ function prepareDbForStorage(db) {
 
   stored.programas = Array.isArray(stored.programas)
     ? stored.programas.map((programa) => {
-        if (programa.id && programa.plantillaBase64) {
+        if (!programa.plantilla) {
+          delete templates[programa.id];
+        } else if (programa.id && programa.plantillaBase64) {
           templates[programa.id] = {
             plantilla: programa.plantilla || "",
             plantillaBase64: programa.plantillaBase64,

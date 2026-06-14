@@ -222,8 +222,8 @@ export async function crearProgramaDesdeDocumento(datos) {
     const payload = {
       nombre_programa: datos.nombre,
       categoria: datos.categoria,
-      fecha_inicio: datos.fechaInicio,
-      fecha_fin: datos.fechaFin,
+      fecha_inicio: datos.fechaInicio || fechaActualInput(),
+      fecha_fin: datos.fechaFin || fechaActualInput(),
       monto: Number(datos.costo || 0),
       cupos: Number(datos.cupos || 0),
       plantilla: datos.plantilla || "",

@@ -596,6 +596,12 @@
   cursor: pointer;
 }
 
+.coord-group-actions button.coord-duplicate-btn {
+  border: 1px solid #c9d8df;
+  color: #315f91;
+  background: #f0f7ff;
+}
+
 .coord-group-actions button.coord-edit-btn {
   border: 1px solid #bfd9d1;
   color: #006b5b;

@@ -21,12 +21,35 @@ let cachedDbMtimeMs = 0;
 // MIGRACIÓN A SUPABASE INTERCEPTOR LOGIC
 // ==========================================
 
+const COLUMNAS_USUARIOS = ["id", "nombre", "usuario", "rol", "estado", "contrasena"];
+const COLUMNAS_ESTUDIANTES = ["dni", "codigoEstudiante", "nombres", "grado", "seccion", "nivel", "sexo", "fechaNacimiento", "tipoAlumno", "estadoMatricula", "apoderado", "telefonoApoderado", "correoApoderado", "estadoInscripcion", "estadoCaja"];
+const COLUMNAS_PROGRAMAS = ["id", "nombre", "categoria", "fechaInicio", "fechaFin", "costo", "cupos", "cuposOcupados", "gradosAplicables", "periodo", "modalidadCobro", "duracionAvisoDias", "requiereUniforme", "requiereIndumentaria", "horario", "grupo", "plantilla", "plantillaBase64"];
+const COLUMNAS_INSCRIPCIONES = ["id", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "gradoEstudiante", "seccion", "programaId", "programa", "categoria", "periodo", "horario", "docente", "costo", "modalidadCobro", "fechaInicio", "fechaFin", "estadoPago", "pagoId"];
+const COLUMNAS_PAGOS = ["id", "inscripcionId", "dniEstudiante", "nombresEstudiante", "programaId", "programa", "periodo", "monto", "formaPago", "numeroOperacion", "telefonoOperacion", "capturaPagoNombre", "capturaPagoBase64", "estado", "fechaPago"];
+const COLUMNAS_ASISTENCIAS = ["id", "inscripcionId", "pagoId", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "programaId", "programa", "horario", "estadoPago", "estadoAcceso", "observacion", "origen", "fechaRegistro"];
+const COLUMNAS_INVITADOS = ["programaId", "dni", "nombres", "grado", "seccion"];
+
+function sanearObjeto(obj, llavesValidas) {
+  if (!obj || typeof obj !== "object") return obj;
+  const nuevo = {};
+  llavesValidas.forEach(k => {
+    if (obj[k] !== undefined) {
+      nuevo[k] = obj[k];
+    }
+  });
+  return nuevo;
+}
+
+function sanearLista(lista, llavesValidas) {
+  return (Array.isArray(lista) ? lista : []).map(item => sanearObjeto(item, llavesValidas));
+}
+
 async function readFromSupabase() {
   try {
     // 1. Traemos todas las tablas en paralelo para máxima velocidad
     const [
       resUsuarios, resEstudiantes, resProgramas, resInscripciones, 
-      resPagos, resAsistencias, resInvitados, resLogs, resPlantillas
+      resPagos, resAsistencias, resInvitados, resLogs, resCategorias
     ] = await Promise.all([
       supabase.from("usuarios").select("*"),
       supabase.from("estudiantes").select("*"),
@@ -36,7 +59,7 @@ async function readFromSupabase() {
       supabase.from("asistencias").select("*"),
       supabase.from("invitados_programa").select("*"),
       supabase.from("audit_logs").select("*"),
-      supabase.from("plantillas_programa").select("*")
+      supabase.from("categorias").select("*")
     ]);
 
     // 2. Mapeo y transformación de formatos (De Filas SQL a Objetos Indexados JSON)
@@ -48,38 +71,117 @@ async function readFromSupabase() {
     const invitadosObj = {};
     (resInvitados.data || []).forEach(i => {
       if (!invitadosObj[i.programaId]) invitadosObj[i.programaId] = [];
-      invitadosObj[i.programaId].push({
-        dni: i.dni,
-        nombres: i.nombres,
-        grado: i.grado,
-        seccion: i.seccion
-      });
+      const existe = invitadosObj[i.programaId].some(inv => inv.dni === i.dni);
+      if (!existe) {
+        invitadosObj[i.programaId].push({
+          dni: i.dni,
+          nombres: i.nombres,
+          grado: i.grado,
+          seccion: i.seccion
+        });
+      }
     });
 
-    const plantillasObj = {};
-    (resPlantillas.data || []).forEach(p => {
-      plantillasObj[p.programaId] = {
-        plantilla: p.plantilla,
-        plantillaBase64: p.plantillaBase64,
-        plantillaVariables: p.plantillaVariables,
-        plantillaActualizadaEn: p.plantillaActualizadaEn
-      };
+    const EXTRA_FIELDS = [
+      "horaInicio",
+      "horaFin",
+      "horaLimiteAviso",
+      "anuncioImagen",
+      "anuncioImagenNombre",
+      "talleresDeportivos",
+      "horariosPorGrupo",
+      "edadMinima",
+      "edadMaxima",
+      "grupoEtario",
+      "requisitos",
+      "comunicado",
+      "comunicadoCompleto",
+      "detalleCosto",
+      "detalleAlmuerzo",
+      "concesionarios",
+      "creadoDesdeDocumento",
+      "estado",
+      "responsable",
+      "docente",
+      "duracionTaller",
+      "cicloI",
+      "cicloII",
+      "invitacionMasiva",
+      "alcanceInvitacionMasiva",
+      "anuncioImagenTamano",
+      "anuncioImagenComprimida",
+      "plantillaVariables",
+      "plantillaValidada"
+    ];
+
+    const rawProgramas = resProgramas.data || [];
+    const programasList = rawProgramas.map(p => {
+      let restoredGrupo = p.grupo;
+      if (p.grupo && p.grupo.startsWith("{")) {
+        try {
+          const meta = JSON.parse(p.grupo);
+          EXTRA_FIELDS.forEach(field => {
+            if (meta[field] !== undefined) {
+              p[field] = meta[field];
+            }
+          });
+          restoredGrupo = meta.originalGrupo || "";
+        } catch (e) {
+          console.error("Error parsing program metadata JSON:", e);
+        }
+      }
+      p.grupo = restoredGrupo;
+      return p;
     });
+
+    // Construimos plantillasPorPrograma directamente a partir de las columnas plantilla y plantillaBase64 en programas
+    const plantillasObj = {};
+    programasList.forEach(p => {
+      if (p.plantilla) {
+        plantillasObj[p.id] = {
+          plantilla: p.plantilla,
+          plantillaBase64: p.plantillaBase64 || "",
+          plantillaVariables: p.plantillaVariables || [],
+          plantillaActualizadaEn: p.plantillaActualizadaEn || new Date().toISOString()
+        };
+      }
+    });
+
+    let maxProgNum = 0;
+    programasList.forEach(p => {
+      const match = String(p.id || "").match(/PROG-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxProgNum) maxProgNum = num;
+      }
+    });
+
+    const categoriasArray = (resCategorias.data || []).map(c => c.categoria);
+    const finalCategorias = categoriasArray.length ? categoriasArray : initialData.categorias;
 
     // 3. Retornamos la estructura exacta simulando db.json
     return {
       usuarios: resUsuarios.data || [],
       estudiantes: estudiantesObj,
-      programas: resProgramas.data || [],
-      inscripciones: resInscripciones.data || [],
-      pagos: resPagos.data || [],
+      programas: programasList,
+      inscripciones: (resInscripciones.data || []).map(ins => {
+        ins.estadoInscripcion = ins.estadoPago || "Pendiente de pago";
+        ins.apoderado = estudiantesObj[ins.dniEstudiante]?.apoderado || "";
+        return ins;
+      }),
+      pagos: (resPagos.data || []).map(pag => {
+        pag.nroOperacion = pag.numeroOperacion || "";
+        pag.fechaRegistro = pag.fechaPago || "";
+        return pag;
+      }),
       asistencias: resAsistencias.data || [],
       invitadosPorPrograma: invitadosObj,
       auditLogs: resLogs.data || [],
       plantillasPorPrograma: plantillasObj,
-      categorias: [], 
+      categorias: finalCategorias, 
       documentosGenerados: [],
-      historialCargas: []
+      historialCargas: [],
+      nextProgramaId: maxProgNum + 1
     };
   } catch (err) {
     console.error("❌ Error conectando a Supabase desde backend:", err);
@@ -92,11 +194,80 @@ async function writeToSupabase(db) {
     // 1. Preparamos inserciones limpias limpiando objetos y transformándolos a listas SQL
     const usuarios = db.usuarios || [];
     const estudiantes = Object.values(db.estudiantes || {});
-    const programas = db.programas || [];
-    const inscripciones = db.inscripciones || [];
-    const pagos = db.pagos || [];
+    const inscripciones = (db.inscripciones || []).map(ins => {
+      return {
+        ...ins,
+        estadoPago: ins.estadoPago || ins.estadoInscripcion || "Pendiente de pago"
+      };
+    });
+    const pagos = (db.pagos || []).map(pag => {
+      return {
+        ...pag,
+        formaPago: pag.formaPago || pag.metodoPago || "Yape",
+        numeroOperacion: pag.numeroOperacion || pag.nroOperacion || "",
+        telefonoOperacion: pag.telefonoOperacion || pag.telefono || ""
+      };
+    });
     const asistencias = db.asistencias || [];
     const auditLogs = db.auditLogs || [];
+
+    const EXTRA_FIELDS = [
+      "horaInicio",
+      "horaFin",
+      "horaLimiteAviso",
+      "anuncioImagen",
+      "anuncioImagenNombre",
+      "talleresDeportivos",
+      "horariosPorGrupo",
+      "edadMinima",
+      "edadMaxima",
+      "grupoEtario",
+      "requisitos",
+      "comunicado",
+      "comunicadoCompleto",
+      "detalleCosto",
+      "detalleAlmuerzo",
+      "concesionarios",
+      "creadoDesdeDocumento",
+      "estado",
+      "responsable",
+      "docente",
+      "duracionTaller",
+      "cicloI",
+      "cicloII",
+      "invitacionMasiva",
+      "alcanceInvitacionMasiva",
+      "anuncioImagenTamano",
+      "anuncioImagenComprimida",
+      "plantillaVariables",
+      "plantillaValidada"
+    ];
+
+    // Enriquecemos los programas con los datos de plantilla guardados en plantillasPorPrograma antes del upsert
+    const programas = (db.programas || []).map(p => {
+      const templateData = db.plantillasPorPrograma?.[p.id] || {};
+      const baseProg = {
+        ...p,
+        plantilla: p.plantilla || "",
+        plantillaBase64: p.plantillaBase64 || templateData.plantillaBase64 || "",
+        plantillaVariables: p.plantillaVariables || templateData.plantillaVariables || [],
+        plantillaValidada: p.plantillaValidada !== undefined ? p.plantillaValidada : (templateData.plantillaValidada !== undefined ? templateData.plantillaValidada : false)
+      };
+
+      // Serializamos los campos adicionales en la columna 'grupo'
+      const meta = {};
+      EXTRA_FIELDS.forEach(field => {
+        if (baseProg[field] !== undefined) {
+          meta[field] = baseProg[field];
+        }
+      });
+      meta.originalGrupo = baseProg.grupo || "";
+
+      return {
+        ...baseProg,
+        grupo: JSON.stringify(meta)
+      };
+    });
 
     const invitados_programa = [];
     Object.entries(db.invitadosPorPrograma || {}).forEach(([progId, lista]) => {
@@ -113,31 +284,92 @@ async function writeToSupabase(db) {
       }
     });
 
-    const plantillas_programa = Object.entries(db.plantillasPorPrograma || {}).map(([progId, data]) => {
-      return {
-        programaId: progId,
-        plantilla: data.plantilla,
-        plantillaBase64: data.plantillaBase64,
-        plantillaVariables: data.plantillaVariables,
-        plantillaActualizadaEn: data.plantillaActualizadaEn || new Date().toISOString()
-      };
+    // 2. Eliminar registros huérfanos físicamente en Supabase (sincronizar eliminaciones)
+    const activeUserIds = usuarios.map(u => u.id).filter(Boolean);
+    const activeProgramIds = programas.map(p => p.id).filter(Boolean);
+    const activeEnrollmentIds = inscripciones.map(i => i.id).filter(Boolean);
+    const activePagoIds = pagos.map(p => p.id).filter(Boolean);
+    const activeAsistenciaIds = asistencias.map(a => a.id).filter(Boolean);
+
+    const deleteResults = await Promise.all([
+      // Eliminar usuarios huérfanos
+      activeUserIds.length 
+        ? supabase.from("usuarios").delete().filter("id", "not.in", `(${activeUserIds.join(",")})`) 
+        : supabase.from("usuarios").delete().neq("id", ""),
+      // Eliminar programas huérfanos
+      activeProgramIds.length 
+        ? supabase.from("programas").delete().filter("id", "not.in", `(${activeProgramIds.join(",")})`) 
+        : supabase.from("programas").delete().neq("id", ""),
+      // Eliminar invitados cuyos programas ya no existen
+      activeProgramIds.length 
+        ? supabase.from("invitados_programa").delete().filter("programaId", "not.in", `(${activeProgramIds.join(",")})`) 
+        : supabase.from("invitados_programa").delete().neq("programaId", ""),
+      // Eliminar inscripciones huérfanas
+      activeEnrollmentIds.length 
+        ? supabase.from("inscripciones").delete().filter("id", "not.in", `(${activeEnrollmentIds.join(",")})`) 
+        : supabase.from("inscripciones").delete().neq("id", ""),
+      // Eliminar pagos huérfanos
+      activePagoIds.length 
+        ? supabase.from("pagos").delete().filter("id", "not.in", `(${activePagoIds.join(",")})`) 
+        : supabase.from("pagos").delete().neq("id", ""),
+      // Eliminar asistencias huérfanas
+      activeAsistenciaIds.length 
+        ? supabase.from("asistencias").delete().filter("id", "not.in", `(${activeAsistenciaIds.join(",")})`) 
+        : supabase.from("asistencias").delete().neq("id", "")
+    ]);
+
+    deleteResults.forEach((res, i) => {
+      if (res.error) {
+        console.error(`❌ Error en delete index ${i}:`, res.error);
+      }
     });
 
-    // 2. Subimos todo de golpe usando Upsert (Si existe actualiza, si no lo inserta)
+    // Sincronizar eliminaciones de invitados dentro de programas existentes: borrar todos para insertar los actuales
+    const syncInvitadosProms = Object.keys(db.invitadosPorPrograma || {}).map(async (progId) => {
+      const res = await supabase.from("invitados_programa").delete().eq("programaId", progId);
+      if (res.error) {
+        console.error(`❌ Error en delete invitados de ${progId}:`, res.error);
+      }
+      return res;
+    });
+    await Promise.all(syncInvitadosProms);
+
+    // 3. Subimos todo de golpe usando Upsert (Si existe actualiza, si no lo inserta)
     // Usamos .upsert() con claves primarias definidas en tu SQL
-    await Promise.all([
-      usuarios.length ? supabase.from("usuarios").upsert(usuarios) : Promise.resolve(),
-      estudiantes.length ? supabase.from("estudiantes").upsert(estudiantes) : Promise.resolve(),
-      programas.length ? supabase.from("programas").upsert(programas) : Promise.resolve(),
-      inscripciones.length ? supabase.from("inscripciones").upsert(inscripciones) : Promise.resolve(),
-      pagos.length ? supabase.from("pagos").upsert(pagos) : Promise.resolve(),
-      asistencias.length ? supabase.from("asistencias").upsert(asistencias) : Promise.resolve(),
-      invitados_programa.length ? supabase.from("invitados_programa").upsert(invitados_programa) : Promise.resolve(),
-      auditLogs.length ? supabase.from("audit_logs").upsert(auditLogs) : Promise.resolve(),
-      plantillas_programa.length ? supabase.from("plantillas_programa").upsert(plantillas_programa) : Promise.resolve()
+    const results = await Promise.all([
+      usuarios.length ? supabase.from("usuarios").upsert(sanearLista(usuarios, COLUMNAS_USUARIOS)) : Promise.resolve({ error: null }),
+      estudiantes.length ? supabase.from("estudiantes").upsert(sanearLista(estudiantes, COLUMNAS_ESTUDIANTES)) : Promise.resolve({ error: null }),
+      programas.length ? supabase.from("programas").upsert(sanearLista(programas, COLUMNAS_PROGRAMAS)) : Promise.resolve({ error: null }),
+      inscripciones.length ? supabase.from("inscripciones").upsert(sanearLista(inscripciones, COLUMNAS_INSCRIPCIONES)) : Promise.resolve({ error: null }),
+      pagos.length ? supabase.from("pagos").upsert(sanearLista(pagos, COLUMNAS_PAGOS)) : Promise.resolve({ error: null }),
+      asistencias.length ? supabase.from("asistencias").upsert(sanearLista(asistencias, COLUMNAS_ASISTENCIAS)) : Promise.resolve({ error: null }),
+      invitados_programa.length ? supabase.from("invitados_programa").insert(sanearLista(invitados_programa, COLUMNAS_INVITADOS)) : Promise.resolve({ error: null }),
+      auditLogs.length ? supabase.from("audit_logs").upsert(auditLogs) : Promise.resolve({ error: null })
     ]);
+
+    for (const res of results) {
+      if (res && res.error) {
+        throw new Error(`Error en operación de base de datos Supabase: ${res.error.message || JSON.stringify(res.error)}`);
+      }
+    }
+
+    // 4. Sincronizar categorías (borrar e insertar para asegurar coincidencia exacta)
+    const categoriasList = db.categorias || [];
+    if (categoriasList.length) {
+      const deleteRes = await supabase.from("categorias").delete().neq("id", 0);
+      if (deleteRes.error) {
+        console.warn(`⚠️ Warning: No se pudo limpiar categorías en Supabase: ${deleteRes.error.message}`);
+      } else {
+        const catRows = categoriasList.map(c => ({ categoria: c }));
+        const insertRes = await supabase.from("categorias").insert(catRows);
+        if (insertRes.error) {
+          console.warn(`⚠️ Warning: No se pudo insertar categorías en Supabase: ${insertRes.error.message}`);
+        }
+      }
+    }
   } catch (err) {
     console.error("❌ Error al persistir en Supabase:", err);
+    throw err;
   }
 }
 

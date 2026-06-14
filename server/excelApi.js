@@ -680,8 +680,8 @@ app.post("/api/v1/extracurricular/programas/documento", requireRole(["secretaria
       id,
       nombre: req.body.nombre_programa,
       categoria: req.body.categoria,
-      fechaInicio: req.body.fecha_inicio,
-      fechaFin: req.body.fecha_fin,
+      fechaInicio: req.body.fecha_inicio || new Date().toISOString().slice(0, 10),
+      fechaFin: req.body.fecha_fin || new Date().toISOString().slice(0, 10),
       costo: Number(req.body.monto || 0),
       cupos: Number(req.body.cupos || 0),
       cuposOcupados: 0,
@@ -1880,7 +1880,8 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
     const invitations = [];
     const programs = db.programas || [];
     for (const prog of programs) {
-      if (prog.estado !== "Habilitado" || !programaListoParaPortalPadresApi(prog)) continue;
+      const estadoProg = prog.estado || "Habilitado";
+      if (estadoProg !== "Habilitado" || !programaListoParaPortalPadresApi(prog)) continue;
 
       const invitados = db.invitadosPorPrograma[prog.id] || [];
       const inv = invitados.find(item => item.dni === dni);
@@ -1943,20 +1944,23 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
 app.put("/api/v1/extracurricular/padres/:dni/apoderado", requireRole(["padres", "secretaria"]), async (req, res) => {
   try {
     const { dni } = req.params;
-    const { apoderado, telefono_apoderado, correo_apoderado } = req.body;
+    const { apoderado, telefono, telefono_apoderado, correo, correo_apoderado } = req.body;
     const db = await getDb();
     const student = db.estudiantes?.[dni];
     if (!student) return res.status(404).json({ success: false, message: "Estudiante no encontrado." });
     
+    const finalTelefono = telefono || telefono_apoderado || "";
+    const finalCorreo = correo || correo_apoderado || "";
+
     student.apoderado = apoderado || "";
-    student.telefonoApoderado = telefono_apoderado || "";
-    student.correoApoderado = correo_apoderado || "";
+    student.telefonoApoderado = finalTelefono;
+    student.correoApoderado = finalCorreo;
     
     (db.inscripciones || []).forEach(item => {
       if (item.dniEstudiante === dni) {
         item.apoderado = apoderado || "";
-        item.telefono = telefono_apoderado || "";
-        item.correo = correo_apoderado || "";
+        item.telefono = finalTelefono;
+        item.correo = finalCorreo;
       }
     });
     
