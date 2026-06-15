@@ -10,6 +10,7 @@ import {
   IconX as X,
   IconAlertTriangle as AlertTriangle,
   IconEye as Eye,
+  IconMenu2 as Menu,
 } from "@tabler/icons-react";
 import CajaFields from "./components/CajaFields";
 import CajaPagoWebModals from "./components/CajaPagoWebModals";
@@ -53,6 +54,19 @@ export default function Caja({
   onLogout,
 }) {
   const [vista, setVista] = useState(initialView || "pagos");
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem("caja_sidebar_expanded");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const toggleSidebar = () => {
+    setSidebarExpanded((prev) => {
+      const newVal = !prev;
+      localStorage.setItem("caja_sidebar_expanded", JSON.stringify(newVal));
+      return newVal;
+    });
+  };
+
   const [periodo, setPeriodo] = useState("escolar");
   const [formulario, setFormulario] = useState(formularioInicial);
   const [pagos, setPagos] = useState([]);
@@ -593,28 +607,35 @@ export default function Caja({
   }
 
   return (
-    <main className={embedded ? "caja-page caja-page-embedded" : "caja-page"}>
+    <main className={embedded ? "caja-page caja-page-embedded" : `caja-page ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
       {!embedded ? (
         <aside className="caja-sidebar">
-          <div className="caja-brand" aria-label="Colegio San Rafael">
-            <img className="caja-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
-          </div>
-          <p className="caja-module-label">Módulo Cajera</p>
-          <nav className="caja-nav" aria-label="Modulo de cajera">
-            <button className={!delegatedContent && vista === "pagos" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("pagos"); }} type="button">
-              <Receipt size={17} /> Registrar Cobro
+          <div className="caja-sidebar-brand-row">
+            <button className="caja-menu-toggle-btn" type="button" onClick={toggleSidebar} aria-label="Alternar barra lateral">
+              <Menu size={20} />
             </button>
-            <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button">
-              <ChartBar size={17} /> Control y Exportacion
+            {sidebarExpanded && (
+              <div className="caja-brand" aria-label="Colegio San Rafael">
+                <img className="caja-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
+              </div>
+            )}
+          </div>
+          {sidebarExpanded && <p className="caja-module-label">Módulo Cajera</p>}
+          <nav className="caja-nav" aria-label="Modulo de cajera">
+            <button className={!delegatedContent && vista === "pagos" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("pagos"); }} type="button" title="Registrar Cobro">
+              <Receipt size={17} /> {sidebarExpanded && <span>Registrar Cobro</span>}
+            </button>
+            <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button" title="Control y Exportacion">
+              <ChartBar size={17} /> {sidebarExpanded && <span>Control y Exportacion</span>}
             </button>
           </nav>
-          {moduleSwitcher ? (
+          {moduleSwitcher && sidebarExpanded ? (
             <div className="pt-3">
               {moduleSwitcher}
             </div>
           ) : null}
-          <button className="caja-logout" onClick={onLogout} type="button">
-            <LogOut size={17} /> Cerrar sesion
+          <button className="caja-logout" onClick={onLogout} type="button" title="Cerrar sesion">
+            <LogOut size={17} /> {sidebarExpanded && <span>Cerrar sesion</span>}
           </button>
         </aside>
       ) : null}
@@ -626,10 +647,22 @@ export default function Caja({
           <>
             {vista === "reportes" ? (
               <header className="caja-header">
-                <div>
-                  <span>Control y exportacion</span>
-                  <h1>Consulta de Transacciones</h1>
-                  <p></p>
+                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                  {!sidebarExpanded && (
+                    <button
+                      className="caja-menu-toggle-btn-header"
+                      type="button"
+                      onClick={toggleSidebar}
+                      aria-label="Mostrar barra lateral"
+                      title="Mostrar barra lateral"
+                    >
+                      <Menu size={22} />
+                    </button>
+                  )}
+                  <div>
+                    <span>Control y exportacion</span>
+                    <h1>Consulta de Transacciones</h1>
+                  </div>
                 </div>
                 <div className="caja-header-actions">
                   <Select
@@ -651,6 +684,25 @@ export default function Caja({
 
             {vista === "pagos" ? (
               <>
+                <header className="caja-header">
+                  <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                    {!sidebarExpanded && (
+                      <button
+                        className="caja-menu-toggle-btn-header"
+                        type="button"
+                        onClick={toggleSidebar}
+                        aria-label="Mostrar barra lateral"
+                        title="Mostrar barra lateral"
+                      >
+                        <Menu size={22} />
+                      </button>
+                    )}
+                    <div>
+                      <span>Módulo Caja</span>
+                      <h1>Registrar Cobros</h1>
+                    </div>
+                  </div>
+                </header>
                 <section className="caja-payment-workspace">
                   {pagoConfirmado ? (
                     <div className="caja-payment-approved" role="status">

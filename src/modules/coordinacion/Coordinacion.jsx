@@ -5,6 +5,7 @@ import {
   IconFileText as FileText,
   IconUpload as Upload,
   IconUserCheck as UserCheck,
+  IconMenu2 as Menu,
 } from "@tabler/icons-react";
 import {
   diasSemana,
@@ -177,7 +178,30 @@ function Coordinacion({
   const [tallerDepDocente, setTallerDepDocente] = useState("");
   const [programaDocsId, setProgramaDocsId] = useState("");
   const [lecturaDocumento, setLecturaDocumento] = useState(null);
-  const [sidebarAbierta, setSidebarAbierta] = useState(true);
+  const [sidebarAbierta, setSidebarAbierta] = useState(() => {
+    const saved = localStorage.getItem("coord_sidebar_expanded");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const handleSetSidebarAbierta = (val) => {
+    setSidebarAbierta((prev) => {
+      const newVal = typeof val === "function" ? val(prev) : val;
+      localStorage.setItem("coord_sidebar_expanded", JSON.stringify(newVal));
+      return newVal;
+    });
+  };
+
+  const toggleSidebarButton = !sidebarAbierta && (
+    <button 
+      className="coord-menu-toggle-btn-header" 
+      type="button" 
+      onClick={() => handleSetSidebarAbierta(true)} 
+      aria-label="Mostrar barra lateral"
+      title="Mostrar barra lateral"
+    >
+      <Menu size={22} />
+    </button>
+  );
 
   // Modal invitados
   const [showInvitados, setShowInvitados] = useState(false);
@@ -1579,7 +1603,7 @@ function Coordinacion({
           onClearDelegatedModule={onClearDelegatedModule}
           onLogout={onLogout}
           setMensaje={setMensaje}
-          setSidebarAbierta={setSidebarAbierta}
+          setSidebarAbierta={handleSetSidebarAbierta}
           setVista={setVista}
           sidebarAbierta={sidebarAbierta}
           vista={vista}
@@ -1619,6 +1643,7 @@ function Coordinacion({
             filtroEstado={filtroEstado}
             setFiltroEstado={setFiltroEstado}
             todosLosProgramas={programas}
+            toggleSidebarButton={toggleSidebarButton}
           />
         )}
 
@@ -1652,6 +1677,7 @@ function Coordinacion({
             programaCargaId={programaCargaId}
             setProgramaCargaId={setProgramaCargaId}
             programas={programas}
+            toggleSidebarButton={toggleSidebarButton}
           />
         )}
 
@@ -1678,6 +1704,7 @@ function Coordinacion({
             variablesPlantillaAceptadas={variablesPlantillaAceptadas}
             variablesPlantillaRequeridas={variablesPlantillaRequeridas}
             categorias={categorias}
+            toggleSidebarButton={toggleSidebarButton}
           />
         )}
 
@@ -1686,6 +1713,7 @@ function Coordinacion({
             programas={programas}
             listarAsistenciasPrograma={listarAsistenciasPrograma}
             listarMatriculados={listarMatriculados}
+            toggleSidebarButton={toggleSidebarButton}
           />
         )}
 

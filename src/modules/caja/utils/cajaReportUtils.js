@@ -50,7 +50,7 @@ export function obtenerMedioCanalWebCaja(fila = {}) {
   const origen = String(fila.origen || fila.origenRegistro || "").toLowerCase();
   const formaPago = fila.formaPago || "";
   
-  if (origen === "caja") {
+  if (origen === "caja" || origen === "cajera") {
     if (!esPagado) return "-";
     return `${formaPago || "Efectivo"} / Caja`;
   }
@@ -64,7 +64,7 @@ export function obtenerMedioCanalWebCaja(fila = {}) {
 
 export function obtenerTelefonoPagoWebCaja(fila = {}) {
   const origen = String(fila.origen || fila.origenRegistro || "").toLowerCase();
-  if (origen === "caja") {
+  if (origen === "caja" || origen === "cajera") {
     const estado = String(fila.estadoPago || "").toLowerCase();
     const esPagado = ["pagado", "completado", "pago validado", "validado"].includes(estado);
     if (!esPagado) return "-";

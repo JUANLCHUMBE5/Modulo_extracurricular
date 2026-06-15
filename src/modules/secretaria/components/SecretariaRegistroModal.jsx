@@ -6,6 +6,10 @@ import {
   IconLoader2 as Loader2,
   IconPhone as Phone,
   IconX as X,
+  IconUsers as Users,
+  IconCalendar as Calendar,
+  IconClock as Clock,
+  IconCoffee as Coffee,
 } from "@tabler/icons-react";
 import {
   CampoLectura,
@@ -257,11 +261,11 @@ export default function SecretariaRegistroModal({
                       ) : mostrarDetallePrograma ? (
                         <div className="secretaria-program-details-card secretaria-field-full">
                           <h4 className="secretaria-details-card-title">Resumen del Taller</h4>
-                          <div className="secretaria-schedule-summary is-summer-grid">
-                            <DatoHorario label="Grupo" value={programaParaRegistro.grupoEtario || programaParaRegistro.grupo} />
-                            <DatoHorario label="Día" value={horarioResumenRegistro.dia} />
-                            <DatoHorario label="Clase" value={horarioResumenRegistro.clase} />
-                            <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} />
+                          <div className="secretaria-schedule-summary">
+                            <DatoHorario label="Grupo" value={programaParaRegistro.grupoEtario || programaParaRegistro.grupo} icon={Users} themeClass="is-grupo" />
+                            <DatoHorario label="Día" value={horarioResumenRegistro.dia} icon={Calendar} themeClass="is-dia" />
+                            <DatoHorario label="Clase" value={horarioResumenRegistro.clase} icon={Clock} themeClass="is-clase" />
+                            <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} icon={Coffee} themeClass="is-almuerzo" />
                           </div>
                           <div className="secretaria-details-divider" />
                           <div className="secretaria-details-meta-grid">
@@ -423,9 +427,9 @@ export default function SecretariaRegistroModal({
                   <div className="secretaria-program-details-card secretaria-field-full">
                     <h4 className="secretaria-details-card-title">Resumen del Taller</h4>
                     <div className="secretaria-schedule-summary">
-                      <DatoHorario label="Día" value={horarioResumenRegistro.dia} />
-                      <DatoHorario label="Clase" value={horarioResumenRegistro.clase} />
-                      <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} />
+                      <DatoHorario label="Día" value={horarioResumenRegistro.dia} icon={Calendar} themeClass="is-dia" />
+                      <DatoHorario label="Clase" value={horarioResumenRegistro.clase} icon={Clock} themeClass="is-clase" />
+                      <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} icon={Coffee} themeClass="is-almuerzo" />
                     </div>
                     <div className="secretaria-details-divider" />
                     <div className="secretaria-details-meta-grid">

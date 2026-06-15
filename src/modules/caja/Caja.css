@@ -6,6 +6,7 @@
   color: #101828;
   background: #ffffff;
   font-family: var(--font-body);
+  transition: grid-template-columns 0.3s ease;
 }
 
 .caja-page *,
@@ -30,6 +31,7 @@
   border-right: 1px solid #dce7e4;
   background: #ffffff;
   overflow: hidden;
+  transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
 }
 
 .caja-brand {
@@ -1003,3 +1005,90 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Sidebar collapsed overrides for Caja */
+.caja-page.sidebar-collapsed {
+  --caja-sidebar: 0px;
+}
+
+.sidebar-collapsed .caja-sidebar {
+  width: 0px;
+  padding: 0px;
+  border-right: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Sidebar toggle buttons for Caja */
+.caja-sidebar-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding-bottom: 8px;
+}
+
+.caja-sidebar .caja-brand {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.caja-menu-toggle-btn {
+  background: none;
+  border: none;
+  color: #176c60;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.caja-menu-toggle-btn:hover {
+  background-color: #f4fbf9;
+  color: #05604f;
+}
+
+/* Header Toggle Button when sidebar is hidden */
+.caja-header .caja-menu-toggle-btn-header {
+  background: transparent !important;
+  border: none !important;
+  color: #176c60 !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.caja-header .caja-menu-toggle-btn-header *,
+.caja-header .caja-menu-toggle-btn-header {
+  color: #176c60 !important;
+}
+
+.caja-header .caja-menu-toggle-btn-header:hover {
+  background-color: #eaf8f3 !important;
+  transform: none !important;
+}
+
+.caja-header .caja-menu-toggle-btn-header:hover *,
+.caja-header .caja-menu-toggle-btn-header:hover {
+  color: #05604f !important;
+}
+
+@media (max-width: 980px) {
+  .caja-menu-toggle-btn,
+  .caja-menu-toggle-btn-header {
+    display: none !important;
+  }
+}
+

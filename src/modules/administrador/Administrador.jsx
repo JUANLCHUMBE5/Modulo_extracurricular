@@ -10,6 +10,7 @@ import {
   IconUserCheck as UserCheck,
   IconUserOff as UserOff,
   IconRefresh as Refresh,
+  IconMenu2 as Menu,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import {
@@ -48,6 +49,21 @@ const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
 // â”€â”€ Stat Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function Administrador({ onLogout }) {
   const [usuarios, setUsuarios] = useState([]);
+  
+  // Estado de la barra lateral (colapsada/expandida)
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem("adm_sidebar_expanded");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const toggleSidebar = () => {
+    setSidebarExpanded((prev) => {
+      const newVal = !prev;
+      localStorage.setItem("adm_sidebar_expanded", JSON.stringify(newVal));
+      return newVal;
+    });
+  };
+
   const [seccion, setSeccion] = useState("usuarios");
   const [busqueda, setBusqueda] = useState("");
   const [filtroRol, setFiltroRol] = useState("todos");
@@ -255,13 +271,20 @@ export default function Administrador({ onLogout }) {
   };
 
   return (
-    <div className="adm-root">
+    <div className={`adm-root ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
       {/* Sidebar */}
       <aside className="adm-sidebar">
-        <div className="adm-brand" aria-label="Colegio San Rafael">
-          <img className="adm-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
+        <div className="adm-sidebar-brand-row">
+          <button className="adm-menu-toggle-btn" type="button" onClick={toggleSidebar} aria-label="Alternar barra lateral">
+            <Menu size={20} />
+          </button>
+          {sidebarExpanded && (
+            <div className="adm-brand" aria-label="Colegio San Rafael">
+              <img className="adm-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
+            </div>
+          )}
         </div>
-        <p className="adm-module-label">Módulo Administrador</p>
+        {sidebarExpanded && <p className="adm-module-label">Módulo Administrador</p>}
 
         <nav className="adm-nav">
           <button 
@@ -296,9 +319,22 @@ export default function Administrador({ onLogout }) {
           <>
             {/* Topbar */}
             <header className="adm-topbar">
-              <div>
-                <p className="adm-topbar-sub">Panel de control</p>
-                <h1>Administración de usuarios</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                {!sidebarExpanded && (
+                  <button 
+                    className="adm-menu-toggle-btn-header" 
+                    type="button" 
+                    onClick={toggleSidebar} 
+                    aria-label="Mostrar barra lateral"
+                    title="Mostrar barra lateral"
+                  >
+                    <Menu size={22} />
+                  </button>
+                )}
+                <div>
+                  <p className="adm-topbar-sub">Panel de control</p>
+                  <h1>Administración de usuarios</h1>
+                </div>
               </div>
               <div className="adm-topbar-actions">
                 <button className="adm-new-btn" onClick={() => abrirModal()}>
@@ -382,9 +418,22 @@ export default function Administrador({ onLogout }) {
           <>
             {/* Topbar */}
             <header className="adm-topbar">
-              <div>
-                <p className="adm-topbar-sub">Panel de control</p>
-                <h1>Registro de accesos</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                {!sidebarExpanded && (
+                  <button 
+                    className="adm-menu-toggle-btn-header" 
+                    type="button" 
+                    onClick={toggleSidebar} 
+                    aria-label="Mostrar barra lateral"
+                    title="Mostrar barra lateral"
+                  >
+                    <Menu size={22} />
+                  </button>
+                )}
+                <div>
+                  <p className="adm-topbar-sub">Panel de control</p>
+                  <h1>Registro de accesos</h1>
+                </div>
               </div>
             </header>
 

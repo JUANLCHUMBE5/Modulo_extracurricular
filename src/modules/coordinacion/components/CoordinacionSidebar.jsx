@@ -1,6 +1,7 @@
 import {
   IconChevronRight as ChevronRight,
   IconLogout as LogOut,
+  IconMenu2 as Menu,
 } from "@tabler/icons-react";
 import { LOGO_COLEGIO_SRC } from "../constants/coordinacionConstants";
 
@@ -19,19 +20,23 @@ export default function CoordinacionSidebar({
 }) {
   return (
     <aside className="coord-sidebar">
-      <button
-        className="coord-sidebar-toggle"
-        type="button"
-        onClick={() => setSidebarAbierta((abierta) => !abierta)}
-        aria-label={sidebarAbierta ? "Cerrar menu lateral" : "Abrir menu lateral"}
-        title={sidebarAbierta ? "Cerrar menu" : "Abrir menu"}
-      >
-        <ChevronRight size={18} />
-      </button>
-      <div className="coord-brand" aria-label="Colegio San Rafael">
-        <img className="coord-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
+      <div className="coord-sidebar-brand-row">
+        <button
+          className="coord-menu-toggle-btn"
+          type="button"
+          onClick={() => setSidebarAbierta(false)}
+          aria-label="Cerrar barra lateral"
+          title="Cerrar barra lateral"
+        >
+          <Menu size={20} />
+        </button>
+        {sidebarAbierta && (
+          <div className="coord-brand" aria-label="Colegio San Rafael">
+            <img className="coord-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
+          </div>
+        )}
       </div>
-      <p className="coord-module-label">{esProfesor ? "Modulo Profesores" : "Módulo Coordinación Académica"}</p>
+      {sidebarAbierta && <p className="coord-module-label">{esProfesor ? "Modulo Profesores" : "Módulo Coordinación Académica"}</p>}
       <nav className="coord-nav">
         {vistasDisponibles.map(({ id, label, icon: Icon }) => (
           <button
@@ -46,19 +51,19 @@ export default function CoordinacionSidebar({
             title={label}
           >
             <Icon size={18} />
-            <span>{label}</span>
-            <ChevronRight className="coord-nav-arrow" size={16} />
+            {sidebarAbierta && <span>{label}</span>}
+            {sidebarAbierta && <ChevronRight className="coord-nav-arrow" size={16} />}
           </button>
         ))}
       </nav>
-      {moduleSwitcher ? (
+      {moduleSwitcher && sidebarAbierta ? (
         <div className="pt-3">
           {moduleSwitcher}
         </div>
       ) : null}
       <button className="coord-logout" type="button" onClick={onLogout} title="Cerrar sesion">
         <LogOut size={18} />
-        <span>Cerrar sesion</span>
+        {sidebarAbierta && <span>Cerrar sesion</span>}
       </button>
     </aside>
   );

@@ -18,6 +18,7 @@ import {
   IconAdjustments as Adjustments,
   IconClick as Click,
   IconUserCheck as UserCheck,
+  IconMenu2 as Menu,
 } from "@tabler/icons-react";
 import { StatCard, EmptyChart } from "./components/DireccionCards";
 import { columnasDisponiblesMap, opcionesReportesPorModulo } from "./constants/direccionReports";
@@ -28,6 +29,20 @@ import "./Direccion.css";
 
 export default function Direccion({ onLogout, user }) {
   const [vista, setVista] = useState("resumen");
+  
+  // Estado de la barra lateral (colapsada/expandida)
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem("dir_sidebar_expanded");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const toggleSidebar = () => {
+    setSidebarExpanded((prev) => {
+      const newVal = !prev;
+      localStorage.setItem("dir_sidebar_expanded", JSON.stringify(newVal));
+      return newVal;
+    });
+  };
   const [periodo, setPeriodo] = useState("todos");
   const [panel, setPanel] = useState(null);
   const [cargando, setCargando] = useState(true);
@@ -214,33 +229,56 @@ export default function Direccion({ onLogout, user }) {
   };
 
   return (
-    <main className="dir-page">
+    <main className={`dir-page ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
       <aside className="dir-sidebar">
-        <div className="dir-brand" aria-label="Colegio San Rafael">
-          <img className="dir-brand-logo" src="/assets/padres/logo.png.jpg" alt="Colegio San Rafael" />
-        </div>
-        <p className="dir-module-label">Módulo Dirección</p>
-        <nav className="dir-nav" aria-label="Navegacion de direccion">
-          <button className={vista === "resumen" ? "is-active" : ""} type="button" onClick={() => setVista("resumen")}>
-            <ChartBar size={18} /> Resumen general
+        <div className="dir-sidebar-brand-row">
+          <button className="dir-menu-toggle-btn" type="button" onClick={toggleSidebar} aria-label="Alternar barra lateral">
+            <Menu size={20} />
           </button>
-          <button className={vista === "reportes" ? "is-active" : ""} type="button" onClick={() => setVista("reportes")}>
-            <Download size={18} /> Reportes
+          {sidebarExpanded && (
+            <div className="dir-brand" aria-label="Colegio San Rafael">
+              <img className="dir-brand-logo" src="/assets/padres/logo.png.jpg" alt="Colegio San Rafael" />
+            </div>
+          )}
+        </div>
+        {sidebarExpanded && <p className="dir-module-label">Módulo Dirección</p>}
+        <nav className="dir-nav" aria-label="Navegacion de direccion">
+          <button className={vista === "resumen" ? "is-active" : ""} type="button" onClick={() => setVista("resumen")} title="Resumen general">
+            <ChartBar size={18} />
+            <span className="dir-nav-text">Resumen general</span>
+          </button>
+          <button className={vista === "reportes" ? "is-active" : ""} type="button" onClick={() => setVista("reportes")} title="Reportes">
+            <Download size={18} />
+            <span className="dir-nav-text">Reportes</span>
           </button>
         </nav>
-        <button className="dir-logout" type="button" onClick={onLogout}>
-          <LogOut size={18} /> Cerrar sesion
+        <button className="dir-logout" type="button" onClick={onLogout} title="Cerrar sesion">
+          <LogOut size={18} />
+          <span className="dir-nav-text">Cerrar sesion</span>
         </button>
       </aside>
 
       <section className="dir-main">
         <header className="dir-header">
-          <div>
-            <span>Panel institucional</span>
-            <h1>{vista === "reportes" ? "Descarga de reportes" : "Dirección y reportes"}</h1>
-            {vista !== "reportes" && (
-              <p>Seguimiento de programas, inscripciones, pagos y capacidad operativa.</p>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            {!sidebarExpanded && (
+              <button 
+                className="dir-menu-toggle-btn-header" 
+                type="button" 
+                onClick={toggleSidebar} 
+                aria-label="Mostrar barra lateral"
+                title="Mostrar barra lateral"
+              >
+                <Menu size={22} />
+              </button>
             )}
+            <div>
+              <span>Panel institucional</span>
+              <h1>{vista === "reportes" ? "Descarga de reportes" : "Dirección y reportes"}</h1>
+              {vista !== "reportes" && (
+                <p>Seguimiento de programas, inscripciones, pagos y capacidad operativa.</p>
+              )}
+            </div>
           </div>
           <Group gap="xs" wrap="wrap">
             <Select
@@ -685,8 +723,23 @@ export default function Direccion({ onLogout, user }) {
             {/* ── GENERADOR DE REPORTES A LA MEDIDA (PERSONALIZADO POR MÓDULO) ── */}
             <article className="dir-custom-report-builder">
               <header className="dir-builder-header">
-                <span className="dir-tag">Descargas</span>
-                <h2>Generador de Reportes</h2>
+                <div>
+                  <span className="dir-tag">Descargas</span>
+                  <h2>Generador de Reportes</h2>
+                </div>
+                <div className="dir-builder-header-actions">
+                  <Button
+                    color="teal"
+                    leftSection={<Download size={18} />}
+                    loading={exportandoCustom}
+                    disabled={!exportarHabilitado || registrosFiltrados.length === 0 || customColumnas.length === 0}
+                    onClick={ejecutarDescargaCustom}
+                    size="md"
+                    className="dir-download-custom-btn"
+                  >
+                    Descargar Excel
+                  </Button>
+                </div>
               </header>
 
               {/* ── SELECCIÓN DE MÓDULOS (TABS DE DISEÑO PREMIUM) ── */}
@@ -795,6 +848,7 @@ export default function Direccion({ onLogout, user }) {
                     </div>
                   </div>
 
+                  {/* El botón de descarga ahora se ubica en la cabecera superior */}
                 </div>
 
                 <div className="dir-builder-columns-selector">
@@ -825,7 +879,7 @@ export default function Direccion({ onLogout, user }) {
                       {columnasDisponiblesMap[customTipo].map((col) => {
                         const isChecked = customColumnas.includes(col.key);
                         return (
-                          <Grid.Col span={{ base: 12, sm: 6 }} key={col.key}>
+                          <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={col.key}>
                             <Checkbox
                               label={col.label}
                               checked={isChecked}
@@ -842,36 +896,6 @@ export default function Direccion({ onLogout, user }) {
                         );
                       })}
                     </Grid>
-                  </div>
-                </div>
-
-                <div className="dir-builder-action-column">
-                  <div className="dir-builder-summary-card">
-                    <div className="dir-summary-card-header">
-                      <h4>Resumen</h4>
-                    </div>
-                    <div className="dir-summary-card-body">
-                      <div className="dir-summary-metric">
-                        <span>Registros:</span>
-                        <strong>{registrosFiltrados.length}</strong>
-                      </div>
-                      <div className="dir-summary-metric">
-                        <span>Columnas:</span>
-                        <strong>{customColumnas.length}</strong>
-                      </div>
-                    </div>
-                    <Button
-                      color="teal"
-                      fullWidth
-                      leftSection={<Download size={18} />}
-                      loading={exportandoCustom}
-                      disabled={!exportarHabilitado || registrosFiltrados.length === 0 || customColumnas.length === 0}
-                      onClick={ejecutarDescargaCustom}
-                      size="md"
-                      className="dir-download-custom-btn"
-                    >
-                      Descargar Excel (.xlsx)
-                    </Button>
                   </div>
                 </div>
               </div>

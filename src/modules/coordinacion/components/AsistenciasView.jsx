@@ -40,7 +40,7 @@ import {
 } from "../utils/asistenciasFormatters";
 
 // Helper styles matching AlumnosProgramaModal
-function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatriculados }) {
+function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatriculados, toggleSidebarButton }) {
   const [tallerId, setTallerId] = useState("");
   const [asistencias, setAsistencias] = useState([]);
   const [matriculados, setMatriculados] = useState([]);
@@ -699,8 +699,13 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   return (
     <>
       <header className="coord-topbar">
-        <span className="coord-topbar-eyebrow">Gestión académica</span>
-        <h1>Asistencia y Control</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {toggleSidebarButton}
+          <div>
+            <span className="coord-topbar-eyebrow">Gestión académica</span>
+            <h1>Asistencia y Control</h1>
+          </div>
+        </div>
       </header>
 
       <section className="coord-workspace coord-workspace-single">

@@ -1,9 +1,13 @@
 /* Professional white system finish, aligned with Secretaria. */
-.coord-layout,
-.coord-layout.coord-layout-collapsed {
+.coord-layout {
   --coord-sidebar-width: 230px;
   grid-template-columns: var(--coord-sidebar-width) minmax(0, 1fr);
   background: #ffffff;
+  transition: grid-template-columns 0.3s ease;
+}
+
+.coord-layout.coord-layout-collapsed {
+  --coord-sidebar-width: 0px;
 }
 
 .coord-sidebar {
@@ -13,6 +17,8 @@
   background: #ffffff;
   border-right: 1px solid #dbe7e4;
   box-shadow: none;
+  overflow: hidden;
+  transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
 }
 
 .coord-sidebar-toggle {
@@ -1032,3 +1038,86 @@
     justify-self: start;
   }
 }
+
+/* Sidebar collapsed overrides for Coordinacion */
+.coord-layout-collapsed .coord-sidebar {
+  width: 0px;
+  padding: 0px;
+  border-right: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Sidebar toggle buttons for Coordinacion */
+.coord-sidebar-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding-bottom: 8px;
+}
+
+.coord-sidebar .coord-brand {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.coord-menu-toggle-btn {
+  background: none;
+  border: none;
+  color: #176c60;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.coord-menu-toggle-btn:hover {
+  background-color: #f4fbf9;
+  color: #05604f;
+}
+
+/* Header Toggle Button when sidebar is hidden */
+.coord-topbar .coord-menu-toggle-btn-header {
+  background: transparent !important;
+  border: none !important;
+  color: #176c60 !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.coord-topbar .coord-menu-toggle-btn-header *,
+.coord-topbar .coord-menu-toggle-btn-header {
+  color: #176c60 !important;
+}
+
+.coord-topbar .coord-menu-toggle-btn-header:hover {
+  background-color: #eaf8f3 !important;
+  transform: none !important;
+}
+
+.coord-topbar .coord-menu-toggle-btn-header:hover *,
+.coord-topbar .coord-menu-toggle-btn-header:hover {
+  color: #05604f !important;
+}
+
+@media (max-width: 760px) {
+  .coord-menu-toggle-btn,
+  .coord-menu-toggle-btn-header {
+    display: none !important;
+  }
+}
+

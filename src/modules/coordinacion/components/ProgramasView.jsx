@@ -66,6 +66,7 @@ function ProgramasView({
   filtroEstado,
   setFiltroEstado,
   todosLosProgramas = [],
+  toggleSidebarButton,
 }) {
   const limpiarTodosFiltros = () => {
     setBusqueda("");
@@ -79,8 +80,13 @@ function ProgramasView({
   return (
     <>
       <header className="coord-topbar">
-        <span className="coord-topbar-eyebrow">Gestion academica</span>
-        <h1>Programas extracurriculares</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {toggleSidebarButton}
+          <div>
+            <span className="coord-topbar-eyebrow">Gestion academica</span>
+            <h1>Programas extracurriculares</h1>
+          </div>
+        </div>
       </header>
       <section className="coord-workspace coord-workspace-single">
         <article className="coord-card coord-search-card">

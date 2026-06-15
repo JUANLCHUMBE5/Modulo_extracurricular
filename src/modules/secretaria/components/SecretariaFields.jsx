@@ -35,11 +35,17 @@ function CampoLectura({ label, value }) {
   );
 }
 
-function DatoHorario({ label, value }) {
+function DatoHorario({ label, value, icon: Icon, themeClass }) {
+  const isValido = value && value !== "-" && String(value).trim().toLowerCase() !== "no definido" && String(value).trim() !== "";
+  if (!isValido) return null;
+
   return (
-    <div className="secretaria-schedule-item">
-      <span>{label}</span>
-      <strong>{value || "No definido"}</strong>
+    <div className={`secretaria-schedule-item ${themeClass || ""}`}>
+      <span className="secretaria-schedule-label">
+        {Icon && <Icon size={14} className="secretaria-schedule-icon" />}
+        {label}
+      </span>
+      <strong className="secretaria-schedule-value">{value}</strong>
     </div>
   );
 }

@@ -25,7 +25,7 @@ const COLUMNAS_USUARIOS = ["id", "nombre", "usuario", "rol", "estado", "contrase
 const COLUMNAS_ESTUDIANTES = ["dni", "codigoEstudiante", "nombres", "grado", "seccion", "nivel", "sexo", "fechaNacimiento", "tipoAlumno", "estadoMatricula", "apoderado", "telefonoApoderado", "correoApoderado", "estadoInscripcion", "estadoCaja"];
 const COLUMNAS_PROGRAMAS = ["id", "nombre", "categoria", "fechaInicio", "fechaFin", "costo", "cupos", "cuposOcupados", "gradosAplicables", "periodo", "modalidadCobro", "duracionAvisoDias", "requiereUniforme", "requiereIndumentaria", "horario", "grupo", "plantilla", "plantillaBase64"];
 const COLUMNAS_INSCRIPCIONES = ["id", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "gradoEstudiante", "seccion", "programaId", "programa", "categoria", "periodo", "horario", "docente", "costo", "modalidadCobro", "fechaInicio", "fechaFin", "estadoPago", "pagoId"];
-const COLUMNAS_PAGOS = ["id", "inscripcionId", "dniEstudiante", "nombresEstudiante", "programaId", "programa", "periodo", "monto", "formaPago", "numeroOperacion", "telefonoOperacion", "capturaPagoNombre", "capturaPagoBase64", "estado", "fechaPago"];
+const COLUMNAS_PAGOS = ["id", "inscripcionId", "dniEstudiante", "nombresEstudiante", "programaId", "programa", "periodo", "monto", "formaPago", "numeroOperacion", "telefonoOperacion", "capturaPagoNombre", "capturaPagoBase64", "estado", "fechaPago", "origenRegistro"];
 const COLUMNAS_ASISTENCIAS = ["id", "inscripcionId", "pagoId", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "programaId", "programa", "horario", "estadoPago", "estadoAcceso", "observacion", "origen", "fechaRegistro"];
 const COLUMNAS_INVITADOS = ["programaId", "dni", "nombres", "grado", "seccion"];
 

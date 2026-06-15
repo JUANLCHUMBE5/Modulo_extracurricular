@@ -102,6 +102,7 @@ function CargaExcelView({
   setPreviewCarga,
   setProgresoCarga,
   tipoMsg,
+  toggleSidebarButton,
 }) {
   const programasCarga = programasDisponibles(programas);
 
@@ -134,7 +135,12 @@ function CargaExcelView({
 
   return (
     <>
-      <header className="coord-topbar"><h1>CARGAR INVITADOS</h1></header>
+      <header className="coord-topbar">
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {toggleSidebarButton}
+          <h1>CARGAR INVITADOS</h1>
+        </div>
+      </header>
       <section className="coord-workspace coord-workspace-single coord-workspace-upload">
         <article className="coord-card coord-search-card coord-upload-card">
           <div className="coord-upload-tabs" role="tablist" aria-label="Tipo de carga de alumnos">

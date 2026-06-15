@@ -2015,9 +2015,7 @@
   width: 100% !important;
 }
 
-.secretaria-registration-modal.is-summer-registration .secretaria-schedule-summary {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-}
+/* Summer schedule summary styling is now uniform and auto-fit */
 
 .secretaria-registration-modal.is-summer-registration .secretaria-program-cost-row {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -2209,9 +2207,7 @@
   width: 100% !important;
 }
 
-.secretaria-registration-modal.is-summer-registration .secretaria-schedule-summary {
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-}
+/* Summer schedule summary styling is now uniform and auto-fit */
 
 .secretaria-registration-modal.is-summer-registration .secretaria-program-cost-row {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -2549,37 +2545,94 @@
   letter-spacing: 0.5px !important;
 }
 
-/* Schedule Grid */
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-summary {
+/* Schedule Grid & Premium Cards */
+.secretaria-registration-modal .secretaria-schedule-summary {
   display: grid !important;
-  grid-template-columns: repeat(3, 1fr) !important;
-  gap: 8px !important;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+  gap: 10px !important;
+  width: 100% !important;
+  margin-top: 10px !important;
+  margin-bottom: 12px !important;
 }
 
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item {
+.secretaria-registration-modal .secretaria-schedule-item {
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
-  border-radius: 8px !important;
-  padding: 6px 10px !important;
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 2px !important;
-  align-items: center !important;
-  text-align: center !important;
+  gap: 4px !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  grid-column: auto !important;
 }
 
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item span {
-  font-size: 9.5px !important;
+.secretaria-registration-modal .secretaria-schedule-item:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+.secretaria-registration-modal .secretaria-schedule-item span.secretaria-schedule-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 10.5px !important;
   font-weight: 600 !important;
   color: #64748b !important;
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
 }
 
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item strong {
-  font-size: 12.5px !important;
+.secretaria-registration-modal .secretaria-schedule-item .secretaria-schedule-icon {
+  flex-shrink: 0 !important;
+}
+
+.secretaria-registration-modal .secretaria-schedule-item strong.secretaria-schedule-value {
+  font-size: 13px !important;
   font-weight: 700 !important;
-  color: #0f172a !important;
+  color: #1e293b !important;
+  line-height: 1.3 !important;
+}
+
+/* Unified Neutral Theme for Schedule Cards */
+.secretaria-registration-modal .secretaria-schedule-item {
+  background: #f8fafc !important; /* Soft neutral light background */
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  align-items: flex-start !important;
+  text-align: left !important;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  grid-column: auto !important;
+}
+
+.secretaria-registration-modal .secretaria-schedule-item:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+.secretaria-registration-modal .secretaria-schedule-item .secretaria-schedule-icon {
+  color: #64748b !important;
+  flex-shrink: 0 !important;
+}
+
+@media (max-width: 480px) {
+  .secretaria-registration-modal .secretaria-schedule-summary {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* Divider & Meta Grid */

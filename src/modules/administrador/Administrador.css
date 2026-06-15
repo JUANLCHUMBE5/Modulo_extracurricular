@@ -9,6 +9,7 @@
   color: #172033;
   background: #ffffff;
   overflow-x: hidden;
+  transition: grid-template-columns 0.3s ease;
 }
 
 .adm-sidebar {
@@ -25,6 +26,82 @@
   border-right: 1px solid #dce7e4;
   background: #ffffff;
   overflow: hidden;
+  transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+}
+
+/* Sidebar collapsed overrides */
+.adm-root.sidebar-collapsed {
+  --adm-sidebar: 0px;
+}
+
+.sidebar-collapsed .adm-sidebar {
+  width: 0px;
+  padding: 0px;
+  border-right: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.adm-sidebar-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding-bottom: 8px;
+}
+
+.sidebar-collapsed .adm-sidebar-brand-row {
+  justify-content: center;
+}
+
+.adm-menu-toggle-btn {
+  background: none;
+  border: none;
+  color: #176c60;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.adm-menu-toggle-btn:hover {
+  background-color: #f4fbf9;
+  color: #05604f;
+}
+
+/* Header Toggle Button when sidebar is hidden */
+.adm-topbar .adm-menu-toggle-btn-header {
+  background: transparent !important;
+  border: none !important;
+  color: #176c60 !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: none !important;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.adm-topbar .adm-menu-toggle-btn-header *,
+.adm-topbar .adm-menu-toggle-btn-header {
+  color: #176c60 !important;
+}
+
+.adm-topbar .adm-menu-toggle-btn-header:hover {
+  background-color: #eaf8f3 !important;
+  transform: none !important;
+}
+
+.adm-topbar .adm-menu-toggle-btn-header:hover *,
+.adm-topbar .adm-menu-toggle-btn-header:hover {
+  color: #05604f !important;
 }
 
 .adm-main {
@@ -608,6 +685,11 @@
   .adm-filter-group,
   .adm-filter-group-logs { width: 100%; }
   .adm-filter-select { flex: 1; min-width: 0; }
+  
+  .adm-menu-toggle-btn,
+  .adm-menu-toggle-btn-header {
+    display: none !important;
+  }
 }
 
 @media (max-width: 560px) {

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import {
   IconLogout as LogOut,
   IconSearch as Search,
+  IconMenu2 as Menu,
 } from "@tabler/icons-react";
 import {
   buscarEstudiantePorDni,
@@ -45,6 +46,18 @@ import "./Secretaria.css";
 
 function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, onLogout }) {
   const [periodo, setPeriodo] = useState("escolar");
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    const saved = localStorage.getItem("sec_sidebar_expanded");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+
+  const toggleSidebar = () => {
+    setSidebarExpanded((prev) => {
+      const newVal = !prev;
+      localStorage.setItem("sec_sidebar_expanded", JSON.stringify(newVal));
+      return newVal;
+    });
+  };
   const [dni, setDni] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [estudiante, setEstudiante] = useState(null);
@@ -804,13 +817,20 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   const mostrarVistaDelegada = Boolean(delegatedContent);
 
   return (
-    <div className="secretaria-layout">
+    <div className={`secretaria-layout ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
       <aside className="secretaria-sidebar">
-        <div className="secretaria-sidebar-brand" aria-label="Colegio San Rafael">
-          <img src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
-          <div>
-            <span>Asistente</span>
-          </div>
+        <div className="secretaria-sidebar-brand-row">
+          <button className="secretaria-menu-toggle-btn" type="button" onClick={toggleSidebar} aria-label="Alternar barra lateral">
+            <Menu size={20} />
+          </button>
+          {sidebarExpanded && (
+            <div className="secretaria-sidebar-brand" aria-label="Colegio San Rafael">
+              <img src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
+              <div>
+                <span>Asistente</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <nav className="secretaria-nav" aria-label="Menu del modulo asistente">
@@ -818,22 +838,23 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
             className={`secretaria-nav-item ${!mostrarVistaDelegada ? "secretaria-nav-item-active" : ""}`}
             type="button"
             onClick={onClearDelegatedModule}
+            title="Inscripción presencial"
           >
             <Search size={18} />
-            <span>Inscripción presencial</span>
+            {sidebarExpanded && <span>Inscripción presencial</span>}
           </button>
         </nav>
 
-        {moduleSwitcher ? (
+        {moduleSwitcher && sidebarExpanded ? (
           <div className="pt-3">
             {moduleSwitcher}
           </div>
         ) : null}
 
         <div className="secretaria-sidebar-footer">
-          <button className="secretaria-logout" onClick={onLogout}>
+          <button className="secretaria-logout" onClick={onLogout} title="Cerrar sesion">
             <LogOut size={18} />
-            <span>Cerrar sesion</span>
+            {sidebarExpanded && <span>Cerrar sesion</span>}
           </button>
         </div>
       </aside>
@@ -843,7 +864,27 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
           delegatedContent
         ) : (
           <>
-        <section className="secretaria-workspace secretaria-workspace-system">
+            <header className="secretaria-header">
+              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                {!sidebarExpanded && (
+                  <button
+                    className="secretaria-menu-toggle-btn-header"
+                    type="button"
+                    onClick={toggleSidebar}
+                    aria-label="Mostrar barra lateral"
+                    title="Mostrar barra lateral"
+                  >
+                    <Menu size={22} />
+                  </button>
+                )}
+                <div>
+                  <span>Módulo Asistente</span>
+                  <h1>Inscripción Presencial</h1>
+                </div>
+              </div>
+            </header>
+
+            <section className="secretaria-workspace secretaria-workspace-system">
           <SecretariaSearchCard
             aplicarEstudianteEncontrado={aplicarEstudianteEncontrado}
             abrirRegistroAlumnoExterno={abrirRegistroAlumnoExterno}

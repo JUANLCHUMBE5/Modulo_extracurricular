@@ -41,6 +41,7 @@ function DocumentosView({
   variablesPlantillaAceptadas,
   variablesPlantillaRequeridas,
   categorias = [],
+  toggleSidebarButton,
 }) {
   const variablesRequeridasDocumento = lecturaDocumento?.variablesRequeridasModelo || variablesPlantillaRequeridas.map((item) => item.id);
   const variablesListasDocumento = lecturaDocumento?.variablesListasModelo ||
@@ -55,7 +56,12 @@ function DocumentosView({
 
   return (
     <>
-      <header className="coord-topbar"><h1>PLANTILLAS Y DOCUMENTOS</h1></header>
+      <header className="coord-topbar">
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          {toggleSidebarButton}
+          <h1>PLANTILLAS Y DOCUMENTOS</h1>
+        </div>
+      </header>
       <section className="coord-workspace coord-workspace-single">
         <article className="coord-card coord-search-card coord-documents-card">
           <div className="coord-card-title coord-documents-title">
