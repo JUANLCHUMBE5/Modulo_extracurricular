@@ -350,6 +350,54 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
 
   let filteredData = [...rawData];
 
+  // Helper para buscar información de un programa
+  const listProgramas = panel.reportes.programas || [];
+  const findProgram = (progNameOrId) => {
+    if (!progNameOrId) return null;
+    const nameOrId = String(progNameOrId).toLowerCase().trim();
+    return listProgramas.find(p => 
+      String(p.id).toLowerCase() === nameOrId || 
+      String(p.nombre).toLowerCase().trim() === nameOrId
+    );
+  };
+
+  // 1. Filtrar por Categoría
+  if (filtros.categoria && filtros.categoria !== "todos") {
+    filteredData = filteredData.filter((item) => {
+      if (tipoDatos === "programas") {
+        return String(item.categoria || "").toLowerCase() === String(filtros.categoria).toLowerCase();
+      }
+      if (tipoDatos === "inscripciones") {
+        if (item.categoria) {
+          return String(item.categoria).toLowerCase() === String(filtros.categoria).toLowerCase();
+        }
+        const p = findProgram(item.programaId || item.programa);
+        return p && String(p.categoria || "").toLowerCase() === String(filtros.categoria).toLowerCase();
+      }
+      if (tipoDatos === "pagos") {
+        const p = findProgram(item.programaId || item.programa);
+        return p && String(p.categoria || "").toLowerCase() === String(filtros.categoria).toLowerCase();
+      }
+      return true;
+    });
+  }
+
+  // 2. Filtrar por Programa/Taller
+  if (filtros.programa && filtros.programa !== "todos") {
+    filteredData = filteredData.filter((item) => {
+      if (tipoDatos === "programas") {
+        return String(item.id).toLowerCase() === String(filtros.programa).toLowerCase() ||
+               String(item.nombre).toLowerCase().trim() === String(filtros.programa).toLowerCase().trim();
+      }
+      if (tipoDatos === "inscripciones" || tipoDatos === "pagos") {
+        return String(item.programaId).toLowerCase() === String(filtros.programa).toLowerCase() ||
+               String(item.programa).toLowerCase().trim() === String(filtros.programa).toLowerCase().trim();
+      }
+      return true;
+    });
+  }
+
+  // 3. Filtrar por Origen y Pago
   if (tipoDatos === "inscripciones") {
     if (filtros.origen && filtros.origen !== "todos") {
       filteredData = filteredData.filter((item) => {

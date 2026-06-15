@@ -42,6 +42,8 @@ export default function Direccion({ onLogout, user }) {
   const [customTipo, setCustomTipo] = useState("pagos");
   const [customFiltroOrigen, setCustomFiltroOrigen] = useState("todos");
   const [customFiltroPago, setCustomFiltroPago] = useState("todos");
+  const [customFiltroCategoria, setCustomFiltroCategoria] = useState("todos");
+  const [customFiltroPrograma, setCustomFiltroPrograma] = useState("todos");
   const [customColumnas, setCustomColumnas] = useState([]);
   const [exportandoCustom, setExportandoCustom] = useState(false);
   const recargaTimerRef = useRef(null);
@@ -51,6 +53,10 @@ export default function Direccion({ onLogout, user }) {
   // Cambiar el modulo activo y pre-seleccionar el primer reporte de esa categoria
   const cambiarModulo = (mod) => {
     setModuloActivo(mod);
+    setCustomFiltroOrigen("todos");
+    setCustomFiltroPago("todos");
+    setCustomFiltroCategoria("todos");
+    setCustomFiltroPrograma("todos");
     if (mod === "caja") {
       setReporteSeleccionado("pagos_historial");
     } else if (mod === "coordinacion") {
@@ -87,6 +93,10 @@ export default function Direccion({ onLogout, user }) {
 
     setCustomTipo(tipo);
     setCustomColumnas(defaultCols);
+    setCustomFiltroOrigen("todos");
+    setCustomFiltroPago("todos");
+    setCustomFiltroCategoria("todos");
+    setCustomFiltroPrograma("todos");
   }, [reporteSeleccionado]);
 
   const cargarPanel = useCallback(async ({ silencioso = false } = {}) => {
@@ -149,12 +159,29 @@ export default function Direccion({ onLogout, user }) {
 
   const metricasAnalisis = useMemo(() => calcularMetricasAnalisis(panel), [panel]);
 
+  const categoriasOptions = useMemo(() => {
+    const list = panel?.categorias || ["Academico", "Deportivo", "Ingles", "Maraton", "Reforzamiento"];
+    return [
+      { value: "todos", label: "Todas las categorías" },
+      ...list.map(c => ({ value: c, label: c }))
+    ];
+  }, [panel?.categorias]);
+
+  const programasOptions = useMemo(() => {
+    return [
+      { value: "todos", label: "Todos los talleres" },
+      ...filasProgramas.map(p => ({ value: p.id || p.nombre, label: p.nombre }))
+    ];
+  }, [filasProgramas]);
+
   const registrosFiltrados = useMemo(() => filtrarRegistrosReporte({
     customFiltroOrigen,
     customFiltroPago,
+    customFiltroCategoria,
+    customFiltroPrograma,
     customTipo,
     panel,
-  }), [panel, customTipo, customFiltroOrigen, customFiltroPago]);
+  }), [panel, customTipo, customFiltroOrigen, customFiltroPago, customFiltroCategoria, customFiltroPrograma]);
 
   const ejecutarDescargaCustom = async () => {
     if (!exportarHabilitado) {
@@ -172,6 +199,8 @@ export default function Direccion({ onLogout, user }) {
         filtros: {
           origen: customFiltroOrigen,
           estadoPago: customFiltroPago,
+          categoria: customFiltroCategoria,
+          programa: customFiltroPrograma,
         },
         columnas: customColumnas,
         periodo: periodo,
@@ -653,103 +682,6 @@ export default function Direccion({ onLogout, user }) {
           </>
         ) : (
           <section className="dir-reports-view">
-            {/* ── PANEL DE VISUALIZACIÓN ANALÍTICA (PANTALLA) ── */}
-            <article className="dir-analysis-dashboard">
-              <header className="dir-analysis-header">
-                <div className="dir-analysis-title-row">
-                  <span className="dir-tag">Analisis en vivo</span>
-                  <h2>Estadísticas del periodo</h2>
-                </div>
-              </header>
-
-              <div className="dir-analysis-grid">
-                <div className="dir-analysis-card">
-                  <div className="dir-analysis-card-header">
-                    <div className="dir-analysis-card-icon is-teal">
-                      <Users size={18} />
-                    </div>
-                    <div>
-                      <h3>Canal de Matrícula</h3>
-                    </div>
-                  </div>
-                  <div className="dir-analysis-card-body">
-                    <div className="dir-analysis-stat-row">
-                      <div className="dir-analysis-stat-item">
-                        <span className="dir-stat-label"><Laptop size={14} /> Web</span>
-                        <strong className="dir-stat-value">{metricasAnalisis.webCount} <span className="dir-stat-sub">({metricasAnalisis.webPct}%)</span></strong>
-                      </div>
-                      <div className="dir-analysis-stat-item">
-                        <span className="dir-stat-label"><Building size={14} /> Asistente</span>
-                        <strong className="dir-stat-value">{metricasAnalisis.secCount} <span className="dir-stat-sub">({metricasAnalisis.secPct}%)</span></strong>
-                      </div>
-                    </div>
-                    <div className="dir-progress-bar-container">
-                      <div 
-                        className="dir-progress-bar-web" 
-                        style={{ width: `${metricasAnalisis.webPct}%` }}
-                        title={`Web: ${metricasAnalisis.webPct}%`}
-                      />
-                      <div 
-                        className="dir-progress-bar-sec" 
-                        style={{ width: `${metricasAnalisis.secPct}%` }}
-                        title={`Asistente: ${metricasAnalisis.secPct}%`}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="dir-analysis-card">
-                  <div className="dir-analysis-card-header">
-                    <div className="dir-analysis-card-icon is-orange">
-                      <Crown size={18} />
-                    </div>
-                    <div>
-                      <h3>Curso con Mayor Demanda</h3>
-                    </div>
-                  </div>
-                  <div className="dir-analysis-card-body">
-                    <h4 className="dir-star-course-name">{metricasAnalisis.cursoEstrella}</h4>
-                    <div className="dir-star-course-metrics">
-                      <div className="dir-analysis-stat-item">
-                        <span className="dir-stat-label">Inscritos</span>
-                        <strong className="dir-stat-value">{metricasAnalisis.cursoEstrellaCount} <span className="dir-stat-sub">Alum.</span></strong>
-                      </div>
-                      <div className="dir-analysis-stat-item">
-                        <span className="dir-stat-label">Porcentaje</span>
-                        <strong className="dir-stat-value">{metricasAnalisis.estrellaPct}%</strong>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="dir-analysis-card">
-                  <div className="dir-analysis-card-header">
-                    <div className="dir-analysis-card-icon is-purple">
-                      <Wallet size={18} />
-                    </div>
-                    <div>
-                      <h3>Resumen de Recaudación</h3>
-                    </div>
-                  </div>
-                  <div className="dir-analysis-card-body">
-                    <div className="dir-analysis-stat-row">
-                      <div className="dir-analysis-stat-item">
-                        <span className="dir-stat-label">Recaudado</span>
-                        <strong className="dir-stat-value is-teal-text">{formatearSoles(resumen.totalRecaudado)}</strong>
-                      </div>
-                      <div className="dir-analysis-stat-item">
-                        <span className="dir-stat-label">Pendiente</span>
-                        <strong className="dir-stat-value is-orange-text">{formatearSoles(resumen.totalPendiente)}</strong>
-                      </div>
-                    </div>
-                    <p className="dir-analysis-card-hint">Proyectado: {formatearSoles(resumen.totalProyectado)}</p>
-                  </div>
-                </div>
-              </div>
-            </article>
-
-
-
             {/* ── GENERADOR DE REPORTES A LA MEDIDA (PERSONALIZADO POR MÓDULO) ── */}
             <article className="dir-custom-report-builder">
               <header className="dir-builder-header">
@@ -813,36 +745,40 @@ export default function Direccion({ onLogout, user }) {
 
                   <div className="dir-builder-form-group">
                     <label className="dir-builder-label"><Filter size={14} /> 2. Filtros</label>
-                    <div className="dir-builder-filters">
-                      {customTipo === "inscripciones" && (
-                        <>
-                          <Select
-                            label="Canal / Origen"
-                            data={[
-                              { value: "todos", label: "Todos los canales" },
-                              { value: "web", label: "Solo vía Web / Padres" },
-                              { value: "secretaria", label: "Solo vía Asistente" },
-                            ]}
-                            value={customFiltroOrigen}
-                            onChange={(val) => setCustomFiltroOrigen(val || "todos")}
-                            allowDeselect={false}
-                            size="xs"
-                          />
-                          <Select
-                            label="Estado de Pago"
-                            data={[
-                              { value: "todos", label: "Todos los estados" },
-                              { value: "Pagado", label: "Solo Pagados" },
-                              { value: "Pendiente", label: "Solo Pendientes" },
-                            ]}
-                            value={customFiltroPago}
-                            onChange={(val) => setCustomFiltroPago(val || "todos")}
-                            allowDeselect={false}
-                            size="xs"
-                          />
-                        </>
+                    <div className="dir-builder-filters" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      <Select
+                        label="Categoría de Taller"
+                        data={categoriasOptions}
+                        value={customFiltroCategoria}
+                        onChange={(val) => setCustomFiltroCategoria(val || "todos")}
+                        allowDeselect={false}
+                        size="xs"
+                      />
+                      {(customTipo === "inscripciones" || customTipo === "pagos") && (
+                        <Select
+                          label="Programa / Taller"
+                          data={programasOptions}
+                          value={customFiltroPrograma}
+                          onChange={(val) => setCustomFiltroPrograma(val || "todos")}
+                          allowDeselect={false}
+                          size="xs"
+                        />
                       )}
-                      {customTipo === "pagos" && (
+                      {customTipo === "inscripciones" && (
+                        <Select
+                          label="Canal / Origen"
+                          data={[
+                            { value: "todos", label: "Todos los canales" },
+                            { value: "web", label: "Solo vía Web / Padres" },
+                            { value: "secretaria", label: "Solo vía Asistente" },
+                          ]}
+                          value={customFiltroOrigen}
+                          onChange={(val) => setCustomFiltroOrigen(val || "todos")}
+                          allowDeselect={false}
+                          size="xs"
+                        />
+                      )}
+                      {(customTipo === "inscripciones" || customTipo === "pagos") && (
                         <Select
                           label="Estado de Pago"
                           data={[
@@ -855,9 +791,6 @@ export default function Direccion({ onLogout, user }) {
                           allowDeselect={false}
                           size="xs"
                         />
-                      )}
-                      {customTipo === "programas" && (
-                        <p className="dir-builder-empty-filters">Filtro aplicado por el periodo general superior.</p>
                       )}
                     </div>
                   </div>
