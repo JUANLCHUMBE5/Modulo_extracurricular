@@ -553,6 +553,18 @@ export async function eliminarPrograma(id) {
   const index = apiDb.programas.findIndex((item) => item.id === id);
   if (index === -1) throw new Error("Programa no encontrado.");
 
+  // Verificar si hay inscripciones activas vinculadas en el local DB
+  const tieneInscripciones = (apiDb.inscripciones || []).some(
+    ins => ins.programaId === id &&
+           String(ins.estadoInscripcion || "").toLowerCase() !== "anulada" &&
+           String(ins.estadoPago || "").toLowerCase() !== "anulado"
+  );
+
+  if (tieneInscripciones) {
+    const prog = apiDb.programas[index];
+    throw new Error(`No se puede eliminar el taller "${prog.nombre}" porque existen alumnos inscritos en él. Debe anular las inscripciones o trasladar a los alumnos antes de eliminar.`);
+  }
+
   apiDb.programas.splice(index, 1);
   delete apiDb.invitadosPorPrograma[id];
   await saveApiDb();

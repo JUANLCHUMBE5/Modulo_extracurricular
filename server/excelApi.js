@@ -924,14 +924,33 @@ app.put("/api/v1/extracurricular/programas/:id/estado", requireRole(["coordinaci
 app.delete("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const db = await getDb();
-    const progAEliminar = (db.programas || []).find(p => p.id === req.params.id);
-    db.programas = (db.programas || []).filter(p => p.id !== req.params.id);
+    const progId = req.params.id;
+    const progAEliminar = (db.programas || []).find(p => p.id === progId);
+    if (!progAEliminar) {
+      return res.status(404).json({ success: false, message: "Programa no encontrado." });
+    }
+
+    // Verificar si hay inscripciones activas vinculadas a este programa
+    const tieneInscripciones = (db.inscripciones || []).some(
+      ins => ins.programaId === progId &&
+             String(ins.estadoInscripcion || "").toLowerCase() !== "anulada" &&
+             String(ins.estadoPago || "").toLowerCase() !== "anulado"
+    );
+
+    if (tieneInscripciones) {
+      return res.status(400).json({
+        success: false,
+        message: `No se puede eliminar el taller "${progAEliminar.nombre}" porque existen alumnos inscritos en él. Debe anular las inscripciones o trasladar a los alumnos antes de eliminar.`
+      });
+    }
+
+    db.programas = (db.programas || []).filter(p => p.id !== progId);
     if (db.invitadosPorPrograma) {
-      delete db.invitadosPorPrograma[req.params.id];
+      delete db.invitadosPorPrograma[progId];
     }
     await saveDb(db);
     await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "PROGRAMA_ELIMINAR", {
-      id: req.params.id,
+      id: progId,
       nombre: progAEliminar?.nombre || ""
     });
     res.json({ success: true, data: true });

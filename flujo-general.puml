@@ -1,142 +1,110 @@
 @startuml
 title FLUJO GENERAL DEL SISTEMA - MÓDULO EXTRACURRICULAR
 
-skinparam defaultFontName Arial
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+skinparam defaultFontSize 12
 skinparam shadowing false
-skinparam roundcorner 14
+skinparam roundcorner 10
 skinparam backgroundColor #FFFFFF
-skinparam ArrowColor #222222
-skinparam ArrowThickness 1.35
 
+' Swimlane Styling
+skinparam swimlane {
+  BorderColor #E2ECE9
+  BorderThickness 1.5
+  TitleFontColor #176C60
+  TitleFontSize 13
+  TitleFontBold true
+}
+
+' Activity Node Styling
 skinparam activity {
-  BackgroundColor #EEF5FF
-  BorderColor #1E5BBF
-  FontColor #0B1F4D
+  BackgroundColor #FFFFFF
+  BorderColor #176C60
+  BorderThickness 1.5
+  FontColor #1A2332
+  FontSize 12
+  
+  ' Start/Stop Nodes
+  StartColor #176C60
+  EndColor #B42318
 }
 
-skinparam partition {
-  BackgroundColor #FAFAFA
-  BorderColor #BDBDBD
-  FontColor #111111
+' Diamond (Decision) Styling
+skinparam ActivityDiamond {
+  BackgroundColor #EAF8F3
+  BorderColor #176C60
+  FontColor #0F5E51
+  FontSize 11
+  FontBold true
 }
 
-|#DCEBFF|ADMINISTRADOR|
+' Arrow Styling
+skinparam Arrow {
+  Color #176C60
+  FontColor #2E453E
+  FontSize 11
+  Thickness 1.3
+}
+
+|#EAF8F3|COORDINACIÓN ACADÉMICA|
 start
-:Gestionar usuarios;
-:Asignar roles y permisos;
+:Crear y configurar programas/talleres;
+note right: Define vacantes, costos, \nhorarios y docentes.
+:Publicar programas y talleres en el sistema;
 
-|#E0F7F4|COORDINACIÓN ACADÉMICA|
-:Crear / configurar talleres;
-:Definir cupos, horarios,\ncostos y docentes;
-:Cargar lista de estudiantes;
-:Publicar programas;
+|#FFFDF5|ASISTENTE (Secretaría)|
+:Recibir solicitud del estudiante;
+:Buscar alumno por DNI y validar requisitos;
+:Registrar preinscripción del alumno en el taller;
+:Hacer clic en "Derivar a Cajera";
+note right: Cambia estado de la \ninscripción en base de datos.
+:Entregar ficha de preinscripción (física o digital);
 
-if (¿Programa publicado\ncon cupos?) then (Sí)
+|#F9F9FB|PROCESO DE COBRO|
+if (¿Qué modalidad de pago utiliza el apoderado?) then (Pago Presencial)
+  
+  |#F0F7FF|CAJA (Cajera)|
+  :Ingresar DNI y buscar preinscripción derivada;
+  :Cobrar monto del taller (Efectivo o POS);
+  :Clic en "Registrar Pago" (Matrícula confirmada);
 
-  |#EDF7FF|SISTEMA|
-  :Mostrar programa disponible\nen los módulos;
+else (Pago Web / Digital)
 
-  |#FFF3D9|ASISTENTE|
-  :Consultar estudiante por DNI;
-  :Visualizar datos y programa;
+  |#FFF9E6|PADRE DE FAMILIA|
+  :Ingresar al Portal Web de Padres;
+  :Realizar transferencia o Yapeo;
+  :Subir captura del comprobante al sistema;
 
-  |#F1E5FF|PADRES|
-  :Ingresar DNI;
-  :Visualizar programas;
-
-  |#FFE3EA|CAJERA|
-  :Visualizar pagos pendientes;
-
-  |#F1E5FF|PADRES|
-  :Seleccionar programa / taller;
-
-  |#FFF3D9|ASISTENTE|
-  :Verificar datos;
-
-  while (¿Datos válidos?) is (No)
-    :Solicitar corrección;
-
-    |#F1E5FF|PADRES|
-    :Corregir datos;
-
-    |#FFF3D9|ASISTENTE|
-    :Revisar nuevamente;
-  endwhile (Sí)
-
-  :Registrar inscripción;
-
-  |#F1E5FF|PADRES|
-  :Elegir modalidad de pago;
-
-  if (¿Pago virtual?) then (Sí)
-    :Ver comunicado / costo;
-    :Registrar datos del apoderado;
-    :Ver QR / Yape;
-    :Enviar operación y captura;
-
-    |#EDF7FF|SISTEMA|
-    :Validar pago automáticamente;
-
-    if (¿Pago coincide?) then (Sí)
-      :Aprobar pago;
+  |#F0F7FF|CAJA (Cajera)|
+  :Revisar comprobante de pago en el panel de Caja;
+  if (¿El comprobante es válido y coincide?) then (Sí - Aprobar)
+    :Aprobar Pago Web en el sistema;
+  else (No - Observar o Rechazar)
+    if (¿Se puede corregir?) then (Sí)
+      :Marcar como "Observado" con motivo;
+      |#FFF9E6|PADRE DE FAMILIA|
+      :Recibe alerta y vuelve a subir comprobante;
+      detach
     else (No)
-      |#FFE3EA|CAJERA|
-      :Revisar pago observado;
-
-      if (¿Aprueba pago?) then (Sí)
-        :Aprobar pago;
-      else (No)
-        :Observar pago;
-
-        |#F1E5FF|PADRES|
-        :Corregir / reenviar comprobante;
-
-        |#EDF7FF|SISTEMA|
-        :Revalidar pago;
-      endif
+      |#F0F7FF|CAJA (Cajera)|
+      :Marcar como "Rechazado" (Libera vacante);
+      stop
     endif
-
-  else (Presencial)
-    |#FFE3EA|CAJERA|
-    :Buscar inscripción;
-    :Registrar pago presencial;
-    :Confirmar pago;
   endif
 
-  |#EDF7FF|SISTEMA|
-  :Confirmar inscripción;
-  :Generar constancia / QR;
-
-  |#F1E5FF|PADRES|
-  :Visualizar confirmación y QR;
-
-  |#E8F8E8|AUXILIAR|
-  :Escanear QR del estudiante;
-
-  |#EDF7FF|SISTEMA|
-  :Validar inscripción y pago;
-
-  if (¿Acceso válido?) then (Sí)
-    |#E8F8E8|AUXILIAR|
-    :Mostrar bienvenida;
-    :Registrar asistencia;
-  else (No)
-    |#E8F8E8|AUXILIAR|
-    :Mostrar alerta;
-    :Informar motivo;
-  endif
-
-  |#EAF2FF|DIRECCIÓN|
-  :Consultar reportes;
-  :Revisar inscripciones,\npagos y asistencias;
-  :Generar reportes;
-
-  stop
-
-else (No)
-  |#E0F7F4|COORDINACIÓN ACADÉMICA|
-  :Ajustar programa /\ncupos / horarios;
-  stop
 endif
 
+|#F8F9FA|SISTEMA (Matrícula Activa)|
+:Generar Constancia de Matrícula y Código QR;
+
+|#EAF8E8|AUXILIAR (Control de Puerta)|
+:Escanear el código QR del estudiante al ingresar;
+if (¿La matrícula está activa y pagada?) then (Sí)
+  :Permitir acceso al taller;
+  :Registrar asistencia en el sistema;
+else (No)
+  :Denegar acceso al taller (Mostrar alerta en pantalla);
+endif
+
+stop
 @enduml

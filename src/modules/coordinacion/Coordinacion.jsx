@@ -1613,6 +1613,17 @@ function Coordinacion({
 
       {/* ── MAIN ── */}
       <main className={embedded ? "coord-main coord-main-embedded" : "coord-main"}>
+        {!embedded && !sidebarAbierta && (
+          <button 
+            className="coord-global-menu-toggle-btn" 
+            type="button" 
+            onClick={() => handleSetSidebarAbierta(true)} 
+            aria-label="Mostrar barra lateral"
+            title="Mostrar barra lateral"
+          >
+            <Menu size={22} />
+          </button>
+        )}
         {delegatedContent ? (
           delegatedContent
         ) : (

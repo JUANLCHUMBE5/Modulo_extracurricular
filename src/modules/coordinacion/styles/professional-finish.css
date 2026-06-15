@@ -132,6 +132,8 @@
   grid-column: 2;
   padding: 18px clamp(24px, 3vw, 42px) 34px;
   background: #ffffff;
+  position: relative;
+  transition: padding-left 0.3s ease;
 }
 
 .coord-topbar {
@@ -1117,6 +1119,48 @@
 @media (max-width: 760px) {
   .coord-menu-toggle-btn,
   .coord-menu-toggle-btn-header {
+    display: none !important;
+  }
+}
+
+/* Layout overrides when sidebar is collapsed */
+.coord-layout-collapsed .coord-main {
+  padding-left: clamp(74px, 6vw, 92px);
+}
+
+/* Global floating menu toggle button when sidebar is collapsed */
+.coord-global-menu-toggle-btn {
+  position: absolute;
+  top: 18px;
+  left: 20px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background-color: #ffffff;
+  border: 1px solid #bfd9d1;
+  border-radius: 8px;
+  color: #176c60;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(23, 108, 96, 0.08);
+  transition: all 0.2s ease, opacity 0.3s ease;
+}
+
+.coord-global-menu-toggle-btn:hover {
+  background-color: #f4fbf9;
+  color: #05604f;
+  border-color: #9dd8cb;
+  box-shadow: 0 4px 16px rgba(23, 108, 96, 0.14);
+}
+
+.coord-global-menu-toggle-btn svg {
+  color: inherit;
+}
+
+@media (max-width: 760px) {
+  .coord-global-menu-toggle-btn {
     display: none !important;
   }
 }
