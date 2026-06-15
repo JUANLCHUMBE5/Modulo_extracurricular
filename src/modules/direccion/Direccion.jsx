@@ -875,58 +875,6 @@ export default function Direccion({ onLogout, user }) {
                   </div>
                 </div>
               </div>
-
-              {/* ── VISTA PREVIA DE DATOS (TABLA DE VISUALIZACIÓN) ── */}
-              <div className="dir-builder-preview-section">
-                <Divider my="lg" />
-                <div className="dir-preview-table-header" style={{ marginBottom: "14px" }}>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: "16px", color: "#102035", fontWeight: 900 }}>Vista previa</h3>
-                  </div>
-                </div>
-                
-                <div className="dir-table-wrap">
-                  <Table striped highlightOnHover verticalSpacing="xs" className="dir-preview-table">
-                    <Table.Thead>
-                      <Table.Tr>
-                        {customColumnas.length === 0 ? (
-                          <Table.Th style={{ color: "#b42318" }}>Seleccione al menos una columna...</Table.Th>
-                        ) : (
-                          customColumnas.map((colKey) => {
-                            const colLabel = columnasDisponiblesMap[customTipo].find(c => c.key === colKey)?.label || colKey;
-                            return <Table.Th key={colKey}>{colLabel}</Table.Th>;
-                          })
-                        )}
-                      </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {registrosFiltrados.length === 0 ? (
-                        <Table.Tr>
-                          <Table.Td colSpan={customColumnas.length || 1}>
-                            <div className="dir-empty-preview" style={{ padding: "30px", textAlign: "center", color: "#667085", fontSize: "13px", fontWeight: 800 }}>
-                              Sin registros que coincidan.
-                            </div>
-                          </Table.Td>
-                        </Table.Tr>
-                      ) : (
-                        registrosFiltrados.slice(0, 10).map((row, rowIndex) => (
-                          <Table.Tr key={rowIndex}>
-                            {customColumnas.map((colKey) => {
-                              let value = row[colKey];
-                              if (colKey === "costo" || colKey === "monto" || colKey === "proyectado" || colKey === "recaudado") {
-                                value = formatearSoles(value);
-                              } else if (colKey === "avance") {
-                                value = `${value}%`;
-                              }
-                              return <Table.Td key={colKey}>{value !== undefined && value !== null ? String(value) : "—"}</Table.Td>;
-                            })}
-                          </Table.Tr>
-                        ))
-                      )}
-                    </Table.Tbody>
-                  </Table>
-                </div>
-              </div>
             </article>
           </section>
         )}
