@@ -13,7 +13,21 @@ function HorarioTabla({ programa }) {
 
 function GradosTabla({ programa }) {
   const grados = programa?.grupo || resumenGradosDesdeValores(programa?.gradosAplicables || []);
-  return <span className="coord-table-small-text">{grados || "Por definir"}</span>;
+  if (!grados) return <span className="coord-table-small-text">Por definir</span>;
+
+  const partes = String(grados).split(/\s*\/\s*/g).filter(Boolean);
+  if (partes.length > 1) {
+    return (
+      <div className="coord-table-small-text" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        {partes.map((p, idx) => (
+          <div key={idx} style={{ lineHeight: "1.4" }}>
+            • {p}
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return <span className="coord-table-small-text" style={{ lineHeight: "1.4" }}>{grados}</span>;
 }
 
 function VigenciaTabla({ inicio, fin, duracion, avisoDias }) {

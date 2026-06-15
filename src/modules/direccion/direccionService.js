@@ -64,11 +64,27 @@ export async function obtenerPanelDireccion(filtros = {}) {
 
   // --- Procesamiento de Asistencia ---
   const asistencias = apiDb.asistencias || [];
+  
+  const obtenerFechaPeru = (fechaStr) => {
+    if (!fechaStr) return "";
+    const str = String(fechaStr);
+    if (str.includes("T") || str.length > 10) {
+      try {
+        const d = new Date(str);
+        const dPeru = new Date(d.getTime() - 5 * 60 * 60 * 1000);
+        return dPeru.toISOString().slice(0, 10);
+      } catch {
+        return str.slice(0, 10);
+      }
+    }
+    return str.slice(0, 10);
+  };
+
   const hoyStr = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD local
   
   const asistenciasHoy = asistencias.filter(item => {
     if (!item.fechaRegistro) return false;
-    return item.fechaRegistro.slice(0, 10) === hoyStr;
+    return obtenerFechaPeru(item.fechaRegistro) === hoyStr;
   });
 
   const asistidosHoyUnicos = new Set(

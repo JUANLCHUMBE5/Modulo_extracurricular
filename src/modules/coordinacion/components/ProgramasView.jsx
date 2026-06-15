@@ -272,7 +272,7 @@ function ProgramasView({
                           <span className={`coord-badge-cat coord-badge-cat-${obtenerClaseCategoria(programa.categoria)}`}>
                             {programa.categoria || "General"}
                           </span>
-                          <span>Tutor: {programa.responsable || "No asignado"}</span>
+                          <span>Tutor: {programa.responsable ? String(programa.responsable).replace(/\s*-\s*/g, ", ").trim() : "No asignado"}</span>
                         </div>
                       </div>
                       <Badge

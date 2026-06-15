@@ -167,6 +167,14 @@ async function readFromSupabase() {
       inscripciones: (resInscripciones.data || []).map(ins => {
         ins.estadoInscripcion = ins.estadoPago || "Pendiente de pago";
         ins.apoderado = estudiantesObj[ins.dniEstudiante]?.apoderado || "";
+        
+        // Determinar origenRegistro de forma inteligente para que el panel de Dirección lo identifique como Web/Padres
+        const pagoAsociado = (resPagos.data || []).find(p => p.inscripcionId === ins.id);
+        if (pagoAsociado && (String(pagoAsociado.formaPago).toLowerCase() === "yape" || pagoAsociado.capturaPagoBase64)) {
+          ins.origenRegistro = "Portal padres";
+        } else {
+          ins.origenRegistro = ins.origenRegistro || "Presencial";
+        }
         return ins;
       }),
       pagos: (resPagos.data || []).map(pag => {
