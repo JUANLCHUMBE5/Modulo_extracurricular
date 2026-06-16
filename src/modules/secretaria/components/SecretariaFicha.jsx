@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { renderAsync } from "docx-preview";
 import {
   IconFileText as FileText,
@@ -7,6 +7,7 @@ import {
   IconX as X,
 } from "@tabler/icons-react";
 import {
+  cleanFallbackText,
   crearDatosFicha,
 } from "../utils/secretariaFichaData";
 import {
@@ -226,9 +227,15 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
               </div>
 
               <FichaBloque
-                titulo="Resumen de invitación"
+                titulo=""
                 items={documento.resumen}
               />
+
+              <div className="secretaria-ficha-signature-preview">
+                <div className="secretaria-signature-line"></div>
+                <span className="secretaria-signature-label">Firma del Padre / Apoderado</span>
+                <span className="secretaria-signature-dni">DNI: _______________________</span>
+              </div>
             </>
           )}
         </div>
@@ -251,14 +258,22 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
 }
 
 function FichaBloque({ titulo, items }) {
+  if (!items || !items.length) return null;
   return (
     <section className="secretaria-ficha-block">
-      <h4>{titulo}</h4>
-      {items.map(([label, value]) => (
-        <p key={label}>
-          <strong>{label}:</strong> {value}
-        </p>
-      ))}
+      {titulo ? <h4>{titulo.toUpperCase()}</h4> : null}
+      <div className="secretaria-ficha-grid-table">
+        {(items || []).map(([label, value]) => {
+          const cleanLab = cleanFallbackText(label) || "-";
+          const cleanVal = cleanFallbackText(value) || "-";
+          return (
+            <div className="secretaria-ficha-grid-row" key={label}>
+              <div className="secretaria-ficha-grid-label">{cleanLab}</div>
+              <div className="secretaria-ficha-grid-value">{cleanVal}</div>
+            </div>
+          );
+        })}
+      </div>
     </section>
   );
 }

@@ -105,6 +105,9 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
       buttonText = "Continuar al pago";
       buttonAction = () => setPasoActivo(3);
     }
+  } else if (programa?.ventanaInscripcion?.permitida === false) {
+    buttonText = "Registro por Cajera";
+    buttonDisabled = true;
   }
 
   return (
@@ -428,19 +431,22 @@ function CatalogoProgramas({
             const pagoValidado = estadoPago === "pagado";
             const pagoEnRevision = estadoPago === "verificando";
             const pagoPendienteCaja = estadoPago === "pendiente_caja";
+            const cerrado = !prog.registrado && prog.ventanaInscripcion?.permitida === false;
             const puedeContinuarPago = prog.registrado && !pagoValidado && !pagoEnRevision && !pagoPendienteCaja;
-            const botonDeshabilitado = registrando || sinCupos || (prog.registrado && !puedeContinuarPago);
+            const botonDeshabilitado = registrando || sinCupos || cerrado || (prog.registrado && !puedeContinuarPago);
             const textoAccion = sinCupos
               ? "Sin cupos"
-              : pagoValidado
-                ? "Pago exitoso"
-                : pagoEnRevision
-                  ? "Pago en proceso"
-                  : pagoPendienteCaja
-                    ? "Reserva pendiente"
-                    : puedeContinuarPago
-                      ? "Continuar al pago"
-                      : "Inscribir";
+              : cerrado
+                ? "Cerrado"
+                : pagoValidado
+                  ? "Pago exitoso"
+                  : pagoEnRevision
+                    ? "Pago en proceso"
+                    : pagoPendienteCaja
+                      ? "Reserva pendiente"
+                      : puedeContinuarPago
+                        ? "Continuar al pago"
+                        : "Inscribir";
             return (
               <article className="padres-flow-course-card" key={prog.id}>
 

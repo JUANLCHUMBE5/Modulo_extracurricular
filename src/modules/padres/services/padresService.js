@@ -50,7 +50,14 @@ export async function obtenerResumenPadre(dni) {
     
     const data = res.data || {};
     const estudiante = adaptarEstudiante(data.estudiante);
-    const invitaciones = (data.invitaciones || []).map(adaptarPrograma);
+    const invitaciones = (data.invitaciones || []).map(adaptarPrograma).map((prog) => {
+      const duracionAvisoDias = normalizarDuracionAvisoDias(prog.duracionAvisoDias, 7);
+      return {
+        ...prog,
+        duracionAvisoDias,
+        ventanaInscripcion: obtenerVentanaInscripcion(prog.fechaInicio, new Date(), duracionAvisoDias, prog.horaLimiteAviso),
+      };
+    });
     const inscripciones = (data.inscripciones || []).map(adaptarInscripcion);
     const pagos = (data.pagos || []).map(adaptarPago);
     const documentos = data.documentos || [];
@@ -238,6 +245,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
     cicloII: programa.cicloII || "",
     duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
     duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+    horaLimiteAviso: programa.horaLimiteAviso || "23:59",
     gradosAplicables: programa.gradosAplicables || [],
     horariosPorGrupo: programa.horariosPorGrupo || [],
     talleresDeportivos: programa.talleresDeportivos || [],
@@ -484,6 +492,7 @@ function obtenerInvitaciones(dni, estudiante = null) {
         cicloII: programa.cicloII || "",
         duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
         duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+        horaLimiteAviso: programa.horaLimiteAviso || "23:59",
         ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso),
       });
     }
@@ -529,6 +538,7 @@ function obtenerInvitaciones(dni, estudiante = null) {
           duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
           grado: gradoEstudiante,
           duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
+          horaLimiteAviso: programa.horaLimiteAviso || "23:59",
           ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso),
         });
       });
@@ -624,6 +634,7 @@ function sincronizarInscripcionConPrograma(inscripcion) {
     concesionarios: programa.concesionarios || inscripcion.concesionarios || "",
     requiereUniforme: Boolean(programa.requiereUniforme),
     estadoPrograma: programa.estado || "",
+    horaLimiteAviso: programa.horaLimiteAviso || inscripcion.horaLimiteAviso || "23:59",
   });
 }
 
@@ -693,7 +704,7 @@ export async function obtenerProgramasCoordinacion() {
       const cuposOcupados = Number(programa.cuposOcupados || 0);
       const cuposDisponibles = Math.max(0, cupos - cuposOcupados);
       const duracionAvisoDias = normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7);
-      const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias);
+      const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias, programa.horaLimiteAviso);
       const requiereGradoCompatible = !programa.invitacionMasiva && (
         Array.isArray(programa.horariosPorGrupo) && programa.horariosPorGrupo.length > 0 ||
         (Array.isArray(programa.gradosAplicables) && programa.gradosAplicables.length > 0)
@@ -701,8 +712,10 @@ export async function obtenerProgramasCoordinacion() {
 
       return {
         ...programa,
+        duracionAvisoDias,
+        ventanaInscripcion,
         requiereGradoCompatible,
-        registrable: Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0 && ventanaInscripcion.permitida,
+        registrable: Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0,
       };
     });
   }
@@ -714,7 +727,7 @@ export async function obtenerProgramasCoordinacion() {
     const cuposOcupados = Number(programa.cuposOcupados || 0);
     const cuposDisponibles = Math.max(0, cupos - cuposOcupados);
     const duracionAvisoDias = normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7);
-    const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias);
+    const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias, programa.horaLimiteAviso);
     const requiereGradoCompatible = !programa.invitacionMasiva && (
       tieneHorariosPorGrupo(programa) ||
       (Array.isArray(programa.gradosAplicables) && programa.gradosAplicables.length > 0)
@@ -751,8 +764,9 @@ export async function obtenerProgramasCoordinacion() {
       cicloII: programa.cicloII || "",
       duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
       duracionAvisoDias,
+      horaLimiteAviso: programa.horaLimiteAviso || "23:59",
       ventanaInscripcion,
-      registrable: Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0 && ventanaInscripcion.permitida,
+      registrable: Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0,
     };
   });
 }

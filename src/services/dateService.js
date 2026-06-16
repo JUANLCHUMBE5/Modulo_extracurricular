@@ -94,10 +94,21 @@ export function normalizarFecha(valor) {
   if (!valor) return null;
   if (valor instanceof Date) return isValid(valor) ? valor : null;
 
-  const texto = String(valor);
-  const fecha = /^\d{4}-\d{2}-\d{2}$/.test(texto)
-    ? parseISO(texto)
-    : new Date(texto);
+  const texto = String(valor).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+    const fecha = parseISO(texto);
+    if (isValid(fecha)) return fecha;
+  }
 
+  const dmyMatch = texto.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (dmyMatch) {
+    const dia = parseInt(dmyMatch[1], 10);
+    const mes = parseInt(dmyMatch[2], 10) - 1;
+    const anio = parseInt(dmyMatch[3], 10);
+    const fecha = new Date(anio, mes, dia);
+    if (isValid(fecha)) return fecha;
+  }
+
+  const fecha = new Date(texto);
   return isValid(fecha) ? fecha : null;
 }

@@ -37,6 +37,7 @@ import {
   sincronizarGradosProgramaConInvitadosApi,
   sincronizarPlantillaProgramaApi,
   tieneHorariosPorGrupoApi,
+  programaDisponibleParaGradoApi,
 } from "./apiMappers.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
@@ -629,6 +630,7 @@ app.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), asy
       periodo: req.body.periodo || "escolar",
       modalidadCobro: req.body.modalidad_cobro || "Mensual",
       duracionAvisoDias: req.body.duracion_aviso_dias || req.body.duracionAvisoDias || 7,
+      horaLimiteAviso: req.body.hora_limite_aviso || req.body.horaLimiteAviso || "23:59",
       requiereUniforme: Boolean(req.body.requiere_uniforme),
       requiereIndumentaria: Boolean(req.body.requiere_indumentaria),
       anuncioImagen: req.body.anuncio_imagen || "",
@@ -689,6 +691,7 @@ app.post("/api/v1/extracurricular/programas/documento", requireRole(["secretaria
       periodo: req.body.periodo || "escolar",
       modalidadCobro: req.body.modalidad_cobro || "Mensual",
       duracionAvisoDias: req.body.duracion_aviso_dias || req.body.duracionAvisoDias || 7,
+      horaLimiteAviso: req.body.hora_limite_aviso || req.body.horaLimiteAviso || "23:59",
       requiereUniforme: Boolean(req.body.requiere_uniforme),
       requiereIndumentaria: Boolean(req.body.requiere_indumentaria),
       horario: req.body.horario || "Por definir",
@@ -756,6 +759,7 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
       periodo: req.body.periodo || "escolar",
       modalidadCobro: req.body.modalidad_cobro || "Mensual",
       duracionAvisoDias: req.body.duracion_aviso_dias || req.body.duracionAvisoDias || 7,
+      horaLimiteAviso: req.body.hora_limite_aviso || req.body.horaLimiteAviso || "23:59",
       requiereUniforme: Boolean(req.body.requiere_uniforme),
       requiereIndumentaria: Boolean(req.body.requiere_indumentaria),
       anuncioImagen: req.body.anuncio_imagen || "",
@@ -1902,28 +1906,25 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
       const estadoProg = prog.estado || "Habilitado";
       if (estadoProg !== "Habilitado" || !programaListoParaPortalPadresApi(prog)) continue;
 
-      const invitados = db.invitadosPorPrograma[prog.id] || [];
-      const inv = invitados.find(item => item.dni === dni);
-      if (inv) {
-        const gradoCompletoInvitado = obtenerGradoCompletoApi(inv.grado, inv.nivelEducativo || inv.nivel, student?.grado);
+      if (prog.invitacionMasiva && programaDisponibleParaGradoApi(prog, student?.grado)) {
         invitations.push({
-          id: prog.id,
+          id: `${prog.id}-masiva-${dni}`,
           nombre: prog.nombre,
-          codigo_estudiante: inv.codigoEstudiante || "",
-          dni: inv.dni,
-          nombres: inv.nombres,
-          grado: inv.grado,
-          seccion: inv.seccion,
-          nivel_educativo: inv.nivelEducativo || "",
-          seleccion: inv.seleccion || "",
-          nivel_cambridge: inv.nivelCambridge || "",
-          periodo: inv.periodo || prog.periodo,
+          codigo_estudiante: student?.codigoEstudiante || "",
+          dni: student?.dni || "",
+          nombres: student?.nombres || "",
+          grado: student?.grado || "",
+          seccion: student?.seccion || "",
+          nivel_educativo: student?.nivel || "",
+          seleccion: student?.seleccion || "",
+          nivel_cambridge: student?.nivelCambridge || "",
+          periodo: prog.periodo,
           programa_id: prog.id,
           programa: prog.nombre,
           categoria: prog.categoria || "",
           costo: prog.costo,
-          horario: resolverHorarioPorGradoApi(prog, gradoCompletoInvitado) || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario) || "",
-          responsable: resolverDocentePorGradoApi(prog, gradoCompletoInvitado),
+          horario: resolverHorarioPorGradoApi(prog, student?.grado) || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario) || "",
+          responsable: resolverDocentePorGradoApi(prog, student?.grado),
           modalidad_cobro: prog.modalidadCobro || "",
           requisitos: prog.requisitos || "",
           comunicado: prog.comunicado || "",
@@ -1940,8 +1941,50 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
           estado_programa: prog.estado || "",
           requiere_uniforme: Boolean(prog.requiereUniforme),
           requiere_indumentaria: Boolean(prog.requiereIndumentaria),
-          invitacion_masiva: Boolean(prog.invitacionMasiva),
+          invitacion_masiva: true,
         });
+      } else {
+        const invitados = db.invitadosPorPrograma[prog.id] || [];
+        const inv = invitados.find(item => item.dni === dni);
+        if (inv) {
+          const gradoCompletoInvitado = obtenerGradoCompletoApi(inv.grado, inv.nivelEducativo || inv.nivel, student?.grado);
+          invitations.push({
+            id: prog.id,
+            nombre: prog.nombre,
+            codigo_estudiante: inv.codigoEstudiante || "",
+            dni: inv.dni,
+            nombres: inv.nombres,
+            grado: inv.grado,
+            seccion: inv.seccion,
+            nivel_educativo: inv.nivelEducativo || "",
+            seleccion: inv.seleccion || "",
+            nivel_cambridge: inv.nivelCambridge || "",
+            periodo: inv.periodo || prog.periodo,
+            programa_id: prog.id,
+            programa: prog.nombre,
+            categoria: prog.categoria || "",
+            costo: prog.costo,
+            horario: resolverHorarioPorGradoApi(prog, gradoCompletoInvitado) || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario) || "",
+            responsable: resolverDocentePorGradoApi(prog, gradoCompletoInvitado),
+            modalidad_cobro: prog.modalidadCobro || "",
+            requisitos: prog.requisitos || "",
+            comunicado: prog.comunicado || "",
+            comunicado_completo: prog.comunicadoCompleto || "",
+            detalle_costo: prog.detalleCosto || "",
+            detalle_almuerzo: prog.detalleAlmuerzo || "",
+            concesionarios: prog.concesionarios || "",
+            anuncio_imagen: prog.anuncioImagen || "",
+            anuncio_imagen_nombre: prog.anuncioImagenNombre || "",
+            grados: prog.gradosAplicables || [],
+            horarios_por_grupo: prog.horariosPorGrupo || [],
+            fecha_inicio: prog.fechaInicio || "",
+            fecha_fin: prog.fechaFin || "",
+            estado_programa: prog.estado || "",
+            requiere_uniforme: Boolean(prog.requiereUniforme),
+            requiere_indumentaria: Boolean(prog.requiereIndumentaria),
+            invitacion_masiva: Boolean(prog.invitacionMasiva),
+          });
+        }
       }
     }
     

@@ -229,7 +229,11 @@ export default function Padres({ user, onLogout }) {
     setTallaPolo("");
     setTallaShort("");
     setTallaUniforme("");
-    setInfoProgramaAceptada(false);
+    const tieneComunicado = Boolean(programa?.comunicado || programa?.comunicadoCompleto);
+    setInfoProgramaAceptada(
+      Boolean(programa?.inscripcionRegistrada) || 
+      (String(programa?.categoria || "").toLowerCase() === "deportivo" && !tieneComunicado)
+    );
     cambiarPaso(1);
   }
 
@@ -240,7 +244,11 @@ export default function Padres({ user, onLogout }) {
     setTallaPolo("");
     setTallaShort("");
     setTallaUniforme("");
-    setInfoProgramaAceptada(Boolean(prog.inscripcionRegistrada) || String(prog.categoria || "").toLowerCase() === "deportivo");
+    const tieneComunicado = Boolean(prog.comunicado || prog.comunicadoCompleto);
+    setInfoProgramaAceptada(
+      Boolean(prog.inscripcionRegistrada) || 
+      (String(prog.categoria || "").toLowerCase() === "deportivo" && !tieneComunicado)
+    );
     cambiarPaso(prog.inscripcionRegistrada ? 3 : 1);
   }
 

@@ -61,3 +61,122 @@
   height: 6px;
   border-width: 0 2px 2px 0;
 }
+
+/* Custom premium sliding toggle switch */
+.coord-custom-toggle-container {
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 12px;
+  transition: all 0.2s ease;
+}
+
+.coord-custom-toggle-container:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.coord-custom-toggle-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.coord-toggle-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.coord-toggle-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  width: 105px;
+  height: 32px;
+  border-radius: 100px;
+  border: 1px solid #cbd5e1;
+  background: #f1f5f9;
+  padding: 2px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.coord-toggle-switch-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 107, 91, 0.25);
+}
+
+.coord-toggle-switch-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
+  z-index: 2;
+}
+
+.coord-toggle-switch-labels {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 850;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 1;
+}
+
+.coord-toggle-switch-label-on {
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+  margin-left: 2px;
+}
+
+.coord-toggle-switch-label-off {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+  margin-right: 2px;
+}
+
+/* Active State */
+.coord-toggle-switch-btn.is-active {
+  background: #e6f7f4;
+  border-color: #006b5b;
+}
+
+.coord-toggle-switch-btn.is-active .coord-toggle-switch-slider {
+  transform: translateX(73px);
+  background: #006b5b;
+  box-shadow: 0 2px 6px rgba(0, 107, 91, 0.3);
+}
+
+.coord-toggle-switch-btn.is-active .coord-toggle-switch-label-on {
+  opacity: 1;
+  color: #006b5b;
+}
+
+.coord-toggle-switch-btn.is-active .coord-toggle-switch-label-off {
+  opacity: 0.15;
+}
+
+.coord-toggle-description {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.4;
+}
+

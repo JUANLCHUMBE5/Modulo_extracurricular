@@ -5,46 +5,78 @@ import {
   normalizarFecha,
 } from "../../../services/dateService";
 
+export function cleanFallbackText(value) {
+  if (value === undefined || value === null) return "";
+  const str = String(value).trim();
+  const lower = str.toLowerCase();
+  
+  if (
+    lower === "no definido" ||
+    lower === "no definido." ||
+    lower === "no registrado" ||
+    lower === "no registrado." ||
+    lower === "sin codigo" ||
+    lower === "sin código" ||
+    lower === "sin código."
+  ) {
+    return "";
+  }
+  
+  if (
+    lower === "horario no configurado para este grado" ||
+    lower === "horario no configurado para este grado."
+  ) {
+    return "Por confirmar";
+  }
+  
+  return str;
+}
+
 export function crearDatosFicha(estudiante, inscripcion) {
   const fechaRegistro = normalizarFecha(inscripcion.fechaRegistro) || new Date();
   const seleccionCambridge = normalizarSeleccionCambridge(inscripcion.seleccion || estudiante?.seleccion);
   const nivelCambridge = inscripcion.nivelCambridge || estudiante?.nivelCambridge || "";
 
+  const telApoderado = cleanFallbackText(inscripcion.telefono);
+  const horarioProg = cleanFallbackText(inscripcion.horario);
+
   return {
     codigo: inscripcion.id || "Sin código",
     fecha: formatearFechaFicha(fechaRegistro),
     estudiante: {
-      nombre: inscripcion.nombresEstudiante || estudiante.nombres || "No definido",
-      dni: inscripcion.dniEstudiante || estudiante.dni || "No definido",
-      grado: estudiante.grado || "No aplica",
-      seccion: estudiante.seccion || "No aplica",
+      nombre: cleanFallbackText(inscripcion.nombresEstudiante || estudiante.nombres) || "-",
+      dni: cleanFallbackText(inscripcion.dniEstudiante || estudiante.dni) || "-",
+      grado: cleanFallbackText(estudiante.grado) || "-",
+      seccion: cleanFallbackText(estudiante.seccion) || "-",
       periodo: estudiante.periodo || obtenerNombrePeriodo(inscripcion.periodo),
-      colegio: inscripcion.colegioProcedencia || "Colegio San Rafael",
+      colegio: cleanFallbackText(inscripcion.colegioProcedencia) || "Colegio San Rafael",
     },
     programa: {
-      nombre: inscripcion.programa || "No definido",
-      horario: inscripcion.horario || "No definido",
-      responsable: inscripcion.docente || "No definido",
+      nombre: cleanFallbackText(inscripcion.programa) || "-",
+      horario: horarioProg || "Por confirmar",
+      responsable: cleanFallbackText(inscripcion.docente) || "-",
       costo: `S/ ${Number(inscripcion.costo || 0).toFixed(2)}`,
-      modalidadCobro: inscripcion.modalidadCobro || "No definido",
-      requisitos: inscripcion.requisitos || "Sin requisitos adicionales",
-      plantilla: inscripcion.plantilla || "Sin plantilla asociada",
+      modalidadCobro: cleanFallbackText(inscripcion.modalidadCobro) || "-",
+      requisitos: cleanFallbackText(inscripcion.requisitos) || "Sin requisitos adicionales",
+      plantilla: cleanFallbackText(inscripcion.plantilla) || "Sin plantilla asociada",
       uniforme: inscripcion.requiereUniforme ? "Sí" : "No",
-      talla: inscripcion.tallaUniforme || "No aplica",
-      estado: inscripcion.estadoInscripción || "Pendiente de pago",
-      estadoPago: inscripcion.estadoPago || "Pendiente",
+      talla: cleanFallbackText(inscripcion.tallaUniforme) || "-",
+      estado: cleanFallbackText(inscripcion.estadoInscripción) || "Pendiente de pago",
+      estadoPago: cleanFallbackText(inscripcion.estadoPago) || "Pendiente",
       ingresoCambridge: describirSeleccionCambridgeFicha(seleccionCambridge),
       nivelCambridge,
+      comunicado: cleanFallbackText(inscripcion.comunicado || inscripcion.comunicadoCompleto) || "",
     },
     apoderado: {
-      nombre: inscripcion.apoderado || "No definido",
-      telefono: inscripcion.telefono || "No definido",
-      correo: inscripcion.correo || "No registrado",
-      medioEnvio: inscripcion.medioEnvio || "No definido",
+      nombre: cleanFallbackText(inscripcion.apoderado) || "-",
+      telefono: telApoderado || "-",
+      correo: cleanFallbackText(inscripcion.correo) || "-",
+      medioEnvio: cleanFallbackText(inscripcion.medioEnvio) || "-",
     },
-    observacion: inscripcion.observacion || "Sin observación",
+    observacion: cleanFallbackText(inscripcion.observacion) || "Sin observación",
   };
 }
+
 
 export function crearResumenInvitacion(ficha) {
   const resumen = [
@@ -56,9 +88,17 @@ export function crearResumenInvitacion(ficha) {
     ["Costo", ficha.programa.costo],
     ["Modalidad", ficha.programa.modalidadCobro],
     ["Requisitos", ficha.programa.requisitos],
-    ["Apoderado", ficha.apoderado.nombre],
-    ["Celular", ficha.apoderado.telefono],
   ];
+
+  const tieneUniforme = ficha.programa.uniforme === "Sí" || ficha.programa.uniforme === "Si";
+  if (tieneUniforme) {
+    resumen.push(["Uniforme requerido", "Sí"]);
+    resumen.push(["Talla", ficha.programa.talla]);
+  }
+
+  resumen.push(["Apoderado", ficha.apoderado.nombre]);
+  resumen.push(["Celular", ficha.apoderado.telefono]);
+
   if (esFichaCambridge(ficha)) {
     resumen.splice(5, 0, ["Modalidad Cambridge A/B/C", ficha.programa.ingresoCambridge]);
     if (ficha.programa.nivelCambridge) {
@@ -74,17 +114,17 @@ export function crearMapaVariablesDocumento(estudiante, inscripcion) {
   const fechaFin = formatearFechaFinRango(inscripcion.fechaInicio, inscripcion.fechaFin);
   const rangoFechas = formatearRangoFechasLetras(inscripcion.fechaInicio, inscripcion.fechaFin);
   const duracion = calcularDuracionTexto(inscripcion.fechaInicio, inscripcion.fechaFin);
-  const alumno = inscripcion.nombresEstudiante || estudiante?.nombres || "";
-  const apoderado = inscripcion.apoderado || "";
-  const telefono = inscripcion.telefono || "";
-  const grado = inscripcion.gradoEstudiante || inscripcion.grado || estudiante?.grado || "";
-  const seccion = inscripcion.seccion || estudiante?.seccion || "";
+  const alumno = cleanFallbackText(inscripcion.nombresEstudiante || estudiante?.nombres) || "";
+  const apoderado = cleanFallbackText(inscripcion.apoderado) || "";
+  const telefono = cleanFallbackText(inscripcion.telefono) || "";
+  const grado = cleanFallbackText(inscripcion.gradoEstudiante || inscripcion.grado || estudiante?.grado) || "";
+  const seccion = cleanFallbackText(inscripcion.seccion || estudiante?.seccion) || "";
   const gradoSeccion = `${grado} ${seccion}`.trim();
-  const programa = inscripcion.programa || "";
+  const programa = cleanFallbackText(inscripcion.programa) || "";
   const fechaActual = formatearFechaFicha(new Date());
   const fechaActualLarga = formatearFechaLargaPeru(new Date(), fechaActual);
   const mesEvaluacion = formatearMesEvaluacion(inscripcion.fechaRegistro || new Date());
-  const horario = inscripcion.horario || "";
+  const horario = cleanFallbackText(inscripcion.horario) || "";
   const horarioDocumento = crearHorarioDocumento(inscripcion, estudiante);
   const filasHorario = crearFilasHorarioDocumento(inscripcion, estudiante, horarioDocumento);
   const fila1 = obtenerFilaHorario(filasHorario, 0);
@@ -95,7 +135,7 @@ export function crearMapaVariablesDocumento(estudiante, inscripcion) {
   const aula = horarioDocumento.aula || inscripcion.aula || "";
   const horarioCambridge = [dias, horas].filter(Boolean).join(" ");
   const niveles = horarioDocumento.niveles;
-  const modalidadCobro = inscripcion.modalidadCobro || "";
+  const modalidadCobro = cleanFallbackText(inscripcion.modalidadCobro) || "";
   const anioActual = String(new Date().getFullYear());
   const seleccionCambridge = normalizarSeleccionCambridge(inscripcion.seleccion || estudiante?.seleccion);
   const marcaSeleccion = "X";
@@ -215,6 +255,8 @@ export function crearMapaVariablesDocumento(estudiante, inscripcion) {
     alm_2: fila2.almuerzo,
     clase_2: fila2.clase,
     hor_alm_2: fila2.almuerzo,
+    comunicado: cleanFallbackText(inscripcion.comunicado || inscripcion.comunicadoCompleto) || "",
+    COMUNICADO: cleanFallbackText(inscripcion.comunicado || inscripcion.comunicadoCompleto) || "",
   };
 }
 
@@ -245,6 +287,20 @@ export function escaparXml(valor) {
 
 export function escaparRegExp(valor) {
   return String(valor).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+export function procesarTextoComunicado(texto, estudiante, inscripcion) {
+  if (!texto) return "";
+  const mapa = crearMapaVariablesDocumento(estudiante, inscripcion);
+  let resultado = String(texto);
+  
+  // Replace variables like {{VARIABLE}}
+  Object.entries(mapa).forEach(([key, val]) => {
+    const patron = new RegExp(`\\{\\{\\s*${escaparRegExp(key)}\\s*\\}\\}`, "gi");
+    resultado = resultado.replace(patron, String(val ?? ""));
+  });
+  
+  return resultado;
 }
 
 export function formatearFechaFicha(fecha) {
@@ -362,7 +418,17 @@ function formatearMesEvaluacion(valor) {
 
 function crearFilasHorarioDocumento(inscripcion, estudiante, horarioRespaldo) {
   const grupos = Array.isArray(inscripcion?.horariosPorGrupo) ? inscripcion.horariosPorGrupo : [];
-  const filas = grupos
+  const gradoAlumno = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
+  
+  // Filtrar los grupos que correspondan al grado del alumno
+  const gruposFiltrados = grupos.filter((item) => 
+    (item.grados || []).some((grado) => coincideGradoDocumento(grado, gradoAlumno))
+  );
+
+  // Si no hay grupos que coincidan, mostramos todos (respaldo)
+  const gruposAMostrar = gruposFiltrados.length > 0 ? gruposFiltrados : grupos;
+
+  const filas = gruposAMostrar
     .map((grupo) => ({
       nivel: formatearNivelesDocumento(grupo.grados),
       dia: grupo.dia || "",
@@ -373,9 +439,9 @@ function crearFilasHorarioDocumento(inscripcion, estudiante, horarioRespaldo) {
 
   if (filas.length) return filas;
 
-  const gradoAlumno = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
+  const gradoAlumnoRespaldo = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
   return [{
-    nivel: horarioRespaldo.niveles[0] || formatearGradoDocumento(gradoAlumno),
+    nivel: horarioRespaldo.niveles[0] || formatearGradoDocumento(gradoAlumnoRespaldo),
     dia: horarioRespaldo.dia || extraerDiasHorario(inscripcion?.horario),
     almuerzo: horarioRespaldo.almuerzo || extraerAlmuerzoHorario(inscripcion?.horario),
     clase: horarioRespaldo.clase || extraerHorasHorario(inscripcion?.horario),
@@ -428,7 +494,7 @@ function coincideGradoDocumento(valorGrupo, gradoAlumno) {
   const alumno = descomponerGradoDocumento(gradoAlumno);
   if (!grupo.numero || !alumno.numero) return false;
   if (grupo.numero !== alumno.numero) return false;
-  return !grupo.nivel || grupo.nivel === alumno.nivel;
+  return !grupo.nivel || !alumno.nivel || grupo.nivel === alumno.nivel;
 }
 
 function descomponerGradoDocumento(valor) {

@@ -1,4 +1,4 @@
-﻿.secretaria-ficha-modal {
+.secretaria-ficha-modal {
   width: min(1040px, 100%);
   max-height: min(92vh, 840px);
   margin: 0;
@@ -228,8 +228,57 @@
   margin: 0;
 }
 
-.secretaria-ficha-block p {
-  margin: 4px 0;
+.secretaria-ficha-block {
+  margin-top: 20px;
+}
+
+.secretaria-ficha-block h4 {
+  color: #1e3a8a;
+  font-size: 13px;
+  font-weight: 700;
+  border-bottom: 2px solid #1e3a8a;
+  padding-bottom: 4px;
+  margin: 0 0 10px;
+  letter-spacing: 0.5px;
+}
+
+.secretaria-ficha-grid-table {
+  display: grid;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #ffffff;
+  margin-bottom: 16px;
+}
+
+.secretaria-ficha-grid-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.secretaria-ficha-grid-row:last-child {
+  border-bottom: 0;
+}
+
+.secretaria-ficha-grid-label {
+  background-color: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 8px 12px;
+  border-right: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+}
+
+.secretaria-ficha-grid-value {
+  color: #0f172a;
+  font-size: 12px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  word-break: break-word;
 }
 
 .secretaria-ficha-actions {
@@ -414,5 +463,34 @@
     margin: 0;
     box-shadow: none;
   }
+}
+
+/* HTML preview of parent signature slip */
+.secretaria-ficha-signature-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 36px;
+  margin-bottom: 20px;
+}
+
+.secretaria-signature-line {
+  width: 260px;
+  border-bottom: 1.5px dashed #94a3b8; /* slate 400 dashed line */
+  margin-bottom: 8px;
+}
+
+.secretaria-signature-label {
+  font-size: 12px;
+  color: #475569; /* slate 600 */
+  font-weight: 600;
+  text-align: center;
+}
+
+.secretaria-signature-dni {
+  font-size: 11px;
+  color: #64748b; /* slate 500 */
+  margin-top: 4px;
+  text-align: center;
 }
 

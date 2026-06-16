@@ -172,7 +172,9 @@ export function adaptarInscripcion(apiInscripcion) {
     plantillaValidada: Boolean(apiInscripcion.plantilla_validada ?? apiInscripcion.plantillaValidada),
     derivadoCaja: Boolean(apiInscripcion.derivado_caja ?? apiInscripcion.derivadoCaja),
     estadoCaja: apiInscripcion.estado_caja || apiInscripcion.estadoCaja || "",
-    periodo: apiInscripcion.periodo || ""
+    periodo: apiInscripcion.periodo || "",
+    duracionAvisoDias: apiInscripcion.duracion_aviso_dias || apiInscripcion.duracionAvisoDias || "",
+    horaLimiteAviso: apiInscripcion.hora_limite_aviso || apiInscripcion.horaLimiteAviso || "23:59"
   };
 }
 

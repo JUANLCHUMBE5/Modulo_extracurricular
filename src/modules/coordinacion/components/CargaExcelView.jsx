@@ -13,11 +13,25 @@ import {
   IconDownload as Download,
 } from "@tabler/icons-react";
 import { apiDb } from "../../../services/dbApi";
+import { listarInvitados } from "../services/coordinacionService";
+import { convertirWordOriginalAPdf } from "../../secretaria/utils/secretariaDocumentoPdf";
 import { generarComunicadoWordBlob } from "../../secretaria/utils/secretariaDocumentoWord";
-import JSZip from "jszip";
+import { PDFDocument } from "pdf-lib";
 import { toast } from "sonner";
 import SummaryBox from "./SummaryBox";
 import { textoEstadoCarga } from "../utils/coordinacionFormatters";
+
+async function combinarBlobsPdf(blobs) {
+  const pdfCombinado = await PDFDocument.create();
+  for (const blob of blobs) {
+    const arrayBuffer = await blob.arrayBuffer();
+    const pdf = await PDFDocument.load(arrayBuffer);
+    const paginasCopiadas = await pdfCombinado.copyPages(pdf, pdf.getPageIndices());
+    paginasCopiadas.forEach((pagina) => pdfCombinado.addPage(pagina));
+  }
+  const bytesPdf = await pdfCombinado.save();
+  return new Blob([bytesPdf], { type: "application/pdf" });
+}
 
 function obtenerResumenArchivos(archivosExcel = []) {
   if (!archivosExcel.length) return "Ningun archivo seleccionado";
@@ -111,7 +125,7 @@ function CargaExcelView({
   ultimoLoteId,
   setUltimoLoteId,
 }) {
-  const programasCarga = programasDisponibles(programas);
+  const programasCarga = useMemo(() => programasDisponibles(programas), [programas]);
 
   const [paginaActual, setPaginaActual] = useState(1);
   const [descargandoCargaId, setDescargandoCargaId] = useState("");
@@ -126,17 +140,16 @@ function CargaExcelView({
         return;
       }
 
-      const zip = new JSZip();
-      let archivosAgregados = 0;
+      const resultados = new Array(registros.length).fill(null);
       const programasSinPlantilla = new Set();
 
-      for (const reg of registros) {
+      const procesarRegistro = async (reg, index) => {
         const programa = programas.find((p) => p.id === reg.programaId);
-        if (!programa) continue;
+        if (!programa) return;
 
         if (!programa.plantillaBase64) {
           programasSinPlantilla.add(programa.nombre);
-          continue;
+          return;
         }
 
         const dbEstudiante = apiDb.estudiantes?.[reg.dni];
@@ -174,6 +187,7 @@ function CargaExcelView({
           requiereIndumentaria: programa.requiereIndumentaria || false,
           cicloI: programa.cicloI || "",
           cicloII: programa.cicloII || "",
+          horariosPorGrupo: programa.horariosPorGrupo || [],
         };
 
         try {
@@ -183,21 +197,28 @@ function CargaExcelView({
             omitirMarcaAguaVista: true,
           });
 
-          const fechaActualStr = new Date().toLocaleDateString("es-PE").replace(/\//g, "-");
-          const nombreArchivo = `${reg.nombres.toUpperCase()} - ${String(reg.grado || "GRADO").toUpperCase()} - ${String(programa.nombre || "TALLER").toUpperCase()} - ${fechaActualStr}.docx`;
-          zip.file(nombreArchivo, wordBlob);
-          archivosAgregados++;
+          const pdfBlob = await convertirWordOriginalAPdf(wordBlob);
+          resultados[index] = pdfBlob;
         } catch (err) {
           console.error(`Error generando ficha para ${reg.nombres}:`, err);
         }
+      };
+
+      const batchSize = 5;
+      for (let i = 0; i < registros.length; i += batchSize) {
+        const lote = registros.slice(i, i + batchSize);
+        await Promise.all(lote.map((reg, offset) => procesarRegistro(reg, i + offset)));
       }
+
+      const pdfBlobs = resultados.filter(Boolean);
+      const archivosAgregados = pdfBlobs.length;
 
       if (archivosAgregados === 0) {
         if (programasSinPlantilla.size > 0) {
           alert(
             `No se pudo generar ninguna ficha porque los siguientes programas no tienen plantilla Word asignada:\n\n${Array.from(
               programasSinPlantilla
-            ).join("\n")}\n\nPor favor, suba una plantilla en la sección "Plantillas / Documentos" primero.`
+            ).join("\n")}\n\nPor favor, suba una plantilla en la sección "Importar Formato Taller" primero.`
           );
         } else {
           alert("No se encontraron registros válidos o plantillas para generar.");
@@ -206,15 +227,15 @@ function CargaExcelView({
         return;
       }
 
-      const zipBlob = await zip.generateAsync({ type: "blob" });
-      const nombreZip = `FICHAS - ${carga.archivoNombre || "CARGA"} - ${new Date()
+      const pdfCombinadoBlob = await combinarBlobsPdf(pdfBlobs);
+      const nombrePdf = `FICHAS - ${carga.archivoNombre || "CARGA"} - ${new Date()
         .toLocaleDateString("es-PE")
-        .replace(/\//g, "-")}.zip`;
+        .replace(/\//g, "-")}.pdf`;
 
-      const url = URL.createObjectURL(zipBlob);
+      const url = URL.createObjectURL(pdfCombinadoBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = nombreZip;
+      link.download = nombrePdf;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -222,7 +243,7 @@ function CargaExcelView({
 
       if (programasSinPlantilla.size > 0) {
         alert(
-          `Se descargaron ${archivosAgregados} fichas. Sin embargo, no se generaron fichas para los siguientes programas por falta de plantilla:\n\n${Array.from(
+          `Se descargaron ${archivosAgregados} fichas en un único PDF. Sin embargo, no se generaron fichas para los siguientes programas por falta de plantilla:\n\n${Array.from(
             programasSinPlantilla
           ).join("\n")}`
         );
@@ -237,18 +258,62 @@ function CargaExcelView({
 
   const [seleccionExportarId, setSeleccionExportarId] = useState("all");
   const [exportando, setExportando] = useState(false);
+  const [invitadosMap, setInvitadosMap] = useState({});
+  const [cargandoInvitados, setCargandoInvitados] = useState(false);
+
+  useEffect(() => {
+    if (modoCargaAlumnos !== "exportar") return;
+
+    let active = true;
+    const cargarInvitadosExportar = async () => {
+      setCargandoInvitados(true);
+      try {
+        const map = {};
+        if (seleccionExportarId === "all") {
+          await Promise.all(
+            programasCarga.map(async (prog) => {
+              const list = await listarInvitados(prog.id);
+              if (active) {
+                map[prog.id] = list;
+              }
+            })
+          );
+        } else {
+          const list = await listarInvitados(seleccionExportarId);
+          if (active) {
+            map[seleccionExportarId] = list;
+          }
+        }
+        if (active) {
+          setInvitadosMap(map);
+        }
+      } catch (error) {
+        console.error("Error al cargar invitados para exportar:", error);
+      } finally {
+        if (active) {
+          setCargandoInvitados(false);
+        }
+      }
+    };
+
+    cargarInvitadosExportar();
+
+    return () => {
+      active = false;
+    };
+  }, [seleccionExportarId, programasCarga, modoCargaAlumnos, historialCargas]);
 
   const cantidadAlumnosExportar = useMemo(() => {
     let count = 0;
     if (seleccionExportarId === "all") {
       programasCarga.forEach((prog) => {
-        count += (apiDb.invitadosPorPrograma?.[prog.id] || []).length;
+        count += (invitadosMap[prog.id] || []).length;
       });
     } else {
-      count = (apiDb.invitadosPorPrograma?.[seleccionExportarId] || []).length;
+      count = (invitadosMap[seleccionExportarId] || []).length;
     }
     return count;
-  }, [seleccionExportarId, programasCarga, programas, historialCargas]);
+  }, [seleccionExportarId, programasCarga, invitadosMap]);
 
   const descargarFichasExportarTab = async () => {
     setExportando(true);
@@ -257,7 +322,7 @@ function CargaExcelView({
       
       if (seleccionExportarId === "all") {
         programasCarga.forEach((prog) => {
-          const invitadosProg = apiDb.invitadosPorPrograma?.[prog.id] || [];
+          const invitadosProg = invitadosMap[prog.id] || [];
           invitadosProg.forEach((inv) => {
             registros.push({
               dni: inv.dni,
@@ -271,7 +336,7 @@ function CargaExcelView({
       } else {
         const prog = programasCarga.find((p) => p.id === seleccionExportarId);
         if (prog) {
-          const invitadosProg = apiDb.invitadosPorPrograma?.[prog.id] || [];
+          const invitadosProg = invitadosMap[prog.id] || [];
           invitadosProg.forEach((inv) => {
             registros.push({
               dni: inv.dni,
@@ -290,17 +355,16 @@ function CargaExcelView({
         return;
       }
 
-      const zip = new JSZip();
-      let archivosAgregados = 0;
+      const resultados = new Array(registros.length).fill(null);
       const programasSinPlantilla = new Set();
 
-      for (const reg of registros) {
+      const procesarRegistro = async (reg, index) => {
         const programa = programas.find((p) => p.id === reg.programaId);
-        if (!programa) continue;
+        if (!programa) return;
 
         if (!programa.plantillaBase64) {
           programasSinPlantilla.add(programa.nombre);
-          continue;
+          return;
         }
 
         const dbEstudiante = apiDb.estudiantes?.[reg.dni];
@@ -325,7 +389,6 @@ function CargaExcelView({
           horario: programa.horario || "",
           docente: programa.docente || "",
           costo: programa.costo || 0,
-          modalidadCobro: programa.modalidadCobro || "",
           fechaInicio: programa.fechaInicio || "",
           fechaFin: programa.fechaFin || "",
           fechaRegistro: new Date().toISOString(),
@@ -334,11 +397,14 @@ function CargaExcelView({
           correo: dbEstudiante?.correoApoderado || "",
           plantilla: programa.plantilla || "",
           plantillaBase64: programa.plantillaBase64 || "",
-          requiereUniforme: programa.requiereUniforme || false,
-          requiereIndumentaria: programa.requiereIndumentaria || false,
           cicloI: programa.cicloI || "",
           cicloII: programa.cicloII || "",
+          horariosPorGrupo: programa.horariosPorGrupo || [],
         };
+        // Fix mockInscripcion simple properties mapping from programa
+        mockInscripcion.modalidadCobro = programa.modalidadCobro || "";
+        mockInscripcion.requiereUniforme = programa.requiereUniforme || false;
+        mockInscripcion.requiereIndumentaria = programa.requiereIndumentaria || false;
 
         try {
           const wordBlob = await generarComunicadoWordBlob({
@@ -347,21 +413,28 @@ function CargaExcelView({
             omitirMarcaAguaVista: true,
           });
 
-          const fechaActualStr = new Date().toLocaleDateString("es-PE").replace(/\//g, "-");
-          const nombreArchivo = `${reg.nombres.toUpperCase()} - ${String(reg.grado || "GRADO").toUpperCase()} - ${String(programa.nombre || "TALLER").toUpperCase()} - ${fechaActualStr}.docx`;
-          zip.file(nombreArchivo, wordBlob);
-          archivosAgregados++;
+          const pdfBlob = await convertirWordOriginalAPdf(wordBlob);
+          resultados[index] = pdfBlob;
         } catch (err) {
           console.error(`Error generando ficha para ${reg.nombres}:`, err);
         }
+      };
+
+      const batchSize = 5;
+      for (let i = 0; i < registros.length; i += batchSize) {
+        const lote = registros.slice(i, i + batchSize);
+        await Promise.all(lote.map((reg, offset) => procesarRegistro(reg, i + offset)));
       }
+
+      const pdfBlobs = resultados.filter(Boolean);
+      const archivosAgregados = pdfBlobs.length;
 
       if (archivosAgregados === 0) {
         if (programasSinPlantilla.size > 0) {
           alert(
             `No se pudo generar ninguna ficha porque los siguientes programas no tienen plantilla Word asignada:\n\n${Array.from(
               programasSinPlantilla
-            ).join("\n")}\n\nPor favor, suba una plantilla en la sección "Plantillas / Documentos" primero.`
+            ).join("\n")}\n\nPor favor, suba una plantilla en la sección "Importar Formato Taller" primero.`
           );
         } else {
           alert("No se encontraron registros válidos o plantillas para generar.");
@@ -370,16 +443,16 @@ function CargaExcelView({
         return;
       }
 
-      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const pdfCombinadoBlob = await combinarBlobsPdf(pdfBlobs);
       const nombreTallerStr = seleccionExportarId === "all" ? "TODOS-LOS-TALLERES" : (programasCarga.find((p) => p.id === seleccionExportarId)?.nombre || "TALLER");
-      const nombreZip = `FICHAS - ${nombreTallerStr.toUpperCase()} - ${new Date()
+      const nombrePdf = `FICHAS - ${nombreTallerStr.toUpperCase()} - ${new Date()
         .toLocaleDateString("es-PE")
-        .replace(/\//g, "-")}.zip`;
+        .replace(/\//g, "-")}.pdf`;
 
-      const url = URL.createObjectURL(zipBlob);
+      const url = URL.createObjectURL(pdfCombinadoBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = nombreZip;
+      link.download = nombrePdf;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -387,7 +460,7 @@ function CargaExcelView({
 
       if (programasSinPlantilla.size > 0) {
         alert(
-          `Se descargaron ${archivosAgregados} fichas. Sin embargo, no se generaron fichas para los siguientes programas por falta de plantilla:\n\n${Array.from(
+          `Se descargaron ${archivosAgregados} fichas en un único PDF. Sin embargo, no se generaron fichas para los siguientes programas por falta de plantilla:\n\n${Array.from(
             programasSinPlantilla
           ).join("\n")}`
         );
@@ -430,7 +503,7 @@ function CargaExcelView({
       <header className="coord-topbar">
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           {toggleSidebarButton}
-          <h1>CARGAR INVITADOS</h1>
+          <h1>IMPORTAR/EXPORTAR EXCEL Y PDF</h1>
         </div>
       </header>
       <section className="coord-workspace coord-workspace-single coord-workspace-upload">
@@ -561,7 +634,7 @@ function CargaExcelView({
 
               <div style={{ marginTop: "16px", marginBottom: "20px" }}>
                 <p style={{ fontSize: "14px", color: "#4b5563" }}>
-                  Se generarán <b>{cantidadAlumnosExportar}</b> fichas/comunicados en total para los alumnos cargados en esta selección.
+                  Se generarán <b>{cargandoInvitados ? "..." : cantidadAlumnosExportar}</b> fichas/comunicados en total para los alumnos cargados en esta selección.
                 </p>
                 <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
                   * Nota: Las fichas se rellenarán automáticamente con los nombres y grados de los alumnos. El campo del apoderado quedará en blanco si el estudiante no tiene un apoderado previamente registrado en el sistema.
@@ -573,11 +646,11 @@ function CargaExcelView({
                   className="coord-primary-button" 
                   type="button" 
                   onClick={descargarFichasExportarTab} 
-                  disabled={exportando || cantidadAlumnosExportar === 0}
+                  disabled={exportando || cargandoInvitados || cantidadAlumnosExportar === 0}
                   style={{ backgroundColor: "#2b8a3e", borderColor: "#2b8a3e" }}
                 >
                   {exportando ? <Loader2 className="coord-spin" size={17} /> : <Download size={17} />}
-                  <span>{exportando ? "Generando ZIP..." : "Exportar Fichas (.zip)"}</span>
+                  <span>{exportando ? "Generando PDF..." : "Exportar PDF Único"}</span>
                 </button>
               </div>
             </div>
@@ -693,7 +766,7 @@ function CargaExcelView({
                     ) : (
                       <Download size={14} />
                     )}
-                    <span>Descargar Fichas (.zip)</span>
+                    <span>Descargar PDF Único</span>
                   </button>
                 )}
               </div>
@@ -816,7 +889,7 @@ function CargaExcelView({
                                  ) : (
                                    <Download size={14} />
                                  )}
-                                 <span>{descargandoCargaId === carga.id ? "Generando..." : "Descargar Fichas"}</span>
+                                 <span>{descargandoCargaId === carga.id ? "Generando PDF..." : "Descargar PDF Único"}</span>
                                </button>
                                <button
                                  className="coord-danger-button coord-upload-history-delete"

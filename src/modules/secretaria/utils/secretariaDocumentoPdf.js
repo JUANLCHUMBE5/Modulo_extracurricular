@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import { renderAsync } from "docx-preview";
 import {
+  cleanFallbackText,
   escaparHtml,
   normalizarNombreArchivo,
 } from "./secretariaFichaData";
@@ -70,29 +71,59 @@ export function crearPdfInvitacionDocumento(documento) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const margen = 18;
   const anchoTexto = 174;
-  let y = 20;
+  let y = 16;
+
+  // top brand accent bar
+  doc.setFillColor(30, 58, 138); // brand primary dark blue #1E3A8A
+  doc.rect(margen, y, anchoTexto, 2.5, "F");
+  y += 9;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
+  doc.setTextColor(15, 23, 42); // slate 900
   doc.text("COLEGIO MATEMATICO SAN RAFAEL", 105, y, { align: "center" });
-  y += 7;
-  doc.setFontSize(11);
+  y += 6;
+  doc.setFontSize(10.5);
+  doc.setTextColor(71, 85, 105); // slate 600
   doc.text(documento.titulo || "Ficha de invitación", 105, y, { align: "center" });
   y += 6;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139); // slate 500
   doc.text(`Carabayllo, ${ficha.fecha || ""}`, 105, y, { align: "center" });
-  y += 5;
-  doc.text(`Código de inscripcion: ${ficha.codigo || ""}`, 105, y, { align: "center" });
-  y += 9;
+  y += 4.5;
+  doc.text(`Código de inscripción: ${ficha.codigo || ""}`, 105, y, { align: "center" });
+  y += 6;
+  doc.setDrawColor(203, 213, 225); // slate 300
+  doc.setLineWidth(0.3);
   doc.line(margen, y, 210 - margen, y);
-  y += 9;
+  y += 8;
 
   (documento.lineas || []).forEach((linea) => {
     y = agregarParrafoPdf(doc, linea, margen, y, anchoTexto);
   });
 
-  y = agregarBloquePdf(doc, "Resumen de invitación", documento.resumen || [], margen, y, anchoTexto);
+  y = agregarBloquePdf(doc, "", documento.resumen || [], margen, y, anchoTexto);
+
+  // Add signature block at the bottom
+  if (y + 35 > 275) {
+    doc.addPage();
+    y = 20;
+  } else {
+    y += 12;
+  }
+
+  doc.setDrawColor(148, 163, 184); // slate 400
+  doc.setLineWidth(0.4);
+  const xFirma = 105 - 35; // centered line of 70mm
+  doc.line(xFirma, y + 15, xFirma + 70, y + 15);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(71, 85, 105); // slate 600
+  doc.text("Firma del Padre / Apoderado", 105, y + 20, { align: "center" });
+  doc.text("DNI: _______________________", 105, y + 25, { align: "center" });
+
   return doc;
 }
 
@@ -271,6 +302,25 @@ export function imprimirHtmlRenderizado(html) {
 }
 
 export function crearHtmlImpresionFicha(ficha) {
+  const filasPrograma = [
+    ["Programa / taller", ficha.programa.nombre],
+    ["Horario", ficha.programa.horario],
+    ["Responsable", ficha.programa.responsable],
+    ...obtenerFilasCambridgeFicha(ficha),
+    ["Costo referencial", ficha.programa.costo],
+    ["Modalidad de cobro", ficha.programa.modalidadCobro],
+    ["Requisitos", ficha.programa.requisitos],
+    ["Plantilla utilizada", ficha.programa.plantilla],
+  ];
+
+  if (ficha.programa.uniforme === "Sí" || ficha.programa.uniforme === "Si") {
+    filasPrograma.push(["Uniforme requerido", "Sí"]);
+    filasPrograma.push(["Talla", ficha.programa.talla]);
+  }
+
+  filasPrograma.push(["Estado", ficha.programa.estado]);
+  filasPrograma.push(["Estado de pago", ficha.programa.estadoPago]);
+
   const bloques = [
     ["Datos del estudiante", [
       ["Nombre y apellido", ficha.estudiante.nombre],
@@ -280,20 +330,7 @@ export function crearHtmlImpresionFicha(ficha) {
       ["Periodo", ficha.estudiante.periodo],
       ["Colegio de procedencia", ficha.estudiante.colegio],
     ]],
-	    ["Datos del programa", [
-	      ["Programa / taller", ficha.programa.nombre],
-	      ["Horario", ficha.programa.horario],
-	      ["Responsable", ficha.programa.responsable],
-	      ...obtenerFilasCambridgeFicha(ficha),
-	      ["Costo referencial", ficha.programa.costo],
-	      ["Modalidad de cobro", ficha.programa.modalidadCobro],
-      ["Requisitos", ficha.programa.requisitos],
-      ["Plantilla utilizada", ficha.programa.plantilla],
-      ["Uniforme requerido", ficha.programa.uniforme],
-      ["Talla", ficha.programa.talla],
-      ["Estado", ficha.programa.estado],
-      ["Estado de pago", ficha.programa.estadoPago],
-    ]],
+    ["Datos del programa", filasPrograma],
     ["Datos del padre / apoderado", [
       ["Nombre del padre o apoderado", ficha.apoderado.nombre],
       ["Teléfono", ficha.apoderado.telefono],
@@ -301,9 +338,22 @@ export function crearHtmlImpresionFicha(ficha) {
   ];
 
   const bloquesHtml = bloques.map(([titulo, items]) => `
-    <section>
-      <h4>${escaparHtml(titulo)}</h4>
-      ${items.map(([label, value]) => `<p><strong>${escaparHtml(label)}:</strong> ${escaparHtml(value)}</p>`).join("")}
+    <section style="margin-bottom: 20px;">
+      <h4 style="margin: 0 0 8px; font-size: 13px; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">${escaparHtml(titulo)}</h4>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 12px;">
+        <tbody>
+          ${items.map(([label, value]) => {
+            const cleanVal = cleanFallbackText(value) || "-";
+            const cleanLab = cleanFallbackText(label) || "-";
+            return `
+              <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="width: 30%; padding: 6px 8px; font-weight: bold; background-color: #f8fafc; color: #334155; border: 1px solid #e2e8f0;">${escaparHtml(cleanLab)}</td>
+                <td style="width: 70%; padding: 6px 8px; color: #0f172a; border: 1px solid #e2e8f0;">${escaparHtml(cleanVal)}</td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
     </section>
   `).join("");
 
@@ -360,25 +410,35 @@ export function descargarFichaPdf(ficha) {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const margen = 18;
   const anchoTexto = 174;
-  let y = 20;
+  let y = 16;
+
+  // top brand accent bar
+  doc.setFillColor(30, 58, 138); // brand primary dark blue #1E3A8A
+  doc.rect(margen, y, anchoTexto, 2.5, "F");
+  y += 9;
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
+  doc.setTextColor(15, 23, 42); // slate 900
   doc.text("COLEGIO MATEMATICO SAN RAFAEL", 105, y, { align: "center" });
-  y += 7;
-  doc.setFontSize(11);
-  doc.text("Ficha de aceptacion del programa extracurricular", 105, y, { align: "center" });
+  y += 6;
+  doc.setFontSize(10.5);
+  doc.setTextColor(71, 85, 105); // slate 600
+  doc.text("Ficha de aceptación del programa extracurricular", 105, y, { align: "center" });
   y += 6;
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139); // slate 500
   doc.text(`Carabayllo, ${ficha.fecha}`, 105, y, { align: "center" });
-  y += 5;
-  doc.text(`Código de inscripcion: ${ficha.codigo}`, 105, y, { align: "center" });
-  y += 9;
+  y += 4.5;
+  doc.text(`Código de inscripción: ${ficha.codigo}`, 105, y, { align: "center" });
+  y += 6;
+  doc.setDrawColor(203, 213, 225); // slate 300
+  doc.setLineWidth(0.3);
   doc.line(margen, y, 210 - margen, y);
-  y += 9;
+  y += 8;
 
-  y = agregarParrafoPdf(doc, "Por medio de la presente, se deja constancia de que el padre o apoderado acepta la inscripcion del estudiante en el programa indicado, de acuerdo con las condiciones establecidas por la institución.", margen, y, anchoTexto);
+  y = agregarParrafoPdf(doc, "Por medio de la presente, se deja constancia de que el padre o apoderado acepta la inscripción del estudiante en el programa indicado, de acuerdo con las condiciones establecidas por la institución.", margen, y, anchoTexto);
 
   y = agregarBloquePdf(doc, "Datos del estudiante", [
     ["Nombre y apellido", ficha.estudiante.nombre],
@@ -389,32 +449,67 @@ export function descargarFichaPdf(ficha) {
     ["Colegio de procedencia", ficha.estudiante.colegio],
   ], margen, y, anchoTexto);
 
-	  y = agregarBloquePdf(doc, "Datos del programa", [
-	    ["Programa / taller", ficha.programa.nombre],
-	    ["Horario", ficha.programa.horario],
-	    ["Responsable", ficha.programa.responsable],
-	    ...obtenerFilasCambridgeFicha(ficha),
-	    ["Costo referencial", ficha.programa.costo],
+  const filasPrograma = [
+    ["Programa / taller", ficha.programa.nombre],
+    ["Horario", ficha.programa.horario],
+    ["Responsable", ficha.programa.responsable],
+    ...obtenerFilasCambridgeFicha(ficha),
+    ["Costo referencial", ficha.programa.costo],
     ["Modalidad de cobro", ficha.programa.modalidadCobro],
     ["Requisitos", ficha.programa.requisitos],
     ["Plantilla utilizada", ficha.programa.plantilla],
-    ["Uniforme requerido", ficha.programa.uniforme],
-    ["Talla", ficha.programa.talla],
-    ["Estado", ficha.programa.estado],
-    ["Estado de pago", ficha.programa.estadoPago],
-  ], margen, y, anchoTexto);
+  ];
+
+  if (ficha.programa.uniforme === "Sí" || ficha.programa.uniforme === "Si") {
+    filasPrograma.push(["Uniforme requerido", "Sí"]);
+    filasPrograma.push(["Talla", ficha.programa.talla]);
+  }
+
+  filasPrograma.push(["Estado", ficha.programa.estado]);
+  filasPrograma.push(["Estado de pago", ficha.programa.estadoPago]);
+
+  y = agregarBloquePdf(doc, "Datos del programa", filasPrograma, margen, y, anchoTexto);
 
   y = agregarBloquePdf(doc, "Datos del padre / apoderado", [
     ["Nombre del padre o apoderado", ficha.apoderado.nombre],
     ["Teléfono", ficha.apoderado.telefono],
   ], margen, y, anchoTexto);
 
+
+
+  // Check signature block overflow
+  if (y + 35 > 275) {
+    doc.addPage();
+    y = 20;
+  }
+
   doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(30, 41, 59); // slate 800
   doc.text("Aceptación", margen, y);
-  y += 6;
+  y += 5;
+
+  y = agregarParrafoPdf(doc, "El padre o apoderado declara haber leído y aceptado las condiciones del programa. Esta ficha será presentada en Cajera para continuar con el proceso de pago.", margen, y, anchoTexto);
+  y = agregarParrafoPdf(doc, `Observación: ${ficha.observacion}`, margen, y, anchoTexto);
+
+  // Add parent signature block at the bottom
+  if (y + 35 > 275) {
+    doc.addPage();
+    y = 20;
+  } else {
+    y += 10;
+  }
+
+  doc.setDrawColor(148, 163, 184); // slate 400
+  doc.setLineWidth(0.4);
+  const xFirmaAccept = 105 - 35; // centered line of 70mm
+  doc.line(xFirmaAccept, y + 15, xFirmaAccept + 70, y + 15);
+
   doc.setFont("helvetica", "normal");
-  y = agregarParrafoPdf(doc, "El padre o apoderado declara haber leído y aceptado las condiciones del programa. Esta ficha sera presentada en Cajera para continuar con el proceso de pago.", margen, y, anchoTexto);
-  agregarParrafoPdf(doc, `Observación: ${ficha.observacion}`, margen, y, anchoTexto);
+  doc.setFontSize(8.5);
+  doc.setTextColor(71, 85, 105); // slate 600
+  doc.text("Firma del Padre / Apoderado", 105, y + 20, { align: "center" });
+  doc.text("DNI: _______________________", 105, y + 25, { align: "center" });
 
   doc.save(`ficha-aceptacion-${normalizarNombreArchivo(ficha.codigo)}.pdf`);
 }
@@ -553,25 +648,98 @@ function obtenerEstilosParaImpresion() {
 }
 
 function agregarBloquePdf(doc, titulo, items, x, y, anchoTexto) {
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.text(titulo, x, y + 4);
-  y += 10;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
+  if (!items || !items.length) return y;
+
+  if (titulo) {
+    // Check page overflow for block header
+    if (y + 15 > 275) {
+      doc.addPage();
+      y = 20;
+    }
+
+    // Modern Left-Vertical brand accent bar
+    doc.setFillColor(30, 58, 138); // brand primary dark blue #1E3A8A
+    doc.rect(x, y, 2.5, 6, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.setTextColor(15, 23, 42); // slate 900
+    doc.text(titulo.toUpperCase(), x + 5, y + 4.5);
+
+    // Thin underline under header
+    doc.setDrawColor(203, 213, 225); // slate 300
+    doc.setLineWidth(0.35);
+    doc.line(x, y + 6.5, x + anchoTexto, y + 6.5);
+    y += 9.5;
+  } else {
+    // If no title, add a small spacing before the list/table
+    y += 2;
+  }
 
   items.forEach(([label, value]) => {
-    const lineas = doc.splitTextToSize(`${label}: ${value}`, anchoTexto);
-    doc.text(lineas, x, y);
-    y += lineas.length * 5;
+    const cleanVal = cleanFallbackText(value) || "-";
+    const cleanLab = cleanFallbackText(label) || "-";
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.5);
+
+    const lineasValue = doc.splitTextToSize(String(cleanVal), 120);
+    const lineasLabel = doc.splitTextToSize(String(cleanLab), 46);
+    const numLineas = Math.max(lineasValue.length, lineasLabel.length);
+    const altoFila = numLineas * 5 + 2;
+
+    if (y + altoFila > 275) {
+      doc.addPage();
+      y = 20;
+
+      // Draw continuation header with vertical accent bar
+      doc.setFillColor(30, 58, 138);
+      doc.rect(x, y, 2.5, 5, "F");
+      
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(15, 23, 42);
+      doc.text(`${titulo.toUpperCase()} (CONTINUACIÓN)`, x + 5, y + 3.8);
+      
+      doc.setDrawColor(203, 213, 225);
+      doc.setLineWidth(0.3);
+      doc.line(x, y + 5.5, x + anchoTexto, y + 5.5);
+      y += 7.5;
+    }
+
+    // Draw row cell divider (horizontal bottom line only)
+    doc.setDrawColor(226, 232, 240); // slate 200
+    doc.setLineWidth(0.2);
+    doc.line(x, y + altoFila, x + anchoTexto, y + altoFila);
+
+    // Write label
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(71, 85, 105); // slate 600 (slightly softer gray)
+    doc.setFontSize(8.5);
+    doc.text(lineasLabel, x + 2, y + 4);
+
+    // Write value
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(15, 23, 42); // slate 900
+    doc.setFontSize(8.5);
+    doc.text(lineasValue, x + 52, y + 4);
+
+    y += altoFila;
   });
 
-  return y + 4;
+  return y + 5;
 }
 
 function agregarParrafoPdf(doc, texto, x, y, anchoTexto) {
-  doc.setFontSize(10);
-  const lineas = doc.splitTextToSize(texto, anchoTexto);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(51, 65, 85); // slate 700
+  const lineas = doc.splitTextToSize(String(texto), anchoTexto);
+  const alto = lineas.length * 5 + 4;
+  if (y + alto > 275) {
+    doc.addPage();
+    y = 20;
+  }
   doc.text(lineas, x, y);
-  return y + lineas.length * 5 + 5;
+  return y + alto;
 }

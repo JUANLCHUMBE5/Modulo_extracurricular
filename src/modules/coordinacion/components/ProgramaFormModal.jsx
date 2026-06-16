@@ -115,6 +115,13 @@ function ProgramaFormModal({
   const [formTab, setFormTab] = useState("general"); // general, horarios, cobros
   const usaFormularioPorBloques = true;
   const esMaratonForm = String(form.categoria || "").toLowerCase() === "maraton" || String(form.categoria || "").toLowerCase() === "maratón";
+  const [conComunicadoManual, setConComunicadoManual] = useState(false);
+
+  useEffect(() => {
+    if (show) {
+      setConComunicadoManual(Boolean(form.comunicado || form.comunicadoCompleto));
+    }
+  }, [show, form.comunicado, form.comunicadoCompleto]);
 
   if (!show) return null;
 
@@ -759,7 +766,7 @@ function ProgramaFormModal({
                   </select>
                 </div>
                 {!esFormularioVerano ? (
-                  <div className="coord-field coord-field-full">
+                  <div className="coord-field coord-payment-invite-field">
                     <label className="coord-check-label coord-check-label-stacked">
                       <span>
                         <input
@@ -772,40 +779,9 @@ function ProgramaFormModal({
                         />
                         Invitación masiva en Padres
                       </span>
-                      <small>El curso aparecerá en el portal de padres sin cargar Excel de invitados, según el alcance seleccionado.</small>
                     </label>
-                    {form.invitacionMasiva ? (
-                      <div className="coord-summer-payment-note coord-field-full">
-                        <Photo size={16} />
-                        <span>
-                          {obtenerEtiquetaAlcance(form.alcanceInvitacionMasiva)}
-                          {form.anuncioImagenNombre ? ` · Imagen: ${form.anuncioImagenNombre}` : " · Sin imagen"}
-                        </span>
-                        <button
-                          type="button"
-                          className="coord-secondary-button"
-                          onClick={() => setMostrarInvitacionModal(true)}
-                        >
-                          Configurar invitación
-                        </button>
-                      </div>
-                    ) : null}
-                    {mostrarInvitacionModal && form.invitacionMasiva ? (
-                      <ProgramaInvitacionMasivaModal
-                        actualizarForm={actualizarForm}
-                        form={form}
-                        quitarImagenAnuncio={quitarImagenAnuncio}
-                        seleccionarImagenAnuncio={seleccionarImagenAnuncio}
-                        setMostrarInvitacionModal={setMostrarInvitacionModal}
-                      />
-                    ) : null}
                   </div>
-                ) : (
-                  <div className="coord-summer-payment-note coord-field-full">
-                    <CheckCircle2 size={16} />
-                    <span>Asistente verá este programa como opción de ciclo verano y registrará el tipo de alumno al momento de la inscripción.</span>
-                  </div>
-                )}
+                ) : null}
                 {mostrarIndumentariaDeportiva ? (
                   <div className="coord-field coord-field-full">
                     <label className="coord-check-label coord-check-label-stacked">
@@ -822,6 +798,95 @@ function ProgramaFormModal({
                   </div>
                 ) : null}
               </div>
+
+              {!esFormularioVerano && form.invitacionMasiva ? (
+                <div className="coord-summer-payment-note coord-field-full" style={{ marginTop: "12px" }}>
+                  <Photo size={16} />
+                  <span>
+                    {obtenerEtiquetaAlcance(form.alcanceInvitacionMasiva)}
+                    {form.anuncioImagenNombre ? ` · Imagen: ${form.anuncioImagenNombre}` : " · Sin imagen"}
+                  </span>
+                  <button
+                    type="button"
+                    className="coord-secondary-button"
+                    onClick={() => setMostrarInvitacionModal(true)}
+                  >
+                    Configurar invitación
+                  </button>
+                </div>
+              ) : null}
+
+              {esFormularioVerano ? (
+                <div className="coord-summer-payment-note coord-field-full" style={{ marginTop: "12px" }}>
+                  <CheckCircle2 size={16} />
+                  <span>Asistente verá este programa como opción de ciclo verano y registrará el tipo de alumno al momento de la inscripción.</span>
+                </div>
+              ) : null}
+
+              {!esFormularioVerano && mostrarInvitacionModal && form.invitacionMasiva ? (
+                <ProgramaInvitacionMasivaModal
+                  actualizarForm={actualizarForm}
+                  form={form}
+                  quitarImagenAnuncio={quitarImagenAnuncio}
+                  seleccionarImagenAnuncio={seleccionarImagenAnuncio}
+                  setMostrarInvitacionModal={setMostrarInvitacionModal}
+                />
+              ) : null}
+            </section>
+
+            <section className="coord-form-section" style={{ paddingBottom: conComunicadoManual ? "16px" : "10px" }}>
+              <div className="coord-section-heading" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", marginBottom: conComunicadoManual ? "12px" : "0" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <BookOpen size={18} />
+                  <div>
+                    <h3 style={{ margin: 0 }}>Descripción o Comunicado para Padres</h3>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className={`coord-toggle-switch-btn ${conComunicadoManual ? "is-active" : ""}`}
+                  style={{ margin: 0 }}
+                  onClick={() => {
+                    const val = !conComunicadoManual;
+                    setConComunicadoManual(val);
+                    if (!val) {
+                      actualizarForm("comunicado", "");
+                      actualizarForm("comunicadoCompleto", "");
+                    }
+                  }}
+                >
+                  <span className="coord-toggle-switch-slider"></span>
+                  <div className="coord-toggle-switch-labels">
+                    <span className="coord-toggle-switch-label-on">Activo</span>
+                    <span className="coord-toggle-switch-label-off">Inactivo</span>
+                  </div>
+                </button>
+              </div>
+              {conComunicadoManual && (
+                <div className="coord-section-grid" style={{ marginTop: "8px" }}>
+                  <div className="coord-field coord-field-full">
+                    <label style={{ fontSize: "12.5px", fontWeight: "700", color: "#374151" }}>Texto del Comunicado / Descripción *</label>
+                    <textarea
+                      value={form.comunicado || ""}
+                      onChange={e => {
+                        actualizarForm("comunicado", e.target.value);
+                        actualizarForm("comunicadoCompleto", e.target.value);
+                      }}
+                      placeholder="Escriba aquí los detalles, indicaciones, o comunicado del programa para los padres..."
+                      rows={4}
+                      style={{
+                        width: "100%",
+                        padding: "8px 12px",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "6px",
+                        fontFamily: "inherit",
+                        fontSize: "14px",
+                        resize: "vertical"
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </section>
 
             {!usaTalleresPorEdad && (!formHorariosPorGrupo || formHorariosPorGrupo.length === 0) ? (

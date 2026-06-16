@@ -124,7 +124,7 @@ export function tieneHorariosPorGrupoApi(programa) {
   return Array.isArray(programa?.horariosPorGrupo) && programa.horariosPorGrupo.length > 0;
 }
 
-function descomponerGradoApi(valor) {
+export function descomponerGradoApi(valor) {
   const texto = normalizarTextoApi(valor).replace(":", " ");
   const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
   const numero = texto.match(/\d+/)?.[0] || "";
@@ -144,11 +144,47 @@ export function obtenerGradoCompletoApi(grado, nivel, respaldoGrado = "") {
   return g;
 }
 
-function coincideGradoApi(gradoGrupo, gradoAlumnoNormalizado) {
+export function coincideGradoApi(gradoGrupo, gradoAlumnoNormalizado) {
   const grupo = descomponerGradoApi(gradoGrupo);
   if (!grupo.numero || !gradoAlumnoNormalizado?.numero) return false;
   if (grupo.numero !== gradoAlumnoNormalizado.numero) return false;
   return !grupo.nivel || grupo.nivel === gradoAlumnoNormalizado.nivel;
+}
+
+export function programaDisponibleParaAlcanceMasivoApi(programa, gradoAlumno = "") {
+  const alcance = normalizarTextoApi(programa?.alcanceInvitacionMasiva || "colegio");
+  if (!alcance || alcance === "colegio" || alcance === "todos") return true;
+
+  const gradoNormalizado = descomponerGradoApi(gradoAlumno);
+  if (!gradoNormalizado.nivel) return false;
+
+  if (alcance === "primaria" || alcance === "secundaria" || alcance === "inicial") {
+    return gradoNormalizado.nivel === alcance;
+  }
+
+  if (alcance === "grados" || alcance === "seleccionados") {
+    const gradosAplicables = Array.isArray(programa?.gradosAplicables) ? programa.gradosAplicables : [];
+    if (!gradosAplicables.length || !gradoNormalizado.numero) return false;
+    return gradosAplicables.some((grado) => coincideGradoApi(grado, gradoNormalizado));
+  }
+
+  return true;
+}
+
+export function programaDisponibleParaGradoApi(programa, gradoAlumno = "") {
+  if (programa?.invitacionMasiva) return programaDisponibleParaAlcanceMasivoApi(programa, gradoAlumno);
+
+  if (tieneHorariosPorGrupoApi(programa)) {
+    return Boolean(resolverHorarioPorGradoApi(programa, gradoAlumno));
+  }
+
+  const gradosAplicables = Array.isArray(programa?.gradosAplicables) ? programa.gradosAplicables : [];
+  if (!gradosAplicables.length) return true;
+
+  const gradoNormalizado = descomponerGradoApi(gradoAlumno);
+  if (!gradoNormalizado.numero) return false;
+
+  return gradosAplicables.some((grado) => coincideGradoApi(grado, gradoNormalizado));
 }
 
 function formatearGradoApi(valor) {
@@ -413,6 +449,7 @@ export function mapDbProgramToApi(p, db = null) {
     periodo: p.periodo || "escolar",
     modalidad_cobro: p.modalidadCobro || "Mensual",
     duracion_aviso_dias: p.duracionAvisoDias || 7,
+    hora_limite_aviso: p.horaLimiteAviso || "23:59",
     requiere_uniforme: p.requiereUniforme,
     requiere_indumentaria: p.requiereIndumentaria,
     anuncio_imagen: p.anuncioImagen || "",
@@ -467,6 +504,8 @@ export function mapDbEnrollmentToApi(item, db = null) {
     detalle_costo: item.detalleCosto || programa.detalleCosto || "",
     detalle_almuerzo: item.detalleAlmuerzo || programa.detalleAlmuerzo || "",
     concesionarios: item.concesionarios || programa.concesionarios || "",
+    duracion_aviso_dias: item.duracionAvisoDias || programa.duracionAvisoDias || 7,
+    hora_limite_aviso: item.horaLimiteAviso || programa.horaLimiteAviso || "23:59",
     plantilla: plantilla.plantilla,
     plantilla_base64: plantilla.plantillaBase64,
     plantilla_variables: plantilla.plantillaVariables,

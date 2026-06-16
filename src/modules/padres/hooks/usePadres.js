@@ -173,13 +173,18 @@ function usePadres(user) {
     () => programasCoordinacion
       .map((item) => prepararProgramaParaGrado(item, estudiante?.grado))
       .filter((item) => item.id !== (programa?.programaId || programa?.id))
-      .filter((item) => item.registrable && item.disponibleParaGrado)
+      .filter((item) => {
+        const tieneInvitacion = Array.isArray(resumen?.invitaciones) && resumen.invitaciones.some(
+          (inv) => (inv.programaId === item.id || inv.id === item.id)
+        );
+        return (item.registrable || tieneInvitacion) && item.disponibleParaGrado;
+      })
       .map((item) => ({
         ...item,
         registrado: programasYaRegistrados.has(item.id),
         inscripcionRegistrada: inscripcionesPorPrograma.get(item.id) || null,
       })),
-    [programa?.programaId, programa?.id, programasCoordinacion, programasYaRegistrados, inscripcionesPorPrograma, estudiante?.grado]
+    [programa?.programaId, programa?.id, programasCoordinacion, programasYaRegistrados, inscripcionesPorPrograma, estudiante?.grado, resumen?.invitaciones]
   );
 
   const programaIdAnteriorRef = useRef(programa?.programaId || programa?.id || null);

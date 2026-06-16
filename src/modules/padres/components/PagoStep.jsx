@@ -144,7 +144,7 @@ export default function PagoStep({
     reservaConfirmada
   );
 
-  const mostrarExito = esPagado || reservaConfirmada;
+  const mostrarExito = esPagado || reservaConfirmada || (pagoVerificando && !reintentandoPago);
 
   useEffect(() => {
     if (!mostrarExito) return;
@@ -290,6 +290,70 @@ export default function PagoStep({
                 }}
               >
                 {reservaConfirmada ? `Volver al Panel Principal (${segundos}s)` : "Volver al Panel Principal"}
+              </button>
+            </div>
+          </section>
+        </div>
+      </article>
+    );
+  }
+
+  if (pagoVerificando && !reintentandoPago) {
+    return (
+      <article className="padres-flow-panel padres-flow-payment-step">
+        <div className="padres-flow-section-title">
+          <div>
+            <PortalBadge tone="blue">Pago en proceso</PortalBadge>
+            <h2>Pago en verificación</h2>
+            <p>
+              Tu pago ha sido registrado y se encuentra en proceso de validación.
+            </p>
+          </div>
+        </div>
+
+        <div className="padres-flow-payment-layout" style={{ display: "block" }}>
+          <section className="padres-flow-pay-success" style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            padding: "24px",
+            border: "1px solid #bfdbfe",
+            borderRadius: "8px",
+            background: "#eff6ff",
+            color: "#1e40af",
+            flexDirection: "column",
+            textAlign: "center"
+          }}>
+            <ClockHour4 size={40} style={{ color: "#2563eb" }} />
+            <div style={{ marginTop: "8px" }}>
+              <strong style={{ fontSize: "17px", display: "block", fontWeight: 800 }}>¡Comprobante enviado a verificación!</strong>
+              <span style={{ fontSize: "14px", display: "block", color: "#1e3a8a", marginTop: "6px", lineHeight: "1.5" }}>
+                El comprobante de pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido recibido correctamente. 
+                <br />
+                <br />
+                El área de Cajera validará la transacción a la brevedad. Una vez aprobada, tu estado cambiará a <b>Inscrito</b>.
+              </span>
+            </div>
+            <div style={{ marginTop: "24px" }}>
+              <button
+                type="button"
+                className="padres-flow-primary-button"
+                onClick={onFinalizarPago}
+                style={{
+                  padding: "10px 24px",
+                  background: "#2563eb",
+                  color: "#ffffff",
+                  border: "none",
+                  fontWeight: "bold",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  borderRadius: "6px",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                }}
+              >
+                Volver al Panel Principal ({segundos}s)
               </button>
             </div>
           </section>

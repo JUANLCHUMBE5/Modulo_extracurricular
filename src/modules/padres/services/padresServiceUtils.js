@@ -163,7 +163,36 @@ export function esProgramaCortoPadres(programa = {}) {
 }
 
 export function obtenerProgramaPrincipalPadres(programas = []) {
-  return programas.find((item) => !esProgramaCortoPadres(item)) || programas[0] || null;
+  if (!Array.isArray(programas) || programas.length === 0) return null;
+
+  const lista = [...programas];
+
+  const tieneWord = (item) => Boolean(item.plantilla || item.creadoDesdeDocumento || item.plantillaValidada);
+
+  const esActivo = (item) => {
+    if (item.ventanaInscripcion) {
+      return item.ventanaInscripcion.permitida !== false;
+    }
+    return true;
+  };
+
+  lista.sort((a, b) => {
+    const wordA = tieneWord(a);
+    const wordB = tieneWord(b);
+    const activoA = esActivo(a);
+    const activoB = esActivo(b);
+
+    const score = (hasWord, isActive) => {
+      if (hasWord && isActive) return 3;
+      if (!hasWord && isActive) return 2;
+      if (hasWord && !isActive) return 1;
+      return 0;
+    };
+
+    return score(wordB, activoB) - score(wordA, activoA);
+  });
+
+  return lista[0] || null;
 }
 
 function crearFechaLocal(valor) {

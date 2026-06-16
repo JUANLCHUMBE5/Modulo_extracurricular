@@ -67,8 +67,8 @@ import "./Coordinacion.css";
 
 const vistasNav = [
   { id: "programas", label: "Gestion de Programas", icon: BookOpen, permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"] },
-  { id: "carga", label: "Carga Excel", icon: Upload, permissions: ["grupos.crear", "grupos.editar"] },
-  { id: "documentos", label: "Plantillas / Documentos", icon: FileText, permissions: ["programas.crear", "programas.editar"] },
+  { id: "carga", label: "Importar/Exportar Excel y PDF", icon: Upload, permissions: ["grupos.crear", "grupos.editar"] },
+  { id: "documentos", label: "Importar Formato Taller", icon: FileText, permissions: ["programas.crear", "programas.editar"] },
   { id: "asistencias", label: "Asistencia y Control", icon: UserCheck, permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"] },
 ];
 
@@ -537,6 +537,23 @@ function Coordinacion({
     let gradosFinales = [];
     if (usaTalleresPorEdad) {
       gradosFinales = obtenerGradosDeportivos(talleres);
+    } else if (gruposHorario.length > 0) {
+      gradosFinales = obtenerGradosFinales(form.gradosAplicables, gruposHorario);
+    } else if (form.invitacionMasiva && form.alcanceInvitacionMasiva && ["inicial", "primaria", "secundaria", "colegio", "todos"].includes(form.alcanceInvitacionMasiva.toLowerCase())) {
+      const alcanceLower = form.alcanceInvitacionMasiva.toLowerCase();
+      if (alcanceLower === "inicial") {
+        gradosFinales = ["Inicial:3 años", "Inicial:4 años", "Inicial:5 años"];
+      } else if (alcanceLower === "primaria") {
+        gradosFinales = ["Primaria:1", "Primaria:2", "Primaria:3", "Primaria:4", "Primaria:5", "Primaria:6"];
+      } else if (alcanceLower === "secundaria") {
+        gradosFinales = ["Secundaria:1", "Secundaria:2", "Secundaria:3", "Secundaria:4", "Secundaria:5"];
+      } else if (alcanceLower === "colegio" || alcanceLower === "todos") {
+        gradosFinales = [
+          "Inicial:3 años", "Inicial:4 años", "Inicial:5 años",
+          "Primaria:1", "Primaria:2", "Primaria:3", "Primaria:4", "Primaria:5", "Primaria:6",
+          "Secundaria:1", "Secundaria:2", "Secundaria:3", "Secundaria:4", "Secundaria:5"
+        ];
+      }
     } else if (esMaratonGuardar) {
       gradosFinales = normalizarListaGrados(form.gradosAplicables);
     } else {

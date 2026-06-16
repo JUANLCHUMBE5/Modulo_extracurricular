@@ -10,6 +10,7 @@ import {
   escaparRegExp,
   escaparXml,
   normalizarNombreArchivo,
+  procesarTextoComunicado,
 } from "./secretariaFichaData";
 
 export async function crearDocumentoInvitacion(estudiante, inscripcion) {
@@ -32,7 +33,16 @@ export async function crearDocumentoInvitacion(estudiante, inscripcion) {
   }
 
   if (!lineas.length) {
-    lineas = crearLineasInvitacionDefault(ficha);
+    const textoBruto = inscripcion.comunicado || inscripcion.comunicadoCompleto;
+    if (textoBruto) {
+      const textoProcesado = procesarTextoComunicado(textoBruto, estudiante, inscripcion);
+      lineas = textoProcesado
+        .split(/\n\s*\n/)
+        .map((p) => p.replace(/\n/g, " ").trim())
+        .filter(Boolean);
+    } else {
+      lineas = crearLineasInvitacionDefault(ficha);
+    }
   }
 
   return {
@@ -112,12 +122,15 @@ async function extraerPlantillaPersonalizada({ estudiante, inscripcion }) {
 }
 
 function crearLineasInvitacionDefault(ficha) {
+  const tieneUniforme = ficha.programa.uniforme === "Sí" || ficha.programa.uniforme === "Si";
+  const lineaUniforme = tieneUniforme ? `. Uniforme requerido: Sí (Talla: ${ficha.programa.talla})` : "";
+
   return [
     `Estimado(a) apoderado(a) ${ficha.apoderado.nombre}:`,
     `Por medio de la presente, el Colegio Matemático San Rafael invita al estudiante ${ficha.estudiante.nombre}, del grado ${ficha.estudiante.grado} sección ${ficha.estudiante.seccion}, a participar en el programa extracurricular ${ficha.programa.nombre}.`,
     `El programa se desarrollará en el horario ${ficha.programa.horario}, bajo la responsabilidad de ${ficha.programa.responsable}.`,
     `El costo registrado es ${ficha.programa.costo}, con modalidad de cobro ${ficha.programa.modalidadCobro}.`,
-    `Requisitos: ${ficha.programa.requisitos}. Uniforme requerido: ${ficha.programa.uniforme}.`,
+    `Requisitos: ${ficha.programa.requisitos}${lineaUniforme}.`,
     `Telefono de contacto del apoderado: ${ficha.apoderado.telefono}.`,
     `La inscripción queda registrada como ${ficha.programa.estado} y el pago queda ${ficha.programa.estadoPago}.`,
     ficha.observacion !== "Sin observación" ? `Observación: ${ficha.observacion}.` : "",

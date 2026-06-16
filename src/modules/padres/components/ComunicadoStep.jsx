@@ -172,10 +172,12 @@ export default function ComunicadoStep({
   const continuarDeshabilitado = (tieneOpciones && !horarioSeleccionado) || faltanTallas;
 
   const esDeportivo = String(programa.categoria || "").toLowerCase() === "deportivo";
+  const tieneComunicadoTexto = Boolean(programa.comunicado || programa.comunicadoCompleto);
+  const mostrarCarta = !esDeportivo || tieneComunicadoTexto;
 
   return (
     <article className="padres-flow-panel padres-flow-step-panel">
-      {esDeportivo ? (
+      {!mostrarCarta ? (
         <div className="padres-flow-section-title">
           <div>
             <PortalBadge tone="orange">Datos de inscripción</PortalBadge>
@@ -197,7 +199,7 @@ export default function ComunicadoStep({
         </div>
       )}
 
-      {!esDeportivo ? (
+      {mostrarCarta ? (
         <>
           <div className="padres-flow-letter">
             {comunicadoPadres.fecha ? <p>{comunicadoPadres.fecha}</p> : null}
@@ -453,7 +455,7 @@ export default function ComunicadoStep({
       ) : null}
 
 
-      {!esDeportivo ? (
+      {mostrarCarta ? (
         <div className={`padres-flow-read-card${infoProgramaAceptada ? " is-accepted" : ""}`}>
           <div>
             <strong>{infoProgramaAceptada ? "Comunicado aceptado" : "Lectura requerida"}</strong>
@@ -474,7 +476,7 @@ export default function ComunicadoStep({
         <button
           className="padres-flow-primary-button"
           type="button"
-          disabled={(esDeportivo ? false : !infoProgramaAceptada) || continuarDeshabilitado}
+          disabled={(mostrarCarta ? !infoProgramaAceptada : false) || continuarDeshabilitado}
           onClick={() => setPasoActivo(2)}
         >
           Continuar a datos
