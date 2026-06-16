@@ -227,6 +227,7 @@ function Coordinacion({
   const [programaCargaId, setProgramaCargaId] = useState("");
   const [guardandoIndividual, setGuardandoIndividual] = useState(false);
   const [estadoAlumnoIndividual, setEstadoAlumnoIndividual] = useState({ buscando: false, mensaje: "", encontrado: false });
+  const [ultimoLoteId, setUltimoLoteId] = useState("");
 
   function actualizarAlumnoIndividual(campo, valor) {
     if (campo === "dni") {
@@ -291,7 +292,7 @@ function Coordinacion({
 
     setGuardandoIndividual(true);
     try {
-      await registrarAlumnoIndividualCarga({
+      const resultado = await registrarAlumnoIndividualCarga({
         periodo: cargaPeriodo,
         programaId: programaCargaId,
         dni: alumnoIndividual.dni,
@@ -301,6 +302,11 @@ function Coordinacion({
       await cargarDatos();
       setAlumnoIndividual({ dni: "", nombre: "", grado: "" });
       setEstadoAlumnoIndividual({ buscando: false, mensaje: "", encontrado: false });
+      if (resultado && resultado.cargaId) {
+        setUltimoLoteId(resultado.cargaId);
+      } else if (resultado && resultado.cargaIds && resultado.cargaIds.length > 0) {
+        setUltimoLoteId(resultado.cargaIds[0]);
+      }
       mostrarMsg("Alumno registrado individualmente con éxito.", "success");
     } catch (err) {
       mostrarMsg(err.message || "Error al registrar el alumno.");
@@ -1533,12 +1539,17 @@ function Coordinacion({
 
     setConfirmandoCarga(true);
     try {
-      await confirmarCargaAlumnos(previewCarga);
+      const resultado = await confirmarCargaAlumnos(previewCarga);
       await cargarDatos();
       setPreviewCarga(null);
       setProgresoCarga(null);
       setArchivosExcel([]);
       setArchivoInputKey((actual) => actual + 1);
+      if (resultado && resultado.cargaId) {
+        setUltimoLoteId(resultado.cargaId);
+      } else if (resultado && resultado.cargaIds && resultado.cargaIds.length > 0) {
+        setUltimoLoteId(resultado.cargaIds[0]);
+      }
       mostrarMsg("Carga confirmada correctamente.", "success");
     } catch (err) {
       mostrarMsg(err.message);
@@ -1689,6 +1700,8 @@ function Coordinacion({
             setProgramaCargaId={setProgramaCargaId}
             programas={programas}
             toggleSidebarButton={toggleSidebarButton}
+            ultimoLoteId={ultimoLoteId}
+            setUltimoLoteId={setUltimoLoteId}
           />
         )}
 

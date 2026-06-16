@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Alert as MantineAlert } from "@mantine/core";
 import {
   IconAlertCircle as AlertCircle,
@@ -10,7 +10,12 @@ import {
   IconTrash as Trash,
   IconUserPlus as UserPlus,
   IconX as X,
+  IconDownload as Download,
 } from "@tabler/icons-react";
+import { apiDb } from "../../../services/dbApi";
+import { generarComunicadoWordBlob } from "../../secretaria/utils/secretariaDocumentoWord";
+import JSZip from "jszip";
+import { toast } from "sonner";
 import SummaryBox from "./SummaryBox";
 import { textoEstadoCarga } from "../utils/coordinacionFormatters";
 
@@ -62,7 +67,7 @@ function normalizarTexto(valor = "") {
 
 function esCategoriaAcademica(programa = {}) {
   const categoria = normalizarTexto(programa.categoria);
-  return categoria.includes("academ");
+  return categoria.includes("academ") || categoria.includes("ingles") || categoria.includes("ingl");
 }
 
 function programasDisponibles(programas = []) {
@@ -103,10 +108,297 @@ function CargaExcelView({
   setProgresoCarga,
   tipoMsg,
   toggleSidebarButton,
+  ultimoLoteId,
+  setUltimoLoteId,
 }) {
   const programasCarga = programasDisponibles(programas);
 
   const [paginaActual, setPaginaActual] = useState(1);
+  const [descargandoCargaId, setDescargandoCargaId] = useState("");
+
+  const descargarFichasLote = async (carga) => {
+    setDescargandoCargaId(carga.id);
+    try {
+      const registros = carga.registros || [];
+      if (!registros.length) {
+        toast.error("La carga no tiene alumnos registrados.");
+        setDescargandoCargaId("");
+        return;
+      }
+
+      const zip = new JSZip();
+      let archivosAgregados = 0;
+      const programasSinPlantilla = new Set();
+
+      for (const reg of registros) {
+        const programa = programas.find((p) => p.id === reg.programaId);
+        if (!programa) continue;
+
+        if (!programa.plantillaBase64) {
+          programasSinPlantilla.add(programa.nombre);
+          continue;
+        }
+
+        const dbEstudiante = apiDb.estudiantes?.[reg.dni];
+        const mockEstudiante = {
+          dni: reg.dni,
+          nombres: reg.nombres,
+          grado: reg.grado || "",
+          seccion: reg.seccion || "",
+          apoderado: dbEstudiante?.apoderado || "",
+          telefonoApoderado: dbEstudiante?.telefonoApoderado || "",
+          correoApoderado: dbEstudiante?.correoApoderado || "",
+        };
+
+        const mockInscripcion = {
+          id: `INS-INV-${reg.dni}-${reg.programaId}`,
+          dniEstudiante: reg.dni,
+          nombresEstudiante: reg.nombres,
+          gradoEstudiante: reg.grado || "",
+          seccion: reg.seccion || "",
+          programaId: reg.programaId,
+          programa: programa.nombre,
+          horario: programa.horario || "",
+          docente: programa.docente || "",
+          costo: programa.costo || 0,
+          modalidadCobro: programa.modalidadCobro || "",
+          fechaInicio: programa.fechaInicio || "",
+          fechaFin: programa.fechaFin || "",
+          fechaRegistro: new Date().toISOString(),
+          apoderado: dbEstudiante?.apoderado || "",
+          telefono: dbEstudiante?.telefonoApoderado || "",
+          correo: dbEstudiante?.correoApoderado || "",
+          plantilla: programa.plantilla || "",
+          plantillaBase64: programa.plantillaBase64 || "",
+          requiereUniforme: programa.requiereUniforme || false,
+          requiereIndumentaria: programa.requiereIndumentaria || false,
+          cicloI: programa.cicloI || "",
+          cicloII: programa.cicloII || "",
+        };
+
+        try {
+          const wordBlob = await generarComunicadoWordBlob({
+            estudiante: mockEstudiante,
+            inscripcion: mockInscripcion,
+            omitirMarcaAguaVista: true,
+          });
+
+          const fechaActualStr = new Date().toLocaleDateString("es-PE").replace(/\//g, "-");
+          const nombreArchivo = `${reg.nombres.toUpperCase()} - ${String(reg.grado || "GRADO").toUpperCase()} - ${String(programa.nombre || "TALLER").toUpperCase()} - ${fechaActualStr}.docx`;
+          zip.file(nombreArchivo, wordBlob);
+          archivosAgregados++;
+        } catch (err) {
+          console.error(`Error generando ficha para ${reg.nombres}:`, err);
+        }
+      }
+
+      if (archivosAgregados === 0) {
+        if (programasSinPlantilla.size > 0) {
+          alert(
+            `No se pudo generar ninguna ficha porque los siguientes programas no tienen plantilla Word asignada:\n\n${Array.from(
+              programasSinPlantilla
+            ).join("\n")}\n\nPor favor, suba una plantilla en la sección "Plantillas / Documentos" primero.`
+          );
+        } else {
+          alert("No se encontraron registros válidos o plantillas para generar.");
+        }
+        setDescargandoCargaId("");
+        return;
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const nombreZip = `FICHAS - ${carga.archivoNombre || "CARGA"} - ${new Date()
+        .toLocaleDateString("es-PE")
+        .replace(/\//g, "-")}.zip`;
+
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = nombreZip;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      if (programasSinPlantilla.size > 0) {
+        alert(
+          `Se descargaron ${archivosAgregados} fichas. Sin embargo, no se generaron fichas para los siguientes programas por falta de plantilla:\n\n${Array.from(
+            programasSinPlantilla
+          ).join("\n")}`
+        );
+      }
+    } catch (error) {
+      console.error("Error al descargar fichas en lote:", error);
+      alert("Ocurrió un error al generar las fichas en lote.");
+    } finally {
+      setDescargandoCargaId("");
+    }
+  };
+
+  const [seleccionExportarId, setSeleccionExportarId] = useState("all");
+  const [exportando, setExportando] = useState(false);
+
+  const cantidadAlumnosExportar = useMemo(() => {
+    let count = 0;
+    if (seleccionExportarId === "all") {
+      programasCarga.forEach((prog) => {
+        count += (apiDb.invitadosPorPrograma?.[prog.id] || []).length;
+      });
+    } else {
+      count = (apiDb.invitadosPorPrograma?.[seleccionExportarId] || []).length;
+    }
+    return count;
+  }, [seleccionExportarId, programasCarga, programas, historialCargas]);
+
+  const descargarFichasExportarTab = async () => {
+    setExportando(true);
+    try {
+      let registros = [];
+      
+      if (seleccionExportarId === "all") {
+        programasCarga.forEach((prog) => {
+          const invitadosProg = apiDb.invitadosPorPrograma?.[prog.id] || [];
+          invitadosProg.forEach((inv) => {
+            registros.push({
+              dni: inv.dni,
+              nombres: inv.nombres,
+              grado: inv.grado,
+              seccion: inv.seccion || "",
+              programaId: prog.id,
+            });
+          });
+        });
+      } else {
+        const prog = programasCarga.find((p) => p.id === seleccionExportarId);
+        if (prog) {
+          const invitadosProg = apiDb.invitadosPorPrograma?.[prog.id] || [];
+          invitadosProg.forEach((inv) => {
+            registros.push({
+              dni: inv.dni,
+              nombres: inv.nombres,
+              grado: inv.grado,
+              seccion: inv.seccion || "",
+              programaId: prog.id,
+            });
+          });
+        }
+      }
+
+      if (!registros.length) {
+        alert("No se encontraron alumnos registrados para exportar en el taller seleccionado.");
+        setExportando(false);
+        return;
+      }
+
+      const zip = new JSZip();
+      let archivosAgregados = 0;
+      const programasSinPlantilla = new Set();
+
+      for (const reg of registros) {
+        const programa = programas.find((p) => p.id === reg.programaId);
+        if (!programa) continue;
+
+        if (!programa.plantillaBase64) {
+          programasSinPlantilla.add(programa.nombre);
+          continue;
+        }
+
+        const dbEstudiante = apiDb.estudiantes?.[reg.dni];
+        const mockEstudiante = {
+          dni: reg.dni,
+          nombres: reg.nombres,
+          grado: reg.grado || "",
+          seccion: reg.seccion || "",
+          apoderado: dbEstudiante?.apoderado || "",
+          telefonoApoderado: dbEstudiante?.telefonoApoderado || "",
+          correoApoderado: dbEstudiante?.correoApoderado || "",
+        };
+
+        const mockInscripcion = {
+          id: `INS-INV-${reg.dni}-${reg.programaId}`,
+          dniEstudiante: reg.dni,
+          nombresEstudiante: reg.nombres,
+          gradoEstudiante: reg.grado || "",
+          seccion: reg.seccion || "",
+          programaId: reg.programaId,
+          programa: programa.nombre,
+          horario: programa.horario || "",
+          docente: programa.docente || "",
+          costo: programa.costo || 0,
+          modalidadCobro: programa.modalidadCobro || "",
+          fechaInicio: programa.fechaInicio || "",
+          fechaFin: programa.fechaFin || "",
+          fechaRegistro: new Date().toISOString(),
+          apoderado: dbEstudiante?.apoderado || "",
+          telefono: dbEstudiante?.telefonoApoderado || "",
+          correo: dbEstudiante?.correoApoderado || "",
+          plantilla: programa.plantilla || "",
+          plantillaBase64: programa.plantillaBase64 || "",
+          requiereUniforme: programa.requiereUniforme || false,
+          requiereIndumentaria: programa.requiereIndumentaria || false,
+          cicloI: programa.cicloI || "",
+          cicloII: programa.cicloII || "",
+        };
+
+        try {
+          const wordBlob = await generarComunicadoWordBlob({
+            estudiante: mockEstudiante,
+            inscripcion: mockInscripcion,
+            omitirMarcaAguaVista: true,
+          });
+
+          const fechaActualStr = new Date().toLocaleDateString("es-PE").replace(/\//g, "-");
+          const nombreArchivo = `${reg.nombres.toUpperCase()} - ${String(reg.grado || "GRADO").toUpperCase()} - ${String(programa.nombre || "TALLER").toUpperCase()} - ${fechaActualStr}.docx`;
+          zip.file(nombreArchivo, wordBlob);
+          archivosAgregados++;
+        } catch (err) {
+          console.error(`Error generando ficha para ${reg.nombres}:`, err);
+        }
+      }
+
+      if (archivosAgregados === 0) {
+        if (programasSinPlantilla.size > 0) {
+          alert(
+            `No se pudo generar ninguna ficha porque los siguientes programas no tienen plantilla Word asignada:\n\n${Array.from(
+              programasSinPlantilla
+            ).join("\n")}\n\nPor favor, suba una plantilla en la sección "Plantillas / Documentos" primero.`
+          );
+        } else {
+          alert("No se encontraron registros válidos o plantillas para generar.");
+        }
+        setExportando(false);
+        return;
+      }
+
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      const nombreTallerStr = seleccionExportarId === "all" ? "TODOS-LOS-TALLERES" : (programasCarga.find((p) => p.id === seleccionExportarId)?.nombre || "TALLER");
+      const nombreZip = `FICHAS - ${nombreTallerStr.toUpperCase()} - ${new Date()
+        .toLocaleDateString("es-PE")
+        .replace(/\//g, "-")}.zip`;
+
+      const url = URL.createObjectURL(zipBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = nombreZip;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      if (programasSinPlantilla.size > 0) {
+        alert(
+          `Se descargaron ${archivosAgregados} fichas. Sin embargo, no se generaron fichas para los siguientes programas por falta de plantilla:\n\n${Array.from(
+            programasSinPlantilla
+          ).join("\n")}`
+        );
+      }
+    } catch (error) {
+      console.error("Error al descargar fichas en lote:", error);
+      alert("Ocurrió un error al generar las fichas en lote.");
+    } finally {
+      setExportando(false);
+    }
+  };
 
   const historialFiltrado = historialCargas.filter((carga) => {
     const esIndividual =
@@ -167,6 +459,19 @@ function CargaExcelView({
             >
               <UserPlus size={16} />
               Registro individual
+            </button>
+            <button
+              type="button"
+              className={modoCargaAlumnos === "exportar" ? "is-active" : ""}
+              onClick={() => {
+                setModoCargaAlumnos("exportar");
+                setPreviewCarga(null);
+                setProgresoCarga(null);
+                setMensaje("");
+              }}
+            >
+              <Download size={16} />
+              Exportar forma masiva
             </button>
           </div>
 
@@ -236,6 +541,46 @@ function CargaExcelView({
               </p>
             ) : null}
           </div>
+          ) : modoCargaAlumnos === "exportar" ? (
+            <div className="coord-form coord-massive-clean-form">
+              <div className="coord-field coord-massive-clean-program">
+                <label htmlFor="coord-exportar-programa">Taller / Programa a exportar</label>
+                <select
+                  id="coord-exportar-programa"
+                  value={seleccionExportarId}
+                  onChange={(event) => setSeleccionExportarId(event.target.value)}
+                >
+                  <option value="all">Todos los talleres académicos</option>
+                  {programasCarga.map((programa) => (
+                    <option key={programa.id} value={programa.id}>
+                      {programa.id} - {programa.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginTop: "16px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "14px", color: "#4b5563" }}>
+                  Se generarán <b>{cantidadAlumnosExportar}</b> fichas/comunicados en total para los alumnos cargados en esta selección.
+                </p>
+                <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                  * Nota: Las fichas se rellenarán automáticamente con los nombres y grados de los alumnos. El campo del apoderado quedará en blanco si el estudiante no tiene un apoderado previamente registrado en el sistema.
+                </p>
+              </div>
+
+              <div className="coord-massive-clean-actions">
+                <button 
+                  className="coord-primary-button" 
+                  type="button" 
+                  onClick={descargarFichasExportarTab} 
+                  disabled={exportando || cantidadAlumnosExportar === 0}
+                  style={{ backgroundColor: "#2b8a3e", borderColor: "#2b8a3e" }}
+                >
+                  {exportando ? <Loader2 className="coord-spin" size={17} /> : <Download size={17} />}
+                  <span>{exportando ? "Generando ZIP..." : "Exportar Fichas (.zip)"}</span>
+                </button>
+              </div>
+            </div>
           ) : (
           <div className="coord-form coord-massive-clean-form">
             <div className="coord-field coord-massive-clean-program">
@@ -317,7 +662,41 @@ function CargaExcelView({
               radius="md"
               icon={tipoMsg === "success" ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
             >
-              {mensaje}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexWrap: "wrap", gap: "12px" }}>
+                <span>{mensaje}</span>
+                {tipoMsg === "success" && ultimoLoteId && (
+                  <button
+                    type="button"
+                    className="coord-primary-button"
+                    style={{ 
+                      padding: "4px 12px", 
+                      fontSize: "13px", 
+                      height: "auto", 
+                      backgroundColor: "#2b8a3e", 
+                      borderColor: "#2b8a3e",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px"
+                    }}
+                    onClick={() => {
+                      const carga = historialCargas.find((c) => c.id === ultimoLoteId);
+                      if (carga) {
+                        descargarFichasLote(carga);
+                      } else {
+                        toast.error("No se encontró la carga actual en el historial.");
+                      }
+                    }}
+                    disabled={descargandoCargaId === ultimoLoteId}
+                  >
+                    {descargandoCargaId === ultimoLoteId ? (
+                      <Loader2 className="coord-spin" size={14} />
+                    ) : (
+                      <Download size={14} />
+                    )}
+                    <span>Descargar Fichas (.zip)</span>
+                  </button>
+                )}
+              </div>
             </MantineAlert>
           )}
 
@@ -380,89 +759,122 @@ function CargaExcelView({
             </div>
           ) : null}
 
-          <div className="coord-upload-history">
-            <div className="coord-upload-history-header">
-              <div>
-                <h2>Historial de cargas</h2>
-                <p>Desde aquí puede borrar una carga confirmada si sus alumnos aún no tienen inscripción activa.</p>
-              </div>
-            </div>
-
-            {historialFiltrado.length ? (
-              <>
-                <div className="coord-table-wrap">
-                  <table className="coord-table">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Archivo</th>
-                        <th>Grado</th>
-                        <th>Taller</th>
-                        <th>Nivel</th>
-                        <th>Importados</th>
-                        <th>Errores</th>
-                        <th>Acción</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {historialPaginado.map((carga) => (
-                        <tr key={carga.id}>
-                          <td>{formatearFechaCarga(carga.fecha)}</td>
-                          <td>{Array.isArray(carga.archivos) && carga.archivos.length ? carga.archivos.join(", ") : carga.archivoNombre || carga.id}</td>
-                          <td>{resumirCampoCarga(carga, (item) => item.grado)}</td>
-                          <td>{resumirProgramasCarga(carga)}</td>
-                          <td>{resumirCampoCarga(carga, (item) => item.nivelEducativo || obtenerNivelDesdeGrado(item.grado))}</td>
-                          <td>{carga.resumen?.importados ?? carga.resumen?.validos ?? carga.registros?.length ?? 0}</td>
-                          <td>{carga.resumen?.errores ?? 0}</td>
-                          <td>
-                            <button
-                              className="coord-danger-button coord-upload-history-delete"
-                              type="button"
-                              onClick={() => eliminarCargaExcel(carga)}
-                              disabled={eliminandoCargaId === carga.id}
-                            >
-                              {eliminandoCargaId === carga.id ? <Loader2 className="coord-spin" size={15} /> : <Trash size={15} />}
-                              <span>{eliminandoCargaId === carga.id ? "Borrando" : "Borrar"}</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+          {modoCargaAlumnos !== "exportar" && (
+            <div className="coord-upload-history">
+              <div className="coord-upload-history-header">
+                <div>
+                  <h2>Historial de cargas</h2>
+                  <p>Desde aquí puede borrar una carga confirmada si sus alumnos aún no tienen inscripción activa.</p>
                 </div>
-                {totalPaginas > 1 && (
-                  <div className="coord-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", marginTop: "20px" }}>
-                    <button
-                      type="button"
-                      className="coord-secondary-button"
-                      style={{ minWidth: "100px", padding: "6px 12px" }}
-                      onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
-                      disabled={paginaActual === 1}
-                    >
-                      Anterior
-                    </button>
-                    <span style={{ fontSize: "14px", fontWeight: "500", color: "#4b5563" }}>
-                      Página {paginaActual} de {totalPaginas}
-                    </span>
-                    <button
-                      type="button"
-                      className="coord-secondary-button"
-                      style={{ minWidth: "100px", padding: "6px 12px" }}
-                      onClick={() => setPaginaActual((prev) => Math.min(prev + 1, totalPaginas))}
-                      disabled={paginaActual === totalPaginas}
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="coord-empty coord-upload-history-empty">
-                <ListCheck size={18} />
-                <p>Aún no hay cargas confirmadas para mostrar.</p>
               </div>
-            )}
-          </div>
+
+              {historialFiltrado.length ? (
+                <>
+                  <div className="coord-table-wrap">
+                    <table className="coord-table">
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Archivo</th>
+                          <th>Grado</th>
+                          <th>Taller</th>
+                          <th>Nivel</th>
+                          <th>Importados</th>
+                          <th>Errores</th>
+                          <th>Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {historialPaginado.map((carga) => (
+                          <tr key={carga.id}>
+                            <td>{formatearFechaCarga(carga.fecha)}</td>
+                            <td>{Array.isArray(carga.archivos) && carga.archivos.length ? carga.archivos.join(", ") : carga.archivoNombre || carga.id}</td>
+                            <td>{resumirCampoCarga(carga, (item) => item.grado)}</td>
+                            <td>{resumirProgramasCarga(carga)}</td>
+                            <td>{resumirCampoCarga(carga, (item) => item.nivelEducativo || obtenerNivelDesdeGrado(item.grado))}</td>
+                            <td>{carga.resumen?.importados ?? carga.resumen?.validos ?? carga.registros?.length ?? 0}</td>
+                            <td>{carga.resumen?.errores ?? 0}</td>
+                             <td style={{ display: "flex", gap: "8px", justifyContent: "flex-start", alignItems: "center" }}>
+                               <button
+                                 className="coord-primary-button coord-upload-history-download"
+                                 type="button"
+                                 onClick={() => descargarFichasLote(carga)}
+                                 disabled={descargandoCargaId === carga.id}
+                                 style={{ 
+                                   padding: "6px 12px", 
+                                   fontSize: "13px", 
+                                   height: "auto", 
+                                   backgroundColor: "#2b8a3e", 
+                                   borderColor: "#2b8a3e",
+                                   display: "inline-flex",
+                                   alignItems: "center",
+                                   gap: "6px"
+                                 }}
+                               >
+                                 {descargandoCargaId === carga.id ? (
+                                   <Loader2 className="coord-spin" size={14} />
+                                 ) : (
+                                   <Download size={14} />
+                                 )}
+                                 <span>{descargandoCargaId === carga.id ? "Generando..." : "Descargar Fichas"}</span>
+                               </button>
+                               <button
+                                 className="coord-danger-button coord-upload-history-delete"
+                                 type="button"
+                                 onClick={() => eliminarCargaExcel(carga)}
+                                 disabled={eliminandoCargaId === carga.id}
+                                 style={{ 
+                                   padding: "6px 12px", 
+                                   fontSize: "13px", 
+                                   height: "auto",
+                                   display: "inline-flex",
+                                   alignItems: "center",
+                                   gap: "6px"
+                                 }}
+                               >
+                                 {eliminandoCargaId === carga.id ? <Loader2 className="coord-spin" size={14} /> : <Trash size={14} />}
+                                 <span>{eliminandoCargaId === carga.id ? "Borrando" : "Borrar"}</span>
+                               </button>
+                             </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {totalPaginas > 1 && (
+                    <div className="coord-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", marginTop: "20px" }}>
+                      <button
+                        type="button"
+                        className="coord-secondary-button"
+                        style={{ minWidth: "100px", padding: "6px 12px" }}
+                        onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
+                        disabled={paginaActual === 1}
+                      >
+                        Anterior
+                      </button>
+                      <span style={{ fontSize: "14px", fontWeight: "500", color: "#4b5563" }}>
+                        Página {paginaActual} de {totalPaginas}
+                      </span>
+                      <button
+                        type="button"
+                        className="coord-secondary-button"
+                        style={{ minWidth: "100px", padding: "6px 12px" }}
+                        onClick={() => setPaginaActual((prev) => Math.min(prev + 1, totalPaginas))}
+                        disabled={paginaActual === totalPaginas}
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="coord-empty coord-upload-history-empty">
+                  <ListCheck size={18} />
+                  <p>Aún no hay cargas confirmadas para mostrar.</p>
+                </div>
+              )}
+            </div>
+          )}
         </article>
       </section>
     </>
