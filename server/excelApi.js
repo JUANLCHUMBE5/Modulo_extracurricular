@@ -654,6 +654,20 @@ app.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), asy
       plantillaBase64: req.body.plantilla_base64 || "",
       plantillaVariables: req.body.plantilla_variables || [],
       plantillaValidada: Boolean(req.body.plantilla_validada || req.body.plantilla_base64),
+      tipoComunicado: req.body.tipo_comunicado || "",
+      tipoDocumento: req.body.tipo_documento || "",
+      numeroDocumento: req.body.numero_documento || "",
+      areaTematica: req.body.area_tematica || "",
+      motivoJustificacion: req.body.motivo_justificacion || "",
+      nombreCiclo: req.body.nombre_ciclo || "",
+      duracion: req.body.duracion || "",
+      tablaHorariosNivel: req.body.tabla_horarios_nivel || [],
+      incluyeAlmuerzo: Boolean(req.body.incluye_almuerzo),
+      horarioRecepcionAlmuerzo: req.body.horario_recepcion_almuerzo || "",
+      nivelCambridge: req.body.nivel_cambridge || "",
+      modalidadesCambridge: req.body.modalidades_cambridge || [],
+      costoCiclo: req.body.costo_ciclo || "",
+      montoPrimerPago: req.body.monto_primer_pago || "",
       estado: "Habilitado"
     };
     
@@ -783,6 +797,20 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
       plantillaBase64: req.body.plantilla_base64 ?? plantillaActual.plantillaBase64,
       plantillaVariables: req.body.plantilla_variables ?? plantillaActual.plantillaVariables,
       plantillaValidada: Boolean(req.body.plantilla_validada ?? plantillaActual.plantillaValidada),
+      tipoComunicado: req.body.tipo_comunicado ?? db.programas[idx].tipoComunicado ?? "",
+      tipoDocumento: req.body.tipo_documento ?? db.programas[idx].tipoDocumento ?? "",
+      numeroDocumento: req.body.numero_documento ?? db.programas[idx].numeroDocumento ?? "",
+      areaTematica: req.body.area_tematica ?? db.programas[idx].areaTematica ?? "",
+      motivoJustificacion: req.body.motivo_justificacion ?? db.programas[idx].motivoJustificacion ?? "",
+      nombreCiclo: req.body.nombre_ciclo ?? db.programas[idx].nombreCiclo ?? "",
+      duracion: req.body.duracion ?? db.programas[idx].duracion ?? "",
+      tablaHorariosNivel: req.body.tabla_horarios_nivel ?? db.programas[idx].tablaHorariosNivel ?? [],
+      incluyeAlmuerzo: req.body.incluye_almuerzo !== undefined ? Boolean(req.body.incluye_almuerzo) : Boolean(db.programas[idx].incluyeAlmuerzo),
+      horarioRecepcionAlmuerzo: req.body.horario_recepcion_almuerzo ?? db.programas[idx].horarioRecepcionAlmuerzo ?? "",
+      nivelCambridge: req.body.nivel_cambridge ?? db.programas[idx].nivelCambridge ?? "",
+      modalidadesCambridge: req.body.modalidades_cambridge ?? db.programas[idx].modalidadesCambridge ?? [],
+      costoCiclo: req.body.costo_ciclo ?? db.programas[idx].costoCiclo ?? "",
+      montoPrimerPago: req.body.monto_primer_pago ?? db.programas[idx].montoPrimerPago ?? "",
       estado: nuevoEstado
     };
     
@@ -816,7 +844,21 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
             plantilla: updated.plantilla || "",
             plantillaBase64: updated.plantillaBase64 || "",
             plantillaVariables: updated.plantillaVariables || [],
-            plantillaValidada: updated.plantillaValidada
+            plantillaValidada: updated.plantillaValidada,
+            tipoComunicado: updated.tipoComunicado,
+            tipoDocumento: updated.tipoDocumento,
+            numeroDocumento: updated.numeroDocumento,
+            areaTematica: updated.areaTematica,
+            motivoJustificacion: updated.motivoJustificacion,
+            nombreCiclo: updated.nombreCiclo,
+            duracion: updated.duracion,
+            tablaHorariosNivel: updated.tablaHorariosNivel,
+            incluyeAlmuerzo: updated.incluyeAlmuerzo,
+            horarioRecepcionAlmuerzo: updated.horarioRecepcionAlmuerzo,
+            nivelCambridge: updated.nivelCambridge,
+            modalidadesCambridge: updated.modalidadesCambridge,
+            costoCiclo: updated.costoCiclo,
+            montoPrimerPago: updated.montoPrimerPago
           };
         }
         return item;
@@ -1691,7 +1733,20 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       estadoInscripcion: "pendiente_pago", // estado normalizado
       estadoPago: "pendiente", // estado normalizado
       origenRegistro: origen_inscripcion || "Portal padres",
-      fechaRegistro: new Date().toISOString()
+      fechaRegistro: new Date().toISOString(),
+      tipoComunicado: prog.tipoComunicado || "Otro genérico",
+      tipoDocumento: prog.tipoDocumento || "Comunicado",
+      numeroDocumento: prog.numeroDocumento || "",
+      areaTematica: prog.areaTematica || "No aplica",
+      motivoJustificacion: prog.motivoJustificacion || "",
+      nombreCiclo: prog.nombreCiclo || "Ciclo I",
+      duracion: prog.duracion || "",
+      tablaHorariosNivel: prog.tablaHorariosNivel || [],
+      incluyeAlmuerzo: Boolean(prog.incluyeAlmuerzo),
+      horarioRecepcionAlmuerzo: prog.horarioRecepcionAlmuerzo || "",
+      modalidadesCambridge: prog.modalidadesCambridge || [],
+      costoCiclo: prog.costoCiclo || "",
+      montoPrimerPago: prog.montoPrimerPago || ""
     };
     
     prog.cuposOcupados = (prog.cuposOcupados || 0) + 1;

@@ -22,7 +22,7 @@ import {
   buscarAlumnoCargaPorDni,
 } from "../services/coordinacionService";
 import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias } from "../../../services/dateService";
-import { formInicial, horarioGrupoInicial } from "../constants/coordinacionFormDefaults";
+import { formInicial, horarioGrupoInicial, TEMPLATES_POR_TIPO } from "../constants/coordinacionFormDefaults";
 import { esCostoValido, normalizarComparacion } from "../utils/coordinacionFormatters";
 import { puedeVerVista, tienePermisoAsignado } from "../utils/coordinacionPermissions";
 import {
@@ -58,6 +58,19 @@ import {
   leerPlantillaWord,
 } from "../utils/wordTemplateUtils";
 import { apiDb } from "../../../services/dbApi";
+
+export function sugerirNumeroDocumento(tipoDoc, programasList = []) {
+  const anio = new Date().getFullYear();
+  const prefix = tipoDoc === "Carta" ? "CAR" : "COM";
+  const count = (programasList || []).filter(p => {
+    const pAnio = p.fechaInicio ? new Date(p.fechaInicio).getFullYear() : anio;
+    const pTipo = p.tipoDocumento || "Comunicado";
+    return pTipo === tipoDoc && pAnio === anio;
+  }).length;
+  
+  const correlativo = String(count + 1).padStart(3, "0");
+  return `${prefix}-${correlativo}-${anio}`;
+}
 
 export default function useCoordinacion({
   delegatedContent,
@@ -102,14 +115,22 @@ export default function useCoordinacion({
   const [programaDocsId, setProgramaDocsId] = useState("");
   const [lecturaDocumento, setLecturaDocumento] = useState(null);
   const [sidebarAbierta, setSidebarAbierta] = useState(() => {
-    const saved = localStorage.getItem("coord_sidebar_expanded");
-    return saved !== null ? JSON.parse(saved) : true;
+    try {
+      const saved = localStorage.getItem("coord_sidebar_expanded");
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
   });
 
   const handleSetSidebarAbierta = (val) => {
     setSidebarAbierta((prev) => {
       const newVal = typeof val === "function" ? val(prev) : val;
-      localStorage.setItem("coord_sidebar_expanded", JSON.stringify(newVal));
+      try {
+        localStorage.setItem("coord_sidebar_expanded", JSON.stringify(newVal));
+      } catch (err) {
+        console.warn("Storage write failed:", err);
+      }
       return newVal;
     });
   };
@@ -309,7 +330,11 @@ export default function useCoordinacion({
   // ── Abrir modal crear ──
   function abrirCrear() {
     if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas.");
-    setForm(formInicial);
+    const numSugerido = sugerirNumeroDocumento("Comunicado", programas);
+    setForm({
+      ...formInicial,
+      numeroDocumento: numSugerido
+    });
     setModoEditar(false);
     setProgramaDocsId("");
     setLecturaDocumento(null);
@@ -408,6 +433,18 @@ export default function useCoordinacion({
       anuncioImagenTamano: prog.anuncioImagenTamano || 0,
       anuncioImagenComprimida: Boolean(prog.anuncioImagenComprimida),
       id: prog.id,
+      tipoComunicado: prog.tipoComunicado || "Otro genérico",
+      tipoDocumento: prog.tipoDocumento || "Comunicado",
+      numeroDocumento: prog.numeroDocumento || "",
+      areaTematica: prog.areaTematica || "No aplica",
+      nombreCiclo: prog.nombreCiclo || "Ciclo I",
+      duracionTaller: prog.duracionTaller || "",
+      tablaHorariosNivel: prog.tablaHorariosNivel || [],
+      incluyeAlmuerzo: Boolean(prog.incluyeAlmuerzo),
+      horarioRecepcionAlmuerzo: prog.horarioRecepcionAlmuerzo || "",
+      nivelCambridge: prog.nivelCambridge || "",
+      modalidadesCambridge: prog.modalidadesCambridge || [],
+      montoPrimerPago: prog.montoPrimerPago || "",
     };
   }
 
@@ -504,8 +541,17 @@ export default function useCoordinacion({
       if (diasFinales.length === 0) camposFaltantes.push("dias del programa");
       if (!form.horaInicio || !form.horaFin) camposFaltantes.push("horario");
     } else if (!esCambridgeGuardar && !usaTalleresPorEdad && usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
-      camposFaltantes.push("bloques por grado");
+      if (form.tipoComunicado === "Otro genérico") {
+        camposFaltantes.push("bloques por grado");
+      }
     }
+
+    if (form.tipoComunicado && form.tipoComunicado !== "Otro genérico") {
+      if (!form.tablaHorariosNivel || form.tablaHorariosNivel.length === 0) {
+        camposFaltantes.push("cronograma de horarios por nivel");
+      }
+    }
+
     if (camposFaltantes.length > 0) {
       return mostrarAlertaConfiguracion(`Revise: ${camposFaltantes.join(", ")}.`);
     }
@@ -588,7 +634,9 @@ export default function useCoordinacion({
       edadMaxima: usaTalleresPorEdad ? edadMaximaVerano : "",
       fechaNacimientoDesde: "",
       fechaNacimientoHasta: "",
-      duracionTaller: calcularDuracionTexto(form.fechaInicio, form.fechaFin),
+      duracionTaller: (form.tipoComunicado && form.tipoComunicado !== "Otro genérico")
+        ? (form.duracionTaller || calcularDuracionTexto(form.fechaInicio, form.fechaFin))
+        : calcularDuracionTexto(form.fechaInicio, form.fechaFin),
       cicloI: esCambridgeGuardar ? ciclosCambridgeGuardar.cicloI : form.cicloI || "",
       cicloII: esCambridgeGuardar ? ciclosCambridgeGuardar.cicloII : form.cicloII || "",
       duracionAvisoDias,
@@ -836,7 +884,11 @@ export default function useCoordinacion({
   }
 
   function actualizarForm(campo, valor) {
-    setForm((f) => ({ ...f, [campo]: valor }));
+    if (typeof campo === "object" && campo !== null) {
+      setForm((f) => ({ ...f, ...campo }));
+    } else {
+      setForm((f) => ({ ...f, [campo]: valor }));
+    }
   }
 
   function actualizarInvitacionMasiva(activa) {
@@ -996,17 +1048,38 @@ export default function useCoordinacion({
     setForm((actual) => {
       const esVerano = normalizarPeriodoVista(actual.periodo) === "verano";
       const catLower = String(valor || "").toLowerCase();
-      const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(actual.nombre, valor);
-      const usaTalleresPorEdad = esVerano
-        ? catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés"
-        : esDeportivo;
+      const catClean = catLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const esAcademicoOIngles = catClean === "academico" || catClean === "ingles";
+
+      const esDeportivo = catClean === "deportivo" || esProgramaDeportivo(actual.nombre, valor);
+      const usaTalleresPorEdad = esVerano ? !esAcademicoOIngles : esDeportivo;
       const talleres = Array.isArray(actual.talleresDeportivos) ? actual.talleresDeportivos : [];
       let nuevosCupos = actual.cupos;
       if (usaTalleresPorEdad && talleres.length > 0) {
         nuevosCupos = String(talleres.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0));
       }
+
+      const reseteosCircular = (!esAcademicoOIngles) ? {
+        tipoComunicado: "Otro genérico",
+        tipoDocumento: "Comunicado",
+        numeroDocumento: "",
+        areaTematica: "No aplica",
+        nombreCiclo: "Ciclo I",
+        duracionTaller: "",
+        tablaHorariosNivel: [],
+        incluyeAlmuerzo: false,
+        horarioRecepcionAlmuerzo: "",
+        nivelCambridge: "",
+        modalidadesCambridge: [],
+        montoPrimerPago: "",
+        comunicado: "",
+        comunicadoCompleto: "",
+        requisitos: "",
+      } : {};
+
       return {
         ...actual,
+        ...reseteosCircular,
         categoria: valor,
         cupos: nuevosCupos,
         requiereIndumentaria: esDeportivo ? actual.requiereIndumentaria : false,
@@ -1704,6 +1777,9 @@ export default function useCoordinacion({
     puedeVerCargaVista,
     puedeVerDocumentosVista,
     puedeVerAsistenciasVista,
+    programasFiltrados,
+    programaDocs,
+    historialPlantillas,
 
     formGradosAplicables,
     formDias,

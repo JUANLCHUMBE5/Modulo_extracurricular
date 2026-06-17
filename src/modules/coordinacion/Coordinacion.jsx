@@ -1,3 +1,4 @@
+import React from "react";
 import {
   IconBook as BookOpen,
   IconFileText as FileText,
@@ -22,14 +23,52 @@ import AsistenciasView from "./components/AsistenciasView";
 import useCoordinacion from "./hooks/useCoordinacion";
 import "./Coordinacion.css";
 
-const vistasNav = [
-  { id: "programas", label: "Gestion de Programas", icon: BookOpen, permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"] },
-  { id: "carga", label: "Importar/Exportar Excel y PDF", icon: Upload, permissions: ["grupos.crear", "grupos.editar"] },
-  { id: "documentos", label: "Importar Formato Taller", icon: FileText, permissions: ["programas.crear", "programas.editar"] },
-  { id: "asistencias", label: "Asistencia y Control", icon: UserCheck, permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"] },
-];
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
 
-function Coordinacion({
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: "20px", color: "#991b1b", background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: "8px", margin: "20px", fontFamily: "sans-serif" }}>
+          <h3 style={{ margin: "0 0 10px 0" }}>Ocurrió un error al cargar el Módulo de Coordinación</h3>
+          <p style={{ margin: "0 0 10px 0", fontSize: "14px" }}>Detalles del error:</p>
+          <pre style={{ whiteSpace: "pre-wrap", background: "#fff", padding: "10px", borderRadius: "4px", border: "1px solid #fee2e2", fontSize: "12px", color: "#b91c1c" }}>
+            {this.state.error?.stack || this.state.error?.message || String(this.state.error)}
+          </pre>
+          <button 
+            onClick={() => window.location.reload()} 
+            style={{ padding: "8px 16px", background: "#b91c1c", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", marginTop: "10px" }}
+          >
+            Recargar página
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function Coordinacion(props) {
+  return (
+    <ErrorBoundary>
+      <CoordinacionInner {...props} />
+    </ErrorBoundary>
+  );
+}
+
+function CoordinacionInner({
   delegatedContent,
   embedded = false,
   initialView = "programas",

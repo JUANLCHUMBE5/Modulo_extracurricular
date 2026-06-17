@@ -63,8 +63,21 @@ export function adaptarPrograma(apiPrograma) {
     seccion: apiPrograma.seccion || "",
     nivelEducativo: apiPrograma.nivel_educativo || apiPrograma.nivelEducativo || apiPrograma.nivel_nombre || "",
     seleccion: apiPrograma.seleccion || "",
-    nivelCambridge: apiPrograma.nivel_cambridge || apiPrograma.nivelCambridge || "",
     estadoInvitacion: apiPrograma.estado_invitacion || apiPrograma.estadoInvitacion || "",
+    tipoComunicado: apiPrograma.tipo_comunicado || apiPrograma.tipoComunicado || "Otro genérico",
+    tipoDocumento: apiPrograma.tipo_documento || apiPrograma.tipoDocumento || "Comunicado",
+    numeroDocumento: apiPrograma.numero_documento || apiPrograma.numeroDocumento || "",
+    areaTematica: apiPrograma.area_tematica || apiPrograma.areaTematica || "No aplica",
+    motivoJustificacion: apiPrograma.motivo_justificacion || apiPrograma.motivoJustificacion || apiPrograma.comunicado || "",
+    nombreCiclo: apiPrograma.nombre_ciclo || apiPrograma.nombreCiclo || "Ciclo I",
+    duracion: apiPrograma.duracion || apiPrograma.duracionTaller || "",
+    tablaHorariosNivel: apiPrograma.tabla_horarios_nivel || apiPrograma.tablaHorariosNivel || [],
+    incluyeAlmuerzo: apiPrograma.incluye_almuerzo !== undefined ? Boolean(apiPrograma.incluye_almuerzo) : Boolean(apiPrograma.incluyeAlmuerzo),
+    horarioRecepcionAlmuerzo: apiPrograma.horario_recepcion_almuerzo || apiPrograma.horarioRecepcionAlmuerzo || "",
+    nivelCambridge: apiPrograma.nivel_cambridge || apiPrograma.nivelCambridge || "",
+    modalidadesCambridge: apiPrograma.modalidades_cambridge || apiPrograma.modalidadesCambridge || [],
+    costoCiclo: apiPrograma.costo_ciclo !== undefined ? String(apiPrograma.costo_ciclo) : (apiPrograma.costoCiclo !== undefined ? String(apiPrograma.costoCiclo) : (apiPrograma.costo !== undefined ? String(apiPrograma.costo) : (apiPrograma.monto !== undefined ? String(apiPrograma.monto) : ""))),
+    montoPrimerPago: apiPrograma.monto_primer_pago !== undefined ? String(apiPrograma.monto_primer_pago) : (apiPrograma.montoPrimerPago !== undefined ? String(apiPrograma.montoPrimerPago) : ""),
   };
 }
 
@@ -174,7 +187,21 @@ export function adaptarInscripcion(apiInscripcion) {
     estadoCaja: apiInscripcion.estado_caja || apiInscripcion.estadoCaja || "",
     periodo: apiInscripcion.periodo || "",
     duracionAvisoDias: apiInscripcion.duracion_aviso_dias || apiInscripcion.duracionAvisoDias || "",
-    horaLimiteAviso: apiInscripcion.hora_limite_aviso || apiInscripcion.horaLimiteAviso || "23:59"
+    horaLimiteAviso: apiInscripcion.hora_limite_aviso || apiInscripcion.horaLimiteAviso || "23:59",
+    tipoComunicado: apiInscripcion.tipo_comunicado || apiInscripcion.tipoComunicado || "",
+    tipoDocumento: apiInscripcion.tipo_documento || apiInscripcion.tipoDocumento || "",
+    numeroDocumento: apiInscripcion.numero_documento || apiInscripcion.numeroDocumento || "",
+    areaTematica: apiInscripcion.area_tematica || apiInscripcion.areaTematica || "",
+    motivoJustificacion: apiInscripcion.motivo_justificacion || apiInscripcion.motivoJustificacion || apiInscripcion.comunicado || apiInscripcion.comunicadoCompleto || "",
+    nombreCiclo: apiInscripcion.nombre_ciclo || apiInscripcion.nombreCiclo || "",
+    duracion: apiInscripcion.duracion || apiInscripcion.duracionTaller || "",
+    tablaHorariosNivel: apiInscripcion.tabla_horarios_nivel || apiInscripcion.tablaHorariosNivel || [],
+    incluyeAlmuerzo: apiInscripcion.incluye_almuerzo !== undefined ? Boolean(apiInscripcion.incluye_almuerzo) : Boolean(apiInscripcion.incluyeAlmuerzo),
+    horarioRecepcionAlmuerzo: apiInscripcion.horario_recepcion_almuerzo || apiInscripcion.horarioRecepcionAlmuerzo || "",
+    nivelCambridge: apiInscripcion.nivel_cambridge || apiInscripcion.nivelCambridge || "",
+    modalidadesCambridge: apiInscripcion.modalidades_cambridge || apiInscripcion.modalidadesCambridge || [],
+    costoCiclo: apiInscripcion.costo_ciclo !== undefined ? String(apiInscripcion.costo_ciclo) : (apiInscripcion.costoCiclo !== undefined ? String(apiInscripcion.costoCiclo) : (apiInscripcion.costo !== undefined ? String(apiInscripcion.costo) : "")),
+    montoPrimerPago: apiInscripcion.monto_primer_pago !== undefined ? String(apiInscripcion.monto_primer_pago) : (apiInscripcion.montoPrimerPago !== undefined ? String(apiInscripcion.montoPrimerPago) : ""),
   };
 }
 

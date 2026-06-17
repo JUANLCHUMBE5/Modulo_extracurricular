@@ -111,7 +111,21 @@ async function readFromSupabase() {
       "anuncioImagenTamano",
       "anuncioImagenComprimida",
       "plantillaVariables",
-      "plantillaValidada"
+      "plantillaValidada",
+      "tipoComunicado",
+      "tipoDocumento",
+      "numeroDocumento",
+      "areaTematica",
+      "motivoJustificacion",
+      "nombreCiclo",
+      "duracion",
+      "tablaHorariosNivel",
+      "incluyeAlmuerzo",
+      "horarioRecepcionAlmuerzo",
+      "nivelCambridge",
+      "modalidadesCambridge",
+      "costoCiclo",
+      "montoPrimerPago"
     ];
 
     const rawProgramas = resProgramas.data || [];
@@ -248,7 +262,21 @@ async function writeToSupabase(db) {
       "anuncioImagenTamano",
       "anuncioImagenComprimida",
       "plantillaVariables",
-      "plantillaValidada"
+      "plantillaValidada",
+      "tipoComunicado",
+      "tipoDocumento",
+      "numeroDocumento",
+      "areaTematica",
+      "motivoJustificacion",
+      "nombreCiclo",
+      "duracion",
+      "tablaHorariosNivel",
+      "incluyeAlmuerzo",
+      "horarioRecepcionAlmuerzo",
+      "nivelCambridge",
+      "modalidadesCambridge",
+      "costoCiclo",
+      "montoPrimerPago"
     ];
 
     // Enriquecemos los programas con los datos de plantilla guardados en plantillasPorPrograma antes del upsert

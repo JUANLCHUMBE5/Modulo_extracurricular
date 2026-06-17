@@ -33,28 +33,146 @@ export async function crearDocumentoInvitacion(estudiante, inscripcion) {
   }
 
   if (!lineas.length) {
-    const textoBruto = inscripcion.comunicado || inscripcion.comunicadoCompleto;
-    if (textoBruto) {
-      const textoProcesado = procesarTextoComunicado(textoBruto, estudiante, inscripcion);
-      lineas = textoProcesado
-        .split(/\n\s*\n/)
-        .map((p) => p.replace(/\n/g, " ").trim())
-        .filter(Boolean);
+    const esEspecial = inscripcion.tipoComunicado && inscripcion.tipoComunicado !== "Otro genérico";
+    if (esEspecial) {
+      lineas = crearLineasInvitacionEspecial(ficha, inscripcion, estudiante);
     } else {
-      lineas = crearLineasInvitacionDefault(ficha);
+       const textoBruto = inscripcion.comunicado || inscripcion.comunicadoCompleto;
+       const normalizar = (str) => String(str || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+       const textoNorm = normalizar(textoBruto);
+       const esTextoDefaultAntiguo = textoNorm && (
+         textoNorm.includes("inscripcion queda registrada como") ||
+         textoNorm.includes("telefono de contacto del apoderado") ||
+         textoNorm.includes("invita al estudiante") ||
+         textoNorm.includes("ficha automatica de inscripcion")
+       );
+
+      if (textoBruto && !esTextoDefaultAntiguo) {
+        const textoProcesado = procesarTextoComunicado(textoBruto, estudiante, inscripcion);
+        lineas = textoProcesado
+          .split(/\n\s*\n/)
+          .map((p) => p.replace(/\n/g, " ").trim())
+          .filter(Boolean);
+      } else {
+        lineas = crearLineasInvitacionDefault(ficha);
+      }
     }
   }
 
   return {
     titulo: inscripcion.plantilla
       ? "Ficha de invitación personalizada"
-      : "Ficha automática de inscripción al programa extracurricular",
+      : (inscripcion.tipoComunicado && inscripcion.tipoComunicado !== "Otro genérico")
+      ? `${inscripcion.tipoDocumento || "Comunicado"} Extracurricular`
+      : "Invitación a Actividad Extracurricular",
     lineas,
     html,
     usaPlantilla: Boolean(html),
     resumen: crearResumenInvitacion(ficha),
     ficha,
   };
+}
+
+export function crearLineasInvitacionEspecial(ficha, inscripcion, estudiante) {
+  const lineas = [];
+  const tipoDoc = inscripcion.tipoDocumento || "Comunicado";
+  const numDoc = inscripcion.numeroDocumento || "";
+  const area = inscripcion.areaTematica || "";
+  const motivo = inscripcion.motivoJustificacion || inscripcion.comunicado || "";
+  const ciclo = inscripcion.nombreCiclo || "Ciclo I";
+  const duracion = inscripcion.duracion || inscripcion.duracionTaller || "";
+  const requis = inscripcion.requisitos || "";
+
+  // 1. Cabecera del Documento
+  if (numDoc) {
+    lineas.push(`${tipoDoc.toUpperCase()} N° ${numDoc.toUpperCase()}`);
+  } else {
+    lineas.push(`${tipoDoc.toUpperCase()}`);
+  }
+
+  // 2. Área Temática
+  if (area && area !== "No aplica") {
+    lineas.push(`ÁREA: ${area.toUpperCase()}`);
+  }
+
+  // 3. Saludo al apoderado
+  lineas.push(`Estimado(a) apoderado(a) de la familia San Rafael:`);
+
+  // 4. Motivo / Justificación
+  if (motivo) {
+    const motivoProcesado = procesarTextoComunicado(motivo, estudiante, { ...inscripcion, ...ficha.programa });
+    const parrafos = motivoProcesado.split(/\n+/).map(p => p.trim()).filter(Boolean);
+    lineas.push(...parrafos);
+  } else {
+    lineas.push(`Por medio del presente documento, se hace la cordial invitación al estudiante ${ficha.estudiante.nombre} a participar en el programa de ${ficha.programa.nombre}.`);
+  }
+
+  // 5. Detalles del Ciclo
+  let cicloTexto = `Este taller corresponde al ${ciclo}`;
+  if (duracion) cicloTexto += ` con una duración de ${duracion}`;
+  if (inscripcion.fechaInicio && inscripcion.fechaFin) {
+    cicloTexto += `, comprendido desde el ${formatearFechaLargaCircular(inscripcion.fechaInicio)} hasta el ${formatearFechaLargaCircular(inscripcion.fechaFin)}`;
+  }
+  cicloTexto += `.`;
+  lineas.push(cicloTexto);
+
+  // 6. Horarios por Nivel
+  const tabla = inscripcion.tablaHorariosNivel || [];
+  if (Array.isArray(tabla) && tabla.length > 0) {
+    lineas.push(`CRONOGRAMA Y HORARIOS:`);
+    tabla.forEach(row => {
+      let horarioNivel = `· ${row.nivel || "Nivel"} - Día(s): ${row.dia || "Por definir"} - Horario de clase: ${row.horarioClase || "Por definir"}`;
+      if (row.horarioAlmuerzo) {
+        horarioNivel += ` (Horario almuerzo: ${row.horarioAlmuerzo})`;
+      }
+      lineas.push(horarioNivel);
+    });
+  }
+
+  // 7. Almuerzo
+  if (inscripcion.tipoComunicado === "Club de Tareas" || inscripcion.tipoComunicado === "Reforzamiento (Circular)") {
+    if (inscripcion.incluyeAlmuerzo) {
+      let almuerzoTexto = `Recepción de Almuerzo: Sí, incluye recepción de almuerzo.`;
+      if (inscripcion.horarioRecepcionAlmuerzo) {
+        almuerzoTexto += ` Horario establecido: ${inscripcion.horarioRecepcionAlmuerzo}.`;
+      }
+      lineas.push(almuerzoTexto);
+    }
+  }
+
+  // 8. Cambridge
+  if (inscripcion.tipoComunicado === "Certificación Cambridge") {
+    const nivel = inscripcion.nivelCambridge ? `Nivel de examen: ${inscripcion.nivelCambridge}. ` : "";
+    const mod = Array.isArray(inscripcion.modalidadesCambridge) && inscripcion.modalidadesCambridge.length > 0
+      ? `Modalidad de ingreso: ${inscripcion.modalidadesCambridge.join(", ")}. `
+      : "";
+    const costoVal = inscripcion.costoCiclo || inscripcion.costo;
+    const costoCiclo = costoVal ? `Costo total del ciclo: S/ ${Number(costoVal).toFixed(2)}. ` : "";
+    const pago1 = inscripcion.montoPrimerPago ? `Monto primer pago: S/ ${Number(inscripcion.montoPrimerPago).toFixed(2)}.` : "";
+    
+    if (nivel || mod || costoCiclo || pago1) {
+      lineas.push(`INFORMACIÓN ADICIONAL DEL EXAMEN: ${nivel}${mod}${costoCiclo}${pago1}`);
+    }
+  }
+
+  // 9. Requisitos / Útiles
+  if (requis) {
+    const requisProcesado = procesarTextoComunicado(requis, estudiante, { ...inscripcion, ...ficha.programa });
+    lineas.push(`MATERIALES Y REQUISITOS: ${requisProcesado}`);
+  }
+
+  return lineas;
+}
+
+function formatearFechaLargaCircular(fechaStr) {
+  if (!fechaStr) return "";
+  try {
+    const date = new Date(fechaStr + "T00:00:00");
+    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    return `${date.getDate()} de ${meses[date.getMonth()]} de ${date.getFullYear()}`;
+  } catch (e) {
+    return fechaStr;
+  }
 }
 
 export async function descargarComunicadoWord({ estudiante, inscripcion }) {
@@ -122,19 +240,34 @@ async function extraerPlantillaPersonalizada({ estudiante, inscripcion }) {
 }
 
 function crearLineasInvitacionDefault(ficha) {
+  const lineas = [];
   const tieneUniforme = ficha.programa.uniforme === "Sí" || ficha.programa.uniforme === "Si";
-  const lineaUniforme = tieneUniforme ? `. Uniforme requerido: Sí (Talla: ${ficha.programa.talla})` : "";
+  const uniformeStr = tieneUniforme ? ` Asimismo, se requiere el uso de uniforme (Talla: ${ficha.programa.talla || 'Por definir'}).` : "";
+  const requisitosStr = ficha.programa.requisitos && ficha.programa.requisitos !== "Sin requisitos adicionales"
+    ? ` Para la participación, se solicita cumplir con los siguientes requisitos: ${ficha.programa.requisitos}.`
+    : "";
 
-  return [
-    `Estimado(a) apoderado(a) ${ficha.apoderado.nombre}:`,
-    `Por medio de la presente, el Colegio Matemático San Rafael invita al estudiante ${ficha.estudiante.nombre}, del grado ${ficha.estudiante.grado} sección ${ficha.estudiante.seccion}, a participar en el programa extracurricular ${ficha.programa.nombre}.`,
-    `El programa se desarrollará en el horario ${ficha.programa.horario}, bajo la responsabilidad de ${ficha.programa.responsable}.`,
-    `El costo registrado es ${ficha.programa.costo}, con modalidad de cobro ${ficha.programa.modalidadCobro}.`,
-    `Requisitos: ${ficha.programa.requisitos}${lineaUniforme}.`,
-    `Telefono de contacto del apoderado: ${ficha.apoderado.telefono}.`,
-    `La inscripción queda registrada como ${ficha.programa.estado} y el pago queda ${ficha.programa.estadoPago}.`,
-    ficha.observacion !== "Sin observación" ? `Observación: ${ficha.observacion}.` : "",
-  ].filter(Boolean);
+  lineas.push(`COMUNICADO OFICIAL`);
+  lineas.push(`Estimado(a) apoderado(a) ${ficha.apoderado.nombre || ''}:`);
+  
+  lineas.push(`Reciba un cordial saludo a nombre del Colegio Matemático San Rafael. Por medio del presente documento, nos complace invitar a su menor hijo(a) ${ficha.estudiante.nombre}, del grado ${ficha.estudiante.grado} sección ${ficha.estudiante.seccion}, a participar en nuestra actividad extracurricular: ${ficha.programa.nombre.toUpperCase()}.`);
+  
+  lineas.push(`Este programa tiene como propósito complementar la formación integral de nuestros alumnos. Las sesiones se desarrollarán en el horario de ${ficha.programa.horario || 'Por confirmar'}, y estarán bajo la responsabilidad de ${ficha.programa.responsable || 'Coordinación Académica'}.`);
+  
+  let costoTexto = `La inversión para este programa es de ${ficha.programa.costo || 'S/ 0.00'}`;
+  if (ficha.programa.modalidadCobro) {
+    costoTexto += ` bajo la modalidad de pago ${ficha.programa.modalidadCobro.toLowerCase() === 'unico' ? 'único' : ficha.programa.modalidadCobro.toLowerCase()}`;
+  }
+  costoTexto += `.${requisitosStr}${uniformeStr}`;
+  lineas.push(costoTexto);
+
+  lineas.push(`Agradecemos de antemano su confianza y apoyo constante en las actividades de nuestra institución educativa.`);
+
+  if (ficha.observacion && ficha.observacion !== "Sin observación") {
+    lineas.push(`Observación adicional: ${ficha.observacion}`);
+  }
+
+  return lineas;
 }
 
 function extraerTextoPlanoDocx(xml) {

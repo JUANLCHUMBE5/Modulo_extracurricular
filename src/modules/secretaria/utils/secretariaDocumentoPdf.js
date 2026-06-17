@@ -103,7 +103,7 @@ export function crearPdfInvitacionDocumento(documento) {
     y = agregarParrafoPdf(doc, linea, margen, y, anchoTexto);
   });
 
-  y = agregarBloquePdf(doc, "", documento.resumen || [], margen, y, anchoTexto);
+  // El bloque de resumen se ha removido por completo para evitar redundancia y mantener el diseño limpio del comunicado.
 
   // Add signature block at the bottom
   if (y + 35 > 275) {

@@ -1,9 +1,20 @@
 import {
+  IconBook as BookOpen,
+  IconFileText as FileText,
+  IconUpload as Upload,
+  IconUserCheck as UserCheck,
   IconChevronRight as ChevronRight,
   IconLogout as LogOut,
   IconMenu2 as Menu,
 } from "@tabler/icons-react";
 import { LOGO_COLEGIO_SRC } from "../constants/coordinacionConstants";
+
+const iconMap = {
+  programas: BookOpen,
+  carga: Upload,
+  documentos: FileText,
+  asistencias: UserCheck,
+};
 
 export default function CoordinacionSidebar({
   delegatedContent,
@@ -38,23 +49,26 @@ export default function CoordinacionSidebar({
       </div>
       {sidebarAbierta && <p className="coord-module-label">{esProfesor ? "Modulo Profesores" : "Módulo Coordinación Académica"}</p>}
       <nav className="coord-nav">
-        {vistasDisponibles.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            className={`coord-nav-item ${!delegatedContent && vista === id ? "coord-nav-item-active" : ""}`}
-            onClick={() => {
-              onClearDelegatedModule?.();
-              setVista(id);
-              setMensaje("");
-            }}
-            title={label}
-          >
-            <Icon size={18} />
-            {sidebarAbierta && <span>{label}</span>}
-            {sidebarAbierta && <ChevronRight className="coord-nav-arrow" size={16} />}
-          </button>
-        ))}
+        {vistasDisponibles.map(({ id, label }) => {
+          const Icon = iconMap[id] || BookOpen;
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`coord-nav-item ${!delegatedContent && vista === id ? "coord-nav-item-active" : ""}`}
+              onClick={() => {
+                onClearDelegatedModule?.();
+                setVista(id);
+                setMensaje("");
+              }}
+              title={label}
+            >
+              <Icon size={18} />
+              {sidebarAbierta && <span>{label}</span>}
+              {sidebarAbierta && <ChevronRight className="coord-nav-arrow" size={16} />}
+            </button>
+          );
+        })}
       </nav>
       {moduleSwitcher && sidebarAbierta ? (
         <div className="pt-3">

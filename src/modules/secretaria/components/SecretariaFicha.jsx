@@ -226,10 +226,7 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
                 ))}
               </div>
 
-              <FichaBloque
-                titulo=""
-                items={documento.resumen}
-              />
+              {/* El bloque de resumen se ha removido por completo del diseño */}
 
               <div className="secretaria-ficha-signature-preview">
                 <div className="secretaria-signature-line"></div>
