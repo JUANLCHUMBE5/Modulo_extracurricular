@@ -334,3 +334,63 @@ function obtenerValoresUnicosGrupo(gruposHorario, campo) {
 function etiquetaGradoCorta(grado) {
   return String(grado || "").replace(/\s*años?/i, "").trim();
 }
+
+export const mesesCambridge = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
+
+export function leerFechaInput(valor) {
+  const partes = String(valor || "").split("-").map(Number);
+  if (partes.length !== 3 || partes.some((parte) => !Number.isFinite(parte))) return null;
+  const [anio, mes, dia] = partes;
+  return new Date(anio, mes - 1, dia);
+}
+
+export function obtenerDiasEntreFechas(fechaInicio, fechaFin) {
+  const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const inicio = leerFechaInput(fechaInicio);
+  const fin = leerFechaInput(fechaFin);
+  if (!inicio || !fin || inicio > fin) return [];
+  const diasSet = new Set();
+  let act = new Date(inicio);
+  let limit = 0;
+  while (act <= fin && limit < 15) {
+    diasSet.add(diasSemana[act.getDay()]);
+    act.setDate(act.getDate() + 1);
+    limit++;
+  }
+  const orden = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+  return orden.filter(d => diasSet.has(d));
+}
+
+export function calcularTextoCiclosCambridge(fechaInicio, fechaFin) {
+  const inicio = leerFechaInput(fechaInicio);
+  const fin = leerFechaInput(fechaFin);
+  if (!inicio || !fin || inicio > fin) return { cicloI: "", cicloII: "" };
+
+  const anio = inicio.getFullYear();
+  const calcularRango = (mesInicio, mesFin) => {
+    const rangoInicio = new Date(anio, mesInicio - 1, 1);
+    const rangoFin = new Date(anio, mesFin, 0);
+    const desde = inicio > rangoInicio ? inicio : rangoInicio;
+    const hasta = fin < rangoFin ? fin : rangoFin;
+    if (desde > hasta) return "";
+    return `De ${mesesCambridge[desde.getMonth()]} a ${mesesCambridge[hasta.getMonth()]}`;
+  };
+
+  return {
+    cicloI: calcularRango(4, 7),
+    cicloII: calcularRango(8, 11),
+  };
+}
