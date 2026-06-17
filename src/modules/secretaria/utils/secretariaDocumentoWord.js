@@ -125,6 +125,16 @@ export function crearLineasInvitacionEspecial(ficha, inscripcion, estudiante) {
       if (row.horarioAlmuerzo) {
         horarioNivel += ` (Horario almuerzo: ${row.horarioAlmuerzo})`;
       }
+      const parts = [];
+      if (row.responsable && row.responsable.trim()) {
+        parts.push(`Docente: ${row.responsable.trim()}`);
+      }
+      if (row.tutora && row.tutora.trim()) {
+        parts.push(`Apoyo: ${row.tutora.trim()}`);
+      }
+      if (parts.length > 0) {
+        horarioNivel += ` - ${parts.join(" y ")}`;
+      }
       lineas.push(horarioNivel);
     });
   }

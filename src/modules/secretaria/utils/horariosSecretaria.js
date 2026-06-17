@@ -20,6 +20,20 @@ function resolverHorarioPorGradoLocal(programa, gradoAlumno = "") {
 function resolverDocentePorGradoLocal(programa, gradoAlumno = "") {
   const grupos = programa?.horariosPorGrupo || [];
   const fallback = programa?.docente || programa?.responsable || "No definido";
+
+  // Si tiene tabla de horarios por nivel (programas circulares/especiales)
+  const tabla = programa?.tablaHorariosNivel || [];
+  if ((!Array.isArray(grupos) || grupos.length === 0) && Array.isArray(tabla) && tabla.length > 0) {
+    const gradoNormalizado = descomponerGradoLocal(gradoAlumno);
+    if (gradoNormalizado.nivel) {
+      const fila = tabla.find(row => String(row.nivel).toLowerCase() === gradoNormalizado.nivel);
+      if (fila && fila.responsable) {
+        return fila.responsable.trim();
+      }
+    }
+    return fallback;
+  }
+
   if (!Array.isArray(grupos) || grupos.length === 0) return fallback;
 
   const gradoNormalizado = descomponerGradoLocal(gradoAlumno);
@@ -30,6 +44,35 @@ function resolverDocentePorGradoLocal(programa, gradoAlumno = "") {
   );
 
   return grupo?.responsable?.trim() || fallback;
+}
+
+function resolverTutoraPorGradoLocal(programa, gradoAlumno = "") {
+  const grupos = programa?.horariosPorGrupo || [];
+  const fallback = programa?.tutora || "No definido";
+
+  // Si tiene tabla de horarios por nivel (programas circulares/especiales)
+  const tabla = programa?.tablaHorariosNivel || [];
+  if ((!Array.isArray(grupos) || grupos.length === 0) && Array.isArray(tabla) && tabla.length > 0) {
+    const gradoNormalizado = descomponerGradoLocal(gradoAlumno);
+    if (gradoNormalizado.nivel) {
+      const fila = tabla.find(row => String(row.nivel).toLowerCase() === gradoNormalizado.nivel);
+      if (fila && fila.tutora) {
+        return fila.tutora.trim();
+      }
+    }
+    return fallback;
+  }
+
+  if (!Array.isArray(grupos) || grupos.length === 0) return fallback;
+
+  const gradoNormalizado = descomponerGradoLocal(gradoAlumno);
+  if (!gradoNormalizado.numero) return fallback;
+
+  const grupo = grupos.find((item) =>
+    (item.grados || []).some((grado) => coincideGradoLocal(grado, gradoNormalizado))
+  );
+
+  return grupo?.tutora?.trim() || fallback;
 }
 
 function coincideGradoLocal(gradoGrupo, gradoAlumnoNormalizado) {
@@ -60,4 +103,4 @@ function normalizarComparacion(valor) {
     .trim();
 }
 
-export { resolverDocentePorGradoLocal, resolverHorarioPorGradoLocal };
+export { resolverDocentePorGradoLocal, resolverHorarioPorGradoLocal, resolverTutoraPorGradoLocal };

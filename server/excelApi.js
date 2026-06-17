@@ -976,28 +976,12 @@ app.delete("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
       return res.status(404).json({ success: false, message: "Programa no encontrado." });
     }
 
-    // Verificar si hay inscripciones activas vinculadas a este programa
-    const tieneInscripciones = (db.inscripciones || []).some(
-      ins => ins.programaId === progId &&
-             String(ins.estadoInscripcion || "").toLowerCase() !== "anulada" &&
-             String(ins.estadoPago || "").toLowerCase() !== "anulado"
-    );
-
-    if (tieneInscripciones) {
-      return res.status(400).json({
-        success: false,
-        message: `No se puede eliminar el taller "${progAEliminar.nombre}" porque existen alumnos inscritos en él. Debe anular las inscripciones o trasladar a los alumnos antes de eliminar.`
-      });
-    }
-
-    db.programas = (db.programas || []).filter(p => p.id !== progId);
-    if (db.invitadosPorPrograma) {
-      delete db.invitadosPorPrograma[progId];
-    }
+    progAEliminar.estado = "Archivado";
     await saveDb(db);
     await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "PROGRAMA_ELIMINAR", {
       id: progId,
-      nombre: progAEliminar?.nombre || ""
+      nombre: progAEliminar?.nombre || "",
+      archivado: true
     });
     res.json({ success: true, data: true });
   } catch (error) {
@@ -1951,7 +1935,8 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
       correo_apoderado: student.correoApoderado || ""
     };
     
-    const enrollments = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && item.estadoInscripcion !== "Anulada");
+    const activeProgramIds = new Set((db.programas || []).filter(p => p.estado !== "Archivado").map(p => p.id));
+    const enrollments = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && item.estadoInscripcion !== "Anulada" && activeProgramIds.has(item.programaId));
     const payments = (db.pagos || []).filter(item => item.dniEstudiante === dni || enrollments.some(e => e.id === item.inscripcionId));
     const documents = (db.documentosGenerados || []).filter(item => item.dniEstudiante === dni || item.alumno === student.nombres);
     

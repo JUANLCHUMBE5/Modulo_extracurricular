@@ -200,7 +200,7 @@ export default function PagoStep({
             <div style={{ marginTop: "8px" }}>
               <strong style={{ fontSize: "17px", display: "block", fontWeight: 800 }}>¡Inscripción y Pago Confirmados!</strong>
               <span style={{ fontSize: "14px", display: "block", color: "#14532d", marginTop: "6px", lineHeight: "1.5" }}>
-                El pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido validado y aprobado exitosamente por el área de Cajera. 
+                El pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido validado y aprobado exitosamente por el área de Cajera.
                 El estudiante se encuentra debidamente inscrito.
               </span>
             </div>
@@ -328,7 +328,7 @@ export default function PagoStep({
             <div style={{ marginTop: "8px" }}>
               <strong style={{ fontSize: "17px", display: "block", fontWeight: 800 }}>¡Comprobante enviado a verificación!</strong>
               <span style={{ fontSize: "14px", display: "block", color: "#1e3a8a", marginTop: "6px", lineHeight: "1.5" }}>
-                El comprobante de pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido recibido correctamente. 
+                El comprobante de pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido recibido correctamente.
                 <br />
                 <br />
                 El área de Cajera validará la transacción a la brevedad. Una vez aprobada, tu estado cambiará a <b>Inscrito</b>.
@@ -459,7 +459,7 @@ export default function PagoStep({
               ? "El comprobante fue recibido. Caja validará la operación y el estado cambiará a pago exitoso una vez aprobado."
               : pagoObservado
                 ? "El pago fue observado por Caja. Corrija la información y vuelva a enviar el comprobante."
-                : "Escoja si desea pagar directamente en Caja o realizar el pago virtual por Yape."}
+                : ""}
           </p>
         </div>
       </div>
@@ -623,7 +623,7 @@ export default function PagoStep({
                   ? "El pago queda pendiente hasta que el colegio valide la operacion."
                   : pagoObservado
                     ? "Vuelva a ingresar el numero de operacion, telefono y captura correcta."
-                  : "Despues de pagar, suba la captura y registre el numero de operacion de Yape."}
+                    : "Despues de pagar, suba la captura y registre el numero de operacion de Yape."}
               </p>
             </div>
 

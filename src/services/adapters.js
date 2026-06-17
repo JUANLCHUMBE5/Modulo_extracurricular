@@ -157,6 +157,7 @@ export function adaptarInscripcion(apiInscripcion) {
     categoria: apiInscripcion.categoria || "",
     horario: apiInscripcion.horario || "",
     docente: apiInscripcion.docente || apiInscripcion.responsable || "No definido",
+    tutora: apiInscripcion.tutora || "No definido",
     costo: apiInscripcion.monto !== undefined ? Number(apiInscripcion.monto) : Number(apiInscripcion.costo || 0),
     modalidadCobro: apiInscripcion.modalidad_cobro || apiInscripcion.modalidadCobro || "Mensual",
     fechaInicio: apiInscripcion.fecha_inicio || apiInscripcion.fechaInicio || "",

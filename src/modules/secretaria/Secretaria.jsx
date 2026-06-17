@@ -23,7 +23,7 @@ import {
 import {
   formatearFechaPeru,
 } from "../../services/dateService";
-import { resolverDocentePorGradoLocal, resolverHorarioPorGradoLocal } from "./utils/horariosSecretaria";
+import { resolverDocentePorGradoLocal, resolverHorarioPorGradoLocal, resolverTutoraPorGradoLocal } from "./utils/horariosSecretaria";
 import { imprimirInscripcionDirecta } from "./components/SecretariaFicha";
 import SecretariaRegistroModal from "./components/SecretariaRegistroModal";
 import SecretariaCursoAdicionalModal from "./components/SecretariaCursoAdicionalModal";
@@ -494,6 +494,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       const horarioRegistro = resolverHorarioPorGradoLocal(programaActualizado, gradoRegistro)
         || programaActualizado.horario;
       const docenteRegistro = resolverDocentePorGradoLocal(programaActualizado, gradoRegistro);
+      const tutoraRegistro = resolverTutoraPorGradoLocal(programaActualizado, gradoRegistro);
       const registrarDatosCambridge = esProgramaCambridgeSecretaria(programaActualizado);
       const seleccionCambridgeRegistro = registrarDatosCambridge
         ? (programaParaRegistro?.seleccion || estudiante.seleccion || "")
@@ -525,6 +526,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         colegioProcedencia: formulario.colegioProcedencia.trim(),
         horario: horarioRegistro,
         docente: docenteRegistro,
+        tutora: tutoraRegistro,
         costo: programaActualizado.costo,
         cupos: programaActualizado.cupos,
         requiereUniforme: programaActualizado.requiereUniforme,
@@ -666,6 +668,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       const horarioRegistro = resolverHorarioPorGradoLocal(programaActualizado, gradoRegistro)
         || programaActualizado.horario;
       const docenteRegistro = resolverDocentePorGradoLocal(programaActualizado, gradoRegistro);
+      const tutoraRegistro = resolverTutoraPorGradoLocal(programaActualizado, gradoRegistro);
       const registrarDatosCambridge = esProgramaCambridgeSecretaria(programaActualizado);
       const registro = await registrarInscripcion({
         dniEstudiante: estudiante.dni,
@@ -682,6 +685,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         colegioProcedencia: inscripcion.colegioProcedencia || (estudiante.esExterno ? "" : "Colegio San Rafael"),
         horario: horarioRegistro,
         docente: docenteRegistro,
+        tutora: tutoraRegistro,
         costo: programaActualizado.costo,
         cupos: programaActualizado.cupos,
         requiereUniforme: programaActualizado.requiereUniforme,
@@ -797,6 +801,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       programa: programaActual.nombre || registro.programa,
       horario: resolverHorarioPorGradoLocal(programaActual, registro.gradoEstudiante || registro.grado || estudiante?.grado) || registro.horario || programaActual.horario,
       docente: resolverDocentePorGradoLocal(programaActual, registro.gradoEstudiante || registro.grado || estudiante?.grado) || registro.docente,
+      tutora: resolverTutoraPorGradoLocal(programaActual, registro.gradoEstudiante || registro.grado || estudiante?.grado) || registro.tutora || "",
       costo: programaActual.costo ?? registro.costo,
       modalidadCobro: programaActual.modalidadCobro || registro.modalidadCobro,
       fechaInicio: programaActual.fechaInicio || registro.fechaInicio,

@@ -171,7 +171,10 @@ async function readFromSupabase() {
     });
 
     const categoriasArray = (resCategorias.data || []).map(c => c.categoria);
-    const finalCategorias = categoriasArray.length ? categoriasArray : initialData.categorias;
+    const finalCategorias = (categoriasArray.length ? categoriasArray : initialData.categorias).filter(c => {
+      const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return normal !== "ingles";
+    });
 
     // 3. Retornamos la estructura exacta simulando db.json
     return {
@@ -559,7 +562,10 @@ function mergeWithDefaults(stored, defaults) {
   return {
     ...defaults,
     ...stored,
-    categorias: stored.categorias || defaults.categorias,
+    categorias: (stored.categorias || defaults.categorias || []).filter(c => {
+      const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return normal !== "ingles";
+    }),
     estudiantes: stored.estudiantes || defaults.estudiantes,
     programas: stored.programas || defaults.programas,
     invitadosPorPrograma: {

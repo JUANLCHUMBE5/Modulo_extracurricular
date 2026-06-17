@@ -17,6 +17,7 @@ import CargaExcelView from "./components/CargaExcelView";
 import CoordinacionSidebar from "./components/CoordinacionSidebar";
 import DocumentosView from "./components/DocumentosView";
 import FinalizarProgramaModal from "./components/FinalizarProgramaModal";
+import ArchivarProgramaModal from "./components/ArchivarProgramaModal";
 import ProgramaFormModal from "./components/ProgramaFormModal";
 import ProgramasView from "./components/ProgramasView";
 import AsistenciasView from "./components/AsistenciasView";
@@ -159,6 +160,40 @@ function CoordinacionInner({
                 setFiltroEstado={state.setFiltroEstado}
                 todosLosProgramas={state.programas}
                 toggleSidebarButton={toggleSidebarButton}
+                clonarPrograma={state.clonarPrograma}
+              />
+            )}
+
+            {state.vista === "historial" && state.puedeVerProgramasVista && (
+              <ProgramasView
+                abrirCrear={state.abrirCrear}
+                abrirEditar={state.abrirEditar}
+                cargando={state.cargando}
+                eliminarCurso={state.eliminarCurso}
+                filtroPeriodo={state.filtroPeriodo}
+                finalizarPrograma={state.finalizarPrograma}
+                mensaje={state.mensaje}
+                programas={state.programasArchivadosFiltrados}
+                puedeCrearProgramas={state.puedeCrearProgramas}
+                puedeEditarProgramas={state.puedeEditarProgramas}
+                puedeVerAlumnos={state.puedeVerAlumnos}
+                setFiltroPeriodo={state.setFiltroPeriodo}
+                tieneAccionesPrograma={state.tieneAccionesPrograma}
+                tipoMsg={state.tipoMsg}
+                toggleEstado={state.toggleEstado}
+                verInvitados={state.verInvitados}
+                busqueda={state.busqueda}
+                setBusqueda={state.setBusqueda}
+                categorias={state.categorias}
+                filtroCategoria={state.filtroCategoria}
+                setFiltroCategoria={state.setFiltroCategoria}
+                filtroEstado={state.filtroEstado}
+                setFiltroEstado={state.setFiltroEstado}
+                todosLosProgramas={state.programas}
+                toggleSidebarButton={toggleSidebarButton}
+                mostrarSoloArchivados={true}
+                clonarPrograma={state.clonarPrograma}
+                restaurarPrograma={state.restaurarPrograma}
               />
             )}
 
@@ -323,6 +358,12 @@ function CoordinacionInner({
               onClose={() => state.setProgramaAFinalizar(null)}
               onConfirm={state.confirmarFinalizar}
               programa={state.programaAFinalizar}
+            />
+
+            <ArchivarProgramaModal
+              onClose={() => state.setProgramaAArchivar(null)}
+              onConfirm={state.confirmarArchivar}
+              programa={state.programaAArchivar}
             />
           </>
         )}

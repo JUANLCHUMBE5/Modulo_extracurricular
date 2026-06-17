@@ -354,7 +354,10 @@ function mergeWithDefaults(stored, defaults) {
   const merged = {
     ...defaults,
     ...stored,
-    categorias: Array.isArray(stored.categorias) && stored.categorias.length ? stored.categorias : defaults.categorias,
+    categorias: (Array.isArray(stored.categorias) && stored.categorias.length ? stored.categorias : defaults.categorias).filter(c => {
+      const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return normal !== "ingles";
+    }),
     estudiantes: stored.estudiantes && typeof stored.estudiantes === "object" ? stored.estudiantes : defaults.estudiantes,
     programas: Array.isArray(stored.programas) ? stored.programas : defaults.programas,
     invitadosPorPrograma: stored.invitadosPorPrograma && typeof stored.invitadosPorPrograma === "object"

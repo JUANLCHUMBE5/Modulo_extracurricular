@@ -21,7 +21,7 @@ import {
   registrarAlumnoIndividualCarga,
   buscarAlumnoCargaPorDni,
 } from "../services/coordinacionService";
-import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias } from "../../../services/dateService";
+import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias, fechaActualInput } from "../../../services/dateService";
 import { formInicial, horarioGrupoInicial, TEMPLATES_POR_TIPO } from "../constants/coordinacionFormDefaults";
 import { esCostoValido, normalizarComparacion } from "../utils/coordinacionFormatters";
 import { puedeVerVista, tienePermisoAsignado } from "../utils/coordinacionPermissions";
@@ -143,6 +143,7 @@ export default function useCoordinacion({
   const [subVistaAlumnos, setSubVistaAlumnos] = useState("preinscritos");
   const [progSeleccionado, setProgSeleccionado] = useState(null);
   const [programaAFinalizar, setProgramaAFinalizar] = useState(null);
+  const [programaAArchivar, setProgramaAArchivar] = useState(null);
 
   // Carga Excel
   const cargaPeriodo = "escolar";
@@ -306,6 +307,7 @@ export default function useCoordinacion({
 
   // ── Filtrar programas ──
   const programasFiltrados = programas.filter((p) => {
+    if (p.estado === "Archivado") return false;
     const textoBusqueda = busqueda.trim().toLowerCase();
     const coincide =
       !textoBusqueda ||
@@ -320,6 +322,19 @@ export default function useCoordinacion({
       (filtroEstado === "deshabilitados" && p.estado === "Deshabilitado") ||
       (filtroEstado === "finalizados" && p.estado === "Finalizado");
     return coincide && filtraPeriodo && filtraCategoria && filtraEstado;
+  });
+
+  const programasArchivadosFiltrados = programas.filter((p) => {
+    if (p.estado !== "Archivado") return false;
+    const textoBusqueda = busqueda.trim().toLowerCase();
+    const coincide =
+      !textoBusqueda ||
+      String(p.nombre || "").toLowerCase().includes(textoBusqueda) ||
+      String(p.id || "").toLowerCase().includes(textoBusqueda);
+    const filtraPeriodo = filtroPeriodo === "todos" || normalizarPeriodoVista(p.periodo) === filtroPeriodo;
+    const filtraCategoria =
+      filtroCategoria === "todos" || String(p.categoria || "").toLowerCase() === filtroCategoria.toLowerCase();
+    return coincide && filtraPeriodo && filtraCategoria;
   });
 
   const programaDocs = programas.find((item) => item.id === programaDocsId);
@@ -626,8 +641,14 @@ export default function useCoordinacion({
         ? Array.from(new Set(talleres.map((t) => t.docente).filter(Boolean))).join(" · ") || form.responsable
         : gruposHorario.length > 0
         ? resumenResponsablesPorGrupo(gruposHorario, form.responsable)
+        : (form.tablaHorariosNivel && form.tablaHorariosNivel.length > 0)
+        ? resumenResponsablesPorGrupo(form.tablaHorariosNivel, form.responsable)
         : form.responsable,
-      tutora: gruposHorario.length > 0 ? resumenTutoraPorGrupo(gruposHorario, form.tutora) : form.tutora,
+      tutora: gruposHorario.length > 0
+        ? resumenTutoraPorGrupo(gruposHorario, form.tutora)
+        : (form.tablaHorariosNivel && form.tablaHorariosNivel.length > 0)
+        ? resumenTutoraPorGrupo(form.tablaHorariosNivel, form.tutora)
+        : form.tutora,
       costo: Number(form.costo).toFixed(2),
       gradosAplicables: gradosFinales,
       edadMinima: usaTalleresPorEdad ? edadMinimaVerano : "",
@@ -733,17 +754,54 @@ export default function useCoordinacion({
 
   // ── Ver invitados ──
   async function eliminarCurso(prog) {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para eliminar programas.");
-    const confirmado = window.confirm(`Eliminar ${prog.nombre}? Tambien se retirara su lista de invitados cargada.`);
-    if (!confirmado) return;
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para archivar programas.");
+    setProgramaAArchivar(prog);
+  }
 
+  async function confirmarArchivar() {
+    if (!programaAArchivar) return;
+    const prog = programaAArchivar;
+    setProgramaAArchivar(null);
     try {
       await eliminarPrograma(prog.id);
-      mostrarMsg("Programa eliminado correctamente.", "success");
+      mostrarMsg("Programa archivado correctamente.", "success");
       await cargarDatos();
     } catch (err) {
       mostrarMsg(err.message);
     }
+  }
+
+  async function restaurarPrograma(prog) {
+    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para restaurar programas.");
+    try {
+      await cambiarEstadoPrograma(prog.id, "Deshabilitado");
+      mostrarMsg(`Programa "${prog.nombre}" restaurado como Deshabilitado.`, "success");
+      await cargarDatos();
+    } catch (err) {
+      mostrarMsg(err.message || "No se pudo restaurar el programa.");
+    }
+  }
+
+  function clonarPrograma(prog) {
+    if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas.");
+    const numSugerido = sugerirNumeroDocumento(prog.tipoDocumento || "Comunicado", programas);
+    setForm({
+      ...datosProgramaAFormulario(prog),
+      id: "",
+      fechaInicio: fechaActualInput(),
+      fechaFin: fechaActualInput(),
+      cuposOcupados: 0,
+      estado: "Deshabilitado",
+      numeroDocumento: numSugerido
+    });
+    setModoEditar(false);
+    setProgramaDocsId("");
+    setLecturaDocumento(null);
+    setPlantillaInputKey((actual) => actual + 1);
+    setShowModal(true);
+    setAlertaConfiguracion("");
+    setMensaje("");
+    mostrarMsg(`Datos del taller "${prog.nombre}" clonados. Asigne las nuevas fechas y guarde.`, "success");
   }
 
   async function verInvitados(prog) {
@@ -1404,10 +1462,26 @@ export default function useCoordinacion({
         }));
       }
 
+      // Sincronizar tablaHorariosNivel
+      let nuevaTabla = Array.isArray(f.tablaHorariosNivel) ? [...f.tablaHorariosNivel] : [];
+      const [nivel] = valor.split(":");
+      if (nivel) {
+        const hasGradesForNivel = nuevosGrados.some((g) => g.startsWith(`${nivel}:`));
+        const hasRowForNivel = nuevaTabla.some((row) => row.nivel === nivel);
+        if (hasGradesForNivel && !hasRowForNivel) {
+          // Si tiene grados seleccionados y no hay fila para ese nivel, añadirla
+          nuevaTabla.push({ nivel, dia: "", horarioAlmuerzo: "", horarioClase: "" });
+        } else if (!hasGradesForNivel && hasRowForNivel) {
+          // Si no tiene grados de este nivel y hay fila, quitarla
+          nuevaTabla = nuevaTabla.filter((row) => row.nivel !== nivel);
+        }
+      }
+
       return {
         ...f,
         gradosAplicables: nuevosGrados,
         horariosPorGrupo: nuevosGrupos,
+        tablaHorariosNivel: nuevaTabla,
       };
     });
   }
@@ -1695,6 +1769,8 @@ export default function useCoordinacion({
     progSeleccionado,
     programaAFinalizar,
     setProgramaAFinalizar,
+    programaAArchivar,
+    setProgramaAArchivar,
     archivosExcel,
     setArchivosExcel,
     archivoInputKey,
@@ -1725,6 +1801,7 @@ export default function useCoordinacion({
     toggleEstado,
     finalizarPrograma,
     confirmarFinalizar,
+    confirmarArchivar,
     eliminarCurso,
     verInvitados,
     descargarPdfAlumnos,
@@ -1761,6 +1838,8 @@ export default function useCoordinacion({
     confirmarCargaExcel,
     eliminarCargaExcel,
     cancelarCargaExcel,
+    restaurarPrograma,
+    clonarPrograma,
 
     // Computed
     puedeCrearProgramas,
@@ -1778,6 +1857,7 @@ export default function useCoordinacion({
     puedeVerDocumentosVista,
     puedeVerAsistenciasVista,
     programasFiltrados,
+    programasArchivadosFiltrados,
     programaDocs,
     historialPlantillas,
 
@@ -1816,6 +1896,12 @@ const vistasNav = [
   {
     id: "asistencias",
     label: "Asistencia y Control",
+    icon: null,
+    permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"],
+  },
+  {
+    id: "historial",
+    label: "Historial / Archivo",
     icon: null,
     permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"],
   },

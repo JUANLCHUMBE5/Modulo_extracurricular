@@ -92,7 +92,10 @@ function mergeWithDefaults(stored, defaults) {
   return {
     ...defaults,
     ...stored,
-    categorias: stored.categorias || defaults.categorias,
+    categorias: (stored.categorias || defaults.categorias || []).filter(c => {
+      const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return normal !== "ingles";
+    }),
     estudiantes: { ...defaults.estudiantes, ...(stored.estudiantes || {}) },
     programas: stored.programas || defaults.programas,
     invitadosPorPrograma: {

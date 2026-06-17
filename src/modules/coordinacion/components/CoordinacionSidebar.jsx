@@ -6,6 +6,7 @@ import {
   IconChevronRight as ChevronRight,
   IconLogout as LogOut,
   IconMenu2 as Menu,
+  IconArchive as Archive,
 } from "@tabler/icons-react";
 import { LOGO_COLEGIO_SRC } from "../constants/coordinacionConstants";
 
@@ -14,6 +15,7 @@ const iconMap = {
   carga: Upload,
   documentos: FileText,
   asistencias: UserCheck,
+  historial: Archive,
 };
 
 export default function CoordinacionSidebar({

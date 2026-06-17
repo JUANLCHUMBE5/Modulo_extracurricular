@@ -592,13 +592,13 @@ function sincronizarInscripcionConPrograma(inscripcion) {
     return normalizarTexto(item.nombre) === normalizarTexto(inscripcion.programa);
   });
 
-  if (!programa) {
+  if (!programa || programa.estado === "Archivado") {
     return normalizarInscripcion({
       ...inscripcion,
       estadoInscripcion: "Requiere revision",
       estadoPago: inscripcion.estadoPago || "Pendiente",
-      estadoPrograma: "Programa eliminado",
-      horario: "Programa eliminado por Coordinación Académica",
+      estadoPrograma: "Programa archivado",
+      horario: "Programa archivado por Coordinación Académica",
     });
   }
 

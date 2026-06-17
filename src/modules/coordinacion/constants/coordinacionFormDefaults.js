@@ -16,7 +16,7 @@ export const formInicial = {
   tipoComunicado: "Otro genérico",
   tipoDocumento: "Comunicado",
   numeroDocumento: "",
-  areaTematica: "No aplica",
+  areaTematica: "Matemática",
   nombreCiclo: "Ciclo I",
   tablaHorariosNivel: [],
   incluyeAlmuerzo: false,
