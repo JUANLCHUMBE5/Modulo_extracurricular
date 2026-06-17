@@ -118,7 +118,7 @@ function ProgramaFormModal({
   const [conComunicadoManual, setConComunicadoManual] = useState(false);
 
   const catLowerClean = String(form.categoria || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const esNoAcademico = catLowerClean && catLowerClean !== "academico" && catLowerClean !== "ingles";
+  const esNoAcademico = catLowerClean && catLowerClean !== "academico";
   const esCircularEspecial = form.tipoComunicado && form.tipoComunicado !== "Otro genérico";
 
   useEffect(() => {
@@ -309,18 +309,12 @@ function ProgramaFormModal({
                       }
 
                       let categoriaSugerida = form.categoria;
-                      if (nuevoTipo === "Club de Tareas" || nuevoTipo === "Reforzamiento (Circular)") {
+                      if (nuevoTipo !== "Otro genérico") {
                         const academica = (categorias || []).find(c => {
                           const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
                           return normal === "academico";
                         });
                         categoriaSugerida = academica || "Academico";
-                      } else if (nuevoTipo === "Certificación Cambridge") {
-                        const ingles = (categorias || []).find(c => {
-                          const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                          return normal === "ingles";
-                        });
-                        categoriaSugerida = ingles || "Ingles";
                       }
 
                       actualizarForm({

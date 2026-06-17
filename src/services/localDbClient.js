@@ -5,7 +5,7 @@
 const STORAGE_KEY = "san_rafael_mock_database_v2";
 
 export const initialData = {
-  categorias: ["Academico", "Ingles", "Deportivo", "Arte", "Maraton", "Otro"],
+  categorias: ["Academico", "Deportivo", "Arte", "Maraton", "Otro"],
   nextProgramaId: 1,
   nextCargaId: 1,
   nextDocumentoId: 1,

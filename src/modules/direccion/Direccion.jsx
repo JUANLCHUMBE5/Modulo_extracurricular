@@ -175,7 +175,7 @@ export default function Direccion({ onLogout, user }) {
   const metricasAnalisis = useMemo(() => calcularMetricasAnalisis(panel), [panel]);
 
   const categoriasOptions = useMemo(() => {
-    const list = panel?.categorias || ["Academico", "Deportivo", "Ingles", "Maraton", "Reforzamiento"];
+    const list = panel?.categorias || ["Academico", "Deportivo", "Maraton", "Reforzamiento"];
     return [
       { value: "todos", label: "Todas las categorías" },
       ...list.map(c => ({ value: c, label: c }))

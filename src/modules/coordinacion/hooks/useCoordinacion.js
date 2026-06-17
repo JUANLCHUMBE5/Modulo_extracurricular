@@ -350,7 +350,7 @@ export default function useCoordinacion({
     const catLower = String(prog.categoria || "").toLowerCase();
     const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(prog.nombre, prog.categoria);
     const usaTalleresPorEdad = esVerano
-      ? catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés"
+      ? catLower !== "academico" && catLower !== "académico"
       : esDeportivo;
 
     let cuposCalculados = prog.cupos;
@@ -476,7 +476,7 @@ export default function useCoordinacion({
     const esDeportivoGuardar = catLower === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
     const esMaratonGuardar = catLower === "maraton" || catLower === "maratón";
     const usaTalleresPorEdad = esVeranoGuardar
-      ? catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés"
+      ? catLower !== "academico" && catLower !== "académico"
       : esDeportivoGuardar;
 
     const talleres = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
@@ -1028,7 +1028,7 @@ export default function useCoordinacion({
       const catLower = String(actual.categoria || "").toLowerCase();
       const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(valor, actual.categoria);
       const usaTalleresPorEdad = esVerano
-        ? catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés"
+        ? catLower !== "academico" && catLower !== "académico"
         : esDeportivo;
       const talleres = Array.isArray(actual.talleresDeportivos) ? actual.talleresDeportivos : [];
       let nuevosCupos = actual.cupos;
@@ -1049,17 +1049,17 @@ export default function useCoordinacion({
       const esVerano = normalizarPeriodoVista(actual.periodo) === "verano";
       const catLower = String(valor || "").toLowerCase();
       const catClean = catLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const esAcademicoOIngles = catClean === "academico" || catClean === "ingles";
+      const esAcademico = catClean === "academico";
 
       const esDeportivo = catClean === "deportivo" || esProgramaDeportivo(actual.nombre, valor);
-      const usaTalleresPorEdad = esVerano ? !esAcademicoOIngles : esDeportivo;
+      const usaTalleresPorEdad = esVerano ? !esAcademico : esDeportivo;
       const talleres = Array.isArray(actual.talleresDeportivos) ? actual.talleresDeportivos : [];
       let nuevosCupos = actual.cupos;
       if (usaTalleresPorEdad && talleres.length > 0) {
         nuevosCupos = String(talleres.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0));
       }
 
-      const reseteosCircular = (!esAcademicoOIngles) ? {
+      const reseteosCircular = (!esAcademico) ? {
         tipoComunicado: "Otro genérico",
         tipoDocumento: "Comunicado",
         numeroDocumento: "",
@@ -1357,7 +1357,7 @@ export default function useCoordinacion({
     const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
     const usaTalleresPorEdad =
       periodoNormalizado === "verano"
-        ? catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés"
+        ? catLower !== "academico" && catLower !== "académico"
         : esDeportivo;
 
     if (periodoNormalizado === "verano") {
@@ -1420,7 +1420,7 @@ export default function useCoordinacion({
       const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(f.nombre, f.categoria);
       const usaTalleresPorEdad =
         normalizarPeriodoVista(f.periodo) === "verano"
-          ? catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés"
+          ? catLower !== "academico" && catLower !== "académico"
           : esDeportivo;
       if (!yaExiste && normalizarPeriodoVista(f.periodo) === "verano" && usaTalleresPorEdad && actuales.length >= 3) {
         mostrarMsg("El taller de verano debe tener 3 dias de atencion.");
@@ -1621,7 +1621,7 @@ export default function useCoordinacion({
   const ciclosCambridgeFormulario = calcularTextoCiclosCambridge(form.fechaInicio, form.fechaFin);
   const catLower = String(form.categoria || "").toLowerCase();
   const usaTalleresPorEdad = esFormularioVerano
-    ? catLower !== "academico" && catLower !== "ingles" && catLower !== "académico" && catLower !== "inglés"
+    ? catLower !== "academico" && catLower !== "académico"
     : esDeportivoForm;
   const duracionTallerFormulario = calcularDuracionTexto(form.fechaInicio, form.fechaFin);
   const mostrarIndumentariaDeportiva = esDeportivoForm;
