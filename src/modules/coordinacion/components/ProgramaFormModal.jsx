@@ -102,6 +102,7 @@ function ProgramaFormModal({
 
   const catLowerClean = String(form.categoria || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const esNoAcademico = catLowerClean && catLowerClean !== "academico";
+  const esAcademico = catLowerClean === "academico";
   const esCircularEspecial = form.tipoComunicado && form.tipoComunicado !== "Otro genérico";
 
   useEffect(() => {
@@ -230,115 +231,17 @@ function ProgramaFormModal({
                   <h3>{esFormularioVerano ? "Datos del programa de verano" : "Datos generales"}</h3>
                 </div>
               </div>
-              <div className="coord-section-grid coord-general-grid">
-                <div className="coord-field coord-program-name-field" style={{ gridColumn: "span 3" }}>
-                  <label style={{ fontWeight: "700", color: "#1e3a8a" }}>Tipo de comunicado / Circular escolar *</label>
-                  <select
-                    value={form.tipoComunicado || "Otro genérico"}
-                    disabled={esNoAcademico}
-                    onChange={e => {
-                      const nuevoTipo = e.target.value;
-                      
-                      const templates = {
-                        "Club de Tareas": {
-                          comunicado: "Club de Tareas está diseñado para brindar a nuestros estudiantes un espacio guiado y estructurado para la resolución y presentación oportuna de sus tareas escolares, fortaleciendo sus hábitos de estudio, autonomía y organización bajo el acompañamiento de docentes especialistas.",
-                          requisitos: "Cuaderno de apuntes, cartuchera completa (lápiz, borrador, tajador, regla, colores), agenda escolar física, y los textos/cuadernos de trabajo del colegio correspondientes a las tareas pendientes del día."
-                        },
-                        "Reforzamiento (Circular)": {
-                          comunicado: "El programa de Reforzamiento Académico tiene como objetivo primordial consolidar los aprendizajes del año escolar, brindando un soporte pedagógico personalizado para nivelar competencias y aclarar dudas en las áreas de mayor complejidad cognitiva.",
-                          requisitos: "Cuaderno exclusivo del área (cuadriculado para Matemática, rayado para Comunicación), lapiceros azul y rojo, lápiz, borrador, tajador, regla y las fichas o materiales provistos por el docente de reforzamiento."
-                        },
-                        "Certificación Cambridge": {
-                          comunicado: "La preparación para la Certificación Internacional de Cambridge English brinda a nuestros alumnos la oportunidad de certificar oficialmente su nivel de dominio del idioma inglés bajo el Marco Común Europeo de Referencia para las Lenguas (MCER), potenciando su perfil académico global.",
-                          requisitos: "Libro de preparación oficial Cambridge (según el nivel asignado), cuaderno A4 cuadriculado para apuntes, cartuchera personal completa, y auriculares con conexión auxiliar de 3.5mm para las prácticas de Listening."
-                        },
-                        "Otro genérico": {
-                          comunicado: "",
-                          requisitos: ""
-                        }
-                      };
-
-                      const template = templates[nuevoTipo] || { comunicado: "", requisitos: "" };
-                      const tipoDocSugerido = nuevoTipo === "Certificación Cambridge" ? "Carta" : "Comunicado";
-                      const prefix = tipoDocSugerido === "Carta" ? "CAR" : "COM";
-                      const anio = new Date().getFullYear();
-                      const randomId = Math.floor(Math.random() * 90) + 10;
-                      const numDocSugerido = `${prefix}-0${randomId}-${anio}`;
-
-                      let reseteos = {};
-                      if (nuevoTipo === "Otro genérico") {
-                        reseteos = {
-                          tipoDocumento: "Comunicado",
-                          numeroDocumento: "",
-                          areaTematica: "Matemática",
-                          nombreCiclo: "Ciclo I",
-                          duracionTaller: "",
-                          tablaHorariosNivel: [],
-                          incluyeAlmuerzo: false,
-                          horarioRecepcionAlmuerzo: "",
-                          nivelCambridge: "",
-                          modalidadesCambridge: [],
-                          montoPrimerPago: "",
-                        };
-                      } else if (nuevoTipo === "Certificación Cambridge") {
-                        reseteos = {
-                          incluyeAlmuerzo: false,
-                          horarioRecepcionAlmuerzo: "",
-                          areaTematica: "Matemática",
-                        };
-                      } else {
-                        reseteos = {
-                          nivelCambridge: "",
-                          modalidadesCambridge: [],
-                          areaTematica: "Matemática",
-                        };
-                      }
-
-                      let categoriaSugerida = form.categoria;
-                      if (nuevoTipo !== "Otro genérico") {
-                        const academica = (categorias || []).find(c => {
-                          const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                          return normal === "academico";
-                        });
-                        categoriaSugerida = academica || "Academico";
-                      }
-
-                      actualizarForm({
-                        tipoComunicado: nuevoTipo,
-                        comunicado: template.comunicado,
-                        comunicadoCompleto: template.comunicado,
-                        requisitos: template.requisitos,
-                        tipoDocumento: tipoDocSugerido,
-                        numeroDocumento: numDocSugerido,
-                        categoria: categoriaSugerida,
-                        ...reseteos
-                      });
-                    }}
-                    style={esNoAcademico ? {
-                      background: "#e2e8f0",
-                      color: "#64748b",
-                      cursor: "not-allowed",
-                      borderColor: "#cbd5e1"
-                    } : {
-                      background: "#eff6ff",
-                      fontWeight: "bold",
-                      borderColor: "#3b82f6"
-                    }}
-                  >
-                    <option value="Otro genérico">Otro genérico (Taller común)</option>
-                    <option value="Club de Tareas">Club de Tareas</option>
-                    <option value="Reforzamiento (Circular)">Reforzamiento (Circular)</option>
-                    <option value="Certificación Cambridge">Certificación Cambridge</option>
-                  </select>
-                </div>
+              <div className={`coord-section-grid coord-general-grid ${esAcademico ? "is-academico" : ""}`}>
                 <div className="coord-field coord-program-name-field"><label>{esFormularioVerano ? "Nombre del programa de verano *" : "Nombre del programa *"}</label>
                   <input value={form.nombre} onChange={e => actualizarNombrePrograma(e.target.value)} placeholder={esFormularioVerano ? "Ej: Verano creativo 2026" : "Ej: Reforzamiento y nivelación"} />
                 </div>
-                <div className="coord-field"><label>Periodo *</label>
+
+                <div className="coord-field coord-period-field"><label>Periodo *</label>
                   <select value={normalizarPeriodoVista(form.periodo)} onChange={e => cambiarPeriodoFormulario(e.target.value)}>
                     <option value="escolar">Año escolar</option><option value="verano">Ciclo verano</option>
                   </select>
                 </div>
+
                 <div className="coord-field coord-category-field">
                   <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
                     <span>{esFormularioVerano ? "Categoría general *" : "Categoría *"}</span>
@@ -394,8 +297,126 @@ function ProgramaFormModal({
                     </div>
                   </div>
                 ) : null}
+
+                {esAcademico && (
+                  <div className="coord-field coord-tipo-comunicado-field">
+                    <label style={{ fontWeight: "700", color: "#1e3a8a" }}>Tipo de comunicado / Circular escolar *</label>
+                    <select
+                      value={form.tipoComunicado || "Otro genérico"}
+                      disabled={esNoAcademico}
+                      onChange={e => {
+                        const nuevoTipo = e.target.value;
+                        
+                        const templates = {
+                          "Club de Tareas": {
+                            comunicado: "Club de Tareas está diseñado para brindar a nuestros estudiantes un espacio guiado y estructurado para la resolución y presentación oportuna de sus tareas escolares, fortaleciendo sus hábitos de estudio, autonomía y organization bajo el acompañamiento de docentes especialistas.",
+                            requisitos: "Cuaderno de apuntes, cartuchera completa (lápiz, borrador, tajador, regla, colores), agenda escolar física, y los textos/cuadernos de trabajo del colegio correspondientes a las tareas pendientes del día."
+                          },
+                          "Reforzamiento (Circular)": {
+                            comunicado: "El programa de Reforzamiento Académico tiene como objetivo primordial consolidar los aprendizajes del año escolar, brindando un soporte pedagógico personalizado para nivelar competencias y aclarar dudas en las áreas de mayor complejidad cognitiva.",
+                            requisitos: "Cuaderno exclusivo del área (cuadriculado para Matemática, rayado para Comunicación), lapiceros azul y rojo, lápiz, borrador, tajador, regla y las fichas o materiales provistos por el docente de reforzamiento."
+                          },
+                          "Certificación Cambridge": {
+                            comunicado: "La preparación para la Certificación Internacional de Cambridge English brinda a nuestros alumnos la oportunidad de certificar oficialmente su nivel de dominio del idioma inglés bajo el Marco Común Europeo de Referencia para las Lenguas (MCER), potenciando su perfil académico global.",
+                            requisitos: "Libro de preparación oficial Cambridge (según el nivel asignado), cuaderno A4 cuadriculado para apuntes, cartuchera personal completa, y auriculares con conexión auxiliar de 3.5mm para las prácticas de Listening."
+                          },
+                          "Otro genérico": {
+                            comunicado: "",
+                            requisitos: ""
+                          }
+                        };
+
+                        const template = templates[nuevoTipo] || { comunicado: "", requisitos: "" };
+                        const tipoDocSugerido = nuevoTipo === "Certificación Cambridge" ? "Carta" : "Comunicado";
+                        const prefix = tipoDocSugerido === "Carta" ? "CAR" : "COM";
+                        const anio = new Date().getFullYear();
+                        const randomId = Math.floor(Math.random() * 90) + 10;
+                        const numDocSugerido = `${prefix}-0${randomId}-${anio}`;
+
+                        let reseteos = {};
+                        if (nuevoTipo === "Otro genérico") {
+                          reseteos = {
+                            tipoDocumento: "Comunicado",
+                            numeroDocumento: "",
+                            areaTematica: "Matemática",
+                            nombreCiclo: "Ciclo I",
+                            duracionTaller: "",
+                            tablaHorariosNivel: [],
+                            incluyeAlmuerzo: false,
+                            horarioRecepcionAlmuerzo: "",
+                            nivelCambridge: "",
+                            modalidadesCambridge: [],
+                            montoPrimerPago: "",
+                            comunicado: "",
+                            comunicadoCompleto: "",
+                            requisitos: "",
+                            fechaInicio: "",
+                            fechaFin: "",
+                            duracionAvisoDias: "7",
+                            cupos: "",
+                            costo: "",
+                            modalidadCobro: "Mensual",
+                            invitacionMasiva: false,
+                            horariosPorGrupo: [],
+                            gradosAplicables: [],
+                            dias: [],
+                            horaInicio: "",
+                            horaFin: "",
+                          };
+                        } else if (nuevoTipo === "Certificación Cambridge") {
+                          reseteos = {
+                            incluyeAlmuerzo: false,
+                            horarioRecepcionAlmuerzo: "",
+                            areaTematica: "Matemática",
+                          };
+                        } else {
+                          reseteos = {
+                            nivelCambridge: "",
+                            modalidadesCambridge: [],
+                            areaTematica: "Matemática",
+                          };
+                        }
+
+                        let categoriaSugerida = form.categoria;
+                        if (nuevoTipo !== "Otro genérico") {
+                          const academica = (categorias || []).find(c => {
+                            const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                            return normal === "academico";
+                          });
+                          categoriaSugerida = academica || "Academico";
+                        }
+
+                        actualizarForm({
+                          tipoComunicado: nuevoTipo,
+                          comunicado: template.comunicado,
+                          comunicadoCompleto: template.comunicado,
+                          requisitos: template.requisitos,
+                          tipoDocumento: tipoDocSugerido,
+                          numeroDocumento: numDocSugerido,
+                          categoria: categoriaSugerida,
+                          ...reseteos
+                        });
+                      }}
+                      style={esNoAcademico ? {
+                        background: "#e2e8f0",
+                        color: "#64748b",
+                        cursor: "not-allowed",
+                        borderColor: "#cbd5e1"
+                      } : {
+                        background: "#eff6ff",
+                        fontWeight: "bold",
+                        borderColor: "#3b82f6"
+                      }}
+                    >
+                      <option value="Otro genérico">Otro genérico (Taller común)</option>
+                      <option value="Club de Tareas">Club de Tareas</option>
+                      <option value="Reforzamiento (Circular)">Reforzamiento (Circular)</option>
+                      <option value="Certificación Cambridge">Certificación Cambridge</option>
+                    </select>
+                  </div>
+                )}
                 {usaTalleresPorEdad && esFormularioVerano ? (
-                  <div className="coord-field">
+                  <div className="coord-field coord-field-full">
                     <label>Talleres habilitados</label>
                     <p className="coord-field-hint" style={{ marginTop: "4px" }}>
                       Configure abajo cada taller de verano con edad, día, horario y cupos. Asistente registrará a los alumnos.
@@ -413,8 +434,10 @@ function ProgramaFormModal({
               </div>
             </section>
 
-            {/* SECCIÓN CONDICIONAL: DATOS DEL DOCUMENTO */}
-            {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && (
+            {form.categoria && (!esAcademico || esCircularEspecial) && (
+              <>
+                {/* SECCIÓN CONDICIONAL: DATOS DEL DOCUMENTO */}
+                {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && (
               <section className="coord-form-section" style={{ borderLeft: "4px solid #3b82f6", paddingLeft: "12px" }}>
                 <div className="coord-section-heading">
                   <BookOpen size={18} style={{ color: "#3b82f6" }} />
@@ -504,17 +527,17 @@ function ProgramaFormModal({
                   </div>
                 </div>
                 <div className="coord-section-grid">
-                  <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+                  <div className="coord-time-fields-grid" style={{ gridColumn: "1 / -1" }}>
                     <div className="coord-field">
-                      <label>Fecha inicio *</label>
+                      <label>Inicio *</label>
                       <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
                     </div>
                     <div className="coord-field">
-                      <label>Fecha fin *</label>
+                      <label>Fin *</label>
                       <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
                     </div>
                     <div className="coord-field">
-                      <label>Duración del taller</label>
+                      <label>Duración</label>
                       {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" ? (
                         <input
                           value={form.duracionTaller || ""}
@@ -531,11 +554,8 @@ function ProgramaFormModal({
                         </div>
                       )}
                     </div>
-                  </div>
-
-                  <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: (form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad) ? "repeat(3, 1fr)" : "repeat(2, 1fr)", gap: "16px", alignItems: "end" }}>
                     <div className="coord-field">
-                      <label>Aviso abierto (días) *</label>
+                      <label>Aviso (días) *</label>
                       <input
                         type="number"
                         min="1"
@@ -545,6 +565,7 @@ function ProgramaFormModal({
                         placeholder="Máx 7 días"
                       />
                     </div>
+
                     {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && (
                       <div className="coord-field">
                         <label>Cupos *</label>
@@ -557,14 +578,15 @@ function ProgramaFormModal({
                         />
                       </div>
                     )}
-                    {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad && (
+
+                    {usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad && (
                       <div className="coord-field">
-                        <label style={{ fontWeight: "700", marginBottom: "6px", display: "block" }}>Horarios por grado/bloque/docente</label>
+                        <label>Horarios</label>
                         <button
                           type="button"
                           className="coord-template-autofill"
                           style={{
-                            height: "34px",
+                            height: "40px",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -1222,7 +1244,9 @@ function ProgramaFormModal({
                 </div>
               </div>
             </section>
-          </div>
+          </>
+        )}
+      </div>
 
         </form>
 

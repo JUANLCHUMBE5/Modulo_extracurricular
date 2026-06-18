@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Alert, Badge, Button, Group, Loader, Select, Table, Checkbox, Grid, Divider } from "@mantine/core";
 import { BarChart, DonutChart } from "@mantine/charts";
 import { toast } from "sonner";
@@ -28,7 +29,13 @@ import { formatearSoles, puedeExportar } from "./utils/direccionFormatters";
 import "./Direccion.css";
 
 export default function Direccion({ onLogout, user }) {
-  const [vista, setVista] = useState("resumen");
+  const { subview } = useParams();
+  const navigate = useNavigate();
+  const vista = subview || "resumen";
+
+  const setVista = (newView) => {
+    navigate(`/direccion/${newView}`);
+  };
   
   // Estado de la barra lateral (colapsada/expandida)
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {

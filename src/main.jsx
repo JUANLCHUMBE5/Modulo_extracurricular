@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { MantineProvider } from "@mantine/core";
 import { Toaster } from "sonner";
+import { HashRouter } from "react-router-dom";
 import App from "./App.jsx";
 import { mantineTheme } from "./mantineTheme";
 import "@mantine/core/styles.css";
@@ -26,7 +27,9 @@ createRoot(document.getElementById("root")).render(
           },
         }}
       />
-      <App />
+      <HashRouter>
+        <App />
+      </HashRouter>
     </MantineProvider>
   </React.StrictMode>
 );

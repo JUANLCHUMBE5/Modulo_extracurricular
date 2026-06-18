@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import {
   listarProgramas,
@@ -100,7 +101,15 @@ export default function useCoordinacion({
   user,
 }) {
   const esProfesor = user?.username === "profe" || user?.name === "Profesor";
-  const [vista, setVista] = useState(initialView || "programas");
+  const { subview } = useParams();
+  const navigate = useNavigate();
+  const vista = embedded ? (initialView || "programas") : (subview || "programas");
+
+  const setVista = (newView) => {
+    if (!embedded) {
+      navigate(`/coordinacion/${newView}`);
+    }
+  };
   const [programas, setProgramas] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -286,7 +295,6 @@ export default function useCoordinacion({
 
   useEffect(() => {
     if (!embedded || !initialView) return;
-    setVista(initialView);
     setMensaje("");
   }, [embedded, initialView]);
 

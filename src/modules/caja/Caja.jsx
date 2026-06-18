@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button, Group, Modal, Select } from "@mantine/core";
 import { toast } from "sonner";
 import {
@@ -53,7 +54,15 @@ export default function Caja({
   onClearDelegatedModule,
   onLogout,
 }) {
-  const [vista, setVista] = useState(initialView || "pagos");
+  const { subview } = useParams();
+  const navigate = useNavigate();
+  const vista = embedded ? (initialView || "pagos") : (subview || "pagos");
+
+  const setVista = (newView) => {
+    if (!embedded) {
+      navigate(`/caja/${newView}`);
+    }
+  };
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem("caja_sidebar_expanded");
     return saved !== null ? JSON.parse(saved) : true;
@@ -171,10 +180,7 @@ export default function Caja({
     };
   }, [reporteCaja]);
 
-  useEffect(() => {
-    if (!embedded || !initialView) return;
-    setVista(initialView);
-  }, [embedded, initialView]);
+  // Vista embebida sincronizada mediante URL por el padre
 
   async function cargarDatos() {
     setCargando(true);

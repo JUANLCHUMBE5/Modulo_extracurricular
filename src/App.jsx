@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect, useMemo, useState } from "react";
+import { Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom";
 import Login from "./components/Login/Login";
 import { apiDb, syncApiDb } from "./services/dbApi";
 import { isApiMode, apiClient } from "./services/apiClient";
@@ -219,20 +220,17 @@ function ModuleSwitcher({ activeShortcutId, availableModules, currentRole, onSel
 
 function App() {
   const [user, setUser] = useState(() => readStorageJson(SESSION_STORAGE_KEY, null));
-  const [activeModule, setActiveModule] = useState(() => readStorageValue(MODULE_STORAGE_KEY, ""));
-  const [delegatedModule, setDelegatedModule] = useState(() => readStorageJson(DELEGATED_STORAGE_KEY, null));
+  const navigate = useNavigate();
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
-    setActiveModule(userData.role);
-    setDelegatedModule(null);
+    navigate("/", { replace: true });
   };
 
   const handleLogout = () => {
     setUser(null);
-    setActiveModule("");
-    setDelegatedModule(null);
     removeStoredSession();
+    navigate("/login", { replace: true });
   };
 
   const availableModules = useMemo(() => getAvailableModules(user), [user]);
@@ -241,47 +239,6 @@ function App() {
     if (!user) return;
     writeStorageJson(SESSION_STORAGE_KEY, user);
   }, [user]);
-
-  useEffect(() => {
-    if (!user || !activeModule) return;
-    writeStorageValue(MODULE_STORAGE_KEY, activeModule);
-  }, [activeModule, user]);
-
-  useEffect(() => {
-    if (!user) return;
-    if (delegatedModule) {
-      writeStorageJson(DELEGATED_STORAGE_KEY, {
-        id: delegatedModule.id,
-        label: delegatedModule.label,
-        module: delegatedModule.module,
-        view: delegatedModule.view,
-      });
-      return;
-    }
-
-    try {
-      window.sessionStorage.removeItem(DELEGATED_STORAGE_KEY);
-      window.localStorage.removeItem(DELEGATED_STORAGE_KEY);
-    } catch {
-      // Sin storage, basta con limpiar el estado en memoria.
-    }
-  }, [delegatedModule, user]);
-
-  useEffect(() => {
-    if (!user) return;
-    if (!activeModule || !availableModules.includes(activeModule)) {
-      setActiveModule(user.role);
-    }
-    if (delegatedModule && !availableModules.includes(delegatedModule.module)) {
-      setDelegatedModule(null);
-    }
-  }, [activeModule, availableModules, delegatedModule, user]);
-
-  useEffect(() => {
-    const visibleModule = delegatedModule?.module || activeModule || user?.role;
-    const moduleLabel = moduleLabels[visibleModule];
-    document.title = moduleLabel ? `${moduleLabel} - ${APP_TITLE}` : APP_TITLE;
-  }, [activeModule, delegatedModule, user?.role]);
 
   useEffect(() => {
     if (!user?.username || user.role === "padres") return;
@@ -357,7 +314,6 @@ function App() {
       }
     };
 
-    // App escucha TODOS los módulos — necesita sincronizar permisos del usuario activo
     const handleMockDbUpdated = () => actualizarUsuarioActivo();
 
     actualizarUsuarioActivo();
@@ -381,114 +337,186 @@ function App() {
     const actualizarSesionEntrePestanas = (event) => {
       if (event.key !== SESSION_STORAGE_KEY || event.newValue) return;
       setUser(null);
-      setActiveModule("");
-      setDelegatedModule(null);
     };
 
     window.addEventListener("storage", actualizarSesionEntrePestanas);
     return () => window.removeEventListener("storage", actualizarSesionEntrePestanas);
   }, []);
 
-  if (!user) {
-    return <Login onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  const renderModule = () => {
-    const delegatedContent = delegatedModule ? (() => {
-      switch (delegatedModule.module) {
-        case "coordinacion":
-          return (
-            <Coordinacion
-              embedded
-              initialView={delegatedModule.view}
-              onLogout={handleLogout}
-              user={user}
-            />
-          );
-        case "caja":
-          return (
-            <Caja
-              embedded
-              initialView={delegatedModule.view}
-              onLogout={handleLogout}
-              user={user}
-            />
-          );
-        default:
-          return null;
-      }
-    })() : null;
-
-    const moduleSwitcher = availableModules.length > 1 ? (
-      <ModuleSwitcher
-        activeShortcutId={delegatedModule?.id || ""}
-        availableModules={availableModules}
-        currentRole={user.role}
-        onSelectShortcut={setDelegatedModule}
-        user={user}
-      />
-    ) : null;
-
-    switch (activeModule || user.role) {
-      case "administrador":
-        return <Administrador onLogout={handleLogout} />;
-      case "coordinacion":
-        return (
-          <Coordinacion
-            delegatedContent={delegatedContent}
-            moduleSwitcher={moduleSwitcher}
-            onClearDelegatedModule={() => setDelegatedModule(null)}
-            onLogout={handleLogout}
-            user={user}
-          />
-        );
-      case "secretaria":
-        return (
-          <Secretaria
-            delegatedContent={delegatedContent}
-            moduleSwitcher={moduleSwitcher}
-            onClearDelegatedModule={() => setDelegatedModule(null)}
-            onLogout={handleLogout}
-            user={user}
-          />
-        );
-      case "caja":
-        return (
-          <Caja
-            delegatedContent={delegatedContent}
-            moduleSwitcher={moduleSwitcher}
-            onClearDelegatedModule={() => setDelegatedModule(null)}
-            onLogout={handleLogout}
-            user={user}
-          />
-        );
-      case "padres":
-        return <Padres user={user} onLogout={handleLogout} />;
-      case "auxiliar":
-        return <Auxiliar onLogout={handleLogout} />;
-      case "direccion":
-        return <Direccion onLogout={handleLogout} user={user} />;
-      default:
-        return (
-          <div className="module-placeholder">
-            <section className="module-placeholder-card">
-              <span>SR</span>
-              <h2>Módulo {user.name} en construcción</h2>
-              <p>Este módulo aún no tiene su interfaz implementada.</p>
-            </section>
-            <button onClick={handleLogout} className="module-placeholder-button">
-              Cerrar sesión
-            </button>
-          </div>
-        );
-    }
-  };
-
   return (
     <Suspense fallback={<div className="module-placeholder">Cargando modulo...</div>}>
-      {renderModule()}
+      <Routes>
+        <Route
+          path="/login"
+          element={user ? <Navigate to="/" replace /> : <Login onLoginSuccess={handleLoginSuccess} />}
+        />
+        <Route
+          path="/"
+          element={
+            user ? (
+              <Navigate to={`/${user.role}`} replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/:module"
+          element={
+            <ModuleLayout
+              user={user}
+              onLogout={handleLogout}
+              availableModules={availableModules}
+            />
+          }
+        />
+        <Route
+          path="/:module/:subview"
+          element={
+            <ModuleLayout
+              user={user}
+              onLogout={handleLogout}
+              availableModules={availableModules}
+            />
+          }
+        />
+        <Route
+          path="/:module/delegated/:delegatedModule/:delegatedView"
+          element={
+            <ModuleLayout
+              user={user}
+              onLogout={handleLogout}
+              availableModules={availableModules}
+            />
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Suspense>
   );
+}
+
+function ModuleLayout({ user, onLogout, availableModules }) {
+  const { module, subview, delegatedModule, delegatedView } = useParams();
+  const navigate = useNavigate();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!availableModules.includes(module)) {
+    return <Navigate to={`/${user.role}`} replace />;
+  }
+
+  useEffect(() => {
+    const visibleModule = delegatedModule || module || user?.role;
+    const moduleLabel = moduleLabels[visibleModule];
+    document.title = moduleLabel ? `${moduleLabel} - ${APP_TITLE}` : APP_TITLE;
+  }, [module, delegatedModule, user?.role]);
+
+  let delegatedContent = null;
+  if (delegatedModule && delegatedView) {
+    switch (delegatedModule) {
+      case "coordinacion":
+        delegatedContent = (
+          <Coordinacion
+            embedded
+            initialView={delegatedView}
+            onLogout={onLogout}
+            user={user}
+          />
+        );
+        break;
+      case "caja":
+        delegatedContent = (
+          <Caja
+            embedded
+            initialView={delegatedView}
+            onLogout={onLogout}
+            user={user}
+          />
+        );
+        break;
+      default:
+        break;
+    }
+  }
+
+  const handleSelectShortcut = (item) => {
+    navigate(`/${module}/delegated/${item.module}/${item.view}`);
+  };
+
+  const handleClearDelegatedModule = () => {
+    navigate(`/${module}`);
+  };
+
+  const activeShortcutId = (delegatedModule && delegatedView)
+    ? `${delegatedModule}-${delegatedView}`
+    : "";
+
+  const moduleSwitcher = availableModules.length > 1 ? (
+    <ModuleSwitcher
+      activeShortcutId={activeShortcutId}
+      availableModules={availableModules}
+      currentRole={user.role}
+      onSelectShortcut={handleSelectShortcut}
+      user={user}
+    />
+  ) : null;
+
+  switch (module) {
+    case "administrador":
+      return <Administrador onLogout={onLogout} />;
+    case "coordinacion":
+      return (
+        <Coordinacion
+          delegatedContent={delegatedContent}
+          moduleSwitcher={moduleSwitcher}
+          onClearDelegatedModule={handleClearDelegatedModule}
+          onLogout={onLogout}
+          user={user}
+        />
+      );
+    case "secretaria":
+      return (
+        <Secretaria
+          delegatedContent={delegatedContent}
+          moduleSwitcher={moduleSwitcher}
+          onClearDelegatedModule={handleClearDelegatedModule}
+          onLogout={onLogout}
+          user={user}
+        />
+      );
+    case "caja":
+      return (
+        <Caja
+          delegatedContent={delegatedContent}
+          moduleSwitcher={moduleSwitcher}
+          onClearDelegatedModule={handleClearDelegatedModule}
+          onLogout={onLogout}
+          user={user}
+        />
+      );
+    case "padres":
+      return <Padres user={user} onLogout={onLogout} />;
+    case "auxiliar":
+      return <Auxiliar onLogout={onLogout} />;
+    case "direccion":
+      return <Direccion onLogout={onLogout} user={user} />;
+    default:
+      return (
+        <div className="module-placeholder">
+          <section className="module-placeholder-card">
+            <span>SR</span>
+            <h2>Módulo {user.name} en construcción</h2>
+            <p>Este módulo aún no tiene su interfaz implementada.</p>
+          </section>
+          <button onClick={onLogout} className="module-placeholder-button">
+            Cerrar sesión
+          </button>
+        </div>
+      );
+  }
 }
 
 export default App;
