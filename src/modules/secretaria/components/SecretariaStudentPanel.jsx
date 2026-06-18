@@ -14,8 +14,6 @@ function describirSeleccionCambridge(valor = "") {
   const seleccion = String(valor || "").trim().toUpperCase();
   const opciones = {
     A: "A - Promovido por certificado oficial",
-    B: "B - Ingresante por Admission Test",
-    C: "C - Ingresante por desempeno academico",
   };
   return opciones[seleccion] || "Pendiente de definir en Coordinación Académica";
 }

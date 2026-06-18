@@ -134,7 +134,7 @@ export default function PagoStep({
   const puedeEnviarVerificacion = Boolean(inscripcion && pagoListo && mostrarFormularioPago && !requiereCaja && formularioPagoCompleto);
   const textoBoton = pagoVerificando
     ? "Pago pendiente de verificacion"
-    : "Guardar pago";
+    : "Enviar pago";
 
   const esPagado = esPagoAprobado(inscripcion, pagoConfirmado);
   const esReservadoCaja = Boolean(
@@ -147,7 +147,7 @@ export default function PagoStep({
   const mostrarExito = esPagado || reservaConfirmada || (pagoVerificando && !reintentandoPago);
 
   useEffect(() => {
-    if (!mostrarExito) return;
+    if (!esPagado) return;
     const timer = setInterval(() => {
       setSegundos((s) => {
         if (s <= 1) {
@@ -159,7 +159,7 @@ export default function PagoStep({
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [mostrarExito, onFinalizarPago]);
+  }, [esPagado, onFinalizarPago]);
 
   async function realizarReservaCaja() {
     if (guardando) return;
@@ -289,7 +289,7 @@ export default function PagoStep({
                   boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
                 }}
               >
-                {reservaConfirmada ? `Volver al Panel Principal (${segundos}s)` : "Volver al Panel Principal"}
+                Volver al Panel Principal
               </button>
             </div>
           </section>
@@ -353,7 +353,7 @@ export default function PagoStep({
                   boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
                 }}
               >
-                Volver al Panel Principal ({segundos}s)
+                Volver al Panel Principal
               </button>
             </div>
           </section>
@@ -451,7 +451,7 @@ export default function PagoStep({
       <div className="padres-flow-section-title">
         <div>
           <PortalBadge tone={pagoVerificando ? "blue" : "orange"}>
-            {pagoVerificando ? "Pago en proceso" : "Seleccione método de pago"}
+            {pagoVerificando ? "Pago en proceso" : "Pago Virtual Yape"}
           </PortalBadge>
           <h2>{pagoVerificando ? "Pago en proceso" : "Registrar pago"}</h2>
           <p>
@@ -459,153 +459,16 @@ export default function PagoStep({
               ? "El comprobante fue recibido. Caja validará la operación y el estado cambiará a pago exitoso una vez aprobado."
               : pagoObservado
                 ? "El pago fue observado por Caja. Corrija la información y vuelva a enviar el comprobante."
-                : ""}
+                : "Realice el pago a través de Yape y registre el comprobante a continuación."}
           </p>
         </div>
       </div>
 
       {/* Selector de método */}
-      {!forzarVistaWeb && (
-        <div className="padres-flow-payment-tabs" style={{
-          display: "flex",
-          gap: "0",
-          marginBottom: "20px",
-          borderRadius: "10px",
-          overflow: "hidden",
-          border: "2px solid #e2e8f0",
-          background: "#f8fafc",
-        }}>
-          <button
-            type="button"
-            onClick={() => setMetodoSeleccionado("caja")}
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "10px",
-              padding: "14px 16px",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: tabsCaja ? 700 : 500,
-              fontSize: "15px",
-              background: tabsCaja
-                ? "linear-gradient(135deg, #1e40af, #3b82f6)"
-                : "transparent",
-              color: tabsCaja ? "#fff" : "#64748b",
-              transition: "all 0.25s ease",
-              borderRight: "1px solid #e2e8f0",
-            }}
-          >
-            <BuildingBank size={20} />
-            Pagar en Caja
-          </button>
-          <button
-            type="button"
-            onClick={() => setMetodoSeleccionado("web")}
-            style={{
-              flex: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "10px",
-              padding: "14px 16px",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: tabsWeb ? 700 : 500,
-              fontSize: "15px",
-              background: tabsWeb
-                ? "linear-gradient(135deg, #7c3aed, #a855f7)"
-                : "transparent",
-              color: tabsWeb ? "#fff" : "#64748b",
-              transition: "all 0.25s ease",
-            }}
-          >
-            <DeviceMobile size={20} />
-            Pagar por Web (Virtual)
-          </button>
-        </div>
-      )}
 
-      {/* Vista: Pagar en Caja */}
-      {tabsCaja && !forzarVistaWeb && (
-        <div className="padres-flow-payment-layout" style={{ display: "block" }}>
-          <section style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "16px",
-            padding: "32px 24px",
-            border: "2px solid #bfdbfe",
-            borderRadius: "12px",
-            background: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
-            textAlign: "center",
-          }}>
-            <BuildingBank size={48} style={{ color: "#1d4ed8" }} />
-            <div>
-              <strong style={{ fontSize: "18px", display: "block", color: "#1e3a8a", fontWeight: 800 }}>
-                Pago Presencial en Caja
-              </strong>
-              <p style={{ fontSize: "14px", color: "#1e40af", marginTop: "8px", lineHeight: 1.6 }}>
-                Al seleccionar esta opción, su cupo quedará <b>reservado</b> con estado{" "}
-                <span style={{
-                  display: "inline-block",
-                  background: "#fef3c7",
-                  color: "#92400e",
-                  padding: "2px 10px",
-                  borderRadius: "6px",
-                  fontWeight: 700,
-                  fontSize: "13px",
-                }}>Pendiente de Pago</span>.
-              </p>
-            </div>
-
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              background: "#fff",
-              padding: "14px 20px",
-              borderRadius: "8px",
-              border: "1px solid #93c5fd",
-              width: "100%",
-              maxWidth: "340px",
-              justifyContent: "space-between",
-            }}>
-              <span style={{ color: "#475569", fontSize: "14px" }}>Monto a pagar:</span>
-              <strong style={{ color: "#1e40af", fontSize: "20px" }}>{monto}</strong>
-            </div>
-
-            <button
-              type="button"
-              className="padres-flow-primary-button"
-              onClick={realizarReservaCaja}
-              disabled={guardando}
-              style={{
-                marginTop: "8px",
-                padding: "12px 32px",
-                background: "linear-gradient(135deg, #1e40af, #3b82f6)",
-                color: "#fff",
-                border: "none",
-                fontWeight: 700,
-                cursor: "pointer",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                borderRadius: "8px",
-                fontSize: "15px",
-                boxShadow: "0 4px 12px rgba(30,64,175,0.3)",
-              }}
-            >
-              {guardando ? <Loader2 className="padres-spin" size={18} /> : <BuildingBank size={18} />}
-              Reservar cupo — Pagar en Caja
-            </button>
-          </section>
-        </div>
-      )}
 
       {/* Vista: Pagar por Web (Yape) */}
-      {(tabsWeb || forzarVistaWeb) && (
+
         <div className="padres-flow-payment-layout">
           <section className="padres-flow-yape-card" aria-label="QR de pago Yape">
             <span>Metodo aceptado</span>
@@ -710,7 +573,7 @@ export default function PagoStep({
             </div>
           </form>
         </div>
-      )}
+
     </article>
   );
 }

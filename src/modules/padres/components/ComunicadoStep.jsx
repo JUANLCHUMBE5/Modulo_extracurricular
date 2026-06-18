@@ -2,15 +2,18 @@ import { useState } from "react";
 import {
   IconAlertCircle as AlertCircle,
   IconFileText as FileText,
-  IconCalendar as CalendarDays,
+  IconCalendar as Calendar,
+  IconClock as Clock,
+  IconUser as User,
+  IconReceipt as Receipt,
+  IconClipboardCheck as ClipboardCheck,
+  IconBook2 as BookOpen,
 } from "@tabler/icons-react";
 import PortalBadge from "./PortalBadge";
-import { describirSeleccionCambridgePadres } from "../utils/padresTextUtils";
+import { describirSeleccionCambridgePadres, obtenerTipoCampo } from "../utils/padresTextUtils";
 
 const opcionesCambridge = [
   { id: "A", titulo: "A", detalle: "Promovido/a por Certificado Oficial 2025" },
-  { id: "B", titulo: "B", detalle: "Ingresante por Admission Test" },
-  { id: "C", titulo: "C", detalle: "Ingresante por Desempeno Academico" },
 ];
 
 function obtenerTalleresEstructurados(programa) {
@@ -122,6 +125,24 @@ function obtenerEmojiDeporte(deporte) {
   return "🏆";
 }
 
+function obtenerIconoPorTipo(tipo = "") {
+  if (tipo === "vigencia") return Calendar;
+  if (tipo === "horario") return Clock;
+  if (tipo === "costo") return Receipt;
+  if (tipo === "plazo") return ClipboardCheck;
+  if (tipo === "responsable") return User;
+  return BookOpen;
+}
+
+function obtenerClasePorTipo(tipo = "") {
+  if (tipo === "vigencia") return "is-vigencia";
+  if (tipo === "horario") return "is-horario";
+  if (tipo === "costo") return "is-costo";
+  if (tipo === "plazo") return "is-plazo";
+  if (tipo === "responsable") return "is-responsable";
+  return "is-general";
+}
+
 export default function ComunicadoStep({
   comunicadoPadres,
   infoProgramaAceptada,
@@ -203,9 +224,60 @@ export default function ComunicadoStep({
         <>
           <div className="padres-flow-letter">
             {comunicadoPadres.fecha ? <p>{comunicadoPadres.fecha}</p> : null}
-            {(comunicadoPadres.resumenParrafos || comunicadoPadres.parrafos).map((parrafo, index) => (
-              <p key={`${index}-${parrafo}`}>{parrafo}</p>
-            ))}
+            {(() => {
+              const parrafosRender = comunicadoPadres.resumenParrafos || comunicadoPadres.parrafos;
+              const segmentos = [];
+              let grupoActual = null;
+
+              parrafosRender.forEach((parrafo) => {
+                const match = parrafo.match(/^([^:]+):\s*(.*)$/);
+                const esKeyValue = match && match[1].length < 35;
+                
+                if (esKeyValue) {
+                  if (!grupoActual) {
+                    grupoActual = { type: "grid", items: [] };
+                    segmentos.push(grupoActual);
+                  }
+                  grupoActual.items.push({
+                    label: match[1].trim(),
+                    value: match[2].trim(),
+                  });
+                } else {
+                  grupoActual = null;
+                  segmentos.push({ type: "text", content: parrafo });
+                }
+              });
+
+              return segmentos.map((segmento, idx) => {
+                if (segmento.type === "grid") {
+                  return (
+                    <div key={`grid-${idx}`} className="padres-comunicado-details-grid">
+                      {segmento.items.map((item, itemIdx) => {
+                        const tipo = obtenerTipoCampo(item.label);
+                        const Icono = obtenerIconoPorTipo(tipo);
+                        const clase = obtenerClasePorTipo(tipo);
+                        return (
+                          <div key={itemIdx} className={`padres-comunicado-detail-item ${clase}`}>
+                            <div className="padres-comunicado-detail-icon">
+                              <Icono size={16} />
+                            </div>
+                            <div className="padres-comunicado-detail-info">
+                              <span className="padres-comunicado-detail-label">{item.label}</span>
+                              <span className="padres-comunicado-detail-value">{item.value}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+                return (
+                  <p key={`text-${idx}`} style={{ margin: "12px 0", fontSize: "14.5px", lineHeight: "1.6", color: "#1e293b" }}>
+                    {segmento.content}
+                  </p>
+                );
+              });
+            })()}
           </div>
 
           {comunicadoPadres.datosCambridge ? (

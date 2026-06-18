@@ -81,27 +81,9 @@ function ProgramaFormModal({
   setMostrarGestorCategorias,
   setNuevaCat,
   setShowModal,
-  setTallerDepCustom,
-  setTallerDepDeporte,
-  setTallerDepDia,
-  setTallerDepHoraFin,
-  setTallerDepHoraInicio,
-  setTallerDepMaxEdad,
-  setTallerDepMinEdad,
-  setTallerDepCupos,
-  setTallerDepNivel,
-  setTallerDepDocente,
   show,
-  tallerDepCustom,
-  tallerDepDeporte,
-  tallerDepDia,
-  tallerDepHoraFin,
-  tallerDepHoraInicio,
-  tallerDepMaxEdad,
-  tallerDepMinEdad,
-  tallerDepCupos,
-  tallerDepNivel,
-  tallerDepDocente,
+  tallerDepForm,
+  setTallerDepForm,
   toggleDia,
   toggleGrado,
   toggleGradoGrupo,
@@ -134,44 +116,8 @@ function ProgramaFormModal({
     }
   }, [show, duracionTallerFormulario, form.duracionTaller]);
 
-  useEffect(() => {
-    if (show && esCircularEspecial && Array.isArray(form.tablaHorariosNivel)) {
-      let nuevosGrados = [...(form.gradosAplicables || [])];
-      let cambio = false;
 
-      // 1. Añadir grados para los niveles que están en la tabla
-      form.tablaHorariosNivel.forEach(row => {
-        const nivel = row.nivel;
-        if (nivel) {
-          const nivelObj = nivelesGrados.find(n => n.nivel === nivel);
-          if (nivelObj) {
-            nivelObj.grados.forEach(grado => {
-              const valor = `${nivel}:${grado}`;
-              if (!nuevosGrados.includes(valor)) {
-                nuevosGrados.push(valor);
-                cambio = true;
-              }
-            });
-          }
-        }
-      });
 
-      // 2. Limpiar grados de niveles que ya no están en la tabla
-      const nivelesActivos = form.tablaHorariosNivel.map(r => r.nivel).filter(Boolean);
-      const gradosFiltrados = nuevosGrados.filter(g => {
-        const [gNivel] = g.split(":");
-        if (gNivel && !nivelesActivos.includes(gNivel)) {
-          cambio = true;
-          return false;
-        }
-        return true;
-      });
-
-      if (cambio) {
-        actualizarForm("gradosAplicables", gradosFiltrados);
-      }
-    }
-  }, [show, esCircularEspecial, form.tablaHorariosNivel, form.gradosAplicables, nivelesGrados]);
 
   if (!show) return null;
 
@@ -540,10 +486,6 @@ function ProgramaFormModal({
                       style={{
                         width: "100%",
                         padding: "8px 12px",
-                        border: "1px solid #cbd5e1",
-                        borderRadius: "6px",
-                        fontFamily: "inherit",
-                        fontSize: "14px",
                         resize: "vertical"
                       }}
                     />
@@ -562,15 +504,15 @@ function ProgramaFormModal({
                   </div>
                 </div>
                 <div className="coord-section-grid">
-                  <div className="coord-field">
-                    <label>Fecha inicio *</label>
-                    <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
-                  </div>
-                  <div className="coord-field">
-                    <label>Fecha fin *</label>
-                    <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
-                  </div>
-                  <div style={{ gridColumn: "span 3", display: "grid", gridTemplateColumns: form.tipoComunicado && form.tipoComunicado !== "Otro genérico" ? "repeat(3, 1fr)" : "repeat(2, 1fr)", gap: "16px" }}>
+                  <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+                    <div className="coord-field">
+                      <label>Fecha inicio *</label>
+                      <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
+                    </div>
+                    <div className="coord-field">
+                      <label>Fecha fin *</label>
+                      <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
+                    </div>
                     <div className="coord-field">
                       <label>Duración del taller</label>
                       {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" ? (
@@ -580,11 +522,7 @@ function ProgramaFormModal({
                           placeholder="Ej: 4 semanas"
                           style={{
                             width: "100%",
-                            padding: "8px 12px",
-                            border: "1px solid #cbd5e1",
-                            borderRadius: "6px",
-                            fontFamily: "inherit",
-                            fontSize: "14px"
+                            padding: "8px 12px"
                           }}
                         />
                       ) : (
@@ -593,6 +531,9 @@ function ProgramaFormModal({
                         </div>
                       )}
                     </div>
+                  </div>
+
+                  <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: (form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad) ? "repeat(3, 1fr)" : "repeat(2, 1fr)", gap: "16px", alignItems: "end" }}>
                     <div className="coord-field">
                       <label>Aviso abierto (días) *</label>
                       <input
@@ -614,6 +555,36 @@ function ProgramaFormModal({
                           onChange={e => actualizarForm("cupos", e.target.value)}
                           placeholder="Ej: 50"
                         />
+                      </div>
+                    )}
+                    {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad && (
+                      <div className="coord-field">
+                        <label style={{ fontWeight: "700", marginBottom: "6px", display: "block" }}>Horarios por grado/bloque/docente</label>
+                        <button
+                          type="button"
+                          className="coord-template-autofill"
+                          style={{
+                            height: "34px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: "750",
+                            background: "#eefaf5",
+                            color: "#1f8f73",
+                            border: "1px solid #b8d4c8",
+                            borderRadius: "8px",
+                            cursor: "pointer",
+                            width: "100%",
+                            gap: "6px"
+                          }}
+                          onClick={() => {
+                            setIndiceGrupoEditando(null);
+                            setGrupoDraft(grupoHorarioDraftInicial);
+                            setMostrarGrupoModal(true);
+                          }}
+                        >
+                          <Plus size={14} /> Añadir bloque
+                        </button>
                       </div>
                     )}
                   </div>
@@ -642,314 +613,64 @@ function ProgramaFormModal({
 
                   {/* Program Scheduler configuration depending on circular type */}
                   {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" ? (
-                    // LEVEL SCHEDULES TABLE FOR CIRCULARS
+                    // BLOCK SCHEDULER FOR CIRCULARS
                     <>
-                  <div className="coord-field coord-field-full" style={{ marginTop: "12px" }}>
-                        <label style={{ fontWeight: "700", marginBottom: "8px", display: "block" }}>
-                          Cronograma de horarios por nivel
-                        </label>
-                        <div style={{ overflowX: "auto" }}>
-                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13.5px" }}>
-                            <thead>
-                              <tr style={{ background: "#f8fafc", borderBottom: "2px solid #cbd5e1" }}>
-                                <th style={{ padding: "8px", textAlign: "left" }}>Nivel / Grado</th>
-                                <th style={{ padding: "8px", textAlign: "left" }}>Día(s)</th>
-                                <th style={{ padding: "8px", textAlign: "left" }}>Horario Almuerzo</th>
-                                <th style={{ padding: "8px", textAlign: "left" }}>Horario Clase</th>
-                                <th style={{ padding: "8px", textAlign: "left" }}>Docente</th>
-                                <th style={{ padding: "8px", textAlign: "left" }}>Apoyo / Auxiliar</th>
-                                <th style={{ padding: "8px", width: "80px", textAlign: "center" }}>Acción</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {Array.isArray(form.tablaHorariosNivel) && form.tablaHorariosNivel.length > 0 ? (
-                                form.tablaHorariosNivel.map((row, idx) => (
-                                  <tr key={idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                                    <td style={{ padding: "6px 4px", minWidth: "230px" }}>
-                                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                                        <select
-                                          value={row.nivel || ""}
-                                          onChange={e => {
-                                            const nuevoNivel = e.target.value;
-                                            const antiguoNivel = row.nivel;
-                                            const nuevaTabla = [...form.tablaHorariosNivel];
-                                            nuevaTabla[idx].nivel = nuevoNivel;
-
-                                            let nuevosGrados = [...(form.gradosAplicables || [])];
-
-                                            // Si se selecciona un nivel estándar, autoseleccionar todos sus grados
-                                            if (nuevoNivel) {
-                                              const nivelObj = nivelesGrados.find(n => n.nivel === nuevoNivel);
-                                              if (nivelObj) {
-                                                nivelObj.grados.forEach(grado => {
-                                                  const valor = `${nuevoNivel}:${grado}`;
-                                                  if (!nuevosGrados.includes(valor)) {
-                                                    nuevosGrados.push(valor);
-                                                  }
-                                                });
-                                              }
-                                            }
-
-                                            // Si el nivel anterior ya no está en uso en ninguna otra fila, desmarcar sus grados
-                                            if (antiguoNivel && antiguoNivel !== nuevoNivel) {
-                                              const exists = nuevaTabla.some(r => r.nivel === antiguoNivel);
-                                              if (!exists) {
-                                                nuevosGrados = nuevosGrados.filter(g => !g.startsWith(`${antiguoNivel}:`));
-                                              }
-                                            }
-
-                                            actualizarForm({
-                                              tablaHorariosNivel: nuevaTabla,
-                                              gradosAplicables: nuevosGrados
-                                            });
-                                          }}
-                                          style={{ width: "95px", padding: "4px 8px", border: "1px solid #cbd5e1", borderRadius: "4px", flexShrink: 0 }}
-                                        >
-                                          <option value="">Nivel...</option>
-                                          <option value="Inicial">Inicial</option>
-                                          <option value="Primaria">Primaria</option>
-                                          <option value="Secundaria">Secundaria</option>
-                                        </select>
-
-                                        {row.nivel ? (
-                                          <div style={{ position: "relative", flex: 1 }}>
-                                            {(() => {
-                                              const gradosDeEsteNivel = (form.gradosAplicables || []).filter(g => g.startsWith(`${row.nivel}:`)).map(g => g.split(":")[1]);
-                                              const maxGrados = nivelesGrados.find(n => n.nivel === row.nivel)?.grados.length || 0;
-                                              const label = gradosDeEsteNivel.length === 0 
-                                                ? "Ninguno" 
-                                                : (gradosDeEsteNivel.length === maxGrados
-                                                  ? "Todos"
-                                                  : gradosDeEsteNivel.map(g => g.replace(/\s*años?/i, "")).join(", "));
-                                              return (
-                                                <button
-                                                  type="button"
-                                                  onClick={() => setPopoverAbierto(popoverAbierto === idx ? null : idx)}
-                                                  style={{
-                                                    width: "100%",
-                                                    padding: "4px 8px",
-                                                    border: "1px solid #cbd5e1",
-                                                    borderRadius: "4px",
-                                                    background: "#fff",
-                                                    textAlign: "left",
-                                                    fontSize: "12.5px",
-                                                    color: gradosDeEsteNivel.length === 0 ? "#64748b" : "#0f766e",
-                                                    fontWeight: gradosDeEsteNivel.length === 0 ? "normal" : "bold",
-                                                    cursor: "pointer",
-                                                    whiteSpace: "nowrap",
-                                                    overflow: "hidden",
-                                                    textOverflow: "ellipsis",
-                                                    display: "block"
-                                                  }}
-                                                  title={`Click para editar grados de ${row.nivel}`}
-                                                >
-                                                  {label}
-                                                </button>
-                                              );
-                                            })()}
-
-                                            {popoverAbierto === idx && (
-                                              <>
-                                                {/* Background overlay to close z-index popup when clicking outside */}
-                                                <div 
-                                                  onClick={() => setPopoverAbierto(null)} 
-                                                  style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }} 
-                                                />
-                                                <div 
-                                                  style={{
-                                                    position: "absolute",
-                                                    top: "100%",
-                                                    left: 0,
-                                                    marginTop: "4px",
-                                                    background: "#fff",
-                                                    border: "1px solid #cbd5e1",
-                                                    borderRadius: "6px",
-                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-                                                    padding: "8px",
-                                                    zIndex: 1000,
-                                                    display: "flex",
-                                                    flexDirection: "column",
-                                                    gap: "6px",
-                                                    minWidth: "130px"
-                                                  }}
-                                                >
-                                                  {(nivelesGrados.find(n => n.nivel === row.nivel)?.grados || []).map(grado => {
-                                                    const valor = `${row.nivel}:${grado}`;
-                                                    const seleccionado = (form.gradosAplicables || []).includes(valor);
-                                                    return (
-                                                      <label
-                                                        key={grado}
-                                                        style={{
-                                                          display: "flex",
-                                                          alignItems: "center",
-                                                          gap: "6px",
-                                                          fontSize: "12px",
-                                                          color: "#1e293b",
-                                                          cursor: "pointer",
-                                                          padding: "2px 4px",
-                                                          borderRadius: "3px",
-                                                          background: seleccionado ? "#f1f5f9" : "transparent",
-                                                          margin: 0
-                                                        }}
-                                                      >
-                                                        <input
-                                                          type="checkbox"
-                                                          checked={seleccionado}
-                                                          onChange={() => {
-                                                            let nuevosGrados = [...(form.gradosAplicables || [])];
-                                                            if (seleccionado) {
-                                                              nuevosGrados = nuevosGrados.filter(g => g !== valor);
-                                                            } else {
-                                                              nuevosGrados.push(valor);
-                                                            }
-                                                            actualizarForm("gradosAplicables", nuevosGrados);
-                                                          }}
-                                                          style={{ margin: 0, width: "13px", height: "13px" }}
-                                                        />
-                                                        <span>{grado}</span>
-                                                      </label>
-                                                    );
-                                                  })}
-                                                </div>
-                                              </>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <div style={{ flex: 1, fontSize: "12px", color: "#94a3b8", fontStyle: "italic" }}>
-                                            Nivel...
-                                          </div>
-                                        )}
-                                      </div>
-                                    </td>
-                                    <td style={{ padding: "6px 4px" }}>
-                                      <input
-                                        value={row.dia || ""}
-                                        onChange={e => {
-                                          const nuevaTabla = [...form.tablaHorariosNivel];
-                                          nuevaTabla[idx].dia = e.target.value;
-                                          actualizarForm("tablaHorariosNivel", nuevaTabla);
-                                        }}
-                                        placeholder="Ej: Lunes y Miércoles"
-                                        style={{ width: "100%", padding: "4px 8px", border: "1px solid #cbd5e1", borderRadius: "4px" }}
-                                      />
-                                    </td>
-                                    <td style={{ padding: "6px 4px" }}>
-                                      <input
-                                        value={row.horarioAlmuerzo || ""}
-                                        onChange={e => {
-                                          const nuevaTabla = [...form.tablaHorariosNivel];
-                                          nuevaTabla[idx].horarioAlmuerzo = e.target.value;
-                                          actualizarForm("tablaHorariosNivel", nuevaTabla);
-                                        }}
-                                        placeholder="Ej: 14:20 - 15:10"
-                                        style={{ width: "100%", padding: "4px 8px", border: "1px solid #cbd5e1", borderRadius: "4px" }}
-                                      />
-                                    </td>
-                                    <td style={{ padding: "6px 4px" }}>
-                                      <input
-                                        value={row.horarioClase || ""}
-                                        onChange={e => {
-                                          const nuevaTabla = [...form.tablaHorariosNivel];
-                                          nuevaTabla[idx].horarioClase = e.target.value;
-                                          actualizarForm("tablaHorariosNivel", nuevaTabla);
-                                        }}
-                                        placeholder="Ej: 15:20 - 17:20"
-                                        style={{ width: "100%", padding: "4px 8px", border: "1px solid #cbd5e1", borderRadius: "4px" }}
-                                      />
-                                    </td>
-                                    <td style={{ padding: "6px 4px" }}>
-                                      <input
-                                        value={row.responsable || ""}
-                                        onChange={e => {
-                                          const nuevaTabla = [...form.tablaHorariosNivel];
-                                          nuevaTabla[idx].responsable = e.target.value;
-                                          actualizarForm("tablaHorariosNivel", nuevaTabla);
-                                        }}
-                                        placeholder="Ej: Prof. Luis Ramos"
-                                        style={{ width: "100%", padding: "4px 8px", border: "1px solid #cbd5e1", borderRadius: "4px" }}
-                                      />
-                                    </td>
-                                    <td style={{ padding: "6px 4px" }}>
-                                      <input
-                                        value={row.tutora || ""}
-                                        onChange={e => {
-                                          const nuevaTabla = [...form.tablaHorariosNivel];
-                                          nuevaTabla[idx].tutora = e.target.value;
-                                          actualizarForm("tablaHorariosNivel", nuevaTabla);
-                                        }}
-                                        placeholder="Ej: Aux. Diana Soto"
-                                        style={{ width: "100%", padding: "4px 8px", border: "1px solid #cbd5e1", borderRadius: "4px" }}
-                                      />
-                                    </td>
-                                    <td style={{ padding: "6px 4px", textAlign: "center" }}>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          const removedNivel = row.nivel;
-                                          const nuevaTabla = form.tablaHorariosNivel.filter((_, i) => i !== idx);
-
-                                          let nuevosGrados = [...(form.gradosAplicables || [])];
-                                          if (removedNivel) {
-                                            const stillExists = nuevaTabla.some(r => r.nivel === removedNivel);
-                                            if (!stillExists) {
-                                              nuevosGrados = nuevosGrados.filter(g => !g.startsWith(`${removedNivel}:`));
-                                            }
-                                          }
-
-                                          actualizarForm({
-                                            tablaHorariosNivel: nuevaTabla,
-                                            gradosAplicables: nuevosGrados
-                                          });
-                                        }}
-                                        style={{
-                                          background: "none",
-                                          border: "none",
-                                          color: "#ef4444",
-                                          cursor: "pointer",
-                                          fontWeight: "bold"
-                                        }}
-                                      >
-                                        Quitar
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))
-                              ) : (
-                                <tr>
-                                  <td colSpan={7} style={{ padding: "12px", textAlign: "center", color: "#64748b", fontStyle: "italic" }}>
-                                    Ningún horario configurado. Presione "Añadir fila" para comenzar.
-                                  </td>
-                                </tr>
-                              )}
-                            </tbody>
-                          </table>
+                      {usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad && (
+                        <div className="coord-field coord-field-full coord-block-form-panel" style={{ marginTop: "12px" }}>
+                          {formHorariosPorGrupo.length ? (
+                            <div className="coord-group-schedule-list coord-group-schedule-list-compact">
+                              {formHorariosPorGrupo.map((grupo, index) => (
+                                <div className="coord-group-schedule coord-group-schedule-compact" key={grupo.id || index}>
+                                  <strong className="coord-group-schedule-badge">Grupo {index + 1}</strong>
+                                  <div className="coord-group-schedule-cell">
+                                    <span>Grados</span>
+                                    <p>{resumenGrados(grupo.grados || []) || "Sin grados"}</p>
+                                  </div>
+                                  <div className="coord-group-schedule-cell">
+                                    <span>Días y hora</span>
+                                    <p>{grupo.dia || "Sin día"} · Almuerzo {formatearHora12(grupo.almuerzoInicio || "14:20")} a {formatearHora12(grupo.almuerzoFin || "15:10")} · Clase {formatearHora12(grupo.horaInicio || "15:20")} a {formatearHora12(grupo.horaFin || "17:20")}</p>
+                                  </div>
+                                  <div className="coord-group-schedule-cell">
+                                    <span>Docente / aula</span>
+                                    <p>{[grupo.responsable, grupo.tutora, grupo.aula ? `Aula: ${grupo.aula}` : ""].filter(Boolean).join(" · ") || "Sin docente"}</p>
+                                  </div>
+                                  <div className="coord-group-schedule-cell" style={{ maxWidth: "80px" }}>
+                                    <span>Cupos</span>
+                                    <p>{grupo.cupos || 20}</p>
+                                  </div>
+                                  <div className="coord-group-actions">
+                                    <button type="button" className="coord-duplicate-btn" onClick={() => {
+                                      const copia = { ...grupo, id: `grupo-${Date.now()}-${Math.random().toString(16).slice(2, 6)}` };
+                                      agregarGrupoHorario(copia);
+                                    }} title="Duplicar bloque"><CopyIcon size={14} /></button>
+                                    <button type="button" className="coord-edit-btn" onClick={() => {
+                                      setIndiceGrupoEditando(index);
+                                      setGrupoDraft(grupo);
+                                      setMostrarGrupoModal(true);
+                                    }} aria-label="Editar grupo"><Edit3 size={14} /></button>
+                                    <button type="button" className="coord-delete-btn" onClick={() => quitarGrupoHorario(index)} aria-label="Quitar grupo"><X size={14} /></button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+                          {mostrarGrupoModal ? (
+                            <ProgramaGrupoHorarioModal
+                              actualizarGrupoDraft={actualizarGrupoDraft}
+                              cerrarGrupoModal={cerrarGrupoModal}
+                              diasSemana={diasSemana}
+                              grupoDraft={grupoDraft}
+                              grupoDraftError={grupoDraftError}
+                              grupoDraftErrorTick={grupoDraftErrorTick}
+                              guardarGrupoDraft={guardarGrupoDraft}
+                              esCambridgeForm={esCambridgeForm}
+                              nivelesGrados={nivelesGrados}
+                              toggleGradoDraft={toggleGradoDraft}
+                            />
+                          ) : null}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const nuevaTabla = [
-                              ...(form.tablaHorariosNivel || []),
-                              { nivel: "", dia: "", horarioAlmuerzo: "", horarioClase: "", responsable: "", tutora: "" }
-                            ];
-                            actualizarForm("tablaHorariosNivel", nuevaTabla);
-                          }}
-                          className="coord-mini-btn"
-                          style={{
-                            marginTop: "8px",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                            background: "#0f766e",
-                            color: "#fff",
-                            padding: "6px 12px",
-                            borderRadius: "4px",
-                            border: "none",
-                            cursor: "pointer"
-                          }}
-                        >
-                          <Plus size={14} /> Añadir fila por nivel
-                        </button>
-                      </div>
+                      )}
+
 
 
                       {/* Configuración de Almuerzo */}
@@ -965,13 +686,77 @@ function ProgramaFormModal({
                           </label>
                           {form.incluyeAlmuerzo && (
                             <div style={{ marginTop: "8px" }}>
-                              <label style={{ fontSize: "12px", color: "#475569" }}>Horario de recepción de almuerzo (por nivel, si varía) *</label>
-                              <input
-                                value={form.horarioRecepcionAlmuerzo || ""}
-                                onChange={e => actualizarForm("horarioRecepcionAlmuerzo", e.target.value)}
-                                placeholder="Ej: Inicial: 14:00, Primaria: 14:20"
-                                style={{ width: "100%", marginTop: "4px", padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "6px" }}
-                              />
+                              <label style={{ fontSize: "12px", color: "#475569", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
+                                Horario de recepción de almuerzo (por nivel, si varía) *
+                              </label>
+                              {(() => {
+                                const parseHorarioRecepcionAlmuerzo = (str) => {
+                                  const result = { Inicial: "", Primaria: "", Secundaria: "" };
+                                  if (!str) return result;
+                                  const parts = str.split(/[,,·]/);
+                                  let matchedAny = false;
+                                  parts.forEach(part => {
+                                    const match = part.match(/(Inicial|Primaria|Secundaria)\s*:\s*(\d{2}:\d{2})/i);
+                                    if (match) {
+                                      const level = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+                                      result[level] = match[2];
+                                      matchedAny = true;
+                                    }
+                                  });
+                                  if (!matchedAny) {
+                                    const singleTimeMatch = str.match(/(\d{1,2}:\d{2})/);
+                                    if (singleTimeMatch) {
+                                      const time = singleTimeMatch[1].padStart(5, "0");
+                                      result.Inicial = time;
+                                      result.Primaria = time;
+                                      result.Secundaria = time;
+                                    }
+                                  }
+                                  return result;
+                                };
+
+                                const tiempos = parseHorarioRecepcionAlmuerzo(form.horarioRecepcionAlmuerzo);
+                                const handleTimeChange = (nivel, valor) => {
+                                  const nuevosTiempos = { ...tiempos, [nivel]: valor };
+                                  const textVal = Object.entries(nuevosTiempos)
+                                    .filter(([_, time]) => time)
+                                    .map(([name, time]) => `${name}: ${time}`)
+                                    .join(", ");
+                                  actualizarForm("horarioRecepcionAlmuerzo", textVal);
+                                };
+
+                                return (
+                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginTop: "8px" }}>
+                                    <div className="coord-field" style={{ margin: 0 }}>
+                                      <label style={{ fontSize: "12px", color: "#475569", display: "block", marginBottom: "4px" }}>Inicial</label>
+                                      <input
+                                        type="time"
+                                        value={tiempos.Inicial || ""}
+                                        onChange={e => handleTimeChange("Inicial", e.target.value)}
+                                        style={{ width: "100%", padding: "8px 12px" }}
+                                      />
+                                    </div>
+                                    <div className="coord-field" style={{ margin: 0 }}>
+                                      <label style={{ fontSize: "12px", color: "#475569", display: "block", marginBottom: "4px" }}>Primaria</label>
+                                      <input
+                                        type="time"
+                                        value={tiempos.Primaria || ""}
+                                        onChange={e => handleTimeChange("Primaria", e.target.value)}
+                                        style={{ width: "100%", padding: "8px 12px" }}
+                                      />
+                                    </div>
+                                    <div className="coord-field" style={{ margin: 0 }}>
+                                      <label style={{ fontSize: "12px", color: "#475569", display: "block", marginBottom: "4px" }}>Secundaria</label>
+                                      <input
+                                        type="time"
+                                        value={tiempos.Secundaria || ""}
+                                        onChange={e => handleTimeChange("Secundaria", e.target.value)}
+                                        style={{ width: "100%", padding: "8px 12px" }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           )}
                         </div>
@@ -988,7 +773,7 @@ function ProgramaFormModal({
                           <div className="coord-deportivo-fields-row" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
                             <div className="coord-field">
                               <label>{esFormularioVerano ? "Taller específico *" : "Deporte *"}</label>
-                              <select value={tallerDepDeporte} onChange={e => setTallerDepDeporte(e.target.value)}>
+                              <select value={tallerDepForm.deporte} onChange={e => setTallerDepForm(prev => ({ ...prev, deporte: e.target.value }))}>
                                 {esFormularioVerano ? (
                                   <>
                                     <option value="Danza">Danza</option>
@@ -1009,25 +794,25 @@ function ProgramaFormModal({
                                   </>
                                 )}
                               </select>
-                              {tallerDepDeporte === "Otro" && (
+                              {tallerDepForm.deporte === "Otro" && (
                                 <input
                                   style={{ marginTop: "6px" }}
                                   placeholder={esFormularioVerano ? "Escriba el nombre del taller" : "Escriba el deporte"}
-                                  value={tallerDepCustom}
-                                  onChange={e => setTallerDepCustom(e.target.value)}
+                                  value={tallerDepForm.custom}
+                                  onChange={e => setTallerDepForm(prev => ({ ...prev, custom: e.target.value }))}
                                 />
                               )}
                             </div>
                             <div className="coord-field">
                               <label>Nivel *</label>
-                              <select value={tallerDepNivel} onChange={e => setTallerDepNivel(e.target.value)}>
+                              <select value={tallerDepForm.nivel} onChange={e => setTallerDepForm(prev => ({ ...prev, nivel: e.target.value }))}>
                                 <option value="Formativo">Formativo</option>
                                 <option value="Competitivo">Competitivo</option>
                               </select>
                             </div>
                             <div className="coord-field">
                               <label>Edad mínima *</label>
-                              <select value={tallerDepMinEdad} onChange={e => setTallerDepMinEdad(e.target.value)}>
+                              <select value={tallerDepForm.minEdad} onChange={e => setTallerDepForm(prev => ({ ...prev, minEdad: e.target.value }))}>
                                 {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
                                   <option key={edad} value={edad}>{edad} años</option>
                                 ))}
@@ -1035,7 +820,7 @@ function ProgramaFormModal({
                             </div>
                             <div className="coord-field">
                               <label>Edad máxima *</label>
-                              <select value={tallerDepMaxEdad} onChange={e => setTallerDepMaxEdad(e.target.value)}>
+                              <select value={tallerDepForm.maxEdad} onChange={e => setTallerDepForm(prev => ({ ...prev, maxEdad: e.target.value }))}>
                                 {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
                                   <option key={edad} value={edad}>{edad} años</option>
                                 ))}
@@ -1043,7 +828,7 @@ function ProgramaFormModal({
                             </div>
                             <div className="coord-field">
                               <label>Día de atención *</label>
-                              <select value={tallerDepDia} onChange={e => setTallerDepDia(e.target.value)}>
+                              <select value={tallerDepForm.dia} onChange={e => setTallerDepForm(prev => ({ ...prev, dia: e.target.value }))}>
                                 {diasSemana.map(d => (
                                   <option key={d} value={d}>{d}</option>
                                 ))}
@@ -1051,19 +836,19 @@ function ProgramaFormModal({
                             </div>
                             <div className="coord-field">
                               <label>Clase inicio *</label>
-                              <input type="time" value={tallerDepHoraInicio} onChange={e => setTallerDepHoraInicio(e.target.value)} />
+                              <input type="time" value={tallerDepForm.horaInicio} onChange={e => setTallerDepForm(prev => ({ ...prev, horaInicio: e.target.value }))} />
                             </div>
                             <div className="coord-field">
                               <label>Clase fin *</label>
-                              <input type="time" value={tallerDepHoraFin} onChange={e => setTallerDepHoraFin(e.target.value)} />
+                              <input type="time" value={tallerDepForm.horaFin} onChange={e => setTallerDepForm(prev => ({ ...prev, horaFin: e.target.value }))} />
                             </div>
                             <div className="coord-field">
                               <label>Cupos *</label>
-                              <input type="number" min="1" value={tallerDepCupos} onChange={e => setTallerDepCupos(e.target.value)} />
+                              <input type="number" min="1" value={tallerDepForm.cupos} onChange={e => setTallerDepForm(prev => ({ ...prev, cupos: e.target.value }))} />
                             </div>
                             <div className="coord-field">
                               <label>Tutor / Docente *</label>
-                              <input type="text" value={tallerDepDocente} onChange={e => setTallerDepDocente(e.target.value)} placeholder="Ej: Prof. Juan" />
+                              <input type="text" value={tallerDepForm.docente} onChange={e => setTallerDepForm(prev => ({ ...prev, docente: e.target.value }))} placeholder="Ej: Prof. Juan" />
                             </div>
                             <div className="coord-field" style={{ display: "flex", alignItems: "flex-end" }}>
                               <button type="button" className="coord-template-autofill" style={{ width: "100%", height: "38px", display: "flex", justifyContent: "center" }} onClick={agregarTallerDeportivo}>
@@ -1190,12 +975,6 @@ function ProgramaFormModal({
                         </div>
                       )}
 
-                      {!usaTalleresPorEdad && (!formHorariosPorGrupo || formHorariosPorGrupo.length === 0) && (
-                        <div className="coord-field coord-field-full">
-                          <label>Grados habilitados *</label>
-                          <GradeSelector niveles={nivelesGrados} seleccionados={form.gradosAplicables || []} onToggle={toggleGrado} />
-                        </div>
-                      )}
                     </>
                   )}
                 </div>
@@ -1264,63 +1043,6 @@ function ProgramaFormModal({
                   <div className="coord-field coord-field-full">
                     <label>Grados habilitados *</label>
                     <GradeSelector niveles={nivelesGrados} seleccionados={form.gradosAplicables || []} onToggle={toggleGrado} />
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* SECCIÓN CONDICIONAL: CERTIFICACIÓN CAMBRIDGE */}
-            {form.tipoComunicado && form.tipoComunicado === "Certificación Cambridge" && (
-              <section className="coord-form-section" style={{ borderLeft: "4px solid #8b5cf6", paddingLeft: "12px" }}>
-                <div className="coord-section-heading">
-                  <BookOpen size={18} style={{ color: "#8b5cf6" }} />
-                  <div>
-                    <h3 style={{ color: "#4c1d95" }}>Sección Certificación Cambridge</h3>
-                  </div>
-                </div>
-                <div className="coord-section-grid">
-                  <div className="coord-field">
-                    <label>Nivel del examen Cambridge *</label>
-                    <input
-                      value={form.nivelCambridge || ""}
-                      onChange={e => actualizarForm("nivelCambridge", e.target.value)}
-                      placeholder="Ej: B1 Preliminary for Schools (PET)"
-                    />
-                  </div>
-                  <div className="coord-field">
-                    <label>Monto del primer pago (S/) *</label>
-                    <input
-                      type="number"
-                      value={form.montoPrimerPago || ""}
-                      onChange={e => actualizarForm("montoPrimerPago", e.target.value)}
-                      placeholder="Ej: 180.00"
-                    />
-                  </div>
-                  <div className="coord-field coord-field-full">
-                    <label style={{ fontWeight: "700", marginBottom: "6px", display: "block" }}>
-                      Modalidades de ingreso *
-                    </label>
-                    <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginTop: "4px" }}>
-                      {["Certificado Oficial", "Admission Test", "Desempeño Académico"].map((modalidad) => {
-                        const lista = Array.isArray(form.modalidadesCambridge) ? form.modalidadesCambridge : [];
-                        const check = lista.includes(modalidad);
-                        return (
-                          <label key={modalidad} className="coord-check-label" style={{ cursor: "pointer" }}>
-                            <input
-                              type="checkbox"
-                              checked={check}
-                              onChange={e => {
-                                const nuevaLista = e.target.checked
-                                  ? [...lista, modalidad]
-                                  : lista.filter(x => x !== modalidad);
-                                actualizarForm("modalidadesCambridge", nuevaLista);
-                              }}
-                            />
-                            <span>{modalidad}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
                   </div>
                 </div>
               </section>
@@ -1464,10 +1186,6 @@ function ProgramaFormModal({
                         style={{
                           width: "100%",
                           padding: "8px 12px",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: "6px",
-                          fontFamily: "inherit",
-                          fontSize: "14px",
                           resize: "vertical"
                         }}
                       />
@@ -1477,21 +1195,7 @@ function ProgramaFormModal({
               </section>
             )}
 
-            {!usaTalleresPorEdad && (!formHorariosPorGrupo || formHorariosPorGrupo.length === 0) ? (
-              <section className="coord-form-section">
-                <div className="coord-section-heading">
-                  <Users size={18} />
-                  <div>
-                    <h3>Responsable</h3>
-                  </div>
-                </div>
-                <div className="coord-section-grid">
-                  <div className="coord-field"><label>Responsable</label>
-                    <input value={form.responsable} onChange={e => actualizarForm("responsable", e.target.value)} placeholder="Prof. Ana Torres" />
-                  </div>
-                </div>
-              </section>
-            ) : null}
+
 
             {/* NUEVA SECCIÓN: REQUISITOS Y MATERIALES */}
             <section className="coord-form-section">
@@ -1512,10 +1216,6 @@ function ProgramaFormModal({
                     style={{
                       width: "100%",
                       padding: "8px 12px",
-                      border: "1px solid #cbd5e1",
-                      borderRadius: "6px",
-                      fontFamily: "inherit",
-                      fontSize: "14px",
                       resize: "vertical"
                     }}
                   />

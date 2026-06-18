@@ -31,8 +31,6 @@ function describirSeleccionCambridge(valor = "") {
   const seleccion = String(valor || "").trim().toUpperCase();
   const opciones = {
     A: "A - Certificado oficial",
-    B: "B - Admission Test",
-    C: "C - Desempeno academico",
   };
   return opciones[seleccion] || (seleccion || "-");
 }

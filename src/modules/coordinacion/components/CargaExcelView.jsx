@@ -33,6 +33,130 @@ async function combinarBlobsPdf(blobs) {
   return new Blob([bytesPdf], { type: "application/pdf" });
 }
 
+async function generarYDescargarPdfFichasLote({
+  registros,
+  programas,
+  nombrePdf,
+  setLoadingState = () => {},
+}) {
+  if (!registros || !registros.length) {
+    toast.error("La carga no tiene alumnos registrados.");
+    return;
+  }
+
+  setLoadingState(true);
+  try {
+    const resultados = new Array(registros.length).fill(null);
+    const programasSinPlantilla = new Set();
+
+    const procesarRegistro = async (reg, index) => {
+      const programa = programas.find((p) => p.id === reg.programaId);
+      if (!programa) return;
+
+      if (!programa.plantillaBase64) {
+        programasSinPlantilla.add(programa.nombre);
+        return;
+      }
+
+      const dbEstudiante = apiDb.estudiantes?.[reg.dni];
+      const mockEstudiante = {
+        dni: reg.dni,
+        nombres: reg.nombres || reg.nombre,
+        grado: reg.grado || "",
+        seccion: reg.seccion || "",
+        apoderado: dbEstudiante?.apoderado || "",
+        telefonoApoderado: dbEstudiante?.telefonoApoderado || "",
+        correoApoderado: dbEstudiante?.correoApoderado || "",
+      };
+
+      const mockInscripcion = {
+        id: `INS-INV-${reg.dni}-${reg.programaId}`,
+        dniEstudiante: reg.dni,
+        nombresEstudiante: reg.nombres || reg.nombre,
+        gradoEstudiante: reg.grado || "",
+        seccion: reg.seccion || "",
+        programaId: reg.programaId,
+        programa: programa.nombre,
+        horario: programa.horario || "",
+        docente: programa.docente || "",
+        costo: programa.costo || 0,
+        modalidadCobro: programa.modalidadCobro || "",
+        fechaInicio: programa.fechaInicio || "",
+        fechaFin: programa.fechaFin || "",
+        fechaRegistro: new Date().toISOString(),
+        apoderado: dbEstudiante?.apoderado || "",
+        telefono: dbEstudiante?.telefonoApoderado || "",
+        correo: dbEstudiante?.correoApoderado || "",
+        plantilla: programa.plantilla || "",
+        plantillaBase64: programa.plantillaBase64 || "",
+        requiereUniforme: programa.requiereUniforme || false,
+        requiereIndumentaria: programa.requiereIndumentaria || false,
+        cicloI: programa.cicloI || "",
+        cicloII: programa.cicloII || "",
+        horariosPorGrupo: programa.horariosPorGrupo || [],
+      };
+
+      try {
+        const wordBlob = await generarComunicadoWordBlob({
+          estudiante: mockEstudiante,
+          inscripcion: mockInscripcion,
+          omitirMarcaAguaVista: true,
+        });
+
+        const pdfBlob = await convertirWordOriginalAPdf(wordBlob);
+        resultados[index] = pdfBlob;
+      } catch (err) {
+        console.error(`Error generando ficha para ${reg.nombres || reg.nombre}:`, err);
+      }
+    };
+
+    const batchSize = 5;
+    for (let i = 0; i < registros.length; i += batchSize) {
+      const lote = registros.slice(i, i + batchSize);
+      await Promise.all(lote.map((reg, offset) => procesarRegistro(reg, i + offset)));
+    }
+
+    const pdfBlobs = resultados.filter(Boolean);
+    const archivosAgregados = pdfBlobs.length;
+
+    if (archivosAgregados === 0) {
+      if (programasSinPlantilla.size > 0) {
+        alert(
+          `No se pudo generar ninguna ficha porque los siguientes programas no tienen plantilla Word asignada:\n\n${Array.from(
+            programasSinPlantilla
+          ).join("\n")}\n\nPor favor, suba una plantilla en la sección "Importar Formato Taller" primero.`
+        );
+      } else {
+        alert("No se encontraron registros válidos o plantillas para generar.");
+      }
+      return;
+    }
+
+    const pdfCombinadoBlob = await combinarBlobsPdf(pdfBlobs);
+    const url = URL.createObjectURL(pdfCombinadoBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = nombrePdf;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    if (programasSinPlantilla.size > 0) {
+      alert(
+        `Se descargaron ${archivosAgregados} fichas en un único PDF. Sin embargo, no se generaron fichas para los siguientes programas por falta de plantilla:\n\n${Array.from(
+          programasSinPlantilla
+        ).join("\n")}`
+      );
+    }
+  } catch (error) {
+    console.error("Error al descargar fichas en lote:", error);
+    alert("Ocurrió un error al generar las fichas en lote.");
+  } finally {
+    setLoadingState(false);
+  }
+}
+
 function obtenerResumenArchivos(archivosExcel = []) {
   if (!archivosExcel.length) return "Ningun archivo seleccionado";
   if (archivosExcel.length === 1) return archivosExcel[0].name;
@@ -131,129 +255,16 @@ function CargaExcelView({
   const [descargandoCargaId, setDescargandoCargaId] = useState("");
 
   const descargarFichasLote = async (carga) => {
-    setDescargandoCargaId(carga.id);
-    try {
-      const registros = carga.registros || [];
-      if (!registros.length) {
-        toast.error("La carga no tiene alumnos registrados.");
-        setDescargandoCargaId("");
-        return;
-      }
+    const nombrePdf = `FICHAS - ${carga.archivoNombre || "CARGA"} - ${new Date()
+      .toLocaleDateString("es-PE")
+      .replace(/\//g, "-")}.pdf`;
 
-      const resultados = new Array(registros.length).fill(null);
-      const programasSinPlantilla = new Set();
-
-      const procesarRegistro = async (reg, index) => {
-        const programa = programas.find((p) => p.id === reg.programaId);
-        if (!programa) return;
-
-        if (!programa.plantillaBase64) {
-          programasSinPlantilla.add(programa.nombre);
-          return;
-        }
-
-        const dbEstudiante = apiDb.estudiantes?.[reg.dni];
-        const mockEstudiante = {
-          dni: reg.dni,
-          nombres: reg.nombres,
-          grado: reg.grado || "",
-          seccion: reg.seccion || "",
-          apoderado: dbEstudiante?.apoderado || "",
-          telefonoApoderado: dbEstudiante?.telefonoApoderado || "",
-          correoApoderado: dbEstudiante?.correoApoderado || "",
-        };
-
-        const mockInscripcion = {
-          id: `INS-INV-${reg.dni}-${reg.programaId}`,
-          dniEstudiante: reg.dni,
-          nombresEstudiante: reg.nombres,
-          gradoEstudiante: reg.grado || "",
-          seccion: reg.seccion || "",
-          programaId: reg.programaId,
-          programa: programa.nombre,
-          horario: programa.horario || "",
-          docente: programa.docente || "",
-          costo: programa.costo || 0,
-          modalidadCobro: programa.modalidadCobro || "",
-          fechaInicio: programa.fechaInicio || "",
-          fechaFin: programa.fechaFin || "",
-          fechaRegistro: new Date().toISOString(),
-          apoderado: dbEstudiante?.apoderado || "",
-          telefono: dbEstudiante?.telefonoApoderado || "",
-          correo: dbEstudiante?.correoApoderado || "",
-          plantilla: programa.plantilla || "",
-          plantillaBase64: programa.plantillaBase64 || "",
-          requiereUniforme: programa.requiereUniforme || false,
-          requiereIndumentaria: programa.requiereIndumentaria || false,
-          cicloI: programa.cicloI || "",
-          cicloII: programa.cicloII || "",
-          horariosPorGrupo: programa.horariosPorGrupo || [],
-        };
-
-        try {
-          const wordBlob = await generarComunicadoWordBlob({
-            estudiante: mockEstudiante,
-            inscripcion: mockInscripcion,
-            omitirMarcaAguaVista: true,
-          });
-
-          const pdfBlob = await convertirWordOriginalAPdf(wordBlob);
-          resultados[index] = pdfBlob;
-        } catch (err) {
-          console.error(`Error generando ficha para ${reg.nombres}:`, err);
-        }
-      };
-
-      const batchSize = 5;
-      for (let i = 0; i < registros.length; i += batchSize) {
-        const lote = registros.slice(i, i + batchSize);
-        await Promise.all(lote.map((reg, offset) => procesarRegistro(reg, i + offset)));
-      }
-
-      const pdfBlobs = resultados.filter(Boolean);
-      const archivosAgregados = pdfBlobs.length;
-
-      if (archivosAgregados === 0) {
-        if (programasSinPlantilla.size > 0) {
-          alert(
-            `No se pudo generar ninguna ficha porque los siguientes programas no tienen plantilla Word asignada:\n\n${Array.from(
-              programasSinPlantilla
-            ).join("\n")}\n\nPor favor, suba una plantilla en la sección "Importar Formato Taller" primero.`
-          );
-        } else {
-          alert("No se encontraron registros válidos o plantillas para generar.");
-        }
-        setDescargandoCargaId("");
-        return;
-      }
-
-      const pdfCombinadoBlob = await combinarBlobsPdf(pdfBlobs);
-      const nombrePdf = `FICHAS - ${carga.archivoNombre || "CARGA"} - ${new Date()
-        .toLocaleDateString("es-PE")
-        .replace(/\//g, "-")}.pdf`;
-
-      const url = URL.createObjectURL(pdfCombinadoBlob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = nombrePdf;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-
-      if (programasSinPlantilla.size > 0) {
-        alert(
-          `Se descargaron ${archivosAgregados} fichas en un único PDF. Sin embargo, no se generaron fichas para los siguientes programas por falta de plantilla:\n\n${Array.from(
-            programasSinPlantilla
-          ).join("\n")}`
-        );
-      }
-    } catch (error) {
-      console.error("Error al descargar fichas en lote:", error);
-      alert("Ocurrió un error al generar las fichas en lote.");
-    } finally {
-      setDescargandoCargaId("");
-    }
+    await generarYDescargarPdfFichasLote({
+      registros: carga.registros || [],
+      programas,
+      nombrePdf,
+      setLoadingState: (loading) => setDescargandoCargaId(loading ? carga.id : ""),
+    });
   };
 
   const [seleccionExportarId, setSeleccionExportarId] = useState("all");
@@ -316,161 +327,48 @@ function CargaExcelView({
   }, [seleccionExportarId, programasCarga, invitadosMap]);
 
   const descargarFichasExportarTab = async () => {
-    setExportando(true);
-    try {
-      let registros = [];
-      
-      if (seleccionExportarId === "all") {
-        programasCarga.forEach((prog) => {
-          const invitadosProg = invitadosMap[prog.id] || [];
-          invitadosProg.forEach((inv) => {
-            registros.push({
-              dni: inv.dni,
-              nombres: inv.nombres,
-              grado: inv.grado,
-              seccion: inv.seccion || "",
-              programaId: prog.id,
-            });
+    let registros = [];
+    
+    if (seleccionExportarId === "all") {
+      programasCarga.forEach((prog) => {
+        const invitadosProg = invitadosMap[prog.id] || [];
+        invitadosProg.forEach((inv) => {
+          registros.push({
+            dni: inv.dni,
+            nombres: inv.nombres,
+            grado: inv.grado,
+            seccion: inv.seccion || "",
+            programaId: prog.id,
           });
         });
-      } else {
-        const prog = programasCarga.find((p) => p.id === seleccionExportarId);
-        if (prog) {
-          const invitadosProg = invitadosMap[prog.id] || [];
-          invitadosProg.forEach((inv) => {
-            registros.push({
-              dni: inv.dni,
-              nombres: inv.nombres,
-              grado: inv.grado,
-              seccion: inv.seccion || "",
-              programaId: prog.id,
-            });
+      });
+    } else {
+      const prog = programasCarga.find((p) => p.id === seleccionExportarId);
+      if (prog) {
+        const invitadosProg = invitadosMap[prog.id] || [];
+        invitadosProg.forEach((inv) => {
+          registros.push({
+            dni: inv.dni,
+            nombres: inv.nombres,
+            grado: inv.grado,
+            seccion: inv.seccion || "",
+            programaId: prog.id,
           });
-        }
+        });
       }
-
-      if (!registros.length) {
-        alert("No se encontraron alumnos registrados para exportar en el taller seleccionado.");
-        setExportando(false);
-        return;
-      }
-
-      const resultados = new Array(registros.length).fill(null);
-      const programasSinPlantilla = new Set();
-
-      const procesarRegistro = async (reg, index) => {
-        const programa = programas.find((p) => p.id === reg.programaId);
-        if (!programa) return;
-
-        if (!programa.plantillaBase64) {
-          programasSinPlantilla.add(programa.nombre);
-          return;
-        }
-
-        const dbEstudiante = apiDb.estudiantes?.[reg.dni];
-        const mockEstudiante = {
-          dni: reg.dni,
-          nombres: reg.nombres,
-          grado: reg.grado || "",
-          seccion: reg.seccion || "",
-          apoderado: dbEstudiante?.apoderado || "",
-          telefonoApoderado: dbEstudiante?.telefonoApoderado || "",
-          correoApoderado: dbEstudiante?.correoApoderado || "",
-        };
-
-        const mockInscripcion = {
-          id: `INS-INV-${reg.dni}-${reg.programaId}`,
-          dniEstudiante: reg.dni,
-          nombresEstudiante: reg.nombres,
-          gradoEstudiante: reg.grado || "",
-          seccion: reg.seccion || "",
-          programaId: reg.programaId,
-          programa: programa.nombre,
-          horario: programa.horario || "",
-          docente: programa.docente || "",
-          costo: programa.costo || 0,
-          fechaInicio: programa.fechaInicio || "",
-          fechaFin: programa.fechaFin || "",
-          fechaRegistro: new Date().toISOString(),
-          apoderado: dbEstudiante?.apoderado || "",
-          telefono: dbEstudiante?.telefonoApoderado || "",
-          correo: dbEstudiante?.correoApoderado || "",
-          plantilla: programa.plantilla || "",
-          plantillaBase64: programa.plantillaBase64 || "",
-          cicloI: programa.cicloI || "",
-          cicloII: programa.cicloII || "",
-          horariosPorGrupo: programa.horariosPorGrupo || [],
-        };
-        // Fix mockInscripcion simple properties mapping from programa
-        mockInscripcion.modalidadCobro = programa.modalidadCobro || "";
-        mockInscripcion.requiereUniforme = programa.requiereUniforme || false;
-        mockInscripcion.requiereIndumentaria = programa.requiereIndumentaria || false;
-
-        try {
-          const wordBlob = await generarComunicadoWordBlob({
-            estudiante: mockEstudiante,
-            inscripcion: mockInscripcion,
-            omitirMarcaAguaVista: true,
-          });
-
-          const pdfBlob = await convertirWordOriginalAPdf(wordBlob);
-          resultados[index] = pdfBlob;
-        } catch (err) {
-          console.error(`Error generando ficha para ${reg.nombres}:`, err);
-        }
-      };
-
-      const batchSize = 5;
-      for (let i = 0; i < registros.length; i += batchSize) {
-        const lote = registros.slice(i, i + batchSize);
-        await Promise.all(lote.map((reg, offset) => procesarRegistro(reg, i + offset)));
-      }
-
-      const pdfBlobs = resultados.filter(Boolean);
-      const archivosAgregados = pdfBlobs.length;
-
-      if (archivosAgregados === 0) {
-        if (programasSinPlantilla.size > 0) {
-          alert(
-            `No se pudo generar ninguna ficha porque los siguientes programas no tienen plantilla Word asignada:\n\n${Array.from(
-              programasSinPlantilla
-            ).join("\n")}\n\nPor favor, suba una plantilla en la sección "Importar Formato Taller" primero.`
-          );
-        } else {
-          alert("No se encontraron registros válidos o plantillas para generar.");
-        }
-        setExportando(false);
-        return;
-      }
-
-      const pdfCombinadoBlob = await combinarBlobsPdf(pdfBlobs);
-      const nombreTallerStr = seleccionExportarId === "all" ? "TODOS-LOS-TALLERES" : (programasCarga.find((p) => p.id === seleccionExportarId)?.nombre || "TALLER");
-      const nombrePdf = `FICHAS - ${nombreTallerStr.toUpperCase()} - ${new Date()
-        .toLocaleDateString("es-PE")
-        .replace(/\//g, "-")}.pdf`;
-
-      const url = URL.createObjectURL(pdfCombinadoBlob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = nombrePdf;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-
-      if (programasSinPlantilla.size > 0) {
-        alert(
-          `Se descargaron ${archivosAgregados} fichas en un único PDF. Sin embargo, no se generaron fichas para los siguientes programas por falta de plantilla:\n\n${Array.from(
-            programasSinPlantilla
-          ).join("\n")}`
-        );
-      }
-    } catch (error) {
-      console.error("Error al descargar fichas en lote:", error);
-      alert("Ocurrió un error al generar las fichas en lote.");
-    } finally {
-      setExportando(false);
     }
+
+    const nombreTallerStr = seleccionExportarId === "all" ? "TODOS-LOS-TALLERES" : (programasCarga.find((p) => p.id === seleccionExportarId)?.nombre || "TALLER");
+    const nombrePdf = `FICHAS - ${nombreTallerStr.toUpperCase()} - ${new Date()
+      .toLocaleDateString("es-PE")
+      .replace(/\//g, "-")}.pdf`;
+
+    await generarYDescargarPdfFichasLote({
+      registros,
+      programas,
+      nombrePdf,
+      setLoadingState: setExportando,
+    });
   };
 
   const historialFiltrado = historialCargas.filter((carga) => {

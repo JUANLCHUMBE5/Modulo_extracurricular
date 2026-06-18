@@ -72,6 +72,27 @@ export function sugerirNumeroDocumento(tipoDoc, programasList = []) {
   return `${prefix}-${correlativo}-${anio}`;
 }
 
+export function parseRangeTimes(rango) {
+  if (!rango) return { inicio: "", fin: "" };
+  const matches = rango.match(/(\d{1,2}:\d{2})/g);
+  if (matches && matches.length >= 2) {
+    const pad = (str) => str.split(":").map(s => s.padStart(2, "0")).join(":");
+    return {
+      inicio: pad(matches[0]),
+      fin: pad(matches[1])
+    };
+  }
+  const matchesHours = rango.match(/(\d{1,2})/g);
+  if (matchesHours && matchesHours.length >= 2) {
+    const padHour = (h) => `${h.padStart(2, "0")}:00`;
+    return {
+      inicio: padHour(matchesHours[0]),
+      fin: padHour(matchesHours[1])
+    };
+  }
+  return { inicio: "", fin: "" };
+}
+
 export default function useCoordinacion({
   delegatedContent,
   embedded = false,
@@ -101,17 +122,19 @@ export default function useCoordinacion({
   const [mostrarGestorCategorias, setMostrarGestorCategorias] = useState(false);
   const [plantillaInputKey, setPlantillaInputKey] = useState(0);
 
-  // Estados locales para añadir talleres deportivos
-  const [tallerDepDeporte, setTallerDepDeporte] = useState("Vóley");
-  const [tallerDepCustom, setTallerDepCustom] = useState("");
-  const [tallerDepMinEdad, setTallerDepMinEdad] = useState("6");
-  const [tallerDepMaxEdad, setTallerDepMaxEdad] = useState("9");
-  const [tallerDepDia, setTallerDepDia] = useState("Jueves");
-  const [tallerDepHoraInicio, setTallerDepHoraInicio] = useState("15:50");
-  const [tallerDepHoraFin, setTallerDepHoraFin] = useState("16:50");
-  const [tallerDepCupos, setTallerDepCupos] = useState("20");
-  const [tallerDepNivel, setTallerDepNivel] = useState("Formativo");
-  const [tallerDepDocente, setTallerDepDocente] = useState("");
+  // Estado local unificado para añadir talleres deportivos
+  const [tallerDepForm, setTallerDepForm] = useState({
+    deporte: "Vóley",
+    custom: "",
+    minEdad: "6",
+    maxEdad: "9",
+    dia: "Jueves",
+    horaInicio: "15:50",
+    horaFin: "16:50",
+    cupos: "20",
+    nivel: "Formativo",
+    docente: "",
+  });
   const [programaDocsId, setProgramaDocsId] = useState("");
   const [lecturaDocumento, setLecturaDocumento] = useState(null);
   const [sidebarAbierta, setSidebarAbierta] = useState(() => {
@@ -374,23 +397,46 @@ export default function useCoordinacion({
     }
 
     let horariosPorGrupo = normalizarHorariosPorGrupo(prog.horariosPorGrupo);
-    if (!usaTalleresPorEdad && horariosPorGrupo.length === 0 && prog.horaInicio && prog.horaFin) {
-      const diasArray = normalizarListaTexto(prog.dias);
-      horariosPorGrupo = [
-        {
-          id: `grupo-migrado-${Date.now()}`,
-          grados: normalizarListaGrados(prog.gradosAplicables),
-          dia: diasArray.length > 0 ? diasArray.join(", ") : "Lunes",
-          almuerzoInicio: prog.almuerzoInicio || "14:20",
-          almuerzoFin: prog.almuerzoFin || "15:10",
-          horaInicio: prog.horaInicio,
-          horaFin: prog.horaFin,
-          aula: prog.aula || "",
-          responsable: prog.responsable || "",
-          tutora: prog.tutora || "",
-          cupos: Number(prog.cupos) || 20,
-        },
-      ];
+    if (!usaTalleresPorEdad && horariosPorGrupo.length === 0) {
+      if (Array.isArray(prog.tablaHorariosNivel) && prog.tablaHorariosNivel.length > 0) {
+        horariosPorGrupo = prog.tablaHorariosNivel.map((row, idx) => {
+          const claseTimes = parseRangeTimes(row.horarioClase);
+          const almuerzoTimes = parseRangeTimes(row.horarioAlmuerzo);
+          const nivel = row.nivel || "";
+          const gradosNivel = (normalizarListaGrados(prog.gradosAplicables) || [])
+            .filter(g => g.startsWith(`${nivel}:`));
+          return {
+            id: `grupo-migrado-tabla-${idx}-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
+            grados: gradosNivel,
+            dia: row.dia || "Lunes",
+            almuerzoInicio: almuerzoTimes.inicio || "14:20",
+            almuerzoFin: almuerzoTimes.fin || "15:10",
+            horaInicio: claseTimes.inicio || "15:20",
+            horaFin: claseTimes.fin || "17:20",
+            aula: "",
+            responsable: row.responsable || "",
+            tutora: row.tutora || "",
+            cupos: Number(prog.cupos) || 20,
+          };
+        });
+      } else if (prog.horaInicio && prog.horaFin) {
+        const diasArray = normalizarListaTexto(prog.dias);
+        horariosPorGrupo = [
+          {
+            id: `grupo-migrado-${Date.now()}`,
+            grados: normalizarListaGrados(prog.gradosAplicables),
+            dia: diasArray.length > 0 ? diasArray.join(", ") : "Lunes",
+            almuerzoInicio: prog.almuerzoInicio || "14:20",
+            almuerzoFin: prog.almuerzoFin || "15:10",
+            horaInicio: prog.horaInicio,
+            horaFin: prog.horaFin,
+            aula: prog.aula || "",
+            responsable: prog.responsable || "",
+            tutora: prog.tutora || "",
+            cupos: Number(prog.cupos) || 20,
+          },
+        ];
+      }
     }
 
     if (!usaTalleresPorEdad && horariosPorGrupo.length > 0) {
@@ -562,8 +608,8 @@ export default function useCoordinacion({
     }
 
     if (form.tipoComunicado && form.tipoComunicado !== "Otro genérico") {
-      if (!form.tablaHorariosNivel || form.tablaHorariosNivel.length === 0) {
-        camposFaltantes.push("cronograma de horarios por nivel");
+      if (gruposHorario.length === 0) {
+        camposFaltantes.push("horarios por grado/bloque/docente");
       }
     }
 
@@ -660,6 +706,7 @@ export default function useCoordinacion({
         : calcularDuracionTexto(form.fechaInicio, form.fechaFin),
       cicloI: esCambridgeGuardar ? ciclosCambridgeGuardar.cicloI : form.cicloI || "",
       cicloII: esCambridgeGuardar ? ciclosCambridgeGuardar.cicloII : form.cicloII || "",
+      modalidadesCambridge: esCambridgeGuardar ? ["Certificado Oficial"] : [],
       duracionAvisoDias,
       dias: diasFinales,
       horariosPorGrupo: gruposHorario,
@@ -1010,31 +1057,31 @@ export default function useCoordinacion({
   }
 
   const agregarTallerDeportivo = () => {
-    const deporteFinal = tallerDepDeporte === "Otro" ? tallerDepCustom.trim() : tallerDepDeporte;
+    const deporteFinal = tallerDepForm.deporte === "Otro" ? tallerDepForm.custom.trim() : tallerDepForm.deporte;
     if (!deporteFinal) {
       mostrarMsg("Ingrese el nombre del deporte.");
       return;
     }
-    const minE = Number(tallerDepMinEdad);
-    const maxE = Number(tallerDepMaxEdad);
-    if (!tallerDepMinEdad || !tallerDepMaxEdad || minE > maxE) {
+    const minE = Number(tallerDepForm.minEdad);
+    const maxE = Number(tallerDepForm.maxEdad);
+    if (!tallerDepForm.minEdad || !tallerDepForm.maxEdad || minE > maxE) {
       mostrarMsg("Rango de edades inválido.");
       return;
     }
-    if (!tallerDepHoraInicio || !tallerDepHoraFin) {
+    if (!tallerDepForm.horaInicio || !tallerDepForm.horaFin) {
       mostrarMsg("Ingrese las horas de inicio y fin.");
       return;
     }
-    if (tallerDepHoraInicio >= tallerDepHoraFin) {
+    if (tallerDepForm.horaInicio >= tallerDepForm.horaFin) {
       mostrarMsg("La hora de inicio debe ser menor a la hora de fin.");
       return;
     }
-    const cuposTaller = Number(tallerDepCupos);
+    const cuposTaller = Number(tallerDepForm.cupos);
     if (Number.isNaN(cuposTaller) || cuposTaller <= 0) {
       mostrarMsg("Ingrese un número de cupos válido para el taller.");
       return;
     }
-    const docenteFinal = tallerDepDocente.trim();
+    const docenteFinal = tallerDepForm.docente.trim();
     if (!docenteFinal) {
       mostrarMsg("Ingrese el tutor o docente a cargo del taller.");
       return;
@@ -1044,11 +1091,11 @@ export default function useCoordinacion({
       deporte: deporteFinal,
       edadMinima: minE,
       edadMaxima: maxE,
-      dia: tallerDepDia,
-      horaInicio: tallerDepHoraInicio,
-      horaFin: tallerDepHoraFin,
+      dia: tallerDepForm.dia,
+      horaInicio: tallerDepForm.horaInicio,
+      horaFin: tallerDepForm.horaFin,
       cupos: cuposTaller,
-      nivel: tallerDepNivel,
+      nivel: tallerDepForm.nivel,
       docente: docenteFinal,
     };
 
@@ -1062,10 +1109,13 @@ export default function useCoordinacion({
       cupos: String(totalCupos),
     }));
 
-    setTallerDepCustom("");
-    setTallerDepCupos("20");
-    setTallerDepNivel("Formativo");
-    setTallerDepDocente("");
+    setTallerDepForm((prev) => ({
+      ...prev,
+      custom: "",
+      cupos: "20",
+      nivel: "Formativo",
+      docente: "",
+    }));
   };
 
   const quitarTallerDeportivo = (index) => {
@@ -1419,9 +1469,14 @@ export default function useCoordinacion({
         : esDeportivo;
 
     if (periodoNormalizado === "verano") {
-      setTallerDepDeporte("Danza");
-    } else if (!["Vóley", "Fútbol", "Básquet", "Otro"].includes(tallerDepDeporte)) {
-      setTallerDepDeporte("Vóley");
+      setTallerDepForm((prev) => ({ ...prev, deporte: "Danza" }));
+    } else {
+      setTallerDepForm((prev) => {
+        if (!["Vóley", "Fútbol", "Básquet", "Otro"].includes(prev.deporte)) {
+          return { ...prev, deporte: "Vóley" };
+        }
+        return prev;
+      });
     }
     setForm((f) => ({
       ...f,
@@ -1735,26 +1790,8 @@ export default function useCoordinacion({
     mostrarGestorCategorias,
     setMostrarGestorCategorias,
     plantillaInputKey,
-    tallerDepDeporte,
-    setTallerDepDeporte,
-    tallerDepCustom,
-    setTallerDepCustom,
-    tallerDepMinEdad,
-    setTallerDepMinEdad,
-    tallerDepMaxEdad,
-    setTallerDepMaxEdad,
-    tallerDepDia,
-    setTallerDepDia,
-    tallerDepHoraInicio,
-    setTallerDepHoraInicio,
-    tallerDepHoraFin,
-    setTallerDepHoraFin,
-    tallerDepCupos,
-    setTallerDepCupos,
-    tallerDepNivel,
-    setTallerDepNivel,
-    tallerDepDocente,
-    setTallerDepDocente,
+    tallerDepForm,
+    setTallerDepForm,
     programaDocsId,
     lecturaDocumento,
     sidebarAbierta,

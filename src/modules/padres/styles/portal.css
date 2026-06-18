@@ -1200,3 +1200,90 @@
     justify-self: start;
   }
 }
+
+/* Nuevo bloque de detalles organizados del programa en el portal de padres */
+.padres-comunicado-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 12px rgba(15, 45, 80, 0.03);
+}
+
+.padres-comunicado-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.padres-comunicado-detail-item:hover {
+  background-color: #f8fafc;
+}
+
+.padres-comunicado-detail-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f97316;
+  background: #fff5eb;
+  flex: 0 0 auto;
+}
+
+/* Diferentes colores de fondo y texto para los iconos en base a su naturaleza */
+.padres-comunicado-detail-item.is-vigencia .padres-comunicado-detail-icon {
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.padres-comunicado-detail-item.is-horario .padres-comunicado-detail-icon {
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+.padres-comunicado-detail-item.is-costo .padres-comunicado-detail-icon {
+  color: #d97706;
+  background: #fffbeb;
+}
+
+.padres-comunicado-detail-item.is-plazo .padres-comunicado-detail-icon {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.padres-comunicado-detail-item.is-responsable .padres-comunicado-detail-icon {
+  color: #7c3aed;
+  background: #f5f3ff;
+}
+
+.padres-comunicado-detail-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.padres-comunicado-detail-label {
+  font-size: 11px;
+  font-weight: 850;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.padres-comunicado-detail-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.4;
+  word-break: break-word;
+}

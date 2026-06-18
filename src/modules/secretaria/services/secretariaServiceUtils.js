@@ -153,7 +153,7 @@ export function esProgramaCambridge(programa = {}) {
 
 export function normalizarSeleccionCambridge(valor = "") {
   const seleccion = String(valor || "").trim().toUpperCase();
-  return ["A", "B", "C"].includes(seleccion) ? seleccion : "";
+  return ["A"].includes(seleccion) ? seleccion : "";
 }
 
 export function obtenerDatosCambridgeSeguros(programa, payload = {}) {

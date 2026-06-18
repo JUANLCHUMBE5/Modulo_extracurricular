@@ -4,14 +4,17 @@ import {
   IconAlertCircle as AlertCircle,
   IconBook2 as BookOpen,
   IconBulb as Bulb,
+  IconCalendar as Calendar,
   IconCircleCheck as CheckCircle2,
   IconClipboardCheck as ClipboardCheck,
+  IconClock as Clock,
   IconLoader2 as Loader2,
   IconLogout as LogOut,
   IconNotes as Notes,
   IconPhone as Phone,
   IconReceipt as Receipt,
   IconToolsKitchen2 as Utensils,
+  IconUser as User,
   IconX as X,
 } from "@tabler/icons-react";
 import AsistentePadres from "../components/AsistentePadres";
@@ -23,7 +26,7 @@ import PagoStep from "../components/PagoStep";
 import StepperProceso from "../components/StepperProceso";
 import StudentHeader from "../components/StudentHeader";
 import usePadres from "../hooks/usePadres";
-import { prepararComunicadoPadres } from "../utils/padresTextUtils";
+import { prepararComunicadoPadres, obtenerTipoCampo } from "../utils/padresTextUtils";
 import "../Padres.css";
 
 const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
@@ -39,6 +42,24 @@ function obtenerMetaSeccionComunicado(titulo = "") {
   if (texto.includes("concesionario")) return { Icono: Phone, clase: "is-contact", ayuda: "Contactos autorizados por la instituciÃ³n." };
   return { Icono: BookOpen, clase: "is-general", ayuda: "InformaciÃ³n importante del programa." };
 }
+
+function obtenerIconoPorTipo(tipo = "") {
+  if (tipo === "vigencia") return Calendar;
+  if (tipo === "horario") return Clock;
+  if (tipo === "costo") return Receipt;
+  if (tipo === "plazo") return ClipboardCheck;
+  if (tipo === "responsable") return User;
+  return BookOpen;
+}
+
+function obtenerClasePorTipo(tipo = "") {
+  if (tipo === "vigencia") return "is-vigencia";
+  if (tipo === "horario") return "is-horario";
+  if (tipo === "costo") return "is-costo";
+  if (tipo === "plazo") return "is-plazo";
+  if (tipo === "responsable") return "is-responsable";
+  return "is-general";
+};
 
 function obtenerPasoPagoGuardado(dni) {
   if (typeof window === "undefined" || !dni) return null;
@@ -532,9 +553,59 @@ export default function Padres({ user, onLogout }) {
                 <div className="padres-comunicado-letter">
                   <span>Mensaje del colegio</span>
                 {comunicadoPadres.fecha ? <p>{comunicadoPadres.fecha}</p> : null}
-                {comunicadoPadres.parrafos.map((parrafo, index) => (
-                  <p key={`${index}-${parrafo}`}>{parrafo}</p>
-                ))}
+                {(() => {
+                  const segmentos = [];
+                  let grupoActual = null;
+
+                  comunicadoPadres.parrafos.forEach((parrafo) => {
+                    const match = parrafo.match(/^([^:]+):\s*(.*)$/);
+                    const esKeyValue = match && match[1].length < 35;
+                    
+                    if (esKeyValue) {
+                      if (!grupoActual) {
+                        grupoActual = { type: "grid", items: [] };
+                        segmentos.push(grupoActual);
+                      }
+                      grupoActual.items.push({
+                        label: match[1].trim(),
+                        value: match[2].trim(),
+                      });
+                    } else {
+                      grupoActual = null;
+                      segmentos.push({ type: "text", content: parrafo });
+                    }
+                  });
+
+                  return segmentos.map((segmento, idx) => {
+                    if (segmento.type === "grid") {
+                      return (
+                        <div key={`grid-${idx}`} className="padres-comunicado-details-grid">
+                          {segmento.items.map((item, itemIdx) => {
+                            const tipo = obtenerTipoCampo(item.label);
+                            const Icono = obtenerIconoPorTipo(tipo);
+                            const clase = obtenerClasePorTipo(tipo);
+                            return (
+                              <div key={itemIdx} className={`padres-comunicado-detail-item ${clase}`}>
+                                <div className="padres-comunicado-detail-icon">
+                                  <Icono size={16} />
+                                </div>
+                                <div className="padres-comunicado-detail-info">
+                                  <span className="padres-comunicado-detail-label">{item.label}</span>
+                                  <span className="padres-comunicado-detail-value">{item.value}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    }
+                    return (
+                      <p key={`text-${idx}`} style={{ margin: "12px 0", fontSize: "14.5px", lineHeight: "1.6", color: "#1e293b" }}>
+                        {segmento.content}
+                      </p>
+                    );
+                  });
+                })()}
                 </div>
 
                 <div className="padres-comunicado-section is-family">

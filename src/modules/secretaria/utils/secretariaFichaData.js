@@ -408,8 +408,6 @@ function describirSeleccionCambridgeFicha(valor = "") {
   const seleccion = normalizarSeleccionCambridge(valor);
   const opciones = {
     A: "A - Promovido por certificado oficial",
-    B: "B - Ingresante por Admission Test",
-    C: "C - Ingresante por desempeno academico",
   };
   return opciones[seleccion] || "Pendiente de definir";
 }
@@ -482,7 +480,7 @@ function obtenerFilaHorario(filas, index) {
   };
 }
 
-function formatearNivelesDocumento(grados = []) {
+export function formatearNivelesDocumento(grados = []) {
   return (Array.isArray(grados) ? grados : [])
     .map(formatearGradoDocumento)
     .filter(Boolean)
@@ -539,7 +537,7 @@ function formatearGradoDocumento(valor) {
   return `${numero}°GRADO`;
 }
 
-function formatearRangoHoraDocumento(inicio, fin) {
+export function formatearRangoHoraDocumento(inicio, fin) {
   if (!inicio || !fin) return "";
   return `${formatearHoraDocumento(inicio)} a ${formatearHoraDocumento(fin)}`;
 }

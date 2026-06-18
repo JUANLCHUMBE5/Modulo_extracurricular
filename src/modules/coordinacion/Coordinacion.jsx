@@ -310,31 +310,13 @@ function CoordinacionInner({
               setCatAEliminar={state.setCatAEliminar}
               setMostrarGestorCategorias={state.setMostrarGestorCategorias}
               setNuevaCat={state.setNuevaCat}
-              setTallerDepMaxEdad={state.setTallerDepMaxEdad}
-              setTallerDepMinEdad={state.setTallerDepMinEdad}
-              setTallerDepCupos={state.setTallerDepCupos}
-              setTallerDepNivel={state.setTallerDepNivel}
-              setTallerDepDocente={state.setTallerDepDocente}
+              tallerDepForm={state.tallerDepForm}
+              setTallerDepForm={state.setTallerDepForm}
               setShowModal={(visible) => {
                 if (!visible) state.setAlertaConfiguracion("");
                 state.setShowModal(visible);
               }}
-              setTallerDepCustom={state.setTallerDepCustom}
-              setTallerDepDeporte={state.setTallerDepDeporte}
-              setTallerDepDia={state.setTallerDepDia}
-              setTallerDepHoraFin={state.setTallerDepHoraFin}
-              setTallerDepHoraInicio={state.setTallerDepHoraInicio}
               show={state.showModal}
-              tallerDepCustom={state.tallerDepCustom}
-              tallerDepDeporte={state.tallerDepDeporte}
-              tallerDepDia={state.tallerDepDia}
-              tallerDepHoraFin={state.tallerDepHoraFin}
-              tallerDepHoraInicio={state.tallerDepHoraInicio}
-              tallerDepMaxEdad={state.tallerDepMaxEdad}
-              tallerDepMinEdad={state.tallerDepMinEdad}
-              tallerDepCupos={state.tallerDepCupos}
-              tallerDepNivel={state.tallerDepNivel}
-              tallerDepDocente={state.tallerDepDocente}
               toggleGradoGrupo={state.toggleGradoGrupo}
               toggleGrado={state.toggleGrado}
               toggleDia={state.toggleDia}

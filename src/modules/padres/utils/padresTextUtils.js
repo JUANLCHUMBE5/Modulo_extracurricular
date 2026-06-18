@@ -23,12 +23,14 @@ export function prepararComunicadoPadres(programa, estudiante) {
     : esClubTareas
       ? crearComunicadoClubTareasPadres(programa, estudiante, titulo, area)
       : crearComunicadoBasicoPadres(programa, estudiante, titulo);
-  const parrafos = textoCompletoWord
+  const parrafosOriginales = textoCompletoWord
     ? textoCompletoWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
     : parrafosFallback;
-  const parrafosResumenBase = textoResumenWord
+  const parrafos = dividirParrafosPorCampos(parrafosOriginales);
+  const parrafosResumenBaseOriginales = textoResumenWord
     ? textoResumenWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
     : parrafosFallback;
+  const parrafosResumenBase = dividirParrafosPorCampos(parrafosResumenBaseOriginales);
   const ventana = obtenerVentanaInscripcion(
     programa?.fechaInicio,
     new Date(),
@@ -153,8 +155,6 @@ export function describirSeleccionCambridgePadres(valor = "") {
   const seleccion = String(valor || "").trim().toUpperCase();
   const opciones = {
     A: "A - Promovido por certificado oficial",
-    B: "B - Ingresante por Admission Test",
-    C: "C - Ingresante por desempeno academico",
   };
   return opciones[seleccion] || "Pendiente de definir en Coordinación Académica";
 }
@@ -165,11 +165,11 @@ function crearComunicadoCambridgePadres(programa, estudiante, titulo) {
   const vigencia = formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin);
   const horario = repararTexto(String(programa?.horario || "").trim()) || "Por confirmar";
   const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
-  const modalidad = programa?.modalidadCobro ? `Modalidad de pago: ${programa.modalidadCobro}.` : "";
+  const modalidad = programa?.modalidadCobro ? `Modalidad de pago: ${programa.modalidadCobro}` : "";
   const datosCambridge = obtenerDatosCambridgePadres(programa, estudiante);
   const nivelCambridge = datosCambridge?.nivelCambridge ? ` en el nivel ${datosCambridge.nivelCambridge}` : "";
   const ingresoCambridge = datosCambridge?.seleccion
-    ? ` Modalidad Cambridge A/B/C asignada: ${describirSeleccionCambridgePadres(datosCambridge.seleccion)}.`
+    ? `Modalidad Cambridge asignada: ${describirSeleccionCambridgePadres(datosCambridge.seleccion)}.`
     : "";
 
   const ventana = obtenerVentanaInscripcion(
@@ -179,16 +179,36 @@ function crearComunicadoCambridgePadres(programa, estudiante, titulo) {
     programa?.horaLimiteAviso
   );
   const limiteTexto = ventana.fechaLimite
-    ? ` La inscripción en línea estará disponible hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
+    ? `Habilitado para inscripción en línea hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
     : "";
 
-  return [
-    `En nuestra institución estamos comprometidos con la formación integral de nuestros estudiantes y con una enseñanza sólida del idioma inglés. Por ello, invitamos a ${alumno}${aula ? ` del aula ${aula}` : ""} a participar en ${titulo}${nivelCambridge}.${ingresoCambridge}`,
-    "El programa de Preparación Cambridge fortalece las habilidades necesarias para rendir una certificación internacional reconocida y brinda acompañamiento mediante clases especializadas, materiales de preparación y simulacros del examen.",
-    `La vigencia registrada es ${vigencia}. El horario asignado es: ${horario}.${limiteTexto}`,
-    `El costo registrado para este programa es ${costo}. ${modalidad}`.trim(),
-    "Para completar la inscripción, la familia debe revisar y aceptar esta información antes de confirmar los datos del apoderado y continuar con el pago.",
+  const parrafos = [
+    `En nuestra institución estamos comprometidos con la formación integral de nuestros estudiantes y con una enseñanza sólida del idioma inglés. Por ello, invitamos a ${alumno}${aula ? ` del aula ${aula}` : ""} a participar en ${titulo}${nivelCambridge}.`,
   ];
+
+  if (ingresoCambridge) {
+    parrafos.push(ingresoCambridge);
+  }
+
+  parrafos.push(
+    "El programa de Preparación Cambridge fortalece las habilidades necesarias para rendir una certificación internacional reconocida y brinda acompañamiento mediante clases especializadas, materiales de preparación y simulacros del examen.",
+    `Vigencia: ${vigencia}`,
+    `Horario: ${horario}`,
+    `Costo: ${costo}`
+  );
+
+  if (modalidad) {
+    parrafos.push(modalidad);
+  }
+  if (limiteTexto) {
+    parrafos.push(`Plazo de inscripción: ${limiteTexto}`);
+  }
+
+  parrafos.push(
+    "Para completar la inscripción, la familia debe revisar y aceptar esta información antes de confirmar los datos del apoderado y continuar con el pago."
+  );
+
+  return parrafos;
 }
 
 function crearComunicadoBasicoPadres(programa, estudiante, titulo) {
@@ -205,15 +225,26 @@ function crearComunicadoBasicoPadres(programa, estudiante, titulo) {
     programa?.horaLimiteAviso
   );
   const limiteTexto = ventana.fechaLimite
-    ? ` Plazo de inscripción: Habilitado para confirmación en línea hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
+    ? `Habilitado para confirmación en línea hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
     : "";
 
-  return [
+  const parrafos = [
     `El colegio informa que ${alumno} tiene disponible el programa ${titulo}.`,
-    `Vigencia: ${vigencia}. Horario: ${horario}. Costo: ${costo}.${limiteTexto}`,
-    responsable ? `Responsable del programa: ${responsable}.` : "La coordinacion del programa brindara las indicaciones necesarias antes del inicio.",
-    "Revise esta informacion y confirme la aceptacion para continuar con la inscripcion.",
+    `Vigencia: ${vigencia}`,
+    `Horario: ${horario}`,
+    `Costo: ${costo}`,
   ];
+
+  if (limiteTexto) {
+    parrafos.push(`Plazo de inscripción: ${limiteTexto}`);
+  }
+
+  parrafos.push(
+    responsable ? `Responsable del programa: ${responsable}` : "La coordinacion del programa brindara las indicaciones necesarias antes del inicio.",
+    "Revise esta informacion y confirme la aceptacion para continuar con la inscripcion."
+  );
+
+  return parrafos;
 }
 
 function crearComunicadoClubTareasPadres(programa, estudiante, titulo, area) {
@@ -222,7 +253,7 @@ function crearComunicadoClubTareasPadres(programa, estudiante, titulo, area) {
   const vigencia = formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin);
   const horario = repararTexto(String(programa?.horario || "").trim()) || "Por confirmar";
   const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
-  const modalidad = programa?.modalidadCobro ? ` Modalidad de cobro: ${programa.modalidadCobro}.` : "";
+  const modalidad = programa?.modalidadCobro ? `Modalidad de cobro: ${programa.modalidadCobro}` : "";
   const responsable = repararTexto(String(programa?.responsable || programa?.docente || "").trim());
 
   const ventana = obtenerVentanaInscripcion(
@@ -232,16 +263,29 @@ function crearComunicadoClubTareasPadres(programa, estudiante, titulo, area) {
     programa?.horaLimiteAviso
   );
   const limiteTexto = ventana.fechaLimite
-    ? ` Inscripción regular habilitada en línea hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
+    ? `Habilitado en línea hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
     : "";
 
-  return [
+  const parrafos = [
     `El colegio informa que ${alumno}${grado ? ` del aula ${grado}` : ""} tiene disponible el ${titulo}, orientado al acompanamiento y refuerzo de tareas del area de ${area}.`,
-    `El programa se desarrollara del ${vigencia.replace(/^Del\s+/i, "")}. Horario asignado: ${horario}.${limiteTexto}`,
-    `Costo del programa: ${costo}.${modalidad}`,
-    responsable ? `Responsable del programa: ${responsable}.` : "Coordinacion Academica comunicara el responsable asignado antes del inicio.",
-    "La familia debe revisar esta informacion y confirmar la aceptacion para continuar con la inscripcion.",
+    `Vigencia: del ${vigencia.replace(/^Del\s+/i, "")}`,
+    `Horario: ${horario}`,
+    `Costo: ${costo}`,
   ];
+
+  if (modalidad) {
+    parrafos.push(modalidad);
+  }
+  if (limiteTexto) {
+    parrafos.push(`Plazo de inscripción: ${limiteTexto}`);
+  }
+
+  parrafos.push(
+    responsable ? `Responsable del programa: ${responsable}` : "Coordinacion Academica comunicara el responsable asignado antes del inicio.",
+    "La familia debe revisar esta informacion y confirmar la aceptacion para continuar con la inscripcion."
+  );
+
+  return parrafos;
 }
 
 function obtenerDatosCambridgePadres(programa, estudiante) {
@@ -658,4 +702,99 @@ export function repararTexto(texto) {
   }
 
   return out;
+}
+
+export function dividirSentencias(texto) {
+  const textToProcess = String(texto).trim();
+  const sentencias = [];
+  const regexPunto = /\.\s+(?=[A-ZÁÉÍÓÚÑ])/g;
+  const abrevs = new Set(["sr", "sra", "dr", "dra", "lic", "ing", "av", "jr", "prof", "profa", "a.m", "p.m"]);
+  
+  let lastCut = 0;
+  let match;
+  
+  while ((match = regexPunto.exec(textToProcess)) !== null) {
+    const pos = match.index;
+    const antes = textToProcess.slice(0, pos);
+    
+    const ultimaPalabraMatch = antes.match(/(\b\S+)$/);
+    const ultimaPalabra = ultimaPalabraMatch ? ultimaPalabraMatch[1].toLowerCase() : "";
+    
+    if (abrevs.has(ultimaPalabra) || abrevs.has(ultimaPalabra.replace(/\.$/, ""))) {
+      continue;
+    }
+    
+    const parte = textToProcess.slice(lastCut, pos + 1).trim();
+    if (parte) {
+      sentencias.push(parte);
+    }
+    lastCut = pos + 1;
+  }
+  
+  const parteFinal = textToProcess.slice(lastCut).trim();
+  if (parteFinal) {
+    sentencias.push(parteFinal);
+  }
+  
+  return sentencias;
+}
+
+export function dividirParrafosPorCampos(parrafos) {
+  if (!Array.isArray(parrafos)) return [];
+  const regex = /(Vigencia|Horario|Costo|Plazo de inscripci[oó]n|Plazo|Responsable del programa|Responsable|Docente|Modalidad de cobro|Modalidad de pago|Modalidad de ingreso|Modalidad):/gi;
+  const resultado = [];
+
+  parrafos.forEach((parrafo) => {
+    const texto = String(parrafo || "").trim();
+    if (!texto) return;
+
+    const matches = [];
+    let match;
+    regex.lastIndex = 0;
+    while ((match = regex.exec(texto)) !== null) {
+      matches.push({
+        index: match.index,
+        label: match[1],
+        full: match[0],
+      });
+    }
+
+    if (matches.length === 0) {
+      resultado.push(...dividirSentencias(texto));
+      return;
+    }
+
+    if (matches[0].index > 0) {
+      const partePrevia = texto.slice(0, matches[0].index).trim();
+      if (partePrevia) {
+        resultado.push(...dividirSentencias(partePrevia));
+      }
+    }
+
+    for (let i = 0; i < matches.length; i++) {
+      const inicio = matches[i].index;
+      const fin = i + 1 < matches.length ? matches[i + 1].index : texto.length;
+      const chunk = texto.slice(inicio, fin).trim();
+      
+      const sentenciasDelChunk = dividirSentencias(chunk);
+      if (sentenciasDelChunk.length > 0) {
+        resultado.push(sentenciasDelChunk[0]);
+        for (let j = 1; j < sentenciasDelChunk.length; j++) {
+          resultado.push(sentenciasDelChunk[j]);
+        }
+      }
+    }
+  });
+
+  return resultado;
+}
+
+export function obtenerTipoCampo(label = "") {
+  const texto = label.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (texto.includes("vigencia") || texto.includes("fecha")) return "vigencia";
+  if (texto.includes("horario") || texto.includes("hora")) return "horario";
+  if (texto.includes("costo") || texto.includes("pago") || texto.includes("precio")) return "costo";
+  if (texto.includes("plazo") || texto.includes("limite")) return "plazo";
+  if (texto.includes("responsable") || texto.includes("docente")) return "responsable";
+  return "general";
 }

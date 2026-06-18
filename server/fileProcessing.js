@@ -317,7 +317,7 @@ function validarFilaCarga(fila, programaDetectado) {
   if (!textoSeguro(fila.curso) && !textoSeguro(fila.nivelCambridge)) errores.push("Falta curso o nivel Cambridge.");
   if (fila.curso && !programaDetectado) errores.push("El programa indicado no existe en el periodo seleccionado.");
   if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
-  if (esCambridge && !/^[ABC]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A, B o C.");
+  if (esCambridge && !/^[A]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A.");
   if (programaDetectado && String(programaDetectado.estado || "Habilitado") !== "Habilitado") {
     errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} esta ${programaDetectado.estado}. Habilitelo antes de cargar alumnos.`);
   }

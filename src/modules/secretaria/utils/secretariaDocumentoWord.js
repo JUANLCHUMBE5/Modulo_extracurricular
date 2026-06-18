@@ -11,6 +11,8 @@ import {
   escaparXml,
   normalizarNombreArchivo,
   procesarTextoComunicado,
+  formatearNivelesDocumento,
+  formatearRangoHoraDocumento,
 } from "./secretariaFichaData";
 
 export async function crearDocumentoInvitacion(estudiante, inscripcion) {
@@ -118,12 +120,33 @@ export function crearLineasInvitacionEspecial(ficha, inscripcion, estudiante) {
 
   // 6. Horarios por Nivel
   const tabla = inscripcion.tablaHorariosNivel || [];
+  const grupos = inscripcion.horariosPorGrupo || [];
   if (Array.isArray(tabla) && tabla.length > 0) {
     lineas.push(`CRONOGRAMA Y HORARIOS:`);
     tabla.forEach(row => {
       let horarioNivel = `· ${row.nivel || "Nivel"} - Día(s): ${row.dia || "Por definir"} - Horario de clase: ${row.horarioClase || "Por definir"}`;
       if (row.horarioAlmuerzo) {
         horarioNivel += ` (Horario almuerzo: ${row.horarioAlmuerzo})`;
+      }
+      const parts = [];
+      if (row.responsable && row.responsable.trim()) {
+        parts.push(`Docente: ${row.responsable.trim()}`);
+      }
+      if (row.tutora && row.tutora.trim()) {
+        parts.push(`Apoyo: ${row.tutora.trim()}`);
+      }
+      if (parts.length > 0) {
+        horarioNivel += ` - ${parts.join(" y ")}`;
+      }
+      lineas.push(horarioNivel);
+    });
+  } else if (Array.isArray(grupos) && grupos.length > 0) {
+    lineas.push(`CRONOGRAMA Y HORARIOS:`);
+    grupos.forEach(row => {
+      const nivelesFmt = formatearNivelesDocumento(row.grados);
+      let horarioNivel = `· ${nivelesFmt || "Nivel"} - Día(s): ${row.dia || "Por definir"} - Horario de clase: ${formatearRangoHoraDocumento(row.horaInicio, row.horaFin)}`;
+      if (row.almuerzoInicio && row.almuerzoFin) {
+        horarioNivel += ` (Horario almuerzo: ${formatearRangoHoraDocumento(row.almuerzoInicio, row.almuerzoFin)})`;
       }
       const parts = [];
       if (row.responsable && row.responsable.trim()) {
