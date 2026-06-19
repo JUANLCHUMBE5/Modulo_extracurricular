@@ -768,12 +768,71 @@ export async function buscarInscripcionesParaDescuento(busqueda) {
   const term = String(busqueda || "").toLowerCase().trim();
   if (!term) return [];
 
-  return (apiDb.inscripciones || []).filter(ins => {
-    if (ins.estadoInscripcion === "Anulada") return false;
+  const realEnrollments = (apiDb.inscripciones || []).filter(ins => {
+    if (ins.estadoInscripcion === "Anulada" || ins.estadoInscripcion === "anulada") return false;
     const dniCoincide = String(ins.dni || ins.dniEstudiante || "").includes(term);
     const nombreCoincide = String(ins.estudiante || ins.nombresEstudiante || "").toLowerCase().includes(term);
     return dniCoincide || nombreCoincide;
   });
+
+  const virtualEnrollments = [];
+  const programas = apiDb.programas || [];
+  programas.forEach(programa => {
+    const invitados = apiDb.invitadosPorPrograma?.[programa.id] || [];
+    invitados.forEach(invitado => {
+      const dni = String(invitado.dni || "").replace(/\D/g, "");
+      const name = String(invitado.nombres || "").toLowerCase();
+      const matchesDni = dni.includes(term);
+      const matchesName = name.includes(term);
+      
+      if (matchesDni || matchesName) {
+        const existeReal = (apiDb.inscripciones || []).some(ins => 
+          ins.dniEstudiante === invitado.dni && 
+          ins.programaId === programa.id && 
+          ins.estadoInscripcion !== "Anulada" &&
+          ins.estadoInscripcion !== "anulada"
+        );
+        
+        if (!existeReal) {
+          const student = apiDb.estudiantes?.[invitado.dni] || {};
+          virtualEnrollments.push({
+            id: `INV-${programa.id}-${invitado.dni}`,
+            inscripcion_id: `INV-${programa.id}-${invitado.dni}`,
+            estudiante_id: invitado.dni,
+            programa_id: programa.id,
+            creado_en: new Date().toISOString(),
+            origen_inscripcion: "Invitación",
+            estado_inscripcion: "Pendiente de pago",
+            dni_estudiante: invitado.dni,
+            codigo_estudiante: student.codigoEstudiante || invitado.codigoEstudiante || "",
+            nombres_estudiante: invitado.nombres,
+            grado_estudiante: invitado.grado || "",
+            seccion: invitado.seccion || "",
+            nombre_programa: programa.nombre,
+            categoria: programa.categoria || "",
+            horario: programa.horario || "",
+            docente: programa.responsable || programa.docente || "No definido",
+            monto: programa.costo || 0,
+            costoOriginal: programa.costo || 0,
+            apoderado: student.apoderado || "",
+            telefono_apoderado: student.telefonoApoderado || student.telefono || "",
+            correo_apoderado: student.correoApoderado || student.correo || "",
+            estado_pago: "pendiente",
+            pago_id: "",
+            derivado_caja: false,
+            estado_caja: "",
+            descuentoAprobado: false,
+            esVirtual: true
+          });
+        }
+      }
+    });
+  });
+
+  return [
+    ...realEnrollments,
+    ...virtualEnrollments
+  ];
 }
 
 export async function aplicarDescuentoInscripcion(inscripcionId, datosDescuento) {
@@ -788,13 +847,63 @@ export async function aplicarDescuentoInscripcion(inscripcionId, datosDescuento)
 
   await esperar(300);
   await syncApiDb();
-  const index = (apiDb.inscripciones || []).findIndex(ins => ins.id === inscripcionId);
-  if (index === -1) throw new Error("Inscripción no encontrada");
-
-  const ins = apiDb.inscripciones[index];
   
-  const costoOriginal = Number(ins.costoOriginal ?? ins.costo ?? 0);
+  let ins = null;
+  let index = -1;
 
+  if (String(inscripcionId).startsWith("INV-")) {
+    const parts = String(inscripcionId).split("-");
+    const progId = parts[1];
+    const dni = parts[2];
+    
+    const prog = (apiDb.programas || []).find(p => p.id === progId);
+    if (!prog) throw new Error("Taller no encontrado para la invitación");
+
+    const invitados = apiDb.invitadosPorPrograma?.[progId] || [];
+    const invitado = invitados.find(i => i.dni === dni);
+    if (!invitado) throw new Error("Invitación de estudiante no encontrada");
+
+    const student = apiDb.estudiantes?.[dni] || {};
+
+    const newInscripcion = {
+      id: "INS-" + Date.now(),
+      dniEstudiante: dni,
+      codigoEstudiante: student.codigoEstudiante || invitado.codigoEstudiante || "",
+      nombresEstudiante: invitado.nombres,
+      gradoEstudiante: invitado.grado || student.grado || "",
+      seccion: invitado.seccion || student.seccion || "",
+      programaId: progId,
+      programa: prog.nombre,
+      categoria: prog.categoria || "",
+      costo: prog.costo || 0,
+      estadoInscripcion: "pendiente_pago", // Pre-inscrito
+      estadoPago: "pendiente",
+      derivadoCaja: true, // Manda a caja
+      fechaRegistro: new Date().toISOString(),
+      apoderado: student.apoderado || "",
+      telefono: student.telefonoApoderado || student.telefono || "",
+      correo: student.correoApoderado || student.correo || "",
+      origenRegistro: "Dirección / Descuento"
+    };
+
+    apiDb.inscripciones = apiDb.inscripciones || [];
+    apiDb.inscripciones.push(newInscripcion);
+    index = apiDb.inscripciones.length - 1;
+    ins = apiDb.inscripciones[index];
+  } else {
+    index = (apiDb.inscripciones || []).findIndex(ins => ins.id === inscripcionId);
+    if (index === -1) throw new Error("Inscripción no encontrada");
+    ins = apiDb.inscripciones[index];
+  }
+
+  // Validar si ya está pagado
+  const payments = apiDb.pagos || [];
+  const pagoAsociado = payments.find(pay => pay.inscripcionId === ins.id) || payments.find(pay => pay.dniEstudiante === ins.dniEstudiante && (pay.programaId === ins.programaId || String(pay.programa || "").toLowerCase() === String(ins.programa || "").toLowerCase()));
+  if (pagoAsociado && ["completado", "validado", "pagado"].includes(String(pagoAsociado.estado).toLowerCase())) {
+    throw new Error("No se puede aplicar descuento a una inscripción que ya ha sido pagada.");
+  }
+
+  const costoOriginal = Number(ins.costoOriginal ?? ins.costo ?? 0);
   let descuentoMonto = 0;
   let nuevoCosto = costoOriginal;
 
@@ -821,6 +930,7 @@ export async function aplicarDescuentoInscripcion(inscripcionId, datosDescuento)
     descuentoAprobado: true,
     descuentoAprobadoPor: "Dirección",
     descuentoFechaAprobacion: new Date().toISOString(),
+    derivadoCaja: true
   };
 
   await saveApiDb();
