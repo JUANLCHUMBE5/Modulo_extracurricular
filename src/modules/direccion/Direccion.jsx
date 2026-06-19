@@ -89,6 +89,17 @@ export default function Direccion({ onLogout, user }) {
 
   const exportarHabilitado = puedeExportar(user);
 
+  const refrescarBusquedaDescuento = useCallback(async () => {
+    const term = String(busquedaDescuento || "").trim();
+    if (!term) return;
+    try {
+      const res = await buscarInscripcionesParaDescuento(term);
+      setResultadosDescuento(res);
+    } catch (err) {
+      console.error("Error al refrescar búsqueda:", err);
+    }
+  }, [busquedaDescuento]);
+
   // Cambiar el modulo activo y pre-seleccionar el primer reporte de esa categoria
   const cambiarModulo = (mod) => {
     setModuloActivo(mod);
@@ -293,16 +304,16 @@ export default function Direccion({ onLogout, user }) {
     }
   };
 
-  const refrescarBusquedaDescuento = useCallback(async () => {
-    const term = String(busquedaDescuento || "").trim();
-    if (!term) return;
-    try {
-      const res = await buscarInscripcionesParaDescuento(term);
-      setResultadosDescuento(res);
-    } catch (err) {
-      console.error("Error al refrescar búsqueda:", err);
-    }
-  }, [busquedaDescuento]);
+
+
+
+
+
+
+
+
+
+
 
   const abrirModalBeneficio = (ins) => {
     setInscripcionSeleccionada(ins);
