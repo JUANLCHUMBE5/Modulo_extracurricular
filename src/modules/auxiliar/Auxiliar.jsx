@@ -46,46 +46,89 @@ function parsearHorario(horarioStr) {
 }
 
 function verificarLlegadaTemprano(horarioStr) {
-  if (!horarioStr) return { esTemprano: false, horaInicio: "" };
+  if (!horarioStr) return { esTemprano: false, esTarde: false, horaInicio: "", horaFin: "" };
   
-  // Extraer la primera hora (hora de inicio)
-  const match = String(horarioStr).match(/(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
-  if (!match) return { esTemprano: false, horaInicio: "" };
+  const str = String(horarioStr);
   
-  let hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
-  const meridian = match[3] ? match[3].toLowerCase().replace(/\s/g, "") : null;
+  // 1. Intentar buscar rango de clase con prefijo "clase"
+  let match = str.match(/clase\s*(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?\s*-\s*(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
+  let usesClaseMatch = true;
   
-  const horaOriginalTexto = match[0].trim();
-  
-  // Convertir a formato de 24 horas para comparación
-  if (meridian) {
-    if (meridian.includes("p") && hours < 12) {
-      hours += 12;
-    } else if (meridian.includes("a") && hours === 12) {
-      hours = 0;
+  if (!match) {
+    usesClaseMatch = false;
+    // Si no encontramos con "clase", limpiamos almuerzo e intentamos buscar cualquier rango de hora
+    const cleaned = str.replace(/almuerzo\s+\d{2}:\d{2}-\d{2}:\d{2},?\s*/gi, "");
+    match = cleaned.match(/(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?\s*-\s*(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
+    
+    // Si aún no encontramos un rango de hora, buscamos al menos una hora simple (hora de inicio)
+    if (!match) {
+      const singleMatch = cleaned.match(/(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
+      if (!singleMatch) return { esTemprano: false, esTarde: false, horaInicio: "", horaFin: "" };
+      
+      const hours = parseInt(singleMatch[1], 10);
+      const minutes = parseInt(singleMatch[2], 10);
+      const meridian = singleMatch[3] ? singleMatch[3].toLowerCase().replace(/\s/g, "") : null;
+      const horaInicioFmt = `${singleMatch[1]}:${singleMatch[2]}${singleMatch[3] ? ' ' + singleMatch[3] : ''}`.trim();
+      
+      let hours24 = hours;
+      if (meridian) {
+        if (meridian.includes("p") && hours < 12) hours24 += 12;
+        else if (meridian.includes("a") && hours === 12) hours24 = 0;
+      }
+      const inicioMinutos = hours24 * 60 + minutes;
+      
+      const ahora = new Date();
+      const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
+      const diferenciaMinutos = inicioMinutos - ahoraMinutos;
+      
+      return {
+        esTemprano: diferenciaMinutos > 10,
+        esTarde: false,
+        horaInicio: horaInicioFmt,
+        horaFin: ""
+      };
     }
   }
   
-  const inicioMinutos = hours * 60 + minutes;
+  // Si encontramos un rango de hora: inicio - fin
+  const startHrs = parseInt(match[1], 10);
+  const startMins = parseInt(match[2], 10);
+  const startMeridian = match[3] ? match[3].toLowerCase().replace(/\s/g, "") : null;
   
-  // Obtener hora actual del sistema
+  const endHrs = parseInt(match[4], 10);
+  const endMins = parseInt(match[5], 10);
+  const endMeridian = match[6] ? match[6].toLowerCase().replace(/\s/g, "") : null;
+  
+  let startHrs24 = startHrs;
+  if (startMeridian) {
+    if (startMeridian.includes("p") && startHrs < 12) startHrs24 += 12;
+    else if (startMeridian.includes("a") && startHrs === 12) startHrs24 = 0;
+  }
+  const inicioMinutos = startHrs24 * 60 + startMins;
+  
+  let endHrs24 = endHrs;
+  if (endMeridian) {
+    if (endMeridian.includes("p") && endHrs < 12) endHrs24 += 12;
+    else if (endMeridian.includes("a") && endHrs === 12) endHrs24 = 0;
+  }
+  if (endHrs24 < startHrs24 && !endMeridian) {
+    endHrs24 += 12;
+  }
+  const finMinutos = endHrs24 * 60 + endMins;
+  
   const ahora = new Date();
   const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
   
   const diferenciaMinutos = inicioMinutos - ahoraMinutos;
   
-  // Si falta más de 10 minutos para la hora de inicio, es muy temprano
-  if (diferenciaMinutos > 10) {
-    return {
-      esTemprano: true,
-      horaInicio: horaOriginalTexto
-    };
-  }
+  const horaInicioFmt = `${match[1]}:${match[2]}${match[3] ? ' ' + match[3] : ''}`.trim();
+  const horaFinFmt = `${match[4]}:${match[5]}${match[6] ? ' ' + match[6] : ''}`.trim();
   
   return {
-    esTemprano: false,
-    horaInicio: horaOriginalTexto
+    esTemprano: diferenciaMinutos > 10,
+    esTarde: ahoraMinutos > finMinutos,
+    horaInicio: horaInicioFmt,
+    horaFin: horaFinFmt
   };
 }
 
@@ -370,6 +413,7 @@ export default function Auxiliar({ onLogout }) {
     if (ultimoEvento?.estado === "observado") return "observado";
     if (!estudiante) return "esperando";
     if (estudiante.estadoAcceso === "pre_inscrito") return "pre-inscrito";
+    if (estudiante.estadoAcceso === "ya_registrado") return "ya-registrado";
     if (estudiante.estadoAcceso === "pagado") {
       if (!esDiaCorrecto(estudiante.horario)) {
         return "dia-incorrecto";
@@ -377,6 +421,9 @@ export default function Auxiliar({ onLogout }) {
       const infoTemprano = verificarLlegadaTemprano(estudiante.horario);
       if (infoTemprano.esTemprano) {
         return "temprano";
+      }
+      if (infoTemprano.esTarde) {
+        return "tarde";
       }
       return "autorizado";
     }
@@ -681,6 +728,98 @@ export default function Auxiliar({ onLogout }) {
               <h2 className="student-name">¡Hola, {estudiante.nombres}! 👋</h2>
               <p className="kiosk-status-message-highlight" style={{ color: "#d97706" }}>
                 Espere por favor, ingreso permitido a las {verificarLlegadaTemprano(estudiante.horario).horaInicio}.
+              </p>
+              
+              <div className="kiosk-student-details-box">
+                <div className="detail-item">
+                  <span className="label">TALLER</span>
+                  <strong className="value">🎨 {estudiante.programa}</strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">HORARIO</span>
+                  <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3" }}>
+                    {(() => {
+                      const infoHorario = parsearHorario(estudiante.horario);
+                      return (
+                        <>
+                          {infoHorario.nivel && <div style={{ fontWeight: 800 }}>{infoHorario.nivel}</div>}
+                          {infoHorario.dias && <div style={{ color: "#475569", marginTop: "2px", fontWeight: 700 }}>{infoHorario.dias}</div>}
+                          {infoHorario.hora && <div style={{ color: "#0ea5e9", marginTop: "2px", fontWeight: 700 }}>⏰ {infoHorario.hora}</div>}
+                          {!infoHorario.nivel && !infoHorario.dias && !infoHorario.hora && <div>{estudiante.horario || "No registrado"}</div>}
+                        </>
+                      );
+                    })()}
+                  </strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">ESTADO PAGO</span>
+                  <strong className="value badge-success">✅ {estudiante.estadoPago}</strong>
+                </div>
+              </div>
+
+              <div className="kiosk-actions-panel">
+                <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+                  Limpiar / Nuevo Escaneo
+                </button>
+              </div>
+            </div>
+          )}
+
+          {kioskState === "tarde" && (
+            <div className="kiosk-status-card state-pendiente">
+              <div className="kiosk-status-header-icon error-shake">
+                <Clock size={72} />
+              </div>
+              <span className="kiosk-badge-tag error">TALLER FINALIZADO</span>
+              <h2 className="student-name">¡Hola, {estudiante.nombres}! 👋</h2>
+              <p className="kiosk-status-message-highlight" style={{ color: "#e11d48" }}>
+                El taller ya finalizó. El horario de clase era de {verificarLlegadaTemprano(estudiante.horario).horaInicio} a {verificarLlegadaTemprano(estudiante.horario).horaFin}.
+              </p>
+              
+              <div className="kiosk-student-details-box">
+                <div className="detail-item">
+                  <span className="label">TALLER</span>
+                  <strong className="value">🎨 {estudiante.programa}</strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">HORARIO</span>
+                  <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3" }}>
+                    {(() => {
+                      const infoHorario = parsearHorario(estudiante.horario);
+                      return (
+                        <>
+                          {infoHorario.nivel && <div style={{ fontWeight: 800 }}>{infoHorario.nivel}</div>}
+                          {infoHorario.dias && <div style={{ color: "#475569", marginTop: "2px", fontWeight: 700 }}>{infoHorario.dias}</div>}
+                          {infoHorario.hora && <div style={{ color: "#0ea5e9", marginTop: "2px", fontWeight: 700 }}>⏰ {infoHorario.hora}</div>}
+                          {!infoHorario.nivel && !infoHorario.dias && !infoHorario.hora && <div>{estudiante.horario || "No registrado"}</div>}
+                        </>
+                      );
+                    })()}
+                  </strong>
+                </div>
+                <div className="detail-item">
+                  <span className="label">ESTADO PAGO</span>
+                  <strong className="value badge-success">✅ {estudiante.estadoPago}</strong>
+                </div>
+              </div>
+
+              <div className="kiosk-actions-panel">
+                <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+                  Limpiar / Nuevo Escaneo
+                </button>
+              </div>
+            </div>
+          )}
+
+          {kioskState === "ya-registrado" && (
+            <div className="kiosk-status-card state-pendiente">
+              <div className="kiosk-status-header-icon error-shake">
+                <Clock size={72} />
+              </div>
+              <span className="kiosk-badge-tag error">YA REGISTRADO</span>
+              <h2 className="student-name">¡Hola, {estudiante.nombres}! 👋</h2>
+              <p className="kiosk-status-message-highlight" style={{ color: "#e11d48" }}>
+                {estudiante.accion || "Este estudiante ya registró su ingreso hace poco. Espere 15 minutos para volver a registrarse."}
               </p>
               
               <div className="kiosk-student-details-box">

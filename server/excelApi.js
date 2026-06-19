@@ -993,7 +993,70 @@ app.delete("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
 app.get("/api/v1/extracurricular/programas/:programaId/invitados", requireRole(["coordinacion"]), async (req, res) => {
   try {
     const db = await getDb();
-    res.json({ success: true, data: db.invitadosPorPrograma?.[req.params.programaId] || [] });
+    const programaId = req.params.programaId;
+    const todosInvitados = db.invitadosPorPrograma?.[programaId] || [];
+
+    // Filtrar invitados que ya tienen una inscripción activa en este programa
+    const inscripcionesActivas = (db.inscripciones || [])
+      .filter((ins) => ins.programaId === programaId && ins.estadoInscripcion !== "Anulada");
+
+    if (!inscripcionesActivas.length) {
+      return res.json({ success: true, data: todosInvitados });
+    }
+
+    const dnisMatriculados = new Set(
+      inscripcionesActivas
+        .map((ins) => String(ins.dniEstudiante || "").replace(/\D/g, ""))
+        .filter(Boolean)
+    );
+    const codigosMatriculados = new Set(
+      inscripcionesActivas
+        .map((ins) => String(ins.codigoEstudiante || "").trim().toUpperCase())
+        .filter(Boolean)
+    );
+    const nombresMatriculados = new Set(
+      inscripcionesActivas
+        .map((ins) => normalizarTextoApi(ins.nombresEstudiante))
+        .filter(Boolean)
+    );
+
+    const filtered = todosInvitados.filter((invitado) => {
+      const dniInvitado = String(invitado.dni || "").replace(/\D/g, "");
+      const codigoInvitado = String(invitado.codigoEstudiante || "").trim().toUpperCase();
+      const nombreInvitado = normalizarTextoApi(invitado.nombres);
+
+      // Coincidencia directa por DNI
+      if (dniInvitado && dnisMatriculados.has(dniInvitado)) return false;
+      // Coincidencia directa por código
+      if (codigoInvitado && codigosMatriculados.has(codigoInvitado)) return false;
+
+      // Buscar el código del invitado en la base de estudiantes (DNI → codigoEstudiante)
+      if (dniInvitado) {
+        const estudianteBase = db.estudiantes?.[dniInvitado];
+        if (estudianteBase) {
+          const codigoDesdeBase = String(estudianteBase.codigoEstudiante || "").trim().toUpperCase();
+          if (codigoDesdeBase && codigosMatriculados.has(codigoDesdeBase)) return false;
+        }
+      }
+
+      // Buscar por código cruzado (codigoInvitado -> DNI)
+      if (codigoInvitado) {
+        const estudianteBase = Object.values(db.estudiantes || {}).find(
+          (e) => String(e.codigoEstudiante || "").trim().toUpperCase() === codigoInvitado
+        );
+        if (estudianteBase && estudianteBase.dni) {
+          const dniDesdeBase = String(estudianteBase.dni).replace(/\D/g, "");
+          if (dniDesdeBase && dnisMatriculados.has(dniDesdeBase)) return false;
+        }
+      }
+
+      // Coincidencia por nombre normalizado como último recurso
+      if (nombreInvitado && nombresMatriculados.has(nombreInvitado)) return false;
+
+      return true;
+    });
+
+    res.json({ success: true, data: filtered });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -2153,6 +2216,38 @@ app.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), u
   }
 });
 
+function obtenerMinutosRestantesIngresoRecienteApi(asistenciasList, studentDni, studentCode, programId, nowMs = Date.now()) {
+  if (!Array.isArray(asistenciasList)) return 0;
+  
+  const cleanDni = studentDni ? String(studentDni).replace(/\D/g, "") : "";
+  const cleanCode = studentCode ? String(studentCode).trim() : "";
+  
+  let maxRestante = 0;
+  
+  asistenciasList.forEach(ast => {
+    const astDni = ast.dniEstudiante ? String(ast.dniEstudiante).replace(/\D/g, "") : "";
+    const astCode = ast.codigoEstudiante ? String(ast.codigoEstudiante).trim() : "";
+    
+    const coincideEstudiante = (cleanDni && astDni === cleanDni) || (cleanCode && astCode === cleanCode);
+    if (!coincideEstudiante) return;
+    
+    const coincidePrograma = ast.programaId === programId;
+    if (!coincidePrograma) return;
+    
+    const fechaAst = new Date(ast.fechaRegistro);
+    if (isNaN(fechaAst.getTime())) return;
+    
+    const diffMs = nowMs - fechaAst.getTime();
+    const limiteMs = 15 * 60 * 1000;
+    if (diffMs >= 0 && diffMs < limiteMs) {
+      const mins = Math.ceil((limiteMs - diffMs) / 60000);
+      if (mins > maxRestante) maxRestante = mins;
+    }
+  });
+  
+  return maxRestante;
+}
+
 // 8. Auxiliar
 app.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar"]), async (req, res) => {
   try {
@@ -2265,8 +2360,22 @@ app.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar"]), a
       result.horario = inscripcion.horario;
       result.pagoId = pago ? pago.id : "";
       
+      const minsRestantes = obtenerMinutosRestantesIngresoRecienteApi(
+        db.asistencias || [],
+        studentDni,
+        student ? student.codigoEstudiante : "",
+        inscripcion.programaId
+      );
+      
       const isPaid = (pago && (pago.estado === "completado" || pago.estado === "validado")) || inscripcion.estadoPago === "Pagado";
-      if (isPaid) {
+      if (minsRestantes > 0) {
+        result.accesoPermitido = false;
+        result.mensajeAcceso = "Ya registrado";
+        result.accion = `Este estudiante ya registró su ingreso hace poco. Podrá registrarse nuevamente en ${minsRestantes} minuto(s).`;
+        result.color = "rojo";
+        result.estadoPago = "Pagado";
+        result.estadoAcceso = "ya_registrado";
+      } else if (isPaid) {
         result.accesoPermitido = true;
         result.mensajeAcceso = "Pago validado";
         result.accion = "Ingreso permitido.";
@@ -2396,8 +2505,22 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"])
       result.horario = inscripcion.horario;
       result.pagoId = pago ? pago.id : "";
       
+      const minsRestantes = obtenerMinutosRestantesIngresoRecienteApi(
+        db.asistencias || [],
+        targetDni,
+        student ? student.codigoEstudiante : "",
+        inscripcion.programaId
+      );
+      
       const isPaid = (pago && (pago.estado === "completado" || pago.estado === "validado")) || inscripcion.estadoPago === "Pagado";
-      if (isPaid) {
+      if (minsRestantes > 0) {
+        result.accesoPermitido = false;
+        result.mensajeAcceso = "Ya registrado";
+        result.accion = `Este estudiante ya registró su ingreso hace poco. Podrá registrarse nuevamente en ${minsRestantes} minuto(s).`;
+        result.color = "rojo";
+        result.estadoPago = "Pagado";
+        result.estadoAcceso = "ya_registrado";
+      } else if (isPaid) {
         result.accesoPermitido = true;
         result.mensajeAcceso = "Pago validado";
         result.accion = "Ingreso permitido.";

@@ -11,6 +11,10 @@ import {
   IconUserOff as UserOff,
   IconRefresh as Refresh,
   IconMenu2 as Menu,
+  IconX as X,
+  IconDatabase as Database,
+  IconInfoCircle as InfoCircle,
+  IconAlertTriangle as AlertTriangle,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import {
@@ -21,6 +25,8 @@ import {
   eliminarUsuarioController,
   resetearContrasenaUsuarioController,
   listarLogsAuditoriaController,
+  descargarBackupController,
+  resetearBaseDatosController,
 } from "./controllers/administradorController";
 import {
   ALL_PERMISSIONS,

@@ -148,8 +148,10 @@ export function adaptarInscripcion(apiInscripcion) {
     
     // Propiedades heredadas y calculadas para compatibilidad con vistas React
     dniEstudiante: apiInscripcion.dni_estudiante || apiInscripcion.dniEstudiante || "",
+    dni: apiInscripcion.dni || apiInscripcion.dni_estudiante || apiInscripcion.dniEstudiante || "",
     codigoEstudiante: apiInscripcion.codigo_estudiante || apiInscripcion.codigoEstudiante || "",
     nombresEstudiante: apiInscripcion.nombres_estudiante || apiInscripcion.nombresEstudiante || "",
+    nombres: apiInscripcion.nombres || apiInscripcion.nombres_estudiante || apiInscripcion.nombresEstudiante || "",
     gradoEstudiante: apiInscripcion.grado_estudiante || apiInscripcion.gradoEstudiante || apiInscripcion.grado || "",
     grado: apiInscripcion.grado_estudiante || apiInscripcion.gradoEstudiante || apiInscripcion.grado || "",
     seccion: apiInscripcion.seccion || "",

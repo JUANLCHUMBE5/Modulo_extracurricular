@@ -567,7 +567,65 @@ export async function listarInvitados(programaId) {
   }
   await delay(400);
   await syncApiDb();
-  return [...(apiDb.invitadosPorPrograma[programaId] || [])];
+  const todosInvitados = [...(apiDb.invitadosPorPrograma[programaId] || [])];
+
+  // Filtrar invitados que ya tienen una inscripción activa en este programa
+  const inscripcionesActivas = (apiDb.inscripciones || [])
+    .filter((ins) => ins.programaId === programaId && ins.estadoInscripcion !== "Anulada");
+
+  if (!inscripcionesActivas.length) return todosInvitados;
+
+  const dnisMatriculados = new Set(
+    inscripcionesActivas
+      .map((ins) => String(ins.dniEstudiante || "").replace(/\D/g, ""))
+      .filter(Boolean)
+  );
+  const codigosMatriculados = new Set(
+    inscripcionesActivas
+      .map((ins) => String(ins.codigoEstudiante || "").trim().toUpperCase())
+      .filter(Boolean)
+  );
+  const nombresMatriculados = new Set(
+    inscripcionesActivas
+      .map((ins) => normalizarTextoSimple(ins.nombresEstudiante))
+      .filter(Boolean)
+  );
+
+  return todosInvitados.filter((invitado) => {
+    const dniInvitado = String(invitado.dni || "").replace(/\D/g, "");
+    const codigoInvitado = String(invitado.codigoEstudiante || "").trim().toUpperCase();
+    const nombreInvitado = normalizarTextoSimple(invitado.nombres);
+
+    // Coincidencia directa por DNI
+    if (dniInvitado && dnisMatriculados.has(dniInvitado)) return false;
+    // Coincidencia directa por código
+    if (codigoInvitado && codigosMatriculados.has(codigoInvitado)) return false;
+
+    // Buscar el código del invitado en la base de estudiantes (DNI → codigoEstudiante)
+    if (dniInvitado) {
+      const estudianteBase = apiDb.estudiantes?.[dniInvitado];
+      if (estudianteBase) {
+        const codigoDesdeBase = String(estudianteBase.codigoEstudiante || "").trim().toUpperCase();
+        if (codigoDesdeBase && codigosMatriculados.has(codigoDesdeBase)) return false;
+      }
+    }
+
+    // Buscar por código cruzado (codigoInvitado -> DNI)
+    if (codigoInvitado) {
+      const estudianteBase = Object.values(apiDb.estudiantes || {}).find(
+        (e) => String(e.codigoEstudiante || "").trim().toUpperCase() === codigoInvitado
+      );
+      if (estudianteBase && estudianteBase.dni) {
+        const dniDesdeBase = String(estudianteBase.dni).replace(/\D/g, "");
+        if (dniDesdeBase && dnisMatriculados.has(dniDesdeBase)) return false;
+      }
+    }
+
+    // Coincidencia por nombre normalizado como último recurso
+    if (nombreInvitado && nombresMatriculados.has(nombreInvitado)) return false;
+
+    return true;
+  });
 }
 
 export async function listarMatriculados(programaId) {
@@ -580,21 +638,26 @@ export async function listarMatriculados(programaId) {
   await syncApiDb();
   return (apiDb.inscripciones || [])
     .filter((item) => item.programaId === programaId && item.estadoInscripcion !== "Anulada")
-    .map((item) => ({
-      id: item.id,
-      dni: item.dniEstudiante || "",
-      codigoEstudiante: item.codigoEstudiante || "",
-      nombres: item.nombresEstudiante || "",
-      grado: item.gradoEstudiante || item.grado || "",
-      seccion: item.seccion || "",
-      estadoInscripcion: item.estadoInscripcion || "",
-      estadoPago: item.estadoPago || "",
-      origenRegistro: item.origenRegistro || "Presencial",
-      fechaRegistro: item.fechaRegistro || "",
-      costo: item.costo,
-      apoderado: item.apoderado || "",
-      telefono: item.telefono || "",
-    }));
+    .map((item) => {
+      // Buscar datos del estudiante en la base para completar campos faltantes
+      const dniBase = item.dniEstudiante || "";
+      const estudianteBase = dniBase ? (apiDb.estudiantes?.[dniBase] || null) : null;
+      return {
+        id: item.id,
+        dni: item.dniEstudiante || estudianteBase?.dni || "",
+        codigoEstudiante: item.codigoEstudiante || estudianteBase?.codigoEstudiante || "",
+        nombres: item.nombresEstudiante || estudianteBase?.nombres || "",
+        grado: item.gradoEstudiante || item.grado || estudianteBase?.grado || "",
+        seccion: item.seccion || item.seccionEstudiante || estudianteBase?.seccion || "",
+        estadoInscripcion: item.estadoInscripcion || "",
+        estadoPago: item.estadoPago || "",
+        origenRegistro: item.origenRegistro || "Presencial",
+        fechaRegistro: item.fechaRegistro || "",
+        costo: item.costo,
+        apoderado: item.apoderado || estudianteBase?.apoderado || "",
+        telefono: item.telefono || estudianteBase?.telefonoApoderado || "",
+      };
+    });
 }
 
 export async function listarAsistenciasPrograma(programaId) {

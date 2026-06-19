@@ -694,11 +694,40 @@
 .kiosk-state-no-registrado .kiosk-status-card,
 .kiosk-state-no-matriculado .kiosk-status-card,
 .kiosk-state-dia-incorrecto .kiosk-status-card,
-.kiosk-state-pre-inscrito .kiosk-status-card {
+.kiosk-state-pre-inscrito .kiosk-status-card,
+.kiosk-state-tarde .kiosk-status-card,
+.kiosk-state-ya-registrado .kiosk-status-card {
   background: var(--color-error-bg);
   border-color: #fda4af;
   box-shadow: 0 20px 45px var(--color-error-glow);
 }
+
+/* Estado Tarde / Finalizado */
+.kiosk-state-tarde .kiosk-status-header-icon,
+.kiosk-state-ya-registrado .kiosk-status-header-icon {
+  background: #ffffff;
+  color: var(--color-error-main);
+  animation: observado-icono-shake 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+  box-shadow: 0 10px 24px var(--color-error-glow);
+}
+
+.kiosk-state-tarde .kiosk-badge-tag.error,
+.kiosk-state-ya-registrado .kiosk-badge-tag.error {
+  background: linear-gradient(135deg, var(--color-error-main), #be123c);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.4);
+}
+
+.kiosk-state-tarde .student-name,
+.kiosk-state-ya-registrado .student-name {
+  color: #be123c !important;
+}
+
+.kiosk-state-tarde .kiosk-status-message,
+.kiosk-state-ya-registrado .kiosk-status-message {
+  color: #be123c;
+}
+
 
 /* Ilustración Esperando */
 .kiosk-status-illustration {

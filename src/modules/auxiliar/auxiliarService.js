@@ -195,6 +195,38 @@ function obtenerClaveDuplicado(data) {
   return "";
 }
 
+function obtenerMinutosRestantesIngresoReciente(asistenciasList, studentDni, studentCode, programId, nowMs = Date.now()) {
+  if (!Array.isArray(asistenciasList)) return 0;
+  
+  const cleanDni = studentDni ? String(studentDni).replace(/\D/g, "") : "";
+  const cleanCode = studentCode ? String(studentCode).trim() : "";
+  
+  let maxRestante = 0;
+  
+  asistenciasList.forEach(ast => {
+    const astDni = ast.dniEstudiante ? String(ast.dniEstudiante).replace(/\D/g, "") : "";
+    const astCode = ast.codigoEstudiante ? String(ast.codigoEstudiante).trim() : "";
+    
+    const coincideEstudiante = (cleanDni && astDni === cleanDni) || (cleanCode && astCode === cleanCode);
+    if (!coincideEstudiante) return;
+    
+    const coincidePrograma = ast.programaId === programId;
+    if (!coincidePrograma) return;
+    
+    const fechaAst = new Date(ast.fechaRegistro);
+    if (isNaN(fechaAst.getTime())) return;
+    
+    const diffMs = nowMs - fechaAst.getTime();
+    const limiteMs = 15 * 60 * 1000;
+    if (diffMs >= 0 && diffMs < limiteMs) {
+      const mins = Math.ceil((limiteMs - diffMs) / 60000);
+      if (mins > maxRestante) maxRestante = mins;
+    }
+  });
+  
+  return maxRestante;
+}
+
 function resolverValidacion(identificadores = {}) {
   const ids = normalizarIdentificadores(identificadores);
   const inscripcion = buscarInscripcion(ids);
@@ -250,6 +282,28 @@ function resolverValidacion(identificadores = {}) {
   const estadoNormalizado = resolverEstadoPago(inscripcion, pago);
 
   if (estadoNormalizado === "pagado") {
+    const minsRestantes = obtenerMinutosRestantesIngresoReciente(
+      apiDb.asistencias || [],
+      ids.dni || estudiante?.dni,
+      ids.codigoEstudiante || estudiante?.codigoEstudiante,
+      inscripcion.programaId
+    );
+    
+    if (minsRestantes > 0) {
+      return crearRespuestaInscripcion({
+        inscripcion,
+        estudiante,
+        pago,
+        estadoAcceso: "ya_registrado",
+        estadoPago: "Pagado",
+        accesoPermitido: false,
+        value: "Ya registrado",
+        mensajeAcceso: "Ya registrado",
+        accion: `Este estudiante ya registró su ingreso hace poco. Podrá registrarse nuevamente en ${minsRestantes} minuto(s).`,
+        color: "rojo",
+      });
+    }
+
     return crearRespuestaInscripcion({
       inscripcion,
       estudiante,

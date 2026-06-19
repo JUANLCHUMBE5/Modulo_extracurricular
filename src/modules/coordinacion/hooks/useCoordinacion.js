@@ -292,9 +292,42 @@ export default function useCoordinacion({
   const puedeGestionarGruposFormulario = modoEditar ? puedeEditarGrupos : puedeCrearGrupos;
   const tieneAccionesPrograma = puedeEditarProgramas || puedeVerAlumnos;
 
+  async function refrescarAlumnosModal(prog) {
+    if (!prog) return;
+    try {
+      const lista = await listarInvitados(prog.id);
+      const listaMatriculados = await listarMatriculados(prog.id);
+      const listaAsistencias = await listarAsistenciasPrograma(prog.id);
+      setInvitados(lista);
+      setMatriculados(listaMatriculados);
+      setAsistenciasPrograma(listaAsistencias);
+    } catch (err) {
+      console.warn("Error refrescando alumnos modal:", err);
+    }
+  }
+
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      cargarDatos();
+      if (progSeleccionado) {
+        refrescarAlumnosModal(progSeleccionado);
+      }
+    };
+    window.addEventListener("api-db-updated", handleUpdate);
+    window.addEventListener("mock-db-updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    window.addEventListener("focus", handleUpdate);
+    return () => {
+      window.removeEventListener("api-db-updated", handleUpdate);
+      window.removeEventListener("mock-db-updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("focus", handleUpdate);
+    };
+  }, [progSeleccionado]);
 
   useEffect(() => {
     if (!embedded || !initialView) return;
@@ -1956,6 +1989,8 @@ export default function useCoordinacion({
     cancelarCargaExcel,
     restaurarPrograma,
     clonarPrograma,
+    listarAsistenciasPrograma,
+    listarMatriculados,
 
     // Computed
     puedeCrearProgramas,
