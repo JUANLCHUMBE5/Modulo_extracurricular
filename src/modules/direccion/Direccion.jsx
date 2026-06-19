@@ -22,6 +22,11 @@ import {
   IconMenu2 as Menu,
   IconRosetteDiscount as RosetteDiscount,
   IconSearch as Search,
+  IconAward as Award,
+  IconPercentage as Percentage,
+  IconTrash as Trash,
+  IconEdit as Edit,
+  IconUser as UserIcon,
 } from "@tabler/icons-react";
 import { StatCard, EmptyChart } from "./components/DireccionCards";
 import { columnasDisponiblesMap, opcionesReportesPorModulo } from "./constants/direccionReports";
@@ -38,7 +43,7 @@ export default function Direccion({ onLogout, user }) {
   const setVista = (newView) => {
     navigate(`/direccion/${newView}`);
   };
-  
+
   // Estado de la barra lateral (colapsada/expandida)
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem("dir_sidebar_expanded");
@@ -223,6 +228,36 @@ export default function Direccion({ onLogout, user }) {
   }, [resumen.cupos, resumen.ocupados]);
 
   const metricasAnalisis = useMemo(() => calcularMetricasAnalisis(panel), [panel]);
+
+  const statsDescuentos = useMemo(() => {
+    const inscripciones = panel?.reportes?.inscripciones || [];
+    let totalBecas = 0;
+    let totalDescuentosParciales = 0;
+    let totalMontoDescontado = 0;
+
+    inscripciones.forEach(ins => {
+      if (ins.descuentoAprobado) {
+        if (ins.descuentoTipo === "beca") {
+          totalBecas++;
+        } else {
+          totalDescuentosParciales++;
+        }
+        totalMontoDescontado += Math.max(0, (ins.costoOriginal || 0) - (ins.costo || 0));
+      }
+    });
+
+    return { totalBecas, totalDescuentosParciales, totalMontoDescontado };
+  }, [panel]);
+
+  const obtenerIniciales = (nombre) => {
+    const clean = String(nombre || "").trim().toUpperCase();
+    if (!clean) return "?";
+    const partes = clean.split(/\s+/);
+    if (partes.length >= 2) {
+      return `${partes[0][0]}${partes[1][0]}`;
+    }
+    return clean.slice(0, 2);
+  };
 
   const categoriasOptions = useMemo(() => {
     const list = panel?.categorias || ["Academico", "Deportivo", "Maraton", "Reforzamiento"];
@@ -416,26 +451,17 @@ export default function Direccion({ onLogout, user }) {
         <header className="dir-header">
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             {!sidebarExpanded && (
-              <button 
-                className="dir-menu-toggle-btn-header" 
-                type="button" 
-                onClick={toggleSidebar} 
+              <button
+                className="dir-menu-toggle-btn-header"
+                type="button"
+                onClick={toggleSidebar}
                 aria-label="Mostrar barra lateral"
                 title="Mostrar barra lateral"
               >
                 <Menu size={22} />
               </button>
             )}
-            <div>
-              <span>Panel institucional</span>
-              <h1>{vista === "reportes" ? "Descarga de reportes" : vista === "descuentos" ? "Descuentos y Becas" : "Dirección y reportes"}</h1>
-              {vista !== "reportes" && vista !== "descuentos" && (
-                <p>Seguimiento de programas, inscripciones, pagos y capacidad operativa.</p>
-              )}
-              {vista === "descuentos" && (
-                <p>Autorización de becas completas y descuentos para pagos en Caja.</p>
-              )}
-            </div>
+
           </div>
           <Group gap="xs" wrap="wrap">
             <Select
@@ -755,13 +781,13 @@ export default function Direccion({ onLogout, user }) {
                         </div>
                       </div>
                       <div className="dir-progress-bar-container" style={{ height: "12px" }}>
-                        <div 
-                          className="dir-progress-bar-web" 
+                        <div
+                          className="dir-progress-bar-web"
                           style={{ width: `${metricasAnalisis.webPct}%` }}
                           title={`Web: ${metricasAnalisis.webPct}%`}
                         />
-                        <div 
-                          className="dir-progress-bar-sec" 
+                        <div
+                          className="dir-progress-bar-sec"
                           style={{ width: `${metricasAnalisis.secPct}%` }}
                           title={`Asistente: ${metricasAnalisis.secPct}%`}
                         />
@@ -849,8 +875,8 @@ export default function Direccion({ onLogout, user }) {
                               </Table.Td>
                               <Table.Td>{item.programa}</Table.Td>
                               <Table.Td>
-                                <Badge 
-                                  color={item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "teal" : "red"} 
+                                <Badge
+                                  color={item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "teal" : "red"}
                                   variant="light"
                                 >
                                   {item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "Permitido" : "Rechazado"}
@@ -977,19 +1003,19 @@ export default function Direccion({ onLogout, user }) {
                         allowDeselect={false}
                         size="xs"
                       />
-                      {(customTipo === "inscripciones" || 
-                        customTipo === "pagos" || 
-                        customTipo === "direccion_alumnos_pagos" || 
+                      {(customTipo === "inscripciones" ||
+                        customTipo === "pagos" ||
+                        customTipo === "direccion_alumnos_pagos" ||
                         customTipo === "direccion_alumnos_asistencias") && (
-                        <Select
-                          label="Programa / Taller"
-                          data={programasOptions}
-                          value={customFiltroPrograma}
-                          onChange={(val) => setCustomFiltroPrograma(val || "todos")}
-                          allowDeselect={false}
-                          size="xs"
-                        />
-                      )}
+                          <Select
+                            label="Programa / Taller"
+                            data={programasOptions}
+                            value={customFiltroPrograma}
+                            onChange={(val) => setCustomFiltroPrograma(val || "todos")}
+                            allowDeselect={false}
+                            size="xs"
+                          />
+                        )}
                       {customTipo === "inscripciones" && (
                         <Select
                           label="Canal / Origen"
@@ -1004,22 +1030,22 @@ export default function Direccion({ onLogout, user }) {
                           size="xs"
                         />
                       )}
-                      {(customTipo === "inscripciones" || 
-                        customTipo === "pagos" || 
+                      {(customTipo === "inscripciones" ||
+                        customTipo === "pagos" ||
                         customTipo === "direccion_alumnos_pagos") && (
-                        <Select
-                          label="Estado de Pago"
-                          data={[
-                            { value: "todos", label: "Todos los estados" },
-                            { value: "Pagado", label: "Solo Pagados" },
-                            { value: "Pendiente", label: "Solo Pendientes" },
-                          ]}
-                          value={customFiltroPago}
-                          onChange={(val) => setCustomFiltroPago(val || "todos")}
-                          allowDeselect={false}
-                          size="xs"
-                        />
-                      )}
+                          <Select
+                            label="Estado de Pago"
+                            data={[
+                              { value: "todos", label: "Todos los estados" },
+                              { value: "Pagado", label: "Solo Pagados" },
+                              { value: "Pendiente", label: "Solo Pendientes" },
+                            ]}
+                            value={customFiltroPago}
+                            onChange={(val) => setCustomFiltroPago(val || "todos")}
+                            allowDeselect={false}
+                            size="xs"
+                          />
+                        )}
 
                       {/* Rango de Fechas */}
                       <div style={{ display: "flex", gap: "6px", flexDirection: "column", marginTop: "4px" }}>
@@ -1112,12 +1138,12 @@ export default function Direccion({ onLogout, user }) {
                               checked={isChecked}
                               color="teal"
                               onChange={(event) => {
-                                  if (event.currentTarget.checked) {
-                                    setCustomColumnas([...customColumnas, col.key]);
-                                  } else {
-                                    setCustomColumnas(customColumnas.filter((k) => k !== col.key));
-                                  }
-                                }}
+                                if (event.currentTarget.checked) {
+                                  setCustomColumnas([...customColumnas, col.key]);
+                                } else {
+                                  setCustomColumnas(customColumnas.filter((k) => k !== col.key));
+                                }
+                              }}
                             />
                           </Grid.Col>
                         );
@@ -1130,15 +1156,40 @@ export default function Direccion({ onLogout, user }) {
           </section>
         ) : (
           <section className="dir-descuentos-view" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            <article className="dir-custom-report-builder" style={{ padding: "24px" }}>
-              <header className="dir-builder-header" style={{ marginBottom: "16px", borderBottom: "1px solid #f1f5f9", paddingBottom: "16px" }}>
-                <div>
-                  <span className="dir-tag" style={{ background: "#e0f2fe", color: "#0369a1" }}>Finanzas</span>
-                  <h2>Autorización de Descuentos y Becas</h2>
-                </div>
-              </header>
+            
+            {/* Cabecera de estadísticas rápidas específicas para Descuentos */}
+            <section className="dir-stats dir-stats-descuentos" aria-label="Estadísticas de descuentos y becas">
+              <StatCard
+                icon={Award}
+                label="Becas Completas (100%)"
+                value={statsDescuentos.totalBecas}
+                detail="Exoneraciones completas aprobadas"
+                tone="teal"
+              />
+              <StatCard
+                icon={Percentage}
+                label="Descuentos Especiales"
+                value={statsDescuentos.totalDescuentosParciales}
+                detail="Beneficios de monto fijo o porcentaje"
+                tone="blue"
+              />
+              <StatCard
+                icon={Wallet}
+                label="Monto Subsidiado"
+                value={formatearSoles(statsDescuentos.totalMontoDescontado)}
+                detail="Inversión total en apoyo familiar"
+                tone="green"
+              />
+            </section>
 
-              <form onSubmit={buscarEstudiantesDescuento} style={{ display: "flex", gap: "12px", maxWidth: "600px", marginBottom: "24px" }}>
+            <article className="dir-search-container">
+              <div style={{ marginBottom: "20px" }}>
+                <span className="dir-tag" style={{ background: "#e0f2fe", color: "#0369a1", marginBottom: "4px" }}>Finanzas</span>
+                <h2 style={{ margin: 0, color: "#0c1a30", fontSize: "20px", fontWeight: 800 }}>Autorización de Descuentos y Becas</h2>
+                <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "13px" }}>Consulte las pre-inscripciones activas por estudiante y asigne becas de estudio o descuentos especiales.</p>
+              </div>
+
+              <form onSubmit={buscarEstudiantesDescuento} className="dir-search-form">
                 <TextInput
                   placeholder="Ingrese DNI o nombre completo del estudiante..."
                   value={busquedaDescuento}
@@ -1146,123 +1197,234 @@ export default function Direccion({ onLogout, user }) {
                   style={{ flex: 1 }}
                   size="md"
                   leftSection={<Search size={18} />}
+                  styles={{
+                    input: {
+                      borderRadius: "8px",
+                      borderColor: "#cbd5e1",
+                      fontSize: "14px",
+                      height: "46px"
+                    }
+                  }}
                 />
-                <Button 
-                  color="teal" 
-                  type="submit" 
+                <Button
+                  color="teal"
+                  type="submit"
                   loading={buscandoDescuento}
                   size="md"
+                  styles={{
+                    root: {
+                      height: "46px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      padding: "0 24px",
+                      background: "linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)",
+                    }
+                  }}
                 >
-                  Buscar
+                  Buscar Alumno
                 </Button>
               </form>
+            </article>
 
-              <div className="dir-table-panel" style={{ background: "#ffffff", borderRadius: "8px", overflow: "hidden" }}>
+            {resultadosDescuento.length > 0 ? (
+              <div className="dir-table-panel" style={{ background: "#ffffff", borderRadius: "12px", overflow: "hidden", border: "1px solid #e2e8f0", boxShadow: "0 4px 15px rgba(0,0,0,0.01)" }}>
                 <div className="dir-table-wrap">
                   <Table striped highlightOnHover verticalSpacing="md">
                     <Table.Thead>
                       <Table.Tr style={{ background: "#f8fafc" }}>
-                        <Table.Th>Estudiante</Table.Th>
-                        <Table.Th>DNI</Table.Th>
-                        <Table.Th>Taller / Programa</Table.Th>
-                        <Table.Th style={{ textAlign: "right" }}>Costo Taller</Table.Th>
-                        <Table.Th>Beneficio Aplicado</Table.Th>
-                        <Table.Th style={{ textAlign: "right" }}>Costo Final</Table.Th>
-                        <Table.Th>Pago</Table.Th>
-                        <Table.Th style={{ textAlign: "center" }}>Acción</Table.Th>
+                        <Table.Th style={{ width: "32%" }}>Estudiante</Table.Th>
+                        <Table.Th style={{ width: "12%" }}>DNI</Table.Th>
+                        <Table.Th style={{ width: "24%" }}>Taller / Programa</Table.Th>
+                        <Table.Th style={{ textAlign: "right", width: "12%" }}>Costo Taller</Table.Th>
+                        <Table.Th style={{ width: "14%" }}>Beneficio</Table.Th>
+                        <Table.Th style={{ textAlign: "right", width: "12%" }}>Costo Final</Table.Th>
+                        <Table.Th style={{ width: "10%" }}>Pago</Table.Th>
+                        <Table.Th style={{ textAlign: "center", width: "12%" }}>Acción</Table.Th>
                       </Table.Tr>
                     </Table.Thead>
                     <Table.Tbody>
                       {resultadosDescuento.map((ins) => {
                         const tieneDescuento = ins.descuentoAprobado;
                         const esPagoCompletado = ["pagado", "pago validado", "completado"].includes(String(ins.estadoPago || "").toLowerCase().trim());
-                        
+                        const avatarClass = `alt-${(ins.estudiante || ins.nombresEstudiante || "").length % 5}`;
+
                         return (
-                          <Table.Tr key={ins.id}>
-                            <Table.Td><strong>{ins.estudiante || ins.nombresEstudiante}</strong></Table.Td>
-                            <Table.Td>{ins.dni || ins.dniEstudiante}</Table.Td>
-                            <Table.Td>{ins.programa}</Table.Td>
-                            <Table.Td style={{ textAlign: "right" }}>{formatearSoles(ins.costoOriginal || ins.costo)}</Table.Td>
+                          <Table.Tr key={ins.id} className="dir-descuentos-row">
+                            <Table.Td>
+                              <div className="dir-student-avatar-cell">
+                                <div className={`dir-student-avatar ${avatarClass}`}>
+                                  {obtenerIniciales(ins.estudiante || ins.nombresEstudiante)}
+                                </div>
+                                <div className="dir-student-name-container">
+                                  <strong>{ins.estudiante || ins.nombresEstudiante}</strong>
+                                  <span>Pre-inscrito</span>
+                                </div>
+                              </div>
+                            </Table.Td>
+                            <Table.Td style={{ fontWeight: 650, color: "#475569" }}>
+                              {ins.dni || ins.dniEstudiante}
+                            </Table.Td>
+                            <Table.Td>
+                              <div style={{ display: "flex", flexDirection: "column" }}>
+                                <strong style={{ fontSize: "13px", color: "#0c1a30" }}>{ins.programa}</strong>
+                                <span className="dir-muted" style={{ fontSize: "11px", marginTop: "2px" }}>{ins.categoria || "Extracurricular"}</span>
+                              </div>
+                            </Table.Td>
+                            <Table.Td style={{ textAlign: "right" }} className={tieneDescuento ? "dir-cost-original-td" : ""}>
+                              {formatearSoles(ins.costoOriginal || ins.costo)}
+                            </Table.Td>
                             <Table.Td>
                               {tieneDescuento ? (
-                                <Badge color="green" variant="light">
-                                  {ins.descuentoTipo === "beca" 
-                                    ? "Beca 100%" 
-                                    : ins.descuentoTipo === "porcentaje" 
-                                    ? `-${ins.descuentoValor}%` 
-                                    : `-S/. ${ins.descuentoMonto}`}
+                                <Badge
+                                  color={ins.descuentoTipo === "beca" ? "teal" : "blue"}
+                                  variant="filled"
+                                  className="dir-badge-discount"
+                                  style={{
+                                    background: ins.descuentoTipo === "beca"
+                                      ? "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)"
+                                      : "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)"
+                                  }}
+                                >
+                                  {ins.descuentoTipo === "beca"
+                                    ? "Beca 100%"
+                                    : ins.descuentoTipo === "porcentaje"
+                                      ? `-${ins.descuentoValor}%`
+                                      : `-S/. ${ins.descuentoMonto}`}
                                 </Badge>
                               ) : (
-                                <span style={{ color: "#94a3b8", fontSize: "13px" }}>Ninguno</span>
+                                <span style={{ color: "#94a3b8", fontSize: "13px", fontWeight: 500 }}>Ninguno</span>
                               )}
                             </Table.Td>
-                            <Table.Td style={{ textAlign: "right", fontWeight: 700, color: tieneDescuento ? "#15803d" : "inherit" }}>
+                            <Table.Td style={{ textAlign: "right" }} className={`dir-cost-final-td ${tieneDescuento ? "has-discount" : ""}`}>
                               {formatearSoles(ins.costo)}
                             </Table.Td>
                             <Table.Td>
-                              <Badge color={esPagoCompletado ? "teal" : "orange"} variant="light">
+                              <Badge
+                                color={esPagoCompletado ? "teal" : "orange"}
+                                variant="light"
+                                styles={{
+                                  root: {
+                                    fontWeight: 700,
+                                    fontSize: "11px",
+                                    height: "22px"
+                                  }
+                                }}
+                              >
                                 {esPagoCompletado ? "Pagado" : "Pendiente"}
                               </Badge>
                             </Table.Td>
                             <Table.Td style={{ textAlign: "center" }}>
                               {esPagoCompletado ? (
-                                <Button size="xs" variant="subtle" color="gray" disabled>
+                                <Button size="xs" variant="subtle" color="gray" disabled styles={{ root: { fontWeight: 600 } }}>
                                   Ya pagado
                                 </Button>
                               ) : (
-                                <Button 
-                                  size="xs" 
-                                  variant={tieneDescuento ? "light" : "outline"} 
+                                <Button
+                                  size="xs"
+                                  variant={tieneDescuento ? "light" : "outline"}
                                   color="teal"
+                                  className="dir-action-btn-descuento"
+                                  leftSection={tieneDescuento ? <Edit size={13} /> : <RosetteDiscount size={13} />}
                                   onClick={() => abrirModalBeneficio(ins)}
+                                  styles={{
+                                    root: {
+                                      borderColor: tieneDescuento ? "transparent" : "#0c8569",
+                                      color: tieneDescuento ? "#0c8569" : "#0c8569",
+                                      backgroundColor: tieneDescuento ? "#e6fcf5" : "transparent"
+                                    }
+                                  }}
                                 >
-                                  {tieneDescuento ? "Editar beneficio" : "Aplicar beneficio"}
+                                  {tieneDescuento ? "Editar" : "Aplicar"}
                                 </Button>
                               )}
                             </Table.Td>
                           </Table.Tr>
                         );
                       })}
-                      {resultadosDescuento.length === 0 && (
-                        <Table.Tr>
-                          <Table.Td colSpan={8}>
-                            <div style={{ textAlign: "center", padding: "40px 20px", color: "#64748b", fontSize: "14px" }}>
-                              Ingrese el DNI o el nombre del estudiante arriba y haga clic en Buscar para consultar las matrículas.
-                            </div>
-                          </Table.Td>
-                        </Table.Tr>
-                      )}
                     </Table.Tbody>
                   </Table>
                 </div>
               </div>
-            </article>
+            ) : (
+              <div className="dir-empty-state-card">
+                <div className="dir-empty-state-icon-container" style={{
+                  background: busquedaDescuento ? "#fef2f2" : "#e6fcf5",
+                  color: busquedaDescuento ? "#ef4444" : "#0c8569",
+                  borderColor: busquedaDescuento ? "#fee2e2" : "#c3fae8"
+                }}>
+                  {busquedaDescuento ? <AlertCircle size={36} /> : <RosetteDiscount size={36} />}
+                </div>
+                <h3>{busquedaDescuento ? "Sin resultados" : "Buscador de Alumnos"}</h3>
+                <p>
+                  {busquedaDescuento
+                    ? `No se encontraron pre-inscripciones activas que coincidan con "${busquedaDescuento}". Asegúrese de escribir correctamente el DNI o nombres del alumno.`
+                    : "Ingrese el DNI o el nombre completo del estudiante en el cuadro de búsqueda para consultar las pre-inscripciones y aplicar becas o descuentos especiales."}
+                </p>
+                {!busquedaDescuento && (
+                  <div className="dir-empty-state-steps">
+                    <div className="dir-empty-state-step">
+                      <span className="dir-empty-state-step-num">Paso 1</span>
+                      <span className="dir-empty-state-step-text">Buscar estudiante</span>
+                    </div>
+                    <div className="dir-empty-state-step">
+                      <span className="dir-empty-state-step-num">Paso 2</span>
+                      <span className="dir-empty-state-step-text">Definir beneficio</span>
+                    </div>
+                    <div className="dir-empty-state-step">
+                      <span className="dir-empty-state-step-num">Paso 3</span>
+                      <span className="dir-empty-state-step-text">Enviar a Caja</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Modal para aplicar beneficio */}
             <Modal
               opened={modalDescuentoAbierto}
               onClose={cerrarModalBeneficio}
               title={
-                <strong style={{ fontSize: "18px", color: "#0f172a" }}>
-                  {datosBeneficio.tipo === "beca" ? "Aprobación de Beca Completa" : "Autorización de Descuento Especial"}
-                </strong>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <RosetteDiscount size={22} color="#0c8569" />
+                  <strong style={{ fontSize: "16px", color: "#0c1a30" }}>
+                    {datosBeneficio.tipo === "beca" ? "Aprobación de Beca Completa" : "Autorización de Descuento Especial"}
+                  </strong>
+                </div>
               }
               size="md"
               centered
-              radius="md"
+              radius="lg"
+              styles={{
+                header: {
+                  borderBottom: "1px solid #f1f5f9",
+                  paddingBottom: "12px",
+                  marginBottom: "16px"
+                },
+                close: {
+                  color: "#94a3b8",
+                  "&:hover": {
+                    color: "#64748b",
+                    backgroundColor: "#f8fafc"
+                  }
+                }
+              }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
                 {inscripcionSeleccionada && (
-                  <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-                    <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>ESTUDIANTE</div>
-                    <div style={{ fontWeight: 700, fontSize: "14px", color: "#0f172a" }}>
-                      {inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante} ({inscripcionSeleccionada.dni || inscripcionSeleccionada.dniEstudiante})
+                  <div className="dir-modal-student-card">
+                    <div className="dir-modal-student-avatar">
+                      {obtenerIniciales(inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante)}
                     </div>
-                    <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, marginTop: "8px" }}>PROGRAMA / TALLER</div>
-                    <div style={{ fontWeight: 600, fontSize: "13px" }}>{inscripcionSeleccionada.programa}</div>
-                    <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, marginTop: "8px" }}>COSTO ORIGINAL</div>
-                    <div style={{ fontWeight: 700, fontSize: "15px", color: "#0f172a" }}>
-                      {formatearSoles(inscripcionSeleccionada.costoOriginal || inscripcionSeleccionada.costo)}
+                    <div className="dir-modal-student-details">
+                      <span className="label">Estudiante</span>
+                      <span className="name">{inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante}</span>
+                      <span className="sub">DNI: {inscripcionSeleccionada.dni || inscripcionSeleccionada.dniEstudiante}</span>
+                      <span className="sub" style={{ fontWeight: 700, color: "#0c8569", marginTop: "2px" }}>
+                        Taller: {inscripcionSeleccionada.programa}
+                      </span>
+                      <span className="sub" style={{ fontWeight: 800, color: "#0c1a30", display: "flex", gap: "6px" }}>
+                        Costo Original: <span style={{ color: "#0c8569" }}>{formatearSoles(inscripcionSeleccionada.costoOriginal || inscripcionSeleccionada.costo)}</span>
+                      </span>
                     </div>
                   </div>
                 )}
@@ -1277,6 +1439,10 @@ export default function Direccion({ onLogout, user }) {
                   value={datosBeneficio.tipo}
                   onChange={(val) => setDatosBeneficio({ ...datosBeneficio, tipo: val || "beca", valor: "" })}
                   allowDeselect={false}
+                  styles={{
+                    label: { fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "6px" },
+                    input: { borderRadius: "8px", borderColor: "#cbd5e1" }
+                  }}
                 />
 
                 {datosBeneficio.tipo !== "beca" && (
@@ -1288,33 +1454,65 @@ export default function Direccion({ onLogout, user }) {
                     type="number"
                     min="1"
                     required
+                    styles={{
+                      label: { fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "6px" },
+                      input: { borderRadius: "8px", borderColor: "#cbd5e1" }
+                    }}
                   />
                 )}
 
                 <Textarea
-                  label="Justificación / Motivo"
-                  placeholder="Ej. Hermano de alumno regular / Beca de rendimiento deportivo / Convenio institucional..."
+                  label="Justificación / Motivo de Aprobación"
+                  placeholder="Ej. Convenio institucional, familiar directo de docente, beca socioeconómica..."
                   value={datosBeneficio.justificacion}
                   onChange={(e) => setDatosBeneficio({ ...datosBeneficio, justificacion: e.target.value })}
                   rows={3}
                   required
+                  styles={{
+                    label: { fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "6px" },
+                    input: { borderRadius: "8px", borderColor: "#cbd5e1" }
+                  }}
                 />
 
-                <Divider style={{ margin: "8px 0" }} />
+                <Divider style={{ margin: "6px 0" }} />
 
-                <div style={{ display: "flex", justifySelf: "stretch", justifyContent: "space-between", gap: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
                   {inscripcionSeleccionada?.descuentoAprobado ? (
-                    <Button variant="outline" color="red" onClick={removerBeneficio} loading={buscandoDescuento}>
+                    <Button
+                      variant="subtle"
+                      color="red"
+                      leftSection={<Trash size={14} />}
+                      onClick={removerBeneficio}
+                      loading={buscandoDescuento}
+                      styles={{
+                        root: {
+                          fontWeight: 750,
+                          fontSize: "12.5px"
+                        }
+                      }}
+                    >
                       Retirar beneficio
                     </Button>
                   ) : (
                     <div />
                   )}
                   <div style={{ display: "flex", gap: "10px" }}>
-                    <Button variant="subtle" color="gray" onClick={cerrarModalBeneficio}>
+                    <Button variant="subtle" color="gray" onClick={cerrarModalBeneficio} styles={{ root: { fontWeight: 600 } }}>
                       Cancelar
                     </Button>
-                    <Button color="teal" onClick={guardarBeneficio} loading={buscandoDescuento}>
+                    <Button
+                      color="teal"
+                      onClick={guardarBeneficio}
+                      loading={buscandoDescuento}
+                      styles={{
+                        root: {
+                          borderRadius: "8px",
+                          fontWeight: 700,
+                          background: "linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)",
+                          padding: "0 16px"
+                        }
+                      }}
+                    >
                       Aprobar y Mandar a Caja
                     </Button>
                   </div>

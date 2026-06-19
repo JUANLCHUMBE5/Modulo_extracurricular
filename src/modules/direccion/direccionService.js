@@ -272,10 +272,16 @@ function crearFilaInscripcion(item) {
     estadoInscripcion: item.estadoInscripcion || "",
     estadoPago: normalizarEstadoPago(item.estadoPago),
     costo: Number(item.costo || 0),
+    costoOriginal: Number(item.costoOriginal ?? item.costo ?? 0),
     origen: item.origenRegistro || "",
     fechaRegistro: item.fechaRegistro || "",
     apoderado: item.apoderado || "",
     telefono: item.telefono || "",
+    descuentoAprobado: !!item.descuentoAprobado,
+    descuentoTipo: item.descuentoTipo || "",
+    descuentoValor: Number(item.descuentoValor || 0),
+    descuentoMonto: Number(item.descuentoMonto || 0),
+    descuentoJustificacion: item.descuentoJustificacion || "",
   };
 }
 
