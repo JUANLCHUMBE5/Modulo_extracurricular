@@ -205,6 +205,14 @@ export function adaptarInscripcion(apiInscripcion) {
     modalidadesCambridge: apiInscripcion.modalidades_cambridge || apiInscripcion.modalidadesCambridge || [],
     costoCiclo: apiInscripcion.costo_ciclo !== undefined ? String(apiInscripcion.costo_ciclo) : (apiInscripcion.costoCiclo !== undefined ? String(apiInscripcion.costoCiclo) : (apiInscripcion.costo !== undefined ? String(apiInscripcion.costo) : "")),
     montoPrimerPago: apiInscripcion.monto_primer_pago !== undefined ? String(apiInscripcion.monto_primer_pago) : (apiInscripcion.montoPrimerPago !== undefined ? String(apiInscripcion.montoPrimerPago) : ""),
+    costoOriginal: apiInscripcion.costoOriginal !== undefined ? Number(apiInscripcion.costoOriginal) : (apiInscripcion.costo_original !== undefined ? Number(apiInscripcion.costo_original) : undefined),
+    descuentoMonto: apiInscripcion.descuentoMonto !== undefined ? Number(apiInscripcion.descuentoMonto) : (apiInscripcion.descuento_monto !== undefined ? Number(apiInscripcion.descuento_monto) : undefined),
+    descuentoTipo: apiInscripcion.descuentoTipo || apiInscripcion.descuento_tipo || undefined,
+    descuentoValor: apiInscripcion.descuentoValor !== undefined ? Number(apiInscripcion.descuentoValor) : (apiInscripcion.descuento_valor !== undefined ? Number(apiInscripcion.descuento_valor) : undefined),
+    descuentoJustificacion: apiInscripcion.descuentoJustificacion || apiInscripcion.descuento_justificacion || undefined,
+    descuentoAprobado: apiInscripcion.descuentoAprobado !== undefined ? Boolean(apiInscripcion.descuentoAprobado) : (apiInscripcion.descuento_aprobado !== undefined ? Boolean(apiInscripcion.descuento_aprobado) : false),
+    descuentoAprobadoPor: apiInscripcion.descuentoAprobadoPor || apiInscripcion.descuento_aprobado_por || undefined,
+    descuentoFechaAprobacion: apiInscripcion.descuentoFechaAprobacion || apiInscripcion.descuento_fecha_aprobacion || undefined,
   };
 }
 

@@ -557,7 +557,15 @@ export function mapDbEnrollmentToApi(item, db = null) {
     pago_observacion_caja: item.pagoObservacionCaja || "",
     fecha_pago: item.fechaPago || "",
     derivado_caja: Boolean(item.derivadoCaja),
-    estado_caja: item.estadoCaja || ""
+    estado_caja: item.estadoCaja || "",
+    costoOriginal: item.costoOriginal,
+    descuentoMonto: item.descuentoMonto,
+    descuentoTipo: item.descuentoTipo,
+    descuentoValor: item.descuentoValor,
+    descuentoJustificacion: item.descuentoJustificacion,
+    descuentoAprobado: item.descuentoAprobado || false,
+    descuentoAprobadoPor: item.descuentoAprobadoPor,
+    descuentoFechaAprobacion: item.descuentoFechaAprobacion
   };
 }
 

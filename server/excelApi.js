@@ -3509,6 +3509,138 @@ app.delete("/api/v1/usuarios/:id", async (req, res) => {
   }
 });
 
+// --- ENDPOINTS PARA DESCUENTOS Y BECAS (DIRECCIÓN) ---
+
+app.get("/api/v1/extracurricular/direccion/descuentos/buscar", requireRole(["direccion"]), async (req, res) => {
+  try {
+    const { q } = req.query;
+    const db = await getDb();
+    const term = String(q || "").toLowerCase().trim();
+    if (!term) return res.json({ success: true, data: [] });
+
+    const results = (db.inscripciones || []).filter(ins => {
+      if (ins.estadoInscripcion === "Anulada" || ins.estadoInscripcion === "anulada") return false;
+      const dniCoincide = String(ins.dni || ins.dniEstudiante || "").includes(term);
+      const nombreCoincide = String(ins.estudiante || ins.nombresEstudiante || "").toLowerCase().includes(term);
+      return dniCoincide || nombreCoincide;
+    });
+
+    res.json({
+      success: true,
+      data: results.map(item => mapDbEnrollmentToApi(item, db))
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/v1/extracurricular/direccion/descuentos/aplicar", requireRole(["direccion"]), async (req, res) => {
+  try {
+    const { inscripcionId, tipo, valor, justificacion } = req.body;
+    if (!inscripcionId) return res.status(400).json({ success: false, message: "Falta id de inscripcion" });
+    if (!justificacion?.trim()) return res.status(400).json({ success: false, message: "Falta justificacion" });
+
+    const db = await getDb();
+    const index = (db.inscripciones || []).findIndex(ins => ins.id === inscripcionId);
+    if (index === -1) return res.status(404).json({ success: false, message: "Inscripción no encontrada" });
+
+    const ins = db.inscripciones[index];
+    
+    // Validar si ya está pagado
+    const payments = db.pagos || [];
+    const pagoAsociado = payments.find(pay => pay.inscripcionId === ins.id) || payments.find(pay => pay.dniEstudiante === ins.dniEstudiante && (pay.programaId === ins.programaId || normalizarTextoApi(pay.programa) === normalizarTextoApi(ins.programa)));
+    if (pagoAsociado) {
+      const estPago = normalizarTextoApi(pagoAsociado.estado);
+      if (["completado", "validado", "pagado"].includes(estPago)) {
+        return res.status(400).json({ success: false, message: "No se puede aplicar descuento a una inscripción que ya ha sido pagada." });
+      }
+    }
+
+    const costoOriginal = Number(ins.costoOriginal ?? ins.costo ?? 0);
+    let descuentoMonto = 0;
+    let nuevoCosto = costoOriginal;
+
+    if (tipo === "beca") {
+      descuentoMonto = costoOriginal;
+      nuevoCosto = 0;
+    } else if (tipo === "porcentaje") {
+      const pct = Number(valor || 0);
+      descuentoMonto = Math.round((costoOriginal * pct) / 100);
+      nuevoCosto = Math.max(0, costoOriginal - descuentoMonto);
+    } else if (tipo === "monto") {
+      descuentoMonto = Number(valor || 0);
+      nuevoCosto = Math.max(0, costoOriginal - descuentoMonto);
+    }
+
+    db.inscripciones[index] = {
+      ...ins,
+      costo: nuevoCosto,
+      costoOriginal,
+      descuentoMonto,
+      descuentoTipo: tipo,
+      descuentoValor: Number(valor || 0),
+      descuentoJustificacion: justificacion.trim(),
+      descuentoAprobado: true,
+      descuentoAprobadoPor: "Dirección",
+      descuentoFechaAprobacion: new Date().toISOString(),
+    };
+
+    await saveDb(db);
+
+    await registrarAuditoria(req.user?.username || "Direccion", req.user?.role || "direccion", "DESCUENTO_APLICAR", {
+      inscripcionId,
+      tipo,
+      valor,
+      nuevoCosto
+    });
+
+    res.json({
+      success: true,
+      data: mapDbEnrollmentToApi(db.inscripciones[index], db)
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.delete("/api/v1/extracurricular/direccion/descuentos/remover/:inscripcionId", requireRole(["direccion"]), async (req, res) => {
+  try {
+    const { inscripcionId } = req.params;
+    const db = await getDb();
+    const index = (db.inscripciones || []).findIndex(ins => ins.id === inscripcionId);
+    if (index === -1) return res.status(404).json({ success: false, message: "Inscripción no encontrada" });
+
+    const ins = db.inscripciones[index];
+    const costoOriginal = Number(ins.costoOriginal ?? ins.costo ?? 0);
+
+    db.inscripciones[index] = {
+      ...ins,
+      costo: costoOriginal,
+      costoOriginal: undefined,
+      descuentoMonto: undefined,
+      descuentoTipo: undefined,
+      descuentoValor: undefined,
+      descuentoJustificacion: undefined,
+      descuentoAprobado: false,
+      descuentoAprobadoPor: undefined,
+      descuentoFechaAprobacion: undefined,
+    };
+
+    await saveDb(db);
+
+    await registrarAuditoria(req.user?.username || "Direccion", req.user?.role || "direccion", "DESCUENTO_REMOVER", {
+      inscripcionId
+    });
+
+    res.json({
+      success: true,
+      data: mapDbEnrollmentToApi(db.inscripciones[index], db)
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 app.use((error, _req, res, _next) => {
   if (error instanceof multer.MulterError) {
     const mensajes = {
