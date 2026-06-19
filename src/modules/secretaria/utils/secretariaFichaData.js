@@ -52,6 +52,7 @@ export function crearDatosFicha(estudiante, inscripcion) {
       colegio: cleanFallbackText(inscripcion.colegioProcedencia) || "Colegio San Rafael",
     },
     programa: {
+      id: inscripcion.programaId || "",
       nombre: cleanFallbackText(inscripcion.programa) || "-",
       horario: horarioProg || "Por confirmar",
       responsable: cleanFallbackText(inscripcion.docente) || "-",
@@ -79,6 +80,9 @@ export function crearDatosFicha(estudiante, inscripcion) {
       modalidadesCambridge: inscripcion.modalidadesCambridge || inscripcion.modalidades_cambridge || [],
       costoCiclo: inscripcion.costoCiclo || inscripcion.costo_ciclo || (inscripcion.costo ? String(inscripcion.costo) : ""),
       montoPrimerPago: inscripcion.montoPrimerPago || inscripcion.monto_primer_pago || "",
+      fechaInicio: inscripcion.fechaInicio || "",
+      fechaFin: inscripcion.fechaFin || "",
+      horariosPorGrupo: inscripcion.horariosPorGrupo || [],
     },
     apoderado: {
       nombre: cleanFallbackText(inscripcion.apoderado) || "-",
@@ -485,6 +489,75 @@ export function formatearNivelesDocumento(grados = []) {
     .map(formatearGradoDocumento)
     .filter(Boolean)
     .join(", ");
+}
+
+function obtenerInfoGrado(gradoStr) {
+  const texto = String(gradoStr || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  
+  let nivel = "primaria";
+  if (texto.includes("inicial") || texto.includes("ano") || texto.includes("anos")) {
+    nivel = "inicial";
+  } else if (texto.includes("secundaria") || texto.includes("sec")) {
+    nivel = "secundaria";
+  }
+  
+  const match = texto.match(/\d+/);
+  const numero = match ? parseInt(match[0], 10) : null;
+  
+  return { nivel, numero, original: gradoStr };
+}
+
+export function agruparGradosConsecutivos(gradosArray) {
+  if (!Array.isArray(gradosArray) || gradosArray.length === 0) return [];
+  
+  const parsed = gradosArray.map(g => obtenerInfoGrado(g));
+  
+  const levels = { inicial: [], primaria: [], secundaria: [] };
+  parsed.forEach(p => {
+    if (levels[p.nivel]) {
+      levels[p.nivel].push(p);
+    } else {
+      levels.primaria.push(p);
+    }
+  });
+  
+  const subgroups = [];
+  
+  ["inicial", "primaria", "secundaria"].forEach(levelName => {
+    const items = levels[levelName];
+    if (items.length === 0) return;
+    
+    items.sort((a, b) => {
+      const numA = a.numero === null ? 99 : a.numero;
+      const numB = b.numero === null ? 99 : b.numero;
+      return numA - numB;
+    });
+    
+    let currentRun = [];
+    for (let i = 0; i < items.length; i++) {
+      const current = items[i];
+      if (currentRun.length === 0) {
+        currentRun.push(current);
+      } else {
+        const last = currentRun[currentRun.length - 1];
+        if (
+          current.numero !== null && 
+          last.numero !== null && 
+          current.numero === last.numero + 1
+        ) {
+          currentRun.push(current);
+        } else {
+          subgroups.push(currentRun.map(r => r.original));
+          currentRun = [current];
+        }
+      }
+    }
+    if (currentRun.length > 0) {
+      subgroups.push(currentRun.map(r => r.original));
+    }
+  });
+  
+  return subgroups;
 }
 
 function crearHorarioDocumento(inscripcion, estudiante) {

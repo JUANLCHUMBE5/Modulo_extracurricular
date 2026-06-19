@@ -14,8 +14,8 @@ import {
 } from "@tabler/icons-react";
 import { apiDb } from "../../../services/dbApi";
 import { listarInvitados } from "../services/coordinacionService";
-import { convertirWordOriginalAPdf } from "../../secretaria/utils/secretariaDocumentoPdf";
-import { generarComunicadoWordBlob } from "../../secretaria/utils/secretariaDocumentoWord";
+import { convertirWordOriginalAPdf, crearPdfInvitacionDocumento } from "../../secretaria/utils/secretariaDocumentoPdf";
+import { generarComunicadoWordBlob, crearDocumentoInvitacion } from "../../secretaria/utils/secretariaDocumentoWord";
 import { PDFDocument } from "pdf-lib";
 import { toast } from "sonner";
 import SummaryBox from "./SummaryBox";
@@ -52,11 +52,6 @@ async function generarYDescargarPdfFichasLote({
     const procesarRegistro = async (reg, index) => {
       const programa = programas.find((p) => p.id === reg.programaId);
       if (!programa) return;
-
-      if (!programa.plantillaBase64) {
-        programasSinPlantilla.add(programa.nombre);
-        return;
-      }
 
       const dbEstudiante = apiDb.estudiantes?.[reg.dni];
       const mockEstudiante = {
@@ -95,6 +90,17 @@ async function generarYDescargarPdfFichasLote({
         cicloII: programa.cicloII || "",
         horariosPorGrupo: programa.horariosPorGrupo || [],
       };
+
+      if (!programa.plantillaBase64) {
+        try {
+          const documentoFallback = await crearDocumentoInvitacion(mockEstudiante, mockInscripcion);
+          const pdfBlob = crearPdfInvitacionDocumento(documentoFallback).output("blob");
+          resultados[index] = pdfBlob;
+        } catch (err) {
+          console.error(`Error generando ficha genérica para ${reg.nombres || reg.nombre}:`, err);
+        }
+        return;
+      }
 
       try {
         const wordBlob = await generarComunicadoWordBlob({

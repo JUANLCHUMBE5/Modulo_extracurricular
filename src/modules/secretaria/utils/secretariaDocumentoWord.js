@@ -13,6 +13,7 @@ import {
   procesarTextoComunicado,
   formatearNivelesDocumento,
   formatearRangoHoraDocumento,
+  agruparGradosConsecutivos,
 } from "./secretariaFichaData";
 
 export async function crearDocumentoInvitacion(estudiante, inscripcion) {
@@ -143,11 +144,12 @@ export function crearLineasInvitacionEspecial(ficha, inscripcion, estudiante) {
   } else if (Array.isArray(grupos) && grupos.length > 0) {
     lineas.push(`CRONOGRAMA Y HORARIOS:`);
     grupos.forEach(row => {
-      const nivelesFmt = formatearNivelesDocumento(row.grados);
-      let horarioNivel = `· ${nivelesFmt || "Nivel"} - Día(s): ${row.dia || "Por definir"} - Horario de clase: ${formatearRangoHoraDocumento(row.horaInicio, row.horaFin)}`;
-      if (row.almuerzoInicio && row.almuerzoFin) {
-        horarioNivel += ` (Horario almuerzo: ${formatearRangoHoraDocumento(row.almuerzoInicio, row.almuerzoFin)})`;
-      }
+      const subgruposGrados = agruparGradosConsecutivos(row.grados);
+      const almuerzoTexto = (row.almuerzoInicio && row.almuerzoFin)
+        ? ` (Horario almuerzo: ${formatearRangoHoraDocumento(row.almuerzoInicio, row.almuerzoFin)})`
+        : "";
+      const claseTexto = formatearRangoHoraDocumento(row.horaInicio, row.horaFin);
+      
       const parts = [];
       if (row.responsable && row.responsable.trim()) {
         parts.push(`Docente: ${row.responsable.trim()}`);
@@ -155,10 +157,18 @@ export function crearLineasInvitacionEspecial(ficha, inscripcion, estudiante) {
       if (row.tutora && row.tutora.trim()) {
         parts.push(`Apoyo: ${row.tutora.trim()}`);
       }
-      if (parts.length > 0) {
-        horarioNivel += ` - ${parts.join(" y ")}`;
+      const extraInfo = parts.length > 0 ? ` - ${parts.join(" y ")}` : "";
+
+      if (subgruposGrados.length > 0) {
+        subgruposGrados.forEach(subgrupo => {
+          const nivelesFmt = formatearNivelesDocumento(subgrupo);
+          let horarioNivel = `· ${nivelesFmt || "Nivel"} - Día(s): ${row.dia || "Por definir"} - Horario de clase: ${claseTexto}${almuerzoTexto}${extraInfo}`;
+          lineas.push(horarioNivel);
+        });
+      } else {
+        let horarioNivel = `· Nivel - Día(s): ${row.dia || "Por definir"} - Horario de clase: ${claseTexto}${almuerzoTexto}${extraInfo}`;
+        lineas.push(horarioNivel);
       }
-      lineas.push(horarioNivel);
     });
   }
 

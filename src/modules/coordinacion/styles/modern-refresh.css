@@ -706,3 +706,159 @@
   color: #006b5b !important;
   background: rgba(0, 107, 91, 0.05) !important;
 }
+
+/* Refined Sports/Summer Taller Builder layout */
+.coord-taller-builder-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 20px;
+}
+
+.coord-taller-col-1 { grid-column: span 1; }
+.coord-taller-col-2 { grid-column: span 2; }
+.coord-taller-col-3 { grid-column: span 3; }
+.coord-taller-col-4 { grid-column: span 4; }
+.coord-taller-col-5 { grid-column: span 5; }
+.coord-taller-col-6 { grid-column: span 6; }
+.coord-taller-col-7 { grid-column: span 7; }
+.coord-taller-col-8 { grid-column: span 8; }
+.coord-taller-col-9 { grid-column: span 9; }
+.coord-taller-col-10 { grid-column: span 10; }
+.coord-taller-col-11 { grid-column: span 11; }
+.coord-taller-col-12 { grid-column: span 12; }
+
+.coord-flex-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coord-flex-range > select,
+.coord-flex-range > input {
+  flex: 1;
+  min-width: 0;
+}
+
+.coord-flex-range-separator {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.coord-add-taller-btn {
+  width: 100%;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 750;
+  background: #eefaf5;
+  color: #1f8f73;
+  border: 1px solid #b8d4c8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.coord-add-taller-btn:hover {
+  background: #e1f7ed;
+  border-color: #92c4b1;
+  color: #167a61;
+  box-shadow: 0 4px 10px rgba(31, 143, 115, 0.12);
+}
+
+.coord-cancel-taller-btn {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 750;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0 12px;
+}
+
+.coord-cancel-taller-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: #334155;
+  box-shadow: 0 4px 10px rgba(71, 85, 105, 0.1);
+}
+
+.coord-taller-builder-grid.is-editing {
+  border-color: #3b82f6;
+  background: #f0f7ff;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.15);
+  animation: coordPulseBorder 2s infinite ease-in-out;
+}
+
+@keyframes coordPulseBorder {
+  0%, 100% { border-color: rgba(59, 130, 246, 0.6); }
+  50% { border-color: rgba(59, 130, 246, 1); }
+}
+
+.coord-taller-edit-action-btn {
+  background: none;
+  border: none;
+  color: #006b5b;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  transition: color 0.2s, text-decoration 0.2s;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.coord-taller-edit-action-btn:hover {
+  color: #004d40;
+  background: rgba(0, 107, 91, 0.05);
+}
+
+.coord-taller-delete-action-btn {
+  background: none;
+  border: none;
+  color: #b42318;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  transition: color 0.2s, text-decoration 0.2s;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.coord-taller-delete-action-btn:hover {
+  color: #911812;
+  background: rgba(180, 35, 24, 0.05);
+}
+
+@media (max-width: 991px) {
+  .coord-taller-builder-grid {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    padding: 16px;
+  }
+  .coord-taller-col-12 { grid-column: span 6; }
+  .coord-taller-col-11, .coord-taller-col-10, .coord-taller-col-9, .coord-taller-col-8, .coord-taller-col-7, .coord-taller-col-6, .coord-taller-col-5, .coord-taller-col-4 { grid-column: span 3; }
+  .coord-taller-col-3, .coord-taller-col-2, .coord-taller-col-1 { grid-column: span 3; }
+}
+
+@media (max-width: 640px) {
+  .coord-taller-builder-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .coord-taller-col-1, .coord-taller-col-2, .coord-taller-col-3, .coord-taller-col-4, .coord-taller-col-5, .coord-taller-col-6, .coord-taller-col-7, .coord-taller-col-8, .coord-taller-col-9, .coord-taller-col-10, .coord-taller-col-11, .coord-taller-col-12 {
+    grid-column: span 1;
+  }
+}

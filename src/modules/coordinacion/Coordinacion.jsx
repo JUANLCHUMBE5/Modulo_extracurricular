@@ -306,6 +306,9 @@ function CoordinacionInner({
               quitarGrupoHorario={state.quitarGrupoHorario}
               quitarImagenAnuncio={state.quitarImagenAnuncio}
               quitarTallerDeportivo={state.quitarTallerDeportivo}
+              iniciarEdicionTaller={state.iniciarEdicionTaller}
+              cancelarEdicionTaller={state.cancelarEdicionTaller}
+              indiceTallerEditando={state.indiceTallerEditando}
               seleccionarImagenAnuncio={state.seleccionarImagenAnuncio}
               setCatAEliminar={state.setCatAEliminar}
               setMostrarGestorCategorias={state.setMostrarGestorCategorias}

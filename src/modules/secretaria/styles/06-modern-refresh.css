@@ -208,7 +208,7 @@
 .secretaria-registration-modal {
   width: min(1080px, calc(100vw - 44px));
   max-height: min(90vh, 720px);
-  padding: 16px 20px 14px;
+  padding: 20px 24px 24px 24px !important;
   background: #ffffff;
 }
 
@@ -1687,27 +1687,27 @@
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) {
-  max-height: min(86vh, 680px);
-  padding: 12px 16px 12px;
+  max-height: min(90vh, 720px) !important;
+  padding: 20px 24px 20px 24px !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-modal-header {
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean {
-  gap: 8px 12px !important;
+  gap: 16px 24px !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean .secretaria-modal-student {
-  gap: 8px 12px !important;
-  padding: 10px 12px !important;
+  gap: 12px 16px !important;
+  padding: 12px 16px !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean .secretaria-modal-student p {
   min-height: 44px;
-  gap: 3px;
-  padding: 7px 9px;
+  gap: 4px;
+  padding: 8px 12px;
   font-size: 12px;
   line-height: 1.18;
 }
@@ -1718,7 +1718,7 @@
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean .secretaria-registration-program,
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean .secretaria-registration-contact {
-  gap: 7px 10px !important;
+  gap: 14px 12px !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-section-head {
@@ -2097,21 +2097,15 @@
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean .secretaria-registration-program,
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean .secretaria-registration-contact {
-  gap: 8px 10px !important;
-  padding: 11px !important;
-  border-radius: 8px !important;
-}
-
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean .secretaria-registration-program {
-  border: 1px solid #d7e8e4 !important;
-  background: #fbfefd !important;
+  border: none !important;
+  background: transparent !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean .secretaria-registration-contact {
-  align-self: start;
-  border: 1px solid #d9e4ef !important;
-  background: #fbfdff !important;
+  align-self: start !important;
+  border: none !important;
+  background: transparent !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-section-head {
@@ -2244,14 +2238,21 @@
 }
 
 /* Tidy Secretaria registration modal. */
+/* 1. Modal Overlay Backdrop (with beautiful blur) */
+.secretaria-modal-overlay {
+  backdrop-filter: blur(8px) !important;
+  background: rgba(15, 23, 42, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
 .secretaria-registration-modal:not(.is-summer-registration) {
-  width: min(1020px, calc(100vw - 32px)) !important;
-  max-height: min(92vh, 740px) !important;
-  padding: 0 !important; /* Full width header / body layout */
-  background: #f8fafc !important; /* Soft cool slate-grey background */
-  border-radius: 20px !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
+  width: min(960px, calc(100vw - 32px)) !important;
+  max-height: min(90vh, 720px) !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(23, 108, 96, 0.15) !important;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.08), 0 4px 15px rgba(0, 0, 0, 0.02) !important;
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
@@ -2259,10 +2260,10 @@
 
 /* 2. Unified Modal Header Bar */
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-modal-header {
-  background: #ffffff !important;
-  padding: 18px 24px !important; /* Balanced vertical & horizontal spacing */
-  border-bottom: 1px solid #e2e8f0 !important;
-  border-radius: 20px 20px 0 0 !important;
+  background: linear-gradient(90deg, #fcfefe 0%, #ffffff 100%) !important;
+  padding: 16px 24px !important;
+  border-bottom: 1px solid #eef2f6 !important;
+  border-radius: 16px 16px 0 0 !important;
   margin-bottom: 0 !important;
   display: flex !important;
   align-items: center !important;
@@ -2273,7 +2274,7 @@
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-card-title {
   margin-bottom: 0 !important;
   align-items: center !important;
-  gap: 14px !important;
+  gap: 12px !important;
   display: flex !important;
 }
 
@@ -2283,76 +2284,32 @@
   place-items: center !important;
   width: 38px !important;
   height: 38px !important;
-  border-radius: 10px !important;
-  background: linear-gradient(135deg, #e6fcf5 0%, #d1f7ec 100%) !important; /* Glowing mint gradient */
-  color: #176c60 !important; /* Emerald green */
-  border: 1px solid #b2ebd9 !important;
-  box-shadow: none !important;
+  border-radius: 12px !important;
+  background: #e6f7f2 !important;
+  color: #0d9488 !important;
+  border: 1px solid #bcead5 !important;
+  box-shadow: 0 2px 8px rgba(13, 148, 136, 0.08) !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-title-icon svg {
-  width: 18px !important;
-  height: 18px !important;
+  width: 20px !important;
+  height: 20px !important;
 }
 
-/* Modal Title Info Column */
+/* Modal Title Info */
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-modal-header-info {
   display: flex !important;
   flex-direction: column !important;
-  gap: 4px !important;
+  gap: 2px !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-modal-title {
   margin: 0 !important;
   font-size: 18px !important;
-  font-weight: 850 !important;
+  font-weight: 800 !important;
   color: #0f172a !important;
-  line-height: 1.15 !important;
-  letter-spacing: -0.2px !important;
-}
-
-/* Student Metadata Row (DNI, Grado, Sección badges) */
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-modal-student-meta-inline {
-  display: flex !important;
-  align-items: center !important;
-  flex-wrap: wrap !important;
-  gap: 6px !important;
-  font-size: 12px !important;
-  color: #64748b !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-modal-student-meta-inline .secretaria-meta-divider {
-  display: none !important; /* Hide dot separators */
-}
-
-/* Student Name Badge */
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-modal-student-name-badge {
-  background: #eaf6f2 !important;
-  border: 1px solid #b2ebd9 !important;
-  color: #176c60 !important;
-  padding: 3px 8px !important;
-  border-radius: 6px !important;
-  font-weight: 700 !important;
-  font-size: 12px !important;
-}
-
-/* Slate Grey Tags for DNI, Grado, Sección */
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-modal-student-meta-inline > span:not(.secretaria-modal-student-name-badge) {
-  background: #f1f5f9 !important; /* Slate-100 */
-  border: 1px solid #e2e8f0 !important; /* Slate-200 */
-  color: #475569 !important; /* Slate-600 */
-  padding: 3px 8px !important;
-  border-radius: 6px !important;
-  font-size: 11.5px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 4px !important;
-  font-weight: 500 !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-modal-student-meta-inline > span strong {
-  color: #64748b !important; /* Slate-500 label */
-  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.01em !important;
 }
 
 /* Close Button (borderless, circle hover) */
@@ -2371,38 +2328,40 @@
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-modal-close:hover {
-  background: #f1f5f9 !important; /* Slate-100 circle hover */
+  background: #f1f5f9 !important;
   color: #0f172a !important;
 }
 
 /* 3. Form Clean Wrapper */
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean {
   display: grid !important;
-  grid-template-columns: 1.05fr 0.95fr !important; /* 2 unequal columns */
+  grid-template-columns: 1.05fr 0.95fr !important;
   align-content: start !important;
-  gap: 16px 24px !important;
-  padding: 24px 24px 20px !important;
-  background: #f8fafc !important;
-  border-radius: 0 0 20px 20px !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  background: #ffffff !important;
+  border-radius: 0 0 16px 16px !important;
   overflow-y: auto !important;
   min-height: 0 !important;
   overscroll-behavior: contain !important;
   scroll-behavior: auto !important;
-  max-height: calc(92vh - 77px - 40px) !important; /* Header is ~77px */
+  max-height: calc(90vh - 72px) !important;
 }
 
+/* 4. Cohesive Student Metadata Row (Transparent strip instead of a colored banner) */
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context {
   grid-column: 1 / -1 !important;
   order: 0 !important;
   display: grid !important;
-  grid-template-columns: minmax(220px, 1.4fr) repeat(3, minmax(120px, 0.8fr)) !important;
-  gap: 10px !important;
-  margin: 0 !important;
-  padding: 12px !important;
-  border: 1px solid #d6e7e3 !important;
-  border-radius: 12px !important;
-  background: #ffffff !important;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+  grid-template-columns: minmax(200px, 1.4fr) repeat(3, minmax(90px, 0.8fr)) !important;
+  gap: 0 !important;
+  margin: 18px 28px 12px 28px !important; /* Perfect horizontal alignment with columns below */
+  padding: 0 0 14px 0 !important; /* No background padding */
+  background: transparent !important; /* Fully transparent */
+  border: none !important; /* No border box */
+  border-bottom: 1px solid #eef2f6 !important; /* Subtle bottom separator */
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item {
@@ -2410,31 +2369,44 @@
   display: flex !important;
   flex-direction: column !important;
   gap: 3px !important;
-  padding: 9px 11px !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 9px !important;
-  background: #f8fafc !important;
+  padding: 0 16px !important;
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item:first-child {
+  padding-left: 0 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item:last-child {
+  padding-right: 0 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item:not(:last-child) {
+  border-right: 1px solid #eef2f6 !important; /* Clean soft divider */
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item span {
-  color: #64748b !important;
-  font-size: 10.5px !important;
-  font-weight: 700 !important;
+  color: #475569 !important; /* Slate-600 */
+  font-size: 11px !important; /* Harmonized label size */
+  font-weight: 700 !important; /* Harmonized label weight */
   line-height: 1.1 !important;
   text-transform: uppercase !important;
+  letter-spacing: 0.02em !important; /* Harmonized label spacing */
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item strong {
   min-width: 0 !important;
-  color: #0f172a !important;
-  font-size: 13px !important;
-  font-weight: 800 !important;
-  line-height: 1.2 !important;
+  color: #0f172a !important; /* Matches slate-900 value */
+  font-size: 13.5px !important; /* Harmonized value size */
+  font-weight: 700 !important; /* Harmonized value weight */
+  line-height: 1.3 !important;
   overflow-wrap: anywhere !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item.is-name strong {
-  color: #176c60 !important;
+  color: #0d9488 !important; /* Elegant teal name value */
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean > .secretaria-student-context {
@@ -2472,47 +2444,56 @@
   grid-column: 1 / -1 !important;
 }
 
-/* 4. Left and Right Sections as White Cards */
+/* 5. Left and Right Sections styling (Unified white background, subtle divider line) */
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-program {
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 16px !important;
-  padding: 20px 24px !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+  background: #ffffff !important; 
+  border: none !important;
+  border-radius: 0 !important;
+  border-right: 1px solid #eef2f6 !important; /* Subtle vertical division line between panes */
+  padding: 24px 28px !important;
+  box-shadow: none !important;
   grid-column: 1 / span 1 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 16px !important;
+  display: grid !important; /* CSS grid instead of flex */
+  grid-template-columns: 1.35fr 0.65fr !important; /* Unified 2-column grid layout for left section */
+  gap: 16px 24px !important;
   order: 1 !important;
+  align-content: start !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean .secretaria-registration-program {
+  background: #ffffff !important;
+  border-right: 1px solid #eef2f6 !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-contact {
   background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 16px !important;
-  padding: 20px 24px !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 24px 28px !important;
+  box-shadow: none !important;
   grid-column: 2 / span 1 !important;
-  align-self: start !important;
+  align-self: stretch !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 16px !important;
+  gap: 20px !important;
   order: 2 !important;
 }
 
 /* Section Header (3px vertical esmeralda line) */
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-section-head {
-  padding-left: 12px !important;
-  border-left: 3px solid #248267 !important;
+  padding-left: 10px !important;
+  border-left: 3px solid #0d9488 !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 2px !important;
   margin-bottom: 4px !important;
   grid-column: 1 / -1 !important;
+  padding-bottom: 0 !important;
+  border-bottom: none !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-section-head strong {
-  font-size: 14px !important;
+  font-size: 13px !important;
   font-weight: 800 !important;
   color: #0f172a !important;
   line-height: 1.2 !important;
@@ -2524,157 +2505,169 @@
   color: #64748b !important;
 }
 
-/* 5. Program Details Card (Specs Card) */
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-program-details-card {
-  background: #f8fafc !important; /* Soft grey inside the white card */
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 12px !important;
-  padding: 14px 16px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 12px !important;
-  width: 100% !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-details-card-title {
+/* Make program field (select / readonly field wrapper) span column 1, row 1 */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-readonly-field-wrapper,
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-program-select-field {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
   margin: 0 !important;
-  font-size: 12px !important;
-  font-weight: 700 !important;
-  color: #475569 !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
+  order: 1 !important;
 }
 
-/* Schedule Grid & Premium Cards */
-.secretaria-registration-modal .secretaria-schedule-summary {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
-  gap: 10px !important;
-  width: 100% !important;
-  margin-top: 10px !important;
-  margin-bottom: 12px !important;
-}
-
-.secretaria-registration-modal .secretaria-schedule-item {
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 10px !important;
-  padding: 8px 12px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 4px !important;
-  align-items: flex-start !important;
-  text-align: left !important;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  position: relative !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-  grid-column: auto !important;
-}
-
-.secretaria-registration-modal .secretaria-schedule-item:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-}
-
-.secretaria-registration-modal .secretaria-schedule-item span.secretaria-schedule-label {
+/* 6. Readonly Program Field (Clean bold title text matching form typography) */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-readonly-field {
+  min-height: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  color: #0f172a !important; /* Slate-900 */
+  font-size: 13.5px !important; /* Harmonized value size */
+  font-weight: 700 !important; /* Harmonized weight */
+  padding: 3px 0 0 0 !important;
   display: flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  font-size: 10.5px !important;
-  font-weight: 600 !important;
-  color: #64748b !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
+  text-transform: none !important; /* Keep original casing */
+  letter-spacing: 0 !important;
 }
 
-.secretaria-registration-modal .secretaria-schedule-item .secretaria-schedule-icon {
-  flex-shrink: 0 !important;
+/* 7. Program Details Section (Elegant 2-Column borderless grid layout via display: contents) */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-program-details-card {
+  display: contents !important;
 }
 
-.secretaria-registration-modal .secretaria-schedule-item strong.secretaria-schedule-value {
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  color: #1e293b !important;
-  line-height: 1.3 !important;
-}
-
-/* Unified Neutral Theme for Schedule Cards */
-.secretaria-registration-modal .secretaria-schedule-item {
-  background: #f8fafc !important; /* Soft neutral light background */
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 8px !important;
-  padding: 8px 12px !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 4px !important;
-  align-items: flex-start !important;
-  text-align: left !important;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease !important;
-  position: relative !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-  grid-column: auto !important;
-}
-
-.secretaria-registration-modal .secretaria-schedule-item:hover {
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
-  background: #ffffff !important;
-  border-color: #cbd5e1 !important;
-}
-
-.secretaria-registration-modal .secretaria-schedule-item .secretaria-schedule-icon {
-  color: #64748b !important;
-  flex-shrink: 0 !important;
-}
-
-@media (max-width: 480px) {
-  .secretaria-registration-modal .secretaria-schedule-summary {
-    grid-template-columns: 1fr !important;
-  }
-}
-
-/* Divider & Meta Grid */
+/* Hide repeat titles and dividers */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-details-card-title,
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-details-divider {
-  height: 1px !important;
-  background: #e2e8f0 !important;
-  margin: 2px 0 !important;
+  display: none !important;
+}
+
+/* Promote schedule list items and meta items to be direct children of the parent grid */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-summary {
+  display: contents !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-details-meta-grid {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  gap: 16px !important;
-  align-items: center !important;
+  display: contents !important;
 }
 
+/* Assign exact order and grid positions to children to place them in the 3x2 grid */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item.is-dia {
+  order: 3 !important;
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-meta-item:nth-last-child(2) {
+  /* Costo Referencial is second to last */
+  order: 2 !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-meta-item:nth-last-child(1) {
+  /* Cupos Disponibles is last child */
+  order: 4 !important;
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item.is-clase {
+  order: 5 !important;
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item.is-almuerzo {
+  order: 6 !important;
+  grid-column: 2 !important;
+  grid-row: 3 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-meta-item.is-cambridge {
+  order: 7 !important;
+  grid-column: 1 / -1 !important;
+}
+
+/* Uniform layouts for schedule and meta items (no box/background) */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item,
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-meta-item {
   display: flex !important;
-  flex-direction: column !important;
-  gap: 2px !important;
-  flex: 1 1 120px !important;
+  flex-direction: column !important; /* Stacks label on top of value */
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  min-height: auto !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item span.secretaria-schedule-label,
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-meta-item span {
-  font-size: 10px !important;
-  font-weight: 600 !important;
-  color: #64748b !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #475569 !important; /* Slate-600 (matches right side labels) */
+  text-transform: uppercase !important; /* Consistent uppercase labels */
+  letter-spacing: 0.02em !important; /* Consistent letter spacing */
 }
 
+/* Schedule Icons */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item .secretaria-schedule-icon {
+  flex-shrink: 0 !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item.is-dia .secretaria-schedule-icon {
+  color: #0d9488 !important;
+}
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item.is-clase .secretaria-schedule-icon {
+  color: #2563eb !important;
+}
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item.is-almuerzo .secretaria-schedule-icon {
+  color: #ea580c !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item strong.secretaria-schedule-value,
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-meta-item strong {
-  font-size: 14px !important;
+  font-size: 13.5px !important; /* Matches input values exactly */
   font-weight: 700 !important;
-  color: #0f172a !important;
+  color: #0f172a !important; /* Slate-900 */
+  line-height: 1.3 !important;
+  padding-left: 0 !important;
+  margin-top: 3px !important; /* Soft gap below the label */
+  text-align: left !important;
+}
+
+/* Hide divider line */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-details-divider {
+  display: none !important;
+}
+
+/* Cost & Cupos on the Right Column */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean .secretaria-details-meta-grid {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  align-items: stretch !important;
+  margin: 0 !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-highlight-green {
-  color: #10b981 !important; /* Emerald green cupos highlight */
+  color: #059669 !important;
 }
 
-/* 6. Form Fields */
+/* 8. Contact Form Fields */
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-field {
   display: flex !important;
   flex-direction: column !important;
@@ -2683,159 +2676,215 @@
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-field label {
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
-  color: #475569 !important;
-  margin-bottom: 0 !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field input,
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field select,
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field textarea {
-  border-radius: 8px !important;
-  border: 1px solid #cbd5e1 !important;
-  background: #ffffff !important;
-  color: #0f172a !important;
-  font-size: 13px !important;
-  transition: all 0.2s ease !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field input:focus,
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field select:focus,
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field textarea:focus {
-  border-color: #248267 !important;
-  box-shadow: 0 0 0 3px rgba(36, 130, 103, 0.1) !important;
-  outline: none !important;
-}
-
-/* 7. Checkbox (Mint style) */
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-check {
-  grid-column: 1 / -1 !important;
-  width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  padding: 10px 14px !important;
-  border: 1px solid #b9e4d9 !important; /* Soft esmeralda border */
-  border-radius: 10px !important;
-  background: #f0fbf7 !important; /* Soft mint green */
-  color: #334155 !important;
-  font-weight: 600 !important;
-  cursor: pointer !important;
-  transition: all 0.2s ease !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
-  margin-top: 4px !important;
-  order: 5 !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-check:hover {
-  background: #e6f7f2 !important;
-  border-color: #a3dcd0 !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-check input[type="checkbox"] {
-  width: 16px !important;
-  height: 16px !important;
-  accent-color: #248267 !important;
-  cursor: pointer !important;
-  margin: 0 !important;
-}
-
-/* 8. Action Buttons */
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions {
-  grid-column: 1 / -1 !important;
-  width: 100% !important;
-  display: flex !important;
-  justify-content: flex-end !important;
-  gap: 12px !important;
-  margin-top: 12px !important;
-  order: 6 !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button {
-  min-height: 40px !important;
-  border-radius: 10px !important;
-  padding: 8px 24px !important;
-  font-size: 13.5px !important;
+  font-size: 11px !important;
   font-weight: 700 !important;
-  transition: all 0.2s ease !important;
-}
-
-/* Secondary Cancel Button */
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button[type="button"] {
-  background: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
   color: #475569 !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button[type="button"]:hover {
-  background: #f8fafc !important;
-  border-color: #94a3b8 !important;
-  color: #0f172a !important;
-}
-
-/* Primary Confirm Button */
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button[type="submit"] {
-  background: linear-gradient(135deg, #248267 0%, #1a6f57 100%) !important;
-  border: none !important;
-  color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(36, 130, 103, 0.15) !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button[type="submit"]:hover:not(:disabled) {
-  transform: translateY(-1px) !important;
-  box-shadow: 0 6px 16px rgba(36, 130, 103, 0.25) !important;
-  filter: brightness(1.05) !important;
-}
-
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button[type="submit"]:active:not(:disabled) {
-  transform: translateY(0) !important;
-}
-
-/* Contact field SVG layout alignment */
-.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-contact > .secretaria-field label {
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+  margin-bottom: 2px !important;
   display: flex !important;
   align-items: center !important;
   gap: 6px !important;
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-contact > .secretaria-field label svg {
+  color: #0d9488 !important;
   width: 14px !important;
   height: 14px !important;
-  color: #64748b !important;
 }
 
-/* 9. Responsive Adjustments */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field input,
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field select,
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field textarea {
+  border-radius: 10px !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  font-size: 13.5px !important;
+  height: 42px !important;
+  padding: 0 14px !important;
+  transition: all 0.2s ease-in-out !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field input:hover,
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field select:hover,
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field textarea:hover {
+  border-color: #94a3b8 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field input:focus,
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field select:focus,
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field textarea:focus {
+  border-color: #0d9488 !important;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15) !important;
+  outline: none !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-field textarea {
+  height: auto !important;
+  min-height: 80px !important;
+  padding: 10px 14px !important;
+}
+
+/* 9. Checkbox (Mint style bar) */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-check {
+  grid-column: 1 / -1 !important;
+  width: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 12px 16px !important;
+  border: 1.5px solid #a3e2ca !important;
+  border-radius: 8px !important;
+  background: #f0faf6 !important;
+  color: #115e59 !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  margin-top: 10px !important;
+  margin-bottom: 6px !important;
+  margin-left: 28px !important;
+  margin-right: 28px !important;
+  order: 5 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-check:hover {
+  background: #e6f7f2 !important;
+  border-color: #0d9488 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-check input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  accent-color: #0d9488 !important;
+  cursor: pointer !important;
+  margin: 0 !important;
+}
+
+/* 10. Action Buttons */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions {
+  grid-column: 1 / -1 !important;
+  width: auto !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 16px 0 0 0 !important;
+  border-top: 1px solid #e2e8f0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin-top: 16px !important;
+  margin-bottom: 8px !important;
+  margin-left: 28px !important;
+  margin-right: 28px !important;
+  order: 6 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button {
+  min-height: 40px !important;
+  height: 40px !important;
+  border-radius: 10px !important;
+  padding: 8px 24px !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  line-height: 1 !important;
+}
+
+/* Cancel Button */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button.secretaria-secondary-button {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #475569 !important;
+  box-shadow: none !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button.secretaria-secondary-button:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+/* Confirm Button */
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button.secretaria-register-button {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%) !important;
+  border: 1px solid transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2) !important;
+  margin-top: 0 !important;
+  width: auto !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button.secretaria-register-button:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.3) !important;
+  filter: brightness(1.05) !important;
+  transform: translateY(-1px) !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button.secretaria-register-button:active:not(:disabled) {
+  transform: translateY(0) !important;
+  filter: brightness(0.98) !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-form-actions button.secretaria-register-button:disabled {
+  background: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* 11. Responsive Adjustments */
 @media (max-width: 860px) {
   .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean {
     grid-template-columns: 1fr !important;
-    max-height: calc(92vh - 84px - 20px) !important;
+    max-height: calc(92vh - 84px) !important;
   }
 
   .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px 0 !important;
+    margin: 12px 16px 6px !important;
+    padding: 10px 14px !important;
+  }
+
+  .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item {
+    padding: 4px 12px !important;
+  }
+
+  .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item:nth-child(2) {
+    border-right: none !important;
   }
   
   .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-program,
   .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-contact {
     grid-column: 1 / -1 !important;
+    border-right: none !important;
+    padding: 12px 18px !important;
   }
 }
 
 @media (max-width: 680px) {
   .secretaria-registration-modal:not(.is-summer-registration) {
-    width: calc(100vw - 18px) !important;
-    padding: 0 !important;
-  }
-  
-  .secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-summary {
-    grid-template-columns: 1fr !important;
+    width: calc(100vw - 16px) !important;
   }
 
   .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context {
     grid-template-columns: 1fr !important;
+  }
+
+  .secretaria-registration-modal:not(.is-summer-registration) .secretaria-student-context-item {
+    border-right: none !important;
+    padding: 4px 8px !important;
   }
 }
 
@@ -2930,4 +2979,557 @@
 }
 .secretaria-student-panel .secretaria-info-box.secretaria-info-box-info svg {
   color: #17a2b8 !important;
+}
+
+/* ==========================================================================
+   SECRETARIA DESIGN SYSTEM v2 — DASHBOARD AESTHETIC
+   Clean, compact, professional. Inspired by modern admin dashboards.
+   ========================================================================== */
+
+/* ── 0. Global layout refinements ────────────────────────────────────────── */
+.secretaria-layout,
+.secretaria-main {
+  background: #f8fafb !important;
+}
+
+.secretaria-main {
+  padding: 20px clamp(16px, 2.5vw, 28px) 28px !important;
+}
+
+/* ── 1. Sidebar — Dark teal with glass-like nav items ───────────────────── */
+.secretaria-sidebar {
+  background: linear-gradient(180deg, #0c332e 0%, #0a2925 100%) !important;
+  border-right: none !important;
+  box-shadow: 1px 0 12px rgba(10, 41, 37, 0.18) !important;
+}
+
+.secretaria-sidebar-brand img {
+  border-radius: 10px !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12) !important;
+}
+
+.secretaria-sidebar-brand span {
+  color: #9fe0d2 !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.08em !important;
+}
+
+.secretaria-nav-item,
+.secretaria-logout {
+  border: 1px solid rgba(255,255,255, 0.08) !important;
+  border-radius: 10px !important;
+  background: rgba(255,255,255, 0.04) !important;
+  color: rgba(255,255,255, 0.82) !important;
+  backdrop-filter: blur(4px) !important;
+  transition: all 0.2s ease !important;
+}
+
+.secretaria-nav-item:hover,
+.secretaria-logout:hover {
+  background: rgba(255,255,255, 0.1) !important;
+  border-color: rgba(255,255,255, 0.15) !important;
+}
+
+.secretaria-nav-item svg,
+.secretaria-logout svg,
+.secretaria-nav-item span,
+.secretaria-logout span {
+  color: rgba(255,255,255, 0.88) !important;
+  stroke: rgba(255,255,255, 0.88) !important;
+}
+
+.secretaria-nav-item-active {
+  background: rgba(26,163,134, 0.35) !important;
+  border-color: rgba(26,163,134, 0.5) !important;
+  box-shadow: 0 0 12px rgba(26,163,134, 0.12) !important;
+}
+
+.secretaria-nav-item-active svg,
+.secretaria-nav-item-active span {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.secretaria-logout {
+  background: rgba(255,255,255, 0.06) !important;
+  border-color: rgba(255,255,255, 0.08) !important;
+}
+
+/* ── 2. Header bar — Compact & branded ──────────────────────────────────── */
+.secretaria-header {
+  background: #ffffff !important;
+  border: 1px solid #e0e7ec !important;
+  border-left: 4px solid #176c60 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 8px rgba(15,23,42, 0.03) !important;
+  padding: 8px 16px !important;
+  margin-bottom: 10px !important;
+}
+
+.secretaria-header span {
+  color: #176c60 !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+}
+
+.secretaria-header h1 {
+  color: #0f172a !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.3px !important;
+  margin-top: 1px !important;
+}
+
+/* ── 3. Search card — Sleek inline bar ──────────────────────────────────── */
+.secretaria-search-card::before {
+  background: linear-gradient(90deg, #176c60 0%, #10b981 60%, #34d399 100%) !important;
+  height: 3px !important;
+  border-radius: 10px 10px 0 0 !important;
+}
+
+.secretaria-search-card {
+  border-radius: 12px !important;
+  border: 1px solid #e0e7ec !important;
+  box-shadow: 0 2px 10px rgba(15,23,42, 0.04) !important;
+  padding: 12px 16px 14px !important;
+  background: #ffffff !important;
+  min-height: auto !important;
+}
+
+.secretaria-card-title {
+  margin-bottom: 8px !important;
+}
+
+.secretaria-title-icon {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 8px !important;
+  background: #eef8f5 !important;
+  color: #176c60 !important;
+}
+
+.secretaria-card-title h2 {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  letter-spacing: -0.2px !important;
+}
+
+.secretaria-search-form-compact {
+  grid-template-columns: minmax(130px, 170px) minmax(0, 1fr) !important;
+  gap: 6px !important;
+}
+
+.secretaria-search-form-compact .secretaria-search-row {
+  grid-template-columns: minmax(0, 1fr) 110px auto !important;
+  gap: 6px !important;
+}
+
+/* ── 4. Form fields — Compact, clean borders ────────────────────────────── */
+.secretaria-form select,
+.secretaria-input-wrap {
+  border-radius: 8px !important;
+  border: 1px solid #d1d9e0 !important;
+  background: #ffffff !important;
+  height: 38px !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.secretaria-form select:focus,
+.secretaria-input-wrap:focus-within {
+  border-color: #176c60 !important;
+  box-shadow: 0 0 0 2.5px rgba(23,108,96, 0.1) !important;
+}
+
+.secretaria-input-wrap input {
+  font-size: 13px !important;
+  color: #0f172a !important;
+}
+
+.secretaria-field label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #4b5c6b !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.secretaria-primary-button,
+.secretaria-new-summer-student {
+  min-height: 38px !important;
+  height: 38px !important;
+  border-radius: 8px !important;
+}
+
+/* ── 5. Student panel — Clean inline card ───────────────────────────────── */
+.secretaria-student-panel {
+  margin-top: 10px !important;
+  border: 1px solid #e0e7ec !important;
+  border-radius: 10px !important;
+  padding: 12px 14px !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 4px rgba(15,23,42, 0.02) !important;
+}
+
+.secretaria-student-summary {
+  display: grid !important;
+  grid-template-columns: 36px minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid #eaeff4 !important;
+}
+
+.secretaria-avatar {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #176c60 0%, #10b981 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 6px rgba(23,108,96, 0.18) !important;
+  border: none !important;
+}
+
+.secretaria-student-summary .secretaria-overline {
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: #176c60 !important;
+  display: block !important;
+  margin-bottom: 0 !important;
+}
+
+.secretaria-student-summary strong {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  line-height: 1.15 !important;
+}
+
+.secretaria-student-summary span:last-child {
+  margin-top: 1px !important;
+  font-size: 11px !important;
+  color: #64748b !important;
+  font-weight: 500 !important;
+}
+
+/* ── 6. Student data grid — Compact table-like cards ────────────────────── */
+.secretaria-student-data {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  gap: 5px !important;
+  margin: 8px 0 0 !important;
+  border: none !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+.secretaria-student-data > div {
+  min-height: 38px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+  border: 1px solid #e8edf2 !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  background: #fafbfc !important;
+  box-shadow: none !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.secretaria-student-data > div:hover {
+  background: #f1f5f9 !important;
+  border-color: #d1d9e0 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.secretaria-student-data dt {
+  margin-bottom: 1px !important;
+  color: #64748b !important;
+  font-size: 8.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+.secretaria-student-data dd {
+  color: #0f172a !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.2 !important;
+}
+
+/* ── 7. Info box — Left accent, minimal ─────────────────────────────────── */
+.secretaria-student-panel .secretaria-info-box {
+  border: 1px solid #e0e7ec !important;
+  border-left: 3px solid #176c60 !important;
+  border-radius: 6px !important;
+  padding: 8px 10px !important;
+  font-weight: 500 !important;
+  font-size: 11px !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 8px !important;
+  margin-top: 8px !important;
+  box-shadow: none !important;
+  background-color: #f8fafb !important;
+  color: #334155 !important;
+  line-height: 1.4 !important;
+}
+
+.secretaria-student-panel .secretaria-info-box svg {
+  flex-shrink: 0 !important;
+  margin-top: 1px !important;
+}
+
+.secretaria-student-panel .secretaria-info-box p {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+  font-size: 11px !important;
+}
+
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-success {
+  border-color: #d1e7dd !important;
+  border-left-color: #198754 !important;
+  background-color: #f6fdf9 !important;
+  color: #155724 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-success p { color: #155724 !important; }
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-success svg { color: #198754 !important; }
+
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-warning {
+  border-color: #fde8c8 !important;
+  border-left-color: #e09f3e !important;
+  background-color: #fffdf6 !important;
+  color: #7a5600 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-warning p { color: #7a5600 !important; }
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-warning svg { color: #e09f3e !important; }
+
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-danger {
+  border-color: #f5c6cb !important;
+  border-left-color: #dc3545 !important;
+  background-color: #fef8f8 !important;
+  color: #721c24 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-danger p { color: #721c24 !important; }
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-danger svg { color: #dc3545 !important; }
+
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-info {
+  border-color: #c5e8ef !important;
+  border-left-color: #0d9eb5 !important;
+  background-color: #f5fcfd !important;
+  color: #0c5460 !important;
+}
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-info p { color: #0c5460 !important; }
+.secretaria-student-panel .secretaria-info-box.secretaria-info-box-info svg { color: #0d9eb5 !important; }
+
+/* ── 8. Pills — Subtle, modern ──────────────────────────────────────────── */
+.secretaria-student-panel .secretaria-pill {
+  font-size: 9.5px !important;
+  font-weight: 800 !important;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.4px !important;
+}
+
+.secretaria-student-panel .secretaria-pill.secretaria-pill-success {
+  color: #14713d !important;
+  background-color: #e8f7ef !important;
+  border: 1px solid #c8e6d5 !important;
+}
+
+.secretaria-student-panel .secretaria-pill.secretaria-pill-warning {
+  color: #7a5600 !important;
+  background-color: #fef8ec !important;
+  border: 1px solid #f5e0b0 !important;
+}
+
+.secretaria-student-panel .secretaria-pill.secretaria-pill-danger {
+  color: #721c24 !important;
+  background-color: #fdf0f1 !important;
+  border: 1px solid #f0c5ca !important;
+}
+
+.secretaria-student-panel .secretaria-pill.secretaria-pill-info {
+  color: #0a4f5c !important;
+  background-color: #edf8fa !important;
+  border: 1px solid #c1dfe6 !important;
+}
+
+/* ── 9. Buttons — Professional gradient + ghost style ───────────────────── */
+.secretaria-register-button {
+  background: linear-gradient(135deg, #176c60 0%, #1a9982 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  border-radius: 8px !important;
+  min-height: 38px !important;
+  box-shadow: 0 2px 6px rgba(23,108,96, 0.12) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  margin-top: 10px !important;
+  width: 100% !important;
+}
+
+.secretaria-register-button:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(23,108,96, 0.2) !important;
+  filter: brightness(1.04) !important;
+  transform: none !important;
+}
+
+.secretaria-register-button:active:not(:disabled) {
+  filter: brightness(0.98) !important;
+}
+
+.secretaria-register-button:disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+.secretaria-final-actions {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) !important;
+  gap: 6px !important;
+  margin-top: 10px !important;
+}
+
+.secretaria-final-actions button,
+.secretaria-new-search-button {
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  transition: all 0.15s ease !important;
+  min-height: 36px !important;
+  font-size: 12.5px !important;
+}
+
+.secretaria-primary-button {
+  background: linear-gradient(135deg, #176c60 0%, #1a9982 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(23,108,96, 0.1) !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  min-height: 36px !important;
+}
+
+.secretaria-primary-button:hover:not(:disabled) {
+  box-shadow: 0 4px 10px rgba(23,108,96, 0.18) !important;
+  filter: brightness(1.04) !important;
+  transform: none !important;
+}
+
+.secretaria-secondary-button {
+  background: #ffffff !important;
+  border: 1px solid #d1d9e0 !important;
+  color: #475569 !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  min-height: 36px !important;
+}
+
+.secretaria-secondary-button:hover:not(:disabled) {
+  background: #f8fafb !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+/* ── 10. Search empty state ─────────────────────────────────────────────── */
+.secretaria-search-empty {
+  min-height: 60px !important;
+  margin-top: 10px !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  border: 1px dashed #d1d9e0 !important;
+  background: #fafbfc !important;
+}
+
+.secretaria-search-empty-icon {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 8px !important;
+  background: #eef8f5 !important;
+  color: #176c60 !important;
+}
+
+.secretaria-search-empty strong {
+  font-size: 13px !important;
+  color: #0f172a !important;
+}
+
+.secretaria-search-empty span {
+  font-size: 11.5px !important;
+  color: #64748b !important;
+}
+
+/* ── 11. Message alert ──────────────────────────────────────────────────── */
+.secretaria-message {
+  margin-top: 8px !important;
+  border-radius: 8px !important;
+}
+
+/* ── 12. Name results list ──────────────────────────────────────────────── */
+.secretaria-name-results {
+  gap: 4px !important;
+  margin: 8px 0 6px !important;
+}
+
+.secretaria-name-results button {
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+}
+
+/* ── 13. New search button ──────────────────────────────────────────────── */
+.secretaria-new-search-button {
+  min-height: 34px !important;
+  border-radius: 6px !important;
+  font-size: 11.5px !important;
+  padding: 4px 10px !important;
+  gap: 4px !important;
+}
+
+/* ── 14. Responsive adjustments ─────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .secretaria-sidebar {
+    background: linear-gradient(180deg, #0c332e 0%, #0a2925 100%) !important;
+  }
+  
+  .secretaria-student-data {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .secretaria-student-data .secretaria-data-identity,
+  .secretaria-student-data .secretaria-data-process,
+  .secretaria-student-data .secretaria-data-program,
+  .secretaria-student-data .secretaria-data-contact,
+  .secretaria-student-data .secretaria-data-wide {
+    grid-column: 1 / -1 !important;
+  }
+
+  .secretaria-final-actions {
+    grid-template-columns: 1fr !important;
+  }
 }

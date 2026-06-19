@@ -106,7 +106,7 @@
   grid-column: 2;
   width: min(1180px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 18px 0 32px;
+  padding: 10px 0 24px;
 }
 
 .caja-page-embedded {
@@ -124,9 +124,9 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 12px;
-  padding: 12px 14px;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px 14px;
   border: 1px solid #d8e5e1;
   border-radius: 10px;
   background: #ffffff;
@@ -142,9 +142,9 @@
 }
 
 .caja-header h1 {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: #111827;
-  font-size: 25px;
+  font-size: 21px;
   font-weight: 800;
   line-height: 1.05;
 }
@@ -249,9 +249,9 @@
 
 .caja-payment-workspace {
   display: grid;
-  gap: 9px;
-  margin-bottom: 10px;
-  padding: 12px;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 8px 10px;
   border: 1px solid #d8e5e1;
   border-radius: 10px;
   background: #ffffff;
@@ -707,7 +707,7 @@
 .caja-form {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 5px;
 }
 
 .caja-form.is-search-only {
@@ -719,7 +719,7 @@
 }
 
 .caja-form-block {
-  padding: 10px;
+  padding: 7px 10px;
   border: 1px solid #dce7e4;
   border-radius: 10px;
   background: #fbfdfc;
@@ -733,16 +733,16 @@
 
 .caja-form-title {
   display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  margin-bottom: 7px;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 4px;
 }
 
 .caja-form-title > svg {
-  width: 30px;
-  height: 30px;
-  padding: 7px;
-  border-radius: 8px;
+  width: 24px;
+  height: 24px;
+  padding: 5px;
+  border-radius: 6px;
   color: #075e50;
   background: #e8f7ef;
 }
@@ -750,14 +750,14 @@
 .caja-form-title h3 {
   margin: 0;
   color: #101828;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 950;
 }
 
 .caja-form-title p {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   color: #667085;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -770,7 +770,7 @@
 .caja-search-form input,
 .caja-payment-method select {
   width: 100%;
-  min-height: 38px;
+  min-height: 34px;
   border: 1px solid #cfded9;
   border-radius: 8px;
   padding: 0 12px;
@@ -793,23 +793,23 @@
 .caja-student-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 8px;
-  padding: 8px 10px;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 5px 10px;
   border: 1px solid #b9e4d9;
   border-radius: 8px;
   background: #f0fbf7;
 }
 
 .caja-student-card span {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #075e50;
   background: #d7f5eb;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 950;
 }
 
@@ -832,7 +832,7 @@
 .caja-payment-summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: 5px;
 }
 
 .caja-readonly-field,
@@ -845,8 +845,8 @@
 }
 
 .caja-readonly-field {
-  min-height: 50px;
-  padding: 7px 10px;
+  min-height: 40px;
+  padding: 4px 8px;
   border: 1px solid #dce7e4;
   border-radius: 8px;
   background: #ffffff;
@@ -862,7 +862,7 @@
 .caja-readonly-field strong {
   overflow: hidden;
   color: #101828;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 950;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -914,7 +914,62 @@
 }
 
 .caja-payment-method {
-  min-height: 54px;
+  min-height: 44px;
+}
+
+.caja-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border-top: 1px solid #e3ece9;
+}
+
+.caja-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  border: 1px solid #d6e2df;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #075e50;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.caja-pagination-btn:hover:not(:disabled) {
+  background: #eaf8f3;
+  border-color: #aee0d2;
+}
+
+.caja-pagination-btn:disabled {
+  color: #98a2b3;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
+.caja-pagination-info {
+  color: #475467;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.caja-pagination-info strong {
+  color: #101828;
+  font-weight: 950;
+}
+
+.caja-pagination-count {
+  margin-left: 6px;
+  color: #98a2b3;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 @media (max-width: 980px) {

@@ -239,13 +239,25 @@ export async function obtenerEstudiantePorDni(dni, periodo = "") {
     )
     .sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0));
   const isPaid = (item) => ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(est => String(item.estadoPago || "").toLowerCase().includes(est) || String(item.estadoInscripcion || "").toLowerCase().includes(est));
-  const inscripcion = inscripciones.find((item) => item.derivadoCaja && !isPaid(item))
-    || inscripciones.find((item) => !isPaid(item))
-    || inscripciones.find((item) => item.derivadoCaja)
-    || inscripciones[0];
-  const estudiante = apiDb.estudiantes[dni] || crearEstudianteDesdeInscripcion(inscripcion);
+
+  // Solo considerar inscripciones que fueron derivadas a Caja
+  const derivadas = inscripciones.filter((item) => item.derivadoCaja);
+  const inscripcion = derivadas.find((item) => !isPaid(item))
+    || derivadas[0]
+    || null;
+
+  const estudiante = apiDb.estudiantes[dni] || crearEstudianteDesdeInscripcion(inscripciones[0]);
 
   if (!estudiante) return null;
+
+  // Hay inscripciones pero ninguna derivada a caja
+  if (!inscripcion && inscripciones.length > 0) {
+    return {
+      ...estudiante,
+      sinInscripcionCaja: true,
+      requiereDerivacionCaja: true,
+    };
+  }
 
   if (!inscripcion) {
     return {
@@ -599,7 +611,8 @@ function obtenerInscripcionesCaja(periodoNormalizado) {
   return [...(apiDb.inscripciones || [])]
     .filter((inscripcion) =>
       normalizarPeriodo(inscripcion.periodo || periodoNormalizado) === periodoNormalizado &&
-      inscripcion.estadoInscripcion !== "Anulada"
+      inscripcion.estadoInscripcion !== "Anulada" &&
+      inscripcion.derivadoCaja
     );
 }
 

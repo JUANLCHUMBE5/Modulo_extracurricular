@@ -6,8 +6,12 @@ dotenv.config();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-console.error("Error: Faltan las credenciales de Supabase en el archivo .env");
+let client = null;
+if (supabaseUrl && supabaseKey) {
+  client = createClient(supabaseUrl, supabaseKey);
+} else {
+  console.warn("⚠️ Advertencia: No se inicializó el cliente de Supabase por falta de credenciales en .env. Esto es correcto si estás usando el modo local.");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = client;
+

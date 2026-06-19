@@ -24,6 +24,7 @@ import {
   formatearFechaPeru,
 } from "../../services/dateService";
 import { resolverDocentePorGradoLocal, resolverHorarioPorGradoLocal, resolverTutoraPorGradoLocal } from "./utils/horariosSecretaria";
+import { programaDisponibleParaGrado } from "./services/secretariaServiceUtils";
 import { imprimirInscripcionDirecta } from "./components/SecretariaFicha";
 import SecretariaRegistroModal from "./components/SecretariaRegistroModal";
 import SecretariaCursoAdicionalModal from "./components/SecretariaCursoAdicionalModal";
@@ -92,19 +93,26 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   const programaSeleccionado = programas.find((programa) => programa.id === formulario.programa);
   const esCicloVerano = periodo === "verano";
   const edadAlumnoFormulario = calcularEdadSecretaria(estudiante, formulario);
+  const gradoEstudiante = estudiante?.esExterno
+    ? formulario.gradoExterno
+    : estudiante?.grado;
+
   const programasCompatiblesFormulario = esCicloVerano
     ? programas.filter((programa) => programaDisponibleParaEdadSecretaria(programa, edadAlumnoFormulario))
-    : programas;
-  const tieneInvitacionOperativa = !esCicloVerano && Boolean(estudiante?.tieneInvitacion);
-  const invitacionSinHorario = tieneInvitacionOperativa && estudiante?.programaDisponible === false;
+    : programas.filter((programa) => {
+        if (!estudiante) return true;
+        return programaDisponibleParaGrado(programa, gradoEstudiante || "");
+      });
+  const tieneInvitacionOperativa = !esCicloVerano && Boolean(estudiante?.tieneInvitacion) && estudiante?.programaDisponible !== false;
+  const invitacionSinHorario = !esCicloVerano && Boolean(estudiante?.tieneInvitacion) && estudiante?.programaDisponible === false && programasCompatiblesFormulario.length === 0;
   const tipoAlumnoMostrado = esCicloVerano
     ? (estudiante?.esExterno ? "Alumno externo" : "Alumno interno")
     : estudiante?.tipoAlumno;
-  
+
   // Si el estudiante tiene invitación, usamos los datos que vienen del servicio para mostrar el nombre
   // Si no tiene invitación, usamos el programa seleccionado en el dropdown
   const nombreProgramaAMostrar = tieneInvitacionOperativa
-    ? estudiante.programaNombre 
+    ? estudiante.programaNombre
     : (programaSeleccionado?.nombre || "");
   const registroAdicional = Boolean(inscripcion);
   const programaAsignadoInvitacion = tieneInvitacionOperativa ? {
@@ -133,11 +141,11 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   } : null;
   const programasParaSelector = programaAsignadoInvitacion && !registroAdicional
     ? [
-        programaAsignadoInvitacion,
-        ...programasCompatiblesFormulario.filter((programa) => programa.id !== programaAsignadoInvitacion.id),
-      ]
+      programaAsignadoInvitacion,
+      ...programasCompatiblesFormulario.filter((programa) => programa.id !== programaAsignadoInvitacion.id),
+    ]
     : programasCompatiblesFormulario;
-  const mostrarSelectorPrograma = esCicloVerano || !tieneInvitacionOperativa || registroAdicional || programasCompatiblesFormulario.length > 0;
+  const mostrarSelectorPrograma = true;
   const clavesProgramasRegistrados = new Set(
     inscripcionesEstudiante.flatMap((item) => [
       item.programaId ? `id:${item.programaId}` : "",
@@ -328,7 +336,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     setInscripcionesEstudiante(registrosExistentes);
     setFormulario({
       ...formularioInicial,
-      programa: encontrado.tieneInvitacion ? encontrado.programaAsignado : "",
+      programa: (encontrado.tieneInvitacion && encontrado.programaDisponible !== false) ? encontrado.programaAsignado : "",
       apoderado: registroExistente?.apoderado ?? encontrado.apoderado ?? "",
       telefono: registroExistente?.telefono ?? encontrado.telefonoApoderado ?? "",
       correo: registroExistente?.correo ?? "",
@@ -341,10 +349,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       colegioProcedencia: periodo === "verano" ? (registroExistente?.colegioProcedencia || "Colegio San Rafael") : "",
     });
     if (encontrado.tieneInvitacion && encontrado.programaDisponible === false) {
-      setMensaje("El alumno esta cargado por Coordinación Académica, pero el programa no tiene horario para su grado. Coordinación Académica debe agregar el turno antes de inscribir.");
-      return;
+      setMensaje("Aviso: El taller invitado por Coordinación Académica no está disponible para el grado del alumno. Puede seleccionar otro taller compatible.");
+    } else {
+      setMensaje("");
     }
-    setMensaje("");
   }
 
 
@@ -518,9 +526,9 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
           esCicloVerano
             ? (tipoAlumnoVeranoAutomatico === "Alumno externo" ? "Verano externo" : "Verano interno")
             :
-          periodo === "escolar" && !estudiante.tieneInvitacion && !programaActualizado.invitacionMasiva
-            ? "Excepcional"
-            : "Regular",
+            periodo === "escolar" && !estudiante.tieneInvitacion && !programaActualizado.invitacionMasiva
+              ? "Excepcional"
+              : "Regular",
         programa: programaActualizado.nombre,
         programaId: programaActualizado.id,
         colegioProcedencia: formulario.colegioProcedencia.trim(),
@@ -544,10 +552,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         origenRegistro: estudiante.esExterno
           ? "Alumno externo de ciclo verano"
           : esCicloVerano
-          ? "Alumno interno de ciclo verano"
-          : estudiante.tieneInvitacion
-          ? "Alumno invitado por Coordinación Académica"
-          : "Registro excepcional por Asistente",
+            ? "Alumno interno de ciclo verano"
+            : estudiante.tieneInvitacion
+              ? "Alumno invitado por Coordinación Académica"
+              : "Registro excepcional por Asistente",
       });
 
       setInscripción(registro);
@@ -604,8 +612,8 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       programa: debeEscogerEntreInvitacionYMasiva
         ? ""
         : programaAsignadoActual
-        ? estudiante.programaAsignado
-        : actual.programa || primerProgramaPeriodo,
+          ? estudiante.programaAsignado
+          : actual.programa || primerProgramaPeriodo,
       colegioProcedencia: actual.colegioProcedencia || (estudiante?.esExterno ? "" : "Colegio San Rafael"),
       tipoAlumnoVerano: periodo === "verano"
         ? (estudiante?.esExterno ? "Alumno externo" : "Alumno interno")
@@ -884,99 +892,92 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
           delegatedContent
         ) : (
           <>
-            <header className="secretaria-header">
-              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                {!sidebarExpanded && (
-                  <button
-                    className="secretaria-menu-toggle-btn-header"
-                    type="button"
-                    onClick={toggleSidebar}
-                    aria-label="Mostrar barra lateral"
-                    title="Mostrar barra lateral"
-                  >
-                    <Menu size={22} />
-                  </button>
-                )}
-                <div>
-                  <span>Módulo Asistente</span>
-                  <h1>Inscripción Presencial</h1>
-                </div>
+            {!sidebarExpanded && (
+              <div style={{ marginBottom: "12px" }}>
+                <button
+                  className="secretaria-menu-toggle-btn-header"
+                  type="button"
+                  onClick={toggleSidebar}
+                  aria-label="Mostrar barra lateral"
+                  title="Mostrar barra lateral"
+                >
+                  <Menu size={22} />
+                </button>
               </div>
-            </header>
-
+            )}
             <section className="secretaria-workspace secretaria-workspace-system">
-          <SecretariaSearchCard
-            aplicarEstudianteEncontrado={aplicarEstudianteEncontrado}
-            abrirRegistroAlumnoExterno={abrirRegistroAlumnoExterno}
-            buscando={buscando}
-            buscarEstudiante={buscarEstudiante}
-            dni={dni}
-            estudiante={estudiante}
-            mensaje={mensaje}
-            periodo={periodo}
-            resultadosNombre={resultadosNombre}
-            setDni={setDni}
-            setPeriodo={setPeriodo}
-          >
-            <SecretariaStudentPanel
-              abrirCursoAdicional={abrirCursoAdicional}
-              abrirFichaGenerada={abrirFichaGenerada}
-              abrirRegistro={abrirRegistro}
-              cursosAdicionalesDisponibles={programasCursoAdicional.length}
-              derivarACaja={derivarACaja}
-              derivandoCaja={derivandoCaja}
+              <SecretariaSearchCard
+                aplicarEstudianteEncontrado={aplicarEstudianteEncontrado}
+                abrirRegistroAlumnoExterno={abrirRegistroAlumnoExterno}
+                buscando={buscando}
+                buscarEstudiante={buscarEstudiante}
+                dni={dni}
+                estudiante={estudiante}
+                mensaje={mensaje}
+                periodo={periodo}
+                resultadosNombre={resultadosNombre}
+                setDni={setDni}
+                setPeriodo={setPeriodo}
+              >
+                <SecretariaStudentPanel
+                  abrirCursoAdicional={abrirCursoAdicional}
+                  abrirFichaGenerada={abrirFichaGenerada}
+                  abrirRegistro={abrirRegistro}
+                  cursosAdicionalesDisponibles={programasCursoAdicional.length}
+                  derivarACaja={derivarACaja}
+                  derivandoCaja={derivandoCaja}
+                  esCicloVerano={esCicloVerano}
+                  estudiante={estudiante}
+                  imprimiendoFichaRegistro={imprimiendoFichaRegistro}
+                  inscripcion={inscripcion}
+                  invitacionSinHorario={invitacionSinHorario}
+                  limpiarBusquedaEstudiante={limpiarBusquedaEstudiante}
+                  nombreProgramaAMostrar={nombreProgramaAMostrar}
+                  programas={programas}
+                  tieneInvitacionOperativa={tieneInvitacionOperativa}
+                  tipoAlumnoMostrado={tipoAlumnoMostrado}
+                />
+              </SecretariaSearchCard>
+
+            </section>
+
+            <SecretariaRegistroModal
+              actualizarFormulario={actualizarFormulario}
               esCicloVerano={esCicloVerano}
               estudiante={estudiante}
-              imprimiendoFichaRegistro={imprimiendoFichaRegistro}
-              inscripcion={inscripcion}
-              invitacionSinHorario={invitacionSinHorario}
-              limpiarBusquedaEstudiante={limpiarBusquedaEstudiante}
-              nombreProgramaAMostrar={nombreProgramaAMostrar}
+              formulario={formulario}
+              guardarInscripción={guardarInscripción}
+              guardando={guardando}
+              horarioResumenRegistro={horarioResumenRegistro}
+              etiquetaPrograma={etiquetaProgramaSecretaria}
+              mensaje={mensaje}
+              modoRegistro={modoRegistro}
+              mostrarSelectorPrograma={mostrarSelectorPrograma}
+              programaParaRegistro={programaParaRegistro}
               programas={programas}
-              tieneInvitacionOperativa={tieneInvitacionOperativa}
-              tipoAlumnoMostrado={tipoAlumnoMostrado}
+              programasParaSelector={programasParaSelector}
+              setModoRegistro={setModoRegistro}
             />
-          </SecretariaSearchCard>
-
-        </section>
-
-        <SecretariaRegistroModal
-          actualizarFormulario={actualizarFormulario}
-          esCicloVerano={esCicloVerano}
-          estudiante={estudiante}
-          formulario={formulario}
-          guardarInscripción={guardarInscripción}
-          guardando={guardando}
-          horarioResumenRegistro={horarioResumenRegistro}
-          etiquetaPrograma={etiquetaProgramaSecretaria}
-          mensaje={mensaje}
-          modoRegistro={modoRegistro}
-          mostrarSelectorPrograma={mostrarSelectorPrograma}
-          programaParaRegistro={programaParaRegistro}
-          programas={programas}
-          programasParaSelector={programasParaSelector}
-          setModoRegistro={setModoRegistro}
-        />
-        {modalCursoAdicional ? (
-          <SecretariaCursoAdicionalModal
-            cursoId={cursoAdicionalId}
-            estudiante={estudiante}
-            guardando={registrandoCursoAdicional}
-            inscripcionActual={inscripcion}
-            onCancel={() => setModalCursoAdicional(false)}
-            onChange={setCursoAdicionalId}
-            onSubmit={registrarCursoAdicional}
-            programas={programasCursoAdicional}
-          />
-        ) : null}
-        {modalExito ? (
-          <SecretariaSuccessModal
-            imprimiendo={imprimiendoFichaRegistro}
-            inscripcion={inscripcion}
-            onClose={() => setModalExito(false)}
-            onPrint={abrirFichaGenerada}
-          />
-        ) : null}
+            {modalCursoAdicional ? (
+              <SecretariaCursoAdicionalModal
+                cursoId={cursoAdicionalId}
+                estudiante={estudiante}
+                guardando={registrandoCursoAdicional}
+                inscripcionActual={inscripcion}
+                onCancel={() => setModalCursoAdicional(false)}
+                onChange={setCursoAdicionalId}
+                onSubmit={registrarCursoAdicional}
+                programas={programasCursoAdicional}
+              />
+            ) : null}
+            {modalExito ? (
+              <SecretariaSuccessModal
+                imprimiendo={imprimiendoFichaRegistro}
+                inscripcion={inscripcion}
+                onClose={() => setModalExito(false)}
+                onPrint={abrirFichaGenerada}
+              />
+            ) : null}
           </>
         )}
       </main>

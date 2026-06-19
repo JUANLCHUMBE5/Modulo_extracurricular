@@ -76,6 +76,9 @@ function ProgramaFormModal({
   quitarGrupoHorario,
   quitarImagenAnuncio,
   quitarTallerDeportivo,
+  iniciarEdicionTaller,
+  cancelarEdicionTaller,
+  indiceTallerEditando,
   seleccionarImagenAnuncio,
   setCatAEliminar,
   setMostrarGestorCategorias,
@@ -434,7 +437,7 @@ function ProgramaFormModal({
               </div>
             </section>
 
-            {form.categoria && (!esAcademico || esCircularEspecial) && (
+            {form.categoria && (
               <>
                 {/* SECCIÓN CONDICIONAL: DATOS DEL DOCUMENTO */}
                 {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && (
@@ -566,7 +569,7 @@ function ProgramaFormModal({
                       />
                     </div>
 
-                    {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && (
+                    {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && !puedeGestionarGruposFormulario && !usaTalleresPorEdad && (
                       <div className="coord-field">
                         <label>Cupos *</label>
                         <input
@@ -696,7 +699,7 @@ function ProgramaFormModal({
 
 
                       {/* Configuración de Almuerzo */}
-                      {(form.tipoComunicado === "Club de Tareas" || form.tipoComunicado === "Reforzamiento (Circular)") && (
+                      {(form.tipoComunicado === "Club de Tareas" || form.tipoComunicado === "Reforzamiento (Circular)") && !puedeGestionarGruposFormulario && (
                         <div className="coord-field coord-field-full" style={{ marginTop: "16px", borderTop: "1px dashed #cbd5e1", paddingTop: "12px" }}>
                           <label className="coord-check-label" style={{ cursor: "pointer", fontWeight: "700" }}>
                             <input
@@ -792,9 +795,10 @@ function ProgramaFormModal({
                           <div className="coord-deportivo-builder-heading" style={{ marginBottom: "14px", borderTop: "1px dashed #e2ece9", paddingTop: "14px" }}>
                             <strong>{esFormularioVerano ? "Configuración de talleres específicos de verano por edades y horarios" : "Configuración de Deportes por Edades y Horarios"}</strong>
                           </div>
-                          <div className="coord-deportivo-fields-row" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
-                            <div className="coord-field">
-                              <label>{esFormularioVerano ? "Taller específico *" : "Deporte *"}</label>
+                          <div className={`coord-taller-builder-grid ${indiceTallerEditando !== null ? "is-editing" : ""}`}>
+                            {/* Fila 1 */}
+                            <div className="coord-field coord-taller-col-4">
+                              <label>{esFormularioVerano ? "Taller específico" : "Deporte"}</label>
                               <select value={tallerDepForm.deporte} onChange={e => setTallerDepForm(prev => ({ ...prev, deporte: e.target.value }))}>
                                 {esFormularioVerano ? (
                                   <>
@@ -825,57 +829,74 @@ function ProgramaFormModal({
                                 />
                               )}
                             </div>
-                            <div className="coord-field">
-                              <label>Nivel *</label>
+
+                            <div className="coord-field coord-taller-col-3">
+                              <label>Nivel</label>
                               <select value={tallerDepForm.nivel} onChange={e => setTallerDepForm(prev => ({ ...prev, nivel: e.target.value }))}>
                                 <option value="Formativo">Formativo</option>
                                 <option value="Competitivo">Competitivo</option>
                               </select>
                             </div>
-                            <div className="coord-field">
-                              <label>Edad mínima *</label>
-                              <select value={tallerDepForm.minEdad} onChange={e => setTallerDepForm(prev => ({ ...prev, minEdad: e.target.value }))}>
-                                {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
-                                  <option key={edad} value={edad}>{edad} años</option>
-                                ))}
-                              </select>
+
+                            <div className="coord-field coord-taller-col-5">
+                              <label>Edad (Mín / Máx)</label>
+                              <div className="coord-flex-range">
+                                <select value={tallerDepForm.minEdad} onChange={e => setTallerDepForm(prev => ({ ...prev, minEdad: e.target.value }))}>
+                                  {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
+                                    <option key={edad} value={edad}>{edad} años</option>
+                                  ))}
+                                </select>
+                                <span className="coord-flex-range-separator">a</span>
+                                <select value={tallerDepForm.maxEdad} onChange={e => setTallerDepForm(prev => ({ ...prev, maxEdad: e.target.value }))}>
+                                  {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
+                                    <option key={edad} value={edad}>{edad} años</option>
+                                  ))}
+                                </select>
+                              </div>
                             </div>
-                            <div className="coord-field">
-                              <label>Edad máxima *</label>
-                              <select value={tallerDepForm.maxEdad} onChange={e => setTallerDepForm(prev => ({ ...prev, maxEdad: e.target.value }))}>
-                                {Array.from({ length: 15 }, (_, index) => String(index + 3)).map(edad => (
-                                  <option key={edad} value={edad}>{edad} años</option>
-                                ))}
-                              </select>
-                            </div>
-                            <div className="coord-field">
-                              <label>Día de atención *</label>
+
+                            {/* Fila 2 */}
+                            <div className="coord-field coord-taller-col-2">
+                              <label>Día de atención</label>
                               <select value={tallerDepForm.dia} onChange={e => setTallerDepForm(prev => ({ ...prev, dia: e.target.value }))}>
                                 {diasSemana.map(d => (
                                   <option key={d} value={d}>{d}</option>
                                 ))}
                               </select>
                             </div>
-                            <div className="coord-field">
-                              <label>Clase inicio *</label>
-                              <input type="time" value={tallerDepForm.horaInicio} onChange={e => setTallerDepForm(prev => ({ ...prev, horaInicio: e.target.value }))} />
+
+                            <div className="coord-field coord-taller-col-4">
+                              <label>Horario (Inicio / Fin)</label>
+                              <div className="coord-flex-range">
+                                <input type="time" value={tallerDepForm.horaInicio} onChange={e => setTallerDepForm(prev => ({ ...prev, horaInicio: e.target.value }))} />
+                                <span className="coord-flex-range-separator">a</span>
+                                <input type="time" value={tallerDepForm.horaFin} onChange={e => setTallerDepForm(prev => ({ ...prev, horaFin: e.target.value }))} />
+                              </div>
                             </div>
-                            <div className="coord-field">
-                              <label>Clase fin *</label>
-                              <input type="time" value={tallerDepForm.horaFin} onChange={e => setTallerDepForm(prev => ({ ...prev, horaFin: e.target.value }))} />
-                            </div>
-                            <div className="coord-field">
-                              <label>Cupos *</label>
+
+                            <div className="coord-field coord-taller-col-2">
+                              <label>Cupos</label>
                               <input type="number" min="1" value={tallerDepForm.cupos} onChange={e => setTallerDepForm(prev => ({ ...prev, cupos: e.target.value }))} />
                             </div>
-                            <div className="coord-field">
-                              <label>Tutor / Docente *</label>
+
+                            <div className="coord-field coord-taller-col-2">
+                              <label>Tutor / Docente</label>
                               <input type="text" value={tallerDepForm.docente} onChange={e => setTallerDepForm(prev => ({ ...prev, docente: e.target.value }))} placeholder="Ej: Prof. Juan" />
                             </div>
-                            <div className="coord-field" style={{ display: "flex", alignItems: "flex-end" }}>
-                              <button type="button" className="coord-template-autofill" style={{ width: "100%", height: "38px", display: "flex", justifyContent: "center" }} onClick={agregarTallerDeportivo}>
-                                <Plus size={14} /> Añadir taller
+
+                            <div className="coord-field coord-taller-col-2" style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
+                              <button type="button" className="coord-add-taller-btn" onClick={agregarTallerDeportivo} style={{ flex: 1 }}>
+                                {indiceTallerEditando !== null ? (
+                                  <>Guardar</>
+                                ) : (
+                                  <><Plus size={14} /> Añadir taller</>
+                                )}
                               </button>
+                              {indiceTallerEditando !== null && (
+                                <button type="button" className="coord-cancel-taller-btn" onClick={cancelarEdicionTaller} style={{ flex: 1 }}>
+                                  Cancelar
+                                </button>
+                              )}
                             </div>
                           </div>
                           <div className="coord-deportivo-workshops-list">
@@ -907,9 +928,22 @@ function ProgramaFormModal({
                                         <td style={{ padding: "8px" }}>{taller.docente || "-"}</td>
                                         <td style={{ padding: "8px", fontWeight: "bold" }}>{taller.cupos || 20}</td>
                                         <td style={{ padding: "8px", textAlign: "right" }}>
-                                          <button type="button" style={{ background: "none", border: "none", color: "#b42318", cursor: "pointer", fontWeight: 700 }} onClick={() => quitarTallerDeportivo(idx)}>
-                                            Quitar
-                                          </button>
+                                          <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", alignItems: "center" }}>
+                                            <button
+                                              type="button"
+                                              className="coord-taller-edit-action-btn"
+                                              onClick={() => iniciarEdicionTaller(idx)}
+                                            >
+                                              Editar
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className="coord-taller-delete-action-btn"
+                                              onClick={() => quitarTallerDeportivo(idx)}
+                                            >
+                                              Quitar
+                                            </button>
+                                          </div>
                                         </td>
                                       </tr>
                                     ))}
@@ -1010,30 +1044,35 @@ function ProgramaFormModal({
                     <h3>Fechas y horario de la maratón</h3>
                   </div>
                 </div>
-                <div className="coord-section-grid">
-                  <div className="coord-field">
-                    <label>Fecha inicio *</label>
-                    <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "12px 16px" }}>
+                  {/* Fila 1 */}
+                  <div className="coord-field coord-taller-col-5">
+                    <label>Fecha (Inicio / Fin) *</label>
+                    <div className="coord-flex-range">
+                      <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
+                      <span className="coord-flex-range-separator">a</span>
+                      <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
+                    </div>
                   </div>
-                  <div className="coord-field">
-                    <label>Fecha fin *</label>
-                    <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
+
+                  <div className="coord-field coord-taller-col-4">
+                    <label>Horario (Inicio / Fin) *</label>
+                    <div className="coord-flex-range">
+                      <input type="time" value={form.horaInicio} onChange={e => actualizarForm("horaInicio", e.target.value)} />
+                      <span className="coord-flex-range-separator">a</span>
+                      <input type="time" value={form.horaFin} onChange={e => actualizarForm("horaFin", e.target.value)} />
+                    </div>
                   </div>
-                  <div className="coord-field">
-                    <label>Hora inicio *</label>
-                    <input type="time" value={form.horaInicio} onChange={e => actualizarForm("horaInicio", e.target.value)} />
-                  </div>
-                  <div className="coord-field">
-                    <label>Hora fin *</label>
-                    <input type="time" value={form.horaFin} onChange={e => actualizarForm("horaFin", e.target.value)} />
-                  </div>
-                  <div className="coord-field">
+
+                  <div className="coord-field coord-taller-col-3">
                     <label>Duración</label>
-                    <div className="coord-readonly-field">
+                    <div className="coord-readonly-field" style={{ height: "34px", display: "flex", alignItems: "center" }}>
                       {duracionTallerFormulario || "Seleccione fechas"}
                     </div>
                   </div>
-                  <div className="coord-field">
+
+                  {/* Fila 2 */}
+                  <div className="coord-field coord-taller-col-4">
                     <label>Aviso abierto (días) *</label>
                     <input
                       type="number"
@@ -1044,7 +1083,8 @@ function ProgramaFormModal({
                       placeholder="Máx 7 días"
                     />
                   </div>
-                  <div className="coord-field">
+
+                  <div className="coord-field coord-taller-col-4">
                     <label>Hora límite de aviso *</label>
                     <input
                       type="time"
@@ -1052,7 +1092,8 @@ function ProgramaFormModal({
                       onChange={e => actualizarForm("horaLimiteAviso", e.target.value)}
                     />
                   </div>
-                  <div className="coord-field">
+
+                  <div className="coord-field coord-taller-col-4">
                     <label>Cupos *</label>
                     <input
                       type="number"
@@ -1062,7 +1103,8 @@ function ProgramaFormModal({
                       placeholder="Ej: 50"
                     />
                   </div>
-                  <div className="coord-field coord-field-full">
+
+                  <div className="coord-field coord-taller-col-12">
                     <label>Grados habilitados *</label>
                     <GradeSelector niveles={nivelesGrados} seleccionados={form.gradosAplicables || []} onToggle={toggleGrado} />
                   </div>
@@ -1113,7 +1155,7 @@ function ProgramaFormModal({
                   </div>
                 ) : null}
                 {mostrarIndumentariaDeportiva ? (
-                  <div className="coord-field coord-field-full">
+                  <div className="coord-field coord-payment-invite-field">
                     <label className="coord-check-label coord-check-label-stacked">
                       <span>
                         <input
@@ -1121,9 +1163,8 @@ function ProgramaFormModal({
                           checked={Boolean(form.requiereIndumentaria)}
                           onChange={e => actualizarForm("requiereIndumentaria", e.target.checked)}
                         />
-                        Requiere tallas de polo y short para la indumentaria
+                        Registrar tallas para kit deportivo (Polo y Short)
                       </span>
-                      <small>Si se marca, Padres deberá seleccionar ambas tallas antes de continuar con la inscripción.</small>
                     </label>
                   </div>
                 ) : null}

@@ -60,7 +60,7 @@ import {
 } from "../utils/wordTemplateUtils";
 import { apiDb } from "../../../services/dbApi";
 
-export function sugerirNumeroDocumento(tipoDoc, programasList = []) {
+const sugerirNumeroDocumento = (tipoDoc, programasList = []) => {
   const anio = new Date().getFullYear();
   const prefix = tipoDoc === "Carta" ? "CAR" : "COM";
   const count = (programasList || []).filter(p => {
@@ -71,7 +71,20 @@ export function sugerirNumeroDocumento(tipoDoc, programasList = []) {
   
   const correlativo = String(count + 1).padStart(3, "0");
   return `${prefix}-${correlativo}-${anio}`;
-}
+};
+
+const tallerDepFormInicial = {
+  deporte: "Vóley",
+  custom: "",
+  minEdad: "6",
+  maxEdad: "9",
+  dia: "Jueves",
+  horaInicio: "15:50",
+  horaFin: "16:50",
+  cupos: "20",
+  nivel: "Formativo",
+  docente: "",
+};
 
 export function parseRangeTimes(rango) {
   if (!rango) return { inicio: "", fin: "" };
@@ -132,18 +145,8 @@ export default function useCoordinacion({
   const [plantillaInputKey, setPlantillaInputKey] = useState(0);
 
   // Estado local unificado para añadir talleres deportivos
-  const [tallerDepForm, setTallerDepForm] = useState({
-    deporte: "Vóley",
-    custom: "",
-    minEdad: "6",
-    maxEdad: "9",
-    dia: "Jueves",
-    horaInicio: "15:50",
-    horaFin: "16:50",
-    cupos: "20",
-    nivel: "Formativo",
-    docente: "",
-  });
+  const [tallerDepForm, setTallerDepForm] = useState(tallerDepFormInicial);
+  const [indiceTallerEditando, setIndiceTallerEditando] = useState(null);
   const [programaDocsId, setProgramaDocsId] = useState("");
   const [lecturaDocumento, setLecturaDocumento] = useState(null);
   const [sidebarAbierta, setSidebarAbierta] = useState(() => {
@@ -382,6 +385,8 @@ export default function useCoordinacion({
       numeroDocumento: numSugerido
     });
     setModoEditar(false);
+    setIndiceTallerEditando(null);
+    setTallerDepForm(tallerDepFormInicial);
     setProgramaDocsId("");
     setLecturaDocumento(null);
     setPlantillaInputKey((actual) => actual + 1);
@@ -522,6 +527,12 @@ export default function useCoordinacion({
     if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar programas.");
     setForm(datosProgramaAFormulario(prog));
     setModoEditar(true);
+    setIndiceTallerEditando(null);
+    const esVerano = normalizarPeriodoVista(prog.periodo) === "verano";
+    setTallerDepForm({
+      ...tallerDepFormInicial,
+      deporte: esVerano ? "Danza" : "Vóley"
+    });
     setProgramaDocsId("");
     setLecturaDocumento(null);
     setPlantillaInputKey((actual) => actual + 1);
@@ -1064,6 +1075,41 @@ export default function useCoordinacion({
     }));
   }
 
+  const iniciarEdicionTaller = (index) => {
+    const lista = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
+    const taller = lista[index];
+    if (!taller) return;
+
+    setIndiceTallerEditando(index);
+
+    const deportesPorDefecto = normalizarPeriodoVista(form.periodo) === "verano"
+      ? ["Danza", "Mini Chef", "Pintura", "Teatro", "Fútbol", "Vóley", "Básquet"]
+      : ["Vóley", "Fútbol", "Básquet"];
+
+    const esOtro = !deportesPorDefecto.includes(taller.deporte);
+
+    setTallerDepForm({
+      deporte: esOtro ? "Otro" : taller.deporte,
+      custom: esOtro ? taller.deporte : "",
+      minEdad: String(taller.edadMinima),
+      maxEdad: String(taller.edadMaxima),
+      dia: taller.dia,
+      horaInicio: taller.horaInicio,
+      horaFin: taller.horaFin,
+      cupos: String(taller.cupos || 20),
+      nivel: taller.nivel || "Formativo",
+      docente: taller.docente || "",
+    });
+  };
+
+  const cancelarEdicionTaller = () => {
+    setIndiceTallerEditando(null);
+    setTallerDepForm({
+      ...tallerDepFormInicial,
+      deporte: normalizarPeriodoVista(form.periodo) === "verano" ? "Danza" : "Vóley"
+    });
+  };
+
   const agregarTallerDeportivo = () => {
     const deporteFinal = tallerDepForm.deporte === "Otro" ? tallerDepForm.custom.trim() : tallerDepForm.deporte;
     if (!deporteFinal) {
@@ -1108,7 +1154,12 @@ export default function useCoordinacion({
     };
 
     const listaActual = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
-    const nuevaLista = [...listaActual, nuevoTaller];
+    let nuevaLista;
+    if (indiceTallerEditando !== null) {
+      nuevaLista = listaActual.map((taller, idx) => idx === indiceTallerEditando ? nuevoTaller : taller);
+    } else {
+      nuevaLista = [...listaActual, nuevoTaller];
+    }
     const totalCupos = nuevaLista.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0);
 
     setForm((prev) => ({
@@ -1116,6 +1167,8 @@ export default function useCoordinacion({
       talleresDeportivos: nuevaLista,
       cupos: String(totalCupos),
     }));
+
+    setIndiceTallerEditando(null);
 
     setTallerDepForm((prev) => ({
       ...prev,
@@ -1136,6 +1189,19 @@ export default function useCoordinacion({
       talleresDeportivos: nuevaLista,
       cupos: String(totalCupos),
     }));
+
+    if (indiceTallerEditando === index) {
+      setIndiceTallerEditando(null);
+      setTallerDepForm((prev) => ({
+        ...prev,
+        custom: "",
+        cupos: "20",
+        nivel: "Formativo",
+        docente: "",
+      }));
+    } else if (indiceTallerEditando > index) {
+      setIndiceTallerEditando((prev) => prev - 1);
+    }
   };
 
   function actualizarNombrePrograma(valor) {
@@ -1800,6 +1866,7 @@ export default function useCoordinacion({
     plantillaInputKey,
     tallerDepForm,
     setTallerDepForm,
+    indiceTallerEditando,
     programaDocsId,
     lecturaDocumento,
     sidebarAbierta,
@@ -1833,6 +1900,8 @@ export default function useCoordinacion({
     guardandoIndividual,
     ultimoLoteId,
     setUltimoLoteId,
+    programaCargaId,
+    setProgramaCargaId,
 
     // Methods
     actualizarAlumnoIndividual,
@@ -1862,6 +1931,8 @@ export default function useCoordinacion({
     quitarImagenAnuncio,
     agregarTallerDeportivo,
     quitarTallerDeportivo,
+    iniciarEdicionTaller,
+    cancelarEdicionTaller,
     actualizarNombrePrograma,
     actualizarCategoriaPrograma,
     actualizarCosto,
