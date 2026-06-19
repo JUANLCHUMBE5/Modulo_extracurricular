@@ -1022,3 +1022,28 @@
   color: #dc2626 !important;
   font-weight: 700;
 }
+
+/* ── Overrides Barra Lateral Verde #197f10 ───────────────────── */
+.adm-sidebar {
+  background: #197f10 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.adm-sidebar-footer {
+  background: transparent !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.adm-sidebar .adm-module-label {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.adm-sidebar .adm-menu-toggle-btn {
+  color: #ffffff !important;
+}
+
+.adm-sidebar .adm-menu-toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+

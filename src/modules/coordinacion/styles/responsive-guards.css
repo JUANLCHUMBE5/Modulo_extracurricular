@@ -174,7 +174,7 @@
   --coord-sidebar-width: 225px;
   grid-template-columns: var(--coord-sidebar-width) minmax(0, 1fr);
   background:
-    linear-gradient(90deg, #173f3a 0 var(--coord-sidebar-width), transparent var(--coord-sidebar-width)),
+    linear-gradient(90deg, var(--coord-sidebar) 0 var(--coord-sidebar-width), transparent var(--coord-sidebar-width)),
     radial-gradient(circle at 25% 8%, rgba(47, 143, 122, 0.09), transparent 28%),
     radial-gradient(circle at 90% 14%, rgba(63, 111, 189, 0.08), transparent 28%),
     linear-gradient(180deg, #f7fbfa 0%, #eef3f7 100%);

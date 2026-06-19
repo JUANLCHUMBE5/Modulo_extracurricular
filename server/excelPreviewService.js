@@ -434,7 +434,8 @@ function normalizarPeriodo(valor) {
 }
 
 function esCategoriaAcademica(programa = {}) {
-  return normalizarComparacion(programa.categoria).includes("academ");
+  const norm = normalizarComparacion(programa.categoria);
+  return norm.includes("academ") || norm.includes("vacaciones utiles");
 }
 
 function normalizarEncabezado(valor) {
@@ -460,6 +461,7 @@ function normalizarEncabezado(valor) {
     nombre: "nombres",
     nombres_y_apellidos: "alumno",
     programa: "curso_programa",
+    modalidad: "seleccion",
     selecci_n: "seleccion",
     taller: "curso_programa",
     nivel: "nivel_educativo",

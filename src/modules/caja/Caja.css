@@ -1147,3 +1147,27 @@
   }
 }
 
+/* ── Overrides Barra Lateral Verde #197f10 ───────────────────── */
+.caja-sidebar {
+  background: #197f10 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.caja-sidebar .caja-module-label {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.caja-sidebar .caja-menu-toggle-btn {
+  color: #ffffff !important;
+}
+
+.caja-sidebar .caja-menu-toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.caja-logout {
+  border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+

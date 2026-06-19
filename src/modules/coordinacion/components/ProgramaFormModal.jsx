@@ -104,8 +104,8 @@ function ProgramaFormModal({
   const [popoverAbierto, setPopoverAbierto] = useState(null);
 
   const catLowerClean = String(form.categoria || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const esNoAcademico = catLowerClean && catLowerClean !== "academico";
-  const esAcademico = catLowerClean === "academico";
+  const esAcademico = catLowerClean === "academico" || catLowerClean === "vacaciones utiles";
+  const esNoAcademico = catLowerClean && catLowerClean !== "academico" && catLowerClean !== "vacaciones utiles";
   const esCircularEspecial = form.tipoComunicado && form.tipoComunicado !== "Otro genérico";
 
   useEffect(() => {
@@ -268,7 +268,15 @@ function ProgramaFormModal({
                     } : {}}
                   >
                     <option value="">Seleccione</option>
-                    {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+                    {esFormularioVerano ? (
+                      <>
+                        <option value="Vacaciones Útiles">Vacaciones Útiles</option>
+                        <option value="Talleres Recreativos">Talleres Recreativos</option>
+                        <option value="Talleres Deportivos">Talleres Deportivos</option>
+                      </>
+                    ) : (
+                      categorias.map(c => <option key={c} value={c}>{c}</option>)
+                    )}
                   </select>
                   {esFormularioVerano ? (
                     <p className="coord-field-hint">
@@ -418,20 +426,14 @@ function ProgramaFormModal({
                     </select>
                   </div>
                 )}
-                {usaTalleresPorEdad && esFormularioVerano ? (
+                {usaTalleresPorEdad && esFormularioVerano && form.talleresDeportivos?.length > 0 ? (
                   <div className="coord-field coord-field-full">
-                    <label>Talleres habilitados</label>
-                    <p className="coord-field-hint" style={{ marginTop: "4px" }}>
-                      Configure abajo cada taller de verano con edad, día, horario y cupos. Asistente registrará a los alumnos.
-                    </p>
-                    {form.talleresDeportivos?.length > 0 && (
-                      <div className="coord-deportivo-grados-summary" style={{ marginTop: "8px", padding: "8px 12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                        <strong>Talleres configurados:</strong>{" "}
-                        <span style={{ color: "#006b5b", fontWeight: 700 }}>
-                          {form.talleresDeportivos.map(t => `${t.deporte} (${t.edadMinima}-${t.edadMaxima} años)`).join(", ")}
-                        </span>
-                      </div>
-                    )}
+                    <div className="coord-deportivo-grados-summary" style={{ marginTop: "8px", padding: "8px 12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                      <strong>Talleres configurados:</strong>{" "}
+                      <span style={{ color: "#006b5b", fontWeight: 700 }}>
+                        {form.talleresDeportivos.map(t => `${t.deporte} (${t.edadMinima}-${t.edadMaxima} años)`).join(", ")}
+                      </span>
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -801,16 +803,25 @@ function ProgramaFormModal({
                               <label>{esFormularioVerano ? "Taller específico" : "Deporte"}</label>
                               <select value={tallerDepForm.deporte} onChange={e => setTallerDepForm(prev => ({ ...prev, deporte: e.target.value }))}>
                                 {esFormularioVerano ? (
-                                  <>
-                                    <option value="Danza">Danza</option>
-                                    <option value="Mini Chef">Mini Chef</option>
-                                    <option value="Pintura">Pintura</option>
-                                    <option value="Teatro">Teatro</option>
-                                    <option value="Fútbol">Fútbol</option>
-                                    <option value="Vóley">Vóley</option>
-                                    <option value="Básquet">Básquet</option>
-                                    <option value="Otro">Otro taller...</option>
-                                  </>
+                                  form.categoria === "Talleres Deportivos" ? (
+                                    <>
+                                      <option value="Fútbol">Fútbol</option>
+                                      <option value="Vóley">Vóley</option>
+                                      <option value="Básquet">Básquet</option>
+                                      <option value="Otro">Otro deporte...</option>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <option value="Danza">Danza</option>
+                                      <option value="Mini Chef">Mini Chef</option>
+                                      <option value="Pintura">Pintura</option>
+                                      <option value="Teatro">Teatro</option>
+                                      <option value="Inglés">Inglés</option>
+                                      <option value="Zancos">Zancos</option>
+                                      <option value="Artes plásticas">Artes plásticas</option>
+                                      <option value="Otro">Otro taller...</option>
+                                    </>
+                                  )
                                 ) : (
                                   <>
                                     <option value="Vóley">Vóley</option>
@@ -830,13 +841,15 @@ function ProgramaFormModal({
                               )}
                             </div>
 
-                            <div className="coord-field coord-taller-col-3">
-                              <label>Nivel</label>
-                              <select value={tallerDepForm.nivel} onChange={e => setTallerDepForm(prev => ({ ...prev, nivel: e.target.value }))}>
-                                <option value="Formativo">Formativo</option>
-                                <option value="Competitivo">Competitivo</option>
-                              </select>
-                            </div>
+                            {esDeportivoForm && (
+                              <div className="coord-field coord-taller-col-3">
+                                <label>Nivel</label>
+                                <select value={tallerDepForm.nivel} onChange={e => setTallerDepForm(prev => ({ ...prev, nivel: e.target.value }))}>
+                                  <option value="Formativo">Formativo</option>
+                                  <option value="Competitivo">Competitivo</option>
+                                </select>
+                              </div>
+                            )}
 
                             <div className="coord-field coord-taller-col-5">
                               <label>Edad (Mín / Máx)</label>
@@ -856,16 +869,33 @@ function ProgramaFormModal({
                             </div>
 
                             {/* Fila 2 */}
-                            <div className="coord-field coord-taller-col-2">
-                              <label>Día de atención</label>
-                              <select value={tallerDepForm.dia} onChange={e => setTallerDepForm(prev => ({ ...prev, dia: e.target.value }))}>
-                                {diasSemana.map(d => (
-                                  <option key={d} value={d}>{d}</option>
-                                ))}
-                              </select>
+                            <div className="coord-field coord-taller-col-3">
+                              <label>Días de atención</label>
+                              <div className="coord-day-list coord-day-list-sm" style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginTop: "4px" }}>
+                                {diasSemana.map((dia) => {
+                                  const diasSeleccionados = Array.isArray(tallerDepForm.dias) ? tallerDepForm.dias : [];
+                                  const isSelected = diasSeleccionados.includes(dia);
+                                  return (
+                                    <label className={`coord-day-chip coord-day-chip-sm ${isSelected ? "is-selected" : ""}`} key={dia} style={{ minWidth: "36px", textAlign: "center", cursor: "pointer" }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => {
+                                          const nuevosDias = isSelected
+                                            ? diasSeleccionados.filter((d) => d !== dia)
+                                            : [...diasSeleccionados, dia];
+                                          const diasOrdenados = diasSemana.filter(d => nuevosDias.includes(d));
+                                          setTallerDepForm(prev => ({ ...prev, dias: diasOrdenados }));
+                                        }}
+                                      />
+                                      <span title={dia}>{dia.substring(0, 2)}</span>
+                                    </label>
+                                  );
+                                })}
+                              </div>
                             </div>
 
-                            <div className="coord-field coord-taller-col-4">
+                            <div className="coord-field coord-taller-col-3">
                               <label>Horario (Inicio / Fin)</label>
                               <div className="coord-flex-range">
                                 <input type="time" value={tallerDepForm.horaInicio} onChange={e => setTallerDepForm(prev => ({ ...prev, horaInicio: e.target.value }))} />

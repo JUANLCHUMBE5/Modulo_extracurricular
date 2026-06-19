@@ -38,8 +38,10 @@ const normalizarTextoSimple = (valor = "") =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-const esCategoriaAcademica = (programa = {}) =>
-  normalizarTextoSimple(programa.categoria).includes("academ");
+const esCategoriaAcademica = (programa = {}) => {
+  const norm = normalizarTextoSimple(programa.categoria);
+  return norm.includes("academ") || norm.includes("vacaciones utiles");
+};
 const obtenerApiBase = () => String(
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? import.meta.env.VITE_LOCAL_API_URL : "") ||

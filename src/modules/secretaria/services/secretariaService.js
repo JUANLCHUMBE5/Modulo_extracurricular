@@ -208,7 +208,12 @@ export async function registrarInscripcion(payload) {
       talla_polo: payload.tallaPolo || "",
       talla_short: payload.tallaShort || "",
       seleccion: payload.seleccion || "",
-      nivel_cambridge: payload.nivelCambridge || ""
+      nivel_cambridge: payload.nivelCambridge || "",
+      es_externo: Boolean(payload.esExterno),
+      nombres_estudiante: payload.nombresEstudiante || "",
+      edad_estudiante: payload.edadEstudiante || "",
+      domicilio_estudiante: payload.domicilioEstudiante || "",
+      sexo_estudiante: payload.sexoEstudiante || ""
     };
     const res = await apiClient.post("/api/v1/extracurricular/inscripciones", apiPayload);
     if (!res.success) throw new Error(res.message || "Error al registrar inscripciÃ³n");

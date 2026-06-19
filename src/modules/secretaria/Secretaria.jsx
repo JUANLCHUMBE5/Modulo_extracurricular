@@ -291,6 +291,11 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     }
 
     const dniLimpio = String(dniSugerido || dni || "").replace(/\D/g, "").slice(0, 8);
+    const confirmar = window.confirm(
+      `El estudiante con DNI ${dniLimpio} no está registrado en el colegio. ¿Desea registrarlo como Alumno Externo para el ciclo de verano?`
+    );
+    if (!confirmar) return;
+
     const programasActualizados = await cargarProgramasDelPeriodo();
     const primerProgramaPeriodo = programasActualizados[0]?.id || "";
 

@@ -622,3 +622,14 @@
   }
 }
 
+/* ── Overrides Barra Lateral Verde #197f10 ───────────────────── */
+.coord-layout {
+  --coord-sidebar: #197f10 !important;
+  --coord-sidebar-soft: #23971c !important;
+}
+
+.coord-sidebar {
+  background: #197f10 !important;
+}
+
+

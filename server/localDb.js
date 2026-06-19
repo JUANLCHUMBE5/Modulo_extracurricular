@@ -222,18 +222,30 @@ async function writeToSupabase(db) {
     const inscripciones = (db.inscripciones || []).map(ins => {
       return {
         ...ins,
+        pagoId: (ins.pagoId === "" || ins.pagoId === "null" || ins.pagoId === undefined) ? null : ins.pagoId,
         estadoPago: ins.estadoPago || ins.estadoInscripcion || "Pendiente de pago"
       };
     });
     const pagos = (db.pagos || []).map(pag => {
       return {
         ...pag,
+        inscripcionId: (pag.inscripcionId === "" || pag.inscripcionId === "null" || pag.inscripcionId === undefined) ? null : pag.inscripcionId,
+        dniEstudiante: (pag.dniEstudiante === "" || pag.dniEstudiante === "null" || pag.dniEstudiante === undefined) ? null : pag.dniEstudiante,
+        programaId: (pag.programaId === "" || pag.programaId === "null" || pag.programaId === undefined) ? null : pag.programaId,
         formaPago: pag.formaPago || pag.metodoPago || "Yape",
         numeroOperacion: pag.numeroOperacion || pag.nroOperacion || "",
         telefonoOperacion: pag.telefonoOperacion || pag.telefono || ""
       };
     });
-    const asistencias = db.asistencias || [];
+    const asistencias = (db.asistencias || []).map(ast => {
+      return {
+        ...ast,
+        pagoId: (ast.pagoId === "" || ast.pagoId === "null" || ast.pagoId === undefined) ? null : ast.pagoId,
+        inscripcionId: (ast.inscripcionId === "" || ast.inscripcionId === "null" || ast.inscripcionId === undefined) ? null : ast.inscripcionId,
+        dniEstudiante: (ast.dniEstudiante === "" || ast.dniEstudiante === "null" || ast.dniEstudiante === undefined) ? null : ast.dniEstudiante,
+        programaId: (ast.programaId === "" || ast.programaId === "null" || ast.programaId === undefined) ? null : ast.programaId
+      };
+    });
     const auditLogs = db.auditLogs || [];
 
     const EXTRA_FIELDS = [
@@ -373,22 +385,37 @@ async function writeToSupabase(db) {
     });
     await Promise.all(syncInvitadosProms);
 
-    // 3. Subimos todo de golpe usando Upsert (Si existe actualiza, si no lo inserta)
-    // Usamos .upsert() con claves primarias definidas en tu SQL
-    const results = await Promise.all([
+    // 3. Subimos todo de golpe usando Upsert en orden de dependencias para evitar violaciones de claves foráneas
+    // Grupo 1: Catálogos, estudiantes y usuarios (sin dependencias mutuas)
+    const grupo1 = await Promise.all([
       usuarios.length ? supabase.from("usuarios").upsert(sanearLista(usuarios, COLUMNAS_USUARIOS)) : Promise.resolve({ error: null }),
       estudiantes.length ? supabase.from("estudiantes").upsert(sanearLista(estudiantes, COLUMNAS_ESTUDIANTES)) : Promise.resolve({ error: null }),
-      programas.length ? supabase.from("programas").upsert(sanearLista(programas, COLUMNAS_PROGRAMAS)) : Promise.resolve({ error: null }),
+      programas.length ? supabase.from("programas").upsert(sanearLista(programas, COLUMNAS_PROGRAMAS)) : Promise.resolve({ error: null })
+    ]);
+    for (const res of grupo1) {
+      if (res && res.error) {
+        throw new Error(`Error en operación de base de datos Supabase (Grupo 1): ${res.error.message || JSON.stringify(res.error)}`);
+      }
+    }
+
+    // Grupo 2: Pagos (depende de estudiantes y programas que ya existen en el Grupo 1)
+    if (pagos.length) {
+      const resPago = await supabase.from("pagos").upsert(sanearLista(pagos, COLUMNAS_PAGOS));
+      if (resPago.error) {
+        throw new Error(`Error en operación de base de datos Supabase (Grupo 2 - Pagos): ${resPago.error.message || JSON.stringify(resPago.error)}`);
+      }
+    }
+
+    // Grupo 3: Inscripciones, Asistencias, Invitados y Logs (dependen de pagos, estudiantes o programas)
+    const grupo3 = await Promise.all([
       inscripciones.length ? supabase.from("inscripciones").upsert(sanearLista(inscripciones, COLUMNAS_INSCRIPCIONES)) : Promise.resolve({ error: null }),
-      pagos.length ? supabase.from("pagos").upsert(sanearLista(pagos, COLUMNAS_PAGOS)) : Promise.resolve({ error: null }),
       asistencias.length ? supabase.from("asistencias").upsert(sanearLista(asistencias, COLUMNAS_ASISTENCIAS)) : Promise.resolve({ error: null }),
       invitados_programa.length ? supabase.from("invitados_programa").insert(sanearLista(invitados_programa, COLUMNAS_INVITADOS)) : Promise.resolve({ error: null }),
       auditLogs.length ? supabase.from("audit_logs").upsert(auditLogs) : Promise.resolve({ error: null })
     ]);
-
-    for (const res of results) {
+    for (const res of grupo3) {
       if (res && res.error) {
-        throw new Error(`Error en operación de base de datos Supabase: ${res.error.message || JSON.stringify(res.error)}`);
+        throw new Error(`Error en operación de base de datos Supabase (Grupo 3): ${res.error.message || JSON.stringify(res.error)}`);
       }
     }
 

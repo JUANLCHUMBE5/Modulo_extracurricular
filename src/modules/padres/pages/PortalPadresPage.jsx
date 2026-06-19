@@ -250,10 +250,11 @@ export default function Padres({ user, onLogout }) {
     setTallaPolo("");
     setTallaShort("");
     setTallaUniforme("");
-    const tieneComunicado = Boolean(programa?.comunicado || programa?.comunicadoCompleto);
+    const tieneComunicado = Boolean((programa?.comunicado && programa.comunicado.trim()) || (programa?.comunicadoCompleto && programa.comunicadoCompleto.trim()));
+    const tieneRequisitos = Boolean(programa?.requisitos && programa.requisitos.trim());
+    const tieneAmbos = tieneComunicado && tieneRequisitos;
     setInfoProgramaAceptada(
-      Boolean(programa?.inscripcionRegistrada) || 
-      (String(programa?.categoria || "").toLowerCase() === "deportivo" && !tieneComunicado)
+      Boolean(programa?.inscripcionRegistrada) || !tieneAmbos
     );
     cambiarPaso(1);
   }
@@ -265,10 +266,11 @@ export default function Padres({ user, onLogout }) {
     setTallaPolo("");
     setTallaShort("");
     setTallaUniforme("");
-    const tieneComunicado = Boolean(prog.comunicado || prog.comunicadoCompleto);
+    const tieneComunicado = Boolean((prog.comunicado && prog.comunicado.trim()) || (prog.comunicadoCompleto && prog.comunicadoCompleto.trim()));
+    const tieneRequisitos = Boolean(prog.requisitos && prog.requisitos.trim());
+    const tieneAmbos = tieneComunicado && tieneRequisitos;
     setInfoProgramaAceptada(
-      Boolean(prog.inscripcionRegistrada) || 
-      (String(prog.categoria || "").toLowerCase() === "deportivo" && !tieneComunicado)
+      Boolean(prog.inscripcionRegistrada) || !tieneAmbos
     );
     cambiarPaso(prog.inscripcionRegistrada ? 3 : 1);
   }
@@ -497,7 +499,7 @@ export default function Padres({ user, onLogout }) {
             <p>Cargando informaciÃ³n del estudiante...</p>
           </section>
         ) : error ? (
-          <Alert className="padres-alert" color="orange" radius="md" icon={<AlertCircle size={18} />}>
+          <Alert className="padres-alert" color="green" radius="md" icon={<AlertCircle size={18} />}>
             {error}
           </Alert>
         ) : (

@@ -1316,3 +1316,27 @@
     display: none !important;
   }
 }
+
+/* ── Overrides Barra Lateral Verde #197f10 ───────────────────── */
+.dir-sidebar {
+  background: #197f10 !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+.dir-sidebar .dir-module-label {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.dir-sidebar .dir-menu-toggle-btn {
+  color: #ffffff !important;
+}
+
+.dir-sidebar .dir-menu-toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+
+.dir-logout {
+  border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+

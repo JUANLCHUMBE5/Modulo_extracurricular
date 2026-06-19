@@ -41,7 +41,35 @@ import {
 } from "./apiMappers.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { promises as fs } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const EXTRANJEROS_DB_PATH = path.join(__dirname, "estudiantes_externos.json");
+
+async function readExternalStudents() {
+  try {
+    const data = await fs.readFile(EXTRANJEROS_DB_PATH, "utf-8");
+    return JSON.parse(data);
+  } catch (error) {
+    return {};
+  }
+}
+
+async function saveExternalStudent(student) {
+  try {
+    const current = await readExternalStudents();
+    current[student.dni] = {
+      ...student,
+      guardadoEn: new Date().toISOString()
+    };
+    await fs.writeFile(EXTRANJEROS_DB_PATH, JSON.stringify(current, null, 2), "utf-8");
+  } catch (error) {
+    console.error("Error saving external student:", error);
+  }
+}
 
 const app = express();
 const PORT = Number(process.env.PORT || process.env.EXCEL_API_PORT || 5175);
@@ -1453,6 +1481,14 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["sec
     const period = normalizarPeriodoApi(periodo);
     
     let student = db.estudiantes?.[dni];
+    let esExterno = false;
+    if (!student) {
+      const extStudents = await readExternalStudents();
+      if (extStudents[dni]) {
+        student = extStudents[dni];
+        esExterno = true;
+      }
+    }
     let invitacion = null;
     
     const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
@@ -1514,7 +1550,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["sec
         grado_nombre: invitadoExcel.grado || student.grado,
         seccion: invitadoExcel.seccion || student.seccion,
         nivel_nombre: invitadoExcel.nivelEducativo || student.nivel || "",
-        tipo_alumno: student.tipoAlumno || "Alumno interno",
+        tipo_alumno: student.tipoAlumno || "Alumno externo",
         estado_matricula: student.estadoMatricula || "Activo",
         apoderado: student.apoderado || (invitacion ? (invitacion.invitado.apoderado || "") : ""),
         telefono_apoderado: student.telefonoApoderado || (invitacion ? (invitacion.invitado.telefonoApoderado || "") : ""),
@@ -1550,7 +1586,8 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["sec
         estadoInscripcion: inscrip ? inscrip.estadoInscripcion : "No inscrito",
         estadoPago: inscrip ? (inscrip.estadoPago || "Pendiente") : "Pendiente",
         origenRegistro: inscrip ? (inscrip.origenRegistro || "Presencial") : "Base general de estudiantes",
-        periodo: period === "verano" ? "Ciclo verano" : "Año escolar"
+        periodo: period === "verano" ? "Ciclo verano" : "Año escolar",
+        esExterno: esExterno || student.tipoAlumno === "Alumno externo" || student.esExterno || false
       };
       
       res.json({ success: true, data: resStudent });
@@ -1667,6 +1704,44 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretar
         }
       });
     });
+
+    const extStudents = await readExternalStudents();
+    Object.values(extStudents).forEach(student => {
+      if (seenDnis.has(student.dni)) return;
+      const searchKey = normalizarTextoApi(`${student.nombres} ${student.codigoEstudiante || ""}`);
+      if (searchKey.includes(searchVal)) {
+        seenDnis.add(student.dni);
+        const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === student.dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
+        const inscrip = inscripciones[0];
+        results.push({
+          id: student.dni,
+          estudiante_id: student.dni,
+          dni_estudiante: student.dni,
+          codigo_estudiante: student.codigoEstudiante || `EXT-${student.dni}`,
+          nombres: student.nombres,
+          apellidos: student.apellidos || "",
+          fecha_nacimiento: student.fechaNacimiento || "2010-01-01",
+          grado_nombre: student.grado,
+          seccion: student.seccion || "",
+          nivel_nombre: student.nivel || "",
+          tipo_alumno: student.tipoAlumno || "Alumno externo",
+          estado_matricula: student.estadoMatricula || "Activo",
+          apoderado: student.apoderado || "",
+          telefono_apoderado: student.telefonoApoderado || "",
+          correo_apoderado: student.correoApoderado || "",
+          tieneInvitacion: false,
+          programaAsignado: "",
+          programaNombre: "",
+          seleccion: student.seleccion || "",
+          nivelCambridge: student.nivelCambridge || "",
+          estadoInscripcion: inscrip ? inscrip.estadoInscripcion : "No inscrito",
+          estadoPago: inscrip ? (inscrip.estadoPago || "Pendiente") : "Pendiente",
+          origenRegistro: inscrip ? (inscrip.origenRegistro || "Presencial") : "Base general de estudiantes",
+          periodo: period === "verano" ? "Ciclo verano" : "Año escolar",
+          esExterno: true
+        });
+      }
+    });
     
     res.json({ success: true, data: results.slice(0, 10) });
   } catch (error) {
@@ -1725,19 +1800,31 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       }
     }
 
-    const student = db.estudiantes?.[estudiante_id] || {
+    let student = db.estudiantes?.[estudiante_id];
+    let esExternoRestaurado = false;
+    if (!student) {
+      const extStudents = await readExternalStudents();
+      if (extStudents[estudiante_id]) {
+        student = extStudents[estudiante_id];
+        db.estudiantes = db.estudiantes || {};
+        db.estudiantes[estudiante_id] = student;
+        esExternoRestaurado = true;
+      }
+    }
+
+    const studentForRes = student || {
       dni: estudiante_id,
       nombres: "Estudiante",
       apellidos: "",
       grado: grado || "",
       seccion: seccion || ""
     };
-    const codigoRegistro = invitacionRegistro?.codigoEstudiante || student.codigoEstudiante || "";
-    const nombresRegistro = invitacionRegistro?.nombres || `${student.nombres || ""} ${student.apellidos || ""}`.trim();
+    const codigoRegistro = invitacionRegistro?.codigoEstudiante || studentForRes.codigoEstudiante || "";
+    const nombresRegistro = invitacionRegistro?.nombres || `${studentForRes.nombres || ""} ${studentForRes.apellidos || ""}`.trim();
     const gradoInvitacion = invitacionRegistro
-      ? obtenerGradoCompletoApi(invitacionRegistro.grado, invitacionRegistro.nivelEducativo || invitacionRegistro.nivel, student.grado)
+      ? obtenerGradoCompletoApi(invitacionRegistro.grado, invitacionRegistro.nivelEducativo || invitacionRegistro.nivel, studentForRes.grado)
       : "";
-    const gradoRegistro = obtenerGradoCompletoApi(grado || gradoInvitacion || student.grado, student.nivel || student.nivelEducativo);
+    const gradoRegistro = obtenerGradoCompletoApi(grado || gradoInvitacion || studentForRes.grado, studentForRes.nivel || studentForRes.nivelEducativo);
     const seccionRegistro = seccion || "";
     const plantillaPrograma = obtenerPlantillaProgramaApi(db, prog);
     
@@ -1769,9 +1856,9 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       plantillaBase64: plantillaPrograma.plantillaBase64,
       plantillaVariables: plantillaPrograma.plantillaVariables,
       plantillaValidada: plantillaPrograma.plantillaValidada,
-      apoderado: apoderado || student.apoderado || "",
-      telefono: telefono_apoderado || student.telefonoApoderado || "",
-      correo: correo_apoderado || student.correoApoderado || "",
+      apoderado: apoderado || studentForRes.apoderado || "",
+      telefono: telefono_apoderado || studentForRes.telefonoApoderado || "",
+      correo: correo_apoderado || studentForRes.correoApoderado || "",
       tallaUniforme: talla_uniforme || "",
       tallaPolo: talla_polo || "",
       tallaShort: talla_short || "",
@@ -1801,10 +1888,41 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
     db.inscripciones = db.inscripciones || [];
     db.inscripciones.push(newEnrollment);
     
-    if (db.estudiantes?.[estudiante_id]) {
-      db.estudiantes[estudiante_id].apoderado = apoderado || student.apoderado || "";
-      db.estudiantes[estudiante_id].telefonoApoderado = telefono_apoderado || student.telefonoApoderado || "";
+    const esExternoRequest = Boolean(req.body.es_externo || req.body.esExterno);
+    if (!student && esExternoRequest) {
+      const nuevoEstudiante = {
+        dni: estudiante_id,
+        codigoEstudiante: `EXT-${estudiante_id}`,
+        nombres: req.body.nombres_estudiante || nombresRegistro,
+        grado: gradoRegistro,
+        seccion: "",
+        nivel: "",
+        sexo: req.body.sexo_estudiante || "M",
+        fechaNacimiento: "2010-01-01",
+        tipoAlumno: "Alumno externo",
+        estadoMatricula: "Activo",
+        apoderado: apoderado || "",
+        telefonoApoderado: telefono_apoderado || "",
+        correoApoderado: correo_apoderado || "",
+        estadoInscripcion: "pendiente_pago",
+        estadoCaja: "Pendiente"
+      };
+      db.estudiantes = db.estudiantes || {};
+      db.estudiantes[estudiante_id] = nuevoEstudiante;
+      
+      await saveExternalStudent(nuevoEstudiante);
+    } else if (db.estudiantes?.[estudiante_id]) {
+      db.estudiantes[estudiante_id].apoderado = apoderado || db.estudiantes[estudiante_id].apoderado || "";
+      db.estudiantes[estudiante_id].telefonoApoderado = telefono_apoderado || db.estudiantes[estudiante_id].telefonoApoderado || "";
       db.estudiantes[estudiante_id].estadoInscripcion = "pendiente_pago";
+      
+      const extStudents = await readExternalStudents();
+      if (extStudents[estudiante_id] || esExternoRestaurado) {
+        const extData = extStudents[estudiante_id] || db.estudiantes[estudiante_id];
+        extData.apoderado = db.estudiantes[estudiante_id].apoderado;
+        extData.telefonoApoderado = db.estudiantes[estudiante_id].telefonoApoderado;
+        await saveExternalStudent(extData);
+      }
     }
     
     await saveDb(db);

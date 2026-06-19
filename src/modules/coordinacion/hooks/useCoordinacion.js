@@ -78,7 +78,7 @@ const tallerDepFormInicial = {
   custom: "",
   minEdad: "6",
   maxEdad: "9",
-  dia: "Jueves",
+  dias: ["Jueves"],
   horaInicio: "15:50",
   horaFin: "16:50",
   cupos: "20",
@@ -432,9 +432,9 @@ export default function useCoordinacion({
     const talleres = Array.isArray(prog.talleresDeportivos) ? prog.talleresDeportivos : [];
     const esVerano = normalizarPeriodoVista(prog.periodo) === "verano";
     const catLower = String(prog.categoria || "").toLowerCase();
-    const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(prog.nombre, prog.categoria);
+    const esDeportivo = catLower === "deportivo" || catLower === "talleres deportivos" || esProgramaDeportivo(prog.nombre, prog.categoria);
     const usaTalleresPorEdad = esVerano
-      ? catLower !== "academico" && catLower !== "académico"
+      ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
       : esDeportivo;
 
     let cuposCalculados = prog.cupos;
@@ -564,7 +564,9 @@ export default function useCoordinacion({
     const esVerano = normalizarPeriodoVista(prog.periodo) === "verano";
     setTallerDepForm({
       ...tallerDepFormInicial,
-      deporte: esVerano ? "Danza" : "Vóley"
+      deporte: esVerano 
+        ? (prog.categoria === "Talleres Deportivos" ? "Fútbol" : "Danza")
+        : "Vóley"
     });
     setProgramaDocsId("");
     setLecturaDocumento(null);
@@ -586,10 +588,10 @@ export default function useCoordinacion({
     const esVeranoGuardar = normalizarPeriodoVista(form.periodo) === "verano";
     const catLower = String(form.categoria || "").toLowerCase();
     const esCambridgeGuardar = esProgramaCambridge(form);
-    const esDeportivoGuardar = catLower === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
+    const esDeportivoGuardar = catLower === "deportivo" || catLower === "talleres deportivos" || esProgramaDeportivo(form.nombre, form.categoria);
     const esMaratonGuardar = catLower === "maraton" || catLower === "maratón";
     const usaTalleresPorEdad = esVeranoGuardar
-      ? catLower !== "academico" && catLower !== "académico"
+      ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
       : esDeportivoGuardar;
 
     const talleres = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
@@ -649,7 +651,7 @@ export default function useCoordinacion({
     if (esMaratonGuardar) {
       if (!form.horaInicio || !form.horaFin) camposFaltantes.push("horario");
     } else if (esVeranoGuardar && usaTalleresPorEdad) {
-      if (diasFinales.length !== 3) camposFaltantes.push("3 dias de atencion");
+      if (diasFinales.length === 0) camposFaltantes.push("dias de atencion");
     } else if (!esCambridgeGuardar && !usaTalleresPorEdad && !usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
       if (diasFinales.length === 0) camposFaltantes.push("dias del programa");
       if (!form.horaInicio || !form.horaFin) camposFaltantes.push("horario");
@@ -672,8 +674,8 @@ export default function useCoordinacion({
     if (!esCambridgeGuardar && !usaTalleresPorEdad && gradosFinales.length === 0) {
       return mostrarAlertaConfiguracion("Revise: grados aplicables.");
     }
-    if (esVeranoGuardar && usaTalleresPorEdad && diasFinales.length !== 3) {
-      return mostrarAlertaConfiguracion("Revise: seleccione exactamente 3 dias de atencion para verano.");
+    if (esVeranoGuardar && usaTalleresPorEdad && diasFinales.length === 0) {
+      return mostrarAlertaConfiguracion("Revise: seleccione al menos 1 dia de atencion para verano.");
     }
 
     if (esMaratonGuardar) {
@@ -1116,7 +1118,9 @@ export default function useCoordinacion({
     setIndiceTallerEditando(index);
 
     const deportesPorDefecto = normalizarPeriodoVista(form.periodo) === "verano"
-      ? ["Danza", "Mini Chef", "Pintura", "Teatro", "Fútbol", "Vóley", "Básquet"]
+      ? (form.categoria === "Talleres Deportivos" 
+          ? ["Fútbol", "Vóley", "Básquet"] 
+          : ["Danza", "Mini Chef", "Pintura", "Teatro", "Inglés", "Zancos", "Artes plásticas"])
       : ["Vóley", "Fútbol", "Básquet"];
 
     const esOtro = !deportesPorDefecto.includes(taller.deporte);
@@ -1126,7 +1130,7 @@ export default function useCoordinacion({
       custom: esOtro ? taller.deporte : "",
       minEdad: String(taller.edadMinima),
       maxEdad: String(taller.edadMaxima),
-      dia: taller.dia,
+      dias: [taller.dia],
       horaInicio: taller.horaInicio,
       horaFin: taller.horaFin,
       cupos: String(taller.cupos || 20),
@@ -1139,7 +1143,9 @@ export default function useCoordinacion({
     setIndiceTallerEditando(null);
     setTallerDepForm({
       ...tallerDepFormInicial,
-      deporte: normalizarPeriodoVista(form.periodo) === "verano" ? "Danza" : "Vóley"
+      deporte: normalizarPeriodoVista(form.periodo) === "verano"
+        ? (form.categoria === "Talleres Deportivos" ? "Fútbol" : "Danza")
+        : "Vóley"
     });
   };
 
@@ -1173,25 +1179,39 @@ export default function useCoordinacion({
       mostrarMsg("Ingrese el tutor o docente a cargo del taller.");
       return;
     }
-
-    const nuevoTaller = {
-      deporte: deporteFinal,
-      edadMinima: minE,
-      edadMaxima: maxE,
-      dia: tallerDepForm.dia,
-      horaInicio: tallerDepForm.horaInicio,
-      horaFin: tallerDepForm.horaFin,
-      cupos: cuposTaller,
-      nivel: tallerDepForm.nivel,
-      docente: docenteFinal,
-    };
+    if (!tallerDepForm.dias || tallerDepForm.dias.length === 0) {
+      mostrarMsg("Seleccione al menos un día de atención.");
+      return;
+    }
 
     const listaActual = Array.isArray(form.talleresDeportivos) ? form.talleresDeportivos : [];
     let nuevaLista;
     if (indiceTallerEditando !== null) {
+      const nuevoTaller = {
+        deporte: deporteFinal,
+        edadMinima: minE,
+        edadMaxima: maxE,
+        dia: tallerDepForm.dias[0] || "Lunes",
+        horaInicio: tallerDepForm.horaInicio,
+        horaFin: tallerDepForm.horaFin,
+        cupos: cuposTaller,
+        nivel: tallerDepForm.nivel,
+        docente: docenteFinal,
+      };
       nuevaLista = listaActual.map((taller, idx) => idx === indiceTallerEditando ? nuevoTaller : taller);
     } else {
-      nuevaLista = [...listaActual, nuevoTaller];
+      const nuevosTalleres = tallerDepForm.dias.map(d => ({
+        deporte: deporteFinal,
+        edadMinima: minE,
+        edadMaxima: maxE,
+        dia: d,
+        horaInicio: tallerDepForm.horaInicio,
+        horaFin: tallerDepForm.horaFin,
+        cupos: cuposTaller,
+        nivel: tallerDepForm.nivel,
+        docente: docenteFinal,
+      }));
+      nuevaLista = [...listaActual, ...nuevosTalleres];
     }
     const totalCupos = nuevaLista.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0);
 
@@ -1209,6 +1229,7 @@ export default function useCoordinacion({
       cupos: "20",
       nivel: "Formativo",
       docente: "",
+      dias: ["Jueves"],
     }));
   };
 
@@ -1241,9 +1262,9 @@ export default function useCoordinacion({
     setForm((actual) => {
       const esVerano = normalizarPeriodoVista(actual.periodo) === "verano";
       const catLower = String(actual.categoria || "").toLowerCase();
-      const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(valor, actual.categoria);
+      const esDeportivo = catLower === "deportivo" || catLower === "talleres deportivos" || esProgramaDeportivo(valor, actual.categoria);
       const usaTalleresPorEdad = esVerano
-        ? catLower !== "academico" && catLower !== "académico"
+        ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
         : esDeportivo;
       const talleres = Array.isArray(actual.talleresDeportivos) ? actual.talleresDeportivos : [];
       let nuevosCupos = actual.cupos;
@@ -1264,9 +1285,9 @@ export default function useCoordinacion({
       const esVerano = normalizarPeriodoVista(actual.periodo) === "verano";
       const catLower = String(valor || "").toLowerCase();
       const catClean = catLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const esAcademico = catClean === "academico";
+      const esAcademico = catClean === "academico" || catClean === "vacaciones utiles";
 
-      const esDeportivo = catClean === "deportivo" || esProgramaDeportivo(actual.nombre, valor);
+      const esDeportivo = catClean === "deportivo" || catClean === "talleres deportivos" || esProgramaDeportivo(actual.nombre, valor);
       const usaTalleresPorEdad = esVerano ? !esAcademico : esDeportivo;
       const talleres = Array.isArray(actual.talleresDeportivos) ? actual.talleresDeportivos : [];
       let nuevosCupos = actual.cupos;
@@ -1300,6 +1321,14 @@ export default function useCoordinacion({
         requiereIndumentaria: esDeportivo ? actual.requiereIndumentaria : false,
       };
     });
+
+    const esVerano = normalizarPeriodoVista(form.periodo) === "verano";
+    if (esVerano) {
+      setTallerDepForm(prev => ({
+        ...prev,
+        deporte: valor === "Talleres Deportivos" ? "Fútbol" : "Danza"
+      }));
+    }
   }
 
   function actualizarCosto(valor) {
@@ -1569,14 +1598,14 @@ export default function useCoordinacion({
   function cambiarPeriodoFormulario(valor) {
     const periodoNormalizado = normalizarPeriodoVista(valor);
     const catLower = String(form.categoria || "").toLowerCase();
-    const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
+    const esDeportivo = catLower === "deportivo" || catLower === "talleres deportivos" || esProgramaDeportivo(form.nombre, form.categoria);
     const usaTalleresPorEdad =
       periodoNormalizado === "verano"
-        ? catLower !== "academico" && catLower !== "académico"
+        ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
         : esDeportivo;
 
     if (periodoNormalizado === "verano") {
-      setTallerDepForm((prev) => ({ ...prev, deporte: "Danza" }));
+      setTallerDepForm((prev) => ({ ...prev, deporte: form.categoria === "Talleres Deportivos" ? "Fútbol" : "Danza" }));
     } else {
       setTallerDepForm((prev) => {
         if (!["Vóley", "Fútbol", "Básquet", "Otro"].includes(prev.deporte)) {
@@ -1653,13 +1682,13 @@ export default function useCoordinacion({
       const actuales = normalizarListaTexto(f.dias);
       const yaExiste = actuales.includes(valor);
       const catLower = String(f.categoria || "").toLowerCase();
-      const esDeportivo = catLower === "deportivo" || esProgramaDeportivo(f.nombre, f.categoria);
+      const esDeportivo = catLower === "deportivo" || catLower === "talleres deportivos" || esProgramaDeportivo(f.nombre, f.categoria);
       const usaTalleresPorEdad =
         normalizarPeriodoVista(f.periodo) === "verano"
-          ? catLower !== "academico" && catLower !== "académico"
+          ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
           : esDeportivo;
-      if (!yaExiste && normalizarPeriodoVista(f.periodo) === "verano" && usaTalleresPorEdad && actuales.length >= 3) {
-        mostrarMsg("El taller de verano debe tener 3 dias de atencion.");
+      if (!yaExiste && normalizarPeriodoVista(f.periodo) === "verano" && usaTalleresPorEdad && actuales.length >= 7) {
+        mostrarMsg("El taller de verano no puede exceder los 7 dias de atencion.");
         return f;
       }
       return {
@@ -1851,13 +1880,13 @@ export default function useCoordinacion({
   const formHorariosPorGrupo = Array.isArray(form.horariosPorGrupo) ? form.horariosPorGrupo : [];
   const esFormularioVerano = normalizarPeriodoVista(form.periodo) === "verano";
   const esDeportivoForm =
-    String(form.categoria || "").toLowerCase() === "deportivo" || esProgramaDeportivo(form.nombre, form.categoria);
+    String(form.categoria || "").toLowerCase() === "deportivo" || String(form.categoria || "").toLowerCase() === "talleres deportivos" || esProgramaDeportivo(form.nombre, form.categoria);
   const esCambridgeForm = esProgramaCambridge(form);
 
   const ciclosCambridgeFormulario = calcularTextoCiclosCambridge(form.fechaInicio, form.fechaFin);
   const catLower = String(form.categoria || "").toLowerCase();
   const usaTalleresPorEdad = esFormularioVerano
-    ? catLower !== "academico" && catLower !== "académico"
+    ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
     : esDeportivoForm;
   const duracionTallerFormulario = calcularDuracionTexto(form.fechaInicio, form.fechaFin);
   const mostrarIndumentariaDeportiva = esDeportivoForm;

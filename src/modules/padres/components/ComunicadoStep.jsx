@@ -192,9 +192,9 @@ export default function ComunicadoStep({
 
   const continuarDeshabilitado = (tieneOpciones && !horarioSeleccionado) || faltanTallas;
 
-  const esDeportivo = String(programa.categoria || "").toLowerCase() === "deportivo";
-  const tieneComunicadoTexto = Boolean(programa.comunicado || programa.comunicadoCompleto);
-  const mostrarCarta = !esDeportivo || tieneComunicadoTexto;
+  const tieneComunicado = Boolean((programa.comunicado && programa.comunicado.trim()) || (programa.comunicadoCompleto && programa.comunicadoCompleto.trim()));
+  const tieneRequisitos = Boolean(programa.requisitos && programa.requisitos.trim());
+  const mostrarCarta = tieneComunicado && tieneRequisitos;
 
   return (
     <article className="padres-flow-panel padres-flow-step-panel">
@@ -309,7 +309,90 @@ export default function ComunicadoStep({
             </div>
           ) : null}
         </>
-      ) : null}
+      ) : (
+        <div style={{
+          background: "#ffffff",
+          borderRadius: "16px",
+          padding: "24px",
+          border: "1px solid #e2e8f0",
+          boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.02)",
+          marginBottom: "20px"
+        }}>
+          {comunicadoPadres.fecha ? (
+            <p style={{
+              textAlign: "right",
+              fontSize: "13px",
+              color: "#64748b",
+              fontWeight: "600",
+              marginBottom: "16px"
+            }}>
+              {comunicadoPadres.fecha}
+            </p>
+          ) : null}
+
+          <h3 style={{
+            fontSize: "15px",
+            fontWeight: "800",
+            color: "#1e293b",
+            borderBottom: "2px solid #f1f5f9",
+            paddingBottom: "8px",
+            marginBottom: "16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "8px"
+          }}>
+            <span style={{ fontSize: "20px" }}>ℹ️</span> Detalle del Taller
+          </h3>
+
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+            gap: "16px"
+          }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", textTransform: "uppercase" }}>Programa</span>
+              <strong style={{ fontSize: "14px", color: "#0f172a" }}>{programa.nombre || "Taller deportivo"}</strong>
+            </div>
+
+            {programa.fechaInicio && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", textTransform: "uppercase" }}>Inicio</span>
+                <strong style={{ fontSize: "14px", color: "#0f172a" }}>
+                  {programa.fechaInicio ? new Date(programa.fechaInicio + "T00:00:00").toLocaleDateString("es-PE", { day: "numeric", month: "long", year: "numeric" }) : "-"}
+                </strong>
+              </div>
+            )}
+
+            {programa.horario && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", textTransform: "uppercase" }}>Horario General</span>
+                <strong style={{ fontSize: "14px", color: "#0f172a" }}>{programa.horario}</strong>
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", textTransform: "uppercase" }}>Costo</span>
+              <strong style={{ fontSize: "14px", color: "#0f172a" }}>
+                {Number(programa.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Gratuito"}
+              </strong>
+            </div>
+
+            {programa.cupos && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", textTransform: "uppercase" }}>Cupos</span>
+                <strong style={{ fontSize: "14px", color: "#0f172a" }}>{programa.cupos} vacantes</strong>
+              </div>
+            )}
+            
+            {programa.responsable && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", textTransform: "uppercase" }}>Responsable</span>
+                <strong style={{ fontSize: "14px", color: "#0f172a" }}>{programa.responsable}</strong>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {tieneOpciones ? (
         <div style={{
@@ -385,20 +468,20 @@ export default function ComunicadoStep({
                         textAlign: "left",
                         padding: "16px",
                         borderRadius: "14px",
-                        border: seleccionado ? "2.5px solid #ea580c" : "1.5px solid #cbd5e1",
-                        background: seleccionado ? "#fff7ed" : "#ffffff",
+                        border: seleccionado ? "2.5px solid #068003" : "1.5px solid #cbd5e1",
+                        background: seleccionado ? "#f0fdf0" : "#ffffff",
                         cursor: "pointer",
                         display: "flex",
                         flexDirection: "column",
                         gap: "8px",
                         transition: "all 0.2s ease",
-                        boxShadow: seleccionado ? "0 4px 12px rgba(234, 88, 12, 0.12)" : "0 1px 2px rgba(0,0,0,0.02)",
+                        boxShadow: seleccionado ? "0 4px 12px rgba(6, 128, 3, 0.12)" : "0 1px 2px rgba(0,0,0,0.02)",
                         outline: "none"
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <span style={{ fontSize: "20px" }}>{emoji}</span>
-                        <strong style={{ fontSize: "15px", color: seleccionado ? "#ea580c" : "#1e293b", fontWeight: "800" }}>
+                        <strong style={{ fontSize: "15px", color: seleccionado ? "#068003" : "#1e293b", fontWeight: "800" }}>
                           {opc.deporte}{opc.nivel ? ` [${opc.nivel}]` : ""}
                         </strong>
                       </div>
@@ -419,7 +502,7 @@ export default function ComunicadoStep({
               </div>
 
               {!horarioSeleccionado ? (
-                <span style={{ fontSize: "11px", color: "#f97316", fontWeight: "700", marginTop: "4px" }}>
+                <span style={{ fontSize: "11px", color: "#068003", fontWeight: "700", marginTop: "4px" }}>
                   ⚠️ Debe seleccionar un grupo para poder continuar con la inscripción.
                 </span>
               ) : null}

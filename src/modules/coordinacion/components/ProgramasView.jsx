@@ -26,20 +26,20 @@ import { formatearSoles } from "../utils/coordinacionFormatters";
 import { CuposTabla, GradosTabla, HorarioTabla, VigenciaTabla } from "./ProgramTableCells";
 
 const obtenerClaseCategoria = (cat) => {
-  const c = String(cat || "").toLowerCase();
+  const c = String(cat || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (c.includes("deport")) return "deportivo";
-  if (c.includes("acad") || c.includes("tarea")) return "academico";
-  if (c.includes("cambridge") || c.includes("ingles") || c.includes("ingl")) return "ingles";
-  if (c.includes("verano")) return "verano";
+  if (c.includes("acad") || c.includes("tarea") || c.includes("utiles")) return "academico";
+  if (c.includes("cambridge") || c.includes("ingles")) return "ingles";
+  if (c.includes("verano") || c.includes("recreativ")) return "verano";
   return "general";
 };
 
 const obtenerIconoCategoria = (cat) => {
-  const c = String(cat || "").toLowerCase();
+  const c = String(cat || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (c.includes("deport")) return <Trophy size={18} style={{ color: "#c2410c", marginRight: "8px", flexShrink: 0 }} />;
-  if (c.includes("acad") || c.includes("tarea")) return <School size={18} style={{ color: "#0369a1", marginRight: "8px", flexShrink: 0 }} />;
-  if (c.includes("cambridge") || c.includes("ingles") || c.includes("ingl")) return <Language size={18} style={{ color: "#6b21a8", marginRight: "8px", flexShrink: 0 }} />;
-  if (c.includes("verano")) return <Sun size={18} style={{ color: "#a16207", marginRight: "8px", flexShrink: 0 }} />;
+  if (c.includes("acad") || c.includes("tarea") || c.includes("utiles")) return <School size={18} style={{ color: "#0369a1", marginRight: "8px", flexShrink: 0 }} />;
+  if (c.includes("cambridge") || c.includes("ingles")) return <Language size={18} style={{ color: "#6b21a8", marginRight: "8px", flexShrink: 0 }} />;
+  if (c.includes("verano") || c.includes("recreativ")) return <Sun size={18} style={{ color: "#a16207", marginRight: "8px", flexShrink: 0 }} />;
   return <Bookmark size={18} style={{ color: "#475569", marginRight: "8px", flexShrink: 0 }} />;
 };
 

@@ -169,7 +169,7 @@ export function adaptarInscripcion(apiInscripcion) {
     correo: apiInscripcion.correo_apoderado || apiInscripcion.correo || "",
     estadoInscripcion: apiInscripcion.estado_inscripcion || apiInscripcion.estadoInscripcion || "Pendiente de pago",
     estadoPago: apiInscripcion.estado_pago || apiInscripcion.estadoPago || "Pendiente",
-    pagoId: apiInscripcion.pago_id || apiInscripcion.pagoId || "",
+    pagoId: apiInscripcion.pago_id || apiInscripcion.pagoId || null,
     pagoReferencia: apiInscripcion.pago_referencia || apiInscripcion.pagoReferencia || "",
     pagoTelefono: apiInscripcion.pago_telefono || apiInscripcion.pagoTelefono || "",
     pagoCapturaNombre: apiInscripcion.pago_captura_nombre || apiInscripcion.pagoCapturaNombre || "",
@@ -220,8 +220,8 @@ export function adaptarPago(apiPago) {
 
   return {
     id: idPago,
-    pagoId: apiPago.pago_id || apiPago.pagoId || "",
-    inscripcionId: apiPago.inscripcion_id || apiPago.inscripcionId || "",
+    pagoId: apiPago.pago_id || apiPago.pagoId || null,
+    inscripcionId: apiPago.inscripcion_id || apiPago.inscripcionId || null,
     monto: apiPago.monto_pago !== undefined ? Number(apiPago.monto_pago) : Number(apiPago.monto || 0),
     metodo: apiPago.metodo_pago || apiPago.metodo || apiPago.formaPago || apiPago.medioPago || "Yape",
     formaPago: apiPago.metodo_pago || apiPago.metodo || apiPago.formaPago || apiPago.medioPago || "Yape",
