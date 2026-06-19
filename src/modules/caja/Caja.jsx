@@ -299,6 +299,11 @@ export default function Caja({
         telefonoOperacion: pagoAsociado?.telefonoOperacion || "",
         capturaPagoBase64: pagoAsociado?.capturaPagoBase64 || "",
         formaPago: pagoAsociado?.formaPago || "Efectivo",
+        descuentoMonto: inscripcion?.descuentoMonto ? String(inscripcion.descuentoMonto) : "",
+        descuentoTipo: inscripcion?.descuentoTipo || "",
+        descuentoJustificacion: inscripcion?.descuentoJustificacion || "",
+        costoOriginal: inscripcion?.costoOriginal ? String(inscripcion.costoOriginal) : "",
+        descuentoAprobado: inscripcion?.descuentoAprobado || false,
       }));
     } catch (error) {
       setMensaje(error.message || "No se pudo buscar el estudiante.");

@@ -96,6 +96,59 @@ export default function CajaFields({
           </div>
 
           <div className="caja-payment-summary">
+            {formulario.descuentoAprobado && (
+              <div className="caja-discount-applied-card" style={{
+                gridColumn: "1 / -1",
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                borderRadius: "8px",
+                padding: "12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+                marginBottom: "8px"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span style={{
+                    background: "#dcfce7",
+                    color: "#15803d",
+                    fontSize: "10px",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    padding: "2px 8px",
+                    borderRadius: "12px",
+                  }}>
+                    {formulario.descuentoTipo === "beca" ? "Beca 100% Aprobada" : "Descuento Aprobado"}
+                  </span>
+                  <span style={{ fontSize: "11px", color: "#16a34a", fontWeight: 700 }}>por Dirección</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginTop: "4px" }}>
+                  <div>
+                    <span style={{ fontSize: "11px", color: "#475569", display: "block" }}>Costo Original:</span>
+                    <span style={{ fontSize: "14px", fontWeight: 700, color: "#64748b", textDecoration: "line-through" }}>
+                      {formatearSoles(formulario.costoOriginal)}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", color: "#475569", display: "block" }}>Descuento:</span>
+                    <span style={{ fontSize: "14px", fontWeight: 700, color: "#16a34a" }}>
+                      -{formatearSoles(formulario.descuentoMonto)}
+                    </span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: "11px", color: "#475569", display: "block" }}>Monto Final:</span>
+                    <span style={{ fontSize: "14px", fontWeight: 800, color: "#15803d" }}>
+                      {formatearSoles(formulario.monto)}
+                    </span>
+                  </div>
+                </div>
+                {formulario.descuentoJustificacion && (
+                  <div style={{ fontSize: "12px", color: "#166534", borderTop: "1px dashed #bbf7d0", paddingTop: "6px", marginTop: "4px" }}>
+                    <strong>Motivo:</strong> {formulario.descuentoJustificacion}
+                  </div>
+                )}
+              </div>
+            )}
             {datosLectura.map(([etiqueta, valor]) => {
               const isPrograma = etiqueta === "Programa";
               const isEstado = etiqueta === "Estado";

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Alert, Badge, Button, Group, Loader, Select, Table, Checkbox, Grid, Divider } from "@mantine/core";
+import { Alert, Badge, Button, Group, Loader, Select, Table, Checkbox, Grid, Divider, Modal, Textarea, TextInput } from "@mantine/core";
 import { BarChart, DonutChart } from "@mantine/charts";
 import { toast } from "sonner";
 import {
@@ -20,10 +20,12 @@ import {
   IconClick as Click,
   IconUserCheck as UserCheck,
   IconMenu2 as Menu,
+  IconRosetteDiscount as RosetteDiscount,
+  IconSearch as Search,
 } from "@tabler/icons-react";
 import { StatCard, EmptyChart } from "./components/DireccionCards";
 import { columnasDisponiblesMap, opcionesReportesPorModulo } from "./constants/direccionReports";
-import { descargarReporteDireccion, descargarReportePersonalizado, obtenerPanelDireccion } from "./direccionService";
+import { descargarReporteDireccion, descargarReportePersonalizado, obtenerPanelDireccion, buscarInscripcionesParaDescuento, aplicarDescuentoInscripcion, removerDescuentoInscripcion } from "./direccionService";
 import { calcularMetricasAnalisis, filtrarRegistrosReporte } from "./utils/direccionAnalytics";
 import { formatearSoles, puedeExportar } from "./utils/direccionFormatters";
 import "./Direccion.css";
@@ -59,7 +61,7 @@ export default function Direccion({ onLogout, user }) {
   const [dashboardTab, setDashboardTab] = useState("caja");
 
   // Estados del Centro de Reportes Modular y Personalizado
-  const [moduloActivo, setModuloActivo] = useState("caja"); // "caja" | "coordinacion" | "padres"
+  const [moduloActivo, setModuloActivo] = useState("caja"); // "caja" | "coordinacion" | "padres" | "direccion"
   const [reporteSeleccionado, setReporteSeleccionado] = useState("pagos_historial");
   const [customTipo, setCustomTipo] = useState("pagos");
   const [customFiltroOrigen, setCustomFiltroOrigen] = useState("todos");
@@ -68,6 +70,21 @@ export default function Direccion({ onLogout, user }) {
   const [customFiltroPrograma, setCustomFiltroPrograma] = useState("todos");
   const [customColumnas, setCustomColumnas] = useState([]);
   const [exportandoCustom, setExportandoCustom] = useState(false);
+  const [fechaInicio, setFechaInicio] = useState("");
+  const [fechaFin, setFechaFin] = useState("");
+  const [consolidacionAsistencia, setConsolidacionAsistencia] = useState("semana");
+
+  // Estados para Descuentos y Becas
+  const [busquedaDescuento, setBusquedaDescuento] = useState("");
+  const [resultadosDescuento, setResultadosDescuento] = useState([]);
+  const [buscandoDescuento, setBuscandoDescuento] = useState(false);
+  const [modalDescuentoAbierto, setModalDescuentoAbierto] = useState(false);
+  const [inscripcionSeleccionada, setInscripcionSeleccionada] = useState(null);
+  const [datosBeneficio, setDatosBeneficio] = useState({
+    tipo: "beca",
+    valor: "",
+    justificacion: "",
+  });
   const recargaTimerRef = useRef(null);
 
   const exportarHabilitado = puedeExportar(user);
@@ -85,6 +102,8 @@ export default function Direccion({ onLogout, user }) {
       setReporteSeleccionado("programas_catalogo");
     } else if (mod === "padres") {
       setReporteSeleccionado("padres_matriculas");
+    } else if (mod === "direccion") {
+      setReporteSeleccionado("direccion_alumnos_pagos");
     }
   };
 
@@ -111,6 +130,12 @@ export default function Direccion({ onLogout, user }) {
     } else if (reporteSeleccionado === "padres_apoderados") {
       tipo = "inscripciones";
       defaultCols = ["estudiante", "apoderado", "telefono", "programa"];
+    } else if (reporteSeleccionado === "direccion_alumnos_pagos") {
+      tipo = "direccion_alumnos_pagos";
+      defaultCols = ["dni", "estudiante", "grado", "programa", "costo", "montoPagado", "pendiente", "estadoPago", "medioPago", "fechaPago"];
+    } else if (reporteSeleccionado === "direccion_alumnos_asistencias") {
+      tipo = "direccion_alumnos_asistencias";
+      defaultCols = ["dni", "estudiante", "grado", "programa"];
     }
 
     setCustomTipo(tipo);
@@ -152,7 +177,13 @@ export default function Direccion({ onLogout, user }) {
       }
     };
 
+    const handleMockDbUpdated = () => {
+      recargarSilencioso();
+      refrescarBusquedaDescuento();
+    };
+
     window.addEventListener("api-db-updated", recargarSilencioso);
+    window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("storage", manejarStorage);
     window.addEventListener("focus", recargarSilencioso);
     const intervalo = window.setInterval(recargarSilencioso, 30000);
@@ -161,10 +192,11 @@ export default function Direccion({ onLogout, user }) {
       window.clearTimeout(recargaTimerRef.current);
       window.clearInterval(intervalo);
       window.removeEventListener("api-db-updated", recargarSilencioso);
+      window.removeEventListener("mock-db-updated", handleMockDbUpdated);
       window.removeEventListener("storage", manejarStorage);
       window.removeEventListener("focus", recargarSilencioso);
     };
-  }, [cargarPanel]);
+  }, [cargarPanel, refrescarBusquedaDescuento]);
 
   const resumen = panel?.resumen || {};
   const filasProgramas = panel?.filasProgramas || [];
@@ -203,7 +235,9 @@ export default function Direccion({ onLogout, user }) {
     customFiltroPrograma,
     customTipo,
     panel,
-  }), [panel, customTipo, customFiltroOrigen, customFiltroPago, customFiltroCategoria, customFiltroPrograma]);
+    fechaInicio,
+    fechaFin,
+  }), [panel, customTipo, customFiltroOrigen, customFiltroPago, customFiltroCategoria, customFiltroPrograma, fechaInicio, fechaFin]);
 
   const ejecutarDescargaCustom = async () => {
     if (!exportarHabilitado) {
@@ -223,6 +257,9 @@ export default function Direccion({ onLogout, user }) {
           estadoPago: customFiltroPago,
           categoria: customFiltroCategoria,
           programa: customFiltroPrograma,
+          fechaInicio,
+          fechaFin,
+          consolidacionAsistencia,
         },
         columnas: customColumnas,
         periodo: periodo,
@@ -232,6 +269,101 @@ export default function Direccion({ onLogout, user }) {
       toast.error("No se pudo descargar", { description: err.message || "Revise la configuración de su reporte." });
     } finally {
       setExportandoCustom(false);
+    }
+  };
+
+  const buscarEstudiantesDescuento = async (e) => {
+    if (e) e.preventDefault();
+    const term = String(busquedaDescuento || "").trim();
+    if (!term) {
+      toast.error("Búsqueda vacía", { description: "Por favor ingrese un DNI o Nombre." });
+      return;
+    }
+    setBuscandoDescuento(true);
+    try {
+      const res = await buscarInscripcionesParaDescuento(term);
+      setResultadosDescuento(res);
+      if (res.length === 0) {
+        toast.info("Sin resultados", { description: "No se encontraron estudiantes para esa búsqueda." });
+      }
+    } catch (err) {
+      toast.error("Error en búsqueda", { description: err.message || "No se pudo completar la búsqueda." });
+    } finally {
+      setBuscandoDescuento(false);
+    }
+  };
+
+  const refrescarBusquedaDescuento = useCallback(async () => {
+    const term = String(busquedaDescuento || "").trim();
+    if (!term) return;
+    try {
+      const res = await buscarInscripcionesParaDescuento(term);
+      setResultadosDescuento(res);
+    } catch (err) {
+      console.error("Error al refrescar búsqueda:", err);
+    }
+  }, [busquedaDescuento]);
+
+  const abrirModalBeneficio = (ins) => {
+    setInscripcionSeleccionada(ins);
+    setDatosBeneficio({
+      tipo: ins.descuentoTipo || "beca",
+      valor: ins.descuentoValor ? String(ins.descuentoValor) : "",
+      justificacion: ins.descuentoJustificacion || "",
+    });
+    setModalDescuentoAbierto(true);
+  };
+
+  const cerrarModalBeneficio = () => {
+    setModalDescuentoAbierto(false);
+    setInscripcionSeleccionada(null);
+    setDatosBeneficio({
+      tipo: "beca",
+      valor: "",
+      justificacion: "",
+    });
+  };
+
+  const guardarBeneficio = async () => {
+    if (!inscripcionSeleccionada) return;
+    if (!datosBeneficio.justificacion.trim()) {
+      toast.error("Validación", { description: "Debe ingresar una justificación o motivo para el descuento." });
+      return;
+    }
+    if (datosBeneficio.tipo !== "beca" && (!datosBeneficio.valor || Number(datosBeneficio.valor) <= 0)) {
+      toast.error("Validación", { description: "Debe ingresar un valor numérico mayor a cero para el descuento." });
+      return;
+    }
+
+    setBuscandoDescuento(true);
+    try {
+      await aplicarDescuentoInscripcion(inscripcionSeleccionada.id, {
+        tipo: datosBeneficio.tipo,
+        valor: Number(datosBeneficio.valor || 0),
+        justificacion: datosBeneficio.justificacion.trim(),
+      });
+      toast.success("Beneficio registrado", { description: "El descuento/beca ha sido aprobado y enviado a Caja." });
+      await refrescarBusquedaDescuento();
+      cerrarModalBeneficio();
+    } catch (err) {
+      toast.error("Error", { description: err.message || "No se pudo aplicar el beneficio." });
+    } finally {
+      setBuscandoDescuento(false);
+    }
+  };
+
+  const removerBeneficio = async () => {
+    if (!inscripcionSeleccionada) return;
+    setBuscandoDescuento(true);
+    try {
+      await removerDescuentoInscripcion(inscripcionSeleccionada.id);
+      toast.success("Beneficio removido", { description: "Se ha retirado el descuento y restaurado el costo original." });
+      await refrescarBusquedaDescuento();
+      cerrarModalBeneficio();
+    } catch (err) {
+      toast.error("Error", { description: err.message || "No se pudo remover el beneficio." });
+    } finally {
+      setBuscandoDescuento(false);
     }
   };
 
@@ -258,6 +390,10 @@ export default function Direccion({ onLogout, user }) {
             <Download size={18} />
             <span className="dir-nav-text">Reportes</span>
           </button>
+          <button className={vista === "descuentos" ? "is-active" : ""} type="button" onClick={() => setVista("descuentos")} title="Descuentos y Becas">
+            <RosetteDiscount size={18} />
+            <span className="dir-nav-text">Descuentos y Becas</span>
+          </button>
         </nav>
         <button className="dir-logout" type="button" onClick={onLogout} title="Cerrar sesion">
           <LogOut size={18} />
@@ -281,9 +417,12 @@ export default function Direccion({ onLogout, user }) {
             )}
             <div>
               <span>Panel institucional</span>
-              <h1>{vista === "reportes" ? "Descarga de reportes" : "Dirección y reportes"}</h1>
-              {vista !== "reportes" && (
+              <h1>{vista === "reportes" ? "Descarga de reportes" : vista === "descuentos" ? "Descuentos y Becas" : "Dirección y reportes"}</h1>
+              {vista !== "reportes" && vista !== "descuentos" && (
                 <p>Seguimiento de programas, inscripciones, pagos y capacidad operativa.</p>
+              )}
+              {vista === "descuentos" && (
+                <p>Autorización de becas completas y descuentos para pagos en Caja.</p>
               )}
             </div>
           </div>
@@ -725,7 +864,7 @@ export default function Direccion({ onLogout, user }) {
               </>
             )}
           </>
-        ) : (
+        ) : vista === "reportes" ? (
           <section className="dir-reports-view">
             {/* ── GENERADOR DE REPORTES A LA MEDIDA (PERSONALIZADO POR MÓDULO) ── */}
             <article className="dir-custom-report-builder">
@@ -789,6 +928,19 @@ export default function Direccion({ onLogout, user }) {
                     <strong>Módulo Padres</strong>
                   </div>
                 </button>
+
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={moduloActivo === "direccion"}
+                  className={`dir-module-tab ${moduloActivo === "direccion" ? "is-active" : ""}`}
+                  onClick={() => cambiarModulo("direccion")}
+                >
+                  <Crown size={18} />
+                  <div>
+                    <strong>Consolidados Dirección</strong>
+                  </div>
+                </button>
               </div>
 
               <div className="dir-builder-content">
@@ -796,9 +948,9 @@ export default function Direccion({ onLogout, user }) {
                   <div className="dir-builder-form-group">
                     <label className="dir-builder-label"><Click size={14} /> 1. Reporte</label>
                     <Select
-                      data={opcionesReportesPorModulo[moduloActivo]}
+                      data={opcionesReportesPorModulo[moduloActivo] || []}
                       value={reporteSeleccionado}
-                      onChange={(val) => setReporteSeleccionado(val || opcionesReportesPorModulo[moduloActivo][0].value)}
+                      onChange={(val) => setReporteSeleccionado(val || opcionesReportesPorModulo[moduloActivo]?.[0]?.value)}
                       allowDeselect={false}
                     />
                   </div>
@@ -814,7 +966,10 @@ export default function Direccion({ onLogout, user }) {
                         allowDeselect={false}
                         size="xs"
                       />
-                      {(customTipo === "inscripciones" || customTipo === "pagos") && (
+                      {(customTipo === "inscripciones" || 
+                        customTipo === "pagos" || 
+                        customTipo === "direccion_alumnos_pagos" || 
+                        customTipo === "direccion_alumnos_asistencias") && (
                         <Select
                           label="Programa / Taller"
                           data={programasOptions}
@@ -838,7 +993,9 @@ export default function Direccion({ onLogout, user }) {
                           size="xs"
                         />
                       )}
-                      {(customTipo === "inscripciones" || customTipo === "pagos") && (
+                      {(customTipo === "inscripciones" || 
+                        customTipo === "pagos" || 
+                        customTipo === "direccion_alumnos_pagos") && (
                         <Select
                           label="Estado de Pago"
                           data={[
@@ -852,10 +1009,62 @@ export default function Direccion({ onLogout, user }) {
                           size="xs"
                         />
                       )}
+
+                      {/* Rango de Fechas */}
+                      <div style={{ display: "flex", gap: "6px", flexDirection: "column", marginTop: "4px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569" }}>Fecha Inicio</span>
+                          <input
+                            type="date"
+                            value={fechaInicio}
+                            onChange={(e) => setFechaInicio(e.target.value)}
+                            style={{
+                              width: "100%",
+                              padding: "6px 10px",
+                              border: "1px solid #ced4da",
+                              borderRadius: "6px",
+                              fontSize: "12px",
+                              backgroundColor: "#ffffff",
+                              color: "#495057",
+                            }}
+                          />
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569" }}>Fecha Fin</span>
+                          <input
+                            type="date"
+                            value={fechaFin}
+                            onChange={(e) => setFechaFin(e.target.value)}
+                            style={{
+                              width: "100%",
+                              padding: "6px 10px",
+                              border: "1px solid #ced4da",
+                              borderRadius: "6px",
+                              fontSize: "12px",
+                              backgroundColor: "#ffffff",
+                              color: "#495057",
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Agrupación de Asistencias */}
+                      {customTipo === "direccion_alumnos_asistencias" && (
+                        <Select
+                          label="Consolidación Asistencia"
+                          data={[
+                            { value: "dia", label: "Por Día (Detallado)" },
+                            { value: "semana", label: "Por Semana" },
+                            { value: "mes", label: "Por Mes" },
+                          ]}
+                          value={consolidacionAsistencia}
+                          onChange={(val) => setConsolidacionAsistencia(val || "semana")}
+                          allowDeselect={false}
+                          size="xs"
+                        />
+                      )}
                     </div>
                   </div>
-
-                  {/* El botón de descarga ahora se ubica en la cabecera superior */}
                 </div>
 
                 <div className="dir-builder-columns-selector">
@@ -883,7 +1092,7 @@ export default function Direccion({ onLogout, user }) {
 
                   <div className="dir-columns-checkbox-container">
                     <Grid>
-                      {columnasDisponiblesMap[customTipo].map((col) => {
+                      {columnasDisponiblesMap[customTipo]?.map((col) => {
                         const isChecked = customColumnas.includes(col.key);
                         return (
                           <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={col.key}>
@@ -892,12 +1101,12 @@ export default function Direccion({ onLogout, user }) {
                               checked={isChecked}
                               color="teal"
                               onChange={(event) => {
-                                if (event.currentTarget.checked) {
-                                  setCustomColumnas([...customColumnas, col.key]);
-                                } else {
-                                  setCustomColumnas(customColumnas.filter((k) => k !== col.key));
-                                }
-                              }}
+                                  if (event.currentTarget.checked) {
+                                    setCustomColumnas([...customColumnas, col.key]);
+                                  } else {
+                                    setCustomColumnas(customColumnas.filter((k) => k !== col.key));
+                                  }
+                                }}
                             />
                           </Grid.Col>
                         );
@@ -907,6 +1116,200 @@ export default function Direccion({ onLogout, user }) {
                 </div>
               </div>
             </article>
+          </section>
+        ) : (
+          <section className="dir-descuentos-view" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+            <article className="dir-custom-report-builder" style={{ padding: "24px" }}>
+              <header className="dir-builder-header" style={{ marginBottom: "16px", borderBottom: "1px solid #f1f5f9", paddingBottom: "16px" }}>
+                <div>
+                  <span className="dir-tag" style={{ background: "#e0f2fe", color: "#0369a1" }}>Finanzas</span>
+                  <h2>Autorización de Descuentos y Becas</h2>
+                </div>
+              </header>
+
+              <form onSubmit={buscarEstudiantesDescuento} style={{ display: "flex", gap: "12px", maxWidth: "600px", marginBottom: "24px" }}>
+                <TextInput
+                  placeholder="Ingrese DNI o nombre completo del estudiante..."
+                  value={busquedaDescuento}
+                  onChange={(e) => setBusquedaDescuento(e.target.value)}
+                  style={{ flex: 1 }}
+                  size="md"
+                  leftSection={<Search size={18} />}
+                />
+                <Button 
+                  color="teal" 
+                  type="submit" 
+                  loading={buscandoDescuento}
+                  size="md"
+                >
+                  Buscar
+                </Button>
+              </form>
+
+              <div className="dir-table-panel" style={{ background: "#ffffff", borderRadius: "8px", overflow: "hidden" }}>
+                <div className="dir-table-wrap">
+                  <Table striped highlightOnHover verticalSpacing="md">
+                    <Table.Thead>
+                      <Table.Tr style={{ background: "#f8fafc" }}>
+                        <Table.Th>Estudiante</Table.Th>
+                        <Table.Th>DNI</Table.Th>
+                        <Table.Th>Taller / Programa</Table.Th>
+                        <Table.Th style={{ textAlign: "right" }}>Costo Taller</Table.Th>
+                        <Table.Th>Beneficio Aplicado</Table.Th>
+                        <Table.Th style={{ textAlign: "right" }}>Costo Final</Table.Th>
+                        <Table.Th>Pago</Table.Th>
+                        <Table.Th style={{ textAlign: "center" }}>Acción</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {resultadosDescuento.map((ins) => {
+                        const tieneDescuento = ins.descuentoAprobado;
+                        const esPagoCompletado = ["pagado", "pago validado", "completado"].includes(String(ins.estadoPago || "").toLowerCase().trim());
+                        
+                        return (
+                          <Table.Tr key={ins.id}>
+                            <Table.Td><strong>{ins.estudiante || ins.nombresEstudiante}</strong></Table.Td>
+                            <Table.Td>{ins.dni || ins.dniEstudiante}</Table.Td>
+                            <Table.Td>{ins.programa}</Table.Td>
+                            <Table.Td style={{ textAlign: "right" }}>{formatearSoles(ins.costoOriginal || ins.costo)}</Table.Td>
+                            <Table.Td>
+                              {tieneDescuento ? (
+                                <Badge color="green" variant="light">
+                                  {ins.descuentoTipo === "beca" 
+                                    ? "Beca 100%" 
+                                    : ins.descuentoTipo === "porcentaje" 
+                                    ? `-${ins.descuentoValor}%` 
+                                    : `-S/. ${ins.descuentoMonto}`}
+                                </Badge>
+                              ) : (
+                                <span style={{ color: "#94a3b8", fontSize: "13px" }}>Ninguno</span>
+                              )}
+                            </Table.Td>
+                            <Table.Td style={{ textAlign: "right", fontWeight: 700, color: tieneDescuento ? "#15803d" : "inherit" }}>
+                              {formatearSoles(ins.costo)}
+                            </Table.Td>
+                            <Table.Td>
+                              <Badge color={esPagoCompletado ? "teal" : "orange"} variant="light">
+                                {esPagoCompletado ? "Pagado" : "Pendiente"}
+                              </Badge>
+                            </Table.Td>
+                            <Table.Td style={{ textAlign: "center" }}>
+                              {esPagoCompletado ? (
+                                <Button size="xs" variant="subtle" color="gray" disabled>
+                                  Ya pagado
+                                </Button>
+                              ) : (
+                                <Button 
+                                  size="xs" 
+                                  variant={tieneDescuento ? "light" : "outline"} 
+                                  color="teal"
+                                  onClick={() => abrirModalBeneficio(ins)}
+                                >
+                                  {tieneDescuento ? "Editar beneficio" : "Aplicar beneficio"}
+                                </Button>
+                              )}
+                            </Table.Td>
+                          </Table.Tr>
+                        );
+                      })}
+                      {resultadosDescuento.length === 0 && (
+                        <Table.Tr>
+                          <Table.Td colSpan={8}>
+                            <div style={{ textAlign: "center", padding: "40px 20px", color: "#64748b", fontSize: "14px" }}>
+                              Ingrese el DNI o el nombre del estudiante arriba y haga clic en Buscar para consultar las matrículas.
+                            </div>
+                          </Table.Td>
+                        </Table.Tr>
+                      )}
+                    </Table.Tbody>
+                  </Table>
+                </div>
+              </div>
+            </article>
+
+            {/* Modal para aplicar beneficio */}
+            <Modal
+              opened={modalDescuentoAbierto}
+              onClose={cerrarModalBeneficio}
+              title={
+                <strong style={{ fontSize: "18px", color: "#0f172a" }}>
+                  {datosBeneficio.tipo === "beca" ? "Aprobación de Beca Completa" : "Autorización de Descuento Especial"}
+                </strong>
+              }
+              size="md"
+              centered
+              radius="md"
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {inscripcionSeleccionada && (
+                  <div style={{ padding: "12px", background: "#f8fafc", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                    <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600 }}>ESTUDIANTE</div>
+                    <div style={{ fontWeight: 700, fontSize: "14px", color: "#0f172a" }}>
+                      {inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante} ({inscripcionSeleccionada.dni || inscripcionSeleccionada.dniEstudiante})
+                    </div>
+                    <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, marginTop: "8px" }}>PROGRAMA / TALLER</div>
+                    <div style={{ fontWeight: 600, fontSize: "13px" }}>{inscripcionSeleccionada.programa}</div>
+                    <div style={{ fontSize: "12px", color: "#64748b", fontWeight: 600, marginTop: "8px" }}>COSTO ORIGINAL</div>
+                    <div style={{ fontWeight: 700, fontSize: "15px", color: "#0f172a" }}>
+                      {formatearSoles(inscripcionSeleccionada.costoOriginal || inscripcionSeleccionada.costo)}
+                    </div>
+                  </div>
+                )}
+
+                <Select
+                  label="Tipo de Beneficio"
+                  data={[
+                    { value: "beca", label: "Beca Completa (100% descuento)" },
+                    { value: "monto", label: "Descuento de monto fijo (S/.)" },
+                    { value: "porcentaje", label: "Descuento porcentual (%)" },
+                  ]}
+                  value={datosBeneficio.tipo}
+                  onChange={(val) => setDatosBeneficio({ ...datosBeneficio, tipo: val || "beca", valor: "" })}
+                  allowDeselect={false}
+                />
+
+                {datosBeneficio.tipo !== "beca" && (
+                  <TextInput
+                    label={datosBeneficio.tipo === "porcentaje" ? "Porcentaje de descuento (%)" : "Monto a descontar (S/.)"}
+                    placeholder={datosBeneficio.tipo === "porcentaje" ? "Ej. 50" : "Ej. 25"}
+                    value={datosBeneficio.valor}
+                    onChange={(e) => setDatosBeneficio({ ...datosBeneficio, valor: e.target.value })}
+                    type="number"
+                    min="1"
+                    required
+                  />
+                )}
+
+                <Textarea
+                  label="Justificación / Motivo"
+                  placeholder="Ej. Hermano de alumno regular / Beca de rendimiento deportivo / Convenio institucional..."
+                  value={datosBeneficio.justificacion}
+                  onChange={(e) => setDatosBeneficio({ ...datosBeneficio, justificacion: e.target.value })}
+                  rows={3}
+                  required
+                />
+
+                <Divider style={{ margin: "8px 0" }} />
+
+                <div style={{ display: "flex", justifySelf: "stretch", justifyContent: "space-between", gap: "10px" }}>
+                  {inscripcionSeleccionada?.descuentoAprobado ? (
+                    <Button variant="outline" color="red" onClick={removerBeneficio} loading={buscandoDescuento}>
+                      Retirar beneficio
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <Button variant="subtle" color="gray" onClick={cerrarModalBeneficio}>
+                      Cancelar
+                    </Button>
+                    <Button color="teal" onClick={guardarBeneficio} loading={buscandoDescuento}>
+                      Aprobar y Mandar a Caja
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Modal>
           </section>
         )}
       </section>

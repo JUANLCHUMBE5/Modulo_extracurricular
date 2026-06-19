@@ -37,6 +37,29 @@ export const columnasDisponiblesMap = {
     { key: "medio", label: "Medio de Pago" },
     { key: "fecha", label: "Fecha Pago" },
   ],
+  direccion_alumnos_pagos: [
+    { key: "dni", label: "DNI Estudiante" },
+    { key: "estudiante", label: "Nombres Estudiante" },
+    { key: "grado", label: "Grado Estudiante" },
+    { key: "apoderado", label: "Nombre Apoderado" },
+    { key: "telefono", label: "Teléfono Apoderado" },
+    { key: "programa", label: "Programa / Taller" },
+    { key: "costo", label: "Costo / Monto Taller" },
+    { key: "montoPagado", label: "Monto Pagado" },
+    { key: "pendiente", label: "Monto Pendiente" },
+    { key: "estadoPago", label: "Estado de Pago" },
+    { key: "medioPago", label: "Medio de Pago" },
+    { key: "fechaPago", label: "Fecha Pago" },
+    { key: "nroOperacion", label: "N° Operación" },
+    { key: "fechaRegistro", label: "Fecha Registro" },
+  ],
+  direccion_alumnos_asistencias: [
+    { key: "dni", label: "DNI Estudiante" },
+    { key: "estudiante", label: "Nombres Estudiante" },
+    { key: "grado", label: "Grado Estudiante" },
+    { key: "programa", label: "Programa / Taller" },
+    { key: "telefono", label: "Teléfono Apoderado" },
+  ],
 };
 
 export const opcionesReportesPorModulo = {
@@ -51,5 +74,9 @@ export const opcionesReportesPorModulo = {
   padres: [
     { value: "padres_matriculas", label: "Matrículas y Estado de Pago de Alumnos" },
     { value: "padres_apoderados", label: "Directorio Telefónico de Apoderados" },
+  ],
+  direccion: [
+    { value: "direccion_alumnos_pagos", label: "Consolidado de Alumnos y Pagos" },
+    { value: "direccion_alumnos_asistencias", label: "Consolidado de Alumnos y Asistencias" },
   ],
 };
