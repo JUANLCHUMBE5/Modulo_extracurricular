@@ -76,6 +76,29 @@ export function formatearRangoFechasPadres(inicio, fin) {
   return `Del ${inicioTexto} al ${finTexto}`;
 }
 
+export function convertirHorasAMPM(texto) {
+  if (!texto) return "";
+  
+  // Convert HH:MM or H:MM to 12-hour format with AM/PM
+  const timeRegex = /\b(\d{1,2}):(\d{2})\b/g;
+  let result = String(texto).replace(timeRegex, (match, hh, mm) => {
+    let hours = parseInt(hh, 10);
+    const minutes = mm;
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    return `${hours}:${minutes} ${ampm}`;
+  });
+  
+  // Format range dash cleanly
+  result = result.replace(/(\d{1,2}:\d{2}\s*(?:AM|PM))\s*-\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/gi, "$1 - $2");
+  
+  // Replace " - Aula" or " - AULA" with " · Aula"
+  result = result.replace(/\s*-\s*(aula|AULA)\s*/i, " · Aula ");
+  
+  return result;
+}
+
 export function dividirHorarioPadres(horario) {
   const texto = repararTexto(String(horario || "")).trim();
   const partes = texto.match(/^(.+?):\s*([^,]+?)\s+almuerzo\s+([^,]+),\s*clase\s+(.+)$/i);
@@ -701,7 +724,12 @@ export function repararTexto(texto) {
     }
   }
 
-  return out;
+  return out
+    .replace(/\bCKAUB\b/g, "CLUB")
+    .replace(/\bMATEMTAICA\b/g, "MATEMÁTICA")
+    .replace(/\bMatemtaica\b/gi, "Matemática")
+    .replace(/\bCkaub\b/gi, "Club")
+    .replace(/\bMatematica\b/gi, "Matemática");
 }
 
 export function dividirSentencias(texto) {

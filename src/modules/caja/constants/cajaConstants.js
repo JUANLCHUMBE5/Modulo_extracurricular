@@ -14,6 +14,7 @@ export const formularioInicial = {
   estado: "completado",
   fechaPago: fechaActualInput(),
   observaciones: "",
+  nroRecibo: "",
 };
 
 export const estadoLabels = {

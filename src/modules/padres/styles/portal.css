@@ -51,14 +51,14 @@
   place-items: center;
   border-radius: 12px;
   color: #ffffff;
-  background: #315f91;
+  background: #000000;
   font-size: 14px;
   font-weight: 950;
 }
 
 .padres-brand strong {
   display: block;
-  color: #315f91;
+  color: #000000;
   font-size: 15px;
   font-weight: 950;
 }
@@ -92,8 +92,8 @@
   display: grid;
   place-items: center;
   border-radius: 999px;
-  color: #315f91;
-  background: #eef5ff;
+  color: #000000;
+  background: #f4f4f5;
   font-size: 13px;
   font-weight: 950;
 }
@@ -101,7 +101,7 @@
 .padres-logout-top {
   min-height: 36px;
   border-color: #cbd5e1;
-  color: #315f91;
+  color: #000000;
   background: #ffffff;
   box-shadow: none;
 }
@@ -133,7 +133,7 @@
 
 .padres-eyebrow,
 .padres-hero-with-banner .padres-eyebrow {
-  color: #315f91;
+  color: #008000;
 }
 
 .padres-hero h2,
@@ -596,8 +596,8 @@
   display: grid;
   place-items: center;
   border-radius: 18px;
-  color: #315f91;
-  background: #edf5ff;
+  color: #008000;
+  background: #f0faf0;
 }
 
 .padres-program-list {
@@ -629,15 +629,15 @@
 .padres-program-note {
   min-height: 40px;
   margin-top: 18px;
-  border: 1px solid #bfdbfe;
+  border: 1px solid #bde2bd;
   border-radius: 12px;
   padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  color: #315f91;
-  background: #f0f7ff;
+  color: #000000;
+  background: #f0faf0;
   font-size: 13px;
   font-weight: 800;
 }
@@ -805,8 +805,8 @@
   border-radius: 10px;
   display: inline-grid;
   place-items: center;
-  color: #315f91;
-  background: #edf4fc;
+  color: #008000;
+  background: #f0faf0;
   flex: 0 0 auto;
 }
 
@@ -882,7 +882,7 @@
 
 .padres-lunch-vendors span {
   display: block;
-  color: #315f91;
+  color: #008000;
   font-size: 11px;
   font-weight: 950;
 }
@@ -935,7 +935,7 @@
 }
 
 .padres-info-modal-head span {
-  color: #315f91;
+  color: #008000;
   font-size: 11px;
   font-weight: 950;
   letter-spacing: 0.08em;
@@ -975,14 +975,14 @@
 
 .padres-info-guide {
   margin-bottom: 12px;
-  border: 1px solid #cfe0f3;
+  border: 1px solid #bde2bd;
   border-radius: 12px;
   padding: 11px 13px;
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  color: #315f91;
-  background: #eef6ff;
+  color: #008000;
+  background: #f0faf0;
 }
 
 .padres-info-guide svg {
@@ -1036,7 +1036,7 @@
   width: 18px;
   height: 18px;
   margin-top: 1px;
-  accent-color: #315f91;
+  accent-color: #008000;
   flex: 0 0 auto;
 }
 
@@ -1046,7 +1046,7 @@
 
 .padres-info-read-hint {
   margin: -4px 0 0;
-  color: #315f91;
+  color: #008000;
   font-size: 12px;
   font-weight: 800;
 }

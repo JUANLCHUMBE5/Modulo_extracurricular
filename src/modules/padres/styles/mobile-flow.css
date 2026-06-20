@@ -2,8 +2,9 @@
 .padres-portal-flow {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 12% 0%, rgba(255, 237, 213, 0.78), transparent 32%),
-    linear-gradient(180deg, #fffaf5 0%, #f8fbfa 54%, #ffffff 100%);
+    radial-gradient(circle at 5% 5%, rgba(15, 107, 74, 0.05), transparent 35%),
+    radial-gradient(circle at 95% 95%, rgba(15, 107, 74, 0.04), transparent 40%),
+    #f8fafb;
 }
 
 .padres-flow-program-card .padres-flow-program-note {
@@ -13,9 +14,9 @@
   gap: 14px;
   margin-top: 2px;
   padding: 12px;
-  border: 1px solid #f4d8be;
+  border: 1px solid #bde2bd;
   border-radius: 13px;
-  background: #fff7ef;
+  background: #f0faf0;
 }
 
 .padres-flow-program-card .padres-flow-program-note .padres-flow-primary-button {
@@ -222,9 +223,9 @@
 .padres-flow-program-card .padres-flow-program-note {
   margin-top: 2px;
   padding: 9px 10px;
-  border: 1px solid #f4d8be;
+  border: 1px solid #bde2bd;
   border-radius: 13px;
-  background: #fff7ef;
+  background: #f0faf0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -233,7 +234,7 @@
 
 .padres-flow-program-card .padres-flow-program-note p {
   margin: 0;
-  color: #5c3b20;
+  color: #006600;
   font-size: 12px;
   font-weight: 750;
   line-height: 1.35;
@@ -277,10 +278,10 @@
   margin: 0 0 12px;
   padding: 9px 14px;
   align-items: center;
-  border: 1px solid #eedccc;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 12px 30px rgba(154, 78, 17, 0.09);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
   backdrop-filter: blur(14px);
 }
 
@@ -292,7 +293,7 @@
   width: 106px;
   height: 42px;
   padding: 2px 4px;
-  border-right: 1px solid #f1dfcc;
+  border-right: 1px solid #e2e8f0;
 }
 
 .padres-flow-header .padres-brand strong {
@@ -301,7 +302,7 @@
 }
 
 .padres-flow-header .padres-brand p {
-  color: #8a5a18;
+  color: #667085;
   font-size: 12.5px;
 }
 
@@ -326,9 +327,9 @@
 .padres-flow-header .padres-family-avatar {
   width: 44px;
   height: 44px;
-  color: #b84f0d;
-  background: #fff2e3;
-  box-shadow: inset 0 0 0 1px #ffd7ad;
+  color: #008000;
+  background: #f0faf0;
+  box-shadow: inset 0 0 0 1px #bde2bd;
 }
 
 .padres-flow-shell {
@@ -339,9 +340,9 @@
 .padres-flow-student-card,
 .padres-flow-panel,
 .padres-flow-stepper {
-  border: 1px solid #efdfce;
+  border: 1px solid #e2e8f0;
   background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 12px 28px rgba(145, 75, 16, 0.06);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.04);
 }
 
 .padres-flow-student-card {
@@ -354,8 +355,8 @@
   min-height: 110px;
   border-radius: 16px;
   padding: 12px 18px;
-  background:
-    linear-gradient(135deg, #fff2e3 0%, #ffffff 48%, #ecfdf3 100%);
+  background: linear-gradient(135deg, #006600 0%, #008000 100%);
+  color: #ffffff;
 }
 
 .padres-flow-student-card::after {
@@ -366,7 +367,7 @@
   width: 170px;
   height: 170px;
   border-radius: 999px;
-  background: rgba(249, 115, 22, 0.12);
+  background: rgba(0, 128, 0, 0.08);
 }
 
 .padres-flow-student-copy {
@@ -383,7 +384,7 @@
 .padres-flow-student-copy span {
   display: block;
   margin-bottom: 4px;
-  color: #b84f0d;
+  color: #e0ffe0;
   font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -392,7 +393,7 @@
 
 .padres-flow-student-copy h1 {
   margin: 0 0 4px;
-  color: #172331;
+  color: #ffffff;
   font-size: clamp(21px, 3vw, 28px);
   line-height: 1.08;
   font-weight: 850;
@@ -400,7 +401,7 @@
 
 .padres-flow-student-copy p {
   margin: 0;
-  color: #607086;
+  color: #f0faf0;
   font-size: 13px;
   font-weight: 700;
 }
@@ -462,14 +463,14 @@
 }
 
 .padres-flow-step.is-active {
-  color: #b84f0d;
-  background: #fff6ed;
-  box-shadow: inset 0 0 0 1px #f6cda6;
+  color: #008000;
+  background: #f0faf0;
+  box-shadow: inset 0 0 0 1px #bde2bd;
 }
 
 .padres-flow-step.is-done {
-  color: #12705d;
-  background: #eefbf6;
+  color: #008000;
+  background: #f0faf0;
 }
 
 .padres-flow-step-icon {
@@ -538,8 +539,8 @@
 .padres-flow-info-icon {
   display: grid;
   place-items: center;
-  color: #b84f0d;
-  background: #fff2e3;
+  color: #008000;
+  background: #f0faf0;
 }
 
 .padres-flow-program-icon {
@@ -730,7 +731,7 @@
 }
 
 .padres-flow-secondary-button:hover {
-  background: #fff7ef;
+  background: #f0faf0;
 }
 
 .padres-flow-payment-box span {
@@ -1609,9 +1610,9 @@
   gap: 12px;
   margin-top: 2px;
   padding: 9px 10px;
-  border: 1px solid #f4d8be;
+  border: 1px solid #bde2bd;
   border-radius: 13px;
-  background: #fff7ef;
+  background: #f0faf0;
 }
 
 .padres-flow-program-card .padres-flow-program-note .padres-flow-primary-button {

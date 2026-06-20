@@ -89,15 +89,15 @@ function usePadres(user) {
     }
   }, [user?.dni]);
 
-  const cargarProgramas = useCallback(async () => {
-    setCargandoProgramas(true);
+  const cargarProgramas = useCallback(async ({ silencioso = false } = {}) => {
+    if (!silencioso) setCargandoProgramas(true);
     try {
       const programas = await obtenerProgramasCoordinacion();
       setProgramasCoordinacion(programas);
     } catch (err) {
       console.error("Error cargando programas:", err);
     } finally {
-      setCargandoProgramas(false);
+      if (!silencioso) setCargandoProgramas(false);
     }
   }, []);
 
@@ -111,24 +111,36 @@ function usePadres(user) {
   }, [user?.dni]);
 
   useEffect(() => {
-    const actualizar = () => {
+    const lastUpdateRef = { current: Date.now() };
+
+    const actualizar = ({ forzar = false } = {}) => {
+      const ahora = Date.now();
+      if (!forzar && ahora - lastUpdateRef.current < 30000) {
+        return;
+      }
+      lastUpdateRef.current = ahora;
       cargarResumen({ silencioso: true });
-      cargarProgramas();
-    };
-    const actualizarPorStorage = (event) => {
-      if (event.key === "san_rafael_db_updated_at") actualizar();
+      cargarProgramas({ silencioso: true });
     };
 
-    window.addEventListener("mock-db-updated", actualizar);
-    window.addEventListener("api-db-updated", actualizar);
+    const actualizarPorStorage = (event) => {
+      if (event.key === "san_rafael_db_updated_at") actualizar({ forzar: true });
+    };
+
+    const handleDbUpdated = () => actualizar({ forzar: true });
+    const handleFocus = () => actualizar({ forzar: false });
+
+    window.addEventListener("mock-db-updated", handleDbUpdated);
+    window.addEventListener("api-db-updated", handleDbUpdated);
     window.addEventListener("storage", actualizarPorStorage);
-    window.addEventListener("focus", actualizar);
-    const intervalo = window.setInterval(actualizar, INTERVALO_REFRESCO_RESPALDO_MS);
+    window.addEventListener("focus", handleFocus);
+    const intervalo = window.setInterval(() => actualizar({ forzar: true }), INTERVALO_REFRESCO_RESPALDO_MS);
+
     return () => {
-      window.removeEventListener("mock-db-updated", actualizar);
-      window.removeEventListener("api-db-updated", actualizar);
+      window.removeEventListener("mock-db-updated", handleDbUpdated);
+      window.removeEventListener("api-db-updated", handleDbUpdated);
       window.removeEventListener("storage", actualizarPorStorage);
-      window.removeEventListener("focus", actualizar);
+      window.removeEventListener("focus", handleFocus);
       window.clearInterval(intervalo);
     };
   }, [cargarResumen, cargarProgramas]);

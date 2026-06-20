@@ -1,7 +1,6 @@
 .padres-layout {
-  --font-heading: Poppins, Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   min-height: 100vh;
-  color: #172331;
+  color: #000000;
   background: #ffffff;
   font-family: var(--font-body);
 }
@@ -40,7 +39,7 @@
 }
 
 .padres-header span {
-  color: #315f91;
+  color: #008000;
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
@@ -48,7 +47,7 @@
 
 .padres-header h1 {
   margin: 3px 0 4px;
-  color: #172331;
+  color: #000000;
   font-size: clamp(26px, 3vw, 36px);
   line-height: 1.05;
   font-weight: 950;
@@ -91,8 +90,8 @@
 .padres-ghost-button,
 .padres-outline-button,
 .padres-hero-secondary {
-  border: 1px solid #d3e1f1;
-  color: #315f91;
+  border: 1px solid #d1d5db;
+  color: #000000;
   background: #ffffff;
 }
 
@@ -100,28 +99,28 @@
 .padres-primary-button,
 .padres-green-button,
 .padres-hero-primary {
-  border: 1px solid #315f91;
+  border: 1px solid #000000;
   color: #ffffff;
-  background: #315f91;
-  box-shadow: 0 12px 22px rgba(49, 95, 145, 0.18);
+  background: #000000;
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.12);
 }
 
 .padres-blue-button {
-  border: 1px solid #2563eb;
+  border: 1px solid #008000;
   color: #ffffff;
-  background: #2563eb;
+  background: #008000;
 }
 
 .padres-disabled-button {
-  border: 1px solid #d4dce3;
-  color: #7a8794;
-  background: #e9eef3;
+  border: 1px solid #e4e4e7;
+  color: #a1a1aa;
+  background: #f4f4f5;
 }
 
 .padres-ghost-button:hover,
 .padres-outline-button:hover,
 .padres-hero-secondary:hover {
-  background: #edf5ff;
+  background: #f4f4f5;
 }
 
 .padres-primary-button:disabled {

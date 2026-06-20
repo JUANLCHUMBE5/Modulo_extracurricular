@@ -59,7 +59,8 @@ export async function registrarPago(datosPago) {
       estado_pago: datosPago.estado || "completado",
       numero_operacion: datosPago.numeroOperacion || datosPago.referenciaPago || "",
       telefono_operacion: datosPago.telefonoOperacion || "",
-      origen_registro: "Cajera"
+      origen_registro: "Cajera",
+      nro_recibo: datosPago.nroRecibo || ""
     };
     const res = await apiClient.post("/api/v1/extracurricular/pagos", apiPayload);
     if (!res.success) throw new Error(res.message || "Error al registrar pago");
@@ -124,7 +125,11 @@ function generarPagoId() {
 
 export async function actualizarPago(pagoId, datosActualizados) {
   if (isApiMode()) {
-    const res = await apiClient.put(`/api/v1/extracurricular/pagos/${pagoId}`, datosActualizados);
+    const apiPayload = {
+      ...datosActualizados,
+      nro_recibo: datosActualizados.nroRecibo || datosActualizados.nro_recibo || ""
+    };
+    const res = await apiClient.put(`/api/v1/extracurricular/pagos/${pagoId}`, apiPayload);
     if (!res.success) throw new Error(res.message || "Error al actualizar pago");
     return adaptarPago(res.data);
   }
@@ -517,6 +522,7 @@ export async function generarReporteCaja(filtros = {}) {
       apoderado: inscripcion.apoderado || "",
       telefono: inscripcion.telefono || "",
       puedePagarCaja: true,
+      nroRecibo: pago?.nroRecibo || "",
     };
   }).filter(Boolean);
 
@@ -649,6 +655,7 @@ function crearFilaPago(pago, programasVigentes = null) {
     fechaPago: pago.fechaPago || pago.fecha || "",
     apoderado: pago.apoderado || "",
     telefono: pago.telefono || "",
+    nroRecibo: pago.nroRecibo || "",
   };
 }
 

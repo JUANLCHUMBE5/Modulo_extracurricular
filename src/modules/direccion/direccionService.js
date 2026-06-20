@@ -230,6 +230,7 @@ export async function descargarReporteDireccion(tipoReporte, filtros = {}) {
       { header: "Estado", key: "estado", width: 16 },
       { header: "Medio", key: "medio", width: 18 },
       { header: "Fecha", key: "fecha", width: 22 },
+      { header: "Recibo SIADED", key: "nroRecibo", width: 18 },
     ]);
   }
 
@@ -295,6 +296,7 @@ function crearFilaPago(item) {
     estado: normalizarEstadoPago(item.estado),
     medio: item.formaPago || item.medioPago || "",
     fecha: item.fechaPago || item.fecha || "",
+    nroRecibo: item.nroRecibo || "",
   };
 }
 
@@ -382,6 +384,7 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
         medioPago: pago ? (pago.medio || "—") : "—",
         fechaPago: pago ? (pago.fecha || "—") : "—",
         nroOperacion: pago ? (pago.id || "—") : "—",
+        nroRecibo: pago ? (pago.nroRecibo || "—") : "—",
         fechaRegistro: ins.fechaRegistro || "",
       };
     });
@@ -628,6 +631,7 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
     medioPago: { header: "Medio de Pago", width: 18 },
     fechaPago: { header: "Fecha de Pago", width: 16 },
     nroOperacion: { header: "N° Operación", width: 16 },
+    nroRecibo: { header: "Recibo SIADED", width: 18 },
   };
 
   let sheetColumns = [];

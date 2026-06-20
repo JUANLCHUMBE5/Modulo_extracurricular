@@ -85,6 +85,12 @@ export default function HistorialPagosModal({
                         <dt>Factura</dt>
                         <dd>{pagoDetalle.id || "Sin codigo"}</dd>
                       </div>
+                      {pagoDetalle.nroRecibo && (
+                        <div>
+                          <dt>Recibo SIADED</dt>
+                          <dd>{pagoDetalle.nroRecibo}</dd>
+                        </div>
+                      )}
                       <div>
                         <dt>Operacion</dt>
                         <dd>{pagoDetalle.numeroOperacion || pagoDetalle.referenciaPago || "Sin numero"}</dd>

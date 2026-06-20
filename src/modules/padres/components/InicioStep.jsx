@@ -9,9 +9,15 @@ import {
   IconUserCircle as UserRound,
   IconX as X,
   IconSearch as Search,
+  IconSquareRoot as SquareRoot,
+  IconSchool as School,
+  IconCircleCheck as CheckCircle,
+  IconCheck as Check,
+  IconWallet as Wallet,
+  IconStar as Star,
 } from "@tabler/icons-react";
 import { formatearSoles } from "../hooks/usePadres";
-import { dividirHorarioPadres, formatearRangoFechasPadres, repararTexto } from "../utils/padresTextUtils";
+import { dividirHorarioPadres, formatearRangoFechasPadres, repararTexto, convertirHorasAMPM } from "../utils/padresTextUtils";
 import HorarioProgramaPadres from "./HorarioProgramaPadres";
 import PortalBadge from "./PortalBadge";
 
@@ -85,11 +91,15 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
   const nombrePrograma = programa.programa || programa.nombre || "Invitacion disponible";
   const destinoPrograma = obtenerDestinoProgramaPadres(programa);
 
+  let esPagado = false;
+  let esVerificando = false;
+  let esPendienteCaja = false;
+
   if (inscripcion) {
     const estadoPago = obtenerEstadoPagoPadres(inscripcion);
-    const esPagado = estadoPago === "pagado";
-    const esVerificando = estadoPago === "verificando";
-    const esPendienteCaja = estadoPago === "pendiente_caja";
+    esPagado = estadoPago === "pagado";
+    esVerificando = estadoPago === "verificando";
+    esPendienteCaja = estadoPago === "pendiente_caja";
 
     if (esPagado) {
       buttonText = "Pago exitoso";
@@ -110,53 +120,185 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
     buttonDisabled = true;
   }
 
+  const IconHead = Star;
+
+  // Determine status bar styles dynamically
+  let noteText = "Confirme la participación de su hijo(a) en este programa.";
+  let noteIconColor = "#3b82f6"; // blue
+  let noteBg = "#f8fafc";
+  let noteTextColor = "#334155";
+  let noteBorderColor = "#e2e8f0";
+
+  if (inscripcion) {
+    if (esPagado) {
+      noteText = "Inscripción activa y pago registrado con éxito.";
+      noteIconColor = "#16a34a"; // green
+      noteBg = "#f0fdf4";
+      noteTextColor = "#15803d";
+      noteBorderColor = "#bbf7d0";
+    } else if (esVerificando) {
+      noteText = "Pago en proceso de verificación.";
+      noteIconColor = "#ca8a04"; // yellow
+      noteBg = "#fefce8";
+      noteTextColor = "#a16207";
+      noteBorderColor = "#fef08a";
+    } else if (esPendienteCaja) {
+      noteText = "Reserva registrada. Pendiente de pago en caja.";
+      noteIconColor = "#ca8a04"; // yellow
+      noteBg = "#fefce8";
+      noteTextColor = "#a16207";
+      noteBorderColor = "#fef08a";
+    } else {
+      noteText = "Inscripción pendiente de pago.";
+      noteIconColor = "#dc2626"; // red
+      noteBg = "#fef2f2";
+      noteTextColor = "#991b1b";
+      noteBorderColor = "#fca5a5";
+    }
+  }
+
+  const datosHorario = dividirHorarioPadres(programa.horario);
+
   return (
-    <article className="padres-flow-panel padres-flow-program-card">
-      <div className="padres-flow-program-head">
-        <span className="padres-flow-program-icon">
-          <BookOpen size={25} />
-        </span>
-        <div>
-          <PortalBadge tone={inscripcion ? "green" : "orange"}>
-            Invitacion
-          </PortalBadge>
-          <h2>{nombrePrograma}</h2>
-          {destinoPrograma ? (
-            <p className="padres-flow-program-subtitle">Para {destinoPrograma}</p>
-          ) : null}
+    <article className="padres-flow-panel padres-flow-program-card custom-padres-program-card">
+        
+        {/* Main Details and Note wrapped in a single grey bordered box container */}
+        <div className="padres-details-box-container">
+          
+          {/* Upper header segment: Icon, Title, Subtitle, Badges on the right */}
+          <div className="padres-flow-program-head custom-program-head">
+            <div className="head-left-side">
+              <span className="padres-flow-program-icon custom-math-icon-box">
+                <IconHead size={22} fill="currentColor" />
+              </span>
+              <div className="head-text-block">
+                <h2>{repararTexto(nombrePrograma)}</h2>
+                {destinoPrograma ? (
+                  <p className="padres-flow-program-subtitle">Para {destinoPrograma}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="head-right-side">
+              <span className="badge-school-invitation">
+                <School size={14} style={{ marginRight: "5px", verticalAlign: "middle" }} />
+                Invitación Académica
+              </span>
+              {inscripcion && (
+                <span className="badge-school-assigned">
+                  <Check size={12} style={{ marginRight: "4px", verticalAlign: "middle" }} />
+                  Asignado
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Horizontal details row with 4 columns */}
+          <div className="padres-flow-program-grid custom-program-grid">
+            
+            <div className="padres-flow-info-tile custom-info-tile">
+              <span className="padres-flow-info-icon custom-icon-circle">
+                <CalendarDays size={18} />
+              </span>
+              <div className="info-tile-text-container">
+                {datosHorario ? (
+                  <>
+                    <span className="custom-inline-label">
+                      Horario: <strong className="inline-value">{datosHorario.grados}</strong>
+                    </span>
+                    <div className="custom-inline-pills">
+                      <div className="padres-schedule-item">
+                        <CalendarDays size={12} />
+                        <span>{datosHorario.dia}</span>
+                      </div>
+                      <div className="padres-schedule-item">
+                        <CalendarDays size={12} />
+                        <span>Almuerzo: {convertirHorasAMPM(datosHorario.almuerzo)}</span>
+                      </div>
+                      <div className="padres-schedule-item">
+                        <CalendarDays size={12} />
+                        <span>Clase: {convertirHorasAMPM(datosHorario.clase)}</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="custom-inline-label">
+                      Horario: <strong className="inline-value">{convertirHorasAMPM(programa.horario) || "Por confirmar"}</strong>
+                    </span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="padres-flow-info-tile custom-info-tile">
+              <span className="padres-flow-info-icon custom-icon-circle">
+                <CalendarDays size={18} />
+              </span>
+              <div className="info-tile-text-container">
+                <span>Vigencia</span>
+                <strong className="detail-value text-bold">
+                  {(() => {
+                    const txt = formatearRangoFechasPadres(programa.fechaInicio, programa.fechaFin);
+                    if (txt.includes(" al ")) {
+                      const partes = txt.split(" al ");
+                      return (
+                        <>
+                          {partes[0]} al
+                          <br />
+                          {partes[1]}
+                        </>
+                      );
+                    }
+                    return txt;
+                  })()}
+                </strong>
+              </div>
+            </div>
+
+            <div className="padres-flow-info-tile custom-info-tile">
+              <span className="padres-flow-info-icon custom-icon-circle">
+                <UserRound size={18} />
+              </span>
+              <div className="info-tile-text-container">
+                <span>Profesor(a)</span>
+                <strong className="detail-value text-bold">{programa.docente || programa.responsable || "Por definir"}</strong>
+              </div>
+            </div>
+
+            <div className="padres-flow-info-tile custom-info-tile is-price">
+              <span className="padres-flow-info-icon custom-icon-circle">
+                <Wallet size={18} />
+              </span>
+              <div className="info-tile-text-container">
+                <span>Costo</span>
+                <strong className="detail-value price-bold">{formatearSoles(programa.costo)}</strong>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Footer status row inside the same box */}
+          <div className="padres-flow-program-note custom-program-note" style={{ background: noteBg, borderTop: `1px solid ${noteBorderColor}` }}>
+            <p style={{ color: noteTextColor, display: "flex", alignItems: "center", gap: "8px" }}>
+              <CheckCircle size={18} style={{ color: noteIconColor, flexShrink: 0 }} />
+              {noteText}
+            </p>
+            <button 
+              className="padres-flow-primary-button custom-action-btn" 
+              type="button" 
+              disabled={buttonDisabled}
+              onClick={buttonAction}
+              style={buttonDisabled && buttonText !== "Pago exitoso" ? { background: "#e2e8f0", color: "#64748b", cursor: "not-allowed", border: "1px solid #cbd5e1" } : null}
+            >
+              {buttonText}
+              {buttonText === "Pago exitoso" && <Check size={14} style={{ marginLeft: "6px" }} />}
+            </button>
+          </div>
+
         </div>
-      </div>
 
-      <div className="padres-flow-program-grid">
-        <InfoTile icon={CalendarDays} label="Horario">
-          <HorarioProgramaPadres horario={programa.horario || "Por confirmar"} />
-        </InfoTile>
-        <InfoTile icon={CalendarDays} label="Vigencia" value={formatearRangoFechasPadres(programa.fechaInicio, programa.fechaFin)} />
-        <InfoTile icon={UserRound} label="Profesor(a)" value={programa.docente || programa.responsable || "Por definir"} />
-        <InfoTile icon={BookOpen} label="Costo" value={formatearSoles(programa.costo)} />
-        {mostrarDuracion ? (
-        <InfoTile
-          icon={CalendarDays}
-          label="Duración"
-          value={duracion}
-        />
-        ) : null}
-      </div>
-
-      <div className="padres-flow-program-note">
-        <p>{inscripcion ? "Revise el estado de su registro para continuar." : "Confirme la participacion de su hijo(a) en este programa."}</p>
-        <button 
-          className="padres-flow-primary-button" 
-          type="button" 
-          disabled={buttonDisabled}
-          onClick={buttonAction}
-          style={buttonDisabled ? { background: "#e2e8f0", color: "#64748b", cursor: "not-allowed", border: "1px solid #cbd5e1" } : null}
-        >
-          {buttonText}
-        </button>
-      </div>
-
-    </article>
+      </article>
   );
 }
 
@@ -205,7 +347,7 @@ function HorarioCompactoPadres({ horario, talleresDeportivos }) {
       <div className="padres-flow-course-schedule is-simple">
         <div className="padres-schedule-item">
           <CalendarDays size={14} />
-          <span>{texto}</span>
+          <span>{convertirHorasAMPM(texto)}</span>
         </div>
       </div>
     );
@@ -223,7 +365,7 @@ function HorarioCompactoPadres({ horario, talleresDeportivos }) {
       <div className="padres-flow-course-schedule is-simple">
         <div className="padres-schedule-item">
           <CalendarDays size={14} />
-          <span>{texto}</span>
+          <span>{convertirHorasAMPM(texto)}</span>
         </div>
       </div>
     );
@@ -233,12 +375,12 @@ function HorarioCompactoPadres({ horario, talleresDeportivos }) {
     <div className="padres-flow-course-schedule is-simple">
       <div className="padres-schedule-item">
         <CalendarDays size={14} />
-        <span>{[dia, clase].filter(Boolean).join(" ")}</span>
+        <span>{[dia, convertirHorasAMPM(clase)].filter(Boolean).join(" ")}</span>
       </div>
       {almuerzo ? (
         <div className="padres-schedule-item">
           <CalendarDays size={14} />
-          <span>Almuerzo: {almuerzo}</span>
+          <span>Almuerzo: {convertirHorasAMPM(almuerzo)}</span>
         </div>
       ) : null}
     </div>

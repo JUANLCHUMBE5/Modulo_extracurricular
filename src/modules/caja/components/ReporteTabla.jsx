@@ -57,6 +57,7 @@ export default function ReporteTabla({
               <Table.Th>Programa</Table.Th>
               <Table.Th>Monto</Table.Th>
               <Table.Th>Pago</Table.Th>
+              <Table.Th>Recibo SIADED</Table.Th>
               <Table.Th>Cod. operacion</Table.Th>
               <Table.Th>Telefono</Table.Th>
               <Table.Th>Medio / canal</Table.Th>
@@ -102,6 +103,11 @@ export default function ReporteTabla({
                     <Badge color={badgeColor} variant="light">
                       {badgeText}
                     </Badge>
+                  </Table.Td>
+                  <Table.Td>
+                    <span className={fila.nroRecibo ? "caja-operation-code" : "caja-row-muted"}>
+                      {fila.nroRecibo || "-"}
+                    </span>
                   </Table.Td>
                   <Table.Td>
                     <span className={fila.numeroOperacion ? "caja-operation-code" : "caja-row-muted"}>

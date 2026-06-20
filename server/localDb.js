@@ -25,7 +25,7 @@ const COLUMNAS_USUARIOS = ["id", "nombre", "usuario", "rol", "estado", "contrase
 const COLUMNAS_ESTUDIANTES = ["dni", "codigoEstudiante", "nombres", "grado", "seccion", "nivel", "sexo", "fechaNacimiento", "tipoAlumno", "estadoMatricula", "apoderado", "telefonoApoderado", "correoApoderado", "estadoInscripcion", "estadoCaja"];
 const COLUMNAS_PROGRAMAS = ["id", "nombre", "categoria", "fechaInicio", "fechaFin", "costo", "cupos", "cuposOcupados", "gradosAplicables", "periodo", "modalidadCobro", "duracionAvisoDias", "requiereUniforme", "requiereIndumentaria", "horario", "grupo", "plantilla", "plantillaBase64"];
 const COLUMNAS_INSCRIPCIONES = ["id", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "gradoEstudiante", "seccion", "programaId", "programa", "categoria", "periodo", "horario", "docente", "costo", "modalidadCobro", "fechaInicio", "fechaFin", "estadoPago", "pagoId"];
-const COLUMNAS_PAGOS = ["id", "inscripcionId", "dniEstudiante", "nombresEstudiante", "programaId", "programa", "periodo", "monto", "formaPago", "numeroOperacion", "telefonoOperacion", "capturaPagoNombre", "capturaPagoBase64", "estado", "fechaPago", "origenRegistro"];
+const COLUMNAS_PAGOS = ["id", "inscripcionId", "dniEstudiante", "nombresEstudiante", "programaId", "programa", "periodo", "monto", "formaPago", "numeroOperacion", "telefonoOperacion", "capturaPagoNombre", "capturaPagoBase64", "estado", "fechaPago", "origenRegistro", "nroRecibo"];
 const COLUMNAS_ASISTENCIAS = ["id", "inscripcionId", "pagoId", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "programaId", "programa", "horario", "estadoPago", "estadoAcceso", "observacion", "origen", "fechaRegistro"];
 const COLUMNAS_INVITADOS = ["programaId", "dni", "nombres", "grado", "seccion"];
 
@@ -197,6 +197,7 @@ async function readFromSupabase() {
       pagos: (resPagos.data || []).map(pag => {
         pag.nroOperacion = pag.numeroOperacion || "";
         pag.fechaRegistro = pag.fechaPago || "";
+        pag.nroRecibo = pag.nroRecibo || pag.nro_recibo || "";
         return pag;
       }),
       asistencias: resAsistencias.data || [],
@@ -234,7 +235,8 @@ async function writeToSupabase(db) {
         programaId: (pag.programaId === "" || pag.programaId === "null" || pag.programaId === undefined) ? null : pag.programaId,
         formaPago: pag.formaPago || pag.metodoPago || "Yape",
         numeroOperacion: pag.numeroOperacion || pag.nroOperacion || "",
-        telefonoOperacion: pag.telefonoOperacion || pag.telefono || ""
+        telefonoOperacion: pag.telefonoOperacion || pag.telefono || "",
+        nroRecibo: pag.nroRecibo || pag.nro_recibo || ""
       };
     });
     const asistencias = (db.asistencias || []).map(ast => {

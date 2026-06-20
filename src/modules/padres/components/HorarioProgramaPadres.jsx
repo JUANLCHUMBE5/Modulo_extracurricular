@@ -1,5 +1,5 @@
 import { Text } from "@mantine/core";
-import { dividirHorarioPadres, repararTexto } from "../utils/padresTextUtils";
+import { dividirHorarioPadres, repararTexto, convertirHorasAMPM } from "../utils/padresTextUtils";
 
 export default function HorarioProgramaPadres({ horario }) {
   const datos = dividirHorarioPadres(horario);
@@ -10,8 +10,8 @@ export default function HorarioProgramaPadres({ horario }) {
         <strong>{datos.grados}</strong>
         <div className="padres-schedule-pills">
           <span>{datos.dia}</span>
-          <span>Almuerzo: {datos.almuerzo}</span>
-          <span>Clase: {datos.clase}</span>
+          <span>Almuerzo: {convertirHorasAMPM(datos.almuerzo)}</span>
+          <span>Clase: {convertirHorasAMPM(datos.clase)}</span>
         </div>
       </div>
     );
@@ -47,5 +47,5 @@ export default function HorarioProgramaPadres({ horario }) {
     return <Text size="sm">{diasTexto}</Text>;
   }
 
-  return <Text size="sm">{texto || "Por confirmar"}</Text>;
+  return <Text size="sm">{convertirHorasAMPM(texto) || "Por confirmar"}</Text>;
 }

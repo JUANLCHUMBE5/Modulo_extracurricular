@@ -180,6 +180,16 @@ export default function CajaFields({
                 <option value="Tarjeta">Tarjeta</option>
               </select>
             </label>
+            <label className="caja-payment-method">
+              Nro. recibo SIADED
+              <input
+                type="text"
+                placeholder="Ej. 51614"
+                value={formulario.nroRecibo || ""}
+                onChange={(event) => actualizar("nroRecibo", event.currentTarget.value)}
+                disabled={esPorVerificar}
+              />
+            </label>
             {esPorVerificar ? (
               <div className="caja-yape-details-card" style={{
                 gridColumn: "1 / -1",

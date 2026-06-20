@@ -2742,6 +2742,7 @@ app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res
     const nombres_estudiante = body.nombres_estudiante || body.nombresEstudiante || "";
     const programa = body.programa || body.programaNombre || "";
     const periodo = body.periodo || "escolar";
+    const nroRecibo = body.nroRecibo || body.nro_recibo || "";
     
     const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
     const inscrip = (db.inscripciones || []).find(item => item.id === inscripcion_id);
@@ -2758,6 +2759,7 @@ app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res
       formaPago: forma_pago || "Efectivo",
       numeroOperacion: numero_operacion || "",
       telefonoOperacion: telefono_operacion || "",
+      nroRecibo: nroRecibo,
       capturaPagoBase64: "",
       estado: "validado", // estado normalizado
       fecha: fecha_pago || new Date().toISOString(),
@@ -2808,7 +2810,8 @@ app.put("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres"])
       formaPago: req.body.formaPago || db.pagos[idx].formaPago,
       numeroOperacion: req.body.numeroOperacion || db.pagos[idx].numeroOperacion,
       telefonoOperacion: req.body.telefonoOperacion || db.pagos[idx].telefonoOperacion,
-      fechaPago: req.body.fechaPago || db.pagos[idx].fechaPago
+      fechaPago: req.body.fechaPago || db.pagos[idx].fechaPago,
+      nroRecibo: req.body.nroRecibo !== undefined ? req.body.nroRecibo : (req.body.nro_recibo !== undefined ? req.body.nro_recibo : db.pagos[idx].nroRecibo)
     };
     db.pagos[idx] = updated;
     

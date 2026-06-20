@@ -1,7 +1,5 @@
-/* Parent dashboard refinement */
 .padres-layout {
-  background:
-    linear-gradient(180deg, #f7fbfa 0%, #eef7f4 42%, #f8fbfa 100%);
+  background: #ffffff;
 }
 
 .padres-main {
@@ -186,10 +184,7 @@
 
 /* Warm family-facing palette */
 .padres-layout {
-  background:
-    radial-gradient(circle at 8% 10%, rgba(49, 95, 145, 0.13), transparent 28%),
-    radial-gradient(circle at 92% 18%, rgba(255, 176, 67, 0.24), transparent 30%),
-    linear-gradient(180deg, #f8fbff 0%, #fff8ed 46%, #f6fbf8 100%);
+  background: #ffffff;
 }
 
 .padres-header span {

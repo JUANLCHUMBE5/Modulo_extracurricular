@@ -208,7 +208,26 @@ export function resolverHorarioPorGradoApi(programa, gradoAlumno = "") {
   if (!grupo) return "";
   const grados = formatearGradoApi(gradoDelTurno || gradoAlumno);
   const aula = grupo.aula ? ` · Aula ${grupo.aula}` : "";
-  return `${grados ? `${grados}: ` : ""}${grupo.dia} almuerzo ${grupo.almuerzoInicio || "14:20"}-${grupo.almuerzoFin || "15:10"}, clase ${grupo.horaInicio || ""}-${grupo.horaFin || ""}${aula}`;
+
+  const formatTime = (timeStr) => {
+    if (!timeStr) return "";
+    const parts = timeStr.trim().split(":");
+    if (parts.length < 2) return timeStr;
+    let hrs = parseInt(parts[0], 10);
+    const mins = parts[1].trim();
+    if (isNaN(hrs)) return timeStr;
+    const ampm = hrs >= 12 ? "PM" : "AM";
+    hrs = hrs % 12;
+    if (hrs === 0) hrs = 12;
+    return `${hrs}:${mins} ${ampm}`;
+  };
+
+  const almuerzoInicio = formatTime(grupo.almuerzoInicio || "14:20");
+  const almuerzoFin = formatTime(grupo.almuerzoFin || "15:10");
+  const horaInicio = formatTime(grupo.horaInicio || "");
+  const horaFin = formatTime(grupo.horaFin || "");
+
+  return `${grados ? `${grados}: ` : ""}${grupo.dia} almuerzo ${almuerzoInicio}-${almuerzoFin}, clase ${horaInicio}-${horaFin}${aula}`;
 }
 
 export function resolverDocentePorGradoApi(programa, gradoAlumno = "") {
@@ -588,7 +607,9 @@ export function mapDbPaymentToApi(item) {
     creado_en: item.fecha || "",
     numero_operacion: item.numeroOperacion || "",
     telefono_operacion: item.telefonoOperacion || "",
-    origen_registro: item.origenRegistro || "Portal padres"
+    origen_registro: item.origenRegistro || "Portal padres",
+    nro_recibo: item.nroRecibo || item.nro_recibo || "",
+    nroRecibo: item.nroRecibo || item.nro_recibo || ""
   };
 }
 

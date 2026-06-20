@@ -10,7 +10,7 @@ import {
   IconBook2 as BookOpen,
 } from "@tabler/icons-react";
 import PortalBadge from "./PortalBadge";
-import { describirSeleccionCambridgePadres, obtenerTipoCampo } from "../utils/padresTextUtils";
+import { describirSeleccionCambridgePadres, obtenerTipoCampo, convertirHorasAMPM } from "../utils/padresTextUtils";
 
 const opcionesCambridge = [
   { id: "A", titulo: "A", detalle: "Promovido/a por Certificado Oficial 2025" },
@@ -366,7 +366,7 @@ export default function ComunicadoStep({
             {programa.horario && (
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", textTransform: "uppercase" }}>Horario General</span>
-                <strong style={{ fontSize: "14px", color: "#0f172a" }}>{programa.horario}</strong>
+                <strong style={{ fontSize: "14px", color: "#0f172a" }}>{convertirHorasAMPM(programa.horario)}</strong>
               </div>
             )}
 

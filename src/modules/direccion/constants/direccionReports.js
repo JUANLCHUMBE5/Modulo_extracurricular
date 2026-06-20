@@ -36,6 +36,7 @@ export const columnasDisponiblesMap = {
     { key: "estado", label: "Estado Pago" },
     { key: "medio", label: "Medio de Pago" },
     { key: "fecha", label: "Fecha Pago" },
+    { key: "nroRecibo", label: "Recibo SIADED" },
   ],
   direccion_alumnos_pagos: [
     { key: "dni", label: "DNI Estudiante" },
@@ -51,6 +52,7 @@ export const columnasDisponiblesMap = {
     { key: "medioPago", label: "Medio de Pago" },
     { key: "fechaPago", label: "Fecha Pago" },
     { key: "nroOperacion", label: "N° Operación" },
+    { key: "nroRecibo", label: "Recibo SIADED" },
     { key: "fechaRegistro", label: "Fecha Registro" },
   ],
   direccion_alumnos_asistencias: [

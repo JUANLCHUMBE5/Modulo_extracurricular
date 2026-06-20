@@ -265,7 +265,8 @@ export function adaptarPago(apiPago) {
     fuente: apiPago.fuente || "",
     apoderado: apiPago.apoderado || "",
     telefono: apiPago.telefono || apiPago.telefono_apoderado || "",
-    puedePagarCaja: Boolean(apiPago.puedePagarCaja)
+    puedePagarCaja: Boolean(apiPago.puedePagarCaja),
+    nroRecibo: apiPago.nro_recibo || apiPago.nroRecibo || ""
   };
 }
 

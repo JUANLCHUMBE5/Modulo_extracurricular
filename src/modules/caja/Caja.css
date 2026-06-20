@@ -768,7 +768,8 @@
 }
 
 .caja-search-form input,
-.caja-payment-method select {
+.caja-payment-method select,
+.caja-payment-method input {
   width: 100%;
   min-height: 34px;
   border: 1px solid #cfded9;
@@ -784,7 +785,8 @@
   background: #f7faf9;
 }
 
-.caja-payment-method select:disabled {
+.caja-payment-method select:disabled,
+.caja-payment-method input:disabled {
   color: #667085;
   background: #f2f6f4;
   cursor: not-allowed;

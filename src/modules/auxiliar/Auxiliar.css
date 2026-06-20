@@ -1,8 +1,8 @@
 /* Estilos del Módulo de Auxiliar - Diseño Escolar Kiosk */
 
 :root {
-  --school-font-title: "Comic Sans MS", "Quicksand", var(--font-heading);
-  --school-font-body: "Comic Sans MS", "Quicksand", var(--font-body);
+  --school-font-title: var(--font-heading);
+  --school-font-body: var(--font-body);
   
   /* Paleta Vivid y Lúdica */
   --color-bg-main: #0284c7;

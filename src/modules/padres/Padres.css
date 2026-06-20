@@ -189,3 +189,305 @@
   background: #fbfdfb !important;
 }
 
+/* ── Custom Padres Program Card (SaaS Mockup layout) ───────────────────── */
+.custom-padres-program-card {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.04) !important;
+  padding: 12px !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.custom-program-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 0 !important;
+  padding: 10px 18px !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  width: 100% !important;
+}
+
+.head-left-side {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  text-align: left !important;
+}
+
+.custom-math-icon-box {
+  width: 36px !important;
+  height: 36px !important;
+  background: #fef9c3 !important; /* Soft gold/yellow background */
+  border: 1px solid #fde047 !important;
+  border-radius: 10px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #ca8a04 !important; /* Gold star color */
+}
+
+.head-text-block h2 {
+  font-size: 21px !important;
+  font-weight: 850 !important;
+  color: #0f172a !important;
+  margin: 0 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.head-text-block .padres-flow-program-subtitle {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  margin: 3px 0 0 0 !important;
+}
+
+.head-right-side {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.badge-school-invitation {
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  color: #008000 !important;
+  background: #f0faf0 !important;
+  border: 1px solid #bde2bd !important;
+  padding: 4px 12px !important;
+  border-radius: 999px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.badge-school-assigned {
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+  color: #15803d !important;
+  background: #dcfce7 !important;
+  border: 1px solid #bbf7d0 !important;
+  padding: 4px 12px !important;
+  border-radius: 999px !important;
+  text-transform: uppercase !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* Green bordered box container (Frame style) */
+.padres-details-box-container {
+  border: 1.5px solid #bde2bd !important;
+  border-radius: 12px !important;
+  background: #ffffff !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+}
+
+/* Horizontal Grid: 4 columns */
+.custom-program-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 0 !important;
+  padding: 12px 18px !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+@media (max-width: 900px) {
+  .custom-program-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .custom-program-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Clean Info Tiles */
+.custom-info-tile {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  padding: 4px 8px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  min-height: unset !important;
+  gap: 6px !important;
+}
+
+.custom-program-grid > .custom-info-tile:not(:last-child) {
+  border-right: none !important;
+}
+
+@media (max-width: 900px) {
+  .custom-program-grid > .custom-info-tile:nth-child(2) {
+    border-right: none !important;
+  }
+  .custom-program-grid > .custom-info-tile:nth-child(1),
+  .custom-program-grid > .custom-info-tile:nth-child(2) {
+    border-bottom: none !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .custom-program-grid > .custom-info-tile:not(:last-child) {
+    border-right: none !important;
+    border-bottom: none !important;
+  }
+}
+
+.custom-icon-circle {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: #f0faf0 !important; /* soft green */
+  color: #008000 !important;
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 auto !important;
+  border: none !important;
+}
+
+.info-tile-text-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+.info-tile-text-container span {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #000000 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+}
+
+.info-tile-text-container .detail-value {
+  font-size: 13.5px !important;
+  font-weight: 750 !important;
+  color: #1e293b !important;
+  margin-top: 3px !important;
+  line-height: 1.35 !important;
+}
+
+.info-tile-text-container .detail-value.text-bold {
+  font-weight: 750 !important;
+}
+
+.info-tile-text-container .detail-value.price-bold {
+  font-size: 18px !important;
+  font-weight: 950 !important;
+  color: #0f172a !important; /* Black/dark slate color */
+}
+
+/* Custom schedule layout inside grid */
+.custom-info-tile .padres-flow-course-schedule {
+  margin-top: 4px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 4px !important;
+  border: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+.custom-info-tile .padres-schedule-item {
+  background: #f0faf0 !important; /* soft green */
+  border: 1px solid #bde2bd !important;
+  border-radius: 6px !important;
+  padding: 3px 8px !important;
+  font-size: 10.5px !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  width: max-content !important;
+}
+
+.custom-info-tile .padres-schedule-item span {
+  color: #000000 !important;
+}
+
+.custom-info-tile .padres-schedule-item svg {
+  color: #008000 !important;
+}
+
+.custom-program-note {
+  border-top: none !important;
+  padding: 8px 18px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  width: 100% !important;
+  border-radius: 0 !important;
+}
+
+.custom-program-note p {
+  margin: 0 !important;
+  font-size: 13.5px !important;
+  font-weight: 750 !important;
+}
+
+.custom-action-btn {
+  min-width: 130px !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
+.custom-program-note button:disabled {
+  background: #f0fdf4 !important;
+  color: #15803d !important;
+  border: 1px solid #bbf7d0 !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+
+.custom-inline-label {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #000000 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  white-space: nowrap !important;
+}
+
+.inline-value {
+  color: #1e293b !important;
+  font-size: 13.5px !important;
+  font-weight: 850 !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+}
+
+.custom-inline-pills {
+  margin-top: 6px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  gap: 6px !important;
+}
+
+
