@@ -7,7 +7,10 @@ export function requireAuth(req, res, next) {
   }
   const token = authHeader.split(" ")[1];
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secreto-local-san-rafael-extracurricular-2026");
+    if (!process.env.JWT_SECRET) {
+      return res.status(500).json({ success: false, message: "Error de configuración del servidor." });
+    }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     next();
   } catch {

@@ -74,7 +74,10 @@ async function saveExternalStudent(student) {
 const app = express();
 const PORT = Number(process.env.PORT || process.env.EXCEL_API_PORT || 5175);
 const API_HOST = process.env.API_HOST || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
-const JWT_SECRET = process.env.JWT_SECRET || "secreto-local-san-rafael-extracurricular-2026";
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET no está configurado en .env. El servidor no puede iniciar sin un secreto seguro.");
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 function normalizarEstadoPagoReporteCaja(pago = null, inscripcion = null) {
   if (pago) {
