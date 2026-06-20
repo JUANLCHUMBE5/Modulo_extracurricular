@@ -120,9 +120,25 @@ function DocumentosView({
                       onChange={(event) => setForm((actual) => ({ ...actual, categoria: event.target.value }))}
                     >
                       <option value="">Seleccione una categoría</option>
-                      {categorias.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
-                      ))}
+                      {(categorias || [])
+                        .filter(c => {
+                          const norm = String(c || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                          return !(
+                            norm === "vacaciones utiles" ||
+                            norm === "talleres recreativos" ||
+                            norm === "talleres deportivos" ||
+                            norm === "deportivos" ||
+                            norm === "taller recreativo" ||
+                            norm === "vacaciones"
+                          );
+                        })
+                        .map(cat => {
+                          let label = cat;
+                          if (cat === "Academico") label = "Académico";
+                          if (cat === "Maraton") label = "Maratón";
+                          return <option key={cat} value={cat}>{label}</option>;
+                        })
+                      }
                     </select>
                   </div>
                   <button

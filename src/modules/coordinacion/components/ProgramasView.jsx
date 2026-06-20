@@ -82,6 +82,41 @@ function ProgramasView({
     }
   };
 
+  const listadoVerano = ["Vacaciones Útiles", "Talleres Recreativos", "Talleres Deportivos"];
+  const listadoEscolar = (categorias || []).filter(c => {
+    const normCat = String(c || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return ![
+      "vacaciones utiles",
+      "talleres recreativos",
+      "talleres deportivos",
+      "deportivos",
+      "taller recreativo",
+      "vacaciones"
+    ].includes(normCat);
+  });
+
+  const categoriasFiltradasOptions = (() => {
+    if (filtroPeriodo === "escolar") {
+      return listadoEscolar.map(c => {
+        let label = c;
+        if (c === "Academico") label = "Académico";
+        if (c === "Maraton") label = "Maratón";
+        return { value: c, label };
+      });
+    }
+    if (filtroPeriodo === "verano") {
+      return listadoVerano.map(c => ({ value: c, label: c }));
+    }
+    // "todos"
+    const unicos = new Set([...listadoEscolar, ...listadoVerano]);
+    return Array.from(unicos).map(c => {
+      let label = c;
+      if (c === "Academico") label = "Académico";
+      if (c === "Maraton") label = "Maratón";
+      return { value: c, label };
+    });
+  })();
+
   const hasActiveFilters = busqueda.trim() !== "" || filtroCategoria !== "todos" || filtroPeriodo !== "todos" || (!mostrarSoloArchivados && filtroEstado !== "todos");
 
   return (
@@ -172,7 +207,7 @@ function ProgramasView({
                   onChange={(value) => setFiltroCategoria(value || "todos")}
                   data={[
                     { value: "todos", label: "Todas" },
-                    ...categorias.map((cat) => ({ value: cat, label: cat }))
+                    ...categoriasFiltradasOptions
                   ]}
                   size="md"
                   allowDeselect={false}

@@ -108,6 +108,18 @@ function ProgramaFormModal({
   const esNoAcademico = catLowerClean && catLowerClean !== "academico" && catLowerClean !== "vacaciones utiles";
   const esCircularEspecial = form.tipoComunicado && form.tipoComunicado !== "Otro genérico";
 
+  const categoriasEscolar = (categorias || []).filter(c => {
+    const norm = String(c || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return !(
+      norm === "vacaciones utiles" ||
+      norm === "talleres recreativos" ||
+      norm === "talleres deportivos" ||
+      norm === "deportivos" ||
+      norm === "taller recreativo" ||
+      norm === "vacaciones"
+    );
+  });
+
   useEffect(() => {
     if (show) {
       setConComunicadoManual(Boolean(form.comunicado || form.comunicadoCompleto));
@@ -246,14 +258,15 @@ function ProgramaFormModal({
                 </div>
 
                 <div className="coord-field coord-category-field">
-                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-                    <span>{esFormularioVerano ? "Categoría general *" : "Categoría *"}</span>
+                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: "4px" }}>
+                    <span style={{ whiteSpace: "nowrap" }}>Categoría *</span>
                     <button
                       type="button"
                       className="coord-category-toggle-btn"
                       onClick={() => setMostrarGestorCategorias(!mostrarGestorCategorias)}
+                      style={{ whiteSpace: "nowrap" }}
                     >
-                      {mostrarGestorCategorias ? "Ocultar gestión" : "Gestionar"}
+                      {mostrarGestorCategorias ? "Ocultar" : "Gestionar"}
                     </button>
                   </label>
                   <select
@@ -275,7 +288,12 @@ function ProgramaFormModal({
                         <option value="Talleres Deportivos">Talleres Deportivos</option>
                       </>
                     ) : (
-                      categorias.map(c => <option key={c} value={c}>{c}</option>)
+                      categoriasEscolar.map(c => {
+                        let label = c;
+                        if (c === "Academico") label = "Académico";
+                        if (c === "Maraton") label = "Maratón";
+                        return <option key={c} value={c}>{label}</option>;
+                      })
                     )}
                   </select>
                   {esFormularioVerano ? (
@@ -300,7 +318,12 @@ function ProgramaFormModal({
                         <div className="coord-inline-field">
                           <select value={catAEliminar} onChange={e => setCatAEliminar(e.target.value)}>
                             <option value="">Seleccione</option>
-                            {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+                            {categoriasEscolar.map(c => {
+                              let label = c;
+                              if (c === "Academico") label = "Académico";
+                              if (c === "Maraton") label = "Maratón";
+                              return <option key={c} value={c}>{label}</option>;
+                            })}
                           </select>
                           <button type="button" className="coord-mini-btn coord-mini-danger-btn" onClick={quitarCategoria}><Trash2 size={14} /></button>
                         </div>

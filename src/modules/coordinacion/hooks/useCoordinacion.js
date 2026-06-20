@@ -1598,14 +1598,42 @@ export default function useCoordinacion({
   function cambiarPeriodoFormulario(valor) {
     const periodoNormalizado = normalizarPeriodoVista(valor);
     const catLower = String(form.categoria || "").toLowerCase();
-    const esDeportivo = catLower === "deportivo" || catLower === "talleres deportivos" || esProgramaDeportivo(form.nombre, form.categoria);
+    
+    // Validar y resetear categoría si cambia de periodo y es incompatible
+    let nuevaCategoria = form.categoria;
+    const catLowerNew = String(form.categoria || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (periodoNormalizado === "verano") {
+      const esCatVerano = [
+        "vacaciones utiles",
+        "talleres recreativos",
+        "talleres deportivos"
+      ].includes(catLowerNew);
+      if (!esCatVerano) {
+        nuevaCategoria = "";
+      }
+    } else {
+      const esCatVerano = [
+        "vacaciones utiles",
+        "talleres recreativos",
+        "talleres deportivos",
+        "deportivos",
+        "taller recreativo",
+        "vacaciones"
+      ].includes(catLowerNew);
+      if (esCatVerano) {
+        nuevaCategoria = "";
+      }
+    }
+
+    const catLowerFinal = String(nuevaCategoria || "").toLowerCase();
+    const esDeportivo = catLowerFinal === "deportivo" || catLowerFinal === "talleres deportivos" || esProgramaDeportivo(form.nombre, nuevaCategoria);
     const usaTalleresPorEdad =
       periodoNormalizado === "verano"
-        ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
+        ? catLowerFinal !== "academico" && catLowerFinal !== "académico" && catLowerFinal !== "vacaciones utiles" && catLowerFinal !== "vacaciones útiles"
         : esDeportivo;
 
     if (periodoNormalizado === "verano") {
-      setTallerDepForm((prev) => ({ ...prev, deporte: form.categoria === "Talleres Deportivos" ? "Fútbol" : "Danza" }));
+      setTallerDepForm((prev) => ({ ...prev, deporte: nuevaCategoria === "Talleres Deportivos" ? "Fútbol" : "Danza" }));
     } else {
       setTallerDepForm((prev) => {
         if (!["Vóley", "Fútbol", "Básquet", "Otro"].includes(prev.deporte)) {
@@ -1617,6 +1645,7 @@ export default function useCoordinacion({
     setForm((f) => ({
       ...f,
       periodo: periodoNormalizado,
+      categoria: nuevaCategoria,
       modalidadCobro: periodoNormalizado === "verano" ? "Unico" : f.modalidadCobro,
       invitacionMasiva: periodoNormalizado === "verano" ? false : f.invitacionMasiva,
       requiereIndumentaria: periodoNormalizado === "verano" ? false : f.requiereIndumentaria,

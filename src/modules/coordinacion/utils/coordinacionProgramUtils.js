@@ -189,6 +189,7 @@ export function normalizarHorariosPorGrupo(grupos, gradosAplicables = null) {
       aula: String(grupo.aula || "").trim(),
       responsable: String(grupo.responsable || "").trim(),
       tutora: String(grupo.tutora || "").trim(),
+      cupos: grupo.cupos !== undefined ? Number(grupo.cupos) : 20,
     };
   }).filter((grupo) => grupo.grados.length > 0);
 }
