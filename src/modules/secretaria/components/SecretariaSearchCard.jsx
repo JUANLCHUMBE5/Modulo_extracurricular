@@ -22,6 +22,7 @@ function SecretariaSearchCard({
   resultadosNombre = [],
   setDni,
   setPeriodo,
+  modoBusquedaAsistencia = false,
 }) {
   const [filtroNivel, setFiltroNivel] = useState("");
   const [filtroGrado, setFiltroGrado] = useState("");
@@ -75,8 +76,12 @@ function SecretariaSearchCard({
           <IdCard size={21} />
         </span>
         <div>
-          <h2>Buscar estudiante</h2>
-          <p>Ingrese DNI o nombre para iniciar la atencion.</p>
+          <h2>{modoBusquedaAsistencia ? "Consultar asistencia" : "Buscar estudiante"}</h2>
+          <p>
+            {modoBusquedaAsistencia
+              ? "Ingrese DNI o nombre para ver el registro de asistencia del estudiante."
+              : "Ingrese DNI o nombre para iniciar la atencion."}
+          </p>
         </div>
       </div>
 
@@ -118,7 +123,7 @@ function SecretariaSearchCard({
             )}
             <span>{buscando ? "Buscando" : "Buscar"}</span>
           </button>
-          {periodo === "verano" ? (
+          {periodo === "verano" && !modoBusquedaAsistencia ? (
             <button
               className="secretaria-secondary-button secretaria-new-summer-student"
               type="button"
@@ -230,8 +235,12 @@ function SecretariaSearchCard({
             <Search size={28} />
           </div>
           <div>
-            <strong>Lista para iniciar</strong>
-            <span>Seleccione el periodo y busque al estudiante para continuar con el registro.</span>
+            <strong>{modoBusquedaAsistencia ? "Consulta de Asistencia" : "Lista para iniciar"}</strong>
+            <span>
+              {modoBusquedaAsistencia
+                ? "Seleccione el período y busque al estudiante para consultar sus asistencias."
+                : "Seleccione el período y busque al estudiante para continuar con el registro."}
+            </span>
           </div>
         </div>
       ) : null}

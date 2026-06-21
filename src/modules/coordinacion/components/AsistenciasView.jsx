@@ -6,6 +6,7 @@ import {
   Badge,
   Loader,
   SegmentedControl,
+  TextInput,
 } from "@mantine/core";
 import {
   IconCalendar as CalendarDays,
@@ -14,6 +15,8 @@ import {
   IconFileDownload as FileDown,
   IconUserCheck as UserCheck,
   IconAlertCircle as AlertCircle,
+  IconSearch as Search,
+  IconSchool as School,
 } from "@tabler/icons-react";
 import { apiDb } from "../../../services/dbApi";
 import {
@@ -32,9 +35,13 @@ import {
   exportPdfDaily,
   exportExcelMonthly,
   exportPdfMonthly,
+  exportPdfIndividual,
 } from "../utils/asistenciaExports";
+import { resolverHorarioPorGrado, resolverDocentePorGrado } from "../../secretaria/services/secretariaServiceUtils";
 
 function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatriculados, toggleSidebarButton }) {
+
+
   const [tallerId, setTallerId] = useState("");
   const [asistencias, setAsistencias] = useState([]);
   const [matriculados, setMatriculados] = useState([]);
@@ -43,6 +50,18 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   const [mensaje, setMensaje] = useState("");
   const [tipoMsg, setTipoMsg] = useState("error");
   const [vistaTipo, setVistaTipo] = useState("diario"); // "diario" | "mensual"
+  const [busqueda, setBusqueda] = useState("");
+  const [gradoSeleccionado, setGradoSeleccionado] = useState("");
+
+  // Helper function for safe, normalized string matching
+  function normalizarTextoSimple(val = "") {
+    return String(val || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+  }
 
   // Fetch asistencias and matriculados whenever selected tallerId changes
   useEffect(() => {
@@ -50,6 +69,8 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       setAsistencias([]);
       setMatriculados([]);
       setFechaSeleccionada("");
+      setBusqueda("");
+      setGradoSeleccionado("");
       return;
     }
 
@@ -64,6 +85,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
         setAsistencias(asistResult || []);
         setMatriculados(matricResult || []);
         setFechaSeleccionada(""); // Reset date selection
+        setGradoSeleccionado(""); // Reset grade selection
       } catch (err) {
         setAsistencias([]);
         setMatriculados([]);
@@ -77,9 +99,11 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
     cargarDatosTaller();
   }, [tallerId, listarAsistenciasPrograma, listarMatriculados]);
 
-  const programaSeleccionado = useMemo(() => {
+  const programmeSeleccionado = useMemo(() => {
     return programas.find((p) => p.id === tallerId);
   }, [tallerId, programas]);
+
+  const programaSeleccionado = programmeSeleccionado;
 
   // Group fetched attendance data by date (newest first for dropdown)
   const gruposFecha = useMemo(() => {
@@ -122,11 +146,128 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
     );
   }, [matriculados]);
 
+  // Get list of enabled grades for the selected workshop
+  const gradosHabilitados = useMemo(() => {
+    if (!programaSeleccionado) return [];
+
+    if (Array.isArray(programaSeleccionado.horariosPorGrupo) && programaSeleccionado.horariosPorGrupo.length > 0) {
+      const setGrados = new Set();
+      programaSeleccionado.horariosPorGrupo.forEach((grupo) => {
+        if (Array.isArray(grupo.grados)) {
+          grupo.grados.forEach((g) => setGrados.add(g));
+        }
+      });
+      return Array.from(setGrados).sort();
+    }
+
+    if (Array.isArray(programaSeleccionado.gradosAplicables) && programaSeleccionado.gradosAplicables.length > 0) {
+      return [...programaSeleccionado.gradosAplicables].sort();
+    }
+
+    const setGrados = new Set();
+    matriculados.forEach((alumno) => {
+      const g = alumno.grado || alumno.gradoEstudiante;
+      if (g) setGrados.add(g);
+    });
+    return Array.from(setGrados).sort();
+  }, [programaSeleccionado, matriculados]);
+
+  // Format grades for select dropdown
+  const selectGradosData = useMemo(() => {
+    return gradosHabilitados.map((g) => {
+      const parts = String(g || "").split(":");
+      let label = g;
+      if (parts.length === 2) {
+        const nivel = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+        label = `${parts[1]}° ${nivel}`;
+      } else {
+        const match = g.match(/(\d+)\s+(\w+)/);
+        if (match) {
+          const nivel = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+          label = `${match[1]}° ${nivel}`;
+        }
+      }
+      return {
+        value: g,
+        label: label,
+      };
+    });
+  }, [gradosHabilitados]);
+
+  // Resolve schedule for selected grade
+  const horarioDeGrado = useMemo(() => {
+    if (!programaSeleccionado || !gradoSeleccionado) return "";
+    return resolverHorarioPorGrado(programaSeleccionado, gradoSeleccionado) || programaSeleccionado.horario || "";
+  }, [programaSeleccionado, gradoSeleccionado]);
+
+  // Resolve teacher for selected grade
+  const docenteDeGrado = useMemo(() => {
+    if (!programaSeleccionado) return "";
+    if (!gradoSeleccionado) return programaSeleccionado.responsable || "No asignado";
+    return resolverDocentePorGrado(programaSeleccionado, gradoSeleccionado) || programaSeleccionado.responsable || "No asignado";
+  }, [programaSeleccionado, gradoSeleccionado]);
+
+  // Label for selected grade
+  const gradoLabel = useMemo(() => {
+    if (!gradoSeleccionado) return "";
+    return selectGradosData.find((g) => g.value === gradoSeleccionado)?.label || gradoSeleccionado;
+  }, [gradoSeleccionado, selectGradosData]);
+
+  // Search and grade filter for students
+  const matriculadosFiltrados = useMemo(() => {
+    let list = matriculadosOrdenados;
+
+    if (gradoSeleccionado) {
+      list = list.filter((alumno) => {
+        const gAlumno = alumno.grado || alumno.gradoEstudiante || "";
+        return normalizarTextoSimple(gAlumno) === normalizarTextoSimple(gradoSeleccionado);
+      });
+    } else if (gradosHabilitados.length > 0) {
+      return [];
+    }
+
+    const query = busqueda.trim().toLowerCase();
+    if (!query) return list;
+    return list.filter((alumno) => {
+      const nombre = String(alumno.nombres || alumno.nombresEstudiante || "").toLowerCase();
+      const dni = String(alumno.dni || alumno.dniEstudiante || "").toLowerCase();
+      const codigo = String(alumno.codigoEstudiante || "").toLowerCase();
+      return nombre.includes(query) || dni.includes(query) || codigo.includes(query);
+    });
+  }, [matriculadosOrdenados, gradoSeleccionado, gradosHabilitados, busqueda]);
+
   // Active date group for daily view
   const grupoActivo = useMemo(() => {
     if (!gruposFecha.length) return null;
     return gruposFecha.find((g) => g.clave === fechaSeleccionada) || gruposFecha[0];
   }, [gruposFecha, fechaSeleccionada]);
+
+  // Search and grade filter for daily view rows
+  const filasGrupoActivoFiltradas = useMemo(() => {
+    if (!grupoActivo) return [];
+    
+    let list = grupoActivo.filas;
+
+    if (gradoSeleccionado) {
+      list = list.filter((asist) => {
+        const dni = asist.dni || obtenerDniAsistencia(asist);
+        const matriculado = matriculados.find((m) => m.dni === dni);
+        const gAlumno = matriculado ? (matriculado.grado || matriculado.gradoEstudiante || "") : "";
+        return normalizarTextoSimple(gAlumno) === normalizarTextoSimple(gradoSeleccionado);
+      });
+    } else if (gradosHabilitados.length > 0) {
+      return [];
+    }
+
+    const query = busqueda.trim().toLowerCase();
+    if (!query) return list;
+    return list.filter((asist) => {
+      const nombre = String(obtenerNombreAsistencia(asist) || "").toLowerCase();
+      const dni = String(obtenerDniAsistencia(asist) || "").toLowerCase();
+      const codigo = String(asist.codigoEstudiante || "").toLowerCase();
+      return nombre.includes(query) || dni.includes(query) || codigo.includes(query);
+    });
+  }, [grupoActivo, gradoSeleccionado, gradosHabilitados, matriculados, busqueda]);
 
   // Set active date key when active group changes
   useEffect(() => {
@@ -156,10 +297,18 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   const handleExportExcelDaily = async () => {
     try {
       await exportExcelDaily({
-        programaSeleccionado,
-        grupoActivo,
-        matriculadosOrdenados,
-        hasMatriculados,
+        programaSeleccionado: {
+          ...programaSeleccionado,
+          nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
+          horario: horarioDeGrado || programaSeleccionado.horario,
+          responsable: docenteDeGrado || programaSeleccionado.responsable,
+        },
+        grupoActivo: grupoActivo ? {
+          ...grupoActivo,
+          filas: filasGrupoActivoFiltradas,
+        } : null,
+        matriculadosOrdenados: matriculadosFiltrados,
+        hasMatriculados: matriculadosFiltrados.length > 0,
         asistencias,
       });
     } catch (err) {
@@ -172,11 +321,19 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   const handleExportPdfDaily = () => {
     try {
       exportPdfDaily({
-        programaSeleccionado,
-        grupoActivo,
-        matriculadosOrdenados,
-        matriculados,
-        hasMatriculados,
+        programaSeleccionado: {
+          ...programaSeleccionado,
+          nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
+          horario: horarioDeGrado || programaSeleccionado.horario,
+          responsable: docenteDeGrado || programaSeleccionado.responsable,
+        },
+        grupoActivo: grupoActivo ? {
+          ...grupoActivo,
+          filas: filasGrupoActivoFiltradas,
+        } : null,
+        matriculadosOrdenados: matriculadosFiltrados,
+        matriculados: matriculadosFiltrados,
+        hasMatriculados: matriculadosFiltrados.length > 0,
         asistencias,
       });
     } catch (err) {
@@ -189,9 +346,14 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   const handleExportExcelMonthly = async () => {
     try {
       await exportExcelMonthly({
-        programaSeleccionado,
-        matriculados,
-        matriculadosOrdenados,
+        programaSeleccionado: {
+          ...programaSeleccionado,
+          nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
+          horario: horarioDeGrado || programaSeleccionado.horario,
+          responsable: docenteDeGrado || programaSeleccionado.responsable,
+        },
+        matriculados: matriculadosFiltrados,
+        matriculadosOrdenados: matriculadosFiltrados,
         fechasColumnas,
         checkMap,
       });
@@ -205,9 +367,14 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   const handleExportPdfMonthly = () => {
     try {
       exportPdfMonthly({
-        programaSeleccionado,
-        matriculados,
-        matriculadosOrdenados,
+        programaSeleccionado: {
+          ...programaSeleccionado,
+          nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
+          horario: horarioDeGrado || programaSeleccionado.horario,
+          responsable: docenteDeGrado || programaSeleccionado.responsable,
+        },
+        matriculados: matriculadosFiltrados,
+        matriculadosOrdenados: matriculadosFiltrados,
         fechasColumnas,
         checkMap,
       });
@@ -217,19 +384,52 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
     }
   };
 
+  // PDF Export Handler (Individual Attendance Report)
+  const handleExportPdfIndividual = (alumno) => {
+    try {
+      exportPdfIndividual({
+        programaSeleccionado: {
+          ...programaSeleccionado,
+          nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
+          horario: horarioDeGrado || programaSeleccionado.horario,
+          responsable: docenteDeGrado || programaSeleccionado.responsable,
+        },
+        alumno,
+        fechasColumnas,
+        checkMap,
+      });
+    } catch (err) {
+      setMensaje(err.message || "No se pudo exportar el reporte individual de asistencia.");
+      setTipoMsg("error");
+    }
+  };
+
   const selectProgramasData = useMemo(() => {
-    return programas.map((prog) => ({
-      value: prog.id,
-      label: `${prog.id} - ${prog.nombre}`,
-    }));
+    return programas
+      .filter((p) => p.estado !== "Archivado")
+      .map((prog) => ({
+        value: prog.id,
+        label: `${prog.id} - ${prog.nombre}`,
+      }));
   }, [programas]);
 
   const selectFechasData = useMemo(() => {
-    return gruposFecha.map((grupo) => ({
-      value: grupo.clave,
-      label: `${grupo.titulo} (${grupo.filas.length} asistencia${grupo.filas.length === 1 ? "" : "s"})`,
-    }));
-  }, [gruposFecha]);
+    return gruposFecha.map((grupo) => {
+      let filasFiltradas = grupo.filas;
+      if (gradoSeleccionado) {
+        filasFiltradas = filasFiltradas.filter((asist) => {
+          const dni = asist.dni || obtenerDniAsistencia(asist);
+          const matriculado = matriculados.find((m) => m.dni === dni);
+          const gAlumno = matriculado ? (matriculado.grado || matriculado.gradoEstudiante || "") : "";
+          return normalizarTextoSimple(gAlumno) === normalizarTextoSimple(gradoSeleccionado);
+        });
+      }
+      return {
+        value: grupo.clave,
+        label: `${grupo.titulo} (${filasFiltradas.length} asistencia${filasFiltradas.length === 1 ? "" : "s"})`,
+      };
+    });
+  }, [gruposFecha, gradoSeleccionado, matriculados]);
 
   const hasMatriculados = matriculados.length > 0;
 
@@ -276,6 +476,27 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 />
               </div>
 
+              {/* Grado selector */}
+              {tallerId && selectGradosData.length > 0 && (
+                <div style={{ flex: "1 1 200px" }}>
+                  <Select
+                    label={
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                        <School size={14} style={{ color: "#176c60" }} /> Seleccionar Grado
+                      </span>
+                    }
+                    placeholder="Elija un grado..."
+                    value={gradoSeleccionado}
+                    onChange={(value) => setGradoSeleccionado(value || "")}
+                    data={selectGradosData}
+                    size="md"
+                    searchable
+                    clearable
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              )}
+
               {/* Fecha selector - visible only in daily mode */}
               {vistaTipo === "diario" && (
                 <div style={{ flex: "1 1 240px" }}>
@@ -285,12 +506,20 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                         <CalendarDays size={14} style={{ color: "#176c60" }} /> Fecha
                       </span>
                     }
-                    placeholder={tallerId ? (selectFechasData.length ? "Seleccione una fecha..." : "Sin asistencias") : "Elija un taller primero"}
+                    placeholder={
+                      !tallerId
+                        ? "Elija un taller primero"
+                        : (selectGradosData.length > 0 && !gradoSeleccionado)
+                        ? "Elija un grado primero"
+                        : selectFechasData.length
+                        ? "Seleccione una fecha..."
+                        : "Sin asistencias"
+                    }
                     value={fechaSeleccionada}
                     onChange={(value) => setFechaSeleccionada(value || "")}
                     data={selectFechasData}
                     size="md"
-                    disabled={!tallerId || !selectFechasData.length}
+                    disabled={!tallerId || (selectGradosData.length > 0 && !gradoSeleccionado) || !selectFechasData.length}
                     style={{ width: "100%" }}
                     allowDeselect={false}
                   />
@@ -298,7 +527,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
               )}
 
               {/* Export Buttons */}
-              {tallerId && hasMatriculados && (
+              {tallerId && hasMatriculados && (!selectGradosData.length || gradoSeleccionado) && (
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", flexShrink: 0 }}>
                   {vistaTipo === "diario" && (
                     <>
@@ -362,17 +591,63 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
             </MantineAlert>
           )}
 
-          {tallerId && !cargando && (
-            <SegmentedControl
-              value={vistaTipo}
-              onChange={setVistaTipo}
-              data={[
-                { label: "Asistencia Diaria", value: "diario" },
-                { label: "Consolidado Mensual (Matriz)", value: "mensual" },
-              ]}
-              color="teal"
-              style={{ marginBottom: "16px" }}
-            />
+          {/* Schedule Info Card */}
+          {tallerId && gradoSeleccionado && !cargando && (
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              padding: "16px",
+              background: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              borderRadius: "12px",
+              marginBottom: "16px",
+            }}>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                <div>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    Horario de Grado Resuelto
+                  </span>
+                  <h3 style={{ margin: "2px 0 0 0", color: "#1e3a8a", fontSize: "17px" }}>
+                    {programaSeleccionado?.nombre} - {gradoLabel}
+                  </h3>
+                </div>
+                <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+                  <div>
+                    <span style={{ display: "block", fontSize: "10px", color: "#60a5fa", fontWeight: 600 }}>DOCENTE</span>
+                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#1e3a8a" }}>{docenteDeGrado || "No asignado"}</span>
+                  </div>
+                  <div>
+                    <span style={{ display: "block", fontSize: "10px", color: "#60a5fa", fontWeight: 600 }}>HORARIO GENERAL</span>
+                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#1e3a8a" }}>{horarioDeGrado || "No definido"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {tallerId && !cargando && (!selectGradosData.length || gradoSeleccionado) && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", marginBottom: "16px", flexWrap: "wrap" }}>
+              <SegmentedControl
+                value={vistaTipo}
+                onChange={setVistaTipo}
+                data={[
+                  { label: "Asistencia Diaria", value: "diario" },
+                  { label: "Consolidado Mensual (Matriz)", value: "mensual" },
+                ]}
+                color="teal"
+              />
+              
+              <TextInput
+                placeholder="Buscar por DNI, nombre o código..."
+                leftSection={<Search size={16} style={{ color: "#64748b" }} />}
+                value={busqueda}
+                onChange={(event) => setBusqueda(event.currentTarget.value)}
+                style={{ width: "300px" }}
+                size="sm"
+                clearable
+              />
+            </div>
           )}
 
           {cargando ? (
@@ -384,6 +659,12 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
               <UserCheck size={48} style={{ color: "#94a3b8", marginBottom: "12px" }} />
               <h3 style={{ color: "#475569", margin: 0 }}>Seleccione un taller</h3>
               <p style={{ color: "#64748b", fontSize: "14px", marginTop: "4px" }}>Elija un taller del listado para comenzar a explorar las asistencias.</p>
+            </div>
+          ) : (selectGradosData.length > 0 && !gradoSeleccionado) ? (
+            <div className="coord-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 20px" }}>
+              <School size={48} style={{ color: "#94a3b8", marginBottom: "12px" }} />
+              <h3 style={{ color: "#475569", margin: 0 }}>Seleccione un grado</h3>
+              <p style={{ color: "#64748b", fontSize: "14px", marginTop: "4px" }}>Este taller tiene grados habilitados. Seleccione uno para ver el horario y la asistencia.</p>
             </div>
           ) : (asistencias.length === 0 && !hasMatriculados) ? (
             <div className="coord-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 20px" }}>
@@ -453,7 +734,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                       </button>
                     </div>
                     <Badge color="sanrafael" size="md">
-                      {grupoActivo.filas.length} alumno{grupoActivo.filas.length === 1 ? "" : "s"} registrados hoy
+                      {filasGrupoActivoFiltradas.length} alumno{filasGrupoActivoFiltradas.length === 1 ? "" : "s"} encontrados
                     </Badge>
                   </div>
                 ) : (
@@ -463,7 +744,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                       Plantilla de control físico (Sin registros de asistencia)
                     </span>
                     <Badge color="teal" size="md">
-                      {matriculados.length} alumno{matriculados.length === 1 ? "" : "s"} matriculados
+                      {matriculadosFiltrados.length} alumno{matriculadosFiltrados.length === 1 ? "" : "s"} encontrados
                     </Badge>
                   </div>
                 )}
@@ -480,60 +761,106 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                         <th>Pago</th>
                         <th>Acceso</th>
                         <th>{grupoActivo ? "Observación" : "Observación / Firma"}</th>
+                        <th style={{ width: "80px", textAlign: "center" }}>Reporte</th>
                       </tr>
                     </thead>
                     <tbody>
                       {grupoActivo ? (
-                        grupoActivo.filas.map((asist, index) => {
-                          const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asist);
-                          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
-                          const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
-                          const toneAcceso = String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "warning" : "error";
+                        filasGrupoActivoFiltradas.length > 0 ? (
+                          filasGrupoActivoFiltradas.map((asist, index) => {
+                            const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asist);
+                            const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
+                            const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
+                            const toneAcceso = String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "warning" : "error";
 
-                          return (
-                            <tr key={`${asist.id || obtenerDniAsistencia(asist) || obtenerNombreAsistencia(asist)}-${index}`}>
-                              <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asist))}</td>
-                              <td>{obtenerDniAsistencia(asist) || "Sin DNI"}</td>
-                              <td>{asist.codigoEstudiante || "—"}</td>
-                              <td><strong>{obtenerNombreAsistencia(asist) || "—"}</strong></td>
-                              <td>
-                                <span style={badgeStyle(String(asist.estadoPago).toLowerCase() === "pagado", "warning")}>
-                                  {asist.estadoPago || "Pendiente"}
-                                </span>
-                              </td>
-                              <td>
-                                <span style={badgeStyle(esAccesoPermitido, toneAcceso)}>
-                                  {textoAcceso}
-                                </span>
-                              </td>
-                              <td>{asist.observacion || "—"}</td>
-                            </tr>
-                          );
-                        })
+                            const studentObj = {
+                              dni: obtenerDniAsistencia(asist),
+                              nombres: obtenerNombreAsistencia(asist),
+                              codigoEstudiante: asist.codigoEstudiante || "",
+                              telefono: asist.telefono || "",
+                            };
+
+                            return (
+                              <tr key={`${asist.id || obtenerDniAsistencia(asist) || obtenerNombreAsistencia(asist)}-${index}`}>
+                                {grupoActivo && <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asist))}</td>}
+                                <td>{obtenerDniAsistencia(asist) || "Sin DNI"}</td>
+                                <td>{asist.codigoEstudiante || "—"}</td>
+                                <td><strong>{obtenerNombreAsistencia(asist) || "—"}</strong></td>
+                                <td>
+                                  <span style={badgeStyle(String(asist.estadoPago).toLowerCase() === "pagado", "warning")}>
+                                    {asist.estadoPago || "Pendiente"}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={badgeStyle(esAccesoPermitido, toneAcceso)}>
+                                    {textoAcceso}
+                                  </span>
+                                </td>
+                                <td>{asist.observacion || "—"}</td>
+                                <td style={{ textAlign: "center" }}>
+                                  <Button
+                                    variant="subtle"
+                                    color="teal"
+                                    size="xs"
+                                    onClick={() => handleExportPdfIndividual(studentObj)}
+                                    title="Descargar Reporte Individual"
+                                  >
+                                    <FileDown size={16} />
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan={grupoActivo ? 8 : 7} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
+                              No se encontraron estudiantes para la búsqueda.
+                            </td>
+                          </tr>
+                        )
                       ) : (
-                        matriculadosOrdenados.map((alumno, index) => {
-                          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(alumno.estadoPago).toLowerCase());
-                          const textoAcceso = esAccesoPermitido ? "Permitido" : (String(alumno.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
+                        matriculadosFiltrados.length > 0 ? (
+                          matriculadosFiltrados.map((alumno, index) => {
+                            const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(alumno.estadoPago).toLowerCase());
+                            const textoAcceso = esAccesoPermitido ? "Permitido" : (String(alumno.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
 
-                          return (
-                            <tr key={`${alumno.dni || alumno.id || index}-${index}`}>
-                              <td>{alumno.dni || alumno.dniEstudiante || "Sin DNI"}</td>
-                              <td>{alumno.codigoEstudiante || "—"}</td>
-                              <td><strong>{alumno.nombres || alumno.nombresEstudiante || "—"}</strong></td>
-                              <td>
-                                <span style={badgeStyle(String(alumno.estadoPago).toLowerCase() === "pagado", "warning")}>
-                                  {alumno.estadoPago || "Pendiente"}
-                                </span>
-                              </td>
-                              <td>
-                                <span style={badgeStyle(esAccesoPermitido, "warning")}>
-                                  {textoAcceso}
-                                </span>
-                              </td>
-                              <td><span style={{ color: "#cbd5e1" }}>_________________</span></td>
-                            </tr>
-                          );
-                        })
+                            return (
+                              <tr key={`${alumno.dni || alumno.id || index}-${index}`}>
+                                <td>{alumno.dni || alumno.dniEstudiante || "Sin DNI"}</td>
+                                <td>{alumno.codigoEstudiante || "—"}</td>
+                                <td><strong>{alumno.nombres || alumno.nombresEstudiante || "—"}</strong></td>
+                                <td>
+                                  <span style={badgeStyle(String(alumno.estadoPago).toLowerCase() === "pagado", "warning")}>
+                                    {alumno.estadoPago || "Pendiente"}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span style={badgeStyle(esAccesoPermitido, "warning")}>
+                                    {textoAcceso}
+                                  </span>
+                                </td>
+                                <td><span style={{ color: "#cbd5e1" }}>_________________</span></td>
+                                <td style={{ textAlign: "center" }}>
+                                  <Button
+                                    variant="subtle"
+                                    color="teal"
+                                    size="xs"
+                                    onClick={() => handleExportPdfIndividual(alumno)}
+                                    title="Descargar Reporte Individual"
+                                  >
+                                    <FileDown size={16} />
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan={7} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
+                              No se encontraron estudiantes matriculados para la búsqueda.
+                            </td>
+                          </tr>
+                        )
                       )}
                     </tbody>
                   </table>
@@ -569,13 +896,13 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                       <thead>
                         <tr>
                           <th style={{ width: "50px", textAlign: "center" }}>N°</th>
+                          <th style={{ width: "100px" }}>DNI</th>
                           <th style={{ minWidth: "220px" }}>Apellidos y Nombres</th>
-                          <th style={{ width: "80px", textAlign: "center" }}>Edad</th>
                           <th style={{ minWidth: "120px" }}>Teléfono</th>
                           {fechasColumnas.length > 0 ? (
                             fechasColumnas.map((fechaCol) => (
                               <th
-                                key={fechaCol.clone || fechaCol.clave}
+                                key={fechaCol.clave}
                                 style={{
                                   width: "60px",
                                   textAlign: "center",
@@ -604,52 +931,69 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                               </th>
                             ))
                           )}
+                          <th style={{ width: "80px", textAlign: "center" }}>Reporte</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {matriculadosOrdenados.map((alumno, index) => {
-                          const birthdate = alumno.fechaNacimiento || (apiDb.estudiantes && apiDb.estudiantes[alumno.dni]?.fechaNacimiento);
-                          const edad = birthdate ? calcularEdad(birthdate) : "—";
-                          
-                          return (
-                            <tr key={alumno.dni || index}>
-                              <td style={{ textAlign: "center" }}>{index + 1}</td>
-                              <td><strong>{alumno.nombres || alumno.nombresEstudiante || "—"}</strong></td>
-                              <td style={{ textAlign: "center" }}>{edad}</td>
-                              <td>{alumno.telefono || "—"}</td>
-                              {fechasColumnas.length > 0 ? (
-                                fechasColumnas.map((fechaCol) => {
-                                  const asistio = checkMap.has(`${alumno.dni}:${fechaCol.clave}`);
-                                  return (
+                        {matriculadosFiltrados.length > 0 ? (
+                          matriculadosFiltrados.map((alumno, index) => {
+                            return (
+                              <tr key={alumno.dni || index}>
+                                <td style={{ textAlign: "center" }}>{index + 1}</td>
+                                <td>{alumno.dni || alumno.dniEstudiante || "—"}</td>
+                                <td><strong>{alumno.nombres || alumno.nombresEstudiante || "—"}</strong></td>
+                                <td>{alumno.telefono || alumno.telefonoApoderado || "—"}</td>
+                                {fechasColumnas.length > 0 ? (
+                                  fechasColumnas.map((fechaCol) => {
+                                    const asistio = checkMap.has(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`);
+                                    return (
+                                      <td
+                                        key={fechaCol.clave}
+                                        style={{
+                                          textAlign: "center",
+                                          fontWeight: "bold",
+                                          color: asistio ? "#12b886" : "#ced4da",
+                                          fontSize: "16px",
+                                        }}
+                                      >
+                                        {asistio ? "✓" : "—"}
+                                      </td>
+                                    );
+                                  })
+                                ) : (
+                                  [1, 2, 3, 4, 5].map((num) => (
                                     <td
-                                      key={fechaCol.clave}
+                                      key={`blank-${num}`}
                                       style={{
                                         textAlign: "center",
-                                        fontWeight: "bold",
-                                        color: asistio ? "#12b886" : "#ced4da",
-                                        fontSize: "16px",
+                                        color: "#cbd5e1",
                                       }}
                                     >
-                                      {asistio ? "✓" : "—"}
+                                      —
                                     </td>
-                                  );
-                                })
-                              ) : (
-                                [1, 2, 3, 4, 5].map((num) => (
-                                  <td
-                                    key={`blank-${num}`}
-                                    style={{
-                                      textAlign: "center",
-                                      color: "#cbd5e1",
-                                    }}
+                                  ))
+                                )}
+                                <td style={{ textAlign: "center" }}>
+                                  <Button
+                                    variant="subtle"
+                                    color="teal"
+                                    size="xs"
+                                    onClick={() => handleExportPdfIndividual(alumno)}
+                                    title="Descargar Reporte Individual"
                                   >
-                                    —
-                                  </td>
-                                ))
-                              )}
-                            </tr>
-                          );
-                        })}
+                                    <FileDown size={16} />
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan={5 + (fechasColumnas.length > 0 ? fechasColumnas.length : 5)} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
+                              No se encontraron estudiantes para la búsqueda.
+                            </td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>

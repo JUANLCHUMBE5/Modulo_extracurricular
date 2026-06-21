@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Alert, Badge, Button, Group, Loader, Select, Table, Checkbox, Grid, Divider, Modal, Textarea, TextInput } from "@mantine/core";
+import { Alert, Badge, Button, Group, Loader, Select, MultiSelect, Table, Checkbox, Grid, Divider, Modal, Textarea, TextInput } from "@mantine/core";
 import { BarChart, DonutChart } from "@mantine/charts";
 import { toast } from "sonner";
 import {
@@ -29,7 +29,7 @@ import {
   IconUser as UserIcon,
 } from "@tabler/icons-react";
 import { StatCard, EmptyChart } from "./components/DireccionCards";
-import { columnasDisponiblesMap, opcionesReportesPorModulo } from "./constants/direccionReports";
+import { columnasDisponiblesMap, opcionesReportesSimplificados } from "./constants/direccionReports";
 import { descargarReporteDireccion, descargarReportePersonalizado, obtenerPanelDireccion, buscarInscripcionesParaDescuento, aplicarDescuentoInscripcion, removerDescuentoInscripcion } from "./direccionService";
 import { calcularMetricasAnalisis, filtrarRegistrosReporte } from "./utils/direccionAnalytics";
 import { formatearSoles, puedeExportar } from "./utils/direccionFormatters";
@@ -58,6 +58,7 @@ export default function Direccion({ onLogout, user }) {
     });
   };
   const [periodo, setPeriodo] = useState("todos");
+  const [anio, setAnio] = useState("todos");
   const [panel, setPanel] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -66,18 +67,21 @@ export default function Direccion({ onLogout, user }) {
   const [dashboardTab, setDashboardTab] = useState("caja");
 
   // Estados del Centro de Reportes Modular y Personalizado
-  const [moduloActivo, setModuloActivo] = useState("caja"); // "caja" | "coordinacion" | "padres" | "direccion"
-  const [reporteSeleccionado, setReporteSeleccionado] = useState("pagos_historial");
-  const [customTipo, setCustomTipo] = useState("pagos");
+  const [reporteSeleccionado, setReporteSeleccionado] = useState("direccion_alumnos_pagos");
+  const [customTipo, setCustomTipo] = useState("direccion_alumnos_pagos");
   const [customFiltroOrigen, setCustomFiltroOrigen] = useState("todos");
   const [customFiltroPago, setCustomFiltroPago] = useState("todos");
   const [customFiltroCategoria, setCustomFiltroCategoria] = useState("todos");
   const [customFiltroPrograma, setCustomFiltroPrograma] = useState("todos");
+  const [customFiltroGrados, setCustomFiltroGrados] = useState([]);
   const [customColumnas, setCustomColumnas] = useState([]);
   const [exportandoCustom, setExportandoCustom] = useState(false);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [consolidacionAsistencia, setConsolidacionAsistencia] = useState("semana");
+  const [incluirInactivos, setIncluirInactivos] = useState(false);
+  const [customFiltroMeses, setCustomFiltroMeses] = useState([]);
+  const [customFiltroSemanas, setCustomFiltroSemanas] = useState([]);
 
   // Estados para Descuentos y Becas
   const [busquedaDescuento, setBusquedaDescuento] = useState("");
@@ -105,24 +109,6 @@ export default function Direccion({ onLogout, user }) {
     }
   }, [busquedaDescuento]);
 
-  // Cambiar el modulo activo y pre-seleccionar el primer reporte de esa categoria
-  const cambiarModulo = (mod) => {
-    setModuloActivo(mod);
-    setCustomFiltroOrigen("todos");
-    setCustomFiltroPago("todos");
-    setCustomFiltroCategoria("todos");
-    setCustomFiltroPrograma("todos");
-    if (mod === "caja") {
-      setReporteSeleccionado("pagos_historial");
-    } else if (mod === "coordinacion") {
-      setReporteSeleccionado("programas_catalogo");
-    } else if (mod === "padres") {
-      setReporteSeleccionado("padres_matriculas");
-    } else if (mod === "direccion") {
-      setReporteSeleccionado("direccion_alumnos_pagos");
-    }
-  };
-
   // Mapear el reporte descriptivo a tipo de datos y pre-selección inteligente de columnas
   useEffect(() => {
     let tipo = "inscripciones";
@@ -130,28 +116,16 @@ export default function Direccion({ onLogout, user }) {
 
     if (reporteSeleccionado === "pagos_historial") {
       tipo = "pagos";
-      defaultCols = ["id", "dni", "estudiante", "programa", "monto", "estado", "medio", "fecha"];
-    } else if (reporteSeleccionado === "pagos_resumen") {
-      tipo = "pagos";
-      defaultCols = ["estudiante", "programa", "monto", "estado"];
-    } else if (reporteSeleccionado === "programas_catalogo") {
-      tipo = "programas";
-      defaultCols = ["nombre", "periodo", "estado", "categoria", "responsable", "costo", "proyectado", "recaudado"];
-    } else if (reporteSeleccionado === "programas_capacidad") {
-      tipo = "programas";
-      defaultCols = ["id", "nombre", "inscritos", "cupos", "avance"];
-    } else if (reporteSeleccionado === "padres_matriculas") {
-      tipo = "inscripciones";
-      defaultCols = ["id", "dni", "estudiante", "grado", "programa", "estadoInscripcion", "estadoPago", "origen"];
-    } else if (reporteSeleccionado === "padres_apoderados") {
-      tipo = "inscripciones";
-      defaultCols = ["estudiante", "apoderado", "telefono", "programa"];
+      defaultCols = ["id", "dni", "estudiante", "programa", "monto", "estado", "medio", "fecha", "nroRecibo"];
     } else if (reporteSeleccionado === "direccion_alumnos_pagos") {
       tipo = "direccion_alumnos_pagos";
-      defaultCols = ["dni", "estudiante", "grado", "programa", "costo", "montoPagado", "pendiente", "estadoPago", "medioPago", "fechaPago"];
+      defaultCols = ["dni", "estudiante", "grado", "apoderado", "telefono", "programa", "costoOriginal", "descuentoAprobado", "descuentoTipo", "descuentoValor", "descuentoMonto", "costo", "montoPagado", "pendiente", "estadoPago", "medioPago", "fechaPago", "nroRecibo", "origen", "fechaRegistro"];
     } else if (reporteSeleccionado === "direccion_alumnos_asistencias") {
       tipo = "direccion_alumnos_asistencias";
-      defaultCols = ["dni", "estudiante", "grado", "programa"];
+      defaultCols = ["dni", "estudiante", "grado", "programa", "telefono"];
+    } else if (reporteSeleccionado === "programas_catalogo") {
+      tipo = "programas";
+      defaultCols = ["nombre", "categoria", "responsable", "inscritos", "conBeca", "cupos", "costo", "proyectado", "recaudado", "porCobrar"];
     }
 
     setCustomTipo(tipo);
@@ -160,20 +134,23 @@ export default function Direccion({ onLogout, user }) {
     setCustomFiltroPago("todos");
     setCustomFiltroCategoria("todos");
     setCustomFiltroPrograma("todos");
+    setCustomFiltroGrados([]);
+    setCustomFiltroMeses([]);
+    setCustomFiltroSemanas([]);
   }, [reporteSeleccionado]);
 
   const cargarPanel = useCallback(async ({ silencioso = false } = {}) => {
     if (!silencioso) setCargando(true);
     setError("");
     try {
-      const datos = await obtenerPanelDireccion({ periodo });
+      const datos = await obtenerPanelDireccion({ periodo, anio });
       setPanel(datos);
     } catch (err) {
       setError(err.message || "No se pudo cargar el modulo de Direccion.");
     } finally {
       if (!silencioso) setCargando(false);
     }
-  }, [periodo]);
+  }, [periodo, anio]);
 
   useEffect(() => {
     cargarPanel();
@@ -259,31 +236,103 @@ export default function Direccion({ onLogout, user }) {
     return clean.slice(0, 2);
   };
 
-  const categoriasOptions = useMemo(() => {
-    const list = panel?.categorias || ["Academico", "Deportivo", "Maraton", "Reforzamiento"];
-    return [
-      { value: "todos", label: "Todas las categorías" },
-      ...list.map(c => ({ value: c, label: c }))
-    ];
+  const listadoVerano = ["Vacaciones Útiles", "Talleres Recreativos", "Talleres Deportivos"];
+  const listadoEscolar = useMemo(() => {
+    const dbCats = panel?.categorias || ["Academico", "Deportivo", "Maraton", "Reforzamiento"];
+    return dbCats.filter(c => {
+      const normCat = String(c || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      return ![
+        "vacaciones utiles",
+        "talleres recreativos",
+        "talleres deportivos",
+        "deportivos",
+        "taller recreativo",
+        "vacaciones"
+      ].includes(normCat);
+    });
   }, [panel?.categorias]);
 
+  const categoriasOptions = useMemo(() => {
+    let list = [];
+    if (periodo === "verano") {
+      list = listadoVerano;
+    } else if (periodo === "escolar") {
+      list = listadoEscolar;
+    } else {
+      const unicos = new Set([...listadoEscolar, ...listadoVerano]);
+      list = Array.from(unicos);
+    }
+    return [
+      { value: "todos", label: "Todas las categorías" },
+      ...list.map(c => {
+        let label = c;
+        if (c === "Academico") label = "Académico";
+        if (c === "Maraton") label = "Maratón";
+        return { value: c, label };
+      })
+    ];
+  }, [listadoEscolar, periodo]);
+
+  const aniosOptions = useMemo(() => {
+    const list = panel?.aniosDisponibles || [];
+    const currentYear = String(new Date().getFullYear());
+    const merged = Array.from(new Set([currentYear, ...list])).sort((a, b) => b.localeCompare(a));
+    return [
+      { value: "todos", label: "Todos los años" },
+      ...merged.map(y => ({ value: y, label: y }))
+    ];
+  }, [panel?.aniosDisponibles]);
+
+  useEffect(() => {
+    if (customFiltroCategoria !== "todos") {
+      const exists = categoriasOptions.some(opt => opt.value === customFiltroCategoria);
+      if (!exists) {
+        setCustomFiltroCategoria("todos");
+      }
+    }
+  }, [categoriasOptions, customFiltroCategoria]);
+
   const programasOptions = useMemo(() => {
+    let list = filasProgramas;
+    if (!incluirInactivos) {
+      list = list.filter(p => String(p.estado || "").toLowerCase() === "habilitado");
+    }
     return [
       { value: "todos", label: "Todos los talleres" },
-      ...filasProgramas.map(p => ({ value: p.id || p.nombre, label: p.nombre }))
+      ...list.map(p => ({ value: p.id || p.nombre, label: p.nombre }))
     ];
-  }, [filasProgramas]);
+  }, [filasProgramas, incluirInactivos]);
+
+  const gradosOptions = useMemo(() => {
+    const inscripciones = panel?.reportes?.inscripciones || [];
+    const gradosSet = new Set();
+    inscripciones.forEach(ins => {
+      const grado = String(ins.grado || "").trim();
+      if (grado) gradosSet.add(grado);
+    });
+    const sorted = [...gradosSet].sort((a, b) => {
+      const numA = parseInt(a) || 99;
+      const numB = parseInt(b) || 99;
+      if (numA !== numB) return numA - numB;
+      return a.localeCompare(b);
+    });
+    return sorted.map(g => ({ value: g, label: g }));
+  }, [panel]);
 
   const registrosFiltrados = useMemo(() => filtrarRegistrosReporte({
     customFiltroOrigen,
     customFiltroPago,
     customFiltroCategoria,
     customFiltroPrograma,
+    customFiltroGrados,
     customTipo,
     panel,
     fechaInicio,
     fechaFin,
-  }), [panel, customTipo, customFiltroOrigen, customFiltroPago, customFiltroCategoria, customFiltroPrograma, fechaInicio, fechaFin]);
+    incluirInactivos,
+    customFiltroMeses,
+    customFiltroSemanas,
+  }), [panel, customTipo, customFiltroOrigen, customFiltroPago, customFiltroCategoria, customFiltroPrograma, customFiltroGrados, fechaInicio, fechaFin, incluirInactivos, customFiltroMeses, customFiltroSemanas]);
 
   const ejecutarDescargaCustom = async () => {
     if (!exportarHabilitado) {
@@ -303,9 +352,14 @@ export default function Direccion({ onLogout, user }) {
           estadoPago: customFiltroPago,
           categoria: customFiltroCategoria,
           programa: customFiltroPrograma,
+          grados: customFiltroGrados,
           fechaInicio,
           fechaFin,
           consolidacionAsistencia,
+          incluirInactivos,
+          anio,
+          meses: customFiltroMeses,
+          semanas: customFiltroSemanas,
         },
         columnas: customColumnas,
         periodo: periodo,
@@ -463,19 +517,7 @@ export default function Direccion({ onLogout, user }) {
             )}
 
           </div>
-          <Group gap="xs" wrap="wrap">
-            <Select
-              className="dir-period"
-              data={[
-                { value: "todos", label: "Todos los periodos" },
-                { value: "escolar", label: "Año escolar" },
-                { value: "verano", label: "Verano" },
-              ]}
-              value={periodo}
-              onChange={(value) => setPeriodo(value || "todos")}
-              allowDeselect={false}
-            />
-          </Group>
+
         </header>
 
         {error ? (
@@ -925,76 +967,48 @@ export default function Direccion({ onLogout, user }) {
                 </div>
               </header>
 
-              {/* ── SELECCIÓN DE MÓDULOS (TABS DE DISEÑO PREMIUM) ── */}
-              <div className="dir-module-tabs-row" role="tablist">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={moduloActivo === "caja"}
-                  className={`dir-module-tab ${moduloActivo === "caja" ? "is-active" : ""}`}
-                  onClick={() => cambiarModulo("caja")}
-                >
-                  <Wallet size={18} />
-                  <div>
-                    <strong>Módulo Cajera</strong>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={moduloActivo === "coordinacion"}
-                  className={`dir-module-tab ${moduloActivo === "coordinacion" ? "is-active" : ""}`}
-                  onClick={() => cambiarModulo("coordinacion")}
-                >
-                  <School size={18} />
-                  <div>
-                    <strong>Módulo Coordinación Académica</strong>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={moduloActivo === "padres"}
-                  className={`dir-module-tab ${moduloActivo === "padres" ? "is-active" : ""}`}
-                  onClick={() => cambiarModulo("padres")}
-                >
-                  <Users size={18} />
-                  <div>
-                    <strong>Módulo Padres</strong>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={moduloActivo === "direccion"}
-                  className={`dir-module-tab ${moduloActivo === "direccion" ? "is-active" : ""}`}
-                  onClick={() => cambiarModulo("direccion")}
-                >
-                  <Crown size={18} />
-                  <div>
-                    <strong>Consolidados Dirección</strong>
-                  </div>
-                </button>
-              </div>
-
-              <div className="dir-builder-content">
+              <div className="dir-builder-content" style={{ marginTop: "24px" }}>
                 <div className="dir-builder-sidebar">
                   <div className="dir-builder-form-group">
-                    <label className="dir-builder-label"><Click size={14} /> 1. Reporte</label>
+                    <label className="dir-builder-label"><Click size={14} /> 1. Seleccione el Reporte</label>
                     <Select
-                      data={opcionesReportesPorModulo[moduloActivo] || []}
+                      data={opcionesReportesSimplificados}
                       value={reporteSeleccionado}
-                      onChange={(val) => setReporteSeleccionado(val || opcionesReportesPorModulo[moduloActivo]?.[0]?.value)}
+                      onChange={(val) => setReporteSeleccionado(val || "direccion_alumnos_pagos")}
                       allowDeselect={false}
+                      searchable
+                      styles={{
+                        input: {
+                          fontWeight: 600,
+                          color: "#1e293b",
+                        }
+                      }}
                     />
                   </div>
 
                   <div className="dir-builder-form-group">
                     <label className="dir-builder-label"><Filter size={14} /> 2. Filtros</label>
-                    <div className="dir-builder-filters" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div className="dir-builder-filters">
+                      <Select
+                        label="Año"
+                        data={aniosOptions}
+                        value={anio}
+                        onChange={(val) => setAnio(val || "todos")}
+                        allowDeselect={false}
+                        size="xs"
+                      />
+                      <Select
+                        label="Periodo"
+                        data={[
+                          { value: "todos", label: "Todos los periodos" },
+                          { value: "escolar", label: "Año Escolar" },
+                          { value: "verano", label: "Ciclo Verano" },
+                        ]}
+                        value={periodo}
+                        onChange={(val) => setPeriodo(val || "todos")}
+                        allowDeselect={false}
+                        size="xs"
+                      />
                       <Select
                         label="Categoría de Taller"
                         data={categoriasOptions}
@@ -1014,6 +1028,23 @@ export default function Direccion({ onLogout, user }) {
                             onChange={(val) => setCustomFiltroPrograma(val || "todos")}
                             allowDeselect={false}
                             size="xs"
+                          />
+                        )}
+                      {(customTipo === "inscripciones" ||
+                        customTipo === "direccion_alumnos_pagos" ||
+                        customTipo === "direccion_alumnos_asistencias") && gradosOptions.length > 0 && (
+                          <MultiSelect
+                            label="Grado(s)"
+                            placeholder={customFiltroGrados.length === 0 ? "Todos los grados" : ""}
+                            data={gradosOptions}
+                            value={customFiltroGrados}
+                            onChange={setCustomFiltroGrados}
+                            clearable
+                            searchable
+                            size="xs"
+                            styles={{
+                              pill: { fontSize: "11px", fontWeight: 600 },
+                            }}
                           />
                         )}
                       {customTipo === "inscripciones" && (
@@ -1047,42 +1078,95 @@ export default function Direccion({ onLogout, user }) {
                           />
                         )}
 
+                      {(customTipo === "inscripciones" ||
+                        customTipo === "pagos" ||
+                        customTipo === "direccion_alumnos_pagos" ||
+                        customTipo === "direccion_alumnos_asistencias") && (
+                        <>
+                          <MultiSelect
+                            label="Mes(es)"
+                            placeholder={customFiltroMeses.length === 0 ? "Todos los meses" : ""}
+                            data={[
+                              { value: "1", label: "Enero" },
+                              { value: "2", label: "Febrero" },
+                              { value: "3", label: "Marzo" },
+                              { value: "4", label: "Abril" },
+                              { value: "5", label: "Mayo" },
+                              { value: "6", label: "Junio" },
+                              { value: "7", label: "Julio" },
+                              { value: "8", label: "Agosto" },
+                              { value: "9", label: "Septiembre" },
+                              { value: "10", label: "Octubre" },
+                              { value: "11", label: "Noviembre" },
+                              { value: "12", label: "Diciembre" },
+                            ]}
+                            value={customFiltroMeses}
+                            onChange={setCustomFiltroMeses}
+                            clearable
+                            searchable
+                            size="xs"
+                            styles={{
+                              pill: { fontSize: "11px", fontWeight: 600 },
+                            }}
+                          />
+                          <MultiSelect
+                            label="Semana(s)"
+                            placeholder={customFiltroSemanas.length === 0 ? "Todas las semanas" : ""}
+                            data={[
+                              { value: "1", label: "Semana 1 (Días 1-7)" },
+                              { value: "2", label: "Semana 2 (Días 8-14)" },
+                              { value: "3", label: "Semana 3 (Días 15-21)" },
+                              { value: "4", label: "Semana 4 (Días 22-28)" },
+                              { value: "5", label: "Semana 5 (Días 29-31)" },
+                            ]}
+                            value={customFiltroSemanas}
+                            onChange={setCustomFiltroSemanas}
+                            clearable
+                            searchable
+                            size="xs"
+                            styles={{
+                              pill: { fontSize: "11px", fontWeight: 600 },
+                            }}
+                          />
+                        </>
+                      )}
+
                       {/* Rango de Fechas */}
-                      <div style={{ display: "flex", gap: "6px", flexDirection: "column", marginTop: "4px" }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569" }}>Fecha Inicio</span>
-                          <input
-                            type="date"
-                            value={fechaInicio}
-                            onChange={(e) => setFechaInicio(e.target.value)}
-                            style={{
-                              width: "100%",
-                              padding: "6px 10px",
-                              border: "1px solid #ced4da",
-                              borderRadius: "6px",
-                              fontSize: "12px",
-                              backgroundColor: "#ffffff",
-                              color: "#495057",
-                            }}
-                          />
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                          <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569" }}>Fecha Fin</span>
-                          <input
-                            type="date"
-                            value={fechaFin}
-                            onChange={(e) => setFechaFin(e.target.value)}
-                            style={{
-                              width: "100%",
-                              padding: "6px 10px",
-                              border: "1px solid #ced4da",
-                              borderRadius: "6px",
-                              fontSize: "12px",
-                              backgroundColor: "#ffffff",
-                              color: "#495057",
-                            }}
-                          />
-                        </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569" }}>Fecha Inicio</span>
+                        <input
+                          type="date"
+                          value={fechaInicio}
+                          onChange={(e) => setFechaInicio(e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "5px 10px",
+                            border: "1px solid #ced4da",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            backgroundColor: "#ffffff",
+                            color: "#495057",
+                            height: "30px",
+                          }}
+                        />
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569" }}>Fecha Fin</span>
+                        <input
+                          type="date"
+                          value={fechaFin}
+                          onChange={(e) => setFechaFin(e.target.value)}
+                          style={{
+                            width: "100%",
+                            padding: "5px 10px",
+                            border: "1px solid #ced4da",
+                            borderRadius: "6px",
+                            fontSize: "12px",
+                            backgroundColor: "#ffffff",
+                            color: "#495057",
+                            height: "30px",
+                          }}
+                        />
                       </div>
 
                       {/* Agrupación de Asistencias */}
@@ -1100,6 +1184,17 @@ export default function Direccion({ onLogout, user }) {
                           size="xs"
                         />
                       )}
+
+                      <Checkbox
+                        label="Incluir talleres finalizados/inactivos"
+                        checked={incluirInactivos}
+                        onChange={(e) => setIncluirInactivos(e.currentTarget.checked)}
+                        size="xs"
+                        styles={{
+                          label: { fontSize: "11px", color: "#64748b", fontWeight: 500 },
+                          root: { marginTop: "8px" }
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
@@ -1152,37 +1247,75 @@ export default function Direccion({ onLogout, user }) {
                   </div>
                 </div>
               </div>
+
+              {/* Sección de Vista Previa */}
+              <div className="dir-builder-preview-section" style={{ marginTop: "32px", borderTop: "1px solid #e2e8f0", paddingTop: "24px" }}>
+                <div className="dir-preview-table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#0c1a30" }}>Vista Previa del Reporte</h3>
+                    <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#64748b" }}>
+                      Mostrando los primeros 10 de {registrosFiltrados.length} registros filtrados
+                    </p>
+                  </div>
+                </div>
+
+                {registrosFiltrados.length > 0 && customColumnas.length > 0 ? (
+                  <div className="dir-table-wrap dir-preview-table">
+                    <Table striped highlightOnHover verticalSpacing="sm">
+                      <Table.Thead>
+                        <Table.Tr>
+                          {customColumnas.map((colKey) => {
+                            const colInfo = columnasDisponiblesMap[customTipo]?.find(c => c.key === colKey);
+                            return (
+                              <Table.Th key={colKey}>
+                                {colInfo?.label || colKey}
+                              </Table.Th>
+                            );
+                          })}
+                        </Table.Tr>
+                      </Table.Thead>
+                      <Table.Tbody>
+                        {registrosFiltrados.slice(0, 10).map((row, idx) => (
+                          <Table.Tr key={idx}>
+                            {customColumnas.map((colKey) => {
+                              let value = row[colKey];
+                              // Formatear si es soles
+                              if (["costo", "costoOriginal", "descuentoMonto", "montoPagado", "pendiente", "proyectado", "recaudado", "porCobrar", "monto"].includes(colKey)) {
+                                value = formatearSoles(value);
+                              }
+                              // Formatear booleanos
+                              if (typeof value === "boolean") {
+                                value = value ? "Sí" : "No";
+                              }
+                              // Formatear nulos/vacíos
+                              if (value === null || value === undefined || value === "") {
+                                value = "—";
+                              }
+                              return (
+                                <Table.Td key={colKey}>
+                                  {value}
+                                </Table.Td>
+                              );
+                            })}
+                          </Table.Tr>
+                        ))}
+                      </Table.Tbody>
+                    </Table>
+                  </div>
+                ) : (
+                  <div className="dir-empty-preview" style={{ minHeight: "120px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {customColumnas.length === 0 
+                      ? "Seleccione al menos una columna para ver la vista previa."
+                      : "No hay registros que coincidan con los filtros seleccionados."}
+                  </div>
+                )}
+              </div>
             </article>
           </section>
         ) : (
           <section className="dir-descuentos-view" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             
-            {/* Cabecera de estadísticas rápidas específicas para Descuentos */}
-            <section className="dir-stats dir-stats-descuentos" aria-label="Estadísticas de descuentos y becas">
-              <StatCard
-                icon={Award}
-                label="Becas Completas (100%)"
-                value={statsDescuentos.totalBecas}
-                detail="Exoneraciones completas aprobadas"
-                tone="teal"
-              />
-              <StatCard
-                icon={Percentage}
-                label="Descuentos Especiales"
-                value={statsDescuentos.totalDescuentosParciales}
-                detail="Beneficios de monto fijo o porcentaje"
-                tone="blue"
-              />
-              <StatCard
-                icon={Wallet}
-                label="Monto Subsidiado"
-                value={formatearSoles(statsDescuentos.totalMontoDescontado)}
-                detail="Inversión total en apoyo familiar"
-                tone="green"
-              />
-            </section>
-
-            <article className="dir-search-container">
+            <article className="dir-search-container" style={{ borderRadius: "12px", overflow: "hidden" }}>
               <div style={{ marginBottom: "20px" }}>
                 <span className="dir-tag" style={{ background: "#e0f2fe", color: "#0369a1", marginBottom: "4px" }}>Finanzas</span>
                 <h2 style={{ margin: 0, color: "#0c1a30", fontSize: "20px", fontWeight: 800 }}>Autorización de Descuentos y Becas</h2>
@@ -1224,10 +1357,9 @@ export default function Direccion({ onLogout, user }) {
                   Buscar Alumno
                 </Button>
               </form>
-            </article>
 
-            {resultadosDescuento.length > 0 ? (
-              <div className="dir-table-panel" style={{ background: "#ffffff", borderRadius: "12px", overflow: "hidden", border: "1px solid #e2e8f0", boxShadow: "0 4px 15px rgba(0,0,0,0.01)" }}>
+              {resultadosDescuento.length > 0 ? (
+              <div style={{ marginTop: "20px", borderTop: "1px solid #f1f5f9" }}>
                 <div className="dir-table-wrap">
                   <Table striped highlightOnHover verticalSpacing="md">
                     <Table.Thead>
@@ -1378,6 +1510,7 @@ export default function Direccion({ onLogout, user }) {
                 )}
               </div>
             )}
+            </article>
 
             {/* Modal para aplicar beneficio */}
             <Modal

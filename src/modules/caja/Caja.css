@@ -104,9 +104,9 @@
 
 .caja-main {
   grid-column: 2;
-  width: min(1180px, calc(100% - 40px));
+  width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 10px 0 24px;
+  padding: 32px 24px;
 }
 
 .caja-page-embedded {
@@ -249,12 +249,13 @@
 
 .caja-payment-workspace {
   display: grid;
-  gap: 6px;
-  margin-bottom: 8px;
-  padding: 8px 10px;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 24px 28px;
   border: 1px solid #d8e5e1;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #ffffff;
+  box-shadow: 0 4px 12px rgba(16, 24, 40, 0.03);
 }
 
 .caja-recent-payments {
@@ -1149,27 +1150,220 @@
   }
 }
 
-/* ── Overrides Barra Lateral Verde #197f10 ───────────────────── */
+/* ── Nueva Barra Lateral Moderna y Limpia (Estilo Premium con Fondo Verde) ── */
+.caja-page {
+  --caja-sidebar: 260px !important; /* Slightly wider for elegant spacing */
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
 .caja-sidebar {
-  background: #197f10 !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.15) !important;
+  background: #197f10 !important; /* Fondo verde sólido */
+  border-right: none !important; /* Removido borde gris */
+  padding: 24px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08) !important; /* Sombra sutil de separación */
+  overflow: hidden !important;
+  width: var(--caja-sidebar) !important;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-.caja-sidebar .caja-module-label {
-  color: rgba(255, 255, 255, 0.8) !important;
+/* Encabezado / Logo con orden flex para colocar el logo a la izquierda */
+.caja-sidebar-brand-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  margin-bottom: 24px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; /* Borde sutil blanco translúcido */
 }
 
-.caja-sidebar .caja-menu-toggle-btn {
+/* Contenedor del Logo en color blanco para contraste */
+.caja-brand {
+  order: 1 !important; /* Forzar orden a la izquierda */
+  border: none !important;
+  background: #ffffff !important; /* Caja blanca para el logo */
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: auto !important;
+  margin: 0 !important;
+}
+
+.caja-brand-logo {
+  max-height: 38px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+
+.caja-menu-toggle-btn {
+  order: 2 !important; /* Forzar orden a la derecha */
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important; /* Color blanco para contraste */
+  cursor: pointer !important;
+  padding: 6px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin-left: auto !important; /* Empujar a la derecha */
+}
+
+.caja-menu-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
 }
 
-.caja-sidebar .caja-menu-toggle-btn:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  color: #ffffff !important;
+.caja-module-label {
+  color: #a7f3d0 !important; /* Verde claro suave para el label de módulo */
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  padding-left: 0 !important;
+  margin: 0 0 16px !important;
 }
 
+/* Contenedor de Navegación */
+.caja-nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+/* Ítems de la Navegación */
+.caja-nav button,
 .caja-logout {
-  border-top: 1px solid rgba(255, 255, 255, 0.15) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 12px 16px !important; /* Relleno vertical elegante */
+  border: none !important;
+  border-radius: 10px !important; /* Bordes suaves redondeados */
+  background: transparent !important;
+  color: #e2e8f0 !important; /* Texto blanco grisáceo para buen contraste */
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+  min-height: auto !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+.caja-nav button svg,
+.caja-logout svg {
+  color: #cbd5e1 !important; /* Iconos blanco grisáceos */
+  stroke: #cbd5e1 !important;
+  width: 20px !important;
+  height: 20px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.caja-nav button span,
+.caja-logout span {
+  color: #e2e8f0 !important; /* Texto blanco grisáceo inactivo */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Hover de Ítems inactivos */
+.caja-nav button:hover,
+.caja-logout:hover {
+  background: rgba(255, 255, 255, 0.12) !important; /* Blanco translúcido */
+  color: #ffffff !important;
+}
+
+.caja-nav button:hover span,
+.caja-logout:hover span {
+  color: #ffffff !important;
+}
+
+.caja-nav button:hover svg,
+.caja-logout:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  transform: translateY(-1px); /* Micro-animación al pasar el mouse */
+}
+
+/* Ítem Activo (Fondo blanco y letras negras como solicitado) */
+.caja-nav button.is-active {
+  background: #ffffff !important; /* Fondo blanco */
+  color: #000000 !important; /* Letras negras */
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important; /* Sombra sutil para profundidad */
+}
+
+.caja-nav button.is-active svg {
+  color: #000000 !important; /* Icono negro */
+  stroke: #000000 !important;
+}
+
+.caja-nav button.is-active span {
+  color: #000000 !important; /* Forzar texto negro puro en el span */
+}
+
+/* Hover en Ítem Activo (Mantener blanco/negro) */
+.caja-nav button.is-active:hover {
+  background: #f8fafc !important; /* Blanco sutilmente grisáceo */
+  color: #000000 !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18) !important;
+}
+
+.caja-nav button.is-active:hover span {
+  color: #000000 !important;
+}
+
+.caja-nav button.is-active:hover svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  transform: none !important;
+}
+
+/* Botón de Cerrar Sesión al final */
+.caja-sidebar > .caja-logout {
+  margin-top: auto !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important; /* Separador sutil */
+  border-radius: 0 !important;
+  padding-top: 16px !important;
+}
+
+.caja-sidebar > .caja-logout span {
+  color: #e2e8f0 !important;
+}
+
+.caja-sidebar > .caja-logout:hover {
+  background: #fee2e2 !important; /* Hover rojo suave */
+  color: #ef4444 !important; /* Letras rojas */
+  border-radius: 10px !important;
+}
+
+.caja-sidebar > .caja-logout:hover span {
+  color: #ef4444 !important;
+}
+
+.caja-sidebar > .caja-logout:hover svg {
+  color: #ef4444 !important;
+  stroke: #ef4444 !important;
+  transform: translateY(-1px);
+}
+
+/* Ocultar barra lateral por completo cuando está colapsada */
+.sidebar-collapsed .caja-sidebar {
+  width: 0px !important;
+  padding: 0px !important;
+  border-right: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 

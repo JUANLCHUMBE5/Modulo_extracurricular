@@ -19,10 +19,23 @@ export async function obtenerPanelDireccion(filtros = {}) {
   await syncApiDb();
 
   const periodo = normalizarPeriodo(filtros.periodo || "todos");
-  const programas = filtrarPorPeriodo(apiDb.programas || [], periodo);
-  const inscripciones = filtrarPorPeriodo(apiDb.inscripciones || [], periodo)
+  const anio = filtros.anio || "todos";
+
+  let programas = filtrarPorPeriodo(apiDb.programas || [], periodo);
+  let inscripciones = filtrarPorPeriodo(apiDb.inscripciones || [], periodo)
     .filter((item) => item.estadoInscripcion !== "Anulada");
-  const pagos = filtrarPorPeriodo(apiDb.pagos || [], periodo);
+  let pagos = filtrarPorPeriodo(apiDb.pagos || [], periodo);
+
+  if (anio !== "todos") {
+    programas = programas.filter(p => {
+      const date = p.fechaInicio || p.fechaFin;
+      if (!date) return false;
+      return String(date).slice(0, 4) === String(anio);
+    });
+    const programaIdsInYear = new Set(programas.map(p => p.id));
+    inscripciones = inscripciones.filter(ins => programaIdsInYear.has(ins.programaId));
+    pagos = pagos.filter(p => programaIdsInYear.has(p.programaId));
+  }
 
   const filasProgramas = programas.map((programa) => {
     const inscripcionesPrograma = inscripciones.filter((item) =>
@@ -39,6 +52,9 @@ export async function obtenerPanelDireccion(filtros = {}) {
       .filter((item) => normalizarEstadoPago(item.estado) === "Pagado")
       .reduce((sum, item) => sum + Number(item.monto || 0), 0);
 
+    const conBeca = inscripcionesPrograma.filter((item) => item.descuentoAprobado).length;
+    const porCobrar = Math.max(0, proyectado - recaudado);
+
     return {
       id: programa.id,
       nombre: programa.nombre || "Programa sin nombre",
@@ -49,9 +65,11 @@ export async function obtenerPanelDireccion(filtros = {}) {
       cupos,
       ocupados,
       inscritos,
+      conBeca,
       costo: Number(programa.costo || 0),
       proyectado,
       recaudado,
+      porCobrar,
       avance: cupos > 0 ? Math.round((ocupados / cupos) * 100) : 0,
     };
   }).sort((a, b) => b.inscritos - a.inscritos);
@@ -169,6 +187,12 @@ export async function obtenerPanelDireccion(filtros = {}) {
       inscripciones: inscripciones.map(crearFilaInscripcion),
       pagos: pagos.map(crearFilaPago),
     },
+    aniosDisponibles: Array.from(new Set(
+      (apiDb.programas || []).map(p => p.fechaInicio ? String(p.fechaInicio).slice(0, 4) : "").filter(Boolean)
+    )).sort((a, b) => b.localeCompare(a)),
+    categorias: Array.from(new Set(
+      (apiDb.programas || []).map(p => p.categoria).filter(Boolean)
+    ))
   };
 }
 
@@ -343,7 +367,7 @@ function abreviar(valor) {
 }
 
 export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, columnas = [], periodo = "todos" }) {
-  const panel = await obtenerPanelDireccion({ periodo });
+  const panel = await obtenerPanelDireccion({ periodo, anio: filtros.anio });
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Colegio San Rafael";
   workbook.created = new Date();
@@ -352,7 +376,8 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
   if (tipoDatos === "inscripciones") {
     rawData = panel.reportes.inscripciones;
   } else if (tipoDatos === "programas") {
-    rawData = panel.reportes.programas;
+    const list = panel.reportes.programas || [];
+    rawData = filtros.incluirInactivos ? list : list.filter(p => String(p.estado || "").toLowerCase() === "habilitado");
   } else if (tipoDatos === "pagos") {
     rawData = panel.reportes.pagos;
   } else if (tipoDatos === "direccion_alumnos_pagos") {
@@ -377,6 +402,12 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
         apoderado: ins.apoderado || "",
         telefono: ins.telefono || "",
         programa: ins.programa || "",
+        programaId: ins.programaId || ins.programa_id || "",
+        costoOriginal: ins.costoOriginal ?? costo,
+        descuentoAprobado: ins.descuentoAprobado ? "Sí" : "No",
+        descuentoTipo: ins.descuentoTipo || "Ninguno",
+        descuentoValor: ins.descuentoValor || 0,
+        descuentoMonto: ins.descuentoMonto || 0,
         costo,
         montoPagado,
         pendiente,
@@ -385,6 +416,7 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
         fechaPago: pago ? (pago.fecha || "—") : "—",
         nroOperacion: pago ? (pago.id || "—") : "—",
         nroRecibo: pago ? (pago.nroRecibo || "—") : "—",
+        origen: ins.origen || "",
         fechaRegistro: ins.fechaRegistro || "",
       };
     });
@@ -394,6 +426,7 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
       estudiante: ins.estudiante || "",
       grado: ins.grado || "",
       programa: ins.programa || "",
+      programaId: ins.programaId || ins.programa_id || "",
       telefono: ins.telefono || "",
       fechaRegistro: ins.fechaRegistro || "",
     }));
@@ -475,7 +508,16 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
     }
   }
 
-  // 4. Filtrar por Rango de Fechas
+  // 4. Filtrar por Grado(s)
+  if (filtros.grados && filtros.grados.length > 0) {
+    const gradosSet = new Set(filtros.grados.map(g => g.toLowerCase().trim()));
+    filteredData = filteredData.filter((item) => {
+      const itemGrado = String(item.grado || item.gradoEstudiante || "").toLowerCase().trim();
+      return gradosSet.has(itemGrado);
+    });
+  }
+
+  // 5. Filtrar por Rango de Fechas
   if (filtros.fechaInicio || filtros.fechaFin) {
     const startFilter = filtros.fechaInicio ? normalizarFecha(filtros.fechaInicio) : null;
     const endFilter = filtros.fechaFin ? normalizarFecha(filtros.fechaFin) : null;
@@ -504,6 +546,60 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
       return true;
     });
   }
+
+  // 6. Filtrar por Meses
+  if (filtros.meses && filtros.meses.length > 0) {
+    const mesesSet = new Set(filtros.meses.map(m => parseInt(m)));
+    filteredData = filteredData.filter((item) => {
+      let itemDateRaw = null;
+      if (tipoDatos === "inscripciones") {
+        itemDateRaw = item.fechaRegistro;
+      } else if (tipoDatos === "pagos") {
+        itemDateRaw = item.fecha || item.fechaPago;
+      } else if (tipoDatos === "direccion_alumnos_pagos") {
+        itemDateRaw = (item.fechaPago && item.fechaPago !== "—") ? item.fechaPago : item.fechaRegistro;
+      } else if (tipoDatos === "direccion_alumnos_asistencias") {
+        itemDateRaw = item.fechaRegistro;
+      }
+
+      if (!itemDateRaw) return true;
+      const itemDate = normalizarFecha(itemDateRaw);
+      if (!itemDate) return true;
+
+      const month = itemDate.getMonth() + 1; // 1-indexed
+      return mesesSet.has(month);
+    });
+  }
+
+  // 7. Filtrar por Semanas del Mes
+  if (filtros.semanas && filtros.semanas.length > 0) {
+    const semanasSet = new Set(filtros.semanas.map(s => parseInt(s)));
+    filteredData = filteredData.filter((item) => {
+      let itemDateRaw = null;
+      if (tipoDatos === "inscripciones") {
+        itemDateRaw = item.fechaRegistro;
+      } else if (tipoDatos === "pagos") {
+        itemDateRaw = item.fecha || item.fechaPago;
+      } else if (tipoDatos === "direccion_alumnos_pagos") {
+        itemDateRaw = (item.fechaPago && item.fechaPago !== "—") ? item.fechaPago : item.fechaRegistro;
+      } else if (tipoDatos === "direccion_alumnos_asistencias") {
+        itemDateRaw = item.fechaRegistro;
+      }
+
+      if (!itemDateRaw) return true;
+      const itemDate = normalizarFecha(itemDateRaw);
+      if (!itemDate) return true;
+
+      const day = itemDate.getDate();
+      let weekNum = 1;
+      if (day > 28) weekNum = 5;
+      else if (day > 21) weekNum = 4;
+      else if (day > 14) weekNum = 3;
+      else if (day > 7) weekNum = 2;
+      return semanasSet.has(weekNum);
+    });
+  }
+
 
   // 5. Determinar Columnas Temporales Dinámicas (para reporte de asistencias)
   let columnasTiempo = [];
@@ -608,7 +704,12 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
     programa: { header: "Programa", width: 32 },
     estadoInscripcion: { header: "Estado Inscripción", width: 20 },
     estadoPago: { header: "Estado Pago", width: 16 },
-    costo: { header: "Costo / Monto Taller", width: 16 },
+    costoOriginal: { header: "Precio Lista (S/)", width: 16 },
+    descuentoAprobado: { header: "¿Descuento/Beca?", width: 18 },
+    descuentoTipo: { header: "Tipo Descuento", width: 18 },
+    descuentoValor: { header: "Valor Descuento", width: 16 },
+    descuentoMonto: { header: "Monto Descuento (S/)", width: 18 },
+    costo: { header: "Costo / Monto Final (S/)", width: 16 },
     origen: { header: "Origen / Canal", width: 24 },
     fechaRegistro: { header: "Fecha Registro", width: 22 },
     apoderado: { header: "Apoderado", width: 24 },
@@ -617,12 +718,14 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
     estado: { header: "Estado", width: 16 },
     categoria: { header: "Categoría", width: 18 },
     responsable: { header: "Responsable", width: 24 },
-    inscritos: { header: "Inscritos", width: 12 },
+    inscritos: { header: "Total Alumnos", width: 15 },
+    conBeca: { header: "Alumnos con Beca", width: 18 },
     cupos: { header: "Cupos", width: 10 },
     avance: { header: "Avance %", width: 12 },
-    proyectado: { header: "Proyectado", width: 14 },
-    recaudado: { header: "Recaudado", width: 14 },
-    nombre: { header: "Programa", width: 32 },
+    proyectado: { header: "Total Esperado (S/)", width: 18 },
+    recaudado: { header: "Monto Recaudado (S/)", width: 20 },
+    porCobrar: { header: "Por Cobrar (S/)", width: 16 },
+    nombre: { header: "Taller / Programa", width: 32 },
     monto: { header: "Monto", width: 12 },
     medio: { header: "Medio", width: 18 },
     fecha: { header: "Fecha", width: 22 },
@@ -722,10 +825,27 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
         if (rowNum > 1) {
           row.eachCell((cell, colNum) => {
             const colKey = sheetColumns[colNum - 1]?.key;
-            if (colKey === "costo" || colKey === "montoPagado" || colKey === "pendiente") {
+            if (colKey === "costo" || colKey === "costoOriginal" || colKey === "montoPagado" || colKey === "pendiente" || colKey === "descuentoMonto") {
               cell.value = Number(cell.value || 0);
               cell.numFmt = '"S/"#,##0.00';
               cell.alignment = { vertical: "middle", horizontal: "right" };
+            } else if (colKey === "descuentoAprobado" || colKey === "descuentoTipo" || colKey === "descuentoValor") {
+              cell.alignment = { vertical: "middle", horizontal: "center" };
+            }
+          });
+        }
+      });
+    } else if (tipoDatos === "programas") {
+      hoja.eachRow((row, rowNum) => {
+        if (rowNum > 1) {
+          row.eachCell((cell, colNum) => {
+            const colKey = sheetColumns[colNum - 1]?.key;
+            if (colKey === "costo" || colKey === "proyectado" || colKey === "recaudado" || colKey === "porCobrar") {
+              cell.value = Number(cell.value || 0);
+              cell.numFmt = '"S/"#,##0.00';
+              cell.alignment = { vertical: "middle", horizontal: "right" };
+            } else if (colKey === "inscritos" || colKey === "conBeca" || colKey === "cupos" || colKey === "avance") {
+              cell.alignment = { vertical: "middle", horizontal: "center" };
             }
           });
         }

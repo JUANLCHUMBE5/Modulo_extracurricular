@@ -158,35 +158,76 @@ export function exportPdfDaily({
   doc.text(subtitle, anchoPagina / 2, y, { align: "center" });
   y += 10;
 
-  // Box details
-  doc.setDrawColor(216, 229, 226);
-  doc.setFillColor(248, 252, 251);
-  doc.roundedRect(margen, y, anchoPagina - margen * 2, 24, 3, 3, "FD");
-  y += 6;
-
-  const datosProg = [
+  // Box details (Calculated dynamically)
+  const colLeftItemsDaily = [
     ["Taller", programaSeleccionado.nombre || "Sin nombre"],
     ["Código", programaSeleccionado.id || "Sin código"],
+  ];
+
+  const colRightItemsDaily = [
     ["Docente", programaSeleccionado.responsable || "No asignado"],
     ["Horario", programaSeleccionado.horario || "Por definir"],
   ];
 
-  datosProg.forEach(([label, value], idx) => {
-    const col = idx % 2;
-    const row = Math.floor(idx / 2);
-    const x = margen + 5 + col * 91;
-    const yy = y + row * 8;
+  let cardContentHeightDaily = 10; // padding top/bottom
+  const rowHeightsDaily = [];
+  const processedLeftLinesDaily = [];
+  const processedRightLinesDaily = [];
+
+  for (let i = 0; i < 2; i++) {
+    const leftVal = String(colLeftItemsDaily[i][1] || "—");
+    const rightVal = String(colRightItemsDaily[i][1] || "—");
+
+    const leftLines = doc.splitTextToSize(leftVal, 82);
+    const rightLines = doc.splitTextToSize(rightVal, 82);
+
+    processedLeftLinesDaily.push(leftLines);
+    processedRightLinesDaily.push(rightLines);
+
+    const leftHeight = leftLines.length * 4.2 + 5;
+    const rightHeight = rightLines.length * 4.2 + 5;
+    const rowHeight = Math.max(leftHeight, rightHeight);
+
+    rowHeightsDaily.push(rowHeight);
+    cardContentHeightDaily += rowHeight;
+  }
+
+  doc.setDrawColor(216, 229, 226);
+  doc.setFillColor(248, 252, 251);
+  doc.roundedRect(margen, y, anchoPagina - margen * 2, cardContentHeightDaily, 3, 3, "FD");
+
+  let yyDaily = y + 5; // Start drawing text inside the box
+
+  for (let i = 0; i < 2; i++) {
+    const leftLabel = colLeftItemsDaily[i][0].toUpperCase();
+    const rightLabel = colRightItemsDaily[i][0].toUpperCase();
+    const leftLinesVal = processedLeftLinesDaily[i];
+    const rightLinesVal = processedRightLinesDaily[i];
+
+    // Render left column
     doc.setFont("helvetica", "bold");
     doc.setFontSize(8);
     doc.setTextColor(82, 97, 115);
-    doc.text(label.toUpperCase(), x, yy);
+    doc.text(leftLabel, margen + 5, yyDaily);
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
     doc.setTextColor(24, 33, 47);
-    doc.text(String(value || "-"), x, yy + 3.8);
-  });
+    doc.setFontSize(9);
+    doc.text(leftLinesVal, margen + 5, yyDaily + 3.8);
 
-  y += 26;
+    // Render right column
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(82, 97, 115);
+    doc.text(rightLabel, margen + 91, yyDaily);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(24, 33, 47);
+    doc.setFontSize(9);
+    doc.text(rightLinesVal, margen + 91, yyDaily + 3.8);
+
+    yyDaily += rowHeightsDaily[i];
+  }
+
+  y += cardContentHeightDaily + 6;
 
   // Grid header
   doc.setFillColor(234, 246, 242);
@@ -295,8 +336,8 @@ export async function exportExcelMonthly({
   // Setup static columns
   const cols = [
     { header: "N°", key: "nro", width: 6 },
+    { header: "DNI", key: "dni", width: 15 },
     { header: "Apellidos y Nombres", key: "nombres", width: 35 },
-    { header: "Edad", key: "edad", width: 12 },
     { header: "N° Teléfono", key: "telefono", width: 18 },
   ];
 
@@ -315,17 +356,15 @@ export async function exportExcelMonthly({
 
   // Add student data rows
   const rows = matriculadosOrdenados.map((alumno, idx) => {
-    const birthdate = alumno.fechaNacimiento || (apiDb.estudiantes && apiDb.estudiantes[alumno.dni]?.fechaNacimiento);
-    const edad = birthdate ? calcularEdad(birthdate) : "—";
     const rowData = {
       nro: idx + 1,
+      dni: alumno.dni || alumno.dniEstudiante || "—",
       nombres: alumno.nombres || alumno.nombresEstudiante || "—",
-      edad,
-      telefono: alumno.telefono || "—",
+      telefono: alumno.telefono || alumno.telefonoApoderado || "—",
     };
     if (fechasColumnas.length > 0) {
       fechasColumnas.forEach((fechaCol) => {
-        rowData[fechaCol.clave] = checkMap.has(`${alumno.dni}:${fechaCol.clave}`) ? "✓" : "—";
+        rowData[fechaCol.clave] = checkMap.has(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`) ? "✓" : "—";
       });
     } else {
       for (let i = 1; i <= 5; i++) {
@@ -431,8 +470,8 @@ export function exportPdfMonthly({
   // Horizontal spacing widths
   const colWidths = {
     nro: 10,
+    dni: 25,
     nombres: 80,
-    edad: 18,
     telefono: 32,
     fecha: 12,
   };
@@ -449,10 +488,10 @@ export function exportPdfMonthly({
     let cx = margen + 2;
     doc.text("#", cx, yy + 5.3);
     cx += colWidths.nro;
+    doc.text("DNI", cx, yy + 5.3);
+    cx += colWidths.dni;
     doc.text("APELLIDOS Y NOMBRES", cx, yy + 5.3);
     cx += colWidths.nombres;
-    doc.text("EDAD", cx, yy + 5.3);
-    cx += colWidths.edad;
     doc.text("TELÉFONO", cx, yy + 5.3);
     cx += colWidths.telefono;
 
@@ -489,9 +528,8 @@ export function exportPdfMonthly({
       y = dibujarEncabezadoMatriz(y);
     }
 
-    const birthdate = alumno.fechaNacimiento || (apiDb.estudiantes && apiDb.estudiantes[alumno.dni]?.fechaNacimiento);
-    const edad = birthdate ? calcularEdad(birthdate) : "—";
-    const telefono = alumno.telefono || "—";
+    const dni = alumno.dni || alumno.dniEstudiante || "—";
+    const telefono = alumno.telefono || alumno.telefonoApoderado || "—";
 
     doc.setDrawColor(237, 242, 245);
     doc.line(margen, y - 2, anchoPagina - margen, y - 2);
@@ -503,16 +541,16 @@ export function exportPdfMonthly({
     let cx = margen + 2;
     doc.text(String(idx + 1), cx, y + 3);
     cx += colWidths.nro;
+    doc.text(dni, cx, y + 3);
+    cx += colWidths.dni;
     doc.text(doc.splitTextToSize(alumno.nombres || alumno.nombresEstudiante || "", 75), cx, y + 3);
     cx += colWidths.nombres;
-    doc.text(edad, cx, y + 3);
-    cx += colWidths.edad;
     doc.text(telefono, cx, y + 3);
     cx += colWidths.telefono;
 
     if (fechasColumnas.length > 0) {
       fechasColumnas.forEach((fechaCol) => {
-        const asistio = checkMap.has(`${alumno.dni}:${fechaCol.clave}`);
+        const asistio = checkMap.has(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`);
         if (asistio) {
           dibujarCheck(doc, cx + 2, y + 1);
         } else {
@@ -537,4 +575,179 @@ export function exportPdfMonthly({
   doc.text(`Matriculados: ${matriculados.length} alumnos`, margen, altoPagina - 10);
   const fileSuffix = fechasColumnas.length > 0 ? "" : "_plantilla";
   doc.save(`consolidado_asistencias_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}${fileSuffix}.pdf`);
+}
+
+// PDF Export Handler (Individual Attendance Report)
+export function exportPdfIndividual({
+  programaSeleccionado,
+  alumno,
+  fechasColumnas,
+  checkMap,
+}) {
+  if (!programaSeleccionado || !alumno) return;
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const margen = 14;
+  const anchoPagina = doc.internal.pageSize.getWidth();
+  const altoPagina = doc.internal.pageSize.getHeight();
+  let y = 16;
+
+  doc.setTextColor(23, 108, 96);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(16);
+  doc.text("REPORTE DE ASISTENCIA INDIVIDUAL", anchoPagina / 2, y, { align: "center" });
+  y += 7;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(82, 97, 115);
+  doc.text("IEP SAN RAFAEL - IEP San Rafael S.A.C.", anchoPagina / 2, y, { align: "center" });
+  y += 10;
+
+  // Box details (Calculated dynamically)
+  const colLeftItems = [
+    ["Taller", programaSeleccionado.nombre || "Sin nombre"],
+    ["Alumno", alumno.nombres || alumno.nombresEstudiante || "—"],
+    ["DNI / Código", `${alumno.dni || alumno.dniEstudiante || "—"} / ${alumno.codigoEstudiante || "—"}`],
+  ];
+
+  const colRightItems = [
+    ["Docente", programaSeleccionado.responsable || "No asignado"],
+    ["Horario", programaSeleccionado.horario || "Por definir"],
+    ["Contacto", alumno.telefono || alumno.telefonoApoderado || "—"],
+  ];
+
+  let cardContentHeight = 10; // padding top/bottom
+  const rowHeights = [];
+  const processedLeftLines = [];
+  const processedRightLines = [];
+
+  for (let i = 0; i < 3; i++) {
+    const leftVal = String(colLeftItems[i][1] || "—");
+    const rightVal = String(colRightItems[i][1] || "—");
+
+    const leftLines = doc.splitTextToSize(leftVal, 82);
+    const rightLines = doc.splitTextToSize(rightVal, 82);
+
+    processedLeftLines.push(leftLines);
+    processedRightLines.push(rightLines);
+
+    const leftHeight = leftLines.length * 4.2 + 5;
+    const rightHeight = rightLines.length * 4.2 + 5;
+    const rowHeight = Math.max(leftHeight, rightHeight);
+
+    rowHeights.push(rowHeight);
+    cardContentHeight += rowHeight;
+  }
+
+  doc.setDrawColor(216, 229, 226);
+  doc.setFillColor(248, 252, 251);
+  doc.roundedRect(margen, y, anchoPagina - margen * 2, cardContentHeight, 3, 3, "FD");
+
+  let yy = y + 5; // Start drawing text inside the box
+
+  for (let i = 0; i < 3; i++) {
+    const leftLabel = colLeftItems[i][0].toUpperCase();
+    const rightLabel = colRightItems[i][0].toUpperCase();
+    const leftLinesVal = processedLeftLines[i];
+    const rightLinesVal = processedRightLines[i];
+
+    // Render left column
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(82, 97, 115);
+    doc.text(leftLabel, margen + 5, yy);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(24, 33, 47);
+    doc.setFontSize(9);
+    doc.text(leftLinesVal, margen + 5, yy + 3.8);
+
+    // Render right column
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(82, 97, 115);
+    doc.text(rightLabel, margen + 91, yy);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(24, 33, 47);
+    doc.setFontSize(9);
+    doc.text(rightLinesVal, margen + 91, yy + 3.8);
+
+    yy += rowHeights[i];
+  }
+
+  y += cardContentHeight + 8;
+
+  // Grid header for dates
+  doc.setFillColor(234, 246, 242);
+  doc.setDrawColor(216, 229, 226);
+  doc.roundedRect(margen, y, anchoPagina - margen * 2, 8, 2, 2, "FD");
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(23, 108, 96);
+  doc.text("#", margen + 5, y + 5.3);
+  doc.text("FECHA DE CLASE", margen + 20, y + 5.3);
+  doc.text("ESTADO DE ASISTENCIA", margen + 90, y + 5.3);
+  y += 12;
+
+  let totalClases = 0;
+  let totalAsistencias = 0;
+
+  if (fechasColumnas.length > 0) {
+    fechasColumnas.forEach((fechaCol, idx) => {
+      if (y > altoPagina - 18) {
+        doc.addPage();
+        y = 16;
+        doc.setFillColor(234, 246, 242);
+        doc.setDrawColor(216, 229, 226);
+        doc.roundedRect(margen, y, anchoPagina - margen * 2, 8, 2, 2, "FD");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(23, 108, 96);
+        doc.text("#", margen + 5, y + 5.3);
+        doc.text("FECHA DE CLASE", margen + 20, y + 5.3);
+        doc.text("ESTADO DE ASISTENCIA", margen + 90, y + 5.3);
+        y += 12;
+      }
+
+      const asistio = checkMap.has(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`);
+      totalClases++;
+      if (asistio) totalAsistencias++;
+
+      doc.setDrawColor(237, 242, 245);
+      doc.line(margen, y - 2, anchoPagina - margen, y - 2);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(24, 33, 47);
+
+      doc.text(String(idx + 1), margen + 5, y + 3);
+      doc.text(fechaCol.titulo || fechaCol.clave, margen + 20, y + 3);
+      doc.setFont("helvetica", "bold");
+      if (asistio) {
+        doc.setTextColor(18, 184, 134); // Green
+        doc.text("ASISTIÓ (✓)", margen + 90, y + 3);
+      } else {
+        doc.setTextColor(239, 68, 68); // Red
+        doc.text("FALTÓ (—)", margen + 90, y + 3);
+      }
+      doc.setTextColor(24, 33, 47);
+      doc.setFont("helvetica", "normal");
+      y += 8;
+    });
+  } else {
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(100, 116, 139);
+    doc.text("No se han registrado clases ni asistencias en el sistema para este taller.", margen + 5, y + 3);
+    y += 10;
+  }
+
+  // Summary box at bottom
+  if (totalClases > 0) {
+    const porcentaje = Math.round((totalAsistencias / totalClases) * 100);
+    y += 5;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text(`Resumen: ${totalAsistencias} asistencias de ${totalClases} clases (${porcentaje}% de asistencia).`, margen, y);
+  }
+
+  doc.save(`asistencia_individual_${normalizarNombreArchivoPdf(alumno.nombres || alumno.nombresEstudiante || "alumno")}.pdf`);
 }

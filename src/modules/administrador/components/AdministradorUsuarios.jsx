@@ -255,7 +255,7 @@ const ModalUsuario = ({ show, modoEditar, form, setForm, guardar, guardando, cer
       onClick={cerrar}
     >
       <div
-        className="max-h-[calc(100vh-44px)] w-full max-w-[520px] overflow-auto rounded-lg border border-[#dbe3ee] bg-white shadow-[0_28px_70px_rgba(15,23,42,0.28)]"
+        className="max-h-[calc(100vh-44px)] w-full max-w-[720px] overflow-auto rounded-lg border border-[#dbe3ee] bg-white shadow-[0_28px_70px_rgba(15,23,42,0.28)]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

@@ -35,7 +35,7 @@ import {
   getRequiredPermissionsByRole,
   normalizeUser,
 } from "./models/usuarioModel";
-import { ModalLog, TablaLogs, formatearAccionLog } from "./components/AdministradorLogs";
+
 import { ModalUsuario, StatCard, TablaUsuarios } from "./components/AdministradorUsuarios";
 import "./Administrador.css";
 
@@ -78,24 +78,13 @@ export default function Administrador({ onLogout }) {
   const [modal, setModal] = useState({ show: false, editar: false, guardando: false });
   const [form, setForm] = useState(crearFormInicial);
 
-  // States for Audit Logs
-  const [logs, setLogs] = useState([]);
-  const [cargandoLogs, setCargandoLogs] = useState(false);
-  const [logBusqueda, setLogBusqueda] = useState("");
-  const [logFiltroAccion, setLogFiltroAccion] = useState("todos");
-  const [logFechaInicio, setLogFechaInicio] = useState("");
-  const [logFechaFin, setLogFechaFin] = useState("");
-  const [modalLog, setModalLog] = useState({ show: false, log: null });
+
 
   useEffect(() => {
     cargarDatos();
   }, []);
 
-  useEffect(() => {
-    if (seccion === "logs") {
-      cargarLogs();
-    }
-  }, [seccion]);
+
 
   const notify = (message, type = "error") => {
     if (type === "success") {
@@ -115,17 +104,7 @@ export default function Administrador({ onLogout }) {
     setCargando(false);
   };
 
-  const cargarLogs = async () => {
-    setCargandoLogs(true);
-    try {
-      const data = await listarLogsAuditoriaController();
-      setLogs(data);
-    } catch (err) {
-      notify("Error al cargar registros de acceso: " + err.message);
-    } finally {
-      setCargandoLogs(false);
-    }
-  };
+
 
   const filtrados = useMemo(() =>
     usuarios.filter(u =>
@@ -135,36 +114,7 @@ export default function Administrador({ onLogout }) {
       (filtroEstado === "todos" || u.estado === filtroEstado)
     ), [usuarios, busqueda, filtroRol, filtroEstado]);
 
-  const accionesUnicas = useMemo(() => {
-    const set = new Set(logs.map(l => l.accion));
-    return Array.from(set).sort();
-  }, [logs]);
 
-  const logsFiltrados = useMemo(() => {
-    return logs.filter(log => {
-      const matchesSearch = 
-        (log.usuario || "").toLowerCase().includes(logBusqueda.toLowerCase()) ||
-        (log.accion || "").toLowerCase().includes(logBusqueda.toLowerCase()) ||
-        (log.detalles || "").toLowerCase().includes(logBusqueda.toLowerCase()) ||
-        (log.rol || "").toLowerCase().includes(logBusqueda.toLowerCase());
-
-      const matchesAction = logFiltroAccion === "todos" || log.accion === logFiltroAccion;
-
-      let matchesStartDate = true;
-      if (logFechaInicio) {
-        const logDateStr = log.fecha.slice(0, 10);
-        matchesStartDate = logDateStr >= logFechaInicio;
-      }
-
-      let matchesEndDate = true;
-      if (logFechaFin) {
-        const logDateStr = log.fecha.slice(0, 10);
-        matchesEndDate = logDateStr <= logFechaFin;
-      }
-
-      return matchesSearch && matchesAction && matchesStartDate && matchesEndDate;
-    });
-  }, [logs, logBusqueda, logFiltroAccion, logFechaInicio, logFechaFin]);
 
   // Stats
   const totalActivos  = usuarios.filter(u => u.estado === "Activo").length;
@@ -267,9 +217,7 @@ export default function Administrador({ onLogout }) {
       await resetearBaseDatosController();
       notify("Base de datos restablecida correctamente.", "success");
       await cargarDatos();
-      if (seccion === "logs") {
-        await cargarLogs();
-      }
+
       setSeccion("usuarios");
     } catch (err) {
       notify("Error al restablecer la base de datos: " + err.message);
@@ -302,13 +250,7 @@ export default function Administrador({ onLogout }) {
             <span className="adm-nav-badge">{usuarios.length}</span>
           </button>
           
-          <button 
-            className={`adm-nav-item ${seccion === "logs" ? "adm-nav-active" : ""}`}
-            onClick={() => setSeccion("logs")}
-          >
-            <FileText size={18} />
-            <span>Registro de accesos</span>
-          </button>
+
         </nav>
 
         <div className="adm-sidebar-footer">
@@ -340,6 +282,9 @@ export default function Administrador({ onLogout }) {
                 <div>
                   <p className="adm-topbar-sub">Panel de control</p>
                   <h1>Administración de usuarios</h1>
+                  <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: "13px", fontWeight: 500 }}>
+                    {usuarios.length} usuarios registrados ({totalActivos} activos) · {totalRoles} roles únicos
+                  </p>
                 </div>
               </div>
               <div className="adm-topbar-actions">
@@ -349,14 +294,6 @@ export default function Administrador({ onLogout }) {
                 </button>
               </div>
             </header>
-
-            {/* Stats */}
-            <section className="adm-stats">
-              <StatCard label="Total usuarios" value={usuarios.length} icon={Users}     delay={0}   />
-              <StatCard label="Activos"        value={totalActivos}   icon={UserCheck}  delay={60}  />
-              <StatCard label="Inactivos"      value={totalInactivos} icon={UserOff}    delay={120} />
-              <StatCard label="Roles únicos"   value={totalRoles}     icon={ShieldLock} delay={180} />
-            </section>
 
             {/* Tabla card */}
             <section className="adm-content">
@@ -420,98 +357,7 @@ export default function Administrador({ onLogout }) {
           </>
         )}
 
-        {seccion === "logs" && (
-          <>
-            {/* Topbar */}
-            <header className="adm-topbar">
-              <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                {!sidebarExpanded && (
-                  <button 
-                    className="adm-menu-toggle-btn-header" 
-                    type="button" 
-                    onClick={toggleSidebar} 
-                    aria-label="Mostrar barra lateral"
-                    title="Mostrar barra lateral"
-                  >
-                    <Menu size={22} />
-                  </button>
-                )}
-                <div>
-                  <p className="adm-topbar-sub">Panel de control</p>
-                  <h1>Registro de accesos</h1>
-                </div>
-              </div>
-            </header>
 
-            {/* Tabla card */}
-            <section className="adm-content">
-              <div className="adm-card-header">
-                <div>
-                  <h2>Inicios de sesion por modulo</h2>
-                  <p>{logsFiltrados.length} de {logs.length} registros</p>
-                </div>
-                <button className="adm-refresh-btn" onClick={cargarLogs} title="Actualizar logs">
-                  <Refresh size={16} />
-                </button>
-              </div>
-
-              {/* Filtros de logs */}
-              <div className="adm-filters-logs">
-                <div className="adm-search-box">
-                  <Search size={16} />
-                  <input
-                    placeholder="Buscar por usuario, modulo o detalles..."
-                    value={logBusqueda}
-                    onChange={e => setLogBusqueda(e.target.value)}
-                  />
-                  {logBusqueda && (
-                    <button className="adm-search-clear" onClick={() => setLogBusqueda("")}>
-                      <X size={14} />
-                    </button>
-                  )}
-                </div>
-
-                <div className="adm-filter-group-logs">
-                  <div className="adm-select-wrap adm-filter-select">
-                    <select value={logFiltroAccion} onChange={e => setLogFiltroAccion(e.target.value)}>
-                      <option value="todos">Todos los accesos</option>
-                      {accionesUnicas.map(acc => <option key={acc} value={acc}>{formatearAccionLog(acc)}</option>)}
-                    </select>
-                    <ChevronDown size={14} className="adm-select-arrow" />
-                  </div>
-
-                  <div className="adm-date-filters">
-                    <div className="adm-date-input-wrap">
-                      <span className="adm-date-label">Desde:</span>
-                      <input 
-                        type="date" 
-                        value={logFechaInicio} 
-                        onChange={e => setLogFechaInicio(e.target.value)} 
-                        className="adm-date-input"
-                      />
-                    </div>
-                    <div className="adm-date-input-wrap">
-                      <span className="adm-date-label">Hasta:</span>
-                      <input 
-                        type="date" 
-                        value={logFechaFin} 
-                        onChange={e => setLogFechaFin(e.target.value)} 
-                        className="adm-date-input"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Tabla de Logs */}
-              <TablaLogs
-                logs={logsFiltrados}
-                cargando={cargandoLogs}
-                onVerDetalles={(log) => setModalLog({ show: true, log })}
-              />
-            </section>
-          </>
-        )}
 
         {false && (
           <>
@@ -598,11 +444,7 @@ export default function Administrador({ onLogout }) {
         cerrar={() => setModal(m => ({ ...m, show: false }))}
       />
 
-      <ModalLog
-        show={modalLog.show}
-        log={modalLog.log}
-        cerrar={() => setModalLog({ show: false, log: null })}
-      />
+
     </div>
   );
 }

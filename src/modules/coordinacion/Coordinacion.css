@@ -622,14 +622,223 @@
   }
 }
 
-/* ── Overrides Barra Lateral Verde #197f10 ───────────────────── */
+/* ── Nueva Barra Lateral Moderna y Limpia (Estilo Premium con Fondo Verde) ── */
 .coord-layout {
-  --coord-sidebar: #197f10 !important;
-  --coord-sidebar-soft: #23971c !important;
+  --coord-sidebar: #197f10 !important; /* Fondo verde para la barra lateral */
+  --coord-sidebar-soft: rgba(255, 255, 255, 0.1) !important;
+  --coord-sidebar-width: 260px !important; /* Slightly wider for elegant spacing */
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .coord-sidebar {
-  background: #197f10 !important;
+  background: #197f10 !important; /* Fondo verde sólido */
+  border-right: none !important; /* Removido borde gris */
+  padding: 24px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08) !important; /* Sombra sutil de separación */
+  overflow: hidden !important;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Encabezado / Logo */
+.coord-sidebar-brand-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 24px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; /* Borde sutil blanco translúcido */
+}
+
+/* Contenedor del Logo en color blanco para contraste */
+.coord-brand {
+  border: none !important;
+  background: #ffffff !important; /* Caja blanca para el logo */
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: auto !important;
+  margin: 0 !important;
+}
+
+.coord-brand-logo {
+  max-height: 38px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+
+.coord-menu-toggle-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important; /* Color blanco para contraste */
+  cursor: pointer !important;
+  padding: 6px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.coord-menu-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.coord-module-label {
+  color: #a7f3d0 !important; /* Verde claro suave para el label de módulo */
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  padding-left: 0 !important;
+  margin: 0 0 16px !important;
+}
+
+/* Contenedor de Navegación */
+.coord-nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+/* Ítems de la Navegación */
+.coord-nav-item,
+.coord-logout {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 12px 16px !important; /* Relleno vertical elegante */
+  border: none !important;
+  border-radius: 10px !important; /* Bordes suaves redondeados */
+  background: transparent !important;
+  color: #e2e8f0 !important; /* Texto blanco grisáceo para buen contraste */
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+  min-height: auto !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+.coord-nav-item svg,
+.coord-logout svg {
+  color: #cbd5e1 !important; /* Iconos blanco grisáceos */
+  stroke: #cbd5e1 !important;
+  width: 20px !important;
+  height: 20px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.coord-nav-item span,
+.coord-logout span {
+  color: #e2e8f0 !important; /* Texto blanco grisáceo inactivo */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Hover de Ítems inactivos */
+.coord-nav-item:hover,
+.coord-logout:hover {
+  background: rgba(255, 255, 255, 0.12) !important; /* Blanco translúcido */
+  color: #ffffff !important;
+}
+
+.coord-nav-item:hover span,
+.coord-logout:hover span {
+  color: #ffffff !important;
+}
+
+.coord-nav-item:hover svg,
+.coord-logout:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  transform: translateY(-1px); /* Micro-animación al pasar el mouse */
+}
+
+/* Ítem Activo (Fondo blanco y letras negras como solicitado) */
+.coord-nav-item-active,
+.coord-layout-profesor .coord-nav-item-active {
+  background: #ffffff !important; /* Fondo blanco */
+  color: #000000 !important; /* Letras negras */
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important; /* Sombra sutil para profundidad */
+}
+
+.coord-nav-item-active svg {
+  color: #000000 !important; /* Icono negro */
+  stroke: #000000 !important;
+}
+
+.coord-nav-item-active span {
+  color: #000000 !important; /* Forzar texto negro puro en el span */
+}
+
+/* Hover en Ítem Activo (Mantener blanco/negro) */
+.coord-nav-item-active:hover {
+  background: #f8fafc !important; /* Blanco sutilmente grisáceo */
+  color: #000000 !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18) !important;
+}
+
+.coord-nav-item-active:hover span {
+  color: #000000 !important;
+}
+
+.coord-nav-item-active:hover svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  transform: none !important;
+}
+
+/* Quitar la flechita derecha */
+.coord-nav-arrow {
+  display: none !important;
+}
+
+/* Botón de Cerrar Sesión al final */
+.coord-sidebar > .coord-logout {
+  margin-top: auto !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important; /* Separador sutil */
+  border-radius: 0 !important;
+  padding-top: 16px !important;
+}
+
+.coord-sidebar > .coord-logout span {
+  color: #e2e8f0 !important;
+}
+
+.coord-sidebar > .coord-logout:hover {
+  background: #fee2e2 !important; /* Hover rojo suave */
+  color: #ef4444 !important; /* Letras rojas */
+  border-radius: 10px !important;
+}
+
+.coord-sidebar > .coord-logout:hover span {
+  color: #ef4444 !important;
+}
+
+.coord-sidebar > .coord-logout:hover svg {
+  color: #ef4444 !important;
+  stroke: #ef4444 !important;
+  transform: translateY(-1px);
+}
+
+/* Ocultar barra lateral por completo cuando está colapsada */
+.coord-layout-collapsed .coord-sidebar {
+  width: 0px !important;
+  padding: 0px !important;
+  border-right: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 

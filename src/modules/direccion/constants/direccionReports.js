@@ -14,18 +14,20 @@ export const columnasDisponiblesMap = {
     { key: "telefono", label: "Teléfono Apoderado" },
   ],
   programas: [
-    { key: "id", label: "Código de Programa" },
-    { key: "nombre", label: "Nombre Programa" },
+    { key: "id", label: "Código de Taller" },
+    { key: "nombre", label: "Taller / Programa" },
     { key: "periodo", label: "Periodo / Ciclo" },
-    { key: "estado", label: "Estado Programa" },
+    { key: "estado", label: "Estado Taller" },
     { key: "categoria", label: "Categoría" },
     { key: "responsable", label: "Profesor Responsable" },
-    { key: "inscritos", label: "Total Inscritos" },
+    { key: "inscritos", label: "Total Alumnos" },
+    { key: "conBeca", label: "Alumnos con Beca" },
     { key: "cupos", label: "Cupos Totales" },
     { key: "avance", label: "Porcentaje Ocupación (%)" },
-    { key: "costo", label: "Costo Individual" },
-    { key: "proyectado", label: "Monto Proyectado" },
-    { key: "recaudado", label: "Monto Recaudado" },
+    { key: "costo", label: "Precio Lista (S/)" },
+    { key: "proyectado", label: "Total Esperado (S/)" },
+    { key: "recaudado", label: "Monto Recaudado (S/)" },
+    { key: "porCobrar", label: "Por Cobrar (S/)" },
   ],
   pagos: [
     { key: "id", label: "Código Transacción" },
@@ -45,7 +47,12 @@ export const columnasDisponiblesMap = {
     { key: "apoderado", label: "Nombre Apoderado" },
     { key: "telefono", label: "Teléfono Apoderado" },
     { key: "programa", label: "Programa / Taller" },
-    { key: "costo", label: "Costo / Monto Taller" },
+    { key: "costoOriginal", label: "Precio Lista (S/)" },
+    { key: "descuentoAprobado", label: "¿Tiene Beca/Descuento?" },
+    { key: "descuentoTipo", label: "Tipo Descuento" },
+    { key: "descuentoValor", label: "Valor Descuento" },
+    { key: "descuentoMonto", label: "Monto Descuento (S/)" },
+    { key: "costo", label: "Costo / Monto Final (S/)" },
     { key: "montoPagado", label: "Monto Pagado" },
     { key: "pendiente", label: "Monto Pendiente" },
     { key: "estadoPago", label: "Estado de Pago" },
@@ -53,6 +60,7 @@ export const columnasDisponiblesMap = {
     { key: "fechaPago", label: "Fecha Pago" },
     { key: "nroOperacion", label: "N° Operación" },
     { key: "nroRecibo", label: "Recibo SIADED" },
+    { key: "origen", label: "Canal / Origen" },
     { key: "fechaRegistro", label: "Fecha Registro" },
   ],
   direccion_alumnos_asistencias: [
@@ -64,21 +72,9 @@ export const columnasDisponiblesMap = {
   ],
 };
 
-export const opcionesReportesPorModulo = {
-  caja: [
-    { value: "pagos_historial", label: "Historial de Transacciones Financieras (Pagos)" },
-    { value: "pagos_resumen", label: "Resumen de Cobros por Alumno" },
-  ],
-  coordinacion: [
-    { value: "programas_catalogo", label: "Catálogo General de Talleres (Programas)" },
-    { value: "programas_capacidad", label: "Capacidad de Aulas y Ocupación" },
-  ],
-  padres: [
-    { value: "padres_matriculas", label: "Matrículas y Estado de Pago de Alumnos" },
-    { value: "padres_apoderados", label: "Directorio Telefónico de Apoderados" },
-  ],
-  direccion: [
-    { value: "direccion_alumnos_pagos", label: "Consolidado de Alumnos y Pagos" },
-    { value: "direccion_alumnos_asistencias", label: "Consolidado de Alumnos y Asistencias" },
-  ],
-};
+export const opcionesReportesSimplificados = [
+  { value: "direccion_alumnos_pagos", label: "Consolidado de Alumnos, Pagos y Becas" },
+  { value: "direccion_alumnos_asistencias", label: "Consolidado de Alumnos y Asistencias (Asistió ✓ / Faltó —)" },
+  { value: "pagos_historial", label: "Historial de Pagos y Transacciones (Recibos)" },
+  { value: "programas_catalogo", label: "Resumen General por Taller" },
+];

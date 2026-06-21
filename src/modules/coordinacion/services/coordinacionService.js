@@ -809,11 +809,11 @@ function prepararProgramasParaPreview(programas = []) {
 export async function previsualizarCargaAlumnosMasiva({ periodo, archivos, programaId, onProgress }) {
   const lista = Array.from(archivos || []);
   if (!lista.length) throw new Error("Seleccione al menos un archivo Excel.");
-  if (lista.length > 6) throw new Error("Puede subir hasta 6 archivos Excel por carga.");
+  if (lista.length > 15) throw new Error("Puede subir hasta 15 archivos Excel por carga.");
 
   const totalBytes = lista.reduce((total, archivo) => total + Number(archivo.size || 0), 0);
-  if (totalBytes > 25 * 1024 * 1024) {
-    throw new Error("La carga masiva no debe superar 25 MB en total.");
+  if (totalBytes > 50 * 1024 * 1024) {
+    throw new Error("La carga masiva no debe superar 50 MB en total.");
   }
 
   const previews = [];

@@ -4,6 +4,7 @@ import {
   IconLogout as LogOut,
   IconSearch as Search,
   IconMenu2 as Menu,
+  IconUserCheck as UserCheck,
 } from "@tabler/icons-react";
 import {
   buscarEstudiantePorDni,
@@ -31,6 +32,7 @@ import SecretariaCursoAdicionalModal from "./components/SecretariaCursoAdicional
 import SecretariaSearchCard from "./components/SecretariaSearchCard";
 import SecretariaStudentPanel from "./components/SecretariaStudentPanel";
 import SecretariaSuccessModal from "./components/SecretariaSuccessModal";
+import SecretariaAsistenciaModal from "./components/SecretariaAsistenciaModal";
 import {
   resumirHorarioSecretaria,
 } from "./components/SecretariaFields";
@@ -47,6 +49,7 @@ import "./Secretaria.css";
 
 function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, onLogout }) {
   const [periodo, setPeriodo] = useState("escolar");
+  const [vistaActiva, setVistaActiva] = useState("inscripcion"); // "inscripcion" | "asistencias"
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem("sec_sidebar_expanded");
     return saved !== null ? JSON.parse(saved) : true;
@@ -75,6 +78,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   const [modalCursoAdicional, setModalCursoAdicional] = useState(false);
   const [cursoAdicionalId, setCursoAdicionalId] = useState("");
   const [registrandoCursoAdicional, setRegistrandoCursoAdicional] = useState(false);
+  const [asistenciaModal, setAsistenciaModal] = useState({ open: false, inscripcion: null });
   const [resultadosNombre, setResultadosNombre] = useState([]);
 
   function mostrarMensaje(texto, tipo = "error") {
@@ -176,6 +180,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     setModoRegistro(false);
     setModalCursoAdicional(false);
     setModalExito(false);
+    setAsistenciaModal({ open: false, inscripcion: null });
     setMensaje("");
   }, [periodo]);
 
@@ -397,6 +402,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     setModoRegistro(false);
     setModalCursoAdicional(false);
     setModalExito(false);
+    setAsistenciaModal({ open: false, inscripcion: null });
     setResultadosNombre([]);
   }
 
@@ -865,16 +871,34 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
             </div>
           )}
         </div>
+        {sidebarExpanded && <p className="secretaria-module-label">Módulo Asistente</p>}
 
         <nav className="secretaria-nav" aria-label="Menu del modulo asistente">
           <button
-            className={`secretaria-nav-item ${!mostrarVistaDelegada ? "secretaria-nav-item-active" : ""}`}
+            className={`secretaria-nav-item ${!mostrarVistaDelegada && vistaActiva === "inscripcion" ? "secretaria-nav-item-active" : ""}`}
             type="button"
-            onClick={onClearDelegatedModule}
+            onClick={() => {
+              onClearDelegatedModule?.();
+              setVistaActiva("inscripcion");
+              limpiarBusquedaEstudiante();
+            }}
             title="Inscripción presencial"
           >
             <Search size={18} />
             {sidebarExpanded && <span>Inscripción presencial</span>}
+          </button>
+          <button
+            className={`secretaria-nav-item ${!mostrarVistaDelegada && vistaActiva === "asistencias" ? "secretaria-nav-item-active" : ""}`}
+            type="button"
+            onClick={() => {
+              onClearDelegatedModule?.();
+              setVistaActiva("asistencias");
+              limpiarBusquedaEstudiante();
+            }}
+            title="Ver Asistencias"
+          >
+            <UserCheck size={18} />
+            {sidebarExpanded && <span>Ver Asistencias</span>}
           </button>
         </nav>
 
@@ -923,6 +947,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                 resultadosNombre={resultadosNombre}
                 setDni={setDni}
                 setPeriodo={setPeriodo}
+                modoBusquedaAsistencia={vistaActiva === "asistencias"}
               >
                 <SecretariaStudentPanel
                   abrirCursoAdicional={abrirCursoAdicional}
@@ -941,6 +966,9 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   programas={programas}
                   tieneInvitacionOperativa={tieneInvitacionOperativa}
                   tipoAlumnoMostrado={tipoAlumnoMostrado}
+                  inscripcionesEstudiante={inscripcionesEstudiante}
+                  onVerAsistencia={(ins) => setAsistenciaModal({ open: true, inscripcion: ins })}
+                  modoBusquedaAsistencia={vistaActiva === "asistencias"}
                 />
               </SecretariaSearchCard>
 
@@ -983,6 +1011,12 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                 onPrint={abrirFichaGenerada}
               />
             ) : null}
+            <SecretariaAsistenciaModal
+              open={asistenciaModal.open}
+              onClose={() => setAsistenciaModal({ open: false, inscripcion: null })}
+              inscripcion={asistenciaModal.inscripcion}
+              estudiante={estudiante}
+            />
           </>
         )}
       </main>

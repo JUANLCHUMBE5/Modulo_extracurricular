@@ -21,7 +21,10 @@ function crearDetalleAcceso(rol) {
 }
 
 export function prepararLogsAcceso(logs = []) {
-  return (Array.isArray(logs) ? logs : []).map((log) => {
+  const accesosUnicamente = (Array.isArray(logs) ? logs : []).filter(
+    log => ["INICIO_SESION", "LOGIN_FALLIDO", "DB_RESET", "PADRES_VALIDAR_EXITOSO", "PADRES_VALIDAR_FALLIDO"].includes(log.accion)
+  );
+  return accesosUnicamente.slice(0, 100).map((log) => {
     const rol = normalizarRolAuditoria(log.rol);
     return {
       id: log.id,

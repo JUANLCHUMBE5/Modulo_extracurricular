@@ -49,10 +49,14 @@ export function filtrarRegistrosReporte({
   customFiltroPago,
   customFiltroCategoria,
   customFiltroPrograma,
+  customFiltroGrados,
   customTipo,
   panel,
   fechaInicio,
   fechaFin,
+  incluirInactivos,
+  customFiltroMeses,
+  customFiltroSemanas,
 }) {
   if (!panel?.reportes) return [];
 
@@ -60,7 +64,8 @@ export function filtrarRegistrosReporte({
   if (customTipo === "inscripciones") {
     raw = panel.reportes.inscripciones || [];
   } else if (customTipo === "programas") {
-    raw = panel.reportes.programas || [];
+    const list = panel.reportes.programas || [];
+    raw = incluirInactivos ? list : list.filter(p => String(p.estado || "").toLowerCase() === "habilitado");
   } else if (customTipo === "pagos") {
     raw = panel.reportes.pagos || [];
   } else if (customTipo === "direccion_alumnos_pagos") {
@@ -85,6 +90,12 @@ export function filtrarRegistrosReporte({
         apoderado: ins.apoderado || "",
         telefono: ins.telefono || "",
         programa: ins.programa || "",
+        programaId: ins.programaId || ins.programa_id || "",
+        costoOriginal: ins.costoOriginal ?? costo,
+        descuentoAprobado: ins.descuentoAprobado ? "Sí" : "No",
+        descuentoTipo: ins.descuentoTipo || "Ninguno",
+        descuentoValor: ins.descuentoValor || 0,
+        descuentoMonto: ins.descuentoMonto || 0,
         costo,
         montoPagado,
         pendiente,
@@ -92,6 +103,7 @@ export function filtrarRegistrosReporte({
         medioPago: pago ? (pago.medio || "—") : "—",
         fechaPago: pago ? (pago.fecha || "—") : "—",
         nroOperacion: pago ? (pago.id || "—") : "—",
+        origen: ins.origen || "",
         fechaRegistro: ins.fechaRegistro || "",
       };
     });
@@ -101,6 +113,7 @@ export function filtrarRegistrosReporte({
       estudiante: ins.estudiante || "",
       grado: ins.grado || "",
       programa: ins.programa || "",
+      programaId: ins.programaId || ins.programa_id || "",
       telefono: ins.telefono || "",
       fechaRegistro: ins.fechaRegistro || "",
     }));
@@ -155,7 +168,16 @@ export function filtrarRegistrosReporte({
     });
   }
 
-  // 3. Filtrar por Origen y Pago
+  // 3. Filtrar por Grado(s)
+  if (customFiltroGrados && customFiltroGrados.length > 0) {
+    const gradosSet = new Set(customFiltroGrados.map(g => g.toLowerCase().trim()));
+    filtered = filtered.filter((item) => {
+      const itemGrado = String(item.grado || item.gradoEstudiante || "").toLowerCase().trim();
+      return gradosSet.has(itemGrado);
+    });
+  }
+
+  // 4. Filtrar por Origen y Pago
   if (customTipo === "inscripciones") {
     if (customFiltroOrigen !== "todos") {
       filtered = filtered.filter((item) => {
@@ -205,6 +227,59 @@ export function filtrarRegistrosReporte({
       if (start && itemDate < start) return false;
       if (end && itemDate > end) return false;
       return true;
+    });
+  }
+
+  // 5. Filtrar por Meses
+  if (customFiltroMeses && customFiltroMeses.length > 0) {
+    const mesesSet = new Set(customFiltroMeses.map(m => parseInt(m)));
+    filtered = filtered.filter((item) => {
+      let itemDateRaw = null;
+      if (customTipo === "inscripciones") {
+        itemDateRaw = item.fechaRegistro;
+      } else if (customTipo === "pagos") {
+        itemDateRaw = item.fecha || item.fechaPago;
+      } else if (customTipo === "direccion_alumnos_pagos") {
+        itemDateRaw = (item.fechaPago && item.fechaPago !== "—") ? item.fechaPago : item.fechaRegistro;
+      } else if (customTipo === "direccion_alumnos_asistencias") {
+        itemDateRaw = item.fechaRegistro;
+      }
+
+      if (!itemDateRaw) return true;
+      const itemDate = normalizarFecha(itemDateRaw);
+      if (!itemDate) return true;
+
+      const month = itemDate.getMonth() + 1; // 1-indexed
+      return mesesSet.has(month);
+    });
+  }
+
+  // 6. Filtrar por Semanas del Mes
+  if (customFiltroSemanas && customFiltroSemanas.length > 0) {
+    const semanasSet = new Set(customFiltroSemanas.map(s => parseInt(s)));
+    filtered = filtered.filter((item) => {
+      let itemDateRaw = null;
+      if (customTipo === "inscripciones") {
+        itemDateRaw = item.fechaRegistro;
+      } else if (customTipo === "pagos") {
+        itemDateRaw = item.fecha || item.fechaPago;
+      } else if (customTipo === "direccion_alumnos_pagos") {
+        itemDateRaw = (item.fechaPago && item.fechaPago !== "—") ? item.fechaPago : item.fechaRegistro;
+      } else if (customTipo === "direccion_alumnos_asistencias") {
+        itemDateRaw = item.fechaRegistro;
+      }
+
+      if (!itemDateRaw) return true;
+      const itemDate = normalizarFecha(itemDateRaw);
+      if (!itemDate) return true;
+
+      const day = itemDate.getDate();
+      let weekNum = 1;
+      if (day > 28) weekNum = 5;
+      else if (day > 21) weekNum = 4;
+      else if (day > 14) weekNum = 3;
+      else if (day > 7) weekNum = 2;
+      return semanasSet.has(weekNum);
     });
   }
 

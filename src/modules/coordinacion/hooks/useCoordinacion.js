@@ -1793,7 +1793,7 @@ export default function useCoordinacion({
     setProgresoCarga(null);
 
     if (!archivosExcel.length) return mostrarMsg("Seleccione al menos un archivo Excel.");
-    if (archivosExcel.length > 6) return mostrarMsg("Puede subir hasta 6 archivos Excel por carga.");
+    if (archivosExcel.length > 15) return mostrarMsg("Puede subir hasta 15 archivos Excel por carga.");
 
     const invalido = archivosExcel.find((archivo) => !/\.(xlsx|xls)$/i.test(archivo.name));
     const pesado = archivosExcel.find((archivo) => archivo.size > 5 * 1024 * 1024);
@@ -1801,7 +1801,7 @@ export default function useCoordinacion({
     const extensionValida = !invalido;
     if (!extensionValida) return mostrarMsg("Solo se permiten archivos .xlsx o .xls.");
     if (pesado) return mostrarMsg("Cada archivo no debe superar 5 MB.");
-    if (totalBytes > 25 * 1024 * 1024) return mostrarMsg("La carga masiva no debe superar 25 MB en total.");
+    if (totalBytes > 50 * 1024 * 1024) return mostrarMsg("La carga masiva no debe superar 50 MB en total.");
 
     setCargandoPreview(true);
     setProgresoCarga({

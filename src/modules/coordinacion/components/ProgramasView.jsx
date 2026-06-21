@@ -512,19 +512,6 @@ function ProgramasView({
                                 </ActionIcon>
                               </Tooltip>
                             ) : null}
-                            {puedeEditarProgramas && restaurarPrograma ? (
-                              <Tooltip label="Restaurar a activo">
-                                <ActionIcon
-                                  className="coord-program-action coord-program-action-restore"
-                                  size="sm"
-                                  color="green"
-                                  variant="light"
-                                  onClick={() => restaurarPrograma(programa)}
-                                >
-                                  <ArrowBackUp size={15} />
-                                </ActionIcon>
-                              </Tooltip>
-                            ) : null}
                           </>
                         ) : (
                           <>

@@ -24,18 +24,20 @@ function crearDetalleAcceso(rol) {
 }
 
 function filtrarLogsAcceso(logs = []) {
-  return (Array.isArray(logs) ? logs : [])
-    .map((log) => {
-      const rol = normalizarRolAuditoria(log.rol);
-      return {
-        id: log.id,
-        usuario: log.usuario,
-        rol,
-        fecha: log.fecha,
-        accion: log.accion,
-        detalles: log.detalles || crearDetalleAcceso(rol),
-      };
-    });
+  const accesosUnicamente = (Array.isArray(logs) ? logs : []).filter(
+    log => ["INICIO_SESION", "LOGIN_FALLIDO", "DB_RESET", "PADRES_VALIDAR_EXITOSO", "PADRES_VALIDAR_FALLIDO"].includes(log.accion)
+  );
+  return accesosUnicamente.slice(0, 100).map((log) => {
+    const rol = normalizarRolAuditoria(log.rol);
+    return {
+      id: log.id,
+      usuario: log.usuario,
+      rol,
+      fecha: log.fecha,
+      accion: log.accion,
+      detalles: log.detalles || crearDetalleAcceso(rol),
+    };
+  });
 }
 
 export async function listarUsuarios() {

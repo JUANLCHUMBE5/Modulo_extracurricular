@@ -3163,10 +3163,11 @@ app.get("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres"])
 // 10. Reportes Direccion
 app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), async (req, res) => {
   try {
-    const { periodo } = req.query;
+    const { periodo, anio } = req.query;
     const db = await getDb();
     
     const period = normalizarPeriodoApi(periodo || "todos");
+    const year = anio || "todos";
     
     const filtrarPorPeriodo = (items) => {
       if (period === "todos") return [...items];
@@ -3206,6 +3207,7 @@ app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), 
         estudiante: item.nombresEstudiante || "",
         grado: item.gradoEstudiante || item.grado || "",
         programa: item.programa || "",
+        programaId: item.programaId || "",
         estadoInscripcion: item.estadoInscripcion || "",
         estadoPago: normalizarEstadoPago(item.estadoPago),
         costo: Number(item.costo || 0),
@@ -3213,6 +3215,11 @@ app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), 
         fechaRegistro: item.fechaRegistro || "",
         apoderado: item.apoderado || "",
         telefono: item.telefono || "",
+        costoOriginal: item.costoOriginal !== undefined ? Number(item.costoOriginal) : Number(item.costo || 0),
+        descuentoAprobado: item.descuentoAprobado || false,
+        descuentoTipo: item.descuentoTipo || "",
+        descuentoValor: Number(item.descuentoValor || 0),
+        descuentoMonto: Number(item.descuentoMonto || 0),
       };
     };
 
@@ -3226,13 +3233,25 @@ app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), 
         estado: normalizarEstadoPago(item.estado),
         medio: item.formaPago || item.medioPago || "",
         fecha: item.fechaPago || item.fecha || "",
+        nroRecibo: item.nroRecibo || item.nro_recibo || "",
       };
     };
 
-    const programas = filtrarPorPeriodo(db.programas || []);
-    const inscripciones = filtrarPorPeriodo(db.inscripciones || [])
+    let programas = filtrarPorPeriodo(db.programas || []);
+    let inscripciones = filtrarPorPeriodo(db.inscripciones || [])
       .filter((item) => item.estadoInscripcion !== "Anulada" && item.estadoInscripcion !== "anulada");
-    const pagos = filtrarPorPeriodo(db.pagos || []);
+    let pagos = filtrarPorPeriodo(db.pagos || []);
+
+    if (year !== "todos") {
+      programas = programas.filter(p => {
+        const date = p.fechaInicio || p.fechaFin;
+        if (!date) return false;
+        return String(date).slice(0, 4) === String(year);
+      });
+      const programaIdsInYear = new Set(programas.map(p => p.id));
+      inscripciones = inscripciones.filter(ins => programaIdsInYear.has(ins.programaId));
+      pagos = pagos.filter(p => programaIdsInYear.has(p.programaId));
+    }
 
     const filasProgramas = programas.map((programa) => {
       const inscripcionesPrograma = inscripciones.filter((item) =>
@@ -3383,6 +3402,12 @@ app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), 
           inscripciones: inscripciones.map(crearFilaInscripcion),
           pagos: pagos.map(crearFilaPago),
         },
+        aniosDisponibles: Array.from(new Set(
+          (db.programas || []).map(p => p.fechaInicio ? String(p.fechaInicio).slice(0, 4) : "").filter(Boolean)
+        )).sort((a, b) => b.localeCompare(a)),
+        categorias: Array.from(new Set(
+          (db.programas || []).map(p => p.categoria).filter(Boolean)
+        ))
       }
     });
   } catch (error) {
@@ -3432,7 +3457,7 @@ app.post("/api/v1/usuarios", async (req, res) => {
 app.put("/api/v1/usuarios/:id", async (req, res) => {
   try {
     const db = await getDb();
-    const idx = (db.usuarios || []).findIndex(u => u.id === req.params.id);
+    const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(req.params.id));
     if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
     
     let contrasena = db.usuarios[idx].contrasena;
@@ -3468,7 +3493,7 @@ app.put("/api/v1/usuarios/:id", async (req, res) => {
 app.put("/api/v1/usuarios/:id/estado", async (req, res) => {
   try {
     const db = await getDb();
-    const idx = (db.usuarios || []).findIndex(u => u.id === req.params.id);
+    const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(req.params.id));
     if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
     
     db.usuarios[idx].estado = req.body.estado;
@@ -3486,7 +3511,7 @@ app.put("/api/v1/usuarios/:id/estado", async (req, res) => {
 app.post("/api/v1/usuarios/:id/resetear-contrasena", async (req, res) => {
   try {
     const db = await getDb();
-    const idx = (db.usuarios || []).findIndex(u => u.id === req.params.id);
+    const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(req.params.id));
     if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
     
     db.usuarios[idx].contrasena = bcrypt.hashSync("1234", 10);
@@ -3504,7 +3529,7 @@ app.post("/api/v1/usuarios/:id/resetear-contrasena", async (req, res) => {
 app.delete("/api/v1/usuarios/:id", async (req, res) => {
   try {
     const db = await getDb();
-    db.usuarios = (db.usuarios || []).filter(u => u.id !== req.params.id);
+    db.usuarios = (db.usuarios || []).filter(u => String(u.id) !== String(req.params.id));
     await saveDb(db);
 
     await registrarAuditoria(req.user.username, req.user.role, "USUARIO_ELIMINAR", { usuarioId: req.params.id });
