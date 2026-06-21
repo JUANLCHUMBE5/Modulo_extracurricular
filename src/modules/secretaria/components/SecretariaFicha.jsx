@@ -61,67 +61,58 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
       return undefined;
     }
 
-    if (inscripcion.plantillaBase64 && wordPreviewRef.current) {
-      let activo = true;
-      let urlPdfGenerado = "";
-      setPdfUrl("");
-      setWordPreview({ cargando: true, error: "" });
-      wordPreviewRef.current.innerHTML = "";
+    let activo = true;
+    let urlPdfGenerado = "";
+    let urlPdfOriginal = "";
 
-      generarComunicadoWordBlob({ estudiante, inscripcion })
-        .then(async (blob) => {
+    const setupFichaPdf = async () => {
+      if (inscripcion.plantillaBase64 && wordPreviewRef.current) {
+        setPdfUrl("");
+        setWordPreview({ cargando: true, error: "" });
+        wordPreviewRef.current.innerHTML = "";
+
+        try {
+          const blob = await generarComunicadoWordBlob({ estudiante, inscripcion });
           if (!activo || !wordPreviewRef.current) return;
+          const pdf = await convertirWordOriginalAPdf(blob);
+          if (!activo) return;
+          urlPdfGenerado = URL.createObjectURL(pdf);
+          setPdfUrl(urlPdfGenerado);
+          setWordPreview({ cargando: false, error: "" });
+        } catch {
+          if (!activo) return;
           try {
-            const pdf = await convertirWordOriginalAPdf(blob);
+            const url = await crearUrlPdfInvitacion(documento);
             if (!activo) return;
-            urlPdfGenerado = URL.createObjectURL(pdf);
-            setPdfUrl(urlPdfGenerado);
-            setWordPreview({ cargando: false, error: "" });
-            return;
-          } catch {
+            urlPdfOriginal = url;
+            setPdfUrl(url);
+            setWordPreview({
+              cargando: false,
+              error: "No se pudo mostrar el Word original en la vista. Puede intentar descargar el PDF cuando el convertidor del backend esté disponible.",
+            });
+          } catch (e) {
             setPdfUrl("");
           }
-
-          wordPreviewRef.current.innerHTML = "";
-          await renderAsync(blob, wordPreviewRef.current, null, {
-            className: "secretaria-docx-preview",
-            inWrapper: true,
-            ignoreWidth: false,
-            ignoreHeight: false,
-            renderHeaders: true,
-            renderFooters: true,
-            renderFootnotes: true,
-            breakPages: false,
-            ignoreLastRenderedPageBreak: false,
-          });
-          prepararVistaDocxParaImpresion(wordPreviewRef.current);
-          requestAnimationFrame(() => {
-            if (activo) normalizarMarcasAguaDocx(wordPreviewRef.current);
-          });
-          window.setTimeout(() => {
-            if (activo) normalizarMarcasAguaDocx(wordPreviewRef.current);
-          }, 300);
-          if (activo) setWordPreview({ cargando: false, error: "" });
-        })
-        .catch(() => {
+        }
+      } else {
+        try {
+          const url = await crearUrlPdfInvitacion(documento);
           if (!activo) return;
-          const url = crearUrlPdfInvitacion(documento);
+          urlPdfOriginal = url;
           setPdfUrl(url);
-          setWordPreview({
-            cargando: false,
-            error: "No se pudo mostrar el Word original en la vista. Puede intentar descargar el PDF cuando el convertidor del backend esté disponible.",
-          });
-        });
+        } catch (e) {
+          setPdfUrl("");
+        }
+      }
+    };
 
-      return () => {
-        activo = false;
-        if (urlPdfGenerado) URL.revokeObjectURL(urlPdfGenerado);
-      };
-    }
+    setupFichaPdf();
 
-    const url = crearUrlPdfInvitacion(documento);
-    setPdfUrl(url);
-    return () => URL.revokeObjectURL(url);
+    return () => {
+      activo = false;
+      if (urlPdfGenerado) URL.revokeObjectURL(urlPdfGenerado);
+      if (urlPdfOriginal) URL.revokeObjectURL(urlPdfOriginal);
+    };
   }, [documento, estudiante, inscripcion]);
 
   async function imprimirFicha() {
@@ -142,7 +133,7 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
         }
       } catch (err) {
         const documentoFallback = await crearDocumentoInvitacion(estudiante, inscripcion);
-        const pdf = crearPdfInvitacionDocumento(documentoFallback).output("blob");
+        const pdf = (await crearPdfInvitacionDocumento(documentoFallback)).output("blob");
         imprimirPdfBlob(pdf);
         setWordPreview((actual) => ({
           ...actual,
@@ -292,7 +283,7 @@ async function imprimirInscripcionDirecta(estudiante, inscripcion) {
   }
 
   const documento = await crearDocumentoInvitacion(estudiante, inscripcion);
-  const pdf = crearPdfInvitacionDocumento(documento).output("blob");
+  const pdf = (await crearPdfInvitacionDocumento(documento)).output("blob");
   imprimirPdfBlob(pdf);
 }
 

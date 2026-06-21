@@ -1,5 +1,4 @@
-import ExcelJS from "exceljs";
-import { jsPDF } from "jspdf";
+
 import { apiDb } from "../../../services/dbApi";
 import {
   calcularEdad,
@@ -21,6 +20,7 @@ export async function exportExcelDaily({
   hasMatriculados,
   asistencias,
 }) {
+  const ExcelJS = (await import("exceljs")).default;
   if (!programaSeleccionado || (!grupoActivo && asistencias.length > 0)) return;
   if (asistencias.length === 0 && !hasMatriculados) return;
 
@@ -124,7 +124,7 @@ export async function exportExcelDaily({
 }
 
 // PDF Export Handler (Daily View)
-export function exportPdfDaily({
+export async function exportPdfDaily({
   programaSeleccionado,
   grupoActivo,
   matriculadosOrdenados,
@@ -132,6 +132,7 @@ export function exportPdfDaily({
   hasMatriculados,
   asistencias,
 }) {
+  const { jsPDF } = await import("jspdf");
   if (!programaSeleccionado || (!grupoActivo && asistencias.length > 0)) return;
   if (asistencias.length === 0 && !hasMatriculados) return;
 
@@ -325,6 +326,7 @@ export async function exportExcelMonthly({
   fechasColumnas,
   checkMap,
 }) {
+  const ExcelJS = (await import("exceljs")).default;
   if (!programaSeleccionado || !matriculados.length) return;
 
   const workbook = new ExcelJS.Workbook();
@@ -418,13 +420,14 @@ export async function exportExcelMonthly({
 }
 
 // PDF Export Handler (Monthly Matrix View - Landscape)
-export function exportPdfMonthly({
+export async function exportPdfMonthly({
   programaSeleccionado,
   matriculados,
   matriculadosOrdenados,
   fechasColumnas,
   checkMap,
 }) {
+  const { jsPDF } = await import("jspdf");
   if (!programaSeleccionado || !matriculados.length) return;
 
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
@@ -578,12 +581,13 @@ export function exportPdfMonthly({
 }
 
 // PDF Export Handler (Individual Attendance Report)
-export function exportPdfIndividual({
+export async function exportPdfIndividual({
   programaSeleccionado,
   alumno,
   fechasColumnas,
   checkMap,
 }) {
+  const { jsPDF } = await import("jspdf");
   if (!programaSeleccionado || !alumno) return;
 
   const doc = new jsPDF({ unit: "mm", format: "a4" });

@@ -1,4 +1,4 @@
-import { jsPDF } from "jspdf";
+
 import { renderAsync } from "docx-preview";
 import {
   cleanFallbackText,
@@ -128,7 +128,8 @@ function extraerAlmuerzoHorario(horario) {
   return valor.replace(/\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)\b/gi, "").trim();
 }
 
-export function crearPdfInvitacionDocumento(documento) {
+export async function crearPdfInvitacionDocumento(documento) {
+  const { jsPDF } = await import("jspdf");
   const ficha = documento.ficha || {};
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   
@@ -474,8 +475,8 @@ function tituloFichaOriginal(ficha) {
   return t === "Reforzamiento (Circular)" ? "TALLER DE REFORZAMIENTO Y NIVELACIÓN" : t.toUpperCase();
 }
 
-export function crearUrlPdfInvitacion(documento) {
-  const doc = crearPdfInvitacionDocumento(documento);
+export async function crearUrlPdfInvitacion(documento) {
+  const doc = await crearPdfInvitacionDocumento(documento);
   return URL.createObjectURL(doc.output("blob"));
 }
 
@@ -753,7 +754,8 @@ function obtenerFilasCambridgeFicha(ficha) {
   return filas;
 }
 
-export function descargarFichaPdf(ficha) {
+export async function descargarFichaPdf(ficha) {
+  const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const margen = 18;
   const anchoTexto = 174;

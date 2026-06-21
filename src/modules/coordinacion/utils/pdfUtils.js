@@ -1,7 +1,7 @@
-import { jsPDF } from "jspdf";
 import { fechaActualIso } from "../../../services/dateService";
 
-export function descargarListaAlumnosPdf(programa, alumnos) {
+export async function descargarListaAlumnosPdf(programa, alumnos) {
+  const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const margen = 14;
   const anchoPagina = doc.internal.pageSize.getWidth();

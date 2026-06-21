@@ -1,6 +1,5 @@
-import ExcelJS from "exceljs";
-
 export async function descargarListaAlumnosExcel(programa, tipo, alumnos) {
+  const ExcelJS = (await import("exceljs")).default;
   const esPreinscritos = tipo === "preinscritos";
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Colegio San Rafael";

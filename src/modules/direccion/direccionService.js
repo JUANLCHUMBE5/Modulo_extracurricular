@@ -1,5 +1,5 @@
 
-import ExcelJS from "exceljs";
+
 import { apiDb, syncApiDb, saveApiDb } from "../../services/dbApi";
 import { isApiMode, apiClient } from "../../services/apiClient";
 import { normalizarFecha } from "../../services/dateService";
@@ -197,6 +197,7 @@ export async function obtenerPanelDireccion(filtros = {}) {
 }
 
 export async function descargarReporteDireccion(tipoReporte, filtros = {}) {
+  const ExcelJS = (await import("exceljs")).default;
   const panel = await obtenerPanelDireccion(filtros);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Colegio San Rafael";
@@ -367,6 +368,7 @@ function abreviar(valor) {
 }
 
 export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, columnas = [], periodo = "todos" }) {
+  const ExcelJS = (await import("exceljs")).default;
   const panel = await obtenerPanelDireccion({ periodo, anio: filtros.anio });
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Colegio San Rafael";
