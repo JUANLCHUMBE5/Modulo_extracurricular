@@ -119,18 +119,18 @@ export function calcularEstadoGeneral(inscripcion, invitacion) {
     if (String(inscripcion.estadoPago || "").toLowerCase().includes("pag")) {
       return { texto: "Inscrito con pago registrado", tono: "success" };
     }
-    return { texto: "InscripciÃ³n pendiente de pago", tono: "warning" };
+    return { texto: "Inscripción pendiente de pago", tono: "warning" };
   }
 
   if (invitacion) {
-    return { texto: "InvitaciÃ³n disponible", tono: "info" };
+    return { texto: "Invitación disponible", tono: "info" };
   }
 
   return { texto: "Sin programa asignado", tono: "neutral" };
 }
 
 export function normalizarPeriodoTexto(periodo) {
-  return String(periodo || "").toLowerCase().includes("verano") ? "Ciclo verano" : "AÃ±o escolar";
+  return String(periodo || "").toLowerCase().includes("verano") ? "Ciclo verano" : "Año escolar";
 }
 
 export function normalizarTexto(texto) {

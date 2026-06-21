@@ -86,7 +86,7 @@ export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
 
   return {
     ...estudiante,
-    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "AÃ±o escolar",
+    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
     estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(dni, periodoNormalizado),
     estadoPago: obtenerEstadoPagoPorPeriodo(dni, periodoNormalizado),
     origenRegistro: "Base general de estudiantes",
@@ -134,9 +134,9 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
       ? adaptarEstudianteBase(estudiante, periodoNormalizado, invitacion)
       : {
           ...estudiante,
-    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "AÃ±o escolar",
+    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
     estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
-    "estadoInscripciÃ³n": obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
+    "estadoInscripción": obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
           estadoPago: obtenerEstadoPagoPorPeriodo(estudiante.dni, periodoNormalizado),
           origenRegistro: "Base general de estudiantes",
           tipoAlumno: periodoNormalizado === "verano" ? "Alumno interno" : estudiante.tipoAlumno,
@@ -216,7 +216,7 @@ export async function registrarInscripcion(payload) {
       sexo_estudiante: payload.sexoEstudiante || ""
     };
     const res = await apiClient.post("/api/v1/extracurricular/inscripciones", apiPayload);
-    if (!res.success) throw new Error(res.message || "Error al registrar inscripciÃ³n");
+    if (!res.success) throw new Error(res.message || "Error al registrar inscripción");
     return adaptarInscripcion(res.data);
   }
 
@@ -230,12 +230,12 @@ export async function registrarInscripcion(payload) {
   }
 
   const programa = apiDb.programas.find((item) => item.id === payload.programaId);
-  if (!programa) throw new Error("El programa ya no existe. CoordinaciÃ³n debe revisarlo.");
+  if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
   if (programa.estado !== "Habilitado") {
-    throw new Error("No se puede registrar la inscripciÃ³n porque el programa no estÃ¡ habilitado.");
+    throw new Error("No se puede registrar la inscripción porque el programa no está habilitado.");
   }
   if (Number(programa.cuposOcupados || 0) >= Number(programa.cupos || 0)) {
-    throw new Error("No se puede registrar la inscripciÃ³n porque el programa no tiene cupos disponibles.");
+    throw new Error("No se puede registrar la inscripción porque el programa no tiene cupos disponibles.");
   }
   validarVentanaInscripcionRegular(programa, payload);
   const horarioResuelto = resolverHorarioPorGrado(programa, payload.gradoEstudiante);
@@ -260,7 +260,7 @@ export async function registrarInscripcion(payload) {
     clavesAlumnoInscripcion(item).some((clave) => clavesPayload.includes(clave))
   );
 
-  if (duplicada) throw new Error("El alumno ya tiene una inscripciÃ³n registrada en este programa.");
+  if (duplicada) throw new Error("El alumno ya tiene una inscripción registrada en este programa.");
 
   if (!programa.invitacionMasiva) {
     validarCruceHorarioAlumno(payload, horarioResuelto || programa.horario);
@@ -358,7 +358,7 @@ export async function registrarInscripcion(payload) {
 export async function registrarDocumentoGenerado({
   estudiante,
   inscripcion,
-  usuario = "SecretarÃ­a",
+  usuario = "Secretaría",
   tipoDocumento = "Comunicado personalizado",
 }) {
   if (isApiMode()) {
@@ -613,7 +613,7 @@ function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
     nombre: programa.nombre,
     grupo: programa.grupo || "",
     grupoEtario: programa.grupoEtario || programa.grupo || "",
-    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "AÃ±o escolar",
+    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
     horario: resolverHorarioPorGrado(programa, gradoAlumno) || programa.horario,
     horariosPorGrupo: programa.horariosPorGrupo || [],
     gradosAplicables: programa.gradosAplicables || [],
@@ -623,7 +623,7 @@ function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
     cuposDisponibles,
     requiereUniforme: Boolean(programa.requiereUniforme),
     requiereIndumentaria: Boolean(programa.requiereIndumentaria),
-    uniforme: programa.requiereUniforme ? "SÃ­" : "No",
+    uniforme: programa.requiereUniforme ? "Sí" : "No",
     modalidadCobro: programa.modalidadCobro || "",
     fechaInicio: programa.fechaInicio || "",
     fechaFin: programa.fechaFin || "",
@@ -662,11 +662,11 @@ function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo
     grado: gradoInvitacion,
     seccion: seccionInvitacion,
     nivel: nivelInvitacion,
-    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "AÃ±o escolar",
+    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
     estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
-    "estadoInscripciÃ³n": obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
+    "estadoInscripción": obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
     estadoPago: obtenerEstadoPagoPorPeriodo(estudiante.dni, periodoNormalizado),
-    origenRegistro: "Base general de estudiantes + carga Excel de CoordinaciÃ³n",
+    origenRegistro: "Base general de estudiantes + carga Excel de Coordinación",
     tieneInvitacion: true,
     programaAsignado: invitacionPeriodo.programaId,
     programaNombre: programa.nombre,
@@ -711,10 +711,10 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
     grado: gradoInvitado || "No definido",
     seccion: invitado.seccion || "No definido",
     tipoAlumno: "Alumno invitado",
-    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "AÃ±o escolar",
+    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
     estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(invitado.dni, periodoNormalizado),
     estadoPago: obtenerEstadoPagoPorPeriodo(invitado.dni, periodoNormalizado),
-    origenRegistro: "Carga Excel de CoordinaciÃ³n",
+    origenRegistro: "Carga Excel de Coordinación",
     tieneInvitacion: true,
     programaAsignado: invitacionPeriodo.programaId,
     programaNombre: programa.nombre,

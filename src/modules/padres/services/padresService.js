@@ -83,7 +83,7 @@ export async function obtenerResumenPadre(dni) {
   const estudiante = apiDb.estudiantes[dniLimpio] || null;
 
   if (!estudiante) {
-    throw new Error("No se encontrÃ³ informaciÃ³n del estudiante.");
+    throw new Error("No se encontró información del estudiante.");
   }
 
   const invitaciones = obtenerInvitaciones(dniLimpio, estudiante);
@@ -123,7 +123,7 @@ export async function guardarDatosApoderadoPadres(dni, datos) {
 
   const dniLimpio = String(dni || "").replace(/\D/g, "");
   const estudiante = apiDb.estudiantes[dniLimpio];
-  if (!estudiante) throw new Error("No se encontrÃ³ informaciÃ³n del estudiante.");
+  if (!estudiante) throw new Error("No se encontró información del estudiante.");
 
   estudiante.apoderado = limpiarTexto(datos.apoderado);
   estudiante.telefonoApoderado = limpiarTexto(datos.telefono);
@@ -164,7 +164,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
       talla_short: tallas.tallaShort || "",
     };
     const res = await apiClient.post("/api/v1/extracurricular/inscripciones", payload);
-    if (!res.success) throw new Error(res.message || "Error al registrar inscripciÃ³n");
+    if (!res.success) throw new Error(res.message || "Error al registrar inscripción");
     return adaptarInscripcion(res.data);
   }
 
@@ -173,7 +173,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
 
   const dniLimpio = String(dni || "").replace(/\D/g, "");
   const estudiante = apiDb.estudiantes[dniLimpio];
-  if (!estudiante) throw new Error("No se encontrÃ³ informaciÃ³n del estudiante.");
+  if (!estudiante) throw new Error("No se encontró información del estudiante.");
 
   const invitaciones = obtenerInvitaciones(dniLimpio, estudiante);
   const invitacionPrincipal = invitaciones[0] || null;
@@ -182,8 +182,8 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
   const invitacion = invitaciones.find((item) => item.programaId === programaSeleccionadoId) || null;
 
   const programa = apiDb.programas.find((item) => item.id === programaSeleccionadoId);
-  if (!programa) throw new Error("El programa ya no existe. CoordinaciÃ³n debe revisarlo.");
-  if (programa.estado !== "Habilitado") throw new Error("El programa no estÃ¡ habilitado.");
+  if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
+  if (programa.estado !== "Habilitado") throw new Error("El programa no está habilitado.");
   const gradoRegistro = invitacion?.grado || estudiante.grado;
   const seccionRegistro = invitacion?.seccion || estudiante.seccion;
   const codigoRegistro = invitacion?.codigoEstudiante || estudiante.codigoEstudiante || "";
@@ -221,7 +221,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
       throw new Error("El estudiante ya esta matriculado y cancelado en este programa. No se puede volver a matricular.");
     }
   }
-  if (duplicada) throw new Error("El estudiante ya tiene una inscripciÃ³n registrada en este programa.");
+  if (duplicada) throw new Error("El estudiante ya tiene una inscripción registrada en este programa.");
 
   const horarioRegistro = horarioPersonalizado || invitacion?.horario || resolverHorarioPorGrado(programa, gradoRegistro) || (programa.invitacionMasiva ? programa.horario : "") || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || "Horario por confirmar";
   if (!programa.invitacionMasiva) {
@@ -649,7 +649,7 @@ function normalizarInscripcion(inscripcion) {
 
 function obtenerEstadoInscripcion(inscripcion) {
   return inscripcion.estadoInscripcion ||
-    inscripcion["estadoInscripciÃ³n"] ||
+    inscripcion["estadoInscripción"] ||
     "Pendiente";
 }
 

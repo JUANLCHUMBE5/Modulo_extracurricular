@@ -53,10 +53,10 @@ function DatoHorario({ label, value, icon: Icon, themeClass }) {
 const diasSemanaSecretaria = [
   { valor: "Lunes", patron: /\blunes\b/i },
   { valor: "Martes", patron: /\bmartes\b/i },
-  { valor: "Miércoles", patron: /\bmi(?:e|é|Ã©)rcoles\b/i },
+  { valor: "Miércoles", patron: /\bmi(?:e|é|é)rcoles\b/i },
   { valor: "Jueves", patron: /\bjueves\b/i },
   { valor: "Viernes", patron: /\bviernes\b/i },
-  { valor: "Sábado", patron: /\bs(?:a|á|Ã¡)bado\b/i },
+  { valor: "Sábado", patron: /\bs(?:a|á|á)bado\b/i },
   { valor: "Domingo", patron: /\bdomingo\b/i },
 ];
 

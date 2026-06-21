@@ -81,7 +81,7 @@ function usePadres(user) {
       });
 
     } catch (err) {
-      const mensaje = err.message || "No se pudo cargar la informaciÃ³n del estudiante.";
+      const mensaje = err.message || "No se pudo cargar la información del estudiante.";
       setError(mensaje);
       toast.warning("Padres", { description: mensaje });
     } finally {
@@ -351,7 +351,7 @@ function usePadres(user) {
   }
 
   async function continuarPago() {
-    if (!infoProgramaAceptada) return avisar("Debe aceptar que leyÃ³ la informaciÃ³n del programa antes de continuar.");
+    if (!infoProgramaAceptada) return avisar("Debe aceptar que leyó la información del programa antes de continuar.");
     if (invitacion && !inscripcion) {
       const registrado = await solicitarInscripcionPadres();
       if (registrado) setInfoProgramaAbierta(false);

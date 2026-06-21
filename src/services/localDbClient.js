@@ -1,6 +1,6 @@
 // BASE LOCAL PARA DESARROLLO.
 // La fuente principal es server/db.json mediante /api/db.
-// En producciÃ³n serÃ¡ reemplazada por la API del sistema principal.
+// En producción será reemplazada por la API del sistema principal.
 
 const STORAGE_KEY = "san_rafael_mock_database_v2";
 

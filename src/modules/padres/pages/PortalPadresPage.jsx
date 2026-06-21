@@ -39,8 +39,8 @@ function obtenerMetaSeccionComunicado(titulo = "") {
   if (texto.includes("ventaja")) return { Icono: Bulb, clase: "is-benefits", ayuda: "Beneficios incluidos durante el ciclo." };
   if (texto.includes("nota")) return { Icono: Notes, clase: "is-note", ayuda: "Compromisos importantes para la familia." };
   if (texto.includes("util")) return { Icono: ClipboardCheck, clase: "is-supplies", ayuda: "Materiales que debe preparar la familia." };
-  if (texto.includes("concesionario")) return { Icono: Phone, clase: "is-contact", ayuda: "Contactos autorizados por la instituciÃ³n." };
-  return { Icono: BookOpen, clase: "is-general", ayuda: "InformaciÃ³n importante del programa." };
+  if (texto.includes("concesionario")) return { Icono: Phone, clase: "is-contact", ayuda: "Contactos autorizados por la institución." };
+  return { Icono: BookOpen, clase: "is-general", ayuda: "Información importante del programa." };
 }
 
 function obtenerIconoPorTipo(tipo = "") {
@@ -496,7 +496,7 @@ export default function Padres({ user, onLogout }) {
         {cargando ? (
           <section className="padres-loading padres-flow-loading">
             <Loader2 className="padres-spin" size={30} />
-            <p>Cargando informaciÃ³n del estudiante...</p>
+            <p>Cargando información del estudiante...</p>
           </section>
         ) : error ? (
           <Alert className="padres-alert" color="green" radius="md" icon={<AlertCircle size={18} />}>
@@ -535,9 +535,9 @@ export default function Padres({ user, onLogout }) {
               <div>
                 <span>Comunicado para el apoderado</span>
                 <h2 id="padres-info-title">{programaActual.programa || programaActual.nombre}</h2>
-                <p>Revise los puntos importantes del programa antes de confirmar la inscripciÃ³n.</p>
+                <p>Revise los puntos importantes del programa antes de confirmar la inscripción.</p>
               </div>
-              <button type="button" onClick={() => setInfoProgramaAbierta(false)} aria-label="Cerrar informaciÃ³n">
+              <button type="button" onClick={() => setInfoProgramaAbierta(false)} aria-label="Cerrar información">
                 <X size={18} />
               </button>
             </header>
@@ -547,7 +547,7 @@ export default function Padres({ user, onLogout }) {
                 <BookOpen size={19} />
                 <div>
                   <strong>Lea el comunicado completo</strong>
-                  <p>EncontrarÃ¡ costos, beneficios, materiales y datos Ãºtiles organizados por tema.</p>
+                  <p>Encontrará costos, beneficios, materiales y datos útiles organizados por tema.</p>
                 </div>
               </div>
 
@@ -651,28 +651,28 @@ export default function Padres({ user, onLogout }) {
                       <span className="padres-comunicado-section-icon"><Utensils size={17} /></span>
                       <div>
                         <strong>Almuerzo</strong>
-                        <span>RecepciÃ³n y concesionarios autorizados.</span>
+                        <span>Recepción y concesionarios autorizados.</span>
                       </div>
                     </div>
                     <p>
-                      El colegio cuenta con un Ã¡rea para recibir almuerzos. Deben dejarse de 01:20 a 01:45 p.m.
-                      La lonchera debe tener una etiqueta grande con nombre del alumno, grado y secciÃ³n.
+                      El colegio cuenta con un área para recibir almuerzos. Deben dejarse de 01:20 a 01:45 p.m.
+                      La lonchera debe tener una etiqueta grande con nombre del alumno, grado y sección.
                     </p>
                     <div className="padres-lunch-vendors">
                       <div>
-                        <span>CafetÃ­n Los Amigos del recreo</span>
-                        <strong>Sra. RocÃ­o</strong>
+                        <span>Cafetín Los Amigos del recreo</span>
+                        <strong>Sra. Rocío</strong>
                         <p>976280197</p>
                       </div>
                       <div>
-                        <span>CafetÃ­n Edith</span>
+                        <span>Cafetín Edith</span>
                         <strong>Sra. Deysli</strong>
                         <p>960897529</p>
                       </div>
                     </div>
                     <p>
-                      Estos concesionarios estÃ¡n autorizados por la instituciÃ³n y cumplen con los protocolos correspondientes
-                      segÃºn las disposiciones del MINSA.
+                      Estos concesionarios están autorizados por la institución y cumplen con los protocolos correspondientes
+                      según las disposiciones del MINSA.
                     </p>
                   </div>
                 ) : null}
@@ -689,20 +689,20 @@ export default function Padres({ user, onLogout }) {
                 />
                 <span>
                   {invitacionPendiente
-                    ? "He leÃ­do y acepto la informaciÃ³n del programa antes de registrar la inscripciÃ³n."
-                    : "He leÃ­do y acepto la informaciÃ³n del programa antes de continuar con la matricula."}
+                    ? "He leído y acepto la información del programa antes de registrar la inscripción."
+                    : "He leído y acepto la información del programa antes de continuar con la matricula."}
                 </span>
               </label>
               {!comunicadoCompletoVisto && !infoProgramaAceptada ? (
                 <p className="padres-info-read-hint">
-                  Deslice el contenido hasta el final para habilitar la aceptaciÃ³n.
+                  Deslice el contenido hasta el final para habilitar la aceptación.
                 </p>
               ) : null}
 
               <footer className="padres-info-modal-actions">
                 <button className="padres-orange-button" type="button" onClick={continuarDesdeComunicado} disabled={!infoProgramaAceptada || guardando}>
                   {guardando ? <Loader2 className="padres-spin" size={15} /> : <CheckCircle2 size={15} />}
-                  {invitacionPendiente || programaAdicional ? "Continuar con la inscripciÃ³n" : "Continuar con la matricula"}
+                  {invitacionPendiente || programaAdicional ? "Continuar con la inscripción" : "Continuar con la matricula"}
                 </button>
               </footer>
             </div>

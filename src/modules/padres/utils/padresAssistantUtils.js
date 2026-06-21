@@ -201,7 +201,7 @@ export function obtenerBannerEstudiante(estudiante) {
 
 function normalizarSexo(valor) {
   const texto = String(valor || "").trim().toLowerCase();
-  if (["m", "masculino", "hombre", "varon", "varÃ³n", "male"].includes(texto)) return "hombre";
+  if (["m", "masculino", "hombre", "varon", "varón", "male"].includes(texto)) return "hombre";
   if (["f", "femenino", "mujer", "female"].includes(texto)) return "mujer";
   return "";
 }
