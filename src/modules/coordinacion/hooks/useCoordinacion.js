@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useState, useRef, useMemo } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import {
   listarProgramas,
@@ -68,7 +68,7 @@ const sugerirNumeroDocumento = (tipoDoc, programasList = []) => {
     const pTipo = p.tipoDocumento || "Comunicado";
     return pTipo === tipoDoc && pAnio === anio;
   }).length;
-  
+
   const correlativo = String(count + 1).padStart(3, "0");
   return `${prefix}-${correlativo}-${anio}`;
 };
@@ -116,6 +116,14 @@ export default function useCoordinacion({
   const esProfesor = user?.username === "profe" || user?.name === "Profesor";
   const { subview } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryProgId = useMemo(() => {
+    try {
+      return new URLSearchParams(location.search).get("id");
+    } catch {
+      return null;
+    }
+  }, [location.search]);
   const vista = embedded ? (initialView || "programas") : (subview || "programas");
 
   const setVista = (newView) => {
@@ -132,6 +140,7 @@ export default function useCoordinacion({
   const [mensaje, setMensaje] = useState("");
   const [tipoMsg, setTipoMsg] = useState("error");
   const [cargando, setCargando] = useState(false);
+  const lastFetchTimeRef = useRef(0);
 
   // Modal crear/editar
   const [showModal, setShowModal] = useState(false);
@@ -317,15 +326,22 @@ export default function useCoordinacion({
         refrescarAlumnosModal(progSeleccionado);
       }
     };
+    const handleFocusUpdate = () => {
+      const now = Date.now();
+      // Only refetch on focus if the last fetch was more than 30 seconds ago (cooldown to prevent loop / multiple focus spikes)
+      if (now - lastFetchTimeRef.current > 30000) {
+        handleUpdate();
+      }
+    };
     window.addEventListener("api-db-updated", handleUpdate);
     window.addEventListener("mock-db-updated", handleUpdate);
     window.addEventListener("storage", handleUpdate);
-    window.addEventListener("focus", handleUpdate);
+    window.addEventListener("focus", handleFocusUpdate);
     return () => {
       window.removeEventListener("api-db-updated", handleUpdate);
       window.removeEventListener("mock-db-updated", handleUpdate);
       window.removeEventListener("storage", handleUpdate);
-      window.removeEventListener("focus", handleUpdate);
+      window.removeEventListener("focus", handleFocusUpdate);
     };
   }, [progSeleccionado]);
 
@@ -335,6 +351,7 @@ export default function useCoordinacion({
   }, [embedded, initialView]);
 
   async function cargarDatos() {
+    lastFetchTimeRef.current = Date.now();
     setCargando(true);
     try {
       const [progs, cats, cargas] = await Promise.all([
@@ -423,9 +440,13 @@ export default function useCoordinacion({
     setProgramaDocsId("");
     setLecturaDocumento(null);
     setPlantillaInputKey((actual) => actual + 1);
-    setShowModal(true);
     setAlertaConfiguracion("");
     setMensaje("");
+    if (!embedded) {
+      navigate("/coordinacion/registrar-programa");
+    } else {
+      setShowModal(true);
+    }
   }
 
   function datosProgramaAFormulario(prog) {
@@ -555,6 +576,34 @@ export default function useCoordinacion({
     };
   }
 
+  useEffect(() => {
+    if (vista === "registrar-programa") {
+      if (queryProgId) {
+        const prog = programas.find((item) => item.id === queryProgId);
+        if (prog) {
+          if (form.id !== queryProgId) {
+            setForm(datosProgramaAFormulario(prog));
+            setModoEditar(true);
+          }
+        }
+      } else {
+        if (modoEditar || form.id) {
+          const numSugerido = sugerirNumeroDocumento("Comunicado", programas);
+          setForm({
+            ...formInicial,
+            numeroDocumento: numSugerido
+          });
+          setModoEditar(false);
+          setIndiceTallerEditando(null);
+          setTallerDepForm(tallerDepFormInicial);
+          setProgramaDocsId("");
+          setLecturaDocumento(null);
+          setAlertaConfiguracion("");
+        }
+      }
+    }
+  }, [vista, queryProgId, programas]);
+
   // ── Abrir modal editar ──
   function abrirEditar(prog) {
     if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar programas.");
@@ -564,16 +613,20 @@ export default function useCoordinacion({
     const esVerano = normalizarPeriodoVista(prog.periodo) === "verano";
     setTallerDepForm({
       ...tallerDepFormInicial,
-      deporte: esVerano 
+      deporte: esVerano
         ? (prog.categoria === "Talleres Deportivos" ? "Fútbol" : "Danza")
         : "Vóley"
     });
     setProgramaDocsId("");
     setLecturaDocumento(null);
     setPlantillaInputKey((actual) => actual + 1);
-    setShowModal(true);
     setAlertaConfiguracion("");
     setMensaje("");
+    if (!embedded) {
+      navigate(`/coordinacion/registrar-programa?id=${prog.id}`);
+    } else {
+      setShowModal(true);
+    }
   }
 
   // ── Validar y guardar ──
@@ -807,13 +860,20 @@ export default function useCoordinacion({
           })
         );
         setShowModal(false);
+        if (!embedded) {
+          navigate("/coordinacion/programas");
+        }
       } else {
         const nuevoPrograma = await crearPrograma(datosGuardar);
         mostrarMsg("Programa creado correctamente.", "success");
         setProgramas((actuales) => [...actuales, nuevoPrograma]);
-        setModoEditar(true);
-        setForm(datosProgramaAFormulario(nuevoPrograma));
-        setShowModal(true);
+        if (!embedded) {
+          navigate("/coordinacion/programas");
+        } else {
+          setModoEditar(true);
+          setForm(datosProgramaAFormulario(nuevoPrograma));
+          setShowModal(true);
+        }
       }
     } catch (err) {
       mostrarMsg(err.message);
@@ -899,10 +959,14 @@ export default function useCoordinacion({
     setProgramaDocsId("");
     setLecturaDocumento(null);
     setPlantillaInputKey((actual) => actual + 1);
-    setShowModal(true);
     setAlertaConfiguracion("");
     setMensaje("");
     mostrarMsg(`Datos del taller "${prog.nombre}" clonados. Asigne las nuevas fechas y guarde.`, "success");
+    if (!embedded) {
+      navigate("/coordinacion/registrar-programa");
+    } else {
+      setShowModal(true);
+    }
   }
 
   async function verInvitados(prog) {
@@ -1118,8 +1182,8 @@ export default function useCoordinacion({
     setIndiceTallerEditando(index);
 
     const deportesPorDefecto = normalizarPeriodoVista(form.periodo) === "verano"
-      ? (form.categoria === "Talleres Deportivos" 
-          ? ["Fútbol", "Vóley", "Básquet"] 
+      ? (form.categoria === "Talleres Deportivos"
+          ? ["Fútbol", "Vóley", "Básquet"]
           : ["Danza", "Mini Chef", "Pintura", "Teatro", "Inglés", "Zancos", "Artes plásticas"])
       : ["Vóley", "Fútbol", "Básquet"];
 
@@ -1598,7 +1662,7 @@ export default function useCoordinacion({
   function cambiarPeriodoFormulario(valor) {
     const periodoNormalizado = normalizarPeriodoVista(valor);
     const catLower = String(form.categoria || "").toLowerCase();
-    
+
     // Validar y resetear categoría si cambia de periodo y es incompatible
     let nuevaCategoria = form.categoria;
     const catLowerNew = String(form.categoria || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");

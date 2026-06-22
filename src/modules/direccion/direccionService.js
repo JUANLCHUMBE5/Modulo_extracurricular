@@ -3,6 +3,7 @@
 import { apiDb, syncApiDb, saveApiDb } from "../../services/dbApi";
 import { isApiMode, apiClient } from "../../services/apiClient";
 import { normalizarFecha } from "../../services/dateService";
+import { adaptarInscripcion } from "../../services/adapters";
 
 const esperar = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -55,23 +56,24 @@ export async function obtenerPanelDireccion(filtros = {}) {
     const conBeca = inscripcionesPrograma.filter((item) => item.descuentoAprobado).length;
     const porCobrar = Math.max(0, proyectado - recaudado);
 
-    return {
-      id: programa.id,
-      nombre: programa.nombre || "Programa sin nombre",
-      periodo: normalizarPeriodo(programa.periodo || "escolar"),
-      estado: programa.estado || "Sin estado",
-      categoria: programa.categoria || "Sin categoria",
-      responsable: programa.responsable || programa.docente || programa.tutora || "Sin responsable",
-      cupos,
-      ocupados,
-      inscritos,
-      conBeca,
-      costo: Number(programa.costo || 0),
-      proyectado,
-      recaudado,
-      porCobrar,
-      avance: cupos > 0 ? Math.round((ocupados / cupos) * 100) : 0,
-    };
+      return {
+        id: programa.id,
+        nombre: programa.nombre || "Programa sin nombre",
+        periodo: normalizarPeriodo(programa.periodo || "escolar"),
+        estado: programa.estado || "Sin estado",
+        categoria: programa.categoria || "Sin categoria",
+        responsable: programa.responsable || programa.docente || programa.tutora || "Sin responsable",
+        cupos,
+        ocupados,
+        inscritos,
+        conBeca,
+        costo: Number(programa.costo || 0),
+        proyectado,
+        recaudado,
+        porCobrar,
+        avance: cupos > 0 ? Math.round((ocupados / cupos) * 100) : 0,
+        gradosAplicables: programa.gradosAplicables || [],
+      };
   }).sort((a, b) => b.inscritos - a.inscritos);
 
   const totalRecaudado = pagos
@@ -83,7 +85,7 @@ export async function obtenerPanelDireccion(filtros = {}) {
 
   // --- Procesamiento de Asistencia ---
   const asistencias = apiDb.asistencias || [];
-  
+
   const obtenerFechaPeru = (fechaStr) => {
     if (!fechaStr) return "";
     const str = String(fechaStr);
@@ -100,7 +102,7 @@ export async function obtenerPanelDireccion(filtros = {}) {
   };
 
   const hoyStr = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD local
-  
+
   const asistenciasHoy = asistencias.filter(item => {
     if (!item.fechaRegistro) return false;
     return obtenerFechaPeru(item.fechaRegistro) === hoyStr;
@@ -294,6 +296,7 @@ function crearFilaInscripcion(item) {
     dni: item.dniEstudiante || "",
     estudiante: item.nombresEstudiante || "",
     grado: item.gradoEstudiante || item.grado || "",
+    seccion: item.seccionEstudiante || item.seccion || "",
     programa: item.programa || "",
     estadoInscripcion: item.estadoInscripcion || "",
     estadoPago: normalizarEstadoPago(item.estadoPago),
@@ -386,10 +389,10 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
     const inscripciones = panel.reportes.inscripciones || [];
     const pagos = panel.reportes.pagos || [];
     rawData = inscripciones.map(ins => {
-      const pago = pagos.find(p => 
+      const pago = pagos.find(p =>
         (ins.id && p.inscripcionId === ins.id) ||
-        (ins.pagoId && p.id === ins.pagoId) || 
-        ((p.dni || p.dniEstudiante) === ins.dni && 
+        (ins.pagoId && p.id === ins.pagoId) ||
+        ((p.dni || p.dniEstudiante) === ins.dni &&
          normalizarTexto(p.programa || p.programaNombre) === normalizarTexto(ins.programa))
       ) || null;
 
@@ -401,6 +404,7 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
         dni: ins.dni || "",
         estudiante: ins.estudiante || "",
         grado: ins.grado || "",
+        seccion: ins.seccion || "",
         apoderado: ins.apoderado || "",
         telefono: ins.telefono || "",
         programa: ins.programa || "",
@@ -427,6 +431,7 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
       dni: ins.dni || "",
       estudiante: ins.estudiante || "",
       grado: ins.grado || "",
+      seccion: ins.seccion || "",
       programa: ins.programa || "",
       programaId: ins.programaId || ins.programa_id || "",
       telefono: ins.telefono || "",
@@ -441,8 +446,8 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
   const findProgram = (progNameOrId) => {
     if (!progNameOrId) return null;
     const nameOrId = String(progNameOrId).toLowerCase().trim();
-    return listProgramas.find(p => 
-      String(p.id).toLowerCase() === nameOrId || 
+    return listProgramas.find(p =>
+      String(p.id).toLowerCase() === nameOrId ||
       String(p.nombre).toLowerCase().trim() === nameOrId
     );
   };
@@ -511,7 +516,7 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
   }
 
   // 4. Filtrar por Grado(s)
-  if (filtros.grados && filtros.grados.length > 0) {
+  if (filtros.grados && filtros.grados.length > 0 && !filtros.grados.includes("todos")) {
     const gradosSet = new Set(filtros.grados.map(g => g.toLowerCase().trim()));
     filteredData = filteredData.filter((item) => {
       const itemGrado = String(item.grado || item.gradoEstudiante || "").toLowerCase().trim();
@@ -523,7 +528,7 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
   if (filtros.fechaInicio || filtros.fechaFin) {
     const startFilter = filtros.fechaInicio ? normalizarFecha(filtros.fechaInicio) : null;
     const endFilter = filtros.fechaFin ? normalizarFecha(filtros.fechaFin) : null;
-    
+
     if (startFilter) startFilter.setHours(0, 0, 0, 0);
     if (endFilter) endFilter.setHours(23, 59, 59, 999);
 
@@ -644,7 +649,7 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
         const m = curr.getMonth();
         const key = `${y}-${String(m + 1).padStart(2, "0")}`;
         const label = `${mesesNombres[m]} ${y}`;
-        
+
         const mStart = new Date(y, m, 1, 0, 0, 0, 0);
         const mEnd = new Date(y, m + 1, 0, 23, 59, 59, 999);
 
@@ -699,10 +704,12 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
   }
 
   const headersMap = {
+    index: { header: "N", width: 6 },
     id: { header: "Código", width: 16 },
     dni: { header: "DNI", width: 12 },
-    estudiante: { header: "Estudiante", width: 32 },
-    grado: { header: "Grado", width: 18 },
+    estudiante: { header: "NOMBRES Y APELLIDOS", width: 35 },
+    grado: { header: "GRADO", width: 15 },
+    seccion: { header: "SECCIÓN", width: 15 },
     programa: { header: "Programa", width: 32 },
     estadoInscripcion: { header: "Estado Inscripción", width: 20 },
     estadoPago: { header: "Estado Pago", width: 16 },
@@ -711,7 +718,7 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
     descuentoTipo: { header: "Tipo Descuento", width: 18 },
     descuentoValor: { header: "Valor Descuento", width: 16 },
     descuentoMonto: { header: "Monto Descuento (S/)", width: 18 },
-    costo: { header: "Costo / Monto Final (S/)", width: 16 },
+    costo: { header: "COSTO", width: 15 },
     origen: { header: "Origen / Canal", width: 24 },
     fechaRegistro: { header: "Fecha Registro", width: 22 },
     apoderado: { header: "Apoderado", width: 24 },
@@ -734,9 +741,9 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
     montoPagado: { header: "Monto Pagado", width: 15 },
     pendiente: { header: "Monto Pendiente", width: 15 },
     medioPago: { header: "Medio de Pago", width: 18 },
-    fechaPago: { header: "Fecha de Pago", width: 16 },
+    fechaPago: { header: "FECHA", width: 15 },
     nroOperacion: { header: "N° Operación", width: 16 },
-    nroRecibo: { header: "Recibo SIADED", width: 18 },
+    nroRecibo: { header: "RECIBO", width: 15 },
   };
 
   let sheetColumns = [];
@@ -797,13 +804,16 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
         width: colInfo?.width || 16,
       };
     });
-    finalRows = filteredData;
+    finalRows = filteredData.map((row, idx) => ({
+      ...row,
+      index: idx + 1,
+    }));
   }
 
-  const sheetName = tipoDatos === "direccion_alumnos_asistencias" 
-    ? "Asistencias Consolidadas" 
-    : tipoDatos === "direccion_alumnos_pagos" 
-    ? "Alumnos y Pagos" 
+  const sheetName = tipoDatos === "direccion_alumnos_asistencias"
+    ? "Asistencias Consolidadas"
+    : tipoDatos === "direccion_alumnos_pagos"
+    ? "Alumnos y Pagos"
     : "Reporte Personalizado";
 
   agregarHoja(workbook, sheetName, finalRows, sheetColumns);
@@ -823,11 +833,61 @@ export async function descargarReportePersonalizado({ tipoDatos, filtros = {}, c
         }
       });
     } else if (tipoDatos === "direccion_alumnos_pagos") {
+      const formatGradoExcel = (gradoStr) => {
+        if (!gradoStr) return "";
+        const s = String(gradoStr).trim().toUpperCase();
+        if (s.includes("SECUNDARIA")) {
+          return s.replace("SECUNDARIA", "SEC").replace("1°", "1").replace("2°", "2").replace("3°", "3").replace("4°", "4").replace("5°", "5");
+        }
+        if (s.includes("PRIMARIA")) {
+          return s.replace("PRIMARIA", "GRADO").replace("1°", "1").replace("2°", "2").replace("3°", "3").replace("4°", "4").replace("5°", "5").replace("6°", "6");
+        }
+        return s;
+      };
+
+      const formatFechaExcel = (fechaStr) => {
+        if (!fechaStr || fechaStr === "—") return "—";
+        try {
+          const d = new Date(fechaStr);
+          if (isNaN(d.getTime())) return fechaStr;
+          const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Set", "Oct", "Nov", "Dic"];
+          const dia = d.getDate();
+          const mes = meses[d.getMonth()];
+          return `${dia}-${mes}`;
+        } catch {
+          return fechaStr;
+        }
+      };
+
+      const headerRow = hoja.getRow(1);
+      headerRow.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF1F4E78" } };
+      headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD8E4BC" } };
+      headerRow.alignment = { vertical: "middle", horizontal: "center" };
+      headerRow.height = 25;
+
       hoja.eachRow((row, rowNum) => {
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: "thin", color: { argb: "FF000000" } },
+            left: { style: "thin", color: { argb: "FF000000" } },
+            bottom: { style: "thin", color: { argb: "FF000000" } },
+            right: { style: "thin", color: { argb: "FF000000" } },
+          };
+          cell.alignment = { vertical: "middle", horizontal: "left" };
+        });
+
         if (rowNum > 1) {
           row.eachCell((cell, colNum) => {
             const colKey = sheetColumns[colNum - 1]?.key;
-            if (colKey === "costo" || colKey === "costoOriginal" || colKey === "montoPagado" || colKey === "pendiente" || colKey === "descuentoMonto") {
+            if (["index", "grado", "seccion", "fechaPago", "nroRecibo"].includes(colKey)) {
+              cell.alignment = { vertical: "middle", horizontal: "center" };
+            }
+
+            if (colKey === "grado") {
+              cell.value = formatGradoExcel(cell.value);
+            } else if (colKey === "fechaPago") {
+              cell.value = formatFechaExcel(cell.value);
+            } else if (colKey === "costo" || colKey === "costoOriginal" || colKey === "montoPagado" || colKey === "pendiente" || colKey === "descuentoMonto") {
               cell.value = Number(cell.value || 0);
               cell.numFmt = '"S/"#,##0.00';
               cell.alignment = { vertical: "middle", horizontal: "right" };
@@ -892,7 +952,7 @@ export async function buscarInscripcionesParaDescuento(busqueda) {
       params: { q: busqueda }
     });
     if (!res.success) throw new Error(res.message || "Error al buscar inscripciones");
-    return res.data;
+    return res.data.map(adaptarInscripcion);
   }
 
   await esperar(200);
@@ -916,15 +976,15 @@ export async function buscarInscripcionesParaDescuento(busqueda) {
       const name = String(invitado.nombres || "").toLowerCase();
       const matchesDni = dni.includes(term);
       const matchesName = name.includes(term);
-      
+
       if (matchesDni || matchesName) {
-        const existeReal = (apiDb.inscripciones || []).some(ins => 
-          ins.dniEstudiante === invitado.dni && 
-          ins.programaId === programa.id && 
+        const existeReal = (apiDb.inscripciones || []).some(ins =>
+          ins.dniEstudiante === invitado.dni &&
+          ins.programaId === programa.id &&
           ins.estadoInscripcion !== "Anulada" &&
           ins.estadoInscripcion !== "anulada"
         );
-        
+
         if (!existeReal) {
           const student = apiDb.estudiantes?.[invitado.dni] || {};
           virtualEnrollments.push({
@@ -974,20 +1034,20 @@ export async function aplicarDescuentoInscripcion(inscripcionId, datosDescuento)
       ...datosDescuento
     });
     if (!res.success) throw new Error(res.message || "Error al aplicar descuento");
-    return res.data;
+    return adaptarInscripcion(res.data);
   }
 
   await esperar(300);
   await syncApiDb();
-  
+
   let ins = null;
   let index = -1;
 
   if (String(inscripcionId).startsWith("INV-")) {
     const parts = String(inscripcionId).split("-");
-    const progId = parts[1];
-    const dni = parts[2];
-    
+    const dni = parts[parts.length - 1];
+    const progId = parts.slice(1, parts.length - 1).join("-");
+
     const prog = (apiDb.programas || []).find(p => p.id === progId);
     if (!prog) throw new Error("Taller no encontrado para la invitación");
 
@@ -1074,7 +1134,7 @@ export async function removerDescuentoInscripcion(inscripcionId) {
   if (isApiMode()) {
     const res = await apiClient.delete(`/api/v1/extracurricular/direccion/descuentos/remover/${inscripcionId}`);
     if (!res.success) throw new Error(res.message || "Error al remover descuento");
-    return res.data;
+    return adaptarInscripcion(res.data);
   }
 
   await esperar(200);

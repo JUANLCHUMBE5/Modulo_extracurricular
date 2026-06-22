@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Alert, Badge, Button, Group, Loader, Select, MultiSelect, Table, Checkbox, Grid, Divider, Modal, Textarea, TextInput } from "@mantine/core";
+import { Alert, Badge, Button, Group, Loader, Select, MultiSelect, Table, Checkbox, Grid, Divider, Modal, Textarea, TextInput, SegmentedControl } from "@mantine/core";
 import { BarChart, DonutChart } from "@mantine/charts";
 import { toast } from "sonner";
 import {
@@ -74,6 +74,20 @@ export default function Direccion({ onLogout, user }) {
   const [customFiltroCategoria, setCustomFiltroCategoria] = useState("todos");
   const [customFiltroPrograma, setCustomFiltroPrograma] = useState("todos");
   const [customFiltroGrados, setCustomFiltroGrados] = useState([]);
+
+  const handleGradosChange = (val) => {
+    if (val.includes("todos")) {
+      if (!customFiltroGrados.includes("todos")) {
+        setCustomFiltroGrados(["todos"]);
+      } else {
+        const filtered = val.filter(v => v !== "todos");
+        setCustomFiltroGrados(filtered);
+      }
+    } else {
+      setCustomFiltroGrados(val);
+    }
+  };
+
   const [customColumnas, setCustomColumnas] = useState([]);
   const [exportandoCustom, setExportandoCustom] = useState(false);
   const [fechaInicio, setFechaInicio] = useState("");
@@ -95,6 +109,7 @@ export default function Direccion({ onLogout, user }) {
     justificacion: "",
   });
   const recargaTimerRef = useRef(null);
+  const lastFetchTimeRef = useRef(0);
 
   const exportarHabilitado = puedeExportar(user);
 
@@ -119,10 +134,10 @@ export default function Direccion({ onLogout, user }) {
       defaultCols = ["id", "dni", "estudiante", "programa", "monto", "estado", "medio", "fecha", "nroRecibo"];
     } else if (reporteSeleccionado === "direccion_alumnos_pagos") {
       tipo = "direccion_alumnos_pagos";
-      defaultCols = ["dni", "estudiante", "grado", "apoderado", "telefono", "programa", "costoOriginal", "descuentoAprobado", "descuentoTipo", "descuentoValor", "descuentoMonto", "costo", "montoPagado", "pendiente", "estadoPago", "medioPago", "fechaPago", "nroRecibo", "origen", "fechaRegistro"];
+      defaultCols = ["index", "estudiante", "grado", "seccion", "fechaPago", "nroRecibo", "costo"];
     } else if (reporteSeleccionado === "direccion_alumnos_asistencias") {
       tipo = "direccion_alumnos_asistencias";
-      defaultCols = ["dni", "estudiante", "grado", "programa", "telefono"];
+      defaultCols = ["index", "estudiante", "grado", "seccion"];
     } else if (reporteSeleccionado === "programas_catalogo") {
       tipo = "programas";
       defaultCols = ["nombre", "categoria", "responsable", "inscritos", "conBeca", "cupos", "costo", "proyectado", "recaudado", "porCobrar"];
@@ -140,6 +155,7 @@ export default function Direccion({ onLogout, user }) {
   }, [reporteSeleccionado]);
 
   const cargarPanel = useCallback(async ({ silencioso = false } = {}) => {
+    lastFetchTimeRef.current = Date.now();
     if (!silencioso) setCargando(true);
     setError("");
     try {
@@ -175,10 +191,17 @@ export default function Direccion({ onLogout, user }) {
       refrescarBusquedaDescuento();
     };
 
+    const handleFocusUpdate = () => {
+      const now = Date.now();
+      if (now - lastFetchTimeRef.current > 30000) {
+        recargarSilencioso();
+      }
+    };
+
     window.addEventListener("api-db-updated", recargarSilencioso);
     window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("storage", manejarStorage);
-    window.addEventListener("focus", recargarSilencioso);
+    window.addEventListener("focus", handleFocusUpdate);
     const intervalo = window.setInterval(recargarSilencioso, 30000);
 
     return () => {
@@ -187,7 +210,7 @@ export default function Direccion({ onLogout, user }) {
       window.removeEventListener("api-db-updated", recargarSilencioso);
       window.removeEventListener("mock-db-updated", handleMockDbUpdated);
       window.removeEventListener("storage", manejarStorage);
-      window.removeEventListener("focus", recargarSilencioso);
+      window.removeEventListener("focus", handleFocusUpdate);
     };
   }, [cargarPanel, refrescarBusquedaDescuento]);
 
@@ -305,19 +328,59 @@ export default function Direccion({ onLogout, user }) {
 
   const gradosOptions = useMemo(() => {
     const inscripciones = panel?.reportes?.inscripciones || [];
+    const programas = panel?.filasProgramas || [];
     const gradosSet = new Set();
+
+    const formatearGradoDb = (gradoRaw) => {
+      if (!gradoRaw) return "";
+      const str = String(gradoRaw).trim();
+      if (str.includes(":")) {
+        const [nivel, grado] = str.split(":");
+        const nivelFormateado = nivel.charAt(0).toUpperCase() + nivel.slice(1).toLowerCase();
+        if (nivelFormateado === "Inicial") {
+          return `${grado} Inicial`;
+        }
+        return `${grado} ${nivelFormateado}`;
+      }
+      return str;
+    };
+
+    if (customFiltroPrograma && customFiltroPrograma !== "todos") {
+      const progSeleccionado = programas.find(p => p.id === customFiltroPrograma || p.nombre === customFiltroPrograma);
+      if (progSeleccionado && Array.isArray(progSeleccionado.gradosAplicables)) {
+        progSeleccionado.gradosAplicables.forEach(g => {
+          const gradoStr = formatearGradoDb(g);
+          if (gradoStr) gradosSet.add(gradoStr);
+        });
+      }
+    } else {
+      programas.forEach(p => {
+        if (Array.isArray(p.gradosAplicables)) {
+          p.gradosAplicables.forEach(g => {
+            const gradoStr = formatearGradoDb(g);
+            if (gradoStr) gradosSet.add(gradoStr);
+          });
+        }
+      });
+    }
+
     inscripciones.forEach(ins => {
       const grado = String(ins.grado || "").trim();
       if (grado) gradosSet.add(grado);
     });
+
     const sorted = [...gradosSet].sort((a, b) => {
       const numA = parseInt(a) || 99;
       const numB = parseInt(b) || 99;
       if (numA !== numB) return numA - numB;
       return a.localeCompare(b);
     });
-    return sorted.map(g => ({ value: g, label: g }));
-  }, [panel]);
+    const options = sorted.map(g => ({ value: g, label: g }));
+    return [
+      { value: "todos", label: "Todos los grados" },
+      ...options
+    ];
+  }, [panel, customFiltroPrograma]);
 
   const registrosFiltrados = useMemo(() => filtrarRegistrosReporte({
     customFiltroOrigen,
@@ -967,27 +1030,33 @@ export default function Direccion({ onLogout, user }) {
                 </div>
               </header>
 
+              <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+                <SegmentedControl
+                  value={reporteSeleccionado}
+                  onChange={setReporteSeleccionado}
+                  data={[
+                    { label: "Consolidado de Alumnos, Pagos y Becas", value: "direccion_alumnos_pagos" },
+                    { label: "Consolidado de Alumnos y Asistencias", value: "direccion_alumnos_asistencias" },
+                  ]}
+                  color="teal"
+                  size="sm"
+                  radius="md"
+                  styles={{
+                    root: {
+                      background: "#f1f5f9",
+                      padding: "4px",
+                    },
+                    control: {
+                      fontWeight: 700,
+                    }
+                  }}
+                />
+              </div>
+
               <div className="dir-builder-content" style={{ marginTop: "24px" }}>
                 <div className="dir-builder-sidebar">
                   <div className="dir-builder-form-group">
-                    <label className="dir-builder-label"><Click size={14} /> 1. Seleccione el Reporte</label>
-                    <Select
-                      data={opcionesReportesSimplificados}
-                      value={reporteSeleccionado}
-                      onChange={(val) => setReporteSeleccionado(val || "direccion_alumnos_pagos")}
-                      allowDeselect={false}
-                      searchable
-                      styles={{
-                        input: {
-                          fontWeight: 600,
-                          color: "#1e293b",
-                        }
-                      }}
-                    />
-                  </div>
-
-                  <div className="dir-builder-form-group">
-                    <label className="dir-builder-label"><Filter size={14} /> 2. Filtros</label>
+                    <label className="dir-builder-label"><Filter size={14} /> Filtros</label>
                     <div className="dir-builder-filters">
                       <Select
                         label="Año"
@@ -1038,7 +1107,7 @@ export default function Direccion({ onLogout, user }) {
                             placeholder={customFiltroGrados.length === 0 ? "Todos los grados" : ""}
                             data={gradosOptions}
                             value={customFiltroGrados}
-                            onChange={setCustomFiltroGrados}
+                            onChange={handleGradosChange}
                             clearable
                             searchable
                             size="xs"
@@ -1201,7 +1270,7 @@ export default function Direccion({ onLogout, user }) {
 
                 <div className="dir-builder-columns-selector">
                   <div className="dir-columns-header">
-                    <label className="dir-builder-label"><Adjustments size={14} /> 3. Columnas a exportar</label>
+                    <label className="dir-builder-label"><Adjustments size={14} /> Columnas a exportar</label>
                     <Group gap="xs">
                       <Button
                         variant="subtle"
@@ -1304,7 +1373,7 @@ export default function Direccion({ onLogout, user }) {
                   </div>
                 ) : (
                   <div className="dir-empty-preview" style={{ minHeight: "120px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {customColumnas.length === 0 
+                    {customColumnas.length === 0
                       ? "Seleccione al menos una columna para ver la vista previa."
                       : "No hay registros que coincidan con los filtros seleccionados."}
                   </div>
@@ -1314,7 +1383,7 @@ export default function Direccion({ onLogout, user }) {
           </section>
         ) : (
           <section className="dir-descuentos-view" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            
+
             <article className="dir-search-container" style={{ borderRadius: "12px", overflow: "hidden" }}>
               <div style={{ marginBottom: "20px" }}>
                 <span className="dir-tag" style={{ background: "#e0f2fe", color: "#0369a1", marginBottom: "4px" }}>Finanzas</span>

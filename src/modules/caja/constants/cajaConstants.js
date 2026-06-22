@@ -35,6 +35,7 @@ export const tiposReporte = [
   { value: "registro_web", label: "Inscritos por Padres / Web" },
   { value: "pagos_pendientes", label: "Solo pendientes de pago" },
   { value: "pagos_realizados", label: "Solo pagos realizados / validados" },
+  { value: "becas_descuentos", label: "Becas / Descuentos" },
 ];
 
 export const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";

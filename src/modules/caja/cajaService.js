@@ -29,13 +29,13 @@ export async function listarPagos(periodo = "escolar", filtros = {}) {
 
   await esperar(400);
   await syncApiDb();
-  
+
   if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
-  
+
   const periodoNormalizado = normalizarPeriodo(periodo);
   const programasVigentes = obtenerProgramasVigentesCaja(periodoNormalizado);
   let pagos = [...apiDb.pagos].filter((p) => normalizarPeriodo(p.periodo || periodoNormalizado) === periodoNormalizado);
-  
+
   if (filtros.estudianteDni) {
     pagos = pagos.filter((p) => (p.estudianteDni || p.dniEstudiante) === filtros.estudianteDni);
   }
@@ -45,7 +45,7 @@ export async function listarPagos(periodo = "escolar", filtros = {}) {
   if (filtros.programa) {
     pagos = pagos.filter((p) => coincideProgramaFiltroCaja(p, filtros.programa, programasVigentes));
   }
-  
+
   return pagos.sort((a, b) => new Date(b.fecha || b.fechaPago || 0) - new Date(a.fecha || a.fechaPago || 0));
 }
 
@@ -69,9 +69,9 @@ export async function registrarPago(datosPago) {
 
   await esperar(500);
   await syncApiDb();
-  
+
   if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
-  
+
   const dniEstudiante = datosPago.dniEstudiante || datosPago.estudianteDni || "";
   const nombresEstudiante = datosPago.nombresEstudiante || datosPago.estudianteNombre || "";
   const programa = datosPago.programa || datosPago.programaNombre || "";
@@ -104,12 +104,12 @@ export async function registrarPago(datosPago) {
     estado: datosPago.estado || "pendiente",
     createdAt: fechaActualIso(),
   };
-  
+
   apiDb.pagos.push(pago);
   sincronizarPagoConInscripcion(pago);
   await saveApiDb();
   window.dispatchEvent(new Event("mock-db-updated"));
-  
+
   return pago;
 }
 
@@ -136,16 +136,16 @@ export async function actualizarPago(pagoId, datosActualizados) {
 
   await esperar(400);
   await syncApiDb();
-  
+
   if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
-  
+
   const index = apiDb.pagos.findIndex((p) => p.id === pagoId);
   if (index === -1) throw new Error("Pago no encontrado.");
 
   const dniEstudiante = datosActualizados.dniEstudiante || datosActualizados.estudianteDni || apiDb.pagos[index].dniEstudiante || "";
   const nombresEstudiante = datosActualizados.nombresEstudiante || datosActualizados.estudianteNombre || apiDb.pagos[index].nombresEstudiante || "";
   const programa = datosActualizados.programa || datosActualizados.programaNombre || apiDb.pagos[index].programa || "";
-  
+
   apiDb.pagos[index] = {
     ...apiDb.pagos[index],
     ...datosActualizados,
@@ -161,10 +161,10 @@ export async function actualizarPago(pagoId, datosActualizados) {
     updatedAt: fechaActualIso(),
   };
   sincronizarPagoConInscripcion(apiDb.pagos[index]);
-  
+
   await saveApiDb();
   window.dispatchEvent(new Event("mock-db-updated"));
-  
+
   return apiDb.pagos[index];
 }
 
@@ -179,25 +179,25 @@ export async function obtenerResumenCaja(periodo = "escolar") {
 
   await esperar(300);
   await syncApiDb();
-  
+
   if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
-  
+
   const periodoNormalizado = normalizarPeriodo(periodo);
   const pagos = apiDb.pagos.filter((p) => normalizarPeriodo(p.periodo || periodoNormalizado) === periodoNormalizado);
   const inscripciones = obtenerInscripcionesCaja(periodoNormalizado);
-  
+
   const totalIngreso = pagos
     .filter((p) => p.estado === "completado")
     .reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
-  
+
   const totalPendiente = inscripciones
     .filter((inscripcion) => normalizarEstadoPago(inscripcion.estadoPago) === "pendiente")
     .reduce((sum, inscripcion) => sum + Number(inscripcion.costo || 0), 0);
-  
+
   const totalCancelado = pagos
     .filter((p) => p.estado === "cancelado")
     .reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
-  
+
   return {
     totalIngreso,
     totalPendiente,
@@ -213,10 +213,10 @@ export async function obtenerEstudiantePorDni(dni, periodo = "") {
       params: { periodo }
     });
     if (!res.success || !res.data) return null;
-    
+
     const estudiante = adaptarEstudiante(res.data.estudiante || res.data);
     const inscripcion = res.data.inscripcionCaja ? adaptarInscripcion(res.data.inscripcionCaja) : null;
-    
+
     if (!inscripcion) {
       return {
         ...estudiante,
@@ -335,7 +335,7 @@ export async function listarBandejaPagosWeb(periodo = "escolar") {
       params: { periodo }
     });
     if (!res.success || !Array.isArray(res.data)) return [];
-    
+
     return res.data.map((item) => ({
       id: item.id || `${item.inscripcionId}-${item.pagoId || "sin-pago"}`,
       inscripcionId: item.inscripcionId,
@@ -523,6 +523,10 @@ export async function generarReporteCaja(filtros = {}) {
       telefono: inscripcion.telefono || "",
       puedePagarCaja: true,
       nroRecibo: pago?.nroRecibo || "",
+      descuentoAprobado: inscripcion.descuentoAprobado || false,
+      descuentoTipo: inscripcion.descuentoTipo || "",
+      descuentoMonto: inscripcion.descuentoMonto || 0,
+      descuentoJustificacion: inscripcion.descuentoJustificacion || "",
     };
   }).filter(Boolean);
 
@@ -656,6 +660,10 @@ function crearFilaPago(pago, programasVigentes = null) {
     apoderado: pago.apoderado || "",
     telefono: pago.telefono || "",
     nroRecibo: pago.nroRecibo || "",
+    descuentoAprobado: inscripcion ? (inscripcion.descuentoAprobado || false) : false,
+    descuentoTipo: inscripcion ? (inscripcion.descuentoTipo || "") : "",
+    descuentoMonto: inscripcion ? (inscripcion.descuentoMonto || 0) : 0,
+    descuentoJustificacion: inscripcion ? (inscripcion.descuentoJustificacion || "") : "",
   };
 }
 

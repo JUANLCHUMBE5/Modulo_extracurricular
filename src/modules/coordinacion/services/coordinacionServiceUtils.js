@@ -101,7 +101,9 @@ export function validarFilaCarga(fila, programaDetectado) {
   if (!textoSeguro(fila.nombres)) errores.push("Falta nombre o contiene caracteres no permitidos.");
   if (!textoSeguro(fila.apellidos)) errores.push("Falta apellido o contiene caracteres no permitidos.");
   if (!textoSeguro(fila.grado)) errores.push("Falta grado.");
-  if (!/^[A-Z0-9-]{1,4}$/.test(fila.seccion)) errores.push("Sección invalida.");
+  if (fila.seccion && (!textoSeguro(fila.seccion) || fila.seccion.length > 25)) {
+    errores.push("Sección invalida o demasiado larga (máx 25 caracteres).");
+  }
   if (!fila.curso) errores.push("Falta curso o programa.");
   if (fila.curso && !programaDetectado) errores.push("Curso o programa no coincide con un programa registrado del periodo.");
   if (fila.telefono && !/^\d{9}$/.test(fila.telefono)) errores.push("Teléfono invalido.");

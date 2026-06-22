@@ -173,6 +173,12 @@ export default function CajaFields({
                 onChange={(event) => actualizar("formaPago", event.currentTarget.value)}
                 disabled={esPorVerificar}
               >
+                {formulario.descuentoAprobado && (
+                  <>
+                    <option value="Beca">Beca</option>
+                    <option value="Descuento">Descuento</option>
+                  </>
+                )}
                 <option value="Efectivo">Efectivo</option>
                 <option value="Yape">Yape</option>
                 <option value="Plin">Plin</option>

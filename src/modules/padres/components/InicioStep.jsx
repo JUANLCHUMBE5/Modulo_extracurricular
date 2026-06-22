@@ -161,10 +161,10 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
 
   return (
     <article className="padres-flow-panel padres-flow-program-card custom-padres-program-card">
-        
+
         {/* Main Details and Note wrapped in a single grey bordered box container */}
         <div className="padres-details-box-container">
-          
+
           {/* Upper header segment: Icon, Title, Subtitle, Badges on the right */}
           <div className="padres-flow-program-head custom-program-head">
             <div className="head-left-side">
@@ -173,9 +173,6 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
               </span>
               <div className="head-text-block">
                 <h2>{repararTexto(nombrePrograma)}</h2>
-                {destinoPrograma ? (
-                  <p className="padres-flow-program-subtitle">Para {destinoPrograma}</p>
-                ) : null}
               </div>
             </div>
 
@@ -195,7 +192,7 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
 
           {/* Horizontal details row with 4 columns */}
           <div className="padres-flow-program-grid custom-program-grid">
-            
+
             <div className="padres-flow-info-tile custom-info-tile">
               <span className="padres-flow-info-icon custom-icon-circle">
                 <CalendarDays size={18} />
@@ -204,13 +201,9 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
                 {datosHorario ? (
                   <>
                     <span className="custom-inline-label">
-                      Horario: <strong className="inline-value">{datosHorario.grados}</strong>
+                      Horario: <strong className="inline-value">{datosHorario.dia}</strong>
                     </span>
                     <div className="custom-inline-pills">
-                      <div className="padres-schedule-item">
-                        <CalendarDays size={12} />
-                        <span>{datosHorario.dia}</span>
-                      </div>
                       <div className="padres-schedule-item">
                         <CalendarDays size={12} />
                         <span>Almuerzo: {convertirHorasAMPM(datosHorario.almuerzo)}</span>
@@ -284,9 +277,9 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
               <CheckCircle size={18} style={{ color: noteIconColor, flexShrink: 0 }} />
               {noteText}
             </p>
-            <button 
-              className="padres-flow-primary-button custom-action-btn" 
-              type="button" 
+            <button
+              className="padres-flow-primary-button custom-action-btn"
+              type="button"
               disabled={buttonDisabled}
               onClick={buttonAction}
               style={buttonDisabled && buttonText !== "Pago exitoso" ? { background: "#e2e8f0", color: "#64748b", cursor: "not-allowed", border: "1px solid #cbd5e1" } : null}
@@ -451,7 +444,7 @@ function obtenerOpcionesDeGrupo(programa) {
         const time = act.substring(actColonIdx + 1).trim();
 
         const key = name; // e.g. "Vóley (6-9 a.)"
-        
+
         if (!mapGrupos.has(key)) {
           mapGrupos.set(key, []);
         }

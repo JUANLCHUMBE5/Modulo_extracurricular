@@ -15,10 +15,21 @@ const esperar = (ms = 220) => new Promise((resolve) => setTimeout(resolve, ms));
 const MINUTOS_BLOQUEO = 15;
 const registrosRecientes = new Map(); // clave: dni o código → timestamp
 
-export async function validarDni(busqueda) {
+export async function obtenerProgramasActivos() {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/programas");
+    if (!res.success) throw new Error(res.message || "Error al obtener programas");
+    return res.data;
+  }
+  await esperar();
+  await syncApiDb();
+  return (apiDb.programas || []).filter(p => p.estado !== "Archivado");
+}
+
+export async function validarDni(busqueda, programaId = "") {
   if (isApiMode()) {
     const res = await apiClient.get("/api/v1/extracurricular/auxiliar/validar", {
-      params: { busqueda }
+      params: { busqueda, programa_id: programaId }
     });
     if (!res.success) throw new Error(res.message || "Error al validar DNI");
     return res.data;
@@ -38,51 +49,86 @@ export async function validarDni(busqueda) {
     if (!/^\d{8}$/.test(dniLimpio)) {
       throw new Error("El DNI debe contener exactamente 8 numeros.");
     }
-    return resolverValidacion({ dni: dniLimpio, codigoOriginal: dniLimpio });
+    return resolverValidacion({ dni: dniLimpio, codigoOriginal: dniLimpio, programaId });
   }
 
   // Si es texto, buscamos por nombre
-  return resolverValidacionPorNombre(query);
+  return resolverValidacionPorNombre(query, programaId);
 }
 
-function resolverValidacionPorNombre(nombreQuery) {
+function resolverValidacionPorNombre(nombreQuery, programaId = "") {
   const queryNormalizada = normalizarTexto(nombreQuery);
   if (queryNormalizada.length < 3) {
     throw new Error("El nombre de busqueda debe tener al menos 3 caracteres.");
   }
 
-  // 1. Buscar en inscripciones activas (para tener taller directo)
-  const inscripciones = obtenerInscripcionesActivas();
-  const coincidenciaInscripcion = inscripciones.find(ins => 
+  // 1. Buscar en inscripciones activas (filtradas por día)
+  const inscripciones = obtenerInscripcionesActivas().filter((ins) => esDiaCorrecto(ins.horario));
+
+  let matchesInscripcion = inscripciones.filter(ins =>
     normalizarTexto(ins.nombresEstudiante).includes(queryNormalizada)
   );
 
-  if (coincidenciaInscripcion) {
-    const ids = normalizarIdentificadores({
-      dni: coincidenciaInscripcion.dniEstudiante,
-      codigoEstudiante: coincidenciaInscripcion.codigoEstudiante,
-      inscripcionId: coincidenciaInscripcion.id,
-      codigoOriginal: coincidenciaInscripcion.dniEstudiante
-    });
-    return resolverValidacion(ids);
+  if (programaId) {
+    matchesInscripcion = matchesInscripcion.filter(ins => mismoCodigo(ins.programaId, programaId));
   }
 
-  // 2. Si no esta matriculado en un taller, buscar en la lista general de estudiantes del colegio
-  const estudiantes = obtenerEstudiantes();
-  const coincidenciaEstudiante = estudiantes.find(est => 
-    normalizarTexto(est.nombres).includes(queryNormalizada)
-  );
-
-  if (coincidenciaEstudiante) {
+  const resultadosInscripciones = matchesInscripcion.map(ins => {
     const ids = normalizarIdentificadores({
-      dni: coincidenciaEstudiante.dni,
-      codigoEstudiante: coincidenciaEstudiante.codigoEstudiante,
-      codigoOriginal: coincidenciaEstudiante.dni
+      dni: ins.dniEstudiante,
+      codigoEstudiante: ins.codigoEstudiante,
+      inscripcionId: ins.id,
+      programaId: ins.programaId
     });
-    return resolverValidacion(ids);
+    try {
+      return resolverValidacion(ids);
+    } catch {
+      return {
+        dni: ins.dniEstudiante,
+        codigoEstudiante: ins.codigoEstudiante,
+        nombres: ins.nombresEstudiante,
+        grado: ins.gradoEstudiante || "",
+        seccion: ins.seccionEstudiante || "",
+        programa: ins.programa || "",
+        horario: ins.horario || "",
+        estadoAcceso: "no_registrado",
+        accesoPermitido: false,
+        inscripcionId: ins.id
+      };
+    }
+  });
+
+  // 2. Si no hay filtro de programa, buscar en la lista general de estudiantes
+  let resultadosEstudiantes = [];
+  if (!programaId) {
+    const estudiantes = obtenerEstudiantes();
+    const dniConInscripcion = new Set(matchesInscripcion.map(ins => ins.dniEstudiante));
+
+    const matchesEstudiante = estudiantes.filter(est => {
+      const nomCompleto = `${est.nombres || ""} ${est.apellidos || ""}`;
+      return normalizarTexto(nomCompleto).includes(queryNormalizada) && !dniConInscripcion.has(est.dni);
+    });
+
+    resultadosEstudiantes = matchesEstudiante.map(est => {
+      const ids = normalizarIdentificadores({
+        dni: est.dni,
+        codigoEstudiante: est.codigoEstudiante
+      });
+      return resolverValidacion(ids);
+    });
   }
 
-  throw new Error(`No se encontro ningun estudiante que coincida con "${nombreQuery}".`);
+  const todosResultados = [...resultadosInscripciones, ...resultadosEstudiantes];
+
+  if (todosResultados.length === 0) {
+    throw new Error(`No se encontro ningun estudiante que coincida con "${nombreQuery}".`);
+  }
+
+  if (todosResultados.length === 1) {
+    return todosResultados[0];
+  }
+
+  return { isMultiple: true, matches: todosResultados };
 }
 
 export async function validarQR(codigo) {
@@ -197,25 +243,25 @@ function obtenerClaveDuplicado(data) {
 
 function obtenerMinutosRestantesIngresoReciente(asistenciasList, studentDni, studentCode, programId, nowMs = Date.now()) {
   if (!Array.isArray(asistenciasList)) return 0;
-  
+
   const cleanDni = studentDni ? String(studentDni).replace(/\D/g, "") : "";
   const cleanCode = studentCode ? String(studentCode).trim() : "";
-  
+
   let maxRestante = 0;
-  
+
   asistenciasList.forEach(ast => {
     const astDni = ast.dniEstudiante ? String(ast.dniEstudiante).replace(/\D/g, "") : "";
     const astCode = ast.codigoEstudiante ? String(ast.codigoEstudiante).trim() : "";
-    
+
     const coincideEstudiante = (cleanDni && astDni === cleanDni) || (cleanCode && astCode === cleanCode);
     if (!coincideEstudiante) return;
-    
+
     const coincidePrograma = ast.programaId === programId;
     if (!coincidePrograma) return;
-    
+
     const fechaAst = new Date(ast.fechaRegistro);
     if (isNaN(fechaAst.getTime())) return;
-    
+
     const diffMs = nowMs - fechaAst.getTime();
     const limiteMs = 15 * 60 * 1000;
     if (diffMs >= 0 && diffMs < limiteMs) {
@@ -223,7 +269,7 @@ function obtenerMinutosRestantesIngresoReciente(asistenciasList, studentDni, stu
       if (mins > maxRestante) maxRestante = mins;
     }
   });
-  
+
   return maxRestante;
 }
 
@@ -288,7 +334,7 @@ function resolverValidacion(identificadores = {}) {
       ids.codigoEstudiante || estudiante?.codigoEstudiante,
       inscripcion.programaId
     );
-    
+
     if (minsRestantes > 0) {
       return crearRespuestaInscripcion({
         inscripcion,
@@ -340,7 +386,7 @@ function resolverValidacion(identificadores = {}) {
     estadoPago: esProceso ? "Pago en proceso" : "Pendiente",
     accesoPermitido: false,
     mensajeAcceso: esProceso ? "Pago en proceso" : "Pago pendiente",
-    accion: esProceso 
+    accion: esProceso
       ? "Tiene un pago en proceso de verificación. Debe acercarse a Caja para su aprobación."
       : "Falta pagar. Debe acercarse a Caja para regularizar el pago.",
     color: "rojo",
@@ -405,8 +451,22 @@ function crearRespuestaNoRegistrado(ids, estudiante) {
   };
 }
 
+function esDiaCorrecto(horarioStr) {
+  if (!horarioStr) return true;
+
+  const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+  const hoyEsp = diasSemana[new Date().getDay()];
+
+  const horarioNorm = normalizarTexto(horarioStr);
+  const diasEncontrados = diasSemana.filter(dia => horarioNorm.includes(dia));
+
+  if (diasEncontrados.length === 0) return true;
+
+  return horarioNorm.includes(hoyEsp);
+}
+
 function buscarInscripcion(ids) {
-  const inscripciones = obtenerInscripcionesActivas();
+  const inscripciones = obtenerInscripcionesActivas().filter((ins) => esDiaCorrecto(ins.horario));
   const pagos = obtenerPagos();
 
   if (ids.inscripcionId) {

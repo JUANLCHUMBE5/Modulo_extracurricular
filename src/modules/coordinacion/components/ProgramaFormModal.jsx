@@ -14,10 +14,10 @@ import {
   IconX as X,
   IconEdit as Edit3,
   IconCopy as CopyIcon,
+  IconToolsKitchen2 as Utensils,
 } from "@tabler/icons-react";
 import ProgramaGrupoHorarioModal from "./ProgramaGrupoHorarioModal";
 import GradeSelector from "./GradeSelector";
-import ProgramaInvitacionMasivaModal, { obtenerEtiquetaAlcance } from "./ProgramaInvitacionMasivaModal";
 import { formatearHora12 } from "../utils/coordinacionFormatters";
 import {
   normalizarPeriodoVista,
@@ -39,6 +39,8 @@ const grupoHorarioDraftInicial = {
 };
 
 function ProgramaFormModal({
+  isInline = false,
+  toggleSidebarButton,
   actualizarCategoriaPrograma,
   actualizarCosto,
   actualizarForm,
@@ -92,7 +94,6 @@ function ProgramaFormModal({
   toggleGradoGrupo,
 }) {
   const [mostrarGrupoModal, setMostrarGrupoModal] = useState(false);
-  const [mostrarInvitacionModal, setMostrarInvitacionModal] = useState(false);
   const [grupoDraft, setGrupoDraft] = useState(grupoHorarioDraftInicial);
   const [grupoDraftError, setGrupoDraftError] = useState("");
   const [grupoDraftErrorTick, setGrupoDraftErrorTick] = useState(0);
@@ -103,10 +104,51 @@ function ProgramaFormModal({
   const [conComunicadoManual, setConComunicadoManual] = useState(false);
   const [popoverAbierto, setPopoverAbierto] = useState(null);
 
+  useEffect(() => {
+    if (form.incluyeAlmuerzo) {
+      const nivelesEncontrados = { Inicial: null, Primaria: null, Secundaria: null };
+
+      (formHorariosPorGrupo || []).forEach(grupo => {
+        if (!grupo.almuerzoInicio || !grupo.almuerzoFin) return;
+        const grados = grupo.grados || [];
+        grados.forEach(gradoStr => {
+          const lower = String(gradoStr || "").toLowerCase();
+          let nivel = null;
+          if (lower.includes("inicial")) nivel = "Inicial";
+          else if (lower.includes("primaria")) nivel = "Primaria";
+          else if (lower.includes("secundaria")) nivel = "Secundaria";
+
+          if (nivel && !nivelesEncontrados[nivel]) {
+            nivelesEncontrados[nivel] = {
+              inicio: grupo.almuerzoInicio,
+              fin: grupo.almuerzoFin
+            };
+          }
+        });
+      });
+
+      const parts = [];
+      Object.entries(nivelesEncontrados).forEach(([nivel, times]) => {
+        if (times) {
+          parts.push(`${nivel}: ${times.inicio} a ${times.fin}`);
+        }
+      });
+
+      const calculado = parts.join(", ");
+      if (calculado && calculado !== form.horarioRecepcionAlmuerzo) {
+        actualizarForm("horarioRecepcionAlmuerzo", calculado);
+      }
+    }
+  }, [formHorariosPorGrupo, form.incluyeAlmuerzo, form.horarioRecepcionAlmuerzo, actualizarForm]);
+
   const catLowerClean = String(form.categoria || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const esAcademico = catLowerClean === "academico" || catLowerClean === "vacaciones utiles";
   const esNoAcademico = catLowerClean && catLowerClean !== "academico" && catLowerClean !== "vacaciones utiles";
   const esCircularEspecial = form.tipoComunicado && form.tipoComunicado !== "Otro genérico";
+  const esMostrarSeccionAlmuerzo = esAcademico ||
+    form.tipoComunicado === "Club de Tareas" ||
+    form.tipoComunicado === "Reforzamiento (Circular)" ||
+    form.tipoComunicado === "Certificación Cambridge";
 
   const categoriasEscolar = (categorias || []).filter(c => {
     const norm = String(c || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -208,264 +250,246 @@ function ProgramaFormModal({
     cerrarGrupoModal();
   }
 
-  return (
-    <div className="coord-modal-overlay">
-      <div className={`coord-modal ${esFormularioVerano ? "coord-modal-verano" : ""}`} onClick={e => e.stopPropagation()}>
-        <div className="coord-modal-header">
-          <div className="coord-modal-title">
-            <span className="coord-modal-icon">
-              {modoEditar ? <Edit3 size={20} /> : <BookOpen size={20} />}
-            </span>
+  const formElement = (
+    <form className="coord-program-form" id="form-programa" onSubmit={guardar}>
+      {alertaConfiguracion ? (
+        <MantineAlert
+          className="coord-message"
+          color="orange"
+          radius="md"
+          icon={<AlertCircle size={18} />}
+        >
+          {alertaConfiguracion}
+        </MantineAlert>
+      ) : null}
+      <div className="coord-program-form-main">
+        <section className="coord-form-section">
+          <div className="coord-section-heading">
+            <BookOpen size={18} />
             <div>
-              <h2>{esFormularioVerano ? (modoEditar ? "Editar programa de verano" : "Registrar programa de verano") : (modoEditar ? "Editar programa" : "Registrar programa")}</h2>
-              <p>
-                {esFormularioVerano
-                  ? "Complete los datos del programa antes de habilitarlo."
-                  : "Complete la configuración del taller antes de habilitarlo."}
-              </p>
+              <h3>{esFormularioVerano ? "Datos del programa de verano" : "Datos generales"}</h3>
             </div>
           </div>
-          <button className="coord-modal-close" type="button" onClick={() => setShowModal(false)}><X size={20} /></button>
-        </div>
-        <form className="coord-program-form" id="form-programa" onSubmit={guardar}>
-          {alertaConfiguracion ? (
-            <MantineAlert
-              className="coord-message"
-              color="orange"
-              radius="md"
-              icon={<AlertCircle size={18} />}
-            >
-              {alertaConfiguracion}
-            </MantineAlert>
-          ) : null}
-          <div className="coord-program-form-main">
-            <section className="coord-form-section">
-              <div className="coord-section-heading">
-                <BookOpen size={18} />
-                <div>
-                  <h3>{esFormularioVerano ? "Datos del programa de verano" : "Datos generales"}</h3>
-                </div>
-              </div>
-              <div className={`coord-section-grid coord-general-grid ${esAcademico ? "is-academico" : ""}`}>
-                <div className="coord-field coord-program-name-field"><label>{esFormularioVerano ? "Nombre del programa de verano *" : "Nombre del programa *"}</label>
-                  <input value={form.nombre} onChange={e => actualizarNombrePrograma(e.target.value)} placeholder={esFormularioVerano ? "Ej: Verano creativo 2026" : "Ej: Reforzamiento y nivelación"} />
-                </div>
+          <div className={`coord-section-grid coord-general-grid ${esAcademico ? "is-academico" : ""}`}>
+            <div className="coord-field coord-program-name-field"><label>{esFormularioVerano ? "Nombre del programa de verano *" : "Nombre del programa *"}</label>
+              <input value={form.nombre} onChange={e => actualizarNombrePrograma(e.target.value)} placeholder={esFormularioVerano ? "Ej: Verano creativo 2026" : "Ej: Reforzamiento y nivelación"} />
+            </div>
 
-                <div className="coord-field coord-period-field"><label>Periodo *</label>
-                  <select value={normalizarPeriodoVista(form.periodo)} onChange={e => cambiarPeriodoFormulario(e.target.value)}>
-                    <option value="escolar">Año escolar</option><option value="verano">Ciclo verano</option>
-                  </select>
-                </div>
+            <div className="coord-field coord-period-field"><label>Periodo *</label>
+              <select value={normalizarPeriodoVista(form.periodo)} onChange={e => cambiarPeriodoFormulario(e.target.value)}>
+                <option value="escolar">Año escolar</option><option value="verano">Ciclo verano</option>
+              </select>
+            </div>
 
-                <div className="coord-field coord-category-field">
-                  <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: "4px" }}>
-                    <span style={{ whiteSpace: "nowrap" }}>Categoría *</span>
-                    <button
-                      type="button"
-                      className="coord-category-toggle-btn"
-                      onClick={() => setMostrarGestorCategorias(!mostrarGestorCategorias)}
-                      style={{ whiteSpace: "nowrap" }}
-                    >
-                      {mostrarGestorCategorias ? "Ocultar" : "Gestionar"}
-                    </button>
-                  </label>
-                  <select
-                    value={form.categoria}
-                    disabled={esCircularEspecial}
-                    onChange={e => actualizarCategoriaPrograma(e.target.value)}
-                    style={esCircularEspecial ? {
-                      background: "#e2e8f0",
-                      color: "#64748b",
-                      cursor: "not-allowed",
-                      borderColor: "#cbd5e1"
-                    } : {}}
-                  >
-                    <option value="">Seleccione</option>
-                    {esFormularioVerano ? (
-                      <>
-                        <option value="Vacaciones Útiles">Vacaciones Útiles</option>
-                        <option value="Talleres Recreativos">Talleres Recreativos</option>
-                        <option value="Talleres Deportivos">Talleres Deportivos</option>
-                      </>
-                    ) : (
-                      categoriasEscolar.map(c => {
-                        let label = c;
-                        if (c === "Academico") label = "Académico";
-                        if (c === "Maraton") label = "Maratón";
-                        return <option key={c} value={c}>{label}</option>;
-                      })
-                    )}
-                  </select>
-                  {esFormularioVerano ? (
-                    <p className="coord-field-hint">
-
-                    </p>
-                  ) : null}
-                </div>
-
-                {mostrarGestorCategorias ? (
-                  <div className="coord-category-manager-container coord-field-full">
-                    <div className="coord-category-manager-inner">
-                      <div className="coord-field">
-                        <label>Nueva categoría</label>
-                        <div className="coord-inline-field">
-                          <input placeholder="Ej: Arte, verano, alto rendimiento" value={nuevaCat} onChange={e => setNuevaCat(e.target.value)} />
-                          <button type="button" className="coord-mini-btn" onClick={agregarCategoria}><Plus size={14} /></button>
-                        </div>
-                      </div>
-                      <div className="coord-field">
-                        <label>Quitar categoría</label>
-                        <div className="coord-inline-field">
-                          <select value={catAEliminar} onChange={e => setCatAEliminar(e.target.value)}>
-                            <option value="">Seleccione</option>
-                            {categoriasEscolar.map(c => {
-                              let label = c;
-                              if (c === "Academico") label = "Académico";
-                              if (c === "Maraton") label = "Maratón";
-                              return <option key={c} value={c}>{label}</option>;
-                            })}
-                          </select>
-                          <button type="button" className="coord-mini-btn coord-mini-danger-btn" onClick={quitarCategoria}><Trash2 size={14} /></button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-
-                {esAcademico && (
-                  <div className="coord-field coord-tipo-comunicado-field">
-                    <label style={{ fontWeight: "700", color: "#1e3a8a" }}>Tipo de comunicado / Circular escolar *</label>
-                    <select
-                      value={form.tipoComunicado || "Otro genérico"}
-                      disabled={esNoAcademico}
-                      onChange={e => {
-                        const nuevoTipo = e.target.value;
-                        
-                        const templates = {
-                          "Club de Tareas": {
-                            comunicado: "Club de Tareas está diseñado para brindar a nuestros estudiantes un espacio guiado y estructurado para la resolución y presentación oportuna de sus tareas escolares, fortaleciendo sus hábitos de estudio, autonomía y organization bajo el acompañamiento de docentes especialistas.",
-                            requisitos: "Cuaderno de apuntes, cartuchera completa (lápiz, borrador, tajador, regla, colores), agenda escolar física, y los textos/cuadernos de trabajo del colegio correspondientes a las tareas pendientes del día."
-                          },
-                          "Reforzamiento (Circular)": {
-                            comunicado: "El programa de Reforzamiento Académico tiene como objetivo primordial consolidar los aprendizajes del año escolar, brindando un soporte pedagógico personalizado para nivelar competencias y aclarar dudas en las áreas de mayor complejidad cognitiva.",
-                            requisitos: "Cuaderno exclusivo del área (cuadriculado para Matemática, rayado para Comunicación), lapiceros azul y rojo, lápiz, borrador, tajador, regla y las fichas o materiales provistos por el docente de reforzamiento."
-                          },
-                          "Certificación Cambridge": {
-                            comunicado: "La preparación para la Certificación Internacional de Cambridge English brinda a nuestros alumnos la oportunidad de certificar oficialmente su nivel de dominio del idioma inglés bajo el Marco Común Europeo de Referencia para las Lenguas (MCER), potenciando su perfil académico global.",
-                            requisitos: "Libro de preparación oficial Cambridge (según el nivel asignado), cuaderno A4 cuadriculado para apuntes, cartuchera personal completa, y auriculares con conexión auxiliar de 3.5mm para las prácticas de Listening."
-                          },
-                          "Otro genérico": {
-                            comunicado: "",
-                            requisitos: ""
-                          }
-                        };
-
-                        const template = templates[nuevoTipo] || { comunicado: "", requisitos: "" };
-                        const tipoDocSugerido = nuevoTipo === "Certificación Cambridge" ? "Carta" : "Comunicado";
-                        const prefix = tipoDocSugerido === "Carta" ? "CAR" : "COM";
-                        const anio = new Date().getFullYear();
-                        const randomId = Math.floor(Math.random() * 90) + 10;
-                        const numDocSugerido = `${prefix}-0${randomId}-${anio}`;
-
-                        let reseteos = {};
-                        if (nuevoTipo === "Otro genérico") {
-                          reseteos = {
-                            tipoDocumento: "Comunicado",
-                            numeroDocumento: "",
-                            areaTematica: "Matemática",
-                            nombreCiclo: "Ciclo I",
-                            duracionTaller: "",
-                            tablaHorariosNivel: [],
-                            incluyeAlmuerzo: false,
-                            horarioRecepcionAlmuerzo: "",
-                            nivelCambridge: "",
-                            modalidadesCambridge: [],
-                            montoPrimerPago: "",
-                            comunicado: "",
-                            comunicadoCompleto: "",
-                            requisitos: "",
-                            fechaInicio: "",
-                            fechaFin: "",
-                            duracionAvisoDias: "7",
-                            cupos: "",
-                            costo: "",
-                            modalidadCobro: "Mensual",
-                            invitacionMasiva: false,
-                            horariosPorGrupo: [],
-                            gradosAplicables: [],
-                            dias: [],
-                            horaInicio: "",
-                            horaFin: "",
-                          };
-                        } else if (nuevoTipo === "Certificación Cambridge") {
-                          reseteos = {
-                            incluyeAlmuerzo: false,
-                            horarioRecepcionAlmuerzo: "",
-                            areaTematica: "Matemática",
-                          };
-                        } else {
-                          reseteos = {
-                            nivelCambridge: "",
-                            modalidadesCambridge: [],
-                            areaTematica: "Matemática",
-                          };
-                        }
-
-                        let categoriaSugerida = form.categoria;
-                        if (nuevoTipo !== "Otro genérico") {
-                          const academica = (categorias || []).find(c => {
-                            const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                            return normal === "academico";
-                          });
-                          categoriaSugerida = academica || "Academico";
-                        }
-
-                        actualizarForm({
-                          tipoComunicado: nuevoTipo,
-                          comunicado: template.comunicado,
-                          comunicadoCompleto: template.comunicado,
-                          requisitos: template.requisitos,
-                          tipoDocumento: tipoDocSugerido,
-                          numeroDocumento: numDocSugerido,
-                          categoria: categoriaSugerida,
-                          ...reseteos
-                        });
-                      }}
-                      style={esNoAcademico ? {
-                        background: "#e2e8f0",
-                        color: "#64748b",
-                        cursor: "not-allowed",
-                        borderColor: "#cbd5e1"
-                      } : {
-                        background: "#eff6ff",
-                        fontWeight: "bold",
-                        borderColor: "#3b82f6"
-                      }}
-                    >
-                      <option value="Otro genérico">Otro genérico (Taller común)</option>
-                      <option value="Club de Tareas">Club de Tareas</option>
-                      <option value="Reforzamiento (Circular)">Reforzamiento (Circular)</option>
-                      <option value="Certificación Cambridge">Certificación Cambridge</option>
-                    </select>
-                  </div>
+            <div className="coord-field coord-category-field">
+              <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: "4px" }}>
+                <span style={{ whiteSpace: "nowrap" }}>Categoría *</span>
+                <button
+                  type="button"
+                  className="coord-category-toggle-btn"
+                  onClick={() => setMostrarGestorCategorias(!mostrarGestorCategorias)}
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  {mostrarGestorCategorias ? "Ocultar" : "Gestionar"}
+                </button>
+              </label>
+              <select
+                value={form.categoria}
+                disabled={esCircularEspecial}
+                onChange={e => actualizarCategoriaPrograma(e.target.value)}
+                style={esCircularEspecial ? {
+                  background: "#e2e8f0",
+                  color: "#64748b",
+                  cursor: "not-allowed",
+                  borderColor: "#cbd5e1"
+                } : {}}
+              >
+                <option value="">Seleccione</option>
+                {esFormularioVerano ? (
+                  <>
+                    <option value="Vacaciones Útiles">Vacaciones Útiles</option>
+                    <option value="Talleres Recreativos">Talleres Recreativos</option>
+                    <option value="Talleres Deportivos">Talleres Deportivos</option>
+                  </>
+                ) : (
+                  categoriasEscolar.map(c => {
+                    let label = c;
+                    if (c === "Academico") label = "Académico";
+                    if (c === "Maraton") label = "Maratón";
+                    return <option key={c} value={c}>{label}</option>;
+                  })
                 )}
-                {usaTalleresPorEdad && esFormularioVerano && form.talleresDeportivos?.length > 0 ? (
-                  <div className="coord-field coord-field-full">
-                    <div className="coord-deportivo-grados-summary" style={{ marginTop: "8px", padding: "8px 12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                      <strong>Talleres configurados:</strong>{" "}
-                      <span style={{ color: "#006b5b", fontWeight: 700 }}>
-                        {form.talleresDeportivos.map(t => `${t.deporte} (${t.edadMinima}-${t.edadMaxima} años)`).join(", ")}
-                      </span>
+              </select>
+              {esFormularioVerano ? (
+                <p className="coord-field-hint">
+
+                </p>
+              ) : null}
+            </div>
+
+            {mostrarGestorCategorias ? (
+              <div className="coord-category-manager-container coord-field-full">
+                <div className="coord-category-manager-inner">
+                  <div className="coord-field">
+                    <label>Nueva categoría</label>
+                    <div className="coord-inline-field">
+                      <input placeholder="Ej: Arte, verano, alto rendimiento" value={nuevaCat} onChange={e => setNuevaCat(e.target.value)} />
+                      <button type="button" className="coord-mini-btn" onClick={agregarCategoria}><Plus size={14} /></button>
                     </div>
                   </div>
-                ) : null}
+                  <div className="coord-field">
+                    <label>Quitar categoría</label>
+                    <div className="coord-inline-field">
+                      <select value={catAEliminar} onChange={e => setCatAEliminar(e.target.value)}>
+                        <option value="">Seleccione</option>
+                        {categoriasEscolar.map(c => {
+                          let label = c;
+                          if (c === "Academico") label = "Académico";
+                          if (c === "Maraton") label = "Maratón";
+                          return <option key={c} value={c}>{label}</option>;
+                        })}
+                      </select>
+                      <button type="button" className="coord-mini-btn coord-mini-danger-btn" onClick={quitarCategoria}><Trash2 size={14} /></button>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </section>
+            ) : null}
 
-            {form.categoria && (
-              <>
-                {/* SECCIÓN CONDICIONAL: DATOS DEL DOCUMENTO */}
-                {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && (
+            {esAcademico && (
+              <div className="coord-field coord-tipo-comunicado-field">
+                <label style={{ fontWeight: "700", color: "#1e3a8a" }}>Tipo de comunicado / Circular escolar *</label>
+                <select
+                  value={form.tipoComunicado || "Otro genérico"}
+                  disabled={esNoAcademico}
+                  onChange={e => {
+                    const nuevoTipo = e.target.value;
+
+                    const templates = {
+                      "Club de Tareas": {
+                        comunicado: "Club de Tareas está diseñado para brindar a nuestros estudiantes un espacio guiado y estructurado para la resolución y presentación oportuna de sus tareas escolares, fortaleciendo sus hábitos de estudio, autonomía y organization bajo el acompañamiento de docentes especialistas.",
+                        requisitos: "Cuaderno de apuntes, cartuchera completa (lápiz, borrador, tajador, regla, colores), agenda escolar física, y los textos/cuadernos de trabajo del colegio correspondientes a las tareas pendientes del día."
+                      },
+                      "Reforzamiento (Circular)": {
+                        comunicado: "El programa de Reforzamiento Académico tiene como objetivo primordial consolidar los aprendizajes del año escolar, brindando un soporte pedagógico personalizado para nivelar competencias y aclarar dudas en las áreas de mayor complejidad cognitiva.",
+                        requisitos: "Cuaderno exclusivo del área (cuadriculado para Matemática, rayado para Comunicación), lapiceros azul y rojo, lápiz, borrador, tajador, regla y las fichas o materiales provistos por el docente de reforzamiento."
+                      },
+                      "Certificación Cambridge": {
+                        comunicado: "La preparación para la Certificación Internacional de Cambridge English brinda a nuestros alumnos la oportunidad de certificar oficialmente su nivel de dominio del idioma inglés bajo el Marco Común Europeo de Referencia para las Lenguas (MCER), potenciando su perfil académico global.",
+                        requisitos: "Libro de preparación oficial Cambridge (según el nivel asignado), cuaderno A4 cuadriculado para apuntes, cartuchera personal completa, y auriculares con conexión auxiliar de 3.5mm para las prácticas de Listening."
+                      },
+                      "Otro genérico": {
+                        comunicado: "",
+                        requisitos: ""
+                      }
+                    };
+
+                    const template = templates[nuevoTipo] || { comunicado: "", requisitos: "" };
+                    const tipoDocSugerido = nuevoTipo === "Certificación Cambridge" ? "Carta" : "Comunicado";
+                    const prefix = tipoDocSugerido === "Carta" ? "CAR" : "COM";
+                    const anio = new Date().getFullYear();
+                    const randomId = Math.floor(Math.random() * 90) + 10;
+                    const numDocSugerido = `${prefix}-0${randomId}-${anio}`;
+
+                    let reseteos = {};
+                    if (nuevoTipo === "Otro genérico") {
+                      reseteos = {
+                        tipoDocumento: "Comunicado",
+                        numeroDocumento: "",
+                        areaTematica: "Matemática",
+                        nombreCiclo: "Ciclo I",
+                        duracionTaller: "",
+                        tablaHorariosNivel: [],
+                        incluyeAlmuerzo: false,
+                        horarioRecepcionAlmuerzo: "",
+                        nivelCambridge: "",
+                        modalidadesCambridge: [],
+                        montoPrimerPago: "",
+                        comunicado: "",
+                        comunicadoCompleto: "",
+                        requisitos: "",
+                        fechaInicio: "",
+                        fechaFin: "",
+                        duracionAvisoDias: "7",
+                        cupos: "",
+                        costo: "",
+                        modalidadCobro: "Mensual",
+                        invitacionMasiva: false,
+                        horariosPorGrupo: [],
+                        gradosAplicables: [],
+                        dias: [],
+                        horaInicio: "",
+                        horaFin: "",
+                      };
+                    } else if (nuevoTipo === "Certificación Cambridge") {
+                      reseteos = {
+                        incluyeAlmuerzo: false,
+                        horarioRecepcionAlmuerzo: "",
+                        areaTematica: "Matemática",
+                      };
+                    } else {
+                      reseteos = {
+                        nivelCambridge: "",
+                        modalidadesCambridge: [],
+                        areaTematica: "Matemática",
+                      };
+                    }
+
+                    let categoriaSugerida = form.categoria;
+                    if (nuevoTipo !== "Otro genérico") {
+                      const academica = (categorias || []).find(c => {
+                        const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                        return normal === "academico";
+                      });
+                      categoriaSugerida = academica || "Academico";
+                    }
+
+                    actualizarForm({
+                      tipoComunicado: nuevoTipo,
+                      comunicado: template.comunicado,
+                      comunicadoCompleto: template.comunicado,
+                      requisitos: template.requisitos,
+                      tipoDocumento: tipoDocSugerido,
+                      numeroDocumento: numDocSugerido,
+                      categoria: categoriaSugerida,
+                      ...reseteos
+                    });
+                  }}
+                  style={esNoAcademico ? {
+                    background: "#e2e8f0",
+                    color: "#64748b",
+                    cursor: "not-allowed",
+                    borderColor: "#cbd5e1"
+                  } : {
+                    background: "#eff6ff",
+                    fontWeight: "bold",
+                    borderColor: "#3b82f6"
+                  }}
+                >
+                  <option value="Otro genérico">Otro genérico (Taller común)</option>
+                  <option value="Club de Tareas">Club de Tareas</option>
+                  <option value="Reforzamiento (Circular)">Reforzamiento (Circular)</option>
+                  <option value="Certificación Cambridge">Certificación Cambridge</option>
+                </select>
+              </div>
+            )}
+            {usaTalleresPorEdad && esFormularioVerano && form.talleresDeportivos?.length > 0 ? (
+              <div className="coord-field coord-field-full">
+                <div className="coord-deportivo-grados-summary" style={{ marginTop: "8px", padding: "8px 12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                  <strong>Talleres configurados:</strong>{" "}
+                  <span style={{ color: "#006b5b", fontWeight: 700 }}>
+                    {form.talleresDeportivos.map(t => `${t.deporte} (${t.edadMinima}-${t.edadMaxima} años)`).join(", ")}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </section>
+
+        {form.categoria && (
+          <>
+            {/* SECCIÓN CONDICIONAL: DATOS DEL DOCUMENTO */}
+            {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && (
               <section className="coord-form-section" style={{ borderLeft: "4px solid #3b82f6", paddingLeft: "12px" }}>
                 <div className="coord-section-heading">
                   <BookOpen size={18} style={{ color: "#3b82f6" }} />
@@ -473,7 +497,7 @@ function ProgramaFormModal({
                     <h3 style={{ color: "#1e3a8a" }}>Datos del documento oficial</h3>
                   </div>
                 </div>
-                <div className="coord-section-grid">
+                <div className="coord-section-grid coord-doc-fields-grid">
                   <div className="coord-field">
                     <label>Tipo de documento *</label>
                     <select
@@ -677,8 +701,16 @@ function ProgramaFormModal({
                                     <p>{resumenGrados(grupo.grados || []) || "Sin grados"}</p>
                                   </div>
                                   <div className="coord-group-schedule-cell">
-                                    <span>Días y hora</span>
-                                    <p>{grupo.dia || "Sin día"} · Almuerzo {formatearHora12(grupo.almuerzoInicio || "14:20")} a {formatearHora12(grupo.almuerzoFin || "15:10")} · Clase {formatearHora12(grupo.horaInicio || "15:20")} a {formatearHora12(grupo.horaFin || "17:20")}</p>
+                                    <span>Días</span>
+                                    <p>{grupo.dia || "Sin día"}</p>
+                                  </div>
+                                  <div className="coord-group-schedule-cell">
+                                    <span>Almuerzo</span>
+                                    <p>{formatearHora12(grupo.almuerzoInicio || "14:20")} a {formatearHora12(grupo.almuerzoFin || "15:10")}</p>
+                                  </div>
+                                  <div className="coord-group-schedule-cell">
+                                    <span>Clase</span>
+                                    <p>{formatearHora12(grupo.horaInicio || "15:20")} a {formatearHora12(grupo.horaFin || "17:20")}</p>
                                   </div>
                                   <div className="coord-group-schedule-cell">
                                     <span>Docente / aula</span>
@@ -723,94 +755,7 @@ function ProgramaFormModal({
 
 
 
-                      {/* Configuración de Almuerzo */}
-                      {(form.tipoComunicado === "Club de Tareas" || form.tipoComunicado === "Reforzamiento (Circular)") && !puedeGestionarGruposFormulario && (
-                        <div className="coord-field coord-field-full" style={{ marginTop: "16px", borderTop: "1px dashed #cbd5e1", paddingTop: "12px" }}>
-                          <label className="coord-check-label" style={{ cursor: "pointer", fontWeight: "700" }}>
-                            <input
-                              type="checkbox"
-                              checked={Boolean(form.incluyeAlmuerzo)}
-                              onChange={e => actualizarForm("incluyeAlmuerzo", e.target.checked)}
-                            />
-                            <span>Incluye recepción de almuerzo</span>
-                          </label>
-                          {form.incluyeAlmuerzo && (
-                            <div style={{ marginTop: "8px" }}>
-                              <label style={{ fontSize: "12px", color: "#475569", fontWeight: "bold", display: "block", marginBottom: "4px" }}>
-                                Horario de recepción de almuerzo (por nivel, si varía) *
-                              </label>
-                              {(() => {
-                                const parseHorarioRecepcionAlmuerzo = (str) => {
-                                  const result = { Inicial: "", Primaria: "", Secundaria: "" };
-                                  if (!str) return result;
-                                  const parts = str.split(/[,,·]/);
-                                  let matchedAny = false;
-                                  parts.forEach(part => {
-                                    const match = part.match(/(Inicial|Primaria|Secundaria)\s*:\s*(\d{2}:\d{2})/i);
-                                    if (match) {
-                                      const level = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
-                                      result[level] = match[2];
-                                      matchedAny = true;
-                                    }
-                                  });
-                                  if (!matchedAny) {
-                                    const singleTimeMatch = str.match(/(\d{1,2}:\d{2})/);
-                                    if (singleTimeMatch) {
-                                      const time = singleTimeMatch[1].padStart(5, "0");
-                                      result.Inicial = time;
-                                      result.Primaria = time;
-                                      result.Secundaria = time;
-                                    }
-                                  }
-                                  return result;
-                                };
 
-                                const tiempos = parseHorarioRecepcionAlmuerzo(form.horarioRecepcionAlmuerzo);
-                                const handleTimeChange = (nivel, valor) => {
-                                  const nuevosTiempos = { ...tiempos, [nivel]: valor };
-                                  const textVal = Object.entries(nuevosTiempos)
-                                    .filter(([_, time]) => time)
-                                    .map(([name, time]) => `${name}: ${time}`)
-                                    .join(", ");
-                                  actualizarForm("horarioRecepcionAlmuerzo", textVal);
-                                };
-
-                                return (
-                                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginTop: "8px" }}>
-                                    <div className="coord-field" style={{ margin: 0 }}>
-                                      <label style={{ fontSize: "12px", color: "#475569", display: "block", marginBottom: "4px" }}>Inicial</label>
-                                      <input
-                                        type="time"
-                                        value={tiempos.Inicial || ""}
-                                        onChange={e => handleTimeChange("Inicial", e.target.value)}
-                                        style={{ width: "100%", padding: "8px 12px" }}
-                                      />
-                                    </div>
-                                    <div className="coord-field" style={{ margin: 0 }}>
-                                      <label style={{ fontSize: "12px", color: "#475569", display: "block", marginBottom: "4px" }}>Primaria</label>
-                                      <input
-                                        type="time"
-                                        value={tiempos.Primaria || ""}
-                                        onChange={e => handleTimeChange("Primaria", e.target.value)}
-                                        style={{ width: "100%", padding: "8px 12px" }}
-                                      />
-                                    </div>
-                                    <div className="coord-field" style={{ margin: 0 }}>
-                                      <label style={{ fontSize: "12px", color: "#475569", display: "block", marginBottom: "4px" }}>Secundaria</label>
-                                      <input
-                                        type="time"
-                                        value={tiempos.Secundaria || ""}
-                                        onChange={e => handleTimeChange("Secundaria", e.target.value)}
-                                        style={{ width: "100%", padding: "8px 12px" }}
-                                      />
-                                    </div>
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </>
                   ) : (
                     // ORIGINAL GENERIC WORKSHOPS BUILDER / BLOCK SCHEDULER
@@ -1040,8 +985,16 @@ function ProgramaFormModal({
                                     <p>{resumenGrados(grupo.grados || []) || "Sin grados"}</p>
                                   </div>
                                   <div className="coord-group-schedule-cell">
-                                    <span>Días y hora</span>
-                                    <p>{grupo.dia || "Sin día"} · Almuerzo {formatearHora12(grupo.almuerzoInicio || "14:20")} a {formatearHora12(grupo.almuerzoFin || "15:10")} · Clase {formatearHora12(grupo.horaInicio || "15:20")} a {formatearHora12(grupo.horaFin || "17:20")}</p>
+                                    <span>Días</span>
+                                    <p>{grupo.dia || "Sin día"}</p>
+                                  </div>
+                                  <div className="coord-group-schedule-cell">
+                                    <span>Almuerzo</span>
+                                    <p>{formatearHora12(grupo.almuerzoInicio || "14:20")} a {formatearHora12(grupo.almuerzoFin || "15:10")}</p>
+                                  </div>
+                                  <div className="coord-group-schedule-cell">
+                                    <span>Clase</span>
+                                    <p>{formatearHora12(grupo.horaInicio || "15:20")} a {formatearHora12(grupo.horaFin || "17:20")}</p>
                                   </div>
                                   <div className="coord-group-schedule-cell">
                                     <span>Docente / aula</span>
@@ -1178,8 +1131,8 @@ function ProgramaFormModal({
                     {form.tipoComunicado === "Certificación Cambridge"
                       ? "Costo total del ciclo (S/) *"
                       : esFormularioVerano
-                      ? "Costo de verano (S/)"
-                      : "Costo (S/)"}
+                        ? "Costo de verano (S/)"
+                        : "Costo (S/)"}
                   </label>
                   <input inputMode="decimal" value={form.costo} onChange={e => actualizarCosto(e.target.value)} onBlur={formatearCostoFormulario} placeholder="70.00" />
                 </div>
@@ -1192,6 +1145,7 @@ function ProgramaFormModal({
                 </div>
                 {!esFormularioVerano ? (
                   <div className="coord-field coord-payment-invite-field">
+                    <label className="coord-spacer-label">&nbsp;</label>
                     <label className="coord-check-label coord-check-label-stacked">
                       <span>
                         <input
@@ -1199,7 +1153,6 @@ function ProgramaFormModal({
                           checked={form.invitacionMasiva}
                           onChange={e => {
                             actualizarInvitacionMasiva(e.target.checked);
-                            if (e.target.checked) setMostrarInvitacionModal(true);
                           }}
                         />
                         Invitación masiva en Padres
@@ -1207,8 +1160,26 @@ function ProgramaFormModal({
                     </label>
                   </div>
                 ) : null}
+                {!esFormularioVerano && form.invitacionMasiva ? (
+                  <div className="coord-field">
+                    <label>Alcance de la invitación masiva</label>
+                    <select
+                      value={form.alcanceInvitacionMasiva || "colegio"}
+                      onChange={e => actualizarForm("alcanceInvitacionMasiva", e.target.value)}
+                    >
+                      <option value="colegio">Todo el colegio</option>
+                      <option value="inicial">Solo nivel Inicial</option>
+                      <option value="primaria">Solo nivel Primaria</option>
+                      <option value="secundaria">Solo nivel Secundaria</option>
+                    </select>
+                    <p className="coord-field-hint" style={{ fontSize: "11px", marginTop: "2px" }}>
+
+                    </p>
+                  </div>
+                ) : null}
                 {mostrarIndumentariaDeportiva ? (
                   <div className="coord-field coord-payment-invite-field">
+                    <label className="coord-spacer-label">&nbsp;</label>
                     <label className="coord-check-label coord-check-label-stacked">
                       <span>
                         <input
@@ -1223,38 +1194,11 @@ function ProgramaFormModal({
                 ) : null}
               </div>
 
-              {!esFormularioVerano && form.invitacionMasiva ? (
-                <div className="coord-summer-payment-note coord-field-full" style={{ marginTop: "12px" }}>
-                  <Photo size={16} />
-                  <span>
-                    {obtenerEtiquetaAlcance(form.alcanceInvitacionMasiva)}
-                    {form.anuncioImagenNombre ? ` · Imagen: ${form.anuncioImagenNombre}` : " · Sin imagen"}
-                  </span>
-                  <button
-                    type="button"
-                    className="coord-secondary-button"
-                    onClick={() => setMostrarInvitacionModal(true)}
-                  >
-                    Configurar invitación
-                  </button>
-                </div>
-              ) : null}
-
               {esFormularioVerano ? (
                 <div className="coord-summer-payment-note coord-field-full" style={{ marginTop: "12px" }}>
                   <CheckCircle2 size={16} />
                   <span>Asistente verá este programa como opción de ciclo verano y registrará el tipo de alumno al momento de la inscripción.</span>
                 </div>
-              ) : null}
-
-              {!esFormularioVerano && mostrarInvitacionModal && form.invitacionMasiva ? (
-                <ProgramaInvitacionMasivaModal
-                  actualizarForm={actualizarForm}
-                  form={form}
-                  quitarImagenAnuncio={quitarImagenAnuncio}
-                  seleccionarImagenAnuncio={seleccionarImagenAnuncio}
-                  setMostrarInvitacionModal={setMostrarInvitacionModal}
-                />
               ) : null}
             </section>
 
@@ -1338,19 +1282,187 @@ function ProgramaFormModal({
                 </div>
               </div>
             </section>
+
+            {/* SECCIÓN: CONFIGURACIÓN DE ALMUERZO */}
+            {esMostrarSeccionAlmuerzo && (
+              <section className="coord-form-section" style={{ borderLeft: "4px solid #f59e0b", paddingLeft: "12px" }}>
+                <div className="coord-section-heading">
+                  <Utensils size={18} style={{ color: "#f59e0b" }} />
+                  <div>
+                    <h3 style={{ color: "#78350f" }}>Configuración de Almuerzo</h3>
+                  </div>
+                </div>
+                <div className="coord-section-grid">
+                  <div className="coord-field coord-field-full" style={{ margin: 0 }}>
+                    <label className="coord-check-label" style={{ cursor: "pointer", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(form.incluyeAlmuerzo)}
+                        onChange={e => {
+                          const val = e.target.checked;
+                          actualizarForm("incluyeAlmuerzo", val);
+                          if (val) {
+                            if (!form.detalleAlmuerzo) {
+                              actualizarForm("detalleAlmuerzo", "Contamos con un área para la recepción de los almuerzos, donde se deberá dejar bajo el siguiente horario: De 01:20 a 01:45 p.m.\nIndicando claramente una etiqueta grande en la lonchera, con NOMBRE DEL ALUMNO, GRADO Y SECCIÓN.");
+                            }
+                            if (!form.concesionarios) {
+                              actualizarForm("concesionarios", "Si deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\nCafetín Los Amigos del recreo (Sra. Rocío) - 976280197\nCafetín Edith (Sra. Deysli) - 960897529\nque son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde de acuerdo a las disposiciones del MINSA.");
+                            }
+                          }
+                        }}
+                      />
+                      <span>Incluye recepción de almuerzo</span>
+                    </label>
+
+                    {form.incluyeAlmuerzo && (
+                      <div style={{ marginTop: "16px" }}>
+                        <div style={{
+                          background: "#fffbeb",
+                          border: "1px solid #fde68a",
+                          borderRadius: "8px",
+                          padding: "12px 16px",
+                          marginBottom: "16px",
+                          color: "#78350f"
+                        }}>
+                          <strong style={{ display: "block", fontSize: "13px", marginBottom: "4px", color: "#b45309" }}>
+                            ⏰ Horario de recepción de almuerzo (calculado automáticamente del horario de almuerzo de arriba):
+                          </strong>
+                          {form.horarioRecepcionAlmuerzo ? (
+                            <span style={{ fontSize: "14px", fontWeight: "600" }}>
+                              {form.horarioRecepcionAlmuerzo.split(", ").map(part => {
+                                const match = part.match(/(Inicial|Primaria|Secundaria)\s*:\s*(\d{2}:\d{2})\s*a\s*(\d{2}:\d{2})/i);
+                                if (match) {
+                                  const level = match[1];
+                                  const t1 = formatearHora12(match[2]);
+                                  const t2 = formatearHora12(match[3]);
+                                  return `${level}: de ${t1} a ${t2}`;
+                                }
+                                return part;
+                              }).join(" · ")}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: "13px", color: "#b45309", fontStyle: "italic" }}>
+                              Configure al menos un bloque con horario de almuerzo arriba para calcular el horario de recepción.
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ marginTop: "12px" }}>
+                          <label style={{ fontSize: "12.5px", color: "#374151", fontWeight: "700", display: "block", marginBottom: "4px" }}>
+                            Detalle / Indicaciones de almuerzo *
+                          </label>
+                          <textarea
+                            value={form.detalleAlmuerzo || ""}
+                            onChange={e => actualizarForm("detalleAlmuerzo", e.target.value)}
+                            placeholder="Ej: Contamos con un área para la recepción de los almuerzos..."
+                            rows={3}
+                            style={{
+                              width: "100%",
+                              padding: "8px 12px",
+                              fontSize: "13px",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "6px",
+                              resize: "vertical",
+                              fontFamily: "inherit"
+                            }}
+                          />
+                        </div>
+
+                        <div style={{ marginTop: "12px" }}>
+                          <label style={{ fontSize: "12.5px", color: "#374151", fontWeight: "700", display: "block", marginBottom: "4px" }}>
+                            Concesionarios autorizados *
+                          </label>
+                          <textarea
+                            value={form.concesionarios || ""}
+                            onChange={e => actualizarForm("concesionarios", e.target.value)}
+                            placeholder="Ej: Cafetín Los Amigos del recreo (Sra. Rocío) - 976280197..."
+                            rows={3}
+                            style={{
+                              width: "100%",
+                              padding: "8px 12px",
+                              fontSize: "13px",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "6px",
+                              resize: "vertical",
+                              fontFamily: "inherit"
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </section>
+            )}
           </>
         )}
       </div>
+    </form>
+  );
 
-        </form>
+  const actionsElement = (
+    <div className={isInline ? "coord-card-actions" : "coord-modal-actions"} style={isInline ? { display: "flex", justifyContent: "flex-end", gap: "12px", marginTop: "24px", borderTop: "1px solid #e2e8f0", paddingTop: "16px" } : {}}>
+      <button type="button" className="coord-secondary-button" onClick={() => setShowModal(false)}>Cancelar</button>
+      <button type="submit" form="form-programa" className="coord-register-button" disabled={guardando}>
+        {guardando ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
+        <span>{guardando ? "Guardando" : modoEditar ? "Actualizar" : "Crear programa"}</span>
+      </button>
+    </div>
+  );
 
-        <div className="coord-modal-actions">
-          <button type="button" className="coord-secondary-button" onClick={() => setShowModal(false)}>Cancelar</button>
-          <button type="submit" form="form-programa" className="coord-register-button" disabled={guardando}>
-            {guardando ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
-            <span>{guardando ? "Guardando" : modoEditar ? "Actualizar" : "Crear programa"}</span>
-          </button>
+  if (isInline) {
+    return (
+      <>
+        <header className="coord-topbar">
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            {toggleSidebarButton}
+            <h1>{modoEditar ? "EDITAR PROGRAMA" : "REGISTRAR PROGRAMA"}</h1>
+          </div>
+        </header>
+        <section className="coord-workspace coord-workspace-single">
+          <article className="coord-card coord-program-form-card" style={{ maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
+            <div className="coord-card-title">
+              <span className="coord-title-icon">
+                {modoEditar ? <Edit3 size={20} /> : <BookOpen size={20} />}
+              </span>
+              <div>
+                <h2>{esFormularioVerano ? (modoEditar ? "Editar programa de verano" : "Registrar programa de verano") : (modoEditar ? "Editar programa" : "Registrar programa")}</h2>
+                <p>
+                  {esFormularioVerano
+                    ? "Complete los datos del programa antes de habilitarlo."
+                    : "Complete la configuración del taller antes de habilitarlo."}
+                </p>
+              </div>
+            </div>
+            {formElement}
+            {actionsElement}
+          </article>
+        </section>
+      </>
+    );
+  }
+
+  return (
+    <div className="coord-modal-overlay">
+      <div className={`coord-modal ${esFormularioVerano ? "coord-modal-verano" : ""}`} onClick={e => e.stopPropagation()}>
+        <div className="coord-modal-header">
+          <div className="coord-modal-title">
+            <span className="coord-modal-icon">
+              {modoEditar ? <Edit3 size={20} /> : <BookOpen size={20} />}
+            </span>
+            <div>
+              <h2>{esFormularioVerano ? (modoEditar ? "Editar programa de verano" : "Registrar programa de verano") : (modoEditar ? "Editar programa" : "Registrar programa")}</h2>
+              <p>
+                {esFormularioVerano
+                  ? "Complete los datos del programa antes de habilitarlo."
+                  : "Complete la configuración del taller antes de habilitarlo."}
+              </p>
+            </div>
+          </div>
+          <button className="coord-modal-close" type="button" onClick={() => setShowModal(false)}><X size={20} /></button>
         </div>
+        {formElement}
+        {actionsElement}
       </div>
     </div>
   );

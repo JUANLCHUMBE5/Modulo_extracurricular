@@ -161,6 +161,8 @@ export async function crearPrograma(datos) {
       detalle_costo: datos.detalleCosto || "",
       detalle_almuerzo: datos.detalleAlmuerzo || "",
       concesionarios: datos.concesionarios || "",
+      incluye_almuerzo: Boolean(datos.incluyeAlmuerzo),
+      horario_recepcion_almuerzo: datos.horarioRecepcionAlmuerzo || "",
       invitacion_masiva: Boolean(datos.invitacionMasiva),
       alcance_invitacion_masiva: datos.alcanceInvitacionMasiva || "colegio",
       plantilla: datos.plantilla || "",
@@ -237,6 +239,8 @@ export async function crearProgramaDesdeDocumento(datos) {
       detalle_costo: datos.detalleCosto || "",
       detalle_almuerzo: datos.detalleAlmuerzo || "",
       concesionarios: datos.concesionarios || "",
+      incluye_almuerzo: Boolean(datos.incluyeAlmuerzo),
+      horario_recepcion_almuerzo: datos.horarioRecepcionAlmuerzo || "",
       creado_desde_documento: true,
       periodo: datos.periodo || "escolar",
       modalidad_cobro: datos.modalidadCobro || "Mensual",
@@ -356,6 +360,8 @@ export async function editarPrograma(id, datos) {
       detalle_costo: datos.detalleCosto || "",
       detalle_almuerzo: datos.detalleAlmuerzo || "",
       concesionarios: datos.concesionarios || "",
+      incluye_almuerzo: Boolean(datos.incluyeAlmuerzo),
+      horario_recepcion_almuerzo: datos.horarioRecepcionAlmuerzo || "",
       invitacion_masiva: Boolean(datos.invitacionMasiva),
       alcance_invitacion_masiva: datos.alcanceInvitacionMasiva || "colegio",
       plantilla: datos.plantilla || "",
@@ -456,7 +462,7 @@ export async function editarPrograma(id, datos) {
       const isLinkedToInscripcion = item.inscripcionId && (apiDb.inscripciones || []).some(ins => ins.id === item.inscripcionId && ins.programaId === id);
       const isLinkedByProgramId = item.programaId === id;
       const isLinkedByProgramName = oldName && String(item.programa).trim().toLowerCase() === String(oldName).trim().toLowerCase();
-      
+
       if (isLinkedToInscripcion || isLinkedByProgramId || isLinkedByProgramName) {
         return {
           ...item,
@@ -473,7 +479,7 @@ export async function editarPrograma(id, datos) {
     apiDb.asistencias = apiDb.asistencias.map(item => {
       const isLinkedByProgramId = item.programaId === id;
       const isLinkedByProgramName = oldName && String(item.programa).trim().toLowerCase() === String(oldName).trim().toLowerCase();
-      
+
       if (isLinkedByProgramId || isLinkedByProgramName) {
         return {
           ...item,
@@ -490,7 +496,7 @@ export async function editarPrograma(id, datos) {
     apiDb.documentosGenerados = apiDb.documentosGenerados.map(item => {
       const isLinkedByProgramId = item.programaId === id;
       const isLinkedByProgramName = oldName && String(item.programa).trim().toLowerCase() === String(oldName).trim().toLowerCase();
-      
+
       if (isLinkedByProgramId || isLinkedByProgramName) {
         return {
           ...item,
@@ -1124,7 +1130,7 @@ export async function confirmarCargaAlumnos(preview) {
     if (!grupoArchivo.cargaId) return;
     const registrosArchivo = registrosPorArchivo.get(archivoNombre) || grupoArchivo;
     const importadosArchivo = (grupoArchivo.registrosHistorial || []).length;
-    
+
     const todayStr = new Date().toDateString();
     const existingIndex = (apiDb.historialCargas || []).findIndex(
       (c) =>

@@ -9,7 +9,7 @@ export function cleanFallbackText(value) {
   if (value === undefined || value === null) return "";
   const str = String(value).trim();
   const lower = str.toLowerCase();
-  
+
   if (
     lower === "no definido" ||
     lower === "no definido." ||
@@ -21,14 +21,14 @@ export function cleanFallbackText(value) {
   ) {
     return "";
   }
-  
+
   if (
     lower === "horario no configurado para este grado" ||
     lower === "horario no configurado para este grado."
   ) {
     return "Por confirmar";
   }
-  
+
   return str;
 }
 
@@ -77,6 +77,8 @@ export function crearDatosFicha(estudiante, inscripcion) {
       tablaHorariosNivel: inscripcion.tablaHorariosNivel || inscripcion.tabla_horarios_nivel || [],
       incluyeAlmuerzo: Boolean(inscripcion.incluyeAlmuerzo || inscripcion.incluye_almuerzo),
       horarioRecepcionAlmuerzo: cleanFallbackText(inscripcion.horarioRecepcionAlmuerzo || inscripcion.horario_recepcion_almuerzo) || "",
+      detalleAlmuerzo: cleanFallbackText(inscripcion.detalleAlmuerzo || inscripcion.detalle_almuerzo) || "",
+      concesionarios: cleanFallbackText(inscripcion.concesionarios) || "",
       modalidadesCambridge: inscripcion.modalidadesCambridge || inscripcion.modalidades_cambridge || [],
       costoCiclo: inscripcion.costoCiclo || inscripcion.costo_ciclo || (inscripcion.costo ? String(inscripcion.costo) : ""),
       montoPrimerPago: inscripcion.montoPrimerPago || inscripcion.monto_primer_pago || "",
@@ -322,13 +324,13 @@ export function procesarTextoComunicado(texto, estudiante, inscripcion) {
   if (!texto) return "";
   const mapa = crearMapaVariablesDocumento(estudiante, inscripcion);
   let resultado = String(texto);
-  
+
   // Replace variables like {{VARIABLE}}
   Object.entries(mapa).forEach(([key, val]) => {
     const patron = new RegExp(`\\{\\{\\s*${escaparRegExp(key)}\\s*\\}\\}`, "gi");
     resultado = resultado.replace(patron, String(val ?? ""));
   });
-  
+
   return resultado;
 }
 
@@ -446,9 +448,9 @@ function formatearMesEvaluacion(valor) {
 function crearFilasHorarioDocumento(inscripcion, estudiante, horarioRespaldo) {
   const grupos = Array.isArray(inscripcion?.horariosPorGrupo) ? inscripcion.horariosPorGrupo : [];
   const gradoAlumno = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
-  
+
   // Filtrar los grupos que correspondan al grado del alumno
-  const gruposFiltrados = grupos.filter((item) => 
+  const gruposFiltrados = grupos.filter((item) =>
     (item.grados || []).some((grado) => coincideGradoDocumento(grado, gradoAlumno))
   );
 
@@ -493,25 +495,25 @@ export function formatearNivelesDocumento(grados = []) {
 
 function obtenerInfoGrado(gradoStr) {
   const texto = String(gradoStr || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  
+
   let nivel = "primaria";
   if (texto.includes("inicial") || texto.includes("ano") || texto.includes("anos")) {
     nivel = "inicial";
   } else if (texto.includes("secundaria") || texto.includes("sec")) {
     nivel = "secundaria";
   }
-  
+
   const match = texto.match(/\d+/);
   const numero = match ? parseInt(match[0], 10) : null;
-  
+
   return { nivel, numero, original: gradoStr };
 }
 
 export function agruparGradosConsecutivos(gradosArray) {
   if (!Array.isArray(gradosArray) || gradosArray.length === 0) return [];
-  
+
   const parsed = gradosArray.map(g => obtenerInfoGrado(g));
-  
+
   const levels = { inicial: [], primaria: [], secundaria: [] };
   parsed.forEach(p => {
     if (levels[p.nivel]) {
@@ -520,19 +522,19 @@ export function agruparGradosConsecutivos(gradosArray) {
       levels.primaria.push(p);
     }
   });
-  
+
   const subgroups = [];
-  
+
   ["inicial", "primaria", "secundaria"].forEach(levelName => {
     const items = levels[levelName];
     if (items.length === 0) return;
-    
+
     items.sort((a, b) => {
       const numA = a.numero === null ? 99 : a.numero;
       const numB = b.numero === null ? 99 : b.numero;
       return numA - numB;
     });
-    
+
     let currentRun = [];
     for (let i = 0; i < items.length; i++) {
       const current = items[i];
@@ -541,8 +543,8 @@ export function agruparGradosConsecutivos(gradosArray) {
       } else {
         const last = currentRun[currentRun.length - 1];
         if (
-          current.numero !== null && 
-          last.numero !== null && 
+          current.numero !== null &&
+          last.numero !== null &&
           current.numero === last.numero + 1
         ) {
           currentRun.push(current);
@@ -556,7 +558,7 @@ export function agruparGradosConsecutivos(gradosArray) {
       subgroups.push(currentRun.map(r => r.original));
     }
   });
-  
+
   return subgroups;
 }
 

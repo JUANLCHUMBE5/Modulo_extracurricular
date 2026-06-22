@@ -245,7 +245,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   // Search and grade filter for daily view rows
   const filasGrupoActivoFiltradas = useMemo(() => {
     if (!grupoActivo) return [];
-    
+
     let list = grupoActivo.filas;
 
     if (gradoSeleccionado) {
@@ -461,7 +461,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
               <div style={{ flex: "2 1 280px" }}>
                 <Select
                   label={
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
                       <UserCheck size={14} style={{ color: "#176c60" }} /> Seleccionar Taller
                     </span>
                   }
@@ -481,7 +481,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 <div style={{ flex: "1 1 200px" }}>
                   <Select
                     label={
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
                         <School size={14} style={{ color: "#176c60" }} /> Seleccionar Grado
                       </span>
                     }
@@ -502,7 +502,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 <div style={{ flex: "1 1 240px" }}>
                   <Select
                     label={
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
                         <CalendarDays size={14} style={{ color: "#176c60" }} /> Fecha
                       </span>
                     }
@@ -637,7 +637,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 ]}
                 color="teal"
               />
-              
+
               <TextInput
                 placeholder="Buscar por DNI, nombre o código..."
                 leftSection={<Search size={16} style={{ color: "#64748b" }} />}

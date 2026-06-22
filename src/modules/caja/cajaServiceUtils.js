@@ -58,6 +58,9 @@ export function filtrarReporteCaja(filas, filtros) {
       if (filtros.tipoReporte === "por_cobrar" || filtros.tipoReporte === "pagos_pendientes") return fila.estadoPago === "pendiente";
       if (filtros.tipoReporte === "inscripciones") return fila.fuente === "inscripcion";
       if (filtros.tipoReporte === "registro_web") return esRegistroWeb(fila.origen);
+      if (filtros.tipoReporte === "becas_descuentos") {
+        return fila.descuentoAprobado || ["beca", "descuento"].includes(String(fila.formaPago).toLowerCase());
+      }
       return true;
     })
     .sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0));

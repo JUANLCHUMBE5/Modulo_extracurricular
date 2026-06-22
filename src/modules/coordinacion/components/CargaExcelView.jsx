@@ -89,12 +89,17 @@ async function generarYDescargarPdfFichasLote({
         cicloI: programa.cicloI || "",
         cicloII: programa.cicloII || "",
         horariosPorGrupo: programa.horariosPorGrupo || [],
+        incluyeAlmuerzo: programa.incluyeAlmuerzo || false,
+        detalleAlmuerzo: programa.detalleAlmuerzo || "",
+        concesionarios: programa.concesionarios || "",
+        horarioRecepcionAlmuerzo: programa.horarioRecepcionAlmuerzo || "",
+        tipoComunicado: programa.tipoComunicado || "Otro genérico",
       };
 
       if (!programa.plantillaBase64) {
         try {
           const documentoFallback = await crearDocumentoInvitacion(mockEstudiante, mockInscripcion);
-          const pdfBlob = crearPdfInvitacionDocumento(documentoFallback).output("blob");
+          const pdfBlob = (await crearPdfInvitacionDocumento(documentoFallback)).output("blob");
           resultados[index] = pdfBlob;
         } catch (err) {
           console.error(`Error generando ficha genérica para ${reg.nombres || reg.nombre}:`, err);
@@ -334,7 +339,7 @@ function CargaExcelView({
 
   const descargarFichasExportarTab = async () => {
     let registros = [];
-    
+
     if (seleccionExportarId === "all") {
       programasCarga.forEach((prog) => {
         const invitadosProg = invitadosMap[prog.id] || [];
@@ -546,10 +551,10 @@ function CargaExcelView({
               </div>
 
               <div className="coord-massive-clean-actions">
-                <button 
-                  className="coord-primary-button" 
-                  type="button" 
-                  onClick={descargarFichasExportarTab} 
+                <button
+                  className="coord-primary-button"
+                  type="button"
+                  onClick={descargarFichasExportarTab}
                   disabled={exportando || cargandoInvitados || cantidadAlumnosExportar === 0}
                   style={{ backgroundColor: "#2b8a3e", borderColor: "#2b8a3e" }}
                 >
@@ -628,7 +633,7 @@ function CargaExcelView({
                 </button>
               </div>
             </div>
-            <p className="coord-massive-clean-hint">Formato esperado: DNI, NOMBRE y GRADO. No se requiere seccion ni curso en el Excel.</p>
+            <p className="coord-massive-clean-hint">Formato estandarizado esperado: DNI o Código, Alumno (Nombres y Apellidos), Grado, Nivel, y Selección (solo para Cambridge). No se requiere Sección en el Excel (se autocompletará automáticamente desde la base de datos).</p>
           </div>
           )}
 
@@ -645,11 +650,11 @@ function CargaExcelView({
                   <button
                     type="button"
                     className="coord-primary-button"
-                    style={{ 
-                      padding: "4px 12px", 
-                      fontSize: "13px", 
-                      height: "auto", 
-                      backgroundColor: "#2b8a3e", 
+                    style={{
+                      padding: "4px 12px",
+                      fontSize: "13px",
+                      height: "auto",
+                      backgroundColor: "#2b8a3e",
                       borderColor: "#2b8a3e",
                       display: "inline-flex",
                       alignItems: "center",
@@ -777,11 +782,11 @@ function CargaExcelView({
                                  type="button"
                                  onClick={() => descargarFichasLote(carga)}
                                  disabled={descargandoCargaId === carga.id}
-                                 style={{ 
-                                   padding: "6px 12px", 
-                                   fontSize: "13px", 
-                                   height: "auto", 
-                                   backgroundColor: "#2b8a3e", 
+                                 style={{
+                                   padding: "6px 12px",
+                                   fontSize: "13px",
+                                   height: "auto",
+                                   backgroundColor: "#2b8a3e",
                                    borderColor: "#2b8a3e",
                                    display: "inline-flex",
                                    alignItems: "center",
@@ -800,9 +805,9 @@ function CargaExcelView({
                                  type="button"
                                  onClick={() => eliminarCargaExcel(carga)}
                                  disabled={eliminandoCargaId === carga.id}
-                                 style={{ 
-                                   padding: "6px 12px", 
-                                   fontSize: "13px", 
+                                 style={{
+                                   padding: "6px 12px",
+                                   fontSize: "13px",
                                    height: "auto",
                                    display: "inline-flex",
                                    alignItems: "center",

@@ -75,7 +75,9 @@
     grid-template-columns: 1fr;
   }
 
-  .coord-section-grid {
+  .coord-section-grid,
+  .coord-doc-fields-grid,
+  .coord-payment-grid {
     grid-template-columns: 1fr;
   }
 
@@ -92,7 +94,7 @@
   .coord-category-tools {
     grid-template-columns: 1fr;
   }
-  
+
   .coord-program-data {
     grid-template-columns: 1fr;
   }

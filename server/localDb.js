@@ -25,15 +25,17 @@ const COLUMNAS_USUARIOS = ["id", "nombre", "usuario", "rol", "estado", "contrase
 const COLUMNAS_ESTUDIANTES = ["dni", "codigoEstudiante", "nombres", "grado", "seccion", "nivel", "sexo", "fechaNacimiento", "tipoAlumno", "estadoMatricula", "apoderado", "telefonoApoderado", "correoApoderado", "estadoInscripcion", "estadoCaja"];
 const COLUMNAS_PROGRAMAS = ["id", "nombre", "categoria", "fechaInicio", "fechaFin", "costo", "cupos", "cuposOcupados", "gradosAplicables", "periodo", "modalidadCobro", "duracionAvisoDias", "requiereUniforme", "requiereIndumentaria", "horario", "grupo", "plantilla", "plantillaBase64"];
 const COLUMNAS_INSCRIPCIONES = [
-  "id", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "gradoEstudiante", "seccion", 
-  "programaId", "programa", "categoria", "periodo", "horario", "docente", "costo", 
+  "id", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "gradoEstudiante", "seccion",
+  "programaId", "programa", "categoria", "periodo", "horario", "docente", "costo",
   "modalidadCobro", "fechaInicio", "fechaFin", "estadoPago", "pagoId",
-  "costoOriginal", "descuentoAprobado", "descuentoTipo", "descuentoValor", "descuentoMonto", 
-  "descuentoJustificacion", "descuentoAprobadoPor", "descuentoFechaAprobacion"
+  "costoOriginal", "descuentoAprobado", "descuentoTipo", "descuentoValor", "descuentoMonto",
+  "descuentoJustificacion", "descuentoAprobadoPor", "descuentoFechaAprobacion",
+  "derivadoCaja", "estadoCaja", "origenRegistro", "fechaRegistro"
 ];
 const COLUMNAS_PAGOS = ["id", "inscripcionId", "dniEstudiante", "nombresEstudiante", "programaId", "programa", "periodo", "monto", "formaPago", "numeroOperacion", "telefonoOperacion", "capturaPagoNombre", "capturaPagoBase64", "estado", "fechaPago", "origenRegistro", "nro_recibo"];
 const COLUMNAS_ASISTENCIAS = ["id", "inscripcionId", "pagoId", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "programaId", "programa", "horario", "estadoPago", "estadoAcceso", "observacion", "origen", "fechaRegistro"];
 const COLUMNAS_INVITADOS = ["programaId", "dni", "nombres", "grado", "seccion"];
+const COLUMNAS_HISTORIAL_CARGAS = ["id", "fecha", "periodo", "archivoNombre", "archivos", "usuario", "resumen", "registros"];
 
 function sanearObjeto(obj, llavesValidas) {
   if (!obj || typeof obj !== "object") return obj;
@@ -54,8 +56,8 @@ async function readFromSupabase() {
   try {
     // 1. Traemos todas las tablas en paralelo para máxima velocidad
     const [
-      resUsuarios, resEstudiantes, resProgramas, resInscripciones, 
-      resPagos, resAsistencias, resInvitados, resLogs, resCategorias
+      resUsuarios, resEstudiantes, resProgramas, resInscripciones,
+      resPagos, resAsistencias, resInvitados, resLogs, resCategorias, resHistorial
     ] = await Promise.all([
       supabase.from("usuarios").select("*"),
       supabase.from("estudiantes").select("*"),
@@ -65,7 +67,8 @@ async function readFromSupabase() {
       supabase.from("asistencias").select("*"),
       supabase.from("invitados_programa").select("*"),
       supabase.from("audit_logs").select("*"),
-      supabase.from("categorias").select("*")
+      supabase.from("categorias").select("*"),
+      supabase.from("historial_cargas").select("*")
     ]);
 
     // 2. Mapeo y transformación de formatos (De Filas SQL a Objetos Indexados JSON)
@@ -190,7 +193,9 @@ async function readFromSupabase() {
       inscripciones: (resInscripciones.data || []).map(ins => {
         ins.estadoInscripcion = ins.estadoPago || "Pendiente de pago";
         ins.apoderado = estudiantesObj[ins.dniEstudiante]?.apoderado || "";
-        
+        ins.derivadoCaja = ins.derivadoCaja ?? false;
+        ins.estadoCaja = ins.estadoCaja || "";
+
         // Determinar origenRegistro de forma inteligente para que el panel de Dirección lo identifique como Web/Padres
         const pagoAsociado = (resPagos.data || []).find(p => p.inscripcionId === ins.id);
         if (pagoAsociado && (String(pagoAsociado.formaPago).toLowerCase() === "yape" || pagoAsociado.capturaPagoBase64)) {
@@ -210,9 +215,20 @@ async function readFromSupabase() {
       invitadosPorPrograma: invitadosObj,
       auditLogs: resLogs.data || [],
       plantillasPorPrograma: plantillasObj,
-      categorias: finalCategorias, 
+      categorias: finalCategorias,
       documentosGenerados: [],
-      historialCargas: [],
+      historialCargas: (resHistorial && resHistorial.data) ? resHistorial.data.map(hc => {
+        return {
+          id: hc.id,
+          fecha: hc.fecha,
+          periodo: hc.periodo,
+          archivoNombre: hc.archivoNombre,
+          archivos: Array.isArray(hc.archivos) ? hc.archivos : [],
+          usuario: hc.usuario,
+          resumen: hc.resumen || { importados: 0, total: 0, errores: 0, duplicados: 0 },
+          registros: Array.isArray(hc.registros) ? hc.registros : []
+        };
+      }) : [],
       nextProgramaId: maxProgNum + 1
     };
   } catch (err) {
@@ -255,6 +271,18 @@ async function writeToSupabase(db) {
       };
     });
     const auditLogs = db.auditLogs || [];
+    const historialCargas = (db.historialCargas || []).map(hc => {
+      return {
+        id: hc.id,
+        fecha: hc.fecha,
+        periodo: hc.periodo,
+        archivoNombre: hc.archivoNombre,
+        archivos: hc.archivos || [],
+        usuario: hc.usuario,
+        resumen: hc.resumen || {},
+        registros: hc.registros || []
+      };
+    });
 
     const EXTRA_FIELDS = [
       "horaInicio",
@@ -349,32 +377,37 @@ async function writeToSupabase(db) {
     const activeEnrollmentIds = inscripciones.map(i => i.id).filter(Boolean);
     const activePagoIds = pagos.map(p => p.id).filter(Boolean);
     const activeAsistenciaIds = asistencias.map(a => a.id).filter(Boolean);
+    const activeCargaIds = historialCargas.map(c => c.id).filter(Boolean);
 
     const deleteResults = await Promise.all([
       // Eliminar usuarios huérfanos
-      activeUserIds.length 
-        ? supabase.from("usuarios").delete().filter("id", "not.in", `(${activeUserIds.join(",")})`) 
+      activeUserIds.length
+        ? supabase.from("usuarios").delete().filter("id", "not.in", `(${activeUserIds.join(",")})`)
         : supabase.from("usuarios").delete().neq("id", ""),
       // Eliminar programas huérfanos
-      activeProgramIds.length 
-        ? supabase.from("programas").delete().filter("id", "not.in", `(${activeProgramIds.join(",")})`) 
+      activeProgramIds.length
+        ? supabase.from("programas").delete().filter("id", "not.in", `(${activeProgramIds.join(",")})`)
         : supabase.from("programas").delete().neq("id", ""),
       // Eliminar invitados cuyos programas ya no existen
-      activeProgramIds.length 
-        ? supabase.from("invitados_programa").delete().filter("programaId", "not.in", `(${activeProgramIds.join(",")})`) 
+      activeProgramIds.length
+        ? supabase.from("invitados_programa").delete().filter("programaId", "not.in", `(${activeProgramIds.join(",")})`)
         : supabase.from("invitados_programa").delete().neq("programaId", ""),
       // Eliminar inscripciones huérfanas
-      activeEnrollmentIds.length 
-        ? supabase.from("inscripciones").delete().filter("id", "not.in", `(${activeEnrollmentIds.join(",")})`) 
+      activeEnrollmentIds.length
+        ? supabase.from("inscripciones").delete().filter("id", "not.in", `(${activeEnrollmentIds.join(",")})`)
         : supabase.from("inscripciones").delete().neq("id", ""),
       // Eliminar pagos huérfanos
-      activePagoIds.length 
-        ? supabase.from("pagos").delete().filter("id", "not.in", `(${activePagoIds.join(",")})`) 
+      activePagoIds.length
+        ? supabase.from("pagos").delete().filter("id", "not.in", `(${activePagoIds.join(",")})`)
         : supabase.from("pagos").delete().neq("id", ""),
       // Eliminar asistencias huérfanas
-      activeAsistenciaIds.length 
-        ? supabase.from("asistencias").delete().filter("id", "not.in", `(${activeAsistenciaIds.join(",")})`) 
-        : supabase.from("asistencias").delete().neq("id", "")
+      activeAsistenciaIds.length
+        ? supabase.from("asistencias").delete().filter("id", "not.in", `(${activeAsistenciaIds.join(",")})`)
+        : supabase.from("asistencias").delete().neq("id", ""),
+      // Eliminar historial_cargas huérfanos
+      activeCargaIds.length
+        ? supabase.from("historial_cargas").delete().filter("id", "not.in", `(${activeCargaIds.join(",")})`)
+        : supabase.from("historial_cargas").delete().neq("id", "")
     ]);
 
     deleteResults.forEach((res, i) => {
@@ -383,15 +416,13 @@ async function writeToSupabase(db) {
       }
     });
 
-    // Sincronizar eliminaciones de invitados dentro de programas existentes: borrar todos para insertar los actuales
-    const syncInvitadosProms = Object.keys(db.invitadosPorPrograma || {}).map(async (progId) => {
-      const res = await supabase.from("invitados_programa").delete().eq("programaId", progId);
+    // Sincronizar eliminaciones de invitados dentro de programas existentes: borrar todos los invitados para todos los programas activos en una sola consulta
+    if (activeProgramIds.length) {
+      const res = await supabase.from("invitados_programa").delete().filter("programaId", "in", `(${activeProgramIds.join(",")})`);
       if (res.error) {
-        console.error(`❌ Error en delete invitados de ${progId}:`, res.error);
+        console.error("❌ Error en delete invitados de programas activos:", res.error);
       }
-      return res;
-    });
-    await Promise.all(syncInvitadosProms);
+    }
 
     // 3. Subimos todo de golpe usando Upsert en orden de dependencias para evitar violaciones de claves foráneas
     // Grupo 1: Catálogos, estudiantes y usuarios (sin dependencias mutuas)
@@ -414,12 +445,13 @@ async function writeToSupabase(db) {
       }
     }
 
-    // Grupo 3: Inscripciones, Asistencias, Invitados y Logs (dependen de pagos, estudiantes o programas)
+    // Grupo 3: Inscripciones, Asistencias, Invitados, Logs y Cargas (dependen de pagos, estudiantes o programas)
     const grupo3 = await Promise.all([
       inscripciones.length ? supabase.from("inscripciones").upsert(sanearLista(inscripciones, COLUMNAS_INSCRIPCIONES)) : Promise.resolve({ error: null }),
       asistencias.length ? supabase.from("asistencias").upsert(sanearLista(asistencias, COLUMNAS_ASISTENCIAS)) : Promise.resolve({ error: null }),
       invitados_programa.length ? supabase.from("invitados_programa").insert(sanearLista(invitados_programa, COLUMNAS_INVITADOS)) : Promise.resolve({ error: null }),
-      auditLogs.length ? supabase.from("audit_logs").upsert(auditLogs) : Promise.resolve({ error: null })
+      auditLogs.length ? supabase.from("audit_logs").upsert(auditLogs) : Promise.resolve({ error: null }),
+      historialCargas.length ? supabase.from("historial_cargas").upsert(sanearLista(historialCargas, COLUMNAS_HISTORIAL_CARGAS)) : Promise.resolve({ error: null })
     ]);
     for (const res of grupo3) {
       if (res && res.error) {
@@ -470,8 +502,8 @@ export async function saveDb(data) {
 
   let currentDb = null;
   try {
-    currentDb = (process.env.VITE_DATA_MODE === "supabase" || process.env.DATA_MODE === "supabase") 
-      ? await readFromSupabase() 
+    currentDb = (process.env.VITE_DATA_MODE === "supabase" || process.env.DATA_MODE === "supabase")
+      ? await readFromSupabase()
       : await readLocalDb();
   } catch {
     // Ignore if source doesn't exist.

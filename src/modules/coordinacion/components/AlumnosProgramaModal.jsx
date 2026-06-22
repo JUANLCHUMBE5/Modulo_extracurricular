@@ -27,6 +27,20 @@ const badgeStyle = (activo, tone) => ({
   color: activo ? "#006b5b" : tone === "warning" ? "#b25e00" : "#b42318",
 });
 
+function obtenerEstiloInscripcion(estado = "") {
+  const norm = String(estado).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const esActivo = ["validado", "pago validado", "completado", "inscrito", "aprobado", "matriculado"].includes(norm);
+  const esAdvertencia = ["pendiente", "reserva pendiente", "reserva", "en espera"].includes(norm);
+  return badgeStyle(esActivo, esAdvertencia ? "warning" : "error");
+}
+
+function obtenerEstiloPago(estado = "") {
+  const norm = String(estado).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const esActivo = ["pagado", "completado", "validado", "pago validado", "exitoso", "aprobado"].includes(norm);
+  const esAdvertencia = ["pendiente", "verificando", "por verificar", "en verificacion", "pago en proceso", "pago en ..."].some(term => norm.includes(term));
+  return badgeStyle(esActivo, esAdvertencia ? "warning" : "error");
+}
+
 function describirSeleccionCambridge(valor = "") {
   const seleccion = String(valor || "").trim().toUpperCase();
   const opciones = {
@@ -190,12 +204,12 @@ function TablaMatriculados({ alumnos }) {
               <td><strong>{alumno.nombres}</strong></td>
               <td>{alumno.grado}</td>
               <td>
-                <span style={badgeStyle(alumno.estadoInscripcion === "Pago validado", "warning")}>
+                <span style={obtenerEstiloInscripcion(alumno.estadoInscripcion)}>
                   {alumno.estadoInscripcion}
                 </span>
               </td>
               <td>
-                <span style={badgeStyle(alumno.estadoPago === "Pagado", "error")}>
+                <span style={obtenerEstiloPago(alumno.estadoPago)}>
                   {alumno.estadoPago}
                 </span>
               </td>

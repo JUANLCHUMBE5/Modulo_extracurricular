@@ -638,8 +638,8 @@
   flex-direction: column !important;
   box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08) !important; /* Sombra sutil de separación */
   overflow: hidden !important;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
               opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
@@ -839,6 +839,82 @@
   border-right: none !important;
   opacity: 0 !important;
   pointer-events: none !important;
+}
+
+/* ── PREMIUM SOLID WHITE LAYOUT ── */
+.coord-layout {
+  background: #ffffff !important;
+}
+
+.coord-main {
+  background: #ffffff !important;
+}
+
+.coord-card {
+  border: none !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* ── WIDER WORKSPACE AND TOPBAR LAYOUT ── */
+.coord-topbar {
+  max-width: 1400px !important;
+}
+
+.coord-workspace {
+  max-width: 1400px !important;
+}
+
+.coord-workspace-single {
+  max-width: 1400px !important;
+}
+
+.coord-program-form-card {
+  max-width: 1400px !important;
+}
+
+/* ── UNIFICACIÓN DE ALTURAS EN FORMULARIOS Y BOTONES (38px) ── */
+.coord-workspace-upload select,
+.coord-workspace-upload input,
+.coord-workspace-upload .coord-massive-clean-picker,
+.coord-workspace-upload .coord-massive-clean-actions button,
+.coord-workspace-upload .coord-individual-clean-submit,
+.coord-documents-upload-row input,
+.coord-documents-upload-row select,
+.coord-documents-upload-row .coord-template-file-row,
+.coord-documents-upload-row .coord-register-button {
+  height: 38px !important;
+  min-height: 38px !important;
+  box-sizing: border-box !important;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-picker label {
+  height: 30px !important;
+  min-height: 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-picker span {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 30px !important;
+}
+
+.coord-documents-upload-row .coord-template-file-button {
+  height: 28px !important;
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.coord-documents-upload-row .coord-template-file-name {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 28px !important;
 }
 
 

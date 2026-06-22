@@ -1,5 +1,6 @@
 import { Alert } from "@mantine/core";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   IconAlertCircle as AlertCircle,
   IconBook2 as BookOpen,
@@ -35,7 +36,7 @@ const PASO_PAGO_STORAGE_PREFIX = "padres:pasoPago:";
 function obtenerMetaSeccionComunicado(titulo = "") {
   const texto = String(titulo).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (texto.includes("costo")) return { Icono: Receipt, clase: "is-cost", ayuda: "Monto y modalidad registrados para este programa." };
-  if (texto.includes("almuerzo")) return { Icono: Utensils, clase: "is-lunch", ayuda: "Horario de entrega y recomendaciones para la lonchera." };
+  if (texto.includes("almuerzo")) return { Icono: Utensils, clase: "is-lunch", ayuda: "Recepción y concesionarios autorizados por la institución." };
   if (texto.includes("ventaja")) return { Icono: Bulb, clase: "is-benefits", ayuda: "Beneficios incluidos durante el ciclo." };
   if (texto.includes("nota")) return { Icono: Notes, clase: "is-note", ayuda: "Compromisos importantes para la familia." };
   if (texto.includes("util")) return { Icono: ClipboardCheck, clase: "is-supplies", ayuda: "Materiales que debe preparar la familia." };
@@ -190,7 +191,8 @@ export default function Padres({ user, onLogout }) {
   }, [pasoActivo, pasoMaximo, pasoObjetivo]);
 
   useEffect(() => {
-    if (cargando || guardando || pasoActivo !== 3 || inscripcionPago) return;
+    if (cargando || guardando || pasoActivo !== 3) return;
+    if (inscripcionPago || invitacionPendiente || programaAdicional) return;
 
     setMantenerPasoPago(false);
     setPasoObjetivo(null);
@@ -198,7 +200,7 @@ export default function Padres({ user, onLogout }) {
     setInscripcionPagoId("");
     guardarPasoPago(user?.dni, null);
     setPasoActivo(0);
-  }, [cargando, guardando, inscripcionPago, pasoActivo, user?.dni]);
+  }, [cargando, guardando, inscripcionPago, pasoActivo, user?.dni, invitacionPendiente, programaAdicional]);
 
   useEffect(() => {
     setAnuncioCerrado(false);
@@ -290,20 +292,6 @@ export default function Padres({ user, onLogout }) {
     }
 
     setInfoProgramaAceptada(true);
-    if (invitacionPendiente || programaAdicional) {
-      const progId = programaAdicional?.id;
-      const registrado = await solicitarInscripcionPadres(progId, horarioSeleccionado, { tallaPolo, tallaShort, tallaUniforme });
-      if (!registrado) {
-        setMantenerPasoPago(false);
-        setPasoObjetivo(null);
-        guardarPasoPago(user?.dni, null);
-        return false;
-      }
-      if (programaAdicional && registrado?.id) {
-        setInscripcionPagoId(registrado.id);
-      }
-    }
-
     cambiarPaso(3);
     return { pasoDestino: 3 };
   }
@@ -325,15 +313,34 @@ export default function Padres({ user, onLogout }) {
       consultarRafael("Que debo hacer ahora", contextoAsistente);
       return;
     }
-    if ((invitacionPendiente || programaAdicional) && !inscripcionPago) {
+
+    let targetInscripcionId = inscripcionPago?.id || "";
+
+    if ((invitacionPendiente || programaAdicional) && !targetInscripcionId) {
       const progId = programaAdicional?.id;
       const registrado = await solicitarInscripcionPadres(progId, horarioSeleccionado, { tallaPolo, tallaShort, tallaUniforme });
-      if (registrado?.id) {
-        setInscripcionPagoId(registrado.id);
+      if (!registrado) {
+        return;
       }
+      if (typeof registrado === "object" && registrado.id) {
+        targetInscripcionId = registrado.id;
+        setInscripcionPagoId(registrado.id);
+      } else {
+        const targetProgId = progId || programaActual?.programaId || programaActual?.id || "";
+        const found = inscripciones.find(ins => ins.programaId === targetProgId);
+        if (found?.id) {
+          targetInscripcionId = found.id;
+          setInscripcionPagoId(found.id);
+        }
+      }
+    }
+
+    if (!targetInscripcionId) {
+      toast.warning("Revisar datos", { description: "No se pudo registrar la inscripción del programa." });
       return;
     }
-    await enviarPagoVerificacionPadres(datosPago, inscripcionPago?.id);
+
+    await enviarPagoVerificacionPadres(datosPago, targetInscripcionId);
   }
 
   function manejarFinalizarPago() {
@@ -562,7 +569,7 @@ export default function Padres({ user, onLogout }) {
                   comunicadoPadres.parrafos.forEach((parrafo) => {
                     const match = parrafo.match(/^([^:]+):\s*(.*)$/);
                     const esKeyValue = match && match[1].length < 35;
-                    
+
                     if (esKeyValue) {
                       if (!grupoActual) {
                         grupoActual = { type: "grid", items: [] };
@@ -602,7 +609,7 @@ export default function Padres({ user, onLogout }) {
                       );
                     }
                     return (
-                      <p key={`text-${idx}`} style={{ margin: "12px 0", fontSize: "14.5px", lineHeight: "1.6", color: "#1e293b" }}>
+                      <p key={`text-${idx}`} style={{ margin: "12px 0", fontSize: "14.5px", lineHeight: "1.6", color: "#000000" }}>
                         {segmento.content}
                       </p>
                     );

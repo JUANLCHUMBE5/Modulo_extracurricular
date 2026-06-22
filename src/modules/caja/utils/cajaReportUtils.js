@@ -46,15 +46,23 @@ export function esPagoWebPorVerificarCaja(fila = {}) {
 export function obtenerMedioCanalWebCaja(fila = {}) {
   const estado = String(fila.estadoPago || "").toLowerCase();
   const esPagado = ["pagado", "completado", "pago validado", "validado"].includes(estado);
-  
+
   const origen = String(fila.origen || fila.origenRegistro || "").toLowerCase();
   const formaPago = fila.formaPago || "";
-  
+
+  if (fila.descuentoAprobado) {
+    const tipoLabel = String(fila.descuentoTipo).toLowerCase() === "beca" ? "Beca" : "Dirección / Desc";
+    if (esPagado) {
+      return `${tipoLabel} / Caja`;
+    }
+    return tipoLabel;
+  }
+
   if (origen === "caja" || origen === "cajera") {
     if (!esPagado) return "-";
     return `${formaPago || "Efectivo"} / Caja`;
   }
-  
+
   if (!esPagoWebPadresCaja(fila)) return "-";
   if (String(formaPago).toLowerCase().includes("web")) {
     return formaPago || "Reserva / Web";

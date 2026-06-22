@@ -16,6 +16,7 @@ const COLUMNAS_CARGA_EXCEL = new Set([
   "codigo_estudiante",
   "curso_programa",
   "dni",
+  "dni_o_codigo",
   "grado",
   "nivel_cambridge",
   "nivel_educativo",
@@ -291,9 +292,26 @@ function normalizarFila(fila) {
   const nivelCambridge = limpiarTexto(fila.nivel_cambridge);
   const nombres = limpiarTexto(fila.nombres) || alumno.nombres;
   const apellidos = limpiarTexto(fila.apellidos) || alumno.apellidos;
+
+  let dni = limpiarTexto(fila.dni);
+  let codigoEstudiante = limpiarTexto(fila.codigo_estudiante);
+  const rawDniOrCodigo = limpiarTexto(fila.dni_o_codigo);
+  if (rawDniOrCodigo) {
+    if (/^\d{8}$/.test(rawDniOrCodigo)) {
+      dni = rawDniOrCodigo;
+    } else {
+      codigoEstudiante = rawDniOrCodigo;
+    }
+  }
+
+  const rawCurso = limpiarTexto(fila.curso_programa) || limpiarTexto(fila.curso) || limpiarTexto(fila.programa);
+  const rawSeleccion = limpiarTexto(fila.seleccion);
+  const esSeleccionGrupo = /^[A-Z]$/i.test(rawSeleccion);
+  const curso = rawCurso || (!esSeleccionGrupo ? rawSeleccion : "");
+
   return {
-    codigoEstudiante: limpiarTexto(fila.codigo_estudiante),
-    dni: limpiarTexto(fila.dni),
+    codigoEstudiante,
+    dni,
     alumno: limpiarTexto(fila.alumno) || `${nombres} ${apellidos}`.trim(),
     nombres,
     apellidos,
@@ -302,7 +320,7 @@ function normalizarFila(fila) {
     seccion: limpiarTexto(fila.seccion).toUpperCase(),
     seleccion: limpiarTexto(fila.seleccion).toUpperCase(),
     nivelCambridge,
-    curso: limpiarTexto(fila.curso_programa) || limpiarTexto(fila.curso) || limpiarTexto(fila.programa),
+    curso,
     observacion: limpiarTexto(fila.observacion),
     estadoAlumno: "Invitado",
   };
@@ -433,6 +451,8 @@ function normalizarEncabezado(valor) {
     codigo_alumno: "codigo_estudiante",
     cod_est: "codigo_estudiante",
     codigoestudiante: "codigo_estudiante",
+    codigo_de_estudiante: "codigo_estudiante",
+    codigo_de_estudainte: "codigo_estudiante",
     curso: "curso_programa",
     curso_taller: "curso_programa",
     id: "dni",
@@ -444,6 +464,10 @@ function normalizarEncabezado(valor) {
     nivel: "nivel_educativo",
     nivel_educativo: "nivel_educativo",
     niveleducativo: "nivel_educativo",
+    dni_o_codigo_de_estudiante: "dni_o_codigo",
+    dni_o_codigo_de_estudainte: "dni_o_codigo",
+    dni_o_codigo: "dni_o_codigo",
+    dni_codigo: "dni_o_codigo",
   };
   return alias[encabezado] || encabezado;
 }

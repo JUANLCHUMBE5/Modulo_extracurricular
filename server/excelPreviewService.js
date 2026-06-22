@@ -9,6 +9,7 @@ const COLUMNAS_CARGA_EXCEL = new Set([
   "codigo_estudiante",
   "curso_programa",
   "dni",
+  "dni_o_codigo",
   "grado",
   "id",
   "nivel_cambridge",
@@ -133,7 +134,7 @@ function validarColumnasObligatorias(encabezados) {
   const formatoCargaMasiva = esFormatoCargaMasiva(disponibles);
   const obligatorias = formatoCargaMasiva
     ? [
-        disponibles.has("dni") ? "dni" : "codigo_estudiante",
+        disponibles.has("dni_o_codigo") ? "dni_o_codigo" : (disponibles.has("dni") ? "dni" : "codigo_estudiante"),
         disponibles.has("alumno") ? "alumno" : "nombres",
         "grado",
         "nivel_educativo"
@@ -233,10 +234,27 @@ function normalizarFila(fila) {
   const nivelCambridge = limpiarTexto(fila.nivel_cambridge);
   const nombres = limpiarTexto(fila.nombres) || alumno.nombres;
   const apellidos = limpiarTexto(fila.apellidos) || alumno.apellidos;
+
+  let dni = limpiarTexto(fila.dni);
+  let codigoEstudiante = limpiarTexto(fila.codigo_estudiante);
+  const rawDniOrCodigo = limpiarTexto(fila.dni_o_codigo);
+  if (rawDniOrCodigo) {
+    if (/^\d{8}$/.test(rawDniOrCodigo)) {
+      dni = rawDniOrCodigo;
+    } else {
+      codigoEstudiante = rawDniOrCodigo;
+    }
+  }
+
+  const rawCurso = limpiarTexto(fila.curso_programa) || limpiarTexto(fila.curso) || limpiarTexto(fila.programa);
+  const rawSeleccion = limpiarTexto(fila.seleccion);
+  const esSeleccionGrupo = /^[A-Z]$/i.test(rawSeleccion);
+  const curso = rawCurso || (!esSeleccionGrupo ? rawSeleccion : "");
+
   return {
-    codigoEstudiante: limpiarTexto(fila.codigo_estudiante),
+    codigoEstudiante,
     idExcel: limpiarTexto(fila.id),
-    dni: limpiarTexto(fila.dni),
+    dni,
     alumno: limpiarTexto(fila.alumno) || `${nombres} ${apellidos}`.trim(),
     nombres,
     apellidos,
@@ -245,7 +263,7 @@ function normalizarFila(fila) {
     seccion: limpiarTexto(fila.seccion).toUpperCase(),
     seleccion: limpiarTexto(fila.seleccion).toUpperCase(),
     nivelCambridge,
-    curso: limpiarTexto(fila.curso_programa) || limpiarTexto(fila.curso) || limpiarTexto(fila.programa),
+    curso,
     observacion: limpiarTexto(fila.observacion),
     estadoAlumno: "Invitado",
   };
@@ -261,11 +279,15 @@ function validarFilaCarga(fila, programaDetectado, opciones = {}) {
   }
   if (!textoSeguro(fila.alumno || `${fila.nombres} ${fila.apellidos}`)) errores.push("Falta alumno.");
   if (!textoSeguro(fila.grado)) errores.push("Falta grado.");
-  if (!opciones.programaSeleccionado) {
+  if (opciones.programaSeleccionado) {
+    if (fila.curso && !coincideCurso(fila.curso, programaDetectado.nombre)) {
+      errores.push(`El taller en el Excel ("${fila.curso}") no coincide con el seleccionado ("${programaDetectado.nombre}").`);
+    }
+  } else {
     if (!textoSeguro(fila.curso) && !textoSeguro(fila.nivelCambridge)) errores.push("Falta curso o nivel Cambridge.");
     if (fila.curso && !programaDetectado) errores.push("El programa indicado no existe en el periodo seleccionado.");
     if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
-    if (esCambridge && !/^[A]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A.");
+    if (esCambridge && !/^[ABC]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A, B o C.");
   }
   if (programaDetectado && String(programaDetectado.estado || "Habilitado") !== "Habilitado") {
     errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} esta ${programaDetectado.estado}. Habilitelo antes de cargar alumnos.`);
@@ -327,7 +349,7 @@ function coincideCurso(curso, programa) {
 }
 
 function esFormatoCargaMasiva(disponibles) {
-  return (disponibles.has("dni") || disponibles.has("codigo_estudiante")) &&
+  return (disponibles.has("dni") || disponibles.has("codigo_estudiante") || disponibles.has("dni_o_codigo")) &&
     disponibles.has("grado") &&
     (disponibles.has("alumno") || disponibles.has("nombres")) &&
     disponibles.has("nivel_educativo");
@@ -387,6 +409,9 @@ function resolverEstudianteBase(fila, indice) {
   }
   if (!updatedFila.nivelEducativo && (estudiante.nivel || estudiante.nivelEducativo)) {
     updatedFila.nivelEducativo = estudiante.nivel || estudiante.nivelEducativo;
+  }
+  if (!updatedFila.seccion && estudiante.seccion) {
+    updatedFila.seccion = estudiante.seccion;
   }
   if (estudiante.nombres) {
     const parts = separarAlumnoCompleto(estudiante.nombres);
@@ -456,6 +481,8 @@ function normalizarEncabezado(valor) {
     codigo_alumno: "codigo_estudiante",
     cod_est: "codigo_estudiante",
     codigoestudiante: "codigo_estudiante",
+    codigo_de_estudiante: "codigo_estudiante",
+    codigo_de_estudainte: "codigo_estudiante",
     curso: "curso_programa",
     curso_taller: "curso_programa",
     nombre: "nombres",
@@ -467,6 +494,10 @@ function normalizarEncabezado(valor) {
     nivel: "nivel_educativo",
     nivel_educativo: "nivel_educativo",
     niveleducativo: "nivel_educativo",
+    dni_o_codigo_de_estudiante: "dni_o_codigo",
+    dni_o_codigo_de_estudainte: "dni_o_codigo",
+    dni_o_codigo: "dni_o_codigo",
+    dni_codigo: "dni_o_codigo",
   };
   return alias[encabezado] || encabezado;
 }

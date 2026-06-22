@@ -1,7 +1,7 @@
 /**
  * Adaptadores de datos para migración de API
  * Módulo Extracurricular - IEP San Rafael S.A.C.
- * 
+ *
  * Traducen objetos en formato de la API (generalmente snake_case y/o nombres oficiales)
  * al formato esperado por el frontend (generalmente camelCase y/o nombres mock), y viceversa.
  */
@@ -86,6 +86,17 @@ export function adaptarPrograma(apiPrograma) {
  */
 export function adaptarEstudiante(apiEstudiante) {
   if (!apiEstudiante) return null;
+
+  let gradoCompleto = apiEstudiante.grado_nombre || apiEstudiante.grado || "";
+  const nivel = apiEstudiante.nivel_nombre || apiEstudiante.nivel || "";
+  if (gradoCompleto && /^\d+$/.test(String(gradoCompleto).trim()) && nivel) {
+    if (nivel.toLowerCase().includes("inicial")) {
+      gradoCompleto = `${gradoCompleto} inicial`;
+    } else {
+      gradoCompleto = `${gradoCompleto} ${nivel}`;
+    }
+  }
+
   return {
     id: apiEstudiante.estudiante_id || apiEstudiante.id || "",
     dni: apiEstudiante.dni_estudiante || apiEstudiante.dni || "",
@@ -93,9 +104,9 @@ export function adaptarEstudiante(apiEstudiante) {
     nombres: apiEstudiante.nombres || "",
     apellidos: apiEstudiante.apellidos || "",
     fechaNacimiento: apiEstudiante.fecha_nacimiento || apiEstudiante.fechaNacimiento || "",
-    grado: apiEstudiante.grado_nombre || apiEstudiante.grado || "",
+    grado: gradoCompleto,
     seccion: apiEstudiante.seccion || "",
-    nivel: apiEstudiante.nivel_nombre || apiEstudiante.nivel || "",
+    nivel: nivel,
     sexo: apiEstudiante.sexo || "",
     tipoAlumno: apiEstudiante.tipo_alumno || apiEstudiante.tipoAlumno || "Alumno interno",
     periodo: apiEstudiante.periodo || "",
@@ -138,6 +149,17 @@ export function adaptarEstudiante(apiEstudiante) {
  */
 export function adaptarInscripcion(apiInscripcion) {
   if (!apiInscripcion) return null;
+
+  let gradoCompleto = apiInscripcion.grado_estudiante || apiInscripcion.gradoEstudiante || apiInscripcion.grado || "";
+  const nivel = apiInscripcion.nivel_educativo || apiInscripcion.nivelEducativo || apiInscripcion.nivel_nombre || apiInscripcion.nivel || "";
+  if (gradoCompleto && /^\d+$/.test(String(gradoCompleto).trim()) && nivel) {
+    if (nivel.toLowerCase().includes("inicial")) {
+      gradoCompleto = `${gradoCompleto} inicial`;
+    } else {
+      gradoCompleto = `${gradoCompleto} ${nivel}`;
+    }
+  }
+
   return {
     id: apiInscripcion.inscripcion_id || apiInscripcion.id || "",
     estudianteId: apiInscripcion.estudiante_id || apiInscripcion.estudianteId || "",
@@ -145,15 +167,15 @@ export function adaptarInscripcion(apiInscripcion) {
     fechaRegistro: apiInscripcion.creado_en || apiInscripcion.fechaRegistro || "",
     origen: apiInscripcion.origen_inscripcion || apiInscripcion.origen || apiInscripcion.origenRegistro || "Portal padres",
     estado: apiInscripcion.estado_inscripcion || apiInscripcion.estado || apiInscripcion.estadoInscripcion || "Pendiente de pago",
-    
+
     // Propiedades heredadas y calculadas para compatibilidad con vistas React
     dniEstudiante: apiInscripcion.dni_estudiante || apiInscripcion.dniEstudiante || "",
     dni: apiInscripcion.dni || apiInscripcion.dni_estudiante || apiInscripcion.dniEstudiante || "",
     codigoEstudiante: apiInscripcion.codigo_estudiante || apiInscripcion.codigoEstudiante || "",
     nombresEstudiante: apiInscripcion.nombres_estudiante || apiInscripcion.nombresEstudiante || "",
     nombres: apiInscripcion.nombres || apiInscripcion.nombres_estudiante || apiInscripcion.nombresEstudiante || "",
-    gradoEstudiante: apiInscripcion.grado_estudiante || apiInscripcion.gradoEstudiante || apiInscripcion.grado || "",
-    grado: apiInscripcion.grado_estudiante || apiInscripcion.gradoEstudiante || apiInscripcion.grado || "",
+    gradoEstudiante: gradoCompleto,
+    grado: gradoCompleto,
     seccion: apiInscripcion.seccion || "",
     programa: apiInscripcion.nombre_programa || apiInscripcion.programa || "",
     categoria: apiInscripcion.categoria || "",
@@ -244,7 +266,7 @@ export function adaptarPago(apiPago) {
     observaciones: apiPago.motivo_observacion || apiPago.observacion || apiPago.observaciones || "",
     validadoPor: apiPago.usuario_validacion || apiPago.validadoPor || "",
     validadoEn: apiPago.fecha_validacion || apiPago.validadoEn || "",
-    
+
     // Campos extendidos para bandeja y reportes de Caja
     dniEstudiante: apiPago.dni_estudiante || apiPago.dniEstudiante || apiPago.estudianteDni || "",
     estudianteDni: apiPago.dni_estudiante || apiPago.dniEstudiante || apiPago.estudianteDni || "",
@@ -266,7 +288,11 @@ export function adaptarPago(apiPago) {
     apoderado: apiPago.apoderado || "",
     telefono: apiPago.telefono || apiPago.telefono_apoderado || "",
     puedePagarCaja: Boolean(apiPago.puedePagarCaja),
-    nroRecibo: apiPago.nro_recibo || apiPago.nroRecibo || ""
+    nroRecibo: apiPago.nro_recibo || apiPago.nroRecibo || "",
+    descuentoAprobado: Boolean(apiPago.descuento_aprobado || apiPago.descuentoAprobado),
+    descuentoTipo: apiPago.descuento_tipo || apiPago.descuentoTipo || "",
+    descuentoMonto: apiPago.descuento_monto !== undefined ? Number(apiPago.descuento_monto) : Number(apiPago.descuentoMonto || 0),
+    descuentoJustificacion: apiPago.descuento_justificacion || apiPago.descuentoJustificacion || ""
   };
 }
 
@@ -282,7 +308,7 @@ export function adaptarAsistencia(apiAsistencia) {
     fecha: apiAsistencia.fecha_asistencia || apiAsistencia.fecha || apiAsistencia.fechaRegistro || "",
     estado: apiAsistencia.estado_asistencia || apiAsistencia.estado || apiAsistencia.estadoAcceso || "presente",
     registradoPor: apiAsistencia.usuario_registro || apiAsistencia.registradoPor || apiAsistencia.origen || "Auxiliar",
-    
+
     // Atributos de compatibilidad frontend
     dniEstudiante: apiAsistencia.dni_estudiante || apiAsistencia.estudianteId || apiAsistencia.dni || "",
     codigoEstudiante: apiAsistencia.codigo_estudiante || apiAsistencia.codigoEstudiante || "",

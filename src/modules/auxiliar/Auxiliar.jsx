@@ -17,22 +17,22 @@ import {
   IconAlertTriangle as AlertTriangle
 } from "@tabler/icons-react";
 import { toast } from "sonner";
-import { registrarAsistencia, validarDni, validarQR } from "./auxiliarService";
+import { registrarAsistencia, validarDni, validarQR, obtenerProgramasActivos } from "./auxiliarService";
 import "./Auxiliar.css";
 
 function parsearHorario(horarioStr) {
   if (!horarioStr) return { nivel: "", dias: "", hora: "" };
-  
+
   let cleaned = String(horarioStr).trim();
   // Limpiar almuerzo y clase
   cleaned = cleaned.replace(/almuerzo\s+\d{2}:\d{2}-\d{2}:\d{2},?\s*/gi, "");
   cleaned = cleaned.replace(/clase\s+/gi, "");
-  
+
   const parts = cleaned.split(":");
   if (parts.length >= 2) {
     const nivel = parts[0].trim();
     const rest = parts.slice(1).join(":").trim();
-    
+
     const hourRegex = /(\d{2}:\d{2}\s*-\s*\d{2}:\d{2})/g;
     const hours = rest.match(hourRegex);
     if (hours && hours.length > 0) {
@@ -47,40 +47,40 @@ function parsearHorario(horarioStr) {
 
 function verificarLlegadaTemprano(horarioStr) {
   if (!horarioStr) return { esTemprano: false, esTarde: false, horaInicio: "", horaFin: "" };
-  
+
   const str = String(horarioStr);
-  
+
   // 1. Intentar buscar rango de clase con prefijo "clase"
   let match = str.match(/clase\s*(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?\s*-\s*(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
   let usesClaseMatch = true;
-  
+
   if (!match) {
     usesClaseMatch = false;
     // Si no encontramos con "clase", limpiamos almuerzo e intentamos buscar cualquier rango de hora
     const cleaned = str.replace(/almuerzo\s+\d{2}:\d{2}-\d{2}:\d{2},?\s*/gi, "");
     match = cleaned.match(/(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?\s*-\s*(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
-    
+
     // Si aún no encontramos un rango de hora, buscamos al menos una hora simple (hora de inicio)
     if (!match) {
       const singleMatch = cleaned.match(/(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
       if (!singleMatch) return { esTemprano: false, esTarde: false, horaInicio: "", horaFin: "" };
-      
+
       const hours = parseInt(singleMatch[1], 10);
       const minutes = parseInt(singleMatch[2], 10);
       const meridian = singleMatch[3] ? singleMatch[3].toLowerCase().replace(/\s/g, "") : null;
       const horaInicioFmt = `${singleMatch[1]}:${singleMatch[2]}${singleMatch[3] ? ' ' + singleMatch[3] : ''}`.trim();
-      
+
       let hours24 = hours;
       if (meridian) {
         if (meridian.includes("p") && hours < 12) hours24 += 12;
         else if (meridian.includes("a") && hours === 12) hours24 = 0;
       }
       const inicioMinutos = hours24 * 60 + minutes;
-      
+
       const ahora = new Date();
       const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
       const diferenciaMinutos = inicioMinutos - ahoraMinutos;
-      
+
       return {
         esTemprano: diferenciaMinutos > 10,
         esTarde: false,
@@ -89,23 +89,23 @@ function verificarLlegadaTemprano(horarioStr) {
       };
     }
   }
-  
+
   // Si encontramos un rango de hora: inicio - fin
   const startHrs = parseInt(match[1], 10);
   const startMins = parseInt(match[2], 10);
   const startMeridian = match[3] ? match[3].toLowerCase().replace(/\s/g, "") : null;
-  
+
   const endHrs = parseInt(match[4], 10);
   const endMins = parseInt(match[5], 10);
   const endMeridian = match[6] ? match[6].toLowerCase().replace(/\s/g, "") : null;
-  
+
   let startHrs24 = startHrs;
   if (startMeridian) {
     if (startMeridian.includes("p") && startHrs < 12) startHrs24 += 12;
     else if (startMeridian.includes("a") && startHrs === 12) startHrs24 = 0;
   }
   const inicioMinutos = startHrs24 * 60 + startMins;
-  
+
   let endHrs24 = endHrs;
   if (endMeridian) {
     if (endMeridian.includes("p") && endHrs < 12) endHrs24 += 12;
@@ -115,15 +115,15 @@ function verificarLlegadaTemprano(horarioStr) {
     endHrs24 += 12;
   }
   const finMinutos = endHrs24 * 60 + endMins;
-  
+
   const ahora = new Date();
   const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
-  
+
   const diferenciaMinutos = inicioMinutos - ahoraMinutos;
-  
+
   const horaInicioFmt = `${match[1]}:${match[2]}${match[3] ? ' ' + match[3] : ''}`.trim();
   const horaFinFmt = `${match[4]}:${match[5]}${match[6] ? ' ' + match[6] : ''}`.trim();
-  
+
   return {
     esTemprano: diferenciaMinutos > 10,
     esTarde: ahoraMinutos > finMinutos,
@@ -134,20 +134,20 @@ function verificarLlegadaTemprano(horarioStr) {
 
 function esDiaCorrecto(horarioStr) {
   if (!horarioStr) return true;
-  
+
   const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
   const hoyEsp = diasSemana[new Date().getDay()];
-  
+
   const normalizar = (txt) => String(txt || "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
-    
+
   const horarioNorm = normalizar(horarioStr);
   const diasEncontrados = diasSemana.filter(dia => horarioNorm.includes(dia));
-  
+
   if (diasEncontrados.length === 0) return true;
-  
+
   return horarioNorm.includes(hoyEsp);
 }
 
@@ -165,6 +165,9 @@ export default function Auxiliar({ onLogout }) {
   const [camaraMensaje, setCamaraMensaje] = useState("Camara lista.");
   const [ultimoEvento, setUltimoEvento] = useState(null);
   const [historial, setHistorial] = useState([]);
+  const [programas, setProgramas] = useState([]);
+  const [programaSeleccionado, setProgramaSeleccionado] = useState("");
+  const [resultadosBusqueda, setResultadosBusqueda] = useState(null);
   const inputRef = useRef(null);
   const videoRef = useRef(null);
   const detectorRef = useRef(null);
@@ -191,6 +194,18 @@ export default function Auxiliar({ onLogout }) {
     setCamaraActiva(false);
     setCamaraMensaje("Camara detenida.");
   };
+
+  useEffect(() => {
+    const cargarTalleres = async () => {
+      try {
+        const list = await obtenerProgramasActivos();
+        setProgramas(list || []);
+      } catch (err) {
+        console.error("Error al cargar talleres:", err);
+      }
+    };
+    cargarTalleres();
+  }, []);
 
   useEffect(() => {
     if (entrada === "lector" || modo === "DNI") {
@@ -227,6 +242,7 @@ export default function Auxiliar({ onLogout }) {
     setEstudiante(null);
     setObservacion("");
     setUltimoEvento(null);
+    setResultadosBusqueda(null);
     inputRef.current?.focus();
   };
 
@@ -250,6 +266,12 @@ export default function Auxiliar({ onLogout }) {
     } finally {
       setRegistrando(false);
     }
+  };
+
+  const seleccionarEstudiante = (est) => {
+    setEstudiante(est);
+    setResultadosBusqueda(null);
+    setInputValue(est.nombres || est.dni || "");
   };
 
   const procesarValidacion = async (valorEntrada, modoValidacion = modo) => {
@@ -277,14 +299,24 @@ export default function Auxiliar({ onLogout }) {
     setCargando(true);
     setEstudiante(null);
     setObservacion("");
+    setResultadosBusqueda(null);
 
     try {
-      const data = modoValidacion === "DNI" ? await validarDni(valor) : await validarQR(valor);
-      setEstudiante(data);
-      setUltimoEvento(null);
+      const data = modoValidacion === "DNI"
+        ? await validarDni(valor, programaSeleccionado)
+        : await validarQR(valor);
 
-      if (modoValidacion === "QR" && autoRegistro) {
-        await ejecutarRegistro(data);
+      if (data && data.isMultiple) {
+        setResultadosBusqueda(data.matches || []);
+        setEstudiante(null);
+      } else {
+        setEstudiante(data);
+        setResultadosBusqueda(null);
+        setUltimoEvento(null);
+
+        if (modoValidacion === "QR" && autoRegistro) {
+          await ejecutarRegistro(data);
+        }
       }
     } catch (err) {
       setUltimoEvento({
@@ -389,6 +421,8 @@ export default function Auxiliar({ onLogout }) {
     setEntrada("lector");
     detenerCamara();
     setInputValue("");
+    setProgramaSeleccionado("");
+    setResultadosBusqueda(null);
     inputRef.current?.focus();
   };
 
@@ -397,6 +431,8 @@ export default function Auxiliar({ onLogout }) {
     setEntrada("lector");
     detenerCamara();
     setInputValue("");
+    setProgramaSeleccionado("");
+    setResultadosBusqueda(null);
   };
 
   const esInscritoNoMatriculado = estudiante &&
@@ -459,7 +495,7 @@ export default function Auxiliar({ onLogout }) {
         <section className="auxiliar-console-col">
           <div className="auxiliar-console-card">
             <h3 className="console-card-title">Escaneo de Acceso</h3>
-            
+
             <div className="auxiliar-mode-tabs" role="tablist" aria-label="Modo de validacion">
               <button type="button" className={modo === "QR" ? "active" : ""} onClick={cambiarModoQr}>
                 <QrCode size={20} /> Modo QR
@@ -469,7 +505,7 @@ export default function Auxiliar({ onLogout }) {
               </button>
             </div>
 
-            {modo === "QR" ? (
+            {modo === "QR" && (
               <div className="qr-scanner-wrapper">
                 <div className={`auxiliar-scanner ${entrada === "camara" ? "camera" : "reader"} ${camaraActiva ? "is-active" : ""}`}>
                   {entrada === "camara" ? (
@@ -524,21 +560,49 @@ export default function Auxiliar({ onLogout }) {
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="auxiliar-dni-panel">
-                <div className="cute-search-illustration">
-                  <User size={52} className="user-icon-animate" />
-                  <span className="cute-star">⭐</span>
-                </div>
-                <strong>Búsqueda por DNI / Nombre</strong>
-                <span>Ingresa el DNI o nombre del alumno para buscar su estado de pago.</span>
-              </div>
             )}
 
             <form className="auxiliar-input-form" onSubmit={handleBuscar}>
-              <label htmlFor="auxiliar-codigo">
-                {modo === "DNI" ? "DNI o Nombre del Alumno" : "Código QR (Lectura Manual)"}
-              </label>
+              {modo !== "DNI" ? (
+                <label htmlFor="auxiliar-codigo">
+                  Código QR (Lectura Manual)
+                </label>
+              ) : (
+                <div className="taller-filter-group" style={{ marginBottom: "10px" }}>
+                  <label htmlFor="taller-select" style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>
+                    Filtrar por Taller
+                  </label>
+                  <select
+                    id="taller-select"
+                    value={programaSeleccionado}
+                    onChange={(e) => {
+                      setProgramaSeleccionado(e.target.value);
+                      if (resultadosBusqueda) setResultadosBusqueda(null);
+                    }}
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      borderRadius: "10px",
+                      border: "2px solid #bae6fd",
+                      outline: "none",
+                      fontFamily: "inherit",
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                      color: "#1e293b",
+                      backgroundColor: "#f8fafc",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <option value="">Todos los talleres</option>
+                    {programas.map((prog) => (
+                      <option key={prog.id || prog.programaId} value={prog.id || prog.programaId}>
+                        {prog.nombre || prog.programa}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="input-group">
                 <input
                   id="auxiliar-codigo"
@@ -546,7 +610,10 @@ export default function Auxiliar({ onLogout }) {
                   inputMode="text"
                   placeholder={modo === "DNI" ? "Escribe el DNI o nombre del alumno..." : "Código QR escaneado..."}
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    if (resultadosBusqueda) setResultadosBusqueda(null);
+                  }}
                 />
                 <button type="submit" className="btn-validate" disabled={cargando || registrando}>
                   {cargando ? <Loader2 className="auxiliar-spin" size={22} /> : <Search size={22} />}
@@ -554,6 +621,71 @@ export default function Auxiliar({ onLogout }) {
                 </button>
               </div>
             </form>
+
+            {resultadosBusqueda && resultadosBusqueda.length > 0 && (
+              <div className="search-results-list" style={{ marginTop: "15px", borderTop: "1px dashed #cbd5e1", paddingTop: "12px", maxHeight: "250px", overflowY: "auto" }}>
+                <strong style={{ display: "block", fontSize: "0.85rem", color: "#64748b", marginBottom: "8px" }}>
+                  Alumnos encontrados ({resultadosBusqueda.length})
+                </strong>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {resultadosBusqueda.map((est) => {
+                    const esPermitido = est.accesoPermitido;
+                    const badgeColor = esPermitido ? "#10b981" : "#ef4444";
+
+                    return (
+                      <button
+                        key={`${est.dni}-${est.programaId || "sin-programa"}`}
+                        type="button"
+                        onClick={() => seleccionarEstudiante(est)}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "flex-start",
+                          textAlign: "left",
+                          padding: "10px 12px",
+                          borderRadius: "10px",
+                          border: "2.5px solid #bae6fd",
+                          backgroundColor: "#f0f9ff",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                          width: "100%"
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.borderColor = "#0ea5e9";
+                          e.currentTarget.style.backgroundColor = "#e0f2fe";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.borderColor = "#bae6fd";
+                          e.currentTarget.style.backgroundColor = "#f0f9ff";
+                        }}
+                      >
+                        <strong style={{ fontSize: "0.9rem", color: "#0f172a" }}>
+                          {est.nombres}
+                        </strong>
+                        <span style={{ fontSize: "0.78rem", color: "#475569", marginTop: "2px" }}>
+                          🏫 {est.grado} {est.seccion}
+                        </span>
+                        {est.programa && (
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginTop: "4px", fontSize: "0.78rem" }}>
+                            <span style={{ color: "#0ea5e9", fontWeight: 700 }}>
+                              ⚽ {est.programa}
+                            </span>
+                            <span style={{ color: badgeColor, fontWeight: 800 }}>
+                              {est.estadoPago}
+                            </span>
+                          </div>
+                        )}
+                        {!est.programa && (
+                          <span style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: "4px" }}>
+                            ❌ Sin Matricula Activa
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
@@ -586,8 +718,8 @@ export default function Auxiliar({ onLogout }) {
               </div>
               <h2>{registrando ? "Registrando ingreso..." : "Buscando en el sistema..."}</h2>
               <p className="kiosk-status-message">
-                {registrando 
-                  ? "Guardando la asistencia del estudiante para su taller." 
+                {registrando
+                  ? "Guardando la asistencia del estudiante para su taller."
                   : "Verificando estado de matrícula y reportes de pagos en Cajera."}
               </p>
             </div>
@@ -631,7 +763,7 @@ export default function Auxiliar({ onLogout }) {
               </div>
               <span className="kiosk-badge-tag error">ATENCIÓN</span>
               <h2 className="student-name">{ultimoEvento?.estudiante || estudiante?.nombres || "Estudiante"} ⚠️</h2>
-              
+
               <div className="kiosk-alert-explanation">
                 <p><strong>{ultimoEvento?.detalle || "No se pudo completar el registro."}</strong></p>
                 <p className="sub-msg">
@@ -675,7 +807,7 @@ export default function Auxiliar({ onLogout }) {
               <p className="kiosk-status-message-highlight">
                 ¡Tu pago está al día y tu matrícula activa! Que tengas una excelente clase.
               </p>
-              
+
               <div className="kiosk-student-details-box">
                 <div className="detail-item">
                   <span className="label">TALLER</span>
@@ -729,7 +861,7 @@ export default function Auxiliar({ onLogout }) {
               <p className="kiosk-status-message-highlight" style={{ color: "#d97706" }}>
                 Espere por favor, ingreso permitido a las {verificarLlegadaTemprano(estudiante.horario).horaInicio}.
               </p>
-              
+
               <div className="kiosk-student-details-box">
                 <div className="detail-item">
                   <span className="label">TALLER</span>
@@ -775,7 +907,7 @@ export default function Auxiliar({ onLogout }) {
               <p className="kiosk-status-message-highlight" style={{ color: "#e11d48" }}>
                 El taller ya finalizó. El horario de clase era de {verificarLlegadaTemprano(estudiante.horario).horaInicio} a {verificarLlegadaTemprano(estudiante.horario).horaFin}.
               </p>
-              
+
               <div className="kiosk-student-details-box">
                 <div className="detail-item">
                   <span className="label">TALLER</span>
@@ -821,7 +953,7 @@ export default function Auxiliar({ onLogout }) {
               <p className="kiosk-status-message-highlight" style={{ color: "#e11d48" }}>
                 {estudiante.accion || "Este estudiante ya registró su ingreso hace poco. Espere 15 minutos para volver a registrarse."}
               </p>
-              
+
               <div className="kiosk-student-details-box">
                 <div className="detail-item">
                   <span className="label">TALLER</span>
@@ -864,7 +996,7 @@ export default function Auxiliar({ onLogout }) {
               </div>
               <span className="kiosk-badge-tag error">DÍA INCORRECTO</span>
               <h2 className="student-name">¡Hola, {estudiante.nombres}! 📅</h2>
-              
+
               <div className="kiosk-alert-explanation">
                 <p><strong>Hoy no le toca este taller.</strong></p>
                 <p className="sub-msg">
@@ -914,7 +1046,7 @@ export default function Auxiliar({ onLogout }) {
               </div>
               <span className="kiosk-badge-tag error">FALTA PAGAR</span>
               <h2 className="student-name">¡Hola, {estudiante.nombres}! ⏳</h2>
-              
+
               <div className="kiosk-alert-explanation">
                 <p><strong>El alumno tiene pagos pendientes o en proceso de verificación.</strong></p>
                 <p className="sub-msg">
@@ -948,7 +1080,7 @@ export default function Auxiliar({ onLogout }) {
               </div>
               <span className="kiosk-badge-tag error">PRE-INSCRITO</span>
               <h2 className="student-name">¡Hola, {estudiante.nombres}! 🏫</h2>
-              
+
               <div className="kiosk-alert-explanation">
                 <p><strong>No está inscrito. Acercarse a Caja o Asistente para proceder con la matrícula.</strong></p>
                 <p className="sub-msg">
@@ -982,7 +1114,7 @@ export default function Auxiliar({ onLogout }) {
               </div>
               <span className="kiosk-badge-tag error">NO MATRICULADO</span>
               <h2 className="student-name">¡Hola, {estudiante.nombres}! 🏫</h2>
-              
+
               <div className="kiosk-alert-explanation">
                 <p><strong>No está matriculado a ninguno de los cursos / No está asignado a ningún taller.</strong></p>
                 <p className="sub-msg">
@@ -1016,7 +1148,7 @@ export default function Auxiliar({ onLogout }) {
               </div>
               <span className="kiosk-badge-tag error">NO REGISTRADO</span>
               <h2 className="student-name">Código no reconocido ❌</h2>
-              
+
               <div className="kiosk-alert-explanation">
                 <p><strong>Este código QR o DNI no figura en el sistema del colegio.</strong></p>
                 <p className="sub-msg">
@@ -1049,16 +1181,16 @@ export default function Auxiliar({ onLogout }) {
           <h3>Últimos Ingresos Registrados ⏰</h3>
           <span className="badge-count">{historial.length} hoy</span>
         </div>
-        
+
         {historial.length > 0 ? (
           <div className="historial-cards-container">
             {historial.map((ev) => {
-              const histState = ev.estado === "registrado" 
-                ? "success" 
-                : ev.estado === "pendiente" 
-                  ? "error" 
+              const histState = ev.estado === "registrado"
+                ? "success"
+                : ev.estado === "pendiente"
+                  ? "error"
                   : "error";
-              
+
               return (
                 <div key={ev.id} className={`historial-bubble-card border-${histState}`}>
                   <div className={`historial-badge-icon bg-${histState}`}>

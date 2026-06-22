@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button, Group, Modal, Select } from "@mantine/core";
 import { toast } from "sonner";
@@ -56,6 +56,7 @@ export default function Caja({
 }) {
   const { subview } = useParams();
   const navigate = useNavigate();
+  const lastFetchTimeRef = useRef(0);
   const vista = embedded ? (initialView || "pagos") : (subview || "pagos");
 
   const setVista = (newView) => {
@@ -135,17 +136,24 @@ export default function Caja({
       if (!mod || mod === "caja" || mod === "padres" || mod === "global") refrescarCaja();
     };
 
+    const handleFocusUpdate = () => {
+      const now = Date.now();
+      if (now - lastFetchTimeRef.current > 30000) {
+        refrescarCaja();
+      }
+    };
+
     window.addEventListener("api-db-updated", refrescarCaja);
     window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("storage", refrescarPorStorage);
-    window.addEventListener("focus", refrescarCaja);
+    window.addEventListener("focus", handleFocusUpdate);
     const intervalo = window.setInterval(refrescarCaja, 30000);
 
     return () => {
       window.removeEventListener("api-db-updated", refrescarCaja);
       window.removeEventListener("mock-db-updated", handleMockDbUpdated);
       window.removeEventListener("storage", refrescarPorStorage);
-      window.removeEventListener("focus", refrescarCaja);
+      window.removeEventListener("focus", handleFocusUpdate);
       window.clearInterval(intervalo);
     };
   }, [periodo, filtrosReporte]);
@@ -183,6 +191,7 @@ export default function Caja({
   // Vista embebida sincronizada mediante URL por el padre
 
   async function cargarDatos() {
+    lastFetchTimeRef.current = Date.now();
     setCargando(true);
     try {
       const [datosPagos, datosResumen] = await Promise.all([
@@ -199,6 +208,7 @@ export default function Caja({
   }
 
   async function cargarReporteCaja() {
+    lastFetchTimeRef.current = Date.now();
     try {
       const [opciones, filas] = await Promise.all([
         obtenerOpcionesReporteCaja(periodo),
@@ -298,7 +308,7 @@ export default function Caja({
         numeroOperacion: pagoAsociado?.numeroOperacion || "",
         telefonoOperacion: pagoAsociado?.telefonoOperacion || "",
         capturaPagoBase64: pagoAsociado?.capturaPagoBase64 || "",
-        formaPago: pagoAsociado?.formaPago || "Efectivo",
+        formaPago: pagoAsociado?.formaPago || (inscripcion?.descuentoAprobado ? (String(inscripcion.descuentoTipo).toLowerCase() === "beca" ? "Beca" : "Descuento") : "Efectivo"),
         descuentoMonto: inscripcion?.descuentoMonto ? String(inscripcion.descuentoMonto) : "",
         descuentoTipo: inscripcion?.descuentoTipo || "",
         descuentoJustificacion: inscripcion?.descuentoJustificacion || "",
@@ -359,7 +369,12 @@ export default function Caja({
     if (!modoEdicion && !formulario.inscripcionId) return "Primero busque un estudiante con inscripcion registrada por Asistente.";
     if (!validarDni(formulario.estudianteDni)) return "Seleccione o ingrese un DNI valido.";
     if (!formulario.estudianteNombre.trim()) return "Ingrese el nombre del estudiante.";
-    if (!Number.isFinite(Number(formulario.monto)) || Number(formulario.monto) <= 0) return "Ingrese un monto mayor a cero.";
+
+    const montoNum = Number(formulario.monto || 0);
+    const permiteCero = formulario.descuentoAprobado || formulario.descuentoTipo === "beca";
+    if (!Number.isFinite(montoNum) || montoNum < 0 || (!permiteCero && montoNum <= 0)) {
+      return "Ingrese un monto mayor a cero.";
+    }
     if (!formulario.fechaPago) return "Seleccione la fecha de pago.";
     return "";
   }
@@ -380,9 +395,14 @@ export default function Caja({
       programaNombre: fila.programa || "",
       periodo: fila.periodo || periodo,
       tipoAlumno: fila.tipoAlumno || "",
-      monto: String(fila.monto || ""),
-      formaPago: "Efectivo",
+      monto: String(fila.monto !== undefined ? fila.monto : ""),
+      formaPago: fila.descuentoAprobado ? (String(fila.descuentoTipo).toLowerCase() === "beca" ? "Beca" : "Descuento") : "Efectivo",
       fechaPago: fechaActualInput(),
+      descuentoMonto: fila.descuentoMonto ? String(fila.descuentoMonto) : "",
+      descuentoTipo: fila.descuentoTipo || "",
+      descuentoJustificacion: fila.descuentoJustificacion || "",
+      costoOriginal: fila.costoOriginal ? String(fila.costoOriginal) : "",
+      descuentoAprobado: fila.descuentoAprobado || false,
     });
     setDni(fila.dniEstudiante || "");
     setEstudiante(null);
@@ -843,7 +863,7 @@ export default function Caja({
             </Button>
           ) : null}
           <Button leftSection={<Check size={17} />} loading={guardando} onClick={guardarPago} disabled={Boolean(pagoConfirmado)}>
-            {modoEdicion ? "Actualizar" : "Registrar"}
+            {modoEdicion ? "Actualizar" : (formulario.descuentoAprobado ? "Aprobar" : "Registrar")}
           </Button>
         </Group>
       </Modal>

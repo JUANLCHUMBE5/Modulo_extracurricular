@@ -78,24 +78,34 @@ export function formatearRangoFechasPadres(inicio, fin) {
 
 export function convertirHorasAMPM(texto) {
   if (!texto) return "";
-  
-  // Convert HH:MM or H:MM to 12-hour format with AM/PM
-  const timeRegex = /\b(\d{1,2}):(\d{2})\b/g;
-  let result = String(texto).replace(timeRegex, (match, hh, mm) => {
+
+  // Convert HH:MM or H:MM to 12-hour format with AM/PM (preserving any existing suffix)
+  const timeRegex = /\b(\d{1,2}):(\d{2})\b(?:\s*([AP]M|a\.m\.|p\.m\.|am|pm)(?!\w))?/gi;
+  let result = String(texto).replace(timeRegex, (match, hh, mm, suffix) => {
     let hours = parseInt(hh, 10);
     const minutes = mm;
-    const ampm = hours >= 12 ? "PM" : "AM";
+    let ampm = "";
+    if (suffix) {
+      const s = suffix.toLowerCase();
+      if (s.includes("p")) {
+        ampm = "PM";
+      } else {
+        ampm = "AM";
+      }
+    } else {
+      ampm = hours >= 12 ? "PM" : "AM";
+    }
     hours = hours % 12;
     hours = hours ? hours : 12;
     return `${hours}:${minutes} ${ampm}`;
   });
-  
+
   // Format range dash cleanly
   result = result.replace(/(\d{1,2}:\d{2}\s*(?:AM|PM))\s*-\s*(\d{1,2}:\d{2}\s*(?:AM|PM))/gi, "$1 - $2");
-  
+
   // Replace " - Aula" or " - AULA" with " · Aula"
   result = result.replace(/\s*-\s*(aula|AULA)\s*/i, " · Aula ");
-  
+
   return result;
 }
 
@@ -346,31 +356,92 @@ function obtenerIndicacionesProgramaPadres(programa, { esCambridge = false, esCl
   return ["Revise el resumen del programa, confirme el horario y continue con los datos del apoderado."];
 }
 
+function esSaludoGreeting(texto) {
+  const normalizado = String(texto || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+  return (
+    normalizado.includes("cordial saludo") ||
+    normalizado.includes("es grato saludar") ||
+    normalizado.includes("grato dirigirnos") ||
+    normalizado.includes("nos dirigimos a usted") ||
+    normalizado.includes("reciba un saludo") ||
+    normalizado.includes("comunidad educativa") ||
+    normalizado.includes("estimados padres") ||
+    normalizado.includes("estimado padre") ||
+    normalizado.includes("querida familia") ||
+    normalizado.includes("queridas familias") ||
+    normalizado.includes("de nuestra consideracion")
+  );
+}
+
+function formatearHorarioParaResumen(horario) {
+  if (!horario) return "";
+  let texto = String(horario).trim();
+
+  // Strip grade/level prefix (e.g. "Primaria: 4:", "4 Primaria:")
+  const gradeRegex = /^(?:(?:inicial|primaria|secundaria)[\s:]*\d+|\d+\s*(?:inicial|primaria|secundaria))[\s:]*/i;
+  texto = texto.replace(gradeRegex, "").trim();
+
+  // Try to match: "Día almuerzo rango, clase rango"
+  const partesAlm = texto.match(/^([^,]+?)\s+almuerzo\s+([^,]+),\s*clase\s+(.+)$/i);
+  if (partesAlm) {
+    const dia = partesAlm[1].trim();
+    const almuerzo = partesAlm[2].trim();
+    const clase = partesAlm[3].trim();
+    const diaCap = dia.charAt(0).toUpperCase() + dia.slice(1);
+    return `${diaCap} · Almuerzo: ${convertirHorasAMPM(almuerzo)} · Clase: ${convertirHorasAMPM(clase)}`;
+  }
+
+  // Try to match: "Día clase rango"
+  const partesClase = texto.match(/^([^,]+?)\s+clase\s+(.+)$/i);
+  if (partesClase) {
+    const dia = partesClase[1].trim();
+    const clase = partesClase[2].trim();
+    const diaCap = dia.charAt(0).toUpperCase() + dia.slice(1);
+    return `${diaCap} · Clase: ${convertirHorasAMPM(clase)}`;
+  }
+
+  return convertirHorasAMPM(texto);
+}
+
 function resumirComunicadoPadres(parrafos, programa, detalleFormato) {
   const resumen = [];
-  const principal = recortarTexto(parrafos.find((parrafo) => parrafo.length > 40) || parrafos[0] || "", 180);
-  if (principal) resumen.push(principal);
 
-  const costo = Number(programa?.costo || 0) > 0 ? ` Costo registrado: S/ ${Number(programa.costo).toFixed(2)}.` : "";
-  const horario = programa?.horario ? ` Horario: ${repararTexto(programa.horario)}.` : "";
-  const vigencia = programa?.fechaInicio || programa?.fechaFin
-    ? ` Vigencia: ${formatearRangoFechasPadres(programa?.fechaInicio, programa?.fechaFin)}.`
-    : "";
-  const datosClave = `${vigencia}${horario}${costo}`.trim();
-  if (datosClave) resumen.push(datosClave);
+  // Push as separate items so they are parsed into individual cards in the details grid (matching the home page order)
+  if (programa?.horario) {
+    resumen.push(`Horario: ${formatearHorarioParaResumen(programa.horario)}`);
+  }
+  if (programa?.fechaInicio || programa?.fechaFin) {
+    resumen.push(`Vigencia: ${formatearRangoFechasPadres(programa.fechaInicio, programa.fechaFin)}`);
+  }
+  if (Number(programa?.costo || 0) > 0) {
+    resumen.push(`Costo: S/ ${Number(programa.costo).toFixed(2)}`);
+  }
+
   if (detalleFormato.length) {
     resumen.push("Abra el comunicado completo para leer condiciones, indicaciones, materiales y modalidades de pago.");
   }
 
-  return resumen.length ? resumen.slice(0, 3) : parrafos.slice(0, 1);
+  return resumen;
 }
 
 function obtenerDetalleFormatoPadres(programa) {
-  const secciones = [
+  let secciones = [
     ...seccionarTextoFormato(programa?.detalleCosto, "Costo"),
-    ...seccionarTextoFormato(programa?.detalleAlmuerzo, "Detalle del formato"),
-    ...seccionarTextoFormato(programa?.concesionarios, "Concesionarios"),
+    ...seccionarTextoFormato(programa?.detalleAlmuerzo, "Almuerzo"),
+    ...seccionarTextoFormato(programa?.concesionarios, "Almuerzo"),
   ];
+
+  secciones = secciones.map((sec) => {
+    const normal = normalizarTextoPadres(sec.titulo);
+    if (normal.includes("almuerzo") || normal.includes("concesionario") || normal.includes("detalle del formato")) {
+      return { ...sec, titulo: "Almuerzo" };
+    }
+    return sec;
+  });
+
   return compactarSeccionesDetalle(secciones).filter((seccion) => seccion.items.length);
 }
 
@@ -737,33 +808,33 @@ export function dividirSentencias(texto) {
   const sentencias = [];
   const regexPunto = /\.\s+(?=[A-ZÁÉÍÓÚÑ])/g;
   const abrevs = new Set(["sr", "sra", "dr", "dra", "lic", "ing", "av", "jr", "prof", "profa", "a.m", "p.m"]);
-  
+
   let lastCut = 0;
   let match;
-  
+
   while ((match = regexPunto.exec(textToProcess)) !== null) {
     const pos = match.index;
     const antes = textToProcess.slice(0, pos);
-    
+
     const ultimaPalabraMatch = antes.match(/(\b\S+)$/);
     const ultimaPalabra = ultimaPalabraMatch ? ultimaPalabraMatch[1].toLowerCase() : "";
-    
+
     if (abrevs.has(ultimaPalabra) || abrevs.has(ultimaPalabra.replace(/\.$/, ""))) {
       continue;
     }
-    
+
     const parte = textToProcess.slice(lastCut, pos + 1).trim();
     if (parte) {
       sentencias.push(parte);
     }
     lastCut = pos + 1;
   }
-  
+
   const parteFinal = textToProcess.slice(lastCut).trim();
   if (parteFinal) {
     sentencias.push(parteFinal);
   }
-  
+
   return sentencias;
 }
 
@@ -803,7 +874,7 @@ export function dividirParrafosPorCampos(parrafos) {
       const inicio = matches[i].index;
       const fin = i + 1 < matches.length ? matches[i + 1].index : texto.length;
       const chunk = texto.slice(inicio, fin).trim();
-      
+
       const sentenciasDelChunk = dividirSentencias(chunk);
       if (sentenciasDelChunk.length > 0) {
         resultado.push(sentenciasDelChunk[0]);

@@ -1,8 +1,12 @@
 /* Professional white system finish, aligned with Secretaria. */
+:root {
+  --coord-ink: #000000 !important;
+}
+
 .coord-layout {
   --coord-sidebar-width: 230px;
   grid-template-columns: var(--coord-sidebar-width) minmax(0, 1fr);
-  background: #ffffff;
+  background: #f8fafc;
   transition: grid-template-columns 0.3s ease;
 }
 
@@ -130,8 +134,8 @@
 
 .coord-main {
   grid-column: 2;
-  padding: 18px clamp(24px, 3vw, 42px) 34px;
-  background: #ffffff;
+  padding: 24px clamp(24px, 3vw, 42px) 34px;
+  background: #f8fafc !important;
   position: relative;
   transition: padding-left 0.3s ease;
 }
@@ -157,16 +161,18 @@
 }
 
 .coord-card {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.025);
+  padding: 24px;
+  margin-bottom: 24px;
   backdrop-filter: none;
 }
 
 .coord-search-card {
   min-height: auto;
-  padding: 0;
+  padding: 24px !important;
   overflow: visible;
 }
 
@@ -176,7 +182,7 @@
 
 .coord-card-title {
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .coord-title-icon {
@@ -186,8 +192,11 @@
 }
 
 .coord-card-title h2 {
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.15;
+  color: #000000 !important;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .coord-card-title p {

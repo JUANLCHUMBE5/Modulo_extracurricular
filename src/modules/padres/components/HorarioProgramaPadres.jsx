@@ -3,13 +3,12 @@ import { dividirHorarioPadres, repararTexto, convertirHorasAMPM } from "../utils
 
 export default function HorarioProgramaPadres({ horario }) {
   const datos = dividirHorarioPadres(horario);
-  
+
   if (datos) {
     return (
       <div className="padres-schedule-box">
-        <strong>{datos.grados}</strong>
+        <strong>{datos.dia}</strong>
         <div className="padres-schedule-pills">
-          <span>{datos.dia}</span>
           <span>Almuerzo: {convertirHorasAMPM(datos.almuerzo)}</span>
           <span>Clase: {convertirHorasAMPM(datos.clase)}</span>
         </div>

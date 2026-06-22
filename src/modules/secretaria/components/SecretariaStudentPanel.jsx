@@ -367,7 +367,7 @@ function SecretariaStudentPanel({
           <dd>{estudiante.grado}</dd>
         </div>
         <div className="secretaria-data-compact secretaria-data-identity">
-          <dt>Sección</dt>
+          <dt>Sección / Aula</dt>
           <dd>{estudiante.seccion}</dd>
         </div>
         <div className="secretaria-data-compact secretaria-data-identity">
@@ -394,7 +394,7 @@ function SecretariaStudentPanel({
                 let pillClass = "secretaria-pill-danger";
                 let Icon = AlertTriangle;
                 let text = "Sin invitación";
-                
+
                 if (tieneInvitacionOperativa && !invitacionSinHorario) {
                   pillClass = "secretaria-pill-success";
                   Icon = CheckCircle2;
@@ -404,7 +404,7 @@ function SecretariaStudentPanel({
                   Icon = AlertTriangle;
                   text = "Falta horario";
                 }
-                
+
                 return (
                   <span className={`secretaria-pill ${pillClass}`}>
                     <Icon size={13} />

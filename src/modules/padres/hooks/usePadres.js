@@ -42,6 +42,7 @@ function usePadres(user) {
   const [infoProgramaAceptada, setInfoProgramaAceptada] = useState(false);
   const [pagoConfirmado, setPagoConfirmado] = useState(null);
   const formularioEditadoRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
   const [form, setForm] = useState({
     apoderado: "",
     telefono: "",
@@ -62,6 +63,7 @@ function usePadres(user) {
 
     try {
       const datos = await obtenerResumenPadre(user.dni);
+      lastFetchTimeRef.current = Date.now();
       setResumen(datos);
       const estudiante = datos.estudiante;
       const inscripcion = datos.inscripcionActual;
@@ -93,6 +95,7 @@ function usePadres(user) {
     if (!silencioso) setCargandoProgramas(true);
     try {
       const programas = await obtenerProgramasCoordinacion();
+      lastFetchTimeRef.current = Date.now();
       setProgramasCoordinacion(programas);
     } catch (err) {
       console.error("Error cargando programas:", err);
@@ -111,14 +114,11 @@ function usePadres(user) {
   }, [user?.dni]);
 
   useEffect(() => {
-    const lastUpdateRef = { current: Date.now() };
-
     const actualizar = ({ forzar = false } = {}) => {
       const ahora = Date.now();
-      if (!forzar && ahora - lastUpdateRef.current < 30000) {
+      if (!forzar && ahora - lastFetchTimeRef.current < 30000) {
         return;
       }
-      lastUpdateRef.current = ahora;
       cargarResumen({ silencioso: true });
       cargarProgramas({ silencioso: true });
     };
@@ -288,7 +288,7 @@ function usePadres(user) {
     try {
       const registro = await registrarInscripcionPadres(user.dni, form, targetProgramaId, horarioPersonalizado, tallas);
       toast.success("Padres", {
-        description: "Inscripción registrada. Seleccione su método de pago.",
+        description: "Inscripción registrada con éxito.",
       });
       await cargarResumen({ silencioso: true });
       return registro;

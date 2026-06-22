@@ -47,8 +47,8 @@ class ErrorBoundary extends React.Component {
           <pre style={{ whiteSpace: "pre-wrap", background: "#fff", padding: "10px", borderRadius: "4px", border: "1px solid #fee2e2", fontSize: "12px", color: "#b91c1c" }}>
             {this.state.error?.stack || this.state.error?.message || String(this.state.error)}
           </pre>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             style={{ padding: "8px 16px", background: "#b91c1c", color: "#fff", border: "none", borderRadius: "4px", cursor: "pointer", marginTop: "10px" }}
           >
             Recargar página
@@ -86,10 +86,10 @@ function CoordinacionInner({
   });
 
   const toggleSidebarButton = !state.sidebarAbierta && (
-    <button 
-      className="coord-menu-toggle-btn-header" 
-      type="button" 
-      onClick={() => state.setSidebarAbierta(true)} 
+    <button
+      className="coord-menu-toggle-btn-header"
+      type="button"
+      onClick={() => state.setSidebarAbierta(true)}
       aria-label="Mostrar barra lateral"
       title="Mostrar barra lateral"
     >
@@ -119,10 +119,10 @@ function CoordinacionInner({
       {/* ── MAIN ── */}
       <main className={embedded ? "coord-main coord-main-embedded" : "coord-main"}>
         {!embedded && !state.sidebarAbierta && (
-          <button 
-            className="coord-global-menu-toggle-btn" 
-            type="button" 
-            onClick={() => state.setSidebarAbierta(true)} 
+          <button
+            className="coord-global-menu-toggle-btn"
+            type="button"
+            onClick={() => state.setSidebarAbierta(true)}
             aria-label="Mostrar barra lateral"
             title="Mostrar barra lateral"
           >
@@ -133,6 +133,67 @@ function CoordinacionInner({
           delegatedContent
         ) : (
           <>
+            {state.vista === "registrar-programa" && (
+              <ProgramaFormModal
+                isInline={true}
+                toggleSidebarButton={toggleSidebarButton}
+                actualizarCategoriaPrograma={state.actualizarCategoriaPrograma}
+                actualizarCosto={state.actualizarCosto}
+                actualizarForm={state.actualizarForm}
+                actualizarGrupoHorario={state.actualizarGrupoHorario}
+                actualizarInvitacionMasiva={state.actualizarInvitacionMasiva}
+                actualizarNombrePrograma={state.actualizarNombrePrograma}
+                agregarCategoria={state.agregarCategoria}
+                agregarGrupoHorario={state.agregarGrupoHorario}
+                agregarTallerDeportivo={state.agregarTallerDeportivo}
+                alertaConfiguracion={state.alertaConfiguracion}
+                cambiarPeriodoFormulario={state.cambiarPeriodoFormulario}
+                catAEliminar={state.catAEliminar}
+                categorias={state.categorias}
+                ciclosCambridgeFormulario={state.ciclosCambridgeFormulario}
+                diasSemana={diasSemana}
+                duracionTallerFormulario={state.duracionTallerFormulario}
+                esDeportivoForm={state.esDeportivoForm}
+                esCambridgeForm={state.esCambridgeForm}
+                esFormularioVerano={state.esFormularioVerano}
+                usaTalleresPorEdad={state.usaTalleresPorEdad}
+                form={state.form}
+                formHorariosPorGrupo={state.formHorariosPorGrupo}
+                formatearCostoFormulario={state.formatearCostoFormulario}
+                guardar={state.guardar}
+                guardando={state.guardando}
+                mostrarGestorCategorias={state.mostrarGestorCategorias}
+                mostrarIndumentariaDeportiva={state.mostrarIndumentariaDeportiva}
+                modoEditar={state.modoEditar}
+                nivelesGrados={nivelesGrados}
+                nuevaCat={state.nuevaCat}
+                puedeGestionarGruposFormulario={state.puedeGestionarGruposFormulario}
+                quitarCategoria={state.quitarCategoria}
+                quitarGrupoHorario={state.quitarGrupoHorario}
+                quitarImagenAnuncio={state.quitarImagenAnuncio}
+                quitarTallerDeportivo={state.quitarTallerDeportivo}
+                iniciarEdicionTaller={state.iniciarEdicionTaller}
+                cancelarEdicionTaller={state.cancelarEdicionTaller}
+                indiceTallerEditando={state.indiceTallerEditando}
+                seleccionarImagenAnuncio={state.seleccionarImagenAnuncio}
+                setCatAEliminar={state.setCatAEliminar}
+                setMostrarGestorCategorias={state.setMostrarGestorCategorias}
+                setNuevaCat={state.setNuevaCat}
+                tallerDepForm={state.tallerDepForm}
+                setTallerDepForm={state.setTallerDepForm}
+                setShowModal={(visible) => {
+                  if (!visible) {
+                    state.setAlertaConfiguracion("");
+                    state.setVista("programas");
+                  }
+                }}
+                show={true}
+                toggleGradoGrupo={state.toggleGradoGrupo}
+                toggleGrado={state.toggleGrado}
+                toggleDia={state.toggleDia}
+              />
+            )}
+
             {state.vista === "programas" && state.puedeVerProgramasVista && (
               <ProgramasView
                 abrirCrear={state.abrirCrear}

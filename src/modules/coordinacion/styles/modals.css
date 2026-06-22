@@ -404,7 +404,8 @@
   gap: 8px 12px;
 }
 
-.coord-payment-grid {
+.coord-payment-grid,
+.coord-doc-fields-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
@@ -1082,10 +1083,25 @@
   font-weight: 500;
 }
 
+.coord-spacer-label {
+  visibility: hidden;
+  margin-bottom: 2px;
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .coord-spacer-label {
+    display: none;
+  }
+}
+
 .coord-payment-invite-field .coord-check-label-stacked {
-  min-height: 36px;
+  min-height: 34px;
+  height: auto;
   justify-content: center;
-  padding: 6px 10px;
+  align-items: center;
+  padding: 4px 10px;
+  box-sizing: border-box;
 }
 
 .coord-payment-invite-field .coord-check-label-stacked small {

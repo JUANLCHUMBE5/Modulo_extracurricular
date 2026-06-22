@@ -137,8 +137,8 @@ export default function SecretariaRegistroModal({
                     </div>
                     {!estudiante.esExterno ? (
                       <div className="secretaria-student-context-item">
-                        <span>Seccion</span>
-                        <strong>{estudiante.seccion || "Sin seccion"}</strong>
+                        <span>Sección / Aula</span>
+                        <strong>{estudiante.seccion || "Sin sección/aula"}</strong>
                       </div>
                     ) : null}
                   </div>
@@ -215,7 +215,7 @@ export default function SecretariaRegistroModal({
                       ) : (
                         <CampoLectura
                           label="Alumno"
-                          value={`${estudiante.grado || "Grado no registrado"}${estudiante.seccion ? ` - Sección ${estudiante.seccion}` : ""}`}
+                          value={`${estudiante.grado || "Grado no registrado"}${estudiante.seccion ? ` - Sección/Aula ${estudiante.seccion}` : ""}`}
                         />
                       )}
                     </section>

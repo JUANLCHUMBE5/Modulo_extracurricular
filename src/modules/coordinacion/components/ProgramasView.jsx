@@ -23,7 +23,7 @@ import {
   IconArrowBackUp as ArrowBackUp,
 } from "@tabler/icons-react";
 import { formatearSoles } from "../utils/coordinacionFormatters";
-import { CuposTabla, GradosTabla, HorarioTabla, VigenciaTabla } from "./ProgramTableCells";
+import { CuposTabla, GradosTabla, HorarioTabla, VigenciaTabla, AulasTabla } from "./ProgramTableCells";
 
 const obtenerClaseCategoria = (cat) => {
   const c = String(cat || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -176,7 +176,7 @@ function ProgramasView({
               <div className="coord-filter-search">
                 <TextInput
                   label={
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
                       <Search size={14} style={{ color: "#176c60" }} /> Buscar taller
                     </span>
                   }
@@ -199,7 +199,7 @@ function ProgramasView({
               <div className="coord-filter-category">
                 <Select
                   label={
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
                       <Filter size={14} style={{ color: "#176c60" }} /> Categoría
                     </span>
                   }
@@ -218,7 +218,7 @@ function ProgramasView({
               <div className="coord-filter-period">
                 <Select
                   label={
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
                       <CalendarDays size={14} style={{ color: "#176c60" }} /> Periodo
                     </span>
                   }
@@ -239,7 +239,7 @@ function ProgramasView({
                 <div className="coord-filter-status">
                   <Select
                     label={
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
                         <Filter size={14} style={{ color: "#176c60" }} /> Disponibilidad
                       </span>
                     }
@@ -317,7 +317,29 @@ function ProgramasView({
           {cargando ? (
             <div className="coord-loading"><Loader2 className="coord-spin" size={28} /> Cargando programas…</div>
           ) : programas.length === 0 ? (
-            <div className="coord-empty"><AlertCircle size={18} /><p>No se encontraron programas.</p></div>
+            <div className="coord-empty-clean">
+              <div className="coord-empty-clean-icon-container">
+                <div className="coord-empty-clean-icon-bg"></div>
+                <div className="coord-empty-clean-icon">
+                  <BookOpen size={24} />
+                </div>
+              </div>
+              <h3>No se encontraron programas</h3>
+              {hasActiveFilters && (
+                <>
+                  <p>No hay programas registrados que coincidan con los filtros de búsqueda seleccionados. Intente cambiar la búsqueda o limpiar los filtros activos.</p>
+                  <Button
+                    className="coord-empty-clean-btn"
+                    variant="subtle"
+                    color="sanrafael"
+                    size="sm"
+                    onClick={limpiarTodosFiltros}
+                  >
+                    Limpiar todos los filtros
+                  </Button>
+                </>
+              )}
+            </div>
           ) : mostrarSoloArchivados ? (
             <div style={{ background: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", overflow: "hidden", marginTop: "16px" }}>
               <Table highlightOnHover verticalSpacing="md" horizontalSpacing="lg">
@@ -451,7 +473,7 @@ function ProgramasView({
                         {programa.estado}
                       </Badge>
                     </div>
- 
+
                     <div className="coord-program-card-grid">
                       <div className="coord-program-card-detail">
                         <span>Grados</span>
@@ -460,6 +482,10 @@ function ProgramasView({
                       <div className="coord-program-card-detail coord-program-card-schedule">
                         <span>Días y horario</span>
                         <HorarioTabla programa={programa} />
+                      </div>
+                      <div className="coord-program-card-detail">
+                        <span>Aulas</span>
+                        <AulasTabla programa={programa} />
                       </div>
                       <div className="coord-program-card-detail">
                         <span>Vigencia</span>
@@ -480,7 +506,7 @@ function ProgramasView({
                       </div>
                     </div>
                   </div>
- 
+
                   {tieneAccionesPrograma ? (
                     <div className="coord-program-card-actions" aria-label={`Acciones de ${programa.nombre}`}>
                       <Group gap={6} justify="flex-end">

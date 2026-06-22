@@ -149,7 +149,7 @@ export function crearLineasInvitacionEspecial(ficha, inscripcion, estudiante) {
         ? ` (Horario almuerzo: ${formatearRangoHoraDocumento(row.almuerzoInicio, row.almuerzoFin)})`
         : "";
       const claseTexto = formatearRangoHoraDocumento(row.horaInicio, row.horaFin);
-      
+
       const parts = [];
       if (row.responsable && row.responsable.trim()) {
         parts.push(`Docente: ${row.responsable.trim()}`);
@@ -173,13 +173,17 @@ export function crearLineasInvitacionEspecial(ficha, inscripcion, estudiante) {
   }
 
   // 7. Almuerzo
-  if (inscripcion.tipoComunicado === "Club de Tareas" || inscripcion.tipoComunicado === "Reforzamiento (Circular)") {
-    if (inscripcion.incluyeAlmuerzo) {
-      let almuerzoTexto = `Recepción de Almuerzo: Sí, incluye recepción de almuerzo.`;
-      if (inscripcion.horarioRecepcionAlmuerzo) {
-        almuerzoTexto += ` Horario establecido: ${inscripcion.horarioRecepcionAlmuerzo}.`;
-      }
-      lineas.push(almuerzoTexto);
+  if (inscripcion.incluyeAlmuerzo) {
+    let almuerzoTexto = `Recepción de Almuerzo: Sí, incluye recepción de almuerzo.`;
+    if (inscripcion.horarioRecepcionAlmuerzo) {
+      almuerzoTexto += ` Horario establecido: ${inscripcion.horarioRecepcionAlmuerzo}.`;
+    }
+    lineas.push(almuerzoTexto);
+    if (inscripcion.detalleAlmuerzo) {
+      lineas.push(`Detalle del almuerzo: ${inscripcion.detalleAlmuerzo}`);
+    }
+    if (inscripcion.concesionarios) {
+      lineas.push(`Concesionarios: ${inscripcion.concesionarios}`);
     }
   }
 
@@ -192,7 +196,7 @@ export function crearLineasInvitacionEspecial(ficha, inscripcion, estudiante) {
     const costoVal = inscripcion.costoCiclo || inscripcion.costo;
     const costoCiclo = costoVal ? `Costo total del ciclo: S/ ${Number(costoVal).toFixed(2)}. ` : "";
     const pago1 = inscripcion.montoPrimerPago ? `Monto primer pago: S/ ${Number(inscripcion.montoPrimerPago).toFixed(2)}.` : "";
-    
+
     if (nivel || mod || costoCiclo || pago1) {
       lineas.push(`INFORMACIÓN ADICIONAL DEL EXAMEN: ${nivel}${mod}${costoCiclo}${pago1}`);
     }
@@ -292,11 +296,11 @@ function crearLineasInvitacionDefault(ficha) {
 
   lineas.push(`COMUNICADO OFICIAL`);
   lineas.push(`Estimado(a) apoderado(a) ${ficha.apoderado.nombre || ''}:`);
-  
+
   lineas.push(`Reciba un cordial saludo a nombre del Colegio Matemático San Rafael. Por medio del presente documento, nos complace invitar a su menor hijo(a) ${ficha.estudiante.nombre}, del grado ${ficha.estudiante.grado} sección ${ficha.estudiante.seccion}, a participar en nuestra actividad extracurricular: ${ficha.programa.nombre.toUpperCase()}.`);
-  
+
   lineas.push(`Este programa tiene como propósito complementar la formación integral de nuestros alumnos. Las sesiones se desarrollarán en el horario de ${ficha.programa.horario || 'Por confirmar'}, y estarán bajo la responsabilidad de ${ficha.programa.responsable || 'Coordinación Académica'}.`);
-  
+
   let costoTexto = `La inversión para este programa es de ${ficha.programa.costo || 'S/ 0.00'}`;
   if (ficha.programa.modalidadCobro) {
     costoTexto += ` bajo la modalidad de pago ${ficha.programa.modalidadCobro.toLowerCase() === 'unico' ? 'único' : ficha.programa.modalidadCobro.toLowerCase()}`;

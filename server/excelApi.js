@@ -393,6 +393,15 @@ app.post("/api/secretaria/documentos/pdf", documentUpload.single("archivo"), asy
 // NEW REST API V1 ENDPOINTS FOR LOCAL TESTING
 // ==========================================
 
+function generarContrasenaTemporal() {
+  const caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+  let resultado = "";
+  for (let i = 0; i < 8; i++) {
+    resultado += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+  }
+  return resultado;
+}
+
 // 1. Auth Login
 app.post("/api/v1/auth/login", async (req, res) => {
   try {
@@ -409,9 +418,13 @@ app.post("/api/v1/auth/login", async (req, res) => {
     };
     const userToFind = aliases[cleanUser] || cleanUser;
     const userObj = (db.usuarios || []).find(u => String(u.usuario || "").trim().toLowerCase() === userToFind);
-    
+
     if (userObj && userObj.estado !== "Inactivo") {
-      const contrasenaGuardada = userObj.contrasena || "1234";
+      const contrasenaGuardada = userObj.contrasena;
+      if (!contrasenaGuardada) {
+        await registrarAuditoria(username, "desconocido", "LOGIN_FALLIDO", { ip: req.ip, motivo: "Usuario sin contraseña" });
+        return res.status(401).json({ success: false, message: "Usuario o contraseña incorrectos." });
+      }
       let passwordValido = false;
       let migrarContrasena = false;
 
@@ -444,7 +457,7 @@ app.post("/api/v1/auth/login", async (req, res) => {
           Dirección: "direccion"
         };
         const role = rolesMap[userObj.rol] || String(userObj.rol || "").toLowerCase();
-        
+
         // Generar JWT firmado real
         const token = jwt.sign({
           username: userObj.usuario,
@@ -644,7 +657,7 @@ app.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), asy
     const db = await getDb();
     const id = `PROG-${String(db.nextProgramaId || 1).padStart(3, "0")}`;
     db.nextProgramaId = (db.nextProgramaId || 1) + 1;
-    
+
     const nuevo = {
       id,
       nombre: req.body.nombre_programa,
@@ -701,7 +714,7 @@ app.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), asy
       montoPrimerPago: req.body.monto_primer_pago || "",
       estado: "Habilitado"
     };
-    
+
     sincronizarPlantillaProgramaApi(db, nuevo);
     db.programas.push(nuevo);
     await saveDb(db);
@@ -722,7 +735,7 @@ app.post("/api/v1/extracurricular/programas/documento", requireRole(["secretaria
     const db = await getDb();
     const id = `PROG-${String(db.nextProgramaId || 1).padStart(3, "0")}`;
     db.nextProgramaId = (db.nextProgramaId || 1) + 1;
-    
+
     const nuevo = {
       id,
       nombre: req.body.nombre_programa,
@@ -757,7 +770,7 @@ app.post("/api/v1/extracurricular/programas/documento", requireRole(["secretaria
       creadoDesdeDocumento: true,
       estado: "Deshabilitado"
     };
-    
+
     sincronizarPlantillaProgramaApi(db, nuevo);
     db.programas.push(nuevo);
     await saveDb(db);
@@ -777,7 +790,7 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
     const db = await getDb();
     const idx = (db.programas || []).findIndex(p => p.id === req.params.id);
     if (idx === -1) return res.status(404).json({ success: false, message: "Programa no encontrado." });
-    
+
     let nuevoEstado = db.programas[idx].estado;
     if (nuevoEstado === "Finalizado") {
       const d = new Date();
@@ -844,7 +857,7 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
       montoPrimerPago: req.body.monto_primer_pago ?? db.programas[idx].montoPrimerPago ?? "",
       estado: nuevoEstado
     };
-    
+
     const oldName = db.programas[idx].nombre;
 
     sincronizarPlantillaProgramaApi(db, updated);
@@ -901,7 +914,7 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
         const isLinkedToInscripcion = item.inscripcionId && (db.inscripciones || []).some(ins => ins.id === item.inscripcionId && ins.programaId === req.params.id);
         const isLinkedByProgramId = item.programaId === req.params.id;
         const isLinkedByProgramName = oldName && normalizarTextoApi(item.programa) === normalizarTextoApi(oldName);
-        
+
         if (isLinkedToInscripcion || isLinkedByProgramId || isLinkedByProgramName) {
           return {
             ...item,
@@ -918,7 +931,7 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
       db.asistencias = db.asistencias.map(item => {
         const isLinkedByProgramId = item.programaId === req.params.id;
         const isLinkedByProgramName = oldName && normalizarTextoApi(item.programa) === normalizarTextoApi(oldName);
-        
+
         if (isLinkedByProgramId || isLinkedByProgramName) {
           const gradoEst = item.gradoEstudiante || item.grado || "";
           return {
@@ -936,7 +949,7 @@ app.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), 
       db.documentosGenerados = db.documentosGenerados.map(item => {
         const isLinkedByProgramId = item.programaId === req.params.id;
         const isLinkedByProgramName = oldName && normalizarTextoApi(item.programa) === normalizarTextoApi(oldName);
-        
+
         if (isLinkedByProgramId || isLinkedByProgramName) {
           return {
             ...item,
@@ -973,7 +986,7 @@ app.put("/api/v1/extracurricular/programas/:id/estado", requireRole(["coordinaci
     const db = await getDb();
     const idx = (db.programas || []).findIndex(p => p.id === req.params.id);
     if (idx === -1) return res.status(404).json({ success: false, message: "Programa no encontrado." });
-    
+
     if (db.programas[idx].estado === "Finalizado" && req.body.estado === "Habilitado") {
       const d = new Date();
       const tzOffset = d.getTimezoneOffset() * 60000;
@@ -982,7 +995,7 @@ app.put("/api/v1/extracurricular/programas/:id/estado", requireRole(["coordinaci
         return res.status(400).json({ success: false, message: "El programa ya finalizó por fecha de vigencia. Modifique la fecha fin para volver a usarlo." });
       }
     }
-    
+
     const estadoAnterior = db.programas[idx].estado;
     db.programas[idx].estado = req.body.estado;
     await saveDb(db);
@@ -1127,7 +1140,7 @@ app.get("/api/v1/extracurricular/invitaciones/buscar", async (req, res) => {
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
     const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
-    
+
     let result = null;
     for (const prog of programs) {
       const invitados = db.invitadosPorPrograma[prog.id] || [];
@@ -1157,7 +1170,7 @@ app.post("/api/v1/extracurricular/programas/:programaId/invitados", requireRole(
     const nuevos = (lista || []).filter(item => !dniExistentes.has(item.dni));
     const duplicados = (lista || []).length - nuevos.length;
     const prog = db.programas.find(p => p.id === programaId);
-    
+
     db.invitadosPorPrograma[programaId] = [
       ...existentes,
       ...nuevos.map(item => ({
@@ -1482,7 +1495,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["sec
     const { periodo } = req.query;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
-    
+
     let student = db.estudiantes?.[dni];
     let esExterno = false;
     if (!student) {
@@ -1493,7 +1506,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["sec
       }
     }
     let invitacion = null;
-    
+
     const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
     for (const prog of programs) {
       const invitados = db.invitadosPorPrograma[prog.id] || [];
@@ -1507,7 +1520,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["sec
         break;
       }
     }
-    
+
     if (!student && invitacion) {
       student = {
         dni: invitacion.invitado.dni,
@@ -1531,7 +1544,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["sec
         nivelCambridge: invitacion.invitado.nivelCambridge || ""
       };
     }
-    
+
     if (student) {
       const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
       const inscrip = inscripciones[0];
@@ -1541,7 +1554,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["sec
         ? Math.max(0, Number(programaInvitado.cupos || 0) - Number(programaInvitado.cuposOcupados || 0))
         : 0;
       const invitadoExcel = invitacion?.invitado || {};
-      
+
       const resStudent = {
         id: student.dni,
         estudiante_id: student.dni,
@@ -1592,7 +1605,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["sec
         periodo: period === "verano" ? "Ciclo verano" : "Año escolar",
         esExterno: esExterno || student.tipoAlumno === "Alumno externo" || student.esExterno || false
       };
-      
+
       res.json({ success: true, data: resStudent });
     } else {
       res.json({ success: true, data: null });
@@ -1608,17 +1621,17 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretar
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
     const searchVal = normalizarTextoApi(nombre);
-    
+
     if (searchVal.length < 3) return res.json({ success: true, data: [] });
-    
+
     const results = [];
     const seenDnis = new Set();
-    
+
     Object.values(db.estudiantes || {}).forEach(student => {
       const searchKey = normalizarTextoApi(`${student.nombres} ${student.codigoEstudiante || ""}`);
       if (searchKey.includes(searchVal)) {
         seenDnis.add(student.dni);
-        
+
         let invitacion = null;
         const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
         for (const prog of programs) {
@@ -1633,12 +1646,12 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretar
             break;
           }
         }
-        
+
         const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === student.dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
         const inscrip = inscripciones[0];
         const invitadoExcel = invitacion?.invitado || {};
         const camposProgramaInvitacion = obtenerCamposProgramaInvitacionApi(db, invitacion ? invitacion.programa : null, invitadoExcel.grado || student.grado);
-        
+
         results.push({
           id: student.dni,
           estudiante_id: student.dni,
@@ -1668,12 +1681,12 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretar
         });
       }
     });
-    
+
     const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
     programs.forEach(prog => {
       (db.invitadosPorPrograma[prog.id] || []).forEach(invitado => {
         if (seenDnis.has(invitado.dni)) return;
-        
+
         const searchKey = normalizarTextoApi(`${invitado.nombres} ${invitado.codigoEstudiante || ""}`);
         if (searchKey.includes(searchVal)) {
           seenDnis.add(invitado.dni);
@@ -1745,7 +1758,7 @@ app.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretar
         });
       }
     });
-    
+
     res.json({ success: true, data: results.slice(0, 10) });
   } catch (error) {
     console.error("STUDENT SEARCH ERROR STACK:", error);
@@ -1758,7 +1771,7 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
     const db = await getDb();
     const enrollmentId = `INS-${String(Date.now()).slice(-6)}`;
     const { estudiante_id, programa_id, origen_inscripcion, seccion, grado, apoderado, telefono_apoderado, correo_apoderado, talla_uniforme, talla_polo, talla_short, seleccion, nivel_cambridge } = req.body;
-    
+
     // Si es un padre, solo puede inscribir a su propio DNI (estudiante_id)
     if (req.user.role === "padres" && String(req.user.username) !== String(estudiante_id)) {
       return res.status(403).json({ success: false, message: "No está autorizado para inscribir a este estudiante." });
@@ -1766,7 +1779,7 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
 
     const prog = db.programas.find(p => p.id === programa_id);
     if (!prog) return res.status(400).json({ success: false, message: "El programa no existe." });
-    
+
     // 1. Validar que el programa esté activo
     const progEstado = String(prog.estado || "Habilitado").toLowerCase();
     if (progEstado !== "habilitado" && progEstado !== "publicado") {
@@ -1830,7 +1843,7 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
     const gradoRegistro = obtenerGradoCompletoApi(grado || gradoInvitacion || studentForRes.grado, studentForRes.nivel || studentForRes.nivelEducativo);
     const seccionRegistro = seccion || "";
     const plantillaPrograma = obtenerPlantillaProgramaApi(db, prog);
-    
+
     // Almacenar estados normalizados internamente en base de datos
     const newEnrollment = {
       id: enrollmentId,
@@ -1885,12 +1898,12 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       costoCiclo: prog.costoCiclo || "",
       montoPrimerPago: prog.montoPrimerPago || ""
     };
-    
+
     prog.cuposOcupados = (prog.cuposOcupados || 0) + 1;
-    
+
     db.inscripciones = db.inscripciones || [];
     db.inscripciones.push(newEnrollment);
-    
+
     const esExternoRequest = Boolean(req.body.es_externo || req.body.esExterno);
     if (!student && esExternoRequest) {
       const nuevoEstudiante = {
@@ -1912,13 +1925,13 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
       };
       db.estudiantes = db.estudiantes || {};
       db.estudiantes[estudiante_id] = nuevoEstudiante;
-      
+
       await saveExternalStudent(nuevoEstudiante);
     } else if (db.estudiantes?.[estudiante_id]) {
       db.estudiantes[estudiante_id].apoderado = apoderado || db.estudiantes[estudiante_id].apoderado || "";
       db.estudiantes[estudiante_id].telefonoApoderado = telefono_apoderado || db.estudiantes[estudiante_id].telefonoApoderado || "";
       db.estudiantes[estudiante_id].estadoInscripcion = "pendiente_pago";
-      
+
       const extStudents = await readExternalStudents();
       if (extStudents[estudiante_id] || esExternoRestaurado) {
         const extData = extStudents[estudiante_id] || db.estudiantes[estudiante_id];
@@ -1927,7 +1940,7 @@ app.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["sec
         await saveExternalStudent(extData);
       }
     }
-    
+
     await saveDb(db);
 
     await registrarAuditoria(req.user.username, req.user.role, "INSCRIPCION_CREAR", {
@@ -1947,13 +1960,13 @@ app.post("/api/v1/extracurricular/inscripciones/:id/documento", requireRole(["se
     const { id } = req.params;
     const { estudiante_id, usuario, tipo_documento, plantilla } = req.body;
     const db = await getDb();
-    
+
     const inscrip = (db.inscripciones || []).find(item => item.id === id);
     if (!inscrip) return res.status(404).json({ success: false, message: "Inscripción no encontrada." });
-    
+
     const docId = `DOC-${String(db.nextDocumentoId || 1).padStart(3, "0")}`;
     db.nextDocumentoId = (db.nextDocumentoId || 1) + 1;
-    
+
     const docObj = {
       id: docId,
       alumno: inscrip.nombresEstudiante,
@@ -1965,14 +1978,14 @@ app.post("/api/v1/extracurricular/inscripciones/:id/documento", requireRole(["se
       tipoDocumento: tipo_documento || "Comunicado personalizado",
       plantilla: plantilla || ""
     };
-    
+
     db.documentosGenerados = db.documentosGenerados || [];
     db.documentosGenerados.unshift(docObj);
-    
+
     inscrip.documentoGenerado = true;
     inscrip.ultimoDocumentoGeneradoId = docId;
     inscrip.ultimoDocumentoGeneradoEn = docObj.fecha;
-    
+
     await saveDb(db);
     res.json({ success: true, data: docObj });
   } catch (error) {
@@ -1986,7 +1999,7 @@ app.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", req
     const db = await getDb();
     const idx = (db.inscripciones || []).findIndex(item => item.id === inscripcionId);
     if (idx === -1) return res.status(404).json({ success: false, message: "Inscripción no encontrada." });
-    
+
     const updated = {
       ...db.inscripciones[idx],
       ...req.body,
@@ -1995,15 +2008,15 @@ app.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", req
       estadoInscripcion: db.inscripciones[idx].estadoPago === "validado" ? "confirmada" : "pendiente_pago",
       fechaDerivacionCaja: new Date().toISOString()
     };
-    
+
     db.inscripciones[idx] = updated;
-    
+
     const student = db.estudiantes?.[updated.dniEstudiante];
     if (student) {
       student.estadoInscripcion = updated.estadoInscripcion;
       student.estadoCaja = updated.estadoCaja;
     }
-    
+
     await saveDb(db);
     await registrarAuditoria(req.user?.username || "Asistente", req.user?.role || "secretaria", "INSCRIPCION_ESTADO", {
       inscripcionId,
@@ -2101,7 +2114,7 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
     const db = await getDb();
     const student = db.estudiantes?.[dni];
     if (!student) return res.status(404).json({ success: false, message: "Estudiante no encontrado." });
-    
+
     const studentData = {
       id: student.dni,
       dni_estudiante: student.dni,
@@ -2118,12 +2131,12 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
       telefono_apoderado: student.telefonoApoderado || "",
       correo_apoderado: student.correoApoderado || ""
     };
-    
+
     const activeProgramIds = new Set((db.programas || []).filter(p => p.estado !== "Archivado").map(p => p.id));
     const enrollments = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && item.estadoInscripcion !== "Anulada" && activeProgramIds.has(item.programaId));
     const payments = (db.pagos || []).filter(item => item.dniEstudiante === dni || enrollments.some(e => e.id === item.inscripcionId));
     const documents = (db.documentosGenerados || []).filter(item => item.dniEstudiante === dni || item.alumno === student.nombres);
-    
+
     const invitations = [];
     const programs = db.programas || [];
     for (const prog of programs) {
@@ -2211,7 +2224,7 @@ app.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "s
         }
       }
     }
-    
+
     res.json({
       success: true,
       data: {
@@ -2234,14 +2247,14 @@ app.put("/api/v1/extracurricular/padres/:dni/apoderado", requireRole(["padres", 
     const db = await getDb();
     const student = db.estudiantes?.[dni];
     if (!student) return res.status(404).json({ success: false, message: "Estudiante no encontrado." });
-    
+
     const finalTelefono = telefono || telefono_apoderado || "";
     const finalCorreo = correo || correo_apoderado || "";
 
     student.apoderado = apoderado || "";
     student.telefonoApoderado = finalTelefono;
     student.correoApoderado = finalCorreo;
-    
+
     (db.inscripciones || []).forEach(item => {
       if (item.dniEstudiante === dni) {
         item.apoderado = apoderado || "";
@@ -2249,7 +2262,7 @@ app.put("/api/v1/extracurricular/padres/:dni/apoderado", requireRole(["padres", 
         item.correo = finalCorreo;
       }
     });
-    
+
     await saveDb(db);
     res.json({
       success: true,
@@ -2290,7 +2303,7 @@ app.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), u
     if (!inscrip) {
       return res.status(404).json({ success: false, message: "No se encontro la inscripcion para registrar el pago." });
     }
-    
+
     const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
     const nuevoPago = {
       id: pagoId,
@@ -2312,17 +2325,17 @@ app.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), u
       fechaPago: new Date().toISOString(),
       origenRegistro: "Portal padres"
     };
-    
+
     db.pagos = db.pagos || [];
     db.pagos.push(nuevoPago);
-    
+
     inscrip.estadoPago = "pendiente"; // estado normalizado
     inscrip.estadoInscripcion = "Pago en proceso"; // estado normalizado
     inscrip.pagoId = pagoId;
     inscrip.pagoReferencia = nuevoPago.numeroOperacion;
     inscrip.pagoTelefono = nuevoPago.telefonoOperacion;
     inscrip.pagoCapturaNombre = nuevoPago.capturaPagoNombre;
-    
+
     await saveDb(db);
 
     await registrarAuditoria("padre", "padres", "PAGO_COMPROBANTE_SUBIR", {
@@ -2339,25 +2352,25 @@ app.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), u
 
 function obtenerMinutosRestantesIngresoRecienteApi(asistenciasList, studentDni, studentCode, programId, nowMs = Date.now()) {
   if (!Array.isArray(asistenciasList)) return 0;
-  
+
   const cleanDni = studentDni ? String(studentDni).replace(/\D/g, "") : "";
   const cleanCode = studentCode ? String(studentCode).trim() : "";
-  
+
   let maxRestante = 0;
-  
+
   asistenciasList.forEach(ast => {
     const astDni = ast.dniEstudiante ? String(ast.dniEstudiante).replace(/\D/g, "") : "";
     const astCode = ast.codigoEstudiante ? String(ast.codigoEstudiante).trim() : "";
-    
+
     const coincideEstudiante = (cleanDni && astDni === cleanDni) || (cleanCode && astCode === cleanCode);
     if (!coincideEstudiante) return;
-    
+
     const coincidePrograma = ast.programaId === programId;
     if (!coincidePrograma) return;
-    
+
     const fechaAst = new Date(ast.fechaRegistro);
     if (isNaN(fechaAst.getTime())) return;
-    
+
     const diffMs = nowMs - fechaAst.getTime();
     const limiteMs = 15 * 60 * 1000;
     if (diffMs >= 0 && diffMs < limiteMs) {
@@ -2365,8 +2378,27 @@ function obtenerMinutosRestantesIngresoRecienteApi(asistenciasList, studentDni, 
       if (mins > maxRestante) maxRestante = mins;
     }
   });
-  
+
   return maxRestante;
+}
+
+function esDiaCorrecto(horarioStr) {
+  if (!horarioStr) return true;
+
+  const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+  const hoyEsp = diasSemana[new Date().getDay()];
+
+  const normalizar = (txt) => String(txt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const horarioNorm = normalizar(horarioStr);
+  const diasEncontrados = diasSemana.filter(dia => horarioNorm.includes(dia));
+
+  if (diasEncontrados.length === 0) return true;
+
+  return horarioNorm.includes(hoyEsp);
 }
 
 // 8. Auxiliar
@@ -2374,153 +2406,181 @@ app.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar"]), a
   try {
     const { dni, busqueda, programa_id } = req.query;
     const db = await getDb();
-    
-    // Resolve search parameters
+
     const query = String(dni || busqueda || "").trim();
-    let studentDni = "";
-    let student = null;
-    
-    if (/^\d+$/.test(query)) {
-      studentDni = query.replace(/\D/g, "").slice(0, 8);
-      student = db.estudiantes?.[studentDni];
-    } else if (query) {
-      // Búsqueda por nombre
-      const queryNormalizada = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const studentMatch = Object.values(db.estudiantes || {}).find(est => {
-        const full = `${est.nombres || ""} ${est.apellidos || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        return full.includes(queryNormalizada);
-      });
-      if (studentMatch) {
-        student = studentMatch;
-        studentDni = student.dni;
-      } else {
-        const insMatch = (db.inscripciones || []).find(ins => {
-          const name = String(ins.nombresEstudiante || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          return name.includes(queryNormalizada) && ins.estadoInscripcion !== "Anulada";
-        });
-        if (insMatch) {
-          studentDni = insMatch.dniEstudiante;
-          student = db.estudiantes?.[studentDni];
-        }
-      }
-    }
-    
-    let inscripcion = null;
-    if (studentDni) {
-      const inscripcionesEstudiante = (db.inscripciones || []).filter(item => 
-        item.dniEstudiante === studentDni && item.estadoInscripcion !== "Anulada"
-      );
-      
-      if (programa_id) {
-        inscripcion = inscripcionesEstudiante.find(item => item.programaId === programa_id);
-      } else if (inscripcionesEstudiante.length > 0) {
-        // Priorizar pagado, luego en proceso, luego último
-        const paid = inscripcionesEstudiante.filter(ins => {
-          const p = (db.pagos || []).find(p => p.inscripcionId === ins.id && p.estado !== "anulado" && p.estado !== "observado");
-          return (p && (p.estado === "completado" || p.estado === "validado")) || ins.estadoPago === "Pagado";
-        });
-        if (paid.length > 0) {
-          inscripcion = paid[0];
-        } else {
-          const processing = inscripcionesEstudiante.filter(ins => {
-            const p = (db.pagos || []).find(p => p.inscripcionId === ins.id && p.estado !== "anulado" && p.estado !== "observado");
-            return p && (p.estado === "Por Verificar" || p.estado === "Por verificar");
-          });
-          if (processing.length > 0) {
-            inscripcion = processing[0];
-          } else {
-            inscripcion = inscripcionesEstudiante.sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0))[0];
-          }
-        }
-      }
-    }
-    
-    const pago = inscripcion ? (db.pagos || []).find(p => p.inscripcionId === inscripcion.id && p.estado !== "anulado" && p.estado !== "observado") : null;
-    
-    let programaPreInscrito = null;
-    if (studentDni && !inscripcion) {
-      for (const [progId, listaInvitados] of Object.entries(db.invitadosPorPrograma || {})) {
-        const esInvitado = (listaInvitados || []).some(inv => {
-          const invDni = String(inv?.dni || "").replace(/\D/g, "");
-          const targetDniStr = String(studentDni || "").replace(/\D/g, "");
-          return invDni === targetDniStr && invDni !== "";
-        });
-        if (esInvitado) {
-          const prog = (db.programas || []).find(p => p.id === progId);
-          if (prog) {
-            programaPreInscrito = prog;
-            break;
-          }
-        }
-      }
+    if (!query) {
+      return res.status(400).json({ success: false, message: "Debe ingresar una búsqueda." });
     }
 
-    let result = {
-      accesoPermitido: false,
-      mensajeAcceso: programaPreInscrito ? "No inscrito" : "No registrado",
-      accion: programaPreInscrito 
-        ? `No está inscrito. Acercarse a Caja o Asistente para proceder con la matrícula en ${programaPreInscrito.nombre}.`
-        : "Estudiante no registrado en un programa activo. Dirigirse a Asistente.",
-      color: "rojo",
-      nombres: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : "",
-      dni: studentDni || query,
-      codigoEstudiante: student ? student.codigoEstudiante : "",
-      grado: student ? student.grado : "",
-      seccion: student ? student.seccion : "",
-      programa: programaPreInscrito ? programaPreInscrito.nombre : "",
-      horario: programaPreInscrito ? (programaPreInscrito.horario || "") : "",
-      estadoPago: "Pendiente",
-      estadoAcceso: programaPreInscrito ? "pre_inscrito" : "no_registrado",
-      pagoId: "",
-      inscripcionId: ""
-    };
-    
-    if (inscripcion) {
-      result.inscripcionId = inscripcion.id;
-      result.programa = inscripcion.programa;
-      result.horario = inscripcion.horario;
-      result.pagoId = pago ? pago.id : "";
-      
-      const minsRestantes = obtenerMinutosRestantesIngresoRecienteApi(
-        db.asistencias || [],
-        studentDni,
-        student ? student.codigoEstudiante : "",
-        inscripcion.programaId
-      );
-      
-      const isPaid = (pago && (pago.estado === "completado" || pago.estado === "validado")) || inscripcion.estadoPago === "Pagado";
-      if (minsRestantes > 0) {
-        result.accesoPermitido = false;
-        result.mensajeAcceso = "Ya registrado";
-        result.accion = `Este estudiante ya registró su ingreso hace poco. Podrá registrarse nuevamente en ${minsRestantes} minuto(s).`;
-        result.color = "rojo";
-        result.estadoPago = "Pagado";
-        result.estadoAcceso = "ya_registrado";
-      } else if (isPaid) {
-        result.accesoPermitido = true;
-        result.mensajeAcceso = "Pago validado";
-        result.accion = "Ingreso permitido.";
-        result.color = "verde";
-        result.estadoPago = "Pagado";
-        result.estadoAcceso = "pagado";
-      } else if (pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar" || pago.estado === "Pago en proceso")) {
-        result.accesoPermitido = false;
-        result.mensajeAcceso = "Pago en proceso";
-        result.accion = "Tiene un pago en proceso de verificación. Debe acercarse a Caja para su aprobación.";
-        result.color = "rojo";
-        result.estadoPago = "Pago en proceso";
-        result.estadoAcceso = "pendiente";
-      } else {
-        result.accesoPermitido = false;
-        result.mensajeAcceso = "Pago pendiente";
-        result.accion = "Falta pagar. Debe acercarse a Caja para regularizar el pago.";
-        result.color = "rojo";
-        result.estadoPago = "Pendiente";
-        result.estadoAcceso = "pendiente";
+    const resolverParaEstudiante = (studentDni, targetInscripcion = null) => {
+      const student = db.estudiantes?.[studentDni];
+      let inscripcion = targetInscripcion;
+
+      if (!inscripcion && studentDni) {
+        const inscripcionesEstudiante = (db.inscripciones || []).filter(item =>
+          item.dniEstudiante === studentDni && item.estadoInscripcion !== "Anulada" && esDiaCorrecto(item.horario)
+        );
+
+        if (programa_id) {
+          inscripcion = inscripcionesEstudiante.find(item => item.programaId === programa_id);
+        } else if (inscripcionesEstudiante.length > 0) {
+          const paid = inscripcionesEstudiante.filter(ins => {
+            const p = (db.pagos || []).find(p => p.inscripcionId === ins.id && p.estado !== "anulado" && p.estado !== "observado");
+            return (p && (p.estado === "completado" || p.estado === "validado")) || ins.estadoPago === "Pagado";
+          });
+          if (paid.length > 0) {
+            inscripcion = paid[0];
+          } else {
+            const processing = inscripcionesEstudiante.filter(ins => {
+              const p = (db.pagos || []).find(p => p.inscripcionId === ins.id && p.estado !== "anulado" && p.estado !== "observado");
+              return p && (p.estado === "Por Verificar" || p.estado === "Por verificar");
+            });
+            if (processing.length > 0) {
+              inscripcion = processing[0];
+            } else {
+              inscripcion = inscripcionesEstudiante.sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0))[0];
+            }
+          }
+        }
       }
+
+      const pago = inscripcion ? (db.pagos || []).find(p => p.inscripcionId === inscripcion.id && p.estado !== "anulado" && p.estado !== "observado") : null;
+
+      let programaPreInscrito = null;
+      if (studentDni && !inscripcion) {
+        for (const [progId, listaInvitados] of Object.entries(db.invitadosPorPrograma || {})) {
+          const esInvitado = (listaInvitados || []).some(inv => {
+            const invDni = String(inv?.dni || "").replace(/\D/g, "");
+            const targetDniStr = String(studentDni || "").replace(/\D/g, "");
+            return invDni === targetDniStr && invDni !== "";
+          });
+          if (esInvitado) {
+            const prog = (db.programas || []).find(p => p.id === progId);
+            if (prog) {
+              programaPreInscrito = prog;
+              break;
+            }
+          }
+        }
+      }
+
+      let result = {
+        accesoPermitido: false,
+        mensajeAcceso: programaPreInscrito ? "No inscrito" : "No registrado",
+        accion: programaPreInscrito
+          ? `No está inscrito. Acercarse a Caja o Asistente para proceder con la matrícula en ${programaPreInscrito.nombre}.`
+          : "Estudiante no registrado en un programa activo. Dirigirse a Asistente.",
+        color: "rojo",
+        nombres: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : "",
+        dni: studentDni || query,
+        codigoEstudiante: student ? student.codigoEstudiante : "",
+        grado: student ? student.grado : "",
+        seccion: student ? student.seccion : "",
+        programa: programaPreInscrito ? programaPreInscrito.nombre : "",
+        horario: programaPreInscrito ? (programaPreInscrito.horario || "") : "",
+        estadoPago: "Pendiente",
+        estadoAcceso: programaPreInscrito ? "pre_inscrito" : "no_registrado",
+        pagoId: "",
+        inscripcionId: ""
+      };
+
+      if (inscripcion) {
+        result.inscripcionId = inscripcion.id;
+        result.programa = inscripcion.programa;
+        result.horario = inscripcion.horario;
+        result.pagoId = pago ? pago.id : "";
+
+        const minsRestantes = obtenerMinutosRestantesIngresoRecienteApi(
+          db.asistencias || [],
+          studentDni,
+          student ? student.codigoEstudiante : "",
+          inscripcion.programaId
+        );
+
+        const isPaid = (pago && (pago.estado === "completado" || pago.estado === "validado")) || inscripcion.estadoPago === "Pagado";
+        if (minsRestantes > 0) {
+          result.accesoPermitido = false;
+          result.mensajeAcceso = "Ya registrado";
+          result.accion = `Este estudiante ya registró su ingreso hace poco. Podrá registrarse nuevamente en ${minsRestantes} minuto(s).`;
+          result.color = "rojo";
+          result.estadoPago = "Pagado";
+          result.estadoAcceso = "ya_registrado";
+        } else if (isPaid) {
+          result.accesoPermitido = true;
+          result.mensajeAcceso = "Pago validado";
+          result.accion = "Ingreso permitido.";
+          result.color = "verde";
+          result.estadoPago = "Pagado";
+          result.estadoAcceso = "pagado";
+        } else if (pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar" || pago.estado === "Pago en proceso")) {
+          result.accesoPermitido = false;
+          result.mensajeAcceso = "Pago en proceso";
+          result.accion = "Tiene un pago en proceso de verificación. Debe acercarse a Caja para su aprobación.";
+          result.color = "rojo";
+          result.estadoPago = "Pago en proceso";
+          result.estadoAcceso = "pendiente";
+        } else {
+          result.accesoPermitido = false;
+          result.mensajeAcceso = "Pago pendiente";
+          result.accion = "Falta pagar. Debe acercarse a Caja para regularizar el pago.";
+          result.color = "rojo";
+          result.estadoPago = "Pendiente";
+          result.estadoAcceso = "pendiente";
+        }
+      }
+
+      return result;
+    };
+
+    if (/^\d+$/.test(query)) {
+      const studentDni = query.replace(/\D/g, "").slice(0, 8);
+      const result = resolverParaEstudiante(studentDni);
+      return res.json({ success: true, data: result });
+    } else {
+      const queryNormalizada = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+      const inscripciones = (db.inscripciones || []).filter(ins =>
+        ins.estadoInscripcion !== "Anulada" && esDiaCorrecto(ins.horario)
+      );
+
+      let matchesInscripcion = inscripciones.filter(ins => {
+        const name = String(ins.nombresEstudiante || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return name.includes(queryNormalizada);
+      });
+
+      if (programa_id) {
+        matchesInscripcion = matchesInscripcion.filter(ins => ins.programaId === programa_id);
+      }
+
+      const resultadosInscripciones = matchesInscripcion.map(ins =>
+        resolverParaEstudiante(ins.dniEstudiante, ins)
+      );
+
+      let resultadosEstudiantes = [];
+      if (!programa_id) {
+        const dniConInscripcion = new Set(matchesInscripcion.map(ins => ins.dniEstudiante));
+        const generalMatches = Object.values(db.estudiantes || {}).filter(est => {
+          const full = `${est.nombres || ""} ${est.apellidos || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          return full.includes(queryNormalizada) && !dniConInscripcion.has(est.dni);
+        });
+
+        resultadosEstudiantes = generalMatches.map(est =>
+          resolverParaEstudiante(est.dni, null)
+        );
+      }
+
+      const todosResultados = [...resultadosInscripciones, ...resultadosEstudiantes];
+
+      if (todosResultados.length === 0) {
+        return res.status(404).json({ success: false, message: `No se encontró ningún estudiante que coincida con "${query}".` });
+      }
+
+      if (todosResultados.length === 1) {
+        return res.json({ success: true, data: todosResultados[0] });
+      }
+
+      return res.json({ success: true, isMultiple: true, data: todosResultados });
     }
-    
-    res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -2530,10 +2590,10 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"])
   try {
     const { codigo, programa_id } = req.query;
     const db = await getDb();
-    
+
     let dni = "";
     let inscripcionId = "";
-    
+
     const texto = String(codigo || "").trim();
     if (texto.startsWith("INS-")) {
       inscripcionId = texto;
@@ -2544,17 +2604,20 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"])
     } else {
       dni = texto.replace(/\D/g, "").slice(0, 8);
     }
-    
+
     const student = db.estudiantes?.[dni];
-    
+
     let inscripcion = null;
     if (inscripcionId) {
-      inscripcion = (db.inscripciones || []).find(item => item.id === inscripcionId && item.estadoInscripcion !== "Anulada");
+      const ins = (db.inscripciones || []).find(item => item.id === inscripcionId && item.estadoInscripcion !== "Anulada");
+      if (ins && esDiaCorrecto(ins.horario)) {
+        inscripcion = ins;
+      }
     } else if (dni) {
-      const inscripcionesEstudiante = (db.inscripciones || []).filter(item => 
-        item.dniEstudiante === dni && item.estadoInscripcion !== "Anulada"
+      const inscripcionesEstudiante = (db.inscripciones || []).filter(item =>
+        item.dniEstudiante === dni && item.estadoInscripcion !== "Anulada" && esDiaCorrecto(item.horario)
       );
-      
+
       if (programa_id) {
         inscripcion = inscripcionesEstudiante.find(item => item.programaId === programa_id);
       } else if (inscripcionesEstudiante.length > 0) {
@@ -2578,9 +2641,9 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"])
         }
       }
     }
-    
+
     const pago = inscripcion ? (db.pagos || []).find(p => p.inscripcionId === inscripcion.id && p.estado !== "anulado" && p.estado !== "observado") : null;
-    
+
     let programaPreInscrito = null;
     const targetDni = dni || (inscripcion ? inscripcion.dniEstudiante : "");
     if (targetDni && !inscripcion) {
@@ -2603,7 +2666,7 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"])
     let result = {
       accesoPermitido: false,
       mensajeAcceso: programaPreInscrito ? "No inscrito" : "No registrado",
-      accion: programaPreInscrito 
+      accion: programaPreInscrito
         ? `No está inscrito. Acercarse a Caja o Asistente para proceder con la matrícula en ${programaPreInscrito.nombre}.`
         : "Estudiante no registrado en un programa activo. Dirigirse a Asistente.",
       color: "rojo",
@@ -2619,20 +2682,20 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"])
       pagoId: "",
       inscripcionId: ""
     };
-    
+
     if (inscripcion) {
       result.inscripcionId = inscripcion.id;
       result.programa = inscripcion.programa;
       result.horario = inscripcion.horario;
       result.pagoId = pago ? pago.id : "";
-      
+
       const minsRestantes = obtenerMinutosRestantesIngresoRecienteApi(
         db.asistencias || [],
         targetDni,
         student ? student.codigoEstudiante : "",
         inscripcion.programaId
       );
-      
+
       const isPaid = (pago && (pago.estado === "completado" || pago.estado === "validado")) || inscripcion.estadoPago === "Pagado";
       if (minsRestantes > 0) {
         result.accesoPermitido = false;
@@ -2664,7 +2727,7 @@ app.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar"])
         result.estadoAcceso = "pendiente";
       }
     }
-    
+
     res.json({ success: true, data: result });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -2675,11 +2738,11 @@ app.post("/api/v1/extracurricular/asistencia", requireRole(["auxiliar"]), async 
   try {
     const { inscripcion_id, pago_id, dni_estudiante, estado_acceso, observacion, origen } = req.body;
     const db = await getDb();
-    
+
     const inscrip = (db.inscripciones || []).find(item => item.id === inscripcion_id);
     const student = db.estudiantes?.[dni_estudiante];
     const prog = inscrip ? db.programas.find(p => p.id === inscrip.programaId) : null;
-    
+
     const astId = `AST-${String(Date.now()).slice(-6)}`;
     const nuevaAsistencia = {
       id: astId,
@@ -2697,7 +2760,7 @@ app.post("/api/v1/extracurricular/asistencia", requireRole(["auxiliar"]), async 
       origen: origen || "Auxiliar",
       fechaRegistro: new Date().toISOString()
     };
-    
+
     db.asistencias = db.asistencias || [];
     db.asistencias.push(nuevaAsistencia);
     await saveDb(db);
@@ -2730,7 +2793,7 @@ app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res
   try {
     const db = await getDb();
     const body = req.body;
-    
+
     const inscripcion_id = body.inscripcion_id || body.inscripcionId || "";
     const monto = body.monto !== undefined ? body.monto : (body.monto_pago !== undefined ? body.monto_pago : 0);
     const forma_pago = body.forma_pago || body.metodo_pago || body.formaPago || "Efectivo";
@@ -2743,10 +2806,10 @@ app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res
     const programa = body.programa || body.programaNombre || "";
     const periodo = body.periodo || "escolar";
     const nroRecibo = body.nroRecibo || body.nro_recibo || "";
-    
+
     const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
     const inscrip = (db.inscripciones || []).find(item => item.id === inscripcion_id);
-    
+
     const nuevoPago = {
       id: pagoId,
       inscripcionId: inscripcion_id || "",
@@ -2768,21 +2831,21 @@ app.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res
       validadoPor: usuario_registro || "Cajera",
       validadoEn: new Date().toISOString()
     };
-    
+
     db.pagos = db.pagos || [];
     db.pagos.push(nuevoPago);
-    
+
     if (inscrip) {
       inscrip.estadoPago = "validado"; // estado normalizado
       inscrip.estadoInscripcion = "confirmada"; // estado normalizado
       inscrip.pagoId = pagoId;
       inscrip.fechaPago = nuevoPago.fechaPago;
     }
-    
+
     if (db.estudiantes?.[dni_estudiante]) {
       db.estudiantes[dni_estudiante].estadoInscripcion = "confirmada";
     }
-    
+
     await saveDb(db);
 
     await registrarAuditoria(usuario_registro || "Cajera", "caja", "PAGO_REGISTRAR", {
@@ -2803,7 +2866,7 @@ app.put("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres"])
     const db = await getDb();
     const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
     if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
-    
+
     const updated = {
       ...db.pagos[idx],
       monto: Number(req.body.monto || db.pagos[idx].monto),
@@ -2814,12 +2877,12 @@ app.put("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres"])
       nroRecibo: req.body.nroRecibo !== undefined ? req.body.nroRecibo : (req.body.nro_recibo !== undefined ? req.body.nro_recibo : db.pagos[idx].nroRecibo)
     };
     db.pagos[idx] = updated;
-    
+
     const inscrip = (db.inscripciones || []).find(item => item.id === updated.inscripcionId);
     if (inscrip) {
       inscrip.fechaPago = updated.fechaPago;
     }
-    
+
     await saveDb(db);
     res.json({ success: true, data: mapDbPaymentToApi(updated) });
   } catch (error) {
@@ -2832,15 +2895,15 @@ app.get("/api/v1/extracurricular/caja/resumen", requireRole(["caja"]), async (re
     const { periodo } = req.query;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
-    
+
     const pagos = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && p.estado === "completado");
     const totalCobrado = pagos.reduce((sum, p) => sum + Number(p.monto || 0), 0);
-    
+
     const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
     const paidInscripIds = new Set(pagos.map(p => p.inscripcionId));
     const pendingInscrip = enrollments.filter(e => !paidInscripIds.has(e.id));
     const totalPendiente = pendingInscrip.reduce((sum, e) => sum + Number(e.costo || 0), 0);
-    
+
     res.json({
       success: true,
       data: {
@@ -2860,10 +2923,10 @@ app.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]), 
     const { periodo } = req.query;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
-    
+
     const student = db.estudiantes?.[dni];
     if (!student) return res.json({ success: true, data: null });
-    
+
     const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
     const isPaid = (item) => ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(est => String(item.estadoPago || "").toLowerCase().includes(est) || String(item.estadoInscripcion || "").toLowerCase().includes(est));
     const activeInscrip = inscripciones.find(item => item.derivadoCaja && !isPaid(item))
@@ -2871,7 +2934,7 @@ app.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]), 
       || inscripciones.find(item => item.derivadoCaja)
       || inscripciones[0]
       || null;
-    
+
     if (activeInscrip) {
       res.json({
         success: true,
@@ -2916,9 +2979,9 @@ app.get("/api/v1/extracurricular/caja/bandeja-pagos-web", requireRole(["caja"]),
     const { periodo } = req.query;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
-    
+
     const list = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && (p.estado === "Por Verificar" || p.estado === "pendiente"));
-    
+
     const dataList = list.map(p => {
       const student = db.estudiantes?.[p.dniEstudiante];
       return {
@@ -2928,7 +2991,7 @@ app.get("/api/v1/extracurricular/caja/bandeja-pagos-web", requireRole(["caja"]),
         programa: p.programa
       };
     });
-    
+
     res.json({ success: true, data: dataList });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -2940,15 +3003,15 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]), 
     const { pagoId } = req.params;
     const { observaciones } = req.body;
     const db = await getDb();
-    
+
     const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
     if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
-    
+
     db.pagos[idx].estado = "validado"; // estado normalizado
     db.pagos[idx].observaciones = observaciones || "";
     db.pagos[idx].validadoPor = req.user?.username || "Cajera";
     db.pagos[idx].validadoEn = new Date().toISOString();
-    
+
     const inscrip = (db.inscripciones || []).find(item => item.id === db.pagos[idx].inscripcionId);
     if (inscrip) {
       inscrip.estadoPago = "validado"; // estado normalizado
@@ -2956,11 +3019,11 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]), 
       inscrip.fechaPago = db.pagos[idx].validadoEn;
       inscrip.pagoObservacionCaja = observaciones || "";
     }
-    
+
     if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
       db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "Pago exitoso";
     }
-    
+
     await saveDb(db);
 
     await registrarAuditoria(req.user?.username || "Cajera", req.user?.role || "caja", "PAGO_VALIDAR", {
@@ -2979,26 +3042,26 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/observar", requireRole(["caja"]),
     const { pagoId } = req.params;
     const { observaciones } = req.body;
     const db = await getDb();
-    
+
     const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
     if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
-    
+
     db.pagos[idx].estado = "observado"; // estado normalizado
     db.pagos[idx].observaciones = observaciones || "";
     db.pagos[idx].validadoPor = req.user?.username || "Cajera";
     db.pagos[idx].validadoEn = new Date().toISOString();
-    
+
     const inscrip = (db.inscripciones || []).find(item => item.id === db.pagos[idx].inscripcionId);
     if (inscrip) {
       inscrip.estadoPago = "pendiente"; // estado normalizado
       inscrip.estadoInscripcion = "observada"; // estado normalizado
       inscrip.pagoObservacionCaja = observaciones || "";
     }
-    
+
     if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
       db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "observada";
     }
-    
+
     await saveDb(db);
 
     await registrarAuditoria(req.user?.username || "Cajera", req.user?.role || "caja", "PAGO_OBSERVAR", {
@@ -3017,26 +3080,26 @@ app.put("/api/v1/extracurricular/pagos/:pagoId/rechazar", requireRole(["caja"]),
     const { pagoId } = req.params;
     const { observaciones } = req.body;
     const db = await getDb();
-    
+
     const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
     if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
-    
+
     db.pagos[idx].estado = "anulado"; // estado normalizado: anulado
     db.pagos[idx].observaciones = observaciones || "Pago rechazado por Cajera.";
     db.pagos[idx].validadoPor = req.user?.username || "Cajera";
     db.pagos[idx].validadoEn = new Date().toISOString();
-    
+
     const inscrip = (db.inscripciones || []).find(item => item.id === db.pagos[idx].inscripcionId);
     if (inscrip) {
       inscrip.estadoPago = "pendiente";
       inscrip.estadoInscripcion = "pendiente_pago"; // Regresa a pendiente de pago
       inscrip.pagoObservacionCaja = observaciones || "Pago rechazado por Cajera.";
     }
-    
+
     if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
       db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "pendiente_pago";
     }
-    
+
     await saveDb(db);
 
     await registrarAuditoria(req.user?.username || "Cajera", req.user?.role || "caja", "PAGO_RECHAZAR", {
@@ -3055,16 +3118,17 @@ app.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"
     const { periodo, tipoReporte, desde, hasta, programa, medioPago, estadoPago } = req.query;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
-    
+
     const payments = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
     const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
-    
+
     let reportList = [];
-    
+
     if (tipoReporte === "pagos_registrados" || tipoReporte === "pagos_realizados") {
       reportList = payments.map(p => {
         const prog = db.programas.find(progItem => progItem.id === p.programaId || normalizarTextoApi(progItem.nombre) === normalizarTextoApi(p.programa));
         const student = db.estudiantes?.[p.dniEstudiante];
+        const e = (db.inscripciones || []).find(item => item.id === p.inscripcionId || (item.dniEstudiante === p.dniEstudiante && item.programaId === p.programaId));
         return {
           id: p.id,
           pagoId: p.id,
@@ -3086,7 +3150,11 @@ app.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"
           fechaRegistro: p.fecha || "",
           fechaPago: p.fechaPago || "",
           apoderado: student ? student.apoderado : "",
-          telefono: student ? student.telefonoApoderado : ""
+          telefono: student ? student.telefonoApoderado : "",
+          descuentoAprobado: e ? (e.descuentoAprobado || false) : false,
+          descuentoTipo: e ? (e.descuentoTipo || "") : "",
+          descuentoMonto: e ? (e.descuentoMonto || 0) : 0,
+          descuentoJustificacion: e ? (e.descuentoJustificacion || "") : ""
         };
       });
     } else {
@@ -3094,10 +3162,10 @@ app.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"
         const p = payments.find(pay => pagoPerteneceAInscripcionReporte(pay, e));
         const prog = db.programas.find(progItem => progItem.id === e.programaId);
         const student = db.estudiantes?.[e.dniEstudiante];
-        
+
         const monto = p ? p.monto : e.costo;
         const statePay = normalizarEstadoPagoReporteCaja(p, e);
-        
+
         return {
           id: e.id,
           inscripcionId: e.id,
@@ -3120,28 +3188,36 @@ app.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"
           fechaPago: p ? (p.fechaPago || p.fecha) : "",
           apoderado: e.apoderado || "",
           telefono: e.telefono || "",
-          puedePagarCaja: true
+          puedePagarCaja: true,
+          descuentoAprobado: e.descuentoAprobado || false,
+          descuentoTipo: e.descuentoTipo || "",
+          descuentoMonto: e.descuentoMonto || 0,
+          descuentoJustificacion: e.descuentoJustificacion || ""
         };
       });
     }
-    
+
     const finalReport = reportList.filter(row => {
       if (programa && programa !== "todos" && row.programaId !== programa) return false;
       if (medioPago && medioPago !== "todos" && row.formaPago !== medioPago) return false;
       if (estadoPago && estadoPago !== "todos" && row.estadoPago !== estadoPago) return false;
-      
+
       const rowDate = String(row.fecha).slice(0, 10);
       if (desde && rowDate < desde) return false;
       if (hasta && rowDate > hasta) return false;
-      
+
       const isWeb = String(row.origen).toLowerCase().includes("portal padres") || String(row.origen).toLowerCase().includes("web");
       if (tipoReporte === "registro_secretaria" && isWeb) return false;
       if (tipoReporte === "registro_web" && !isWeb) return false;
       if ((tipoReporte === "por_cobrar" || tipoReporte === "pagos_pendientes") && row.estadoPago !== "pendiente") return false;
-      
+      if (tipoReporte === "becas_descuentos") {
+        const esBecaODescuento = row.descuentoAprobado || ["beca", "descuento"].includes(String(row.formaPago).toLowerCase());
+        if (!esBecaODescuento) return false;
+      }
+
       return true;
     });
-    
+
     res.json({ success: true, data: finalReport });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -3165,10 +3241,10 @@ app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), 
   try {
     const { periodo, anio } = req.query;
     const db = await getDb();
-    
+
     const period = normalizarPeriodoApi(periodo || "todos");
     const year = anio || "todos";
-    
+
     const filtrarPorPeriodo = (items) => {
       if (period === "todos") return [...items];
       return [...items].filter((item) => normalizarPeriodoApi(item.periodo || "escolar") === period);
@@ -3206,6 +3282,7 @@ app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), 
         dni: item.dniEstudiante || "",
         estudiante: item.nombresEstudiante || "",
         grado: item.gradoEstudiante || item.grado || "",
+        seccion: item.seccion || "",
         programa: item.programa || "",
         programaId: item.programaId || "",
         estadoInscripcion: item.estadoInscripcion || "",
@@ -3282,6 +3359,7 @@ app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), 
         proyectado,
         recaudado,
         avance: cupos > 0 ? Math.round((ocupados / cupos) * 100) : 0,
+        gradosAplicables: programa.gradosAplicables || [],
       };
     }).sort((a, b) => b.inscritos - a.inscritos);
 
@@ -3294,7 +3372,7 @@ app.get("/api/v1/extracurricular/reportes/resumen", requireRole(["direccion"]), 
 
     // --- Procesamiento de Asistencia ---
     const asistencias = db.asistencias || [];
-    
+
     const obtenerFechaPeru = (fechaStr) => {
       if (!fechaStr) return "";
       const str = String(fechaStr);
@@ -3459,7 +3537,7 @@ app.put("/api/v1/usuarios/:id", async (req, res) => {
     const db = await getDb();
     const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(req.params.id));
     if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
-    
+
     let contrasena = db.usuarios[idx].contrasena;
     if (req.body.contrasena && req.body.contrasena !== contrasena) {
       if (!req.body.contrasena.startsWith("$2a$") && !req.body.contrasena.startsWith("$2b$")) {
@@ -3495,7 +3573,7 @@ app.put("/api/v1/usuarios/:id/estado", async (req, res) => {
     const db = await getDb();
     const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(req.params.id));
     if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
-    
+
     db.usuarios[idx].estado = req.body.estado;
     await saveDb(db);
 
@@ -3513,7 +3591,7 @@ app.post("/api/v1/usuarios/:id/resetear-contrasena", async (req, res) => {
     const db = await getDb();
     const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(req.params.id));
     if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
-    
+
     db.usuarios[idx].contrasena = bcrypt.hashSync("1234", 10);
     await saveDb(db);
 
@@ -3549,16 +3627,75 @@ app.get("/api/v1/extracurricular/direccion/descuentos/buscar", requireRole(["dir
     const term = String(q || "").toLowerCase().trim();
     if (!term) return res.json({ success: true, data: [] });
 
-    const results = (db.inscripciones || []).filter(ins => {
+    const realEnrollments = (db.inscripciones || []).filter(ins => {
       if (ins.estadoInscripcion === "Anulada" || ins.estadoInscripcion === "anulada") return false;
       const dniCoincide = String(ins.dni || ins.dniEstudiante || "").includes(term);
       const nombreCoincide = String(ins.estudiante || ins.nombresEstudiante || "").toLowerCase().includes(term);
       return dniCoincide || nombreCoincide;
     });
 
+    const mappedReal = realEnrollments.map(item => mapDbEnrollmentToApi(item, db));
+
+    const virtualEnrollments = [];
+    const programas = db.programas || [];
+    programas.forEach(programa => {
+      const invitados = db.invitadosPorPrograma?.[programa.id] || [];
+      invitados.forEach(invitado => {
+        const dni = String(invitado.dni || "").replace(/\D/g, "");
+        const name = String(invitado.nombres || "").toLowerCase();
+        const matchesDni = dni.includes(term);
+        const matchesName = name.includes(term);
+
+        if (matchesDni || matchesName) {
+          const existeReal = (db.inscripciones || []).some(ins =>
+            ins.dniEstudiante === invitado.dni &&
+            ins.programaId === programa.id &&
+            ins.estadoInscripcion !== "Anulada" &&
+            ins.estadoInscripcion !== "anulada"
+          );
+
+          if (!existeReal) {
+            const student = db.estudiantes?.[invitado.dni] || {};
+            virtualEnrollments.push({
+              id: `INV-${programa.id}-${invitado.dni}`,
+              inscripcion_id: `INV-${programa.id}-${invitado.dni}`,
+              estudiante_id: invitado.dni,
+              programa_id: programa.id,
+              creado_en: new Date().toISOString(),
+              origen_inscripcion: "Invitación",
+              estado_inscripcion: "Pendiente de pago",
+              dni_estudiante: invitado.dni,
+              codigo_estudiante: student.codigoEstudiante || invitado.codigoEstudiante || "",
+              nombres_estudiante: invitado.nombres,
+              grado_estudiante: invitado.grado || "",
+              seccion: invitado.seccion || "",
+              nombre_programa: programa.nombre,
+              categoria: programa.categoria || "",
+              horario: programa.horario || "",
+              docente: programa.responsable || programa.docente || "No definido",
+              monto: programa.costo || 0,
+              costoOriginal: programa.costo || 0,
+              apoderado: student.apoderado || "",
+              telefono_apoderado: student.telefonoApoderado || student.telefono || "",
+              correo_apoderado: student.correoApoderado || student.correo || "",
+              estado_pago: "pendiente",
+              pago_id: "",
+              derivado_caja: false,
+              estado_caja: "",
+              descuentoAprobado: false,
+              esVirtual: true
+            });
+          }
+        }
+      });
+    });
+
     res.json({
       success: true,
-      data: results.map(item => mapDbEnrollmentToApi(item, db))
+      data: [
+        ...mappedReal,
+        ...virtualEnrollments
+      ]
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -3572,11 +3709,62 @@ app.post("/api/v1/extracurricular/direccion/descuentos/aplicar", requireRole(["d
     if (!justificacion?.trim()) return res.status(400).json({ success: false, message: "Falta justificacion" });
 
     const db = await getDb();
-    const index = (db.inscripciones || []).findIndex(ins => ins.id === inscripcionId);
-    if (index === -1) return res.status(404).json({ success: false, message: "Inscripción no encontrada" });
+    let ins = null;
+    let index = -1;
+    if (String(inscripcionId).startsWith("INV-")) {
+      const parts = String(inscripcionId).split("-");
+      const dni = parts[parts.length - 1];
+      const progId = parts.slice(1, parts.length - 1).join("-");
 
-    const ins = db.inscripciones[index];
-    
+      const prog = (db.programas || []).find(p => p.id === progId);
+      if (!prog) return res.status(404).json({ success: false, message: "Taller no encontrado para la invitación" });
+
+      const invitados = db.invitadosPorPrograma?.[progId] || [];
+      const invitado = invitados.find(i => i.dni === dni);
+      if (!invitado) return res.status(404).json({ success: false, message: "Invitación de estudiante no encontrada" });
+
+      const student = db.estudiantes?.[dni] || {};
+      const gradoEstudiante = invitado.grado || student.grado || "";
+      const horarioResuelto = resolverHorarioPorGradoApi(prog, gradoEstudiante) || prog.horario || "";
+      const docenteResuelto = resolverDocentePorGradoApi(prog, gradoEstudiante) || prog.responsable || prog.docente || "No definido";
+
+      const newInscripcion = {
+        id: "INS-" + Date.now(),
+        dniEstudiante: dni,
+        codigoEstudiante: student.codigoEstudiante || invitado.codigoEstudiante || "",
+        nombresEstudiante: invitado.nombres,
+        gradoEstudiante: gradoEstudiante,
+        seccion: invitado.seccion || student.seccion || "",
+        programaId: progId,
+        programa: prog.nombre,
+        categoria: prog.categoria || "",
+        periodo: prog.periodo || "escolar",
+        horario: horarioResuelto,
+        docente: docenteResuelto,
+        costo: prog.costo || 0,
+        modalidadCobro: prog.modalidadCobro || "Unico",
+        fechaInicio: prog.fechaInicio || "",
+        fechaFin: prog.fechaFin || "",
+        estadoInscripcion: "pendiente_pago", // Pre-inscrito
+        estadoPago: "pendiente",
+        derivadoCaja: true, // Manda a caja
+        fechaRegistro: new Date().toISOString(),
+        apoderado: student.apoderado || "",
+        telefono: student.telefonoApoderado || student.telefono || "",
+        correo: student.correoApoderado || student.correo || "",
+        origenRegistro: "Dirección / Descuento"
+      };
+
+      db.inscripciones = db.inscripciones || [];
+      db.inscripciones.push(newInscripcion);
+      index = db.inscripciones.length - 1;
+      ins = db.inscripciones[index];
+    } else {
+      index = (db.inscripciones || []).findIndex(ins => ins.id === inscripcionId);
+      if (index === -1) return res.status(404).json({ success: false, message: "Inscripción no encontrada" });
+      ins = db.inscripciones[index];
+    }
+
     // Validar si ya está pagado
     const payments = db.pagos || [];
     const pagoAsociado = payments.find(pay => pay.inscripcionId === ins.id) || payments.find(pay => pay.dniEstudiante === ins.dniEstudiante && (pay.programaId === ins.programaId || normalizarTextoApi(pay.programa) === normalizarTextoApi(ins.programa)));

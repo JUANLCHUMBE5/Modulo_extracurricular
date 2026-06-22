@@ -392,10 +392,7 @@ export default function PagoStep({
     event.preventDefault();
     setErrorFormulario("");
 
-    if (!inscripcion) {
-      setErrorFormulario("Primero debe quedar registrada la inscripción de este taller.");
-      return;
-    }
+
     if (!datosConfirmados) {
       setErrorFormulario("Confirme los datos del apoderado antes de enviar el pago.");
       return;

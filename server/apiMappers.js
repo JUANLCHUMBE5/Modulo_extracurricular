@@ -609,7 +609,15 @@ export function mapDbPaymentToApi(item) {
     telefono_operacion: item.telefonoOperacion || "",
     origen_registro: item.origenRegistro || "Portal padres",
     nro_recibo: item.nroRecibo || item.nro_recibo || "",
-    nroRecibo: item.nroRecibo || item.nro_recibo || ""
+    nroRecibo: item.nroRecibo || item.nro_recibo || "",
+    descuento_aprobado: item.descuentoAprobado || false,
+    descuento_tipo: item.descuentoTipo || "",
+    descuento_monto: item.descuentoMonto || 0,
+    descuento_justificacion: item.descuentoJustificacion || "",
+    descuentoAprobado: item.descuentoAprobado || false,
+    descuentoTipo: item.descuentoTipo || "",
+    descuentoMonto: item.descuentoMonto || 0,
+    descuentoJustificacion: item.descuentoJustificacion || ""
   };
 }
 

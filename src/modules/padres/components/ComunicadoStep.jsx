@@ -170,7 +170,7 @@ export default function ComunicadoStep({
 
   const talleres = obtenerTalleresEstructurados(programa);
   const tieneOpciones = talleres.length > 0;
-  
+
   const [diaSeleccionado, setDiaSeleccionado] = useState(() => {
     if (horarioSeleccionado && horarioSeleccionado.includes(":")) {
       return horarioSeleccionado.split(":")[0].trim();
@@ -232,7 +232,7 @@ export default function ComunicadoStep({
               parrafosRender.forEach((parrafo) => {
                 const match = parrafo.match(/^([^:]+):\s*(.*)$/);
                 const esKeyValue = match && match[1].length < 35;
-                
+
                 if (esKeyValue) {
                   if (!grupoActual) {
                     grupoActual = { type: "grid", items: [] };
@@ -272,7 +272,7 @@ export default function ComunicadoStep({
                   );
                 }
                 return (
-                  <p key={`text-${idx}`} style={{ margin: "12px 0", fontSize: "14.5px", lineHeight: "1.6", color: "#1e293b" }}>
+                  <p key={`text-${idx}`} style={{ margin: "12px 0", fontSize: "14.5px", lineHeight: "1.6", color: "#000000" }}>
                     {segmento.content}
                   </p>
                 );
@@ -383,7 +383,7 @@ export default function ComunicadoStep({
                 <strong style={{ fontSize: "14px", color: "#0f172a" }}>{programa.cupos} vacantes</strong>
               </div>
             )}
-            
+
             {programa.responsable && (
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", textTransform: "uppercase" }}>Responsable</span>
@@ -525,7 +525,7 @@ export default function ComunicadoStep({
           <h4 style={{ margin: 0, fontSize: "13px", fontWeight: "800", color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.5px" }}>
             Tallas Requeridas para la Indumentaria:
           </h4>
-          
+
           {requierePoloYShort ? (
             <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: "120px", display: "flex", flexDirection: "column", gap: "4px" }}>

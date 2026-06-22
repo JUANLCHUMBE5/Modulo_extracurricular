@@ -132,7 +132,7 @@ export async function crearPdfInvitacionDocumento(documento) {
   const { jsPDF } = await import("jspdf");
   const ficha = documento.ficha || {};
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  
+
   const nombreEstudiante = (ficha.estudiante?.nombre || "").toUpperCase();
   const gradoEstudiante = (ficha.estudiante?.grado || "").toUpperCase();
   const seccionEstudiante = ficha.estudiante?.seccion && ficha.estudiante.seccion !== "-" ? `SECCIÓN ${ficha.estudiante.seccion.toUpperCase()}` : "";
@@ -143,7 +143,7 @@ export async function crearPdfInvitacionDocumento(documento) {
   doc.setLineWidth(1.2);
   doc.circle(105, 148.5, 42); // outer circle of watermark
   doc.circle(105, 148.5, 38); // inner circle
-  
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(241, 245, 249);
@@ -157,16 +157,16 @@ export async function crearPdfInvitacionDocumento(documento) {
   doc.text('"Año de la Esperanza y el Fortalecimiento de la Democracia"', 192, 14, { align: "right" });
 
   // 2. School Brand info with decorative icons
-  doc.setDrawColor(30, 58, 138); // blue
+  doc.setDrawColor(20, 83, 45); // dark green
   doc.setLineWidth(0.75);
   doc.circle(22, 17.5, 2.5); // gear outer circle
-  
+
   doc.setFillColor(34, 197, 94); // green
   doc.ellipse(23.5, 16.5, 1.2, 0.7, "F"); // green leaf next to gear
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
-  doc.setTextColor(30, 58, 138); // brand primary #1E3A8A
+  doc.setTextColor(20, 83, 45); // brand primary dark green
   doc.text("Colegio San Rafael", 27, 16.5);
   doc.setFont("helvetica", "italic");
   doc.setFontSize(8);
@@ -198,7 +198,7 @@ export async function crearPdfInvitacionDocumento(documento) {
   // 5. Title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.setTextColor(30, 58, 138);
+  doc.setTextColor(20, 83, 45);
   const tituloDoc = `COMUNICADO: ${tituloFichaOriginal(ficha) || tallerNombre}`;
   doc.text(tituloDoc, 105, y, { align: "center" });
   y += 8;
@@ -207,10 +207,10 @@ export async function crearPdfInvitacionDocumento(documento) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(51, 65, 85);
-  
+
   const gradoSeccionText = seccionEstudiante ? `${gradoEstudiante} ${seccionEstudiante}` : gradoEstudiante;
   const parrafo1 = `Reciba un cordial saludo de parte de la Comunidad Educativa del Colegio Matemático "San Rafael". Nos dirigimos a usted para informarle que, con el propósito de complementar la formación integral de nuestros alumnos, nos complace invitar a su menor hijo(a) ${nombreEstudiante}, del grado ${gradoSeccionText}, a participar en nuestra actividad extracurricular: ${tallerNombre}.`;
-  
+
   y = agregarParrafoPdf(doc, parrafo1, 18, y, 174);
   y += 2.5;
 
@@ -230,7 +230,7 @@ export async function crearPdfInvitacionDocumento(documento) {
   const tabla = ficha.programa?.tablaHorariosNivel || [];
   const grupos = ficha.programa?.horariosPorGrupo || [];
   const rows = [];
-  
+
   if (Array.isArray(tabla) && tabla.length > 0) {
     tabla.forEach(row => {
       rows.push({
@@ -247,7 +247,7 @@ export async function crearPdfInvitacionDocumento(documento) {
         ? formatearRangoHoraDocumento(row.almuerzoInicio, row.almuerzoFin)
         : "No aplica";
       const claseFmt = formatearRangoHoraDocumento(row.horaInicio, row.horaFin);
-      
+
       if (subgruposGrados.length > 0) {
         subgruposGrados.forEach(subgrupo => {
           rows.push({
@@ -277,14 +277,14 @@ export async function crearPdfInvitacionDocumento(documento) {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.setTextColor(30, 58, 138);
+  doc.setTextColor(20, 83, 45);
   doc.text("A continuación, se indican los horarios correspondientes:", 18, y);
   y += 4;
 
   // Draw table header
-  doc.setFillColor(30, 58, 138);
+  doc.setFillColor(20, 83, 45);
   doc.rect(18, y, 174, 6.5, "F");
-  
+
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
@@ -321,7 +321,7 @@ export async function crearPdfInvitacionDocumento(documento) {
   if (reqs && reqs !== "Sin requisitos adicionales") {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.setTextColor(30, 58, 138);
+    doc.setTextColor(20, 83, 45);
     doc.text("REQUISITOS:", 18, y);
     y += 4.5;
 
@@ -348,7 +348,7 @@ export async function crearPdfInvitacionDocumento(documento) {
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
-  doc.setTextColor(30, 58, 138);
+  doc.setTextColor(20, 83, 45);
   doc.text("COSTO:", 22, y + 5.8);
 
   doc.setFont("helvetica", "bold");
@@ -362,17 +362,27 @@ export async function crearPdfInvitacionDocumento(documento) {
   if (ficha.programa?.incluyeAlmuerzo) {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.setTextColor(30, 58, 138);
+    doc.setTextColor(20, 83, 45);
     doc.text("EL ALMUERZO:", 18, y);
     y += 4.5;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     doc.setTextColor(51, 65, 85);
-    const horarioAlm = ficha.programa.horarioRecepcionAlmuerzo
-      ? ` de ${ficha.programa.horarioRecepcionAlmuerzo}`
-      : "";
-    const almuerzoParrafo = `Contamos con un área para la recepción de los almuerzos, donde se deberá dejar bajo el siguiente horario:${horarioAlm}. Indicando claramente una etiqueta grande en la lonchera, con NOMBRE DEL ALUMNO, GRADO Y SECCIÓN.`;
+
+    let almuerzoParrafo = "";
+    if (ficha.programa.detalleAlmuerzo) {
+      almuerzoParrafo = ficha.programa.detalleAlmuerzo;
+      if (almuerzoParrafo.toUpperCase().startsWith("EL ALMUERZO:")) {
+        almuerzoParrafo = almuerzoParrafo.substring("EL ALMUERZO:".length).trim();
+      }
+    } else {
+      const horarioAlm = ficha.programa.horarioRecepcionAlmuerzo
+        ? ` de ${ficha.programa.horarioRecepcionAlmuerzo}`
+        : "";
+      almuerzoParrafo = `Contamos con un área para la recepción de los almuerzos, donde se deberá dejar bajo el siguiente horario:${horarioAlm}. Indicando claramente una etiqueta grande en la lonchera, con NOMBRE DEL ALUMNO, GRADO Y SECCIÓN.`;
+    }
+
     y = agregarParrafoPdf(doc, almuerzoParrafo, 18, y, 174);
     y += 2.5;
 
@@ -380,7 +390,17 @@ export async function crearPdfInvitacionDocumento(documento) {
     doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
     doc.setTextColor(71, 85, 105);
-    const deliveryText = "Si deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios autorizados para desayunos, loncheras, almuerzos: Cafetín Los Amigos del recreo (Sra. Rocío) - 976280197 / Cafetín Edith (Sra. Deysli) - 960897529.";
+
+    let deliveryText = "";
+    if (ficha.programa.concesionarios) {
+      deliveryText = ficha.programa.concesionarios;
+      if (deliveryText.toUpperCase().startsWith("CONCESIONARIOS:")) {
+        deliveryText = deliveryText.substring("CONCESIONARIOS:".length).trim();
+      }
+    } else {
+      deliveryText = "Si deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios autorizados para desayunos, loncheras, almuerzos: Cafetín Los Amigos del recreo (Sra. Rocío) - 976280197 / Cafetín Edith (Sra. Deysli) - 960897529.";
+    }
+
     y = agregarParrafoPdf(doc, deliveryText, 18, y, 174);
     y += 4.5;
   }
@@ -401,28 +421,28 @@ export async function crearPdfInvitacionDocumento(documento) {
   y += 11;
 
   // Signature line
-  doc.setDrawColor(30, 58, 138);
+  doc.setDrawColor(20, 83, 45);
   doc.setLineWidth(0.35);
   doc.line(85, y, 125, y);
-  
+
   // General Direction Text
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.setTextColor(30, 58, 138);
+  doc.setTextColor(20, 83, 45);
   doc.text("DIRECCIÓN GENERAL", 105, y + 4, { align: "center" });
-  
+
   // Circular ink stamp overlapping the signature
-  doc.setDrawColor(30, 58, 138);
+  doc.setDrawColor(20, 83, 45);
   doc.setLineWidth(0.35);
   doc.circle(118, y - 2, 7.5);
-  
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(4.5);
   doc.text("COLEGIO", 118, y - 5, { align: "center" });
   doc.text("SAN RAFAEL", 118, y - 3, { align: "center" });
   doc.text("DIRECCIÓN", 118, y - 1, { align: "center" });
   doc.text("GENERAL", 118, y + 1, { align: "center" });
-  
+
   y += 12;
 
   // 13. Dotted line separator and Coupon
@@ -444,7 +464,7 @@ export async function crearPdfInvitacionDocumento(documento) {
   // Coupon title
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.setTextColor(30, 58, 138);
+  doc.setTextColor(20, 83, 45);
   doc.text("ENTREGAR ESTE FORMATO FIRMADO si está conforme, al momento de inscribirse en Administración.", 18, y);
   y += 7;
 
@@ -687,7 +707,7 @@ export function crearHtmlImpresionFicha(ficha) {
 
   const bloquesHtml = bloques.map(([titulo, items]) => `
     <section style="margin-bottom: 20px;">
-      <h4 style="margin: 0 0 8px; font-size: 13px; color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">${escaparHtml(titulo)}</h4>
+      <h4 style="margin: 0 0 8px; font-size: 13px; color: #14532d; border-bottom: 2px solid #14532d; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">${escaparHtml(titulo)}</h4>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 12px;">
         <tbody>
           ${items.map(([label, value]) => {
@@ -762,7 +782,7 @@ export async function descargarFichaPdf(ficha) {
   let y = 16;
 
   // top brand accent bar
-  doc.setFillColor(30, 58, 138); // brand primary dark blue #1E3A8A
+  doc.setFillColor(20, 83, 45); // brand primary dark green
   doc.rect(margen, y, anchoTexto, 2.5, "F");
   y += 9;
 
@@ -1007,7 +1027,7 @@ function agregarBloquePdf(doc, titulo, items, x, y, anchoTexto) {
     }
 
     // Modern Left-Vertical brand accent bar
-    doc.setFillColor(30, 58, 138); // brand primary dark blue #1E3A8A
+    doc.setFillColor(20, 83, 45); // brand primary dark green
     doc.rect(x, y, 2.5, 6, "F");
 
     doc.setFont("helvetica", "bold");
@@ -1042,14 +1062,14 @@ function agregarBloquePdf(doc, titulo, items, x, y, anchoTexto) {
       y = 20;
 
       // Draw continuation header with vertical accent bar
-      doc.setFillColor(30, 58, 138);
+      doc.setFillColor(20, 83, 45);
       doc.rect(x, y, 2.5, 5, "F");
-      
+
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       doc.setTextColor(15, 23, 42);
       doc.text(`${titulo.toUpperCase()} (CONTINUACIÓN)`, x + 5, y + 3.8);
-      
+
       doc.setDrawColor(203, 213, 225);
       doc.setLineWidth(0.3);
       doc.line(x, y + 5.5, x + anchoTexto, y + 5.5);

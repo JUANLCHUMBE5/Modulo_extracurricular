@@ -309,7 +309,7 @@
 
 .coord-program-card-grid {
   display: grid;
-  grid-template-columns: minmax(180px, 1.4fr) minmax(160px, 1.1fr) minmax(165px, 1.15fr) minmax(75px, 0.55fr) minmax(75px, 0.55fr);
+  grid-template-columns: minmax(130px, 0.9fr) minmax(195px, 1.5fr) minmax(100px, 0.7fr) minmax(165px, 1.15fr) minmax(70px, 0.5fr) minmax(70px, 0.5fr);
   gap: 0;
   border-top: 1px solid #eef3f6;
   padding-top: 14px;

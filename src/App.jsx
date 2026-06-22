@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom";
 import Login from "./components/Login/Login";
 import { apiDb, syncApiDb } from "./services/dbApi";
@@ -221,6 +221,7 @@ function ModuleSwitcher({ activeShortcutId, availableModules, currentRole, onSel
 function App() {
   const [user, setUser] = useState(() => readStorageJson(SESSION_STORAGE_KEY, null));
   const navigate = useNavigate();
+  const lastActiveUserCheckRef = useRef(0);
 
   const handleLoginSuccess = (userData) => {
     setUser(userData);
@@ -244,6 +245,7 @@ function App() {
     if (!user?.username || user.role === "padres") return;
 
     const actualizarUsuarioActivo = async () => {
+      lastActiveUserCheckRef.current = Date.now();
       try {
         if (isApiMode()) {
           const res = await apiClient.get("/api/v1/auth/me");
@@ -316,20 +318,27 @@ function App() {
 
     const handleMockDbUpdated = () => actualizarUsuarioActivo();
 
+    const handleFocusCheck = () => {
+      const now = Date.now();
+      if (now - lastActiveUserCheckRef.current > 30000) {
+        actualizarUsuarioActivo();
+      }
+    };
+
     actualizarUsuarioActivo();
     const intervaloPermisos = window.setInterval(actualizarUsuarioActivo, 8000);
     window.addEventListener("api-db-updated", actualizarUsuarioActivo);
     window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("storage", actualizarUsuarioActivo);
-    window.addEventListener("focus", actualizarUsuarioActivo);
-    document.addEventListener("visibilitychange", actualizarUsuarioActivo);
+    window.addEventListener("focus", handleFocusCheck);
+    document.addEventListener("visibilitychange", handleFocusCheck);
     return () => {
       window.clearInterval(intervaloPermisos);
       window.removeEventListener("api-db-updated", actualizarUsuarioActivo);
       window.removeEventListener("mock-db-updated", handleMockDbUpdated);
       window.removeEventListener("storage", actualizarUsuarioActivo);
-      window.removeEventListener("focus", actualizarUsuarioActivo);
-      document.removeEventListener("visibilitychange", actualizarUsuarioActivo);
+      window.removeEventListener("focus", handleFocusCheck);
+      document.removeEventListener("visibilitychange", handleFocusCheck);
     };
   }, [user?.role, user?.username]);
 

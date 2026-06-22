@@ -72,10 +72,10 @@ export function filtrarRegistrosReporte({
     const inscripciones = panel.reportes.inscripciones || [];
     const pagos = panel.reportes.pagos || [];
     raw = inscripciones.map(ins => {
-      const pago = pagos.find(p => 
+      const pago = pagos.find(p =>
         (ins.id && p.inscripcionId === ins.id) ||
-        (ins.pagoId && p.id === ins.pagoId) || 
-        ((p.dni || p.dniEstudiante) === ins.dni && 
+        (ins.pagoId && p.id === ins.pagoId) ||
+        ((p.dni || p.dniEstudiante) === ins.dni &&
          normalizarTexto(p.programa || p.programaNombre) === normalizarTexto(ins.programa))
       ) || null;
 
@@ -126,8 +126,8 @@ export function filtrarRegistrosReporte({
   const findProgram = (progNameOrId) => {
     if (!progNameOrId) return null;
     const nameOrId = String(progNameOrId).toLowerCase().trim();
-    return listProgramas.find(p => 
-      String(p.id).toLowerCase() === nameOrId || 
+    return listProgramas.find(p =>
+      String(p.id).toLowerCase() === nameOrId ||
       String(p.nombre).toLowerCase().trim() === nameOrId
     );
   };
@@ -169,7 +169,7 @@ export function filtrarRegistrosReporte({
   }
 
   // 3. Filtrar por Grado(s)
-  if (customFiltroGrados && customFiltroGrados.length > 0) {
+  if (customFiltroGrados && customFiltroGrados.length > 0 && !customFiltroGrados.includes("todos")) {
     const gradosSet = new Set(customFiltroGrados.map(g => g.toLowerCase().trim()));
     filtered = filtered.filter((item) => {
       const itemGrado = String(item.grado || item.gradoEstudiante || "").toLowerCase().trim();
@@ -204,7 +204,7 @@ export function filtrarRegistrosReporte({
   if (fechaInicio || fechaFin) {
     const start = fechaInicio ? normalizarFecha(fechaInicio) : null;
     const end = fechaFin ? normalizarFecha(fechaFin) : null;
-    
+
     if (start) start.setHours(0, 0, 0, 0);
     if (end) end.setHours(23, 59, 59, 999);
 

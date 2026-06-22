@@ -120,7 +120,7 @@ export default function ReporteTabla({
                     </span>
                   </Table.Td>
                   <Table.Td>
-                    <span className={esPagoWebPadresCaja(fila) || (["caja", "cajera"].includes(String(fila.origen || fila.origenRegistro || "").toLowerCase()) && fila.estadoPago === "pagado") ? "caja-phone-channel" : "caja-row-muted"}>
+                    <span className={esPagoWebPadresCaja(fila) || (["caja", "cajera"].includes(String(fila.origen || fila.origenRegistro || "").toLowerCase()) && fila.estadoPago === "pagado") || fila.descuentoAprobado ? "caja-phone-channel" : "caja-row-muted"}>
                       {obtenerMedioCanalWebCaja(fila)}
                     </span>
                   </Table.Td>
@@ -162,13 +162,14 @@ export default function ReporteTabla({
                         </Group>
                       ) : puedePagar ? (
                         <Button
-                          className="caja-pay-row-button"
-                          leftSection={<Receipt size={15} />}
+                          className={fila.descuentoAprobado ? "caja-approve-discount-button" : "caja-pay-row-button"}
+                          leftSection={fila.descuentoAprobado ? <IconCheck size={15} /> : <Receipt size={15} />}
                           onClick={() => onPagar(fila)}
                           size="xs"
                           variant="light"
+                          color={fila.descuentoAprobado ? "teal" : "blue"}
                         >
-                          Pagar
+                          {fila.descuentoTipo === "beca" ? "Aprobar Beca" : "Aprobar Descuento"}
                         </Button>
                       ) : (
                         <span className="caja-row-muted">
