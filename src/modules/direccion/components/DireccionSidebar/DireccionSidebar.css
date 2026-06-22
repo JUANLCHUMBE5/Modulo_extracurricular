@@ -1,0 +1,219 @@
+/* ==========================================================================
+   BARRA LATERAL (SIDEBAR) - MÓDULO DIRECCIÓN (COLEGIO SAN RAFAEL)
+   ========================================================================== */
+.dir-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  height: 100dvh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #197f10 !important; /* Fondo verde sólido */
+  border-right: none !important; /* Removido borde gris */
+  padding: 24px 16px !important;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08) !important; /* Sombra sutil de separación */
+  overflow: hidden !important;
+  width: var(--dir-sidebar, 260px) !important;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Encabezado / Logo con orden flex para colocar el logo a la izquierda */
+.dir-sidebar-brand-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  margin-bottom: 24px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; /* Borde sutil blanco translúcido */
+}
+
+/* Contenedor del Logo en color blanco para contraste */
+.dir-brand {
+  order: 1 !important; /* Forzar orden a la izquierda */
+  border: none !important;
+  background: #ffffff !important; /* Caja blanca para el logo */
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: auto !important;
+  margin: 0 !important;
+  justify-items: center;
+}
+
+.dir-brand-logo {
+  max-height: 38px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+
+.dir-menu-toggle-btn {
+  order: 2 !important; /* Forzar orden a la derecha */
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important; /* Color blanco para contraste */
+  cursor: pointer !important;
+  padding: 6px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin-left: auto !important; /* Empujar a la derecha */
+}
+
+.dir-menu-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.dir-module-label {
+  color: #a7f3d0 !important; /* Verde claro suave para el label de módulo */
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  padding-left: 0 !important;
+  margin: 0 0 16px !important;
+}
+
+/* Contenedor de Navegación */
+.dir-nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+/* Ítems de la Navegación */
+.dir-nav button,
+.dir-logout {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 12px 16px !important; /* Relleno vertical elegante */
+  border: none !important;
+  border-radius: 10px !important; /* Bordes suaves redondeados */
+  background: transparent !important;
+  color: #e2e8f0 !important; /* Texto blanco grisáceo para buen contraste */
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+  min-height: auto !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+.dir-nav button svg,
+.dir-logout svg {
+  color: #cbd5e1 !important; /* Iconos blanco grisáceos */
+  stroke: #cbd5e1 !important;
+  width: 20px !important;
+  height: 20px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.dir-nav button span,
+.dir-logout span {
+  color: #e2e8f0 !important; /* Texto blanco grisáceo inactivo */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Hover de Ítems inactivos */
+.dir-nav button:hover,
+.dir-logout:hover {
+  background: rgba(255, 255, 255, 0.12) !important; /* Blanco translúcido */
+  color: #ffffff !important;
+}
+
+.dir-nav button:hover span,
+.dir-logout:hover span {
+  color: #ffffff !important;
+}
+
+.dir-nav button:hover svg,
+.dir-logout:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  transform: translateY(-1px); /* Micro-animación al pasar el mouse */
+}
+
+/* Ítem Activo (Fondo blanco y letras negras como solicitado) */
+.dir-nav button.is-active {
+  background: #ffffff !important; /* Fondo blanco */
+  color: #000000 !important; /* Letras negras */
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important; /* Sombra sutil para profundidad */
+}
+
+.dir-nav button.is-active svg {
+  color: #000000 !important; /* Icono negro */
+  stroke: #000000 !important;
+}
+
+.dir-nav button.is-active span {
+  color: #000000 !important; /* Forzar texto negro puro en el span */
+}
+
+/* Hover en Ítem Activo (Mantener blanco/negro) */
+.dir-nav button.is-active:hover {
+  background: #f8fafc !important; /* Blanco sutilmente grisáceo */
+  color: #000000 !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18) !important;
+}
+
+.dir-nav button.is-active:hover span {
+  color: #000000 !important;
+}
+
+.dir-nav button.is-active:hover svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  transform: none !important;
+}
+
+/* Botón de Cerrar Sesión al final */
+.dir-sidebar > .dir-logout {
+  margin-top: auto !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important; /* Separador sutil */
+  border-radius: 0 !important;
+  padding-top: 16px !important;
+}
+
+.dir-sidebar > .dir-logout span {
+  color: #e2e8f0 !important;
+}
+
+.dir-sidebar > .dir-logout:hover {
+  background: #fee2e2 !important; /* Hover rojo suave */
+  color: #ef4444 !important; /* Letras rojas */
+  border-radius: 10px !important;
+}
+
+.dir-sidebar > .dir-logout:hover span {
+  color: #ef4444 !important;
+}
+
+.dir-sidebar > .dir-logout:hover svg {
+  color: #ef4444 !important;
+  stroke: #ef4444 !important;
+  transform: translateY(-1px);
+}
+
+/* Ocultar barra lateral por completo cuando está colapsada */
+.sidebar-collapsed .dir-sidebar {
+  width: 0px !important;
+  padding: 0px !important;
+  border-right: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

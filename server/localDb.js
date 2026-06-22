@@ -57,7 +57,8 @@ async function readFromSupabase() {
     // 1. Traemos todas las tablas en paralelo para máxima velocidad
     const [
       resUsuarios, resEstudiantes, resProgramas, resInscripciones,
-      resPagos, resAsistencias, resInvitados, resLogs, resCategorias, resHistorial
+      resPagos, resAsistencias, resInvitados, resLogs, resCategorias, resHistorial,
+      resConfiguracion
     ] = await Promise.all([
       supabase.from("usuarios").select("*"),
       supabase.from("estudiantes").select("*"),
@@ -68,7 +69,8 @@ async function readFromSupabase() {
       supabase.from("invitados_programa").select("*"),
       supabase.from("audit_logs").select("*"),
       supabase.from("categorias").select("*"),
-      supabase.from("historial_cargas").select("*")
+      supabase.from("historial_cargas").select("*"),
+      supabase.from("configuracion").select("*")
     ]);
 
     // 2. Mapeo y transformación de formatos (De Filas SQL a Objetos Indexados JSON)
@@ -180,10 +182,39 @@ async function readFromSupabase() {
     });
 
     const categoriasArray = (resCategorias.data || []).map(c => c.categoria);
-    const finalCategorias = (categoriasArray.length ? categoriasArray : initialData.categorias).filter(c => {
-      const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      return normal !== "ingles";
-    });
+
+    let correlativosObj = { recibo: "", egreso: "" };
+    
+    // Intentar leer de la tabla configuracion primero
+    if (resConfiguracion && resConfiguracion.data) {
+      const row = resConfiguracion.data.find(r => r.clave === "correlativos");
+      if (row && row.valor) {
+        try {
+          correlativosObj = JSON.parse(row.valor);
+        } catch (e) {
+          console.error("Error parsing correlativos from configuracion table:", e);
+        }
+      }
+    }
+
+    // Fallback: si no se encontró en la tabla configuracion, buscar en categorias (por compatibilidad)
+    if (!correlativosObj.recibo) {
+      const configRow = categoriasArray.find(c => String(c).startsWith("CONFIG_CORRELATIVOS:"));
+      if (configRow) {
+        try {
+          correlativosObj = JSON.parse(configRow.slice("CONFIG_CORRELATIVOS:".length));
+        } catch (e) {
+          console.error("Error parsing correlativos config from legacy categorias:", e);
+        }
+      }
+    }
+
+    const finalCategorias = (categoriasArray.length ? categoriasArray : initialData.categorias)
+      .filter(c => !String(c).startsWith("CONFIG_CORRELATIVOS:"))
+      .filter(c => {
+        const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return normal !== "ingles";
+      });
 
     // 3. Retornamos la estructura exacta simulando db.json
     return {
@@ -216,6 +247,7 @@ async function readFromSupabase() {
       auditLogs: resLogs.data || [],
       plantillasPorPrograma: plantillasObj,
       categorias: finalCategorias,
+      correlativos: correlativosObj,
       documentosGenerados: [],
       historialCargas: (resHistorial && resHistorial.data) ? resHistorial.data.map(hc => {
         return {
@@ -459,19 +491,38 @@ async function writeToSupabase(db) {
       }
     }
 
-    // 4. Sincronizar categorías (borrar e insertar para asegurar coincidencia exacta)
     const categoriasList = db.categorias || [];
-    if (categoriasList.length) {
-      const deleteRes = await supabase.from("categorias").delete().neq("id", 0);
-      if (deleteRes.error) {
-        console.warn(`⚠️ Warning: No se pudo limpiar categorías en Supabase: ${deleteRes.error.message}`);
-      } else {
-        const catRows = categoriasList.map(c => ({ categoria: c }));
-        const insertRes = await supabase.from("categorias").insert(catRows);
-        if (insertRes.error) {
-          console.warn(`⚠️ Warning: No se pudo insertar categorías en Supabase: ${insertRes.error.message}`);
-        }
+    const deleteRes = await supabase.from("categorias").delete().neq("id", 0);
+    if (deleteRes.error) {
+      console.warn(`⚠️ Warning: No se pudo limpiar categorías en Supabase: ${deleteRes.error.message}`);
+    } else {
+      const catRows = categoriasList
+        .filter(c => !String(c).startsWith("CONFIG_CORRELATIVOS:"))
+        .map(c => ({ categoria: c }));
+      
+      catRows.push({
+        categoria: "CONFIG_CORRELATIVOS:" + JSON.stringify(db.correlativos || { recibo: "", egreso: "" })
+      });
+      
+      const insertRes = await supabase.from("categorias").insert(catRows);
+      if (insertRes.error) {
+        console.warn(`⚠️ Warning: No se pudo insertar categorías en Supabase: ${insertRes.error.message}`);
       }
+    }
+
+    // Guardar en la tabla configuracion
+    try {
+      const configVal = JSON.stringify(db.correlativos || { recibo: "", egreso: "" });
+      const resConfig = await supabase.from("configuracion").upsert({
+        clave: "correlativos",
+        valor: configVal,
+        updated_at: new Date().toISOString()
+      }, { onConflict: "clave" });
+      if (resConfig.error) {
+        console.warn(`⚠️ Warning: No se pudo guardar configuración en tabla 'configuracion' de Supabase: ${resConfig.error.message}`);
+      }
+    } catch (confErr) {
+      console.warn(`⚠️ Warning: Error guardando configuración en tabla 'configuracion':`, confErr);
     }
   } catch (err) {
     console.error("❌ Error al persistir en Supabase:", err);
@@ -626,13 +677,24 @@ async function readLocalDb() {
 }
 
 function mergeWithDefaults(stored, defaults) {
+  let correlativosObj = stored.correlativos || defaults.correlativos || { recibo: "", egreso: "" };
+  const storedCats = stored.categorias || [];
+  const configRow = storedCats.find(c => String(c).startsWith("CONFIG_CORRELATIVOS:"));
+  if (configRow) {
+    try {
+      correlativosObj = JSON.parse(configRow.slice("CONFIG_CORRELATIVOS:".length));
+    } catch {}
+  }
+
   return {
     ...defaults,
     ...stored,
-    categorias: (stored.categorias || defaults.categorias || []).filter(c => {
-      const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      return normal !== "ingles";
-    }),
+    categorias: (stored.categorias || defaults.categorias || [])
+      .filter(c => !String(c).startsWith("CONFIG_CORRELATIVOS:"))
+      .filter(c => {
+        const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        return normal !== "ingles";
+      }),
     estudiantes: stored.estudiantes || defaults.estudiantes,
     programas: stored.programas || defaults.programas,
     invitadosPorPrograma: {

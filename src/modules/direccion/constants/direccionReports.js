@@ -39,6 +39,7 @@ export const columnasDisponiblesMap = {
     { key: "medio", label: "Medio de Pago" },
     { key: "fecha", label: "Fecha Pago" },
     { key: "nroRecibo", label: "Recibo SIADED" },
+    { key: "observaciones", label: "Observaciones / Motivo Anulación" },
   ],
   direccion_alumnos_pagos: [
     { key: "index", label: "N°" },
@@ -64,6 +65,7 @@ export const columnasDisponiblesMap = {
     { key: "nroOperacion", label: "N° Operación" },
     { key: "origen", label: "Canal / Origen" },
     { key: "fechaRegistro", label: "Fecha Registro" },
+    { key: "observaciones", label: "Observaciones / Motivo Anulación" },
   ],
   direccion_alumnos_asistencias: [
     { key: "index", label: "N°" },

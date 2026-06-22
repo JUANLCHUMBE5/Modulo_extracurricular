@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Button, Group, Modal, Select } from "@mantine/core";
+import { Button, Group, Modal, Select, Text, Textarea } from "@mantine/core";
 import { toast } from "sonner";
 import {
   IconChartBar as ChartBar,
@@ -35,7 +35,9 @@ import {
   observarPagoWeb,
   rechazarPagoWeb,
   obtenerPagoPorId,
+  anularPago,
 } from "./cajaService";
+import { obtenerCorrelativos } from "../direccion/direccionService";
 import { fechaActualInput } from "../../services/dateService";
 import { validarDni } from "../../services/validators";
 import { formatearSoles } from "./utils/cajaFormatters";
@@ -114,6 +116,27 @@ export default function Caja({
   const [rechazoTexto, setRechazoTexto] = useState("");
   const [guardandoVerificacion, setGuardandoVerificacion] = useState(false);
 
+  // Estados para correlativos y anulación de pagos
+  const [correlativos, setCorrelativos] = useState({ recibo: "", egreso: "" });
+  const [modalAnularAbierto, setModalAnularAbierto] = useState(false);
+  const [anulacionTexto, setAnulacionTexto] = useState("");
+  const [pagoAnular, setPagoAnular] = useState(null);
+
+  async function cargarCorrelativos() {
+    try {
+      const res = await obtenerCorrelativos();
+      if (res) {
+        setCorrelativos(res);
+      }
+    } catch (err) {
+      console.error("Error al cargar correlativos:", err);
+    }
+  }
+
+  useEffect(() => {
+    cargarCorrelativos();
+  }, [periodo]);
+
   useEffect(() => {
     cargarDatos();
   }, [periodo]);
@@ -178,7 +201,9 @@ export default function Caja({
   const reporte = useMemo(() => {
     const totalVisible = reporteCaja.reduce((sum, fila) => sum + Number(fila.monto || 0), 0);
     const pagados = reporteCaja.filter((fila) => fila.estadoPago === "pagado");
-    const pendientes = reporteCaja.filter((fila) => fila.estadoPago === "pendiente");
+    const pendientes = reporteCaja.filter(
+      (fila) => fila.estadoPago === "pendiente" || fila.estadoPago === "verificando" || fila.estadoPago === "observado"
+    );
     return {
       totalVisible,
       totalPagado: pagados.reduce((sum, pago) => sum + Number(pago.monto || 0), 0),
@@ -197,6 +222,7 @@ export default function Caja({
       const [datosPagos, datosResumen] = await Promise.all([
         listarPagos(periodo),
         obtenerResumenCaja(periodo),
+        cargarCorrelativos(),
       ]);
       setPagos(datosPagos);
       setResumen(datosResumen);
@@ -613,6 +639,40 @@ export default function Caja({
     }
   }
 
+  function abrirAnularModal(fila) {
+    if (!fila) return;
+    setPagoAnular(fila);
+    setAnulacionTexto("");
+    setModalAnularAbierto(true);
+  }
+
+  function cerrarAnularModal() {
+    setModalAnularAbierto(false);
+    setPagoAnular(null);
+    setAnulacionTexto("");
+  }
+
+  async function confirmarAnularPago() {
+    if (!pagoAnular) return;
+    if (!anulacionTexto.trim()) {
+      toast.error("Anular pago", { description: "Debe ingresar una justificación para anular el pago." });
+      return;
+    }
+    try {
+      setGuardando(true);
+      const pagoId = pagoAnular.pagoId || pagoAnular.id;
+      await anularPago(pagoId, anulacionTexto);
+      toast.success("Recibo/Pago anulado", { description: "El registro ha sido anulado correctamente." });
+      cerrarAnularModal();
+      await cargarDatos();
+      await cargarReporteCaja();
+    } catch (error) {
+      toast.error("Error al anular", { description: error.message || "No se pudo anular el pago." });
+    } finally {
+      setGuardando(false);
+    }
+  }
+
   async function descargarReporte() {
     try {
       const datos = await generarReporteCaja({
@@ -750,6 +810,7 @@ export default function Caja({
                     setDni={setDni}
                     setFormulario={setFormulario}
                     mensaje={mensaje}
+                    siguienteRecibo={correlativos.recibo}
                   />
                   {formulario.inscripcionId ? (
                     formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar" ? (
@@ -815,6 +876,7 @@ export default function Caja({
                     onObservarWebPago={abrirObservarModal}
                     onRechazarWebPago={abrirRechazarModal}
                     onVerCapturaWebPago={verificarPagoWeb}
+                    onAnularPago={abrirAnularModal}
                   />
                 </section>
               </section>
@@ -852,6 +914,7 @@ export default function Caja({
           setDni={setDni}
           setFormulario={setFormulario}
           mensaje={mensaje}
+          siguienteRecibo={correlativos.recibo}
         />
         <Group justify="flex-end" mt="lg">
           <Button onClick={cerrarModal} variant="default">
@@ -893,6 +956,60 @@ export default function Caja({
         }}
         pagoVerificar={pagoVerificar}
       />
+
+      <Modal
+        centered
+        opened={modalAnularAbierto}
+        onClose={cerrarAnularModal}
+        title="Anular Recibo / Pago"
+        size="md"
+      >
+        {pagoAnular ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ background: "#f8fafc", padding: "12px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+              <Text size="xs" color="dimmed">Estudiante:</Text>
+              <Text size="sm" fw={700} mb="xs">{pagoAnular.estudiante || pagoAnular.nombresEstudiante || "-"}</Text>
+              
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                <div>
+                  <Text size="xs" color="dimmed">Recibo SIADED:</Text>
+                  <Text size="sm" fw={700}>{pagoAnular.nroRecibo || "-"}</Text>
+                </div>
+                <div>
+                  <Text size="xs" color="dimmed">Monto:</Text>
+                  <Text size="sm" fw={700} color="red">{formatearSoles(pagoAnular.monto)}</Text>
+                </div>
+              </div>
+            </div>
+
+            <Text size="sm" color="dimmed">
+              Ingrese el motivo por el cual desea anular este recibo/pago. El recibo quedará registrado como ANULADO en Dirección y el estudiante volverá al estado "Pendiente de pago".
+            </Text>
+
+            <Textarea
+              label="Motivo de la anulación"
+              placeholder="Ej. El padre ya no inscribirá al alumno en este taller y solicitó la cancelación."
+              required
+              rows={4}
+              value={anulacionTexto}
+              onChange={(e) => setAnulacionTexto(e.currentTarget.value)}
+            />
+
+            <Group justify="flex-end" mt="md">
+              <Button variant="default" onClick={cerrarAnularModal}>
+                Cancelar
+              </Button>
+              <Button
+                color="red"
+                loading={guardando}
+                onClick={confirmarAnularPago}
+              >
+                Confirmar Anulación
+              </Button>
+            </Group>
+          </div>
+        ) : null}
+      </Modal>
     </main>
   );
 }

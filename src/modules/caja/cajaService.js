@@ -72,6 +72,14 @@ export async function registrarPago(datosPago) {
 
   if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
 
+  let nroRecibo = datosPago.nroRecibo || "";
+  if (!nroRecibo) {
+    if (apiDb.correlativos && apiDb.correlativos.recibo) {
+      nroRecibo = apiDb.correlativos.recibo;
+      apiDb.correlativos.recibo = incrementarCorrelativo(apiDb.correlativos.recibo);
+    }
+  }
+
   const dniEstudiante = datosPago.dniEstudiante || datosPago.estudianteDni || "";
   const nombresEstudiante = datosPago.nombresEstudiante || datosPago.estudianteNombre || "";
   const programa = datosPago.programa || datosPago.programaNombre || "";
@@ -91,6 +99,7 @@ export async function registrarPago(datosPago) {
   const pago = {
     id: generarPagoId(),
     ...datosPago,
+    nroRecibo: nroRecibo,
     origenRegistro: datosPago.origenRegistro || "Cajera",
     estudianteDni: datosPago.estudianteDni || dniEstudiante,
     estudianteNombre: datosPago.estudianteNombre || nombresEstudiante,
@@ -421,6 +430,19 @@ export async function validarPagoWeb(pagoId, observaciones = "") {
     if (!res.success) throw new Error(res.message || "Error al validar pago web");
     return adaptarPago(res.data);
   }
+
+  await syncApiDb();
+  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
+  const idx = apiDb.pagos.findIndex(p => p.id === pagoId);
+  let nroRecibo = "";
+  if (idx !== -1) {
+    nroRecibo = apiDb.pagos[idx].nroRecibo || "";
+    if (!nroRecibo && apiDb.correlativos && apiDb.correlativos.recibo) {
+      nroRecibo = apiDb.correlativos.recibo;
+      apiDb.correlativos.recibo = incrementarCorrelativo(apiDb.correlativos.recibo);
+    }
+  }
+
   return actualizarEstadoPagoWeb(pagoId, {
     estado: "completado",
     estadoVerificacion: "validado",
@@ -428,6 +450,7 @@ export async function validarPagoWeb(pagoId, observaciones = "") {
     estadoPago: "Pagado",
     fechaPago: fechaActualIso(),
     observaciones,
+    nroRecibo,
   });
 }
 
@@ -736,5 +759,58 @@ export async function obtenerPagoPorId(pagoId) {
   await syncApiDb();
   if (!Array.isArray(apiDb.pagos)) return null;
   return apiDb.pagos.find((p) => p.id === pagoId) || null;
+}
+
+export async function anularPago(pagoId, observaciones = "Pago anulado por Cajera.") {
+  if (isApiMode()) {
+    const res = await apiClient.put(`/api/v1/extracurricular/pagos/${pagoId}/anular`, { observaciones });
+    if (!res.success) throw new Error(res.message || "Error al anular pago");
+    return adaptarPago(res.data);
+  }
+  
+  await syncApiDb();
+  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
+  const index = apiDb.pagos.findIndex((pago) => pago.id === pagoId);
+  if (index === -1) throw new Error("No se encontró el pago a anular.");
+
+  apiDb.pagos[index] = {
+    ...apiDb.pagos[index],
+    estado: "anulado",
+    estadoVerificacion: "anulado",
+    estadoInscripcion: "pendiente_pago",
+    estadoPago: "Anulado",
+    observaciones,
+    updatedAt: fechaActualIso(),
+  };
+
+  const pagoActualizado = apiDb.pagos[index];
+  const inscripcionIndex = (apiDb.inscripciones || []).findIndex((inscripcion) =>
+    inscripcion.id === pagoActualizado.inscripcionId
+  );
+
+  if (inscripcionIndex !== -1) {
+    apiDb.inscripciones[inscripcionIndex] = {
+      ...apiDb.inscripciones[inscripcionIndex],
+      estadoPago: "Pendiente",
+      estadoInscripcion: "pendiente_pago",
+      fechaPago: "",
+      pagoObservacionCaja: observaciones,
+    };
+  }
+
+  await saveApiDb();
+  window.dispatchEvent(new Event("mock-db-updated"));
+  return pagoActualizado;
+}
+
+function incrementarCorrelativo(valor) {
+  if (!valor) return "";
+  const match = String(valor).match(/^(.*?)(\d+)$/);
+  if (!match) return valor;
+  const prefix = match[1];
+  const numStr = match[2];
+  const nextNum = Number(numStr) + 1;
+  const paddedNum = String(nextNum).padStart(numStr.length, "0");
+  return prefix + paddedNum;
 }
 

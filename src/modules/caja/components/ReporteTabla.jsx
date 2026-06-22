@@ -18,9 +18,7 @@ import {
   obtenerMedioCanalWebCaja,
   obtenerTelefonoPagoWebCaja,
 } from "../utils/cajaReportUtils";
-
-const FILAS_POR_PAGINA = 8;
-
+const FILAS_POR_PAGINA = 10;
 export default function ReporteTabla({
   filas,
   onPagar,
@@ -28,6 +26,7 @@ export default function ReporteTabla({
   onObservarWebPago,
   onRechazarWebPago,
   onVerCapturaWebPago,
+  onAnularPago,
 }) {
   const [pagina, setPagina] = useState(0);
 
@@ -169,17 +168,35 @@ export default function ReporteTabla({
                           variant="light"
                           color={fila.descuentoAprobado ? "teal" : "blue"}
                         >
-                          {fila.descuentoTipo === "beca" ? "Aprobar Beca" : "Aprobar Descuento"}
+                          {fila.descuentoAprobado
+                            ? (fila.descuentoTipo === "beca" ? "Aprobar Beca" : "Aprobar Descuento")
+                            : "Registrar Pago"}
                         </Button>
                       ) : (
                         <span className="caja-row-muted">
-                          {fila.estadoPago === "pagado"
-                            ? "Aprobado"
-                            : fila.estadoPago === "observado"
-                            ? "Observado"
-                            : fila.estadoPago === "anulado"
-                            ? "Anulado"
-                            : "Listo"}
+                          {fila.estadoPago === "pagado" ? (
+                            <Group gap={6} wrap="nowrap" style={{ display: "inline-flex", alignItems: "center" }}>
+                              <span style={{ color: "#16a34a", fontWeight: 700 }}>Aprobado</span>
+                              {onAnularPago && (
+                                <Tooltip label="Anular recibo / pago">
+                                  <ActionIcon
+                                    color="red"
+                                    onClick={() => onAnularPago(fila)}
+                                    size="xs"
+                                    variant="subtle"
+                                  >
+                                    <IconX size={13} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              )}
+                            </Group>
+                          ) : fila.estadoPago === "observado" ? (
+                            "Observado"
+                          ) : fila.estadoPago === "anulado" ? (
+                            "Anulado"
+                          ) : (
+                            "Listo"
+                          )}
                         </span>
                       )}
                     </Table.Td>

@@ -63,6 +63,30 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       .replace(/[^a-z0-9]/g, "");
   }
 
+  function compararGrados(g1 = "", g2 = "") {
+    const t1 = String(g1 || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    const t2 = String(g2 || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+      
+    if (t1 === t2) return true;
+
+    const num1 = t1.match(/\d+/)?.[0] || "";
+    const num2 = t2.match(/\d+/)?.[0] || "";
+    if (!num1 || !num2 || num1 !== num2) return false;
+
+    const nivel1 = ["inicial", "primaria", "secundaria"].find((n) => t1.includes(n)) || "";
+    const nivel2 = ["inicial", "primaria", "secundaria"].find((n) => t2.includes(n)) || "";
+
+    return nivel1 === nivel2;
+  }
+
   // Fetch asistencias and matriculados whenever selected tallerId changes
   useEffect(() => {
     if (!tallerId) {
@@ -131,7 +155,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
     const map = new Set();
     asistencias.forEach((asist) => {
       const dateKey = claveFechaAsistencia(obtenerFechaAsistencia(asist));
-      const dni = obtenerDniAsistencia(asist);
+      const dni = String(obtenerDniAsistencia(asist) || "").trim();
       if (dni && dateKey) {
         map.add(`${dni}:${dateKey}`);
       }
@@ -220,7 +244,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
     if (gradoSeleccionado) {
       list = list.filter((alumno) => {
         const gAlumno = alumno.grado || alumno.gradoEstudiante || "";
-        return normalizarTextoSimple(gAlumno) === normalizarTextoSimple(gradoSeleccionado);
+        return compararGrados(gAlumno, gradoSeleccionado);
       });
     } else if (gradosHabilitados.length > 0) {
       return [];
@@ -250,10 +274,10 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
 
     if (gradoSeleccionado) {
       list = list.filter((asist) => {
-        const dni = asist.dni || obtenerDniAsistencia(asist);
-        const matriculado = matriculados.find((m) => m.dni === dni);
+        const dniAsist = String(asist.dni || obtenerDniAsistencia(asist) || "").trim();
+        const matriculado = matriculados.find((m) => String(m.dni || "").trim() === dniAsist);
         const gAlumno = matriculado ? (matriculado.grado || matriculado.gradoEstudiante || "") : "";
-        return normalizarTextoSimple(gAlumno) === normalizarTextoSimple(gradoSeleccionado);
+        return compararGrados(gAlumno, gradoSeleccionado);
       });
     } else if (gradosHabilitados.length > 0) {
       return [];
@@ -418,10 +442,10 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       let filasFiltradas = grupo.filas;
       if (gradoSeleccionado) {
         filasFiltradas = filasFiltradas.filter((asist) => {
-          const dni = asist.dni || obtenerDniAsistencia(asist);
-          const matriculado = matriculados.find((m) => m.dni === dni);
+          const dniAsist = String(asist.dni || obtenerDniAsistencia(asist) || "").trim();
+          const matriculado = matriculados.find((m) => String(m.dni || "").trim() === dniAsist);
           const gAlumno = matriculado ? (matriculado.grado || matriculado.gradoEstudiante || "") : "";
-          return normalizarTextoSimple(gAlumno) === normalizarTextoSimple(gradoSeleccionado);
+          return compararGrados(gAlumno, gradoSeleccionado);
         });
       }
       return {
@@ -945,7 +969,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                                 <td>{alumno.telefono || alumno.telefonoApoderado || "—"}</td>
                                 {fechasColumnas.length > 0 ? (
                                   fechasColumnas.map((fechaCol) => {
-                                    const asistio = checkMap.has(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`);
+                                    const asistio = checkMap.has(`${String(alumno.dni || alumno.dniEstudiante || "").trim()}:${fechaCol.clave}`);
                                     return (
                                       <td
                                         key={fechaCol.clave}

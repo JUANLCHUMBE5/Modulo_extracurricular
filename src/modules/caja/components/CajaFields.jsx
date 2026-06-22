@@ -16,6 +16,7 @@ export default function CajaFields({
   setDni,
   setFormulario,
   mensaje,
+  siguienteRecibo,
 }) {
   const pagoHabilitado = modoEdicion || Boolean(formulario.inscripcionId);
 
@@ -190,11 +191,16 @@ export default function CajaFields({
               Nro. recibo SIADED
               <input
                 type="text"
-                placeholder="Ej. 51614"
+                placeholder={siguienteRecibo ? `${siguienteRecibo} (Autogenerado)` : "Ej. 51614"}
                 value={formulario.nroRecibo || ""}
                 onChange={(event) => actualizar("nroRecibo", event.currentTarget.value)}
                 disabled={esPorVerificar}
               />
+              <span style={{ fontSize: "11px", color: "#64748b", marginTop: "4px", display: "block" }}>
+                {siguienteRecibo
+                  ? "Si se deja vacío, se generará el correlativo automático."
+                  : "Ingrese el número de recibo manual."}
+              </span>
             </label>
             {esPorVerificar ? (
               <div className="caja-yape-details-card" style={{

@@ -3422,8 +3422,14 @@
   border-radius: 8px !important;
   font-weight: 700 !important;
   transition: all 0.15s ease !important;
-  min-height: 36px !important;
+  min-height: 38px !important;
+  height: 38px !important;
   font-size: 12.5px !important;
+  margin-top: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
 }
 
 .secretaria-primary-button {
@@ -3433,7 +3439,7 @@
   box-shadow: 0 2px 6px rgba(23,108,96, 0.1) !important;
   border-radius: 8px !important;
   font-weight: 700 !important;
-  min-height: 36px !important;
+  min-height: 38px !important;
 }
 
 .secretaria-primary-button:hover:not(:disabled) {
@@ -3448,7 +3454,7 @@
   color: #475569 !important;
   border-radius: 8px !important;
   font-weight: 600 !important;
-  min-height: 36px !important;
+  min-height: 38px !important;
 }
 
 .secretaria-secondary-button:hover:not(:disabled) {

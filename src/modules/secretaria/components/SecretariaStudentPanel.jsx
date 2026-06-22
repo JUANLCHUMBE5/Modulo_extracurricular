@@ -482,7 +482,7 @@ function SecretariaStudentPanel({
         </dl>
       )}
 
-      {inscripcionesEstudiante.length > 0 && (
+      {modoBusquedaAsistencia && inscripcionesEstudiante.length > 0 && (
         <div style={{ marginTop: "20px", display: "flex", flexDirection: "column", gap: "12px", width: "100%", gridColumn: "1 / -1" }}>
           <h3 style={{ fontSize: "14px", fontWeight: 700, color: "#1e293b", margin: "0 0 4px 0", borderBottom: "2px solid #e2e8f0", paddingBottom: "6px" }}>
             Talleres y Cursos Matriculados
