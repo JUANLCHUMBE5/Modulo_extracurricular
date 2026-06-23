@@ -54,8 +54,9 @@ export default function CajaReportes({
             ]}
             onChange={(valor) => setPeriodo(valor || "escolar")}
             value={periodo}
+            size="sm"
           />
-          <Button leftSection={<Download size={17} />} onClick={descargarReporte}>
+          <Button leftSection={<Download size={15} />} onClick={descargarReporte} size="sm" style={{ height: "34px" }}>
             Descargar CSV
           </Button>
         </div>
@@ -68,6 +69,8 @@ export default function CajaReportes({
           mediosPago={opcionesReporte.mediosPago}
           onChange={actualizarFiltroReporte}
           programas={opcionesReporte.programas}
+          grados={opcionesReporte.grados}
+          secciones={opcionesReporte.secciones}
         />
         <section className="caja-panel">
           <div className="caja-panel-header">

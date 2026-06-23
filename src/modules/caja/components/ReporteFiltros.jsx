@@ -1,6 +1,6 @@
 import { tiposReporte } from "../constants/cajaConstants";
 
-export default function ReporteFiltros({ filtros, mediosPago, onChange, programas }) {
+export default function ReporteFiltros({ filtros, mediosPago, onChange, programas, grados = [], secciones = [] }) {
   return (
     <section className="caja-report-filters">
       <label>
@@ -17,6 +17,24 @@ export default function ReporteFiltros({ filtros, mediosPago, onChange, programa
           <option value="todos">Todos</option>
           {programas.map((programa) => (
             <option key={programa.value} value={programa.value}>{programa.label}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Grado
+        <select value={filtros.grado || "todos"} onChange={(event) => onChange("grado", event.currentTarget.value)}>
+          <option value="todos">Todos</option>
+          {grados.map((g) => (
+            <option key={g} value={g}>{g}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Sección
+        <select value={filtros.seccion || "todos"} onChange={(event) => onChange("seccion", event.currentTarget.value)}>
+          <option value="todos">Todos</option>
+          {secciones.map((s) => (
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
       </label>

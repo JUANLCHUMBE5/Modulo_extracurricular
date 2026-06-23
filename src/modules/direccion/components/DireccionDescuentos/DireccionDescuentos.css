@@ -3,34 +3,46 @@
    ========================================================================== */
 
 .dir-descuentos-view {
-  animation: fadeIn 0.4s ease-out;
+  animation: fadeIn 0.3s ease-out;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Buscador de Estudiantes */
 .dir-search-container {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.015);
-  margin-bottom: 12px;
-  transition: all 0.3s ease;
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 12px 0 !important;
+  box-shadow: none !important;
+  margin-bottom: 4px !important;
 }
 
-.dir-search-container:focus-within {
-  border-color: #14b8a6;
-  box-shadow: 0 4px 20px rgba(20, 184, 166, 0.08);
+/* Botón Buscar Alumno - Verde Claro */
+.dir-search-btn {
+  height: 46px !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  padding: 0 24px !important;
+  background: #e6fcf5 !important;
+  color: #0c8569 !important;
+  border: 1px solid #c3fae8 !important;
+  transition: all 0.2s ease !important;
+}
+
+.dir-search-btn:hover {
+  background: #c3fae8 !important;
+  color: #09634e !important;
+  border-color: #a3f5d8 !important;
 }
 
 .dir-search-form {
   display: flex;
   gap: 12px;
-  max-width: 700px;
+  width: 100%;
 }
 
 /* Avatares de Estudiantes (Iniciales) */
@@ -44,38 +56,28 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
-  color: #ffffff;
+  background: #f1f5f9;
+  color: #000000;
+  border: 1px solid #cbd5e1;
   font-weight: 700;
   font-size: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.2);
+  box-shadow: none;
   flex-shrink: 0;
   letter-spacing: 0.5px;
 }
 
-.dir-student-avatar.alt-0 {
-  background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
-  box-shadow: 0 2px 8px rgba(20, 184, 166, 0.2);
-}
-.dir-student-avatar.alt-1 {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
-}
-.dir-student-avatar.alt-2 {
-  background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.2);
-}
-.dir-student-avatar.alt-3 {
-  background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
-}
+.dir-student-avatar.alt-0,
+.dir-student-avatar.alt-1,
+.dir-student-avatar.alt-2,
+.dir-student-avatar.alt-3,
 .dir-student-avatar.alt-4 {
-  background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
-  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.2);
+  background: #f1f5f9;
+  color: #000000;
+  border: 1px solid #cbd5e1;
+  box-shadow: none;
 }
 
 .dir-student-name-container {
@@ -85,14 +87,14 @@
 
 .dir-student-name-container strong {
   font-size: 13.5px;
-  color: #0f172a;
+  color: #000000;
   margin: 0;
 }
 
 .dir-student-name-container span {
   font-size: 11px;
-  color: #64748b;
-  font-weight: 500;
+  color: #000000;
+  font-weight: 550;
 }
 
 /* Costos y Descuentos en Tabla */
@@ -105,17 +107,22 @@
 .dir-cost-final-td {
   font-weight: 800;
   font-size: 14px;
+  color: #000000;
 }
 .dir-cost-final-td.has-discount {
-  color: #0c8569;
+  color: #000000;
 }
 
 .dir-badge-discount {
   border-radius: 6px !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   font-size: 11px !important;
   padding: 4px 8px !important;
   letter-spacing: 0.3px !important;
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .dir-descuentos-row {
@@ -124,74 +131,64 @@
 
 .dir-descuentos-row:hover {
   background-color: #f8fafc !important;
-  transform: scale(1.002);
 }
 
 .dir-action-btn-descuento {
-  font-weight: 700 !important;
+  font-weight: 500 !important;
   border-radius: 8px !important;
+  border: 1px solid #000000 !important;
+  color: #000000 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   transition: all 0.2s ease !important;
 }
 
 .dir-action-btn-descuento:hover {
-  transform: translateY(-1px);
+  background: #f1f5f9 !important;
 }
 
-/* Estado Vacío de Tarjetas */
+/* Estado Vacío de Tarjetas - Buscador */
 .dir-empty-state-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 40px;
-  background: #ffffff;
-  border: 1px dashed #cbd5e1;
-  border-radius: 16px;
-  text-align: center;
-  color: #64748b;
-  max-width: 600px;
-  margin: 40px auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.01);
-  animation: scaleUp 0.3s ease-out;
-}
-
-@keyframes scaleUp {
-  from { transform: scale(0.96); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 24px 30px !important;
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  text-align: center !important;
+  color: #000000 !important;
+  width: 100% !important;
+  margin: 16px auto !important;
+  box-shadow: none !important;
 }
 
 .dir-empty-state-icon-container {
-  width: 80px;
-  height: 80px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: #e6fcf5;
-  border: 2px solid #c3fae8;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0c8569;
-  margin-bottom: 20px;
-  box-shadow: 0 8px 20px rgba(12, 133, 105, 0.1);
-  animation: float-state 3s ease-in-out infinite;
-}
-
-@keyframes float-state {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-6px); }
-  100% { transform: translateY(0px); }
+  color: #000000;
+  margin-bottom: 12px;
+  box-shadow: none;
 }
 
 .dir-empty-state-card h3 {
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   font-size: 18px;
-  color: #0c1a30;
+  color: #000000;
   font-weight: 800;
 }
 
 .dir-empty-state-card p {
-  margin: 0 0 24px 0;
+  margin: 0 0 16px 0;
   font-size: 13.5px;
-  color: #64748b;
+  color: #000000;
   line-height: 1.5;
   max-width: 420px;
 }
@@ -201,7 +198,7 @@
   gap: 16px;
   text-align: left;
   border-top: 1px solid #f1f5f9;
-  padding-top: 20px;
+  padding-top: 16px;
   width: 100%;
 }
 
@@ -214,43 +211,43 @@
 
 .dir-empty-state-step-num {
   font-size: 11px;
-  font-weight: 900;
-  color: #0c8569;
+  font-weight: 500;
+  color: #000000;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .dir-empty-state-step-text {
   font-size: 12px;
-  color: #475569;
-  font-weight: 600;
+  color: #000000;
+  font-weight: 500;
 }
 
 /* Modal Detalle Perfil Estudiante */
 .dir-modal-student-card {
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
   border-radius: 12px;
   padding: 16px;
   display: grid;
   grid-template-columns: 48px minmax(0, 1fr);
   gap: 16px;
   align-items: center;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.01);
+  box-shadow: none;
 }
 
 .dir-modal-student-avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0c8569 0%, #09634e 100%);
+  background: #000000;
   color: #ffffff;
   font-size: 16px;
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(12, 133, 105, 0.2);
+  box-shadow: none;
 }
 
 .dir-modal-student-details {
@@ -261,20 +258,20 @@
 
 .dir-modal-student-details .label {
   font-size: 10px;
-  font-weight: 900;
-  color: #64748b;
+  font-weight: 500;
+  color: #000000;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .dir-modal-student-details .name {
   font-size: 15px;
-  font-weight: 850;
-  color: #0c1a30;
+  font-weight: 500;
+  color: #000000;
 }
 
 .dir-modal-student-details .sub {
   font-size: 12px;
-  font-weight: 600;
-  color: #475569;
+  font-weight: 500;
+  color: #000000;
 }

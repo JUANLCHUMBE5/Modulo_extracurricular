@@ -83,20 +83,31 @@ export function obtenerTelefonoPagoWebCaja(fila = {}) {
 }
 
 export function generarCSVReporteCaja(datos) {
-  const encabezados = ["DNI", "Estudiante", "Programa", "Monto", "Estado pago", "Codigo operacion", "Telefono", "Medio / canal", "Fecha registro", "Fecha pago", "Apoderado", "Telefono apoderado"];
-  const filas = datos.map((fila) => [
-    fila.dniEstudiante,
-    fila.estudiante,
-    fila.programa,
-    Number(fila.monto || 0).toFixed(2),
-    fila.estadoPago,
-    fila.numeroOperacion,
-    obtenerTelefonoPagoWebCaja(fila),
-    obtenerMedioCanalWebCaja(fila),
-    formatearFechaPeru(fila.fechaRegistro),
-    formatearFechaPeru(fila.fechaPago),
-    fila.apoderado,
-    fila.telefono,
+  const encabezados = [
+    "NRO",
+    "NOMBRES Y APELLIDOS",
+    "TALLER",
+    "GRADO",
+    "SECCION",
+    "FECHA",
+    "RECIBO",
+    "DESCUENTO / BECA",
+    "ESTADO",
+    "COSTO",
+    "JUSTIFICACION / OBSERVACION"
+  ];
+  const filas = datos.map((fila, index) => [
+    index + 1,
+    fila.estudiante ? String(fila.estudiante).toUpperCase() : "SIN NOMBRE",
+    fila.programa ? String(fila.programa).toUpperCase() : "-",
+    fila.grado || "-",
+    fila.seccion || "-",
+    formatearFechaPeru(fila.fecha || fila.fechaPago || fila.fechaRegistro),
+    fila.nroRecibo || fila.nro_recibo || "-",
+    fila.descuentoAprobado ? String(fila.descuentoTipo || "DESCUENTO").toUpperCase() : "-",
+    fila.estadoPago ? String(fila.estadoPago).toUpperCase() : "-",
+    `S/ ${Number(fila.monto || 0).toFixed(2)}`,
+    fila.observaciones || fila.descuentoJustificacion || "-",
   ]);
   const csvContent = [encabezados, ...filas]
     .map((fila) => fila.map((valor) => `"${String(valor || "").replace(/"/g, '""')}"`).join(";"))

@@ -326,7 +326,11 @@ function App() {
     };
 
     actualizarUsuarioActivo();
-    const intervaloPermisos = window.setInterval(actualizarUsuarioActivo, 8000);
+    const intervaloPermisos = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        actualizarUsuarioActivo();
+      }
+    }, 60000);
     window.addEventListener("api-db-updated", actualizarUsuarioActivo);
     window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("storage", actualizarUsuarioActivo);

@@ -122,7 +122,7 @@ export default function DireccionDashboard({
               </header>
               {chartIngresos.length ? (
                 <BarChart
-                  h={260}
+                  h={180}
                   data={chartIngresos}
                   dataKey="programa"
                   series={[
@@ -146,11 +146,11 @@ export default function DireccionDashboard({
               </header>
               {chartEstadoPago.length ? (
                 <DonutChart
-                  h={260}
+                  h={180}
                   data={chartEstadoPago}
-                  thickness={14}
+                  thickness={12}
                   paddingAngle={5}
-                  size={170}
+                  size={135}
                   withLabels={false}
                   withLabelsLine={false}
                   withLegend
@@ -190,7 +190,7 @@ export default function DireccionDashboard({
               </header>
               {chartInscripciones.length ? (
                 <BarChart
-                  h={260}
+                  h={180}
                   data={chartInscripciones}
                   dataKey="programa"
                   series={[{ name: "inscripciones", color: "teal.5" }]}
@@ -230,7 +230,7 @@ export default function DireccionDashboard({
                   {filasProgramas.map((item) => (
                     <Table.Tr key={item.id || item.nombre}>
                       <Table.Td>
-                        <strong>{item.nombre}</strong>
+                        <span style={{ fontWeight: 500 }}>{item.nombre}</span>
                         <span className="dir-muted">{item.categoria} · {item.periodo}</span>
                       </Table.Td>
                       <Table.Td>
@@ -292,11 +292,11 @@ export default function DireccionDashboard({
               </header>
               {chartOrigen.length ? (
                 <DonutChart
-                  h={260}
+                  h={180}
                   data={chartOrigen}
-                  thickness={14}
+                  thickness={12}
                   paddingAngle={5}
-                  size={170}
+                  size={135}
                   withLabels={false}
                   withLabelsLine={false}
                   withLegend
@@ -311,8 +311,8 @@ export default function DireccionDashboard({
               <header>
                 <h2>Canal de Matrícula (Progreso)</h2>
               </header>
-              <div className="dir-analysis-card-body" style={{ padding: "20px 10px" }}>
-                <div className="dir-analysis-stat-row" style={{ marginBottom: "16px" }}>
+              <div className="dir-analysis-card-body" style={{ padding: "10px 10px" }}>
+                <div className="dir-analysis-stat-row" style={{ marginBottom: "8px" }}>
                   <div className="dir-analysis-stat-item">
                     <span className="dir-stat-label"><Laptop size={14} /> Vía Web / Padres</span>
                     <strong className="dir-stat-value">
@@ -378,7 +378,7 @@ export default function DireccionDashboard({
               </header>
               {panel?.graficos?.asistenciaPorPrograma?.length ? (
                 <BarChart
-                  h={280}
+                  h={180}
                   data={panel.graficos.asistenciaPorPrograma}
                   dataKey="programa"
                   series={[
@@ -397,51 +397,49 @@ export default function DireccionDashboard({
             </article>
 
             <article className="dir-panel dir-table-panel" style={{ display: "flex", flexDirection: "column" }}>
-              <header style={{ padding: "16px 20px" }}>
+              <header style={{ padding: "8px 12px" }}>
                 <h2>Bitácora de Ingresos (En Vivo)</h2>
                 <p>Últimos accesos registrados por el auxiliar</p>
               </header>
-              <div className="dir-table-wrap" style={{ flexGrow: 1, maxHeight: "280px", overflowY: "auto" }}>
+              <div className="dir-table-wrap" style={{ flexGrow: 1, maxHeight: "180px", overflowY: "auto" }}>
                 <Table striped highlightOnHover verticalSpacing="xs">
-                  <Table.KeepValues>
-                    <Table.Thead>
-                      <Table.Tr>
-                        <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Hora</Table.Th>
-                        <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Estudiante</Table.Th>
-                        <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Taller</Table.Th>
-                        <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Acceso</Table.Th>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Hora</Table.Th>
+                      <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Estudiante</Table.Th>
+                      <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Taller</Table.Th>
+                      <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Acceso</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    {panel?.ultimosIngresos?.map((item, index) => (
+                      <Table.Tr key={item.id || index}>
+                        <Table.Td style={{ fontWeight: 500, color: "var(--ui-primary-dark)" }}>{item.hora}</Table.Td>
+                        <Table.Td>
+                          <span style={{ fontWeight: 500 }}>{item.estudiante}</span>
+                          <span className="dir-muted" style={{ fontSize: "11px" }}>DNI: {item.dni || "—"}</span>
+                        </Table.Td>
+                        <Table.Td>{item.programa}</Table.Td>
+                        <Table.Td>
+                          <Badge
+                            color={item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "teal" : "red"}
+                            variant="light"
+                          >
+                            {item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "Permitido" : "Rechazado"}
+                          </Badge>
+                        </Table.Td>
                       </Table.Tr>
-                    </Table.Thead>
-                    <Table.Tbody>
-                      {panel?.ultimosIngresos?.map((item, index) => (
-                        <Table.Tr key={item.id || index}>
-                          <Table.Td style={{ fontWeight: 700, color: "var(--ui-primary-dark)" }}>{item.hora}</Table.Td>
-                          <Table.Td>
-                            <strong>{item.estudiante}</strong>
-                            <span className="dir-muted" style={{ fontSize: "11px" }}>DNI: {item.dni || "—"}</span>
-                          </Table.Td>
-                          <Table.Td>{item.programa}</Table.Td>
-                          <Table.Td>
-                            <Badge
-                              color={item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "teal" : "red"}
-                              variant="light"
-                            >
-                              {item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "Permitido" : "Rechazado"}
-                            </Badge>
-                          </Table.Td>
-                        </Table.Tr>
-                      ))}
-                      {!panel?.ultimosIngresos?.length ? (
-                        <Table.Tr>
-                          <Table.Td colSpan={4}>
-                            <div className="dir-empty-table" style={{ minHeight: "120px" }}>
-                              No hay registros de ingreso en la base de datos.
-                            </div>
-                          </Table.Td>
-                        </Table.Tr>
-                      ) : null}
-                    </Table.Tbody>
-                  </Table.KeepValues>
+                    ))}
+                    {!panel?.ultimosIngresos?.length ? (
+                      <Table.Tr>
+                        <Table.Td colSpan={4}>
+                          <div className="dir-empty-table" style={{ minHeight: "120px" }}>
+                            No hay registros de ingreso en la base de datos.
+                          </div>
+                        </Table.Td>
+                      </Table.Tr>
+                    ) : null}
+                  </Table.Tbody>
                 </Table>
               </div>
             </article>

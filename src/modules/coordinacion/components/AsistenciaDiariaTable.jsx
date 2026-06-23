@@ -51,7 +51,7 @@ function AsistenciaDiariaTable({
                     {grupoActivo && <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asist))}</td>}
                     <td>{obtenerDniAsistencia(asist) || "Sin DNI"}</td>
                     <td>{asist.codigoEstudiante || "—"}</td>
-                    <td><strong>{obtenerNombreAsistencia(asist) || "—"}</strong></td>
+                    <td><span>{obtenerNombreAsistencia(asist) || "—"}</span></td>
                     <td>
                       <span style={badgeStyle(String(asist.estadoPago).toLowerCase() === "pagado", "warning")}>
                         {asist.estadoPago || "Pendiente"}
@@ -94,7 +94,7 @@ function AsistenciaDiariaTable({
                   <tr key={`${alumno.dni || alumno.id || index}-${index}`}>
                     <td>{alumno.dni || alumno.dniEstudiante || "Sin DNI"}</td>
                     <td>{alumno.codigoEstudiante || "—"}</td>
-                    <td><strong>{alumno.nombres || alumno.nombresEstudiante || "—"}</strong></td>
+                    <td><span>{alumno.nombres || alumno.nombresEstudiante || "—"}</span></td>
                     <td>
                       <span style={badgeStyle(String(alumno.estadoPago).toLowerCase() === "pagado", "warning")}>
                         {alumno.estadoPago || "Pendiente"}

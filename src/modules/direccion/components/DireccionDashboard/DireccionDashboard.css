@@ -6,7 +6,7 @@
 .dir-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -15,29 +15,29 @@
   min-height: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: 8px;
+  padding: 8px 12px;
   border-radius: 8px;
   background: #ffffff;
-  border: 1px solid #dce7e4;
-  box-shadow: 0 4px 12px rgba(15, 31, 51, 0.015);
+  border: none !important;
+  box-shadow: none !important;
   overflow: hidden;
   transition: all 0.25s ease;
 }
 
 .dir-stat:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(15, 31, 51, 0.04);
-  border-color: rgba(35, 151, 127, 0.25);
+  transform: translateY(-1px);
+  box-shadow: none !important;
+  border-color: transparent !important;
 }
 
 .dir-stat-icon {
-  width: 38px;
-  height: 38px;
+  width: 30px;
+  height: 30px;
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #0f766e;
   background: linear-gradient(135deg, #e6fcf5 0%, #c3fae8 100%);
   border: 1px solid rgba(15, 118, 110, 0.1);
@@ -92,28 +92,28 @@
 
 .dir-stat span {
   display: block;
-  color: var(--ui-muted, #64748b);
-  font-size: 11px;
-  font-weight: 750;
+  color: #000000;
+  font-size: 10px;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  margin-bottom: 2px;
+  margin-bottom: 0px;
 }
 
 .dir-stat strong {
   display: block;
-  margin: 1px 0;
-  color: #0f1f33;
-  font-size: 18px;
+  margin: 0px;
+  color: #000000;
+  font-size: 16px;
   line-height: 1.1;
-  font-weight: 850;
+  font-weight: 600;
   letter-spacing: -0.5px;
 }
 
 .dir-stat p {
   margin: 0;
-  color: #5d6b82;
-  font-size: 12px;
+  color: #000000;
+  font-size: 11px;
   font-weight: 500;
   line-height: 1.25;
 }
@@ -122,7 +122,7 @@
 .dir-module-tabs-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   border-bottom: 2px solid #e2e8f0;
   padding: 0;
   background: transparent;
@@ -140,70 +140,70 @@
   border-bottom: 2px solid transparent;
   background: transparent;
   cursor: pointer;
-  color: #64748b;
+  color: #000000 !important;
   transition: all 0.2s ease;
   margin-bottom: -2px;
 }
 
 .dir-module-tab:hover {
-  color: #0f766e;
-  background: rgba(15, 118, 110, 0.05);
+  color: #000000 !important;
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .dir-module-tab.is-active {
   background: transparent;
-  color: #0f766e;
-  border-bottom-color: #0f766e;
+  color: #000000 !important;
+  border-bottom-color: #0c8569 !important;
   box-shadow: none;
 }
 
 .dir-module-tab svg {
-  color: #64748b;
+  color: #000000 !important;
   transition: all 0.2s ease;
 }
 
 .dir-module-tab.is-active svg {
-  color: #0f766e;
+  color: #0c8569 !important;
 }
 
 .dir-module-tab strong {
   display: inline-block;
   font-size: 14px;
   color: inherit;
-  font-weight: 700;
+  font-weight: 500 !important;
 }
 
 .dir-module-tab.is-active strong {
-  font-weight: 850;
+  font-weight: 600 !important;
 }
 
 /* Paneles de Gráficos y Grillas */
 .dir-charts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  gap: 12px;
 }
 
 .dir-charts-single {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20px;
+  gap: 12px;
 }
 
 .dir-panel {
   min-width: 0;
-  padding: 18px 20px;
-  border: 1.5px solid rgba(226, 236, 233, 0.9);
+  padding: 10px 14px;
+  border: none !important;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 12px 35px rgba(15, 31, 51, 0.02);
+  box-shadow: none !important;
   backdrop-filter: blur(12px);
   transition: all 0.25s ease;
 }
 
 .dir-panel:hover {
-  border-color: rgba(35, 151, 127, 0.2);
-  box-shadow: 0 16px 40px rgba(15, 31, 51, 0.05);
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .dir-panel > header {
@@ -211,38 +211,38 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .dir-panel h2 {
   margin: 0;
   color: #0c1a30;
-  font-size: 15px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 700;
   letter-spacing: -0.3px;
 }
 
 .dir-panel p {
   margin: 0;
   color: var(--ui-muted, #64748b);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
 }
 
 .dir-empty-chart,
 .dir-empty-table {
-  min-height: 220px;
+  min-height: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--ui-muted, #64748b);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   background: #f8fafc;
   border: 1px dashed #cbd5e1;
   border-radius: 10px;
   text-align: center;
-  padding: 20px;
+  padding: 10px;
 }
 
 /* Tabla de Programas */
@@ -269,7 +269,7 @@
 .dir-table-wrap .mantine-Table-th {
   color: #475569;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
   background: #f8fafc;
@@ -294,7 +294,7 @@
   display: block;
   color: #0c1a30;
   font-size: 13px;
-  font-weight: 750;
+  font-weight: 500;
 }
 
 .dir-muted {

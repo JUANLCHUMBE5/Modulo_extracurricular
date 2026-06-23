@@ -214,11 +214,11 @@
 
 /* Constructor de Reportes Personalizados */
 .dir-custom-report-builder {
-  background: #ffffff;
-  border: 1px solid rgba(226, 236, 233, 0.8);
-  border-radius: 12px;
-  padding: 16px 20px;
-  box-shadow: 0 10px 30px rgba(15, 31, 51, 0.025);
+  background: #ffffff !important;
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 16px 0 !important;
+  box-shadow: none !important;
 }
 
 .dir-builder-header {
@@ -234,14 +234,14 @@
 
 .dir-builder-header h2 {
   margin: 0;
-  color: #0c1a30;
+  color: #000000;
   font-size: 22px;
   font-weight: 800;
 }
 
 .dir-builder-subtitle {
   margin: 3px 0 0;
-  color: #64748b;
+  color: #000000;
   font-size: 13px;
   font-weight: 700;
 }
@@ -287,7 +287,7 @@
 
 .dir-builder-label {
   font-size: 14px;
-  color: #0c1a30;
+  color: #000000;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -437,7 +437,7 @@
 .dir-columns-checkbox-container .mantine-Checkbox-label {
   font-weight: 700;
   font-size: 13px;
-  color: #334155;
+  color: #000000;
   cursor: pointer;
   padding-left: 10px;
 }
@@ -462,7 +462,7 @@
 
 .dir-preview-table .mantine-Table-th {
   background: #f8fafc;
-  color: #475569;
+  color: #000000;
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
@@ -471,8 +471,18 @@
 }
 
 .dir-preview-table .mantine-Table-td {
+  color: #000000;
   font-size: 13px;
   padding: 8px 10px;
+}
+
+/* Mantine select/multiselect/checkbox labels override to black */
+.dir-custom-report-builder .mantine-Select-label,
+.dir-custom-report-builder .mantine-MultiSelect-label,
+.dir-custom-report-builder .mantine-Checkbox-label,
+.dir-custom-report-builder .mantine-InputWrapper-label {
+  color: #000000 !important;
+  font-weight: 700 !important;
 }
 
 .dir-empty-preview {

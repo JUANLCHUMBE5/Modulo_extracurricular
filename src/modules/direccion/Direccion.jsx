@@ -172,8 +172,10 @@ export default function Direccion({ onLogout, user }) {
     try {
       await guardarCorrelativos(correlativosForm);
       toast.success("Éxito", { description: "Los correlativos se han guardado correctamente." });
+      return true;
     } catch (err) {
       toast.error("Error", { description: err.message || "No se pudieron guardar los correlativos." });
+      return false;
     } finally {
       setGuardandoCorrelativos(false);
     }
@@ -271,7 +273,11 @@ export default function Direccion({ onLogout, user }) {
     window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("storage", manejarStorage);
     window.addEventListener("focus", handleFocusUpdate);
-    const intervalo = window.setInterval(recargarSilencioso, 30000);
+    const intervalo = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        recargarSilencioso();
+      }
+    }, 60000);
 
     return () => {
       window.clearTimeout(recargaTimerRef.current);
@@ -595,9 +601,9 @@ export default function Direccion({ onLogout, user }) {
       />
 
       <section className="dir-main">
-        <header className="dir-header">
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            {!sidebarExpanded && (
+        {!sidebarExpanded && (
+          <header className="dir-header">
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
               <button
                 className="dir-menu-toggle-btn-header"
                 type="button"
@@ -607,9 +613,9 @@ export default function Direccion({ onLogout, user }) {
               >
                 <Menu size={22} />
               </button>
-            )}
-          </div>
-        </header>
+            </div>
+          </header>
+        )}
 
         {error ? (
           <Alert color="orange" icon={<AlertCircle size={18} />} radius="md">

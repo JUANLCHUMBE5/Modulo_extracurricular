@@ -7,115 +7,204 @@
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px 14px;
-  border-right: 1px solid #dce7e4;
-  background: #ffffff;
+  padding: 24px 16px !important;
+  border-right: none !important;
+  background: #197f10 !important; /* Bright solid green matching Coordinacion */
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08) !important;
   overflow: hidden;
   transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
 }
 
 .caja-sidebar.collapsed {
   width: 68px;
-  padding: 20px 8px;
+  padding: 20px 8px !important;
 }
 
 .caja-sidebar.collapsed .caja-brand,
 .caja-sidebar.collapsed .caja-module-label {
-  display: none;
+  display: none !important;
+}
+
+.caja-sidebar.collapsed .caja-nav button,
+.caja-sidebar.collapsed .caja-logout {
+  padding: 12px 0px !important;
+  justify-content: center !important;
 }
 
 .caja-sidebar-brand-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 24px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; /* Subtle border under brand row */
 }
 
 .caja-menu-toggle-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid #cfded9;
-  border-radius: 8px;
-  color: #176c60;
-  background: #ffffff;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important; /* White color for contrast */
+  cursor: pointer !important;
+  padding: 6px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  height: 34px !important;
+  min-height: 34px !important;
 }
 
 .caja-menu-toggle-btn:hover {
-  background: #f0fdfa;
-  border-color: #aee0d2;
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
 }
 
+/* White background wrapper for the brand logo */
 .caja-brand {
-  display: grid;
-  justify-items: center;
-  margin: 4px 0 0;
-  padding: 0;
+  border: none !important;
+  background: #ffffff !important;
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: auto !important;
+  margin: 0 !important;
 }
 
 .caja-brand-logo {
-  width: min(168px, 100%);
-  height: auto;
-  display: block;
-  object-fit: contain;
-  border-radius: 8px;
+  max-height: 38px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
 }
 
 .caja-module-label {
-  margin: 0 0 8px;
-  color: #176c60;
-  font-size: 12px;
-  font-weight: 800;
-  text-align: center;
-  text-transform: uppercase;
+  color: #a7f3d0 !important; /* Light green label */
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  padding-left: 0 !important;
+  margin: 0 0 16px !important;
 }
 
 .caja-nav {
-  display: grid;
-  gap: 8px;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
 }
 
 .caja-nav button,
 .caja-logout {
-  width: 100%;
-  min-height: 42px;
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 0 12px;
-  color: #172331;
-  background: #ffffff;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  text-align: left;
-}
-
-.caja-nav button {
-  border-color: #d6e2df;
-}
-
-.caja-nav button.is-active {
-  color: #05604f;
-  background: #eaf8f3;
-  border-color: #aee0d2;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 12px 16px !important; /* Elegant vertical padding */
+  border: none !important;
+  border-radius: 10px !important; /* Smooth rounded corners */
+  background: transparent !important;
+  color: #e2e8f0 !important; /* Soft white-gray text */
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+  min-height: auto !important;
+  cursor: pointer !important;
 }
 
 .caja-nav button svg,
 .caja-logout svg {
-  color: currentColor;
-  stroke: currentColor;
+  color: #cbd5e1 !important; /* Light gray icons */
+  stroke: #cbd5e1 !important;
+  width: 20px !important;
+  height: 20px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+.caja-nav button span,
+.caja-logout span {
+  color: #e2e8f0 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Inactive Item Hover */
+.caja-nav button:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+.caja-nav button:hover span {
+  color: #ffffff !important;
+}
+
+.caja-nav button:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+/* Active Item (Solid white background and black text/icons) */
+.caja-nav button.is-active {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+}
+
+.caja-nav button.is-active svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+
+.caja-nav button.is-active span {
+  color: #000000 !important;
+}
+
+/* Hover on active button */
+.caja-nav button.is-active:hover {
+  background: #f8fafc !important;
+  color: #000000 !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18) !important;
+}
+
+.caja-nav button.is-active:hover span {
+  color: #000000 !important;
+}
+
+.caja-nav button.is-active:hover svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  transform: none !important;
+}
+
+/* Logout Button at bottom */
 .caja-logout {
-  margin-top: auto;
-  border-color: #d6e2df;
+  margin-top: auto !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important; /* Subtle separator */
+  border-radius: 0 !important;
+  padding-top: 16px !important;
+}
+
+.caja-logout span {
+  color: #e2e8f0 !important;
+}
+
+.caja-logout:hover {
+  background: #fee2e2 !important; /* Soft red hover background */
+  color: #ef4444 !important; /* Red text */
+  border-radius: 10px !important;
+}
+
+.caja-logout:hover span {
+  color: #ef4444 !important;
+}
+
+.caja-logout:hover svg {
+  color: #ef4444 !important;
+  stroke: #ef4444 !important;
+  transform: translateY(-1px);
 }

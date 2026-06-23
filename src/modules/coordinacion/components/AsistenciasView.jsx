@@ -473,29 +473,29 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
 
       <section className="coord-workspace coord-workspace-single">
         <article className="coord-card coord-search-card">
-          <div className="coord-card-title" style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "16px" }}>
-            <span className="coord-title-icon"><UserCheck size={21} /></span>
+          <div className="coord-card-title" style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+            <span className="coord-title-icon" style={{ width: "32px", height: "32px" }}><UserCheck size={18} /></span>
             <div>
-              <h2>Control Central de Asistencias</h2>
-              <p>Consulte y descargue reportes diarios de asistencia por cada programa.</p>
+              <h2 style={{ fontSize: "15px" }}>Control Central de Asistencias</h2>
+              <p style={{ fontSize: "12px", marginTop: "1px" }}>Consulte y descargue reportes diarios de asistencia por cada programa.</p>
             </div>
           </div>
 
-          <div className="coord-filtros-card-mantine" style={{ padding: "16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
-            <div className="coord-filtros-row-mantine" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "16px" }}>
+          <div className="coord-filtros-card-mantine" style={{ padding: "0", background: "transparent", border: "none", marginBottom: "8px" }}>
+            <div className="coord-filtros-row-mantine" style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "8px" }}>
               {/* Taller */}
               <div style={{ flex: "2 1 280px" }}>
                 <Select
                   label={
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
-                      <UserCheck size={14} style={{ color: "#176c60" }} /> Seleccionar Taller
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 500, color: "#000000" }}>
+                      <UserCheck size={13} style={{ color: "#176c60" }} /> Seleccionar Taller
                     </span>
                   }
                   placeholder="Elija un programa..."
                   value={tallerId}
                   onChange={(value) => setTallerId(value || "")}
                   data={selectProgramasData}
-                  size="md"
+                  size="sm"
                   searchable
                   clearable
                   style={{ width: "100%" }}
@@ -507,15 +507,15 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 <div style={{ flex: "1 1 200px" }}>
                   <Select
                     label={
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
-                        <School size={14} style={{ color: "#176c60" }} /> Seleccionar Grado
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 500, color: "#000000" }}>
+                        <School size={13} style={{ color: "#176c60" }} /> Seleccionar Grado
                       </span>
                     }
                     placeholder="Elija un grado..."
                     value={gradoSeleccionado}
                     onChange={(value) => setGradoSeleccionado(value || "")}
                     data={selectGradosData}
-                    size="md"
+                    size="sm"
                     searchable
                     clearable
                     style={{ width: "100%" }}
@@ -528,8 +528,8 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 <div style={{ flex: "1 1 240px" }}>
                   <Select
                     label={
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
-                        <CalendarDays size={14} style={{ color: "#176c60" }} /> Fecha
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 500, color: "#000000" }}>
+                        <CalendarDays size={13} style={{ color: "#176c60" }} /> Fecha
                       </span>
                     }
                     placeholder={
@@ -544,7 +544,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                     value={fechaSeleccionada}
                     onChange={(value) => setFechaSeleccionada(value || "")}
                     data={selectFechasData}
-                    size="md"
+                    size="sm"
                     disabled={!tallerId || (selectGradosData.length > 0 && !gradoSeleccionado) || !selectFechasData.length}
                     style={{ width: "100%" }}
                     allowDeselect={false}
@@ -560,9 +560,9 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                       <Button
                         color="sanrafael"
                         onClick={handleExportPdfDaily}
-                        leftSection={<FileDown size={17} />}
-                        size="md"
-                        style={{ height: "42px" }}
+                        leftSection={<FileDown size={15} />}
+                        size="sm"
+                        style={{ height: "34px" }}
                       >
                         PDF
                       </Button>
@@ -570,9 +570,9 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                         variant="outline"
                         color="teal"
                         onClick={handleExportExcelDaily}
-                        leftSection={<FileDown size={17} />}
-                        size="md"
-                        style={{ height: "42px", background: "#f0fdf4" }}
+                        leftSection={<FileDown size={15} />}
+                        size="sm"
+                        style={{ height: "34px", background: "#f0fdf4" }}
                       >
                         Excel
                       </Button>
@@ -583,9 +583,9 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                       <Button
                         color="sanrafael"
                         onClick={handleExportPdfMonthly}
-                        leftSection={<FileDown size={17} />}
-                        size="md"
-                        style={{ height: "42px" }}
+                        leftSection={<FileDown size={15} />}
+                        size="sm"
+                        style={{ height: "34px" }}
                       >
                         PDF
                       </Button>
@@ -593,9 +593,9 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                         variant="outline"
                         color="teal"
                         onClick={handleExportExcelMonthly}
-                        leftSection={<FileDown size={17} />}
-                        size="md"
-                        style={{ height: "42px", background: "#f0fdf4" }}
+                        leftSection={<FileDown size={15} />}
+                        size="sm"
+                        style={{ height: "34px", background: "#f0fdf4" }}
                       >
                         Excel
                       </Button>
@@ -622,30 +622,30 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
             <div style={{
               display: "flex",
               flexDirection: "column",
-              gap: "12px",
-              padding: "16px",
+              gap: "8px",
+              padding: "10px 14px",
               background: "#eff6ff",
               border: "1px solid #bfdbfe",
-              borderRadius: "12px",
-              marginBottom: "16px",
+              borderRadius: "10px",
+              marginBottom: "10px",
             }}>
-              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "10px" }}>
                 <div>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <span style={{ fontSize: "10px", fontWeight: 700, color: "#1e40af", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                     Horario de Grado Resuelto
                   </span>
-                  <h3 style={{ margin: "2px 0 0 0", color: "#1e3a8a", fontSize: "17px" }}>
+                  <h3 style={{ margin: "1px 0 0 0", color: "#1e3a8a", fontSize: "15px" }}>
                     {programaSeleccionado?.nombre} - {gradoLabel}
                   </h3>
                 </div>
-                <div style={{ display: "flex", gap: "24px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
                   <div>
-                    <span style={{ display: "block", fontSize: "10px", color: "#60a5fa", fontWeight: 600 }}>DOCENTE</span>
-                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#1e3a8a" }}>{docenteDeGrado || "No asignado"}</span>
+                    <span style={{ display: "block", fontSize: "9px", color: "#60a5fa", fontWeight: 600 }}>DOCENTE</span>
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#1e3a8a" }}>{docenteDeGrado || "No asignado"}</span>
                   </div>
                   <div>
-                    <span style={{ display: "block", fontSize: "10px", color: "#60a5fa", fontWeight: 600 }}>HORARIO GENERAL</span>
-                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#1e3a8a" }}>{horarioDeGrado || "No definido"}</span>
+                    <span style={{ display: "block", fontSize: "9px", color: "#60a5fa", fontWeight: 600 }}>HORARIO GENERAL</span>
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#1e3a8a" }}>{horarioDeGrado || "No definido"}</span>
                   </div>
                 </div>
               </div>
@@ -653,7 +653,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
           )}
 
           {tallerId && !cargando && (!selectGradosData.length || gradoSeleccionado) && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "16px", marginBottom: "16px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", marginBottom: "10px", flexWrap: "wrap" }}>
               <SegmentedControl
                 value={vistaTipo}
                 onChange={setVistaTipo}
@@ -662,14 +662,15 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                   { label: "Consolidado Mensual (Matriz)", value: "mensual" },
                 ]}
                 color="teal"
+                size="xs"
               />
 
               <TextInput
                 placeholder="Buscar por DNI, nombre o código..."
-                leftSection={<Search size={16} style={{ color: "#64748b" }} />}
+                leftSection={<Search size={14} style={{ color: "#64748b" }} />}
                 value={busqueda}
                 onChange={(event) => setBusqueda(event.currentTarget.value)}
-                style={{ width: "300px" }}
+                style={{ width: "260px" }}
                 size="sm"
                 clearable
               />
@@ -681,22 +682,22 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
               <Loader color="teal" />
             </div>
           ) : !tallerId ? (
-            <div className="coord-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 20px" }}>
-              <UserCheck size={48} style={{ color: "#94a3b8", marginBottom: "12px" }} />
-              <h3 style={{ color: "#475569", margin: 0 }}>Seleccione un taller</h3>
-              <p style={{ color: "#64748b", fontSize: "14px", marginTop: "4px" }}>Elija un taller del listado para comenzar a explorar las asistencias.</p>
+            <div className="coord-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 20px" }}>
+              <UserCheck size={36} style={{ color: "#000000", marginBottom: "6px" }} />
+              <h3 style={{ color: "#000000", margin: 0, fontSize: "16px", fontWeight: 600 }}>Seleccione un taller</h3>
+              <p style={{ color: "#000000", fontSize: "13px", marginTop: "2px", fontWeight: 500 }}>Elija un taller del listado para comenzar a explorar las asistencias.</p>
             </div>
           ) : (selectGradosData.length > 0 && !gradoSeleccionado) ? (
-            <div className="coord-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 20px" }}>
-              <School size={48} style={{ color: "#94a3b8", marginBottom: "12px" }} />
-              <h3 style={{ color: "#475569", margin: 0 }}>Seleccione un grado</h3>
-              <p style={{ color: "#64748b", fontSize: "14px", marginTop: "4px" }}>Este taller tiene grados habilitados. Seleccione uno para ver el horario y la asistencia.</p>
+            <div className="coord-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 20px" }}>
+              <School size={36} style={{ color: "#000000", marginBottom: "6px" }} />
+              <h3 style={{ color: "#000000", margin: 0, fontSize: "16px", fontWeight: 600 }}>Seleccione un grado</h3>
+              <p style={{ color: "#000000", fontSize: "13px", marginTop: "2px", fontWeight: 500 }}>Este taller tiene grados habilitados. Seleccione uno para ver el horario y la asistencia.</p>
             </div>
           ) : (asistencias.length === 0 && !hasMatriculados) ? (
-            <div className="coord-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "60px 20px" }}>
-              <AlertCircle size={48} style={{ color: "#cbd5e1", marginBottom: "12px" }} />
-              <h3 style={{ color: "#475569", margin: 0 }}>Sin registros de asistencia</h3>
-              <p style={{ color: "#64748b", fontSize: "14px", marginTop: "4px" }}>Este taller no cuenta con alumnos matriculados ni asistencias registradas.</p>
+            <div className="coord-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 20px" }}>
+              <AlertCircle size={36} style={{ color: "#000000", marginBottom: "6px" }} />
+              <h3 style={{ color: "#000000", margin: 0, fontSize: "16px", fontWeight: 600 }}>Sin registros de asistencia</h3>
+              <p style={{ color: "#000000", fontSize: "13px", marginTop: "2px", fontWeight: 500 }}>Este taller no cuenta con alumnos matriculados ni asistencias registradas.</p>
             </div>
           ) : vistaTipo === "diario" ? (
             (grupoActivo || (asistencias.length === 0 && hasMatriculados)) ? (
@@ -708,9 +709,9 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 )}
                 {/* Pagination-style Date Picker Bar */}
                 {grupoActivo ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", justifyContent: "space-between", flexWrap: "wrap", padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
-                    <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Navegar Fechas:</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "space-between", flexWrap: "wrap", padding: "4px 0", background: "transparent", border: "none", borderBottom: "1px dashed #cbd5e1", borderRadius: 0, marginBottom: "6px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: "500", color: "#000000" }}>Navegar Fechas:</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       <button
                         type="button"
                         onClick={irAnterior}
@@ -720,20 +721,20 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          width: "36px",
-                          height: "36px",
-                          borderRadius: "8px",
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "6px",
                           border: "1px solid #d0d5dd",
                           background: "#ffffff",
-                          color: "#344054",
+                          color: "#000000",
                           cursor: indiceActivo >= gruposFecha.length - 1 ? "not-allowed" : "pointer",
                           opacity: indiceActivo >= gruposFecha.length - 1 ? 0.5 : 1,
                           transition: "all 0.2s ease",
                         }}
                       >
-                        <ChevronLeft size={18} />
+                        <ChevronLeft size={16} />
                       </button>
-                      <span style={{ fontSize: "14px", fontWeight: 700, color: "#1e293b", padding: "0 10px" }}>
+                      <span style={{ fontSize: "13px", fontWeight: 500, color: "#000000", padding: "0 6px" }}>
                         {grupoActivo.titulo}
                       </span>
                       <button
@@ -745,31 +746,31 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          width: "36px",
-                          height: "36px",
-                          borderRadius: "8px",
+                          width: "28px",
+                          height: "28px",
+                          borderRadius: "6px",
                           border: "1px solid #d0d5dd",
                           background: "#ffffff",
-                          color: "#344054",
+                          color: "#000000",
                           cursor: indiceActivo <= 0 ? "not-allowed" : "pointer",
                           opacity: indiceActivo <= 0 ? 0.5 : 1,
                           transition: "all 0.2s ease",
                         }}
                       >
-                        <ChevronRight size={18} />
+                        <ChevronRight size={16} />
                       </button>
                     </div>
-                    <Badge color="sanrafael" size="md">
+                    <Badge color="sanrafael" size="sm">
                       {filasGrupoActivoFiltradas.length} alumno{filasGrupoActivoFiltradas.length === 1 ? "" : "s"} encontrados
                     </Badge>
                   </div>
                 ) : (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "16px" }}>
-                    <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Fecha:</span>
-                    <span style={{ fontSize: "14px", fontWeight: 500, color: "#64748b" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0", background: "transparent", border: "none", borderBottom: "1px dashed #cbd5e1", borderRadius: 0, marginBottom: "6px" }}>
+                    <span style={{ fontSize: "13px", fontWeight: "500", color: "#000000" }}>Fecha:</span>
+                    <span style={{ fontSize: "13px", fontWeight: 500, color: "#000000" }}>
                       Plantilla de control físico (Sin registros de asistencia)
                     </span>
-                    <Badge color="teal" size="md">
+                    <Badge color="teal" size="sm">
                       {matriculadosFiltrados.length} alumno{matriculadosFiltrados.length === 1 ? "" : "s"} encontrados
                     </Badge>
                   </div>

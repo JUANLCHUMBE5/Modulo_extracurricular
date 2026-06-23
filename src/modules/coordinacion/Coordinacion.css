@@ -848,6 +848,8 @@
 
 .coord-main {
   background: #ffffff !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
 }
 
 .coord-card {
@@ -858,9 +860,15 @@
   padding-right: 0 !important;
 }
 
+.coord-search-card {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
 /* ── WIDER WORKSPACE AND TOPBAR LAYOUT ── */
 .coord-topbar {
   max-width: 1400px !important;
+  margin-bottom: 8px !important;
 }
 
 .coord-workspace {
@@ -875,7 +883,7 @@
   max-width: 1400px !important;
 }
 
-/* ── UNIFICACIÓN DE ALTURAS EN FORMULARIOS Y BOTONES (38px) ── */
+/* ── UNIFICACIÓN DE ALTURAS EN FORMULARIOS Y BOTONES (34px) ── */
 .coord-workspace-upload select,
 .coord-workspace-upload input,
 .coord-workspace-upload .coord-massive-clean-picker,
@@ -885,14 +893,14 @@
 .coord-documents-upload-row select,
 .coord-documents-upload-row .coord-template-file-row,
 .coord-documents-upload-row .coord-register-button {
-  height: 38px !important;
-  min-height: 38px !important;
+  height: 34px !important;
+  min-height: 34px !important;
   box-sizing: border-box !important;
 }
 
 .coord-workspace-upload .coord-upload-card .coord-massive-clean-picker label {
-  height: 30px !important;
-  min-height: 30px !important;
+  height: 26px !important;
+  min-height: 26px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -901,7 +909,15 @@
 .coord-workspace-upload .coord-upload-card .coord-massive-clean-picker span {
   display: inline-flex !important;
   align-items: center !important;
-  height: 30px !important;
+  height: 26px !important;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-form,
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-form {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  margin-bottom: 8px !important;
+  gap: 8px !important;
 }
 
 .coord-documents-upload-row .coord-template-file-button {
@@ -916,5 +932,397 @@
   align-items: center !important;
   height: 28px !important;
 }
+
+/* ==========================================================================
+   VISUAL CLEANUP & OVERRIDES FOR COORDINACIÓN MODULE (SAN RAFAEL)
+   ========================================================================== */
+
+/* 1. Remoción de Marcos (Bordes), Fondos y Sombras en Contenedores */
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-form,
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-form,
+.coord-search-card .coord-programs-clean-filters,
+.coord-template-workspace .coord-documents-saved-state,
+.coord-template-workspace .coord-documents-validation,
+.coord-template-workspace .coord-documents-simple-panel,
+.coord-load-box {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.coord-empty,
+.coord-upload-empty,
+.coord-empty-clean {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 16px 0 !important;
+}
+
+.coord-message {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Rediseño de las Tarjetas de Programas (Sin marco, solo línea divisoria) */
+.coord-program-card-item {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  background: #ffffff !important;
+  padding: 12px 16px !important;
+  margin-bottom: 12px !important;
+  transition: all 0.2s ease !important;
+}
+.coord-program-card-item:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* 2. Color de Letras en Negro Sólido (#000000) y Peso Regular (500) */
+.coord-workspace-upload label,
+.coord-field label,
+.coord-individual-clean-form label,
+.coord-massive-clean-form label,
+.coord-programs-clean-filter-row label,
+.coord-programs-clean-filter-row .mantine-InputWrapper-label,
+.coord-documents-upload-row label {
+  color: #000000 !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+}
+
+.coord-workspace-upload p,
+.coord-workspace-upload span,
+.coord-workspace-upload small,
+.coord-massive-clean-hint,
+.coord-upload-history-header p,
+.coord-empty p,
+.coord-upload-empty p,
+.coord-empty-clean p,
+.coord-programs-clean-heading p,
+.coord-documents-title p,
+.coord-template-history-main span,
+.coord-documents-saved-state span,
+.coord-document-read-head span {
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+.coord-workspace-upload select,
+.coord-workspace-upload input,
+.coord-individual-clean-form input,
+.coord-individual-clean-form select,
+.coord-massive-clean-form select,
+.coord-documents-upload-row input,
+.coord-documents-upload-row select {
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+/* Estilos de las Pestañas de Selección */
+.coord-upload-tabs {
+  border-bottom: 2px solid #e2ece9 !important;
+  margin-bottom: 12px !important;
+}
+
+.coord-upload-tabs button {
+  color: #000000 !important;
+  font-weight: 500 !important;
+  border-bottom: 3px solid transparent !important;
+  background: transparent !important;
+  transition: all 0.2s ease !important;
+}
+
+.coord-upload-tabs button svg {
+  color: #000000 !important;
+  transition: color 0.2s ease !important;
+}
+
+/* Carga Masiva - Verde */
+.coord-upload-tabs button.coord-upload-tab-masiva.is-active {
+  border-bottom-color: #0c8569 !important;
+  color: #0c8569 !important;
+  font-weight: 600 !important;
+}
+.coord-upload-tabs button.coord-upload-tab-masiva.is-active svg {
+  color: #0c8569 !important;
+}
+.coord-upload-tabs button.coord-upload-tab-masiva:hover {
+  background: #f0fdf4 !important;
+  color: #0c8569 !important;
+}
+.coord-upload-tabs button.coord-upload-tab-masiva:hover svg {
+  color: #0c8569 !important;
+}
+
+/* Registro Individual - Azul */
+.coord-upload-tabs button.coord-upload-tab-individual.is-active {
+  border-bottom-color: #0284c7 !important;
+  color: #0284c7 !important;
+  font-weight: 600 !important;
+}
+.coord-upload-tabs button.coord-upload-tab-individual.is-active svg {
+  color: #0284c7 !important;
+}
+.coord-upload-tabs button.coord-upload-tab-individual:hover {
+  background: #f0f9ff !important;
+  color: #0284c7 !important;
+}
+.coord-upload-tabs button.coord-upload-tab-individual:hover svg {
+  color: #0284c7 !important;
+}
+
+/* Exportar - Púrpura */
+.coord-upload-tabs button.coord-upload-tab-exportar.is-active {
+  border-bottom-color: #7c3aed !important;
+  color: #7c3aed !important;
+  font-weight: 600 !important;
+}
+.coord-upload-tabs button.coord-upload-tab-exportar.is-active svg {
+  color: #7c3aed !important;
+}
+.coord-upload-tabs button.coord-upload-tab-exportar:hover {
+  background: #faf5ff !important;
+  color: #7c3aed !important;
+}
+.coord-upload-tabs button.coord-upload-tab-exportar:hover svg {
+  color: #7c3aed !important;
+}
+
+/* 3. Estilo Unificado de Botones (Fondo Verde Claro Premium) */
+.coord-primary-button,
+.coord-register-button,
+.coord-empty-clean-btn {
+  background: #e6fcf5 !important;
+  color: #0c8569 !important;
+  border: 1px solid #c3fae8 !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.coord-primary-button:hover,
+.coord-register-button:hover,
+.coord-empty-clean-btn:hover {
+  background: #c3fae8 !important;
+  color: #09634e !important;
+  border-color: #a3f5d8 !important;
+}
+
+.coord-secondary-button {
+  background: transparent !important;
+  color: #000000 !important;
+  border: 1px solid #cbd5e1 !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.coord-secondary-button:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: #000000 !important;
+}
+
+/* 4. Estilo de Tablas Limpias */
+.coord-table-wrap {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.coord-table th {
+  background: #f8fafc !important;
+  color: #000000 !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  padding: 8px 10px !important;
+}
+
+.coord-table td {
+  color: #000000 !important;
+  font-weight: 500 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 6px 10px !important;
+}
+
+/* 5. Historial de Cargas e Items del Historial */
+.coord-template-history-item {
+  border: none !important;
+  border-bottom: 1px solid #eef3f6 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 12px 0 !important;
+}
+
+/* 6. Compactación e Integración de Alturas en Coordinación (34px) */
+.coord-main {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}
+
+.coord-form select,
+.coord-form input,
+.coord-filtros-row select,
+.coord-filtros-row input,
+.coord-search-card select,
+.coord-search-card input,
+.coord-upload-grid select,
+.coord-upload-grid input,
+.coord-template-upload-row select,
+.coord-template-upload-row input,
+.coord-documents-upload-row select,
+.coord-documents-upload-row input {
+  height: 34px !important;
+  min-height: 34px !important;
+  box-sizing: border-box !important;
+}
+
+.coord-primary-button,
+.coord-register-button,
+.coord-empty-clean-btn,
+.coord-secondary-button,
+.coord-mini-btn,
+.coord-menu-toggle-btn {
+  height: 34px !important;
+  min-height: 34px !important;
+  line-height: 1 !important;
+  padding: 0 14px !important;
+}
+
+.coord-card, .coord-search-card {
+  padding: 12px 18px !important;
+  margin-bottom: 12px !important;
+}
+
+.coord-card-title {
+  margin-bottom: 8px !important;
+}
+
+.coord-card-title h2 {
+  font-size: 16px !important;
+}
+
+.coord-upload-tabs {
+  margin-bottom: 12px !important;
+  gap: 8px !important;
+}
+
+.coord-upload-tabs button {
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  min-height: 32px !important;
+}
+
+.coord-table-responsive .mantine-Table-th {
+  padding: 6px 8px !important;
+  font-size: 12px !important;
+}
+
+.coord-table-responsive .mantine-Table-td {
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+}
+
+.coord-file-picker {
+  min-height: 34px !important;
+  padding: 2px 6px !important;
+}
+
+.coord-file-picker label {
+  min-height: 26px !important;
+  height: 26px !important;
+  padding: 0 8px !important;
+  font-size: 11px !important;
+}
+
+.coord-file-picker span {
+  font-size: 12px !important;
+}
+
+.coord-template-file-row {
+  min-height: 34px !important;
+  padding: 3px 5px !important;
+}
+
+.coord-template-file-button {
+  min-height: 26px !important;
+  height: 26px !important;
+  padding: 0 8px !important;
+  font-size: 11px !important;
+}
+
+/* 7. Diferenciación de Talleres por Categoría (Tarjetas Rectangulares Coloreadas) */
+.coord-cat-academico {
+  background-color: #f4f9ff !important;
+  border: 1px solid #d2e4ff !important;
+}
+.coord-cat-academico:hover {
+  background-color: #ebf5ff !important;
+  border-color: #baccf9 !important;
+}
+
+.coord-cat-deportivo {
+  background-color: #fffaf5 !important;
+  border: 1px solid #ffeedd !important;
+}
+.coord-cat-deportivo:hover {
+  background-color: #fff5eb !important;
+  border-color: #fcd5b8 !important;
+}
+
+.coord-cat-ingles {
+  background-color: #faf5ff !important;
+  border: 1px solid #f3e8ff !important;
+}
+.coord-cat-ingles:hover {
+  background-color: #f3e8ff !important;
+  border-color: #e9d5ff !important;
+}
+
+.coord-cat-verano {
+  background-color: #fffbeb !important;
+  border: 1px solid #fef3c7 !important;
+}
+.coord-cat-verano:hover {
+  background-color: #fef9c3 !important;
+  border-color: #fde047 !important;
+}
+
+.coord-cat-general {
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.coord-cat-general:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.coord-badge-period {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.coord-badge-period-verano {
+  background: #fff3e0 !important;
+  color: #e65100 !important;
+  border: 1px solid #ffe0b2 !important;
+}
+
+.coord-badge-period-escolar {
+  background: #e3f2fd !important;
+  color: #0d47a1 !important;
+  border: 1px solid #bbdefb !important;
+}
+
+
 
 

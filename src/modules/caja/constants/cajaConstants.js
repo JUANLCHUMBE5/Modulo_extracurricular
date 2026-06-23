@@ -40,7 +40,7 @@ export const tiposReporte = [
 
 export const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
 
-export const alertClass = "mb-3 rounded-lg border border-[#f8c7c1] bg-[#fff0ef] px-3 py-2 text-[13px] font-extrabold text-[#b42318]";
-export const reportCardClass = "rounded-lg border border-[#d8e5e1] bg-white px-4 py-2";
-export const reportLabelClass = "block text-xs font-semibold text-slate-500";
-export const reportValueClass = "my-0.5 block text-lg font-extrabold text-slate-900";
+export const alertClass = "mb-3 rounded-lg border border-[#f8c7c1] bg-[#fff0ef] px-3 py-2 text-[13px] font-medium text-[#b42318]";
+export const reportCardClass = "rounded-none border-none bg-transparent py-1 px-0";
+export const reportLabelClass = "block text-xs font-medium text-black";
+export const reportValueClass = "my-0.5 block text-lg font-semibold text-black";

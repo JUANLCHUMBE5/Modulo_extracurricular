@@ -134,7 +134,11 @@ function usePadres(user) {
     window.addEventListener("api-db-updated", handleDbUpdated);
     window.addEventListener("storage", actualizarPorStorage);
     window.addEventListener("focus", handleFocus);
-    const intervalo = window.setInterval(() => actualizar({ forzar: true }), INTERVALO_REFRESCO_RESPALDO_MS);
+    const intervalo = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        actualizar({ forzar: true });
+      }
+    }, INTERVALO_REFRESCO_RESPALDO_MS);
 
     return () => {
       window.removeEventListener("mock-db-updated", handleDbUpdated);

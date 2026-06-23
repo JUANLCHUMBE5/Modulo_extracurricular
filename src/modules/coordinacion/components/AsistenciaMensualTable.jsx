@@ -30,11 +30,11 @@ function AsistenciaMensualTable({
               <strong>Plantilla de consolidado mensual:</strong> Aún no se han registrado asistencias para este taller. Se muestran las columnas vacías para control manual. Puede exportarla en PDF o Excel.
             </MantineAlert>
           )}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
-            <span style={{ fontSize: "14px", color: "#64748b" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", flexWrap: "wrap", gap: "8px" }}>
+            <span style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>
               Consolidado mensual de asistencias registradas por el auxiliar.
             </span>
-            <Badge color="sanrafael" size="md">
+            <Badge color="sanrafael" size="sm">
               {fechasColumnas.length > 0 ? `${fechasColumnas.length} fechas registradas` : "Plantilla de control físico"}
             </Badge>
           </div>
@@ -89,7 +89,7 @@ function AsistenciaMensualTable({
                       <tr key={alumno.dni || index}>
                         <td style={{ textAlign: "center" }}>{index + 1}</td>
                         <td>{alumno.dni || alumno.dniEstudiante || "—"}</td>
-                        <td><strong>{alumno.nombres || alumno.nombresEstudiante || "—"}</strong></td>
+                        <td><span>{alumno.nombres || alumno.nombresEstudiante || "—"}</span></td>
                         <td>{alumno.telefono || alumno.telefonoApoderado || "—"}</td>
                         {fechasColumnas.length > 0 ? (
                           fechasColumnas.map((fechaCol) => {

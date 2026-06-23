@@ -38,9 +38,7 @@ export default function DireccionDescuentos({
     <section className="dir-descuentos-view" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <article className="dir-search-container" style={{ borderRadius: "12px", overflow: "hidden" }}>
         <div style={{ marginBottom: "20px" }}>
-          <span className="dir-tag" style={{ background: "#e0f2fe", color: "#0369a1", marginBottom: "4px" }}>Finanzas</span>
-          <h2 style={{ margin: 0, color: "#0c1a30", fontSize: "20px", fontWeight: 800 }}>Autorización de Descuentos y Becas</h2>
-          <p style={{ margin: "4px 0 0 0", color: "#64748b", fontSize: "13px" }}>Consulte las pre-inscripciones activas por estudiante y asigne becas de estudio o descuentos especiales.</p>
+          <h2 style={{ margin: 0, color: "#000000", fontSize: "20px", fontWeight: 800 }}>Autorización de Descuentos y Becas</h2>
         </div>
 
         <form onSubmit={buscarEstudiantesDescuento} className="dir-search-form">
@@ -61,19 +59,10 @@ export default function DireccionDescuentos({
             }}
           />
           <Button
-            color="teal"
             type="submit"
             loading={buscandoDescuento}
             size="md"
-            styles={{
-              root: {
-                height: "46px",
-                borderRadius: "8px",
-                fontWeight: 700,
-                padding: "0 24px",
-                background: "linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)",
-              }
-            }}
+            className="dir-search-btn"
           >
             Buscar Alumno
           </Button>
@@ -109,18 +98,18 @@ export default function DireccionDescuentos({
                               {obtenerIniciales(ins.estudiante || ins.nombresEstudiante)}
                             </div>
                             <div className="dir-student-name-container">
-                              <strong>{ins.estudiante || ins.nombresEstudiante}</strong>
+                              <span style={{ fontWeight: 500, color: "#000000" }}>{ins.estudiante || ins.nombresEstudiante}</span>
                               <span>Pre-inscrito</span>
                             </div>
                           </div>
                         </Table.Td>
-                        <Table.Td style={{ fontWeight: 650, color: "#475569" }}>
+                        <Table.Td style={{ fontWeight: 500, color: "#000000" }}>
                           {ins.dni || ins.dniEstudiante}
                         </Table.Td>
                         <Table.Td>
                           <div style={{ display: "flex", flexDirection: "column" }}>
-                            <strong style={{ fontSize: "13px", color: "#0c1a30" }}>{ins.programa}</strong>
-                            <span className="dir-muted" style={{ fontSize: "11px", marginTop: "2px" }}>{ins.categoria || "Extracurricular"}</span>
+                            <span style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>{ins.programa}</span>
+                            <span style={{ fontSize: "11px", color: "#000000", marginTop: "2px", fontWeight: 500 }}>{ins.categoria || "Extracurricular"}</span>
                           </div>
                         </Table.Td>
                         <Table.Td style={{ textAlign: "right" }} className={tieneDescuento ? "dir-cost-original-td" : ""}>
@@ -129,14 +118,8 @@ export default function DireccionDescuentos({
                         <Table.Td>
                           {tieneDescuento ? (
                             <Badge
-                              color={ins.descuentoTipo === "beca" ? "teal" : "blue"}
                               variant="filled"
                               className="dir-badge-discount"
-                              style={{
-                                background: ins.descuentoTipo === "beca"
-                                  ? "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)"
-                                  : "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)"
-                              }}
                             >
                               {ins.descuentoTipo === "beca"
                                 ? "Beca 100%"
@@ -145,7 +128,7 @@ export default function DireccionDescuentos({
                                   : `-S/. ${ins.descuentoMonto}`}
                             </Badge>
                           ) : (
-                            <span style={{ color: "#94a3b8", fontSize: "13px", fontWeight: 500 }}>Ninguno</span>
+                            <span style={{ color: "#000000", fontSize: "13px", fontWeight: 500 }}>Ninguno</span>
                           )}
                         </Table.Td>
                         <Table.Td style={{ textAlign: "right" }} className={`dir-cost-final-td ${tieneDescuento ? "has-discount" : ""}`}>
@@ -153,13 +136,15 @@ export default function DireccionDescuentos({
                         </Table.Td>
                         <Table.Td>
                           <Badge
-                            color={esPagoCompletado ? "teal" : "orange"}
-                            variant="light"
+                            variant="outline"
                             styles={{
                               root: {
-                                fontWeight: 700,
+                                fontWeight: 500,
                                 fontSize: "11px",
-                                height: "22px"
+                                height: "22px",
+                                borderColor: esPagoCompletado ? "#000000" : "#cbd5e1",
+                                color: esPagoCompletado ? "#000000" : "#475569",
+                                backgroundColor: esPagoCompletado ? "#ffffff" : "#f1f5f9"
                               }
                             }}
                           >
@@ -168,22 +153,21 @@ export default function DireccionDescuentos({
                         </Table.Td>
                         <Table.Td style={{ textAlign: "center" }}>
                           {esPagoCompletado ? (
-                            <Button size="xs" variant="subtle" color="gray" disabled styles={{ root: { fontWeight: 600 } }}>
+                            <Button size="xs" variant="subtle" color="gray" disabled styles={{ root: { fontWeight: 500 } }}>
                               Ya pagado
                             </Button>
                           ) : (
                             <Button
                               size="xs"
                               variant={tieneDescuento ? "light" : "outline"}
-                              color="teal"
                               className="dir-action-btn-descuento"
-                              leftSection={tieneDescuento ? <Edit size={13} /> : <RosetteDiscount size={13} />}
+                              leftSection={tieneDescuento ? <Edit size={13} color="#000000" /> : <RosetteDiscount size={13} color="#000000" />}
                               onClick={() => abrirModalBeneficio(ins)}
                               styles={{
                                 root: {
-                                  borderColor: tieneDescuento ? "transparent" : "#0c8569",
-                                  color: tieneDescuento ? "#0c8569" : "#0c8569",
-                                  backgroundColor: tieneDescuento ? "#e6fcf5" : "transparent"
+                                  borderColor: "#000000",
+                                  color: "#000000",
+                                  backgroundColor: tieneDescuento ? "#f1f5f9" : "transparent"
                                 }
                               }}
                             >
@@ -201,9 +185,9 @@ export default function DireccionDescuentos({
         ) : (
           <div className="dir-empty-state-card">
             <div className="dir-empty-state-icon-container" style={{
-              background: busquedaDescuento ? "#fef2f2" : "#e6fcf5",
-              color: busquedaDescuento ? "#ef4444" : "#0c8569",
-              borderColor: busquedaDescuento ? "#fee2e2" : "#c3fae8"
+              background: busquedaDescuento ? "#fef2f2" : "#f1f5f9",
+              color: busquedaDescuento ? "#ef4444" : "#000000",
+              borderColor: busquedaDescuento ? "#fee2e2" : "#cbd5e1"
             }}>
               {busquedaDescuento ? <AlertCircle size={36} /> : <RosetteDiscount size={36} />}
             </div>
@@ -239,8 +223,8 @@ export default function DireccionDescuentos({
         onClose={cerrarModalBeneficio}
         title={
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <RosetteDiscount size={22} color="#0c8569" />
-            <strong style={{ fontSize: "16px", color: "#0c1a30" }}>
+            <RosetteDiscount size={22} color="#000000" />
+            <strong style={{ fontSize: "16px", color: "#000000" }}>
               {datosBeneficio.tipo === "beca" ? "Aprobación de Beca Completa" : "Autorización de Descuento Especial"}
             </strong>
           </div>
@@ -270,14 +254,14 @@ export default function DireccionDescuentos({
                 {obtenerIniciales(inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante)}
               </div>
               <div className="dir-modal-student-details">
-                <span className="label">Estudiante</span>
-                <span className="name">{inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante}</span>
-                <span className="sub">DNI: {inscripcionSeleccionada.dni || inscripcionSeleccionada.dniEstudiante}</span>
-                <span className="sub" style={{ fontWeight: 700, color: "#0c8569", marginTop: "2px" }}>
+                <span className="label" style={{ color: "#000000" }}>Estudiante</span>
+                <span className="name" style={{ color: "#000000" }}>{inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante}</span>
+                <span className="sub" style={{ color: "#000000" }}>DNI: {inscripcionSeleccionada.dni || inscripcionSeleccionada.dniEstudiante}</span>
+                <span className="sub" style={{ fontWeight: 500, color: "#000000", marginTop: "2px" }}>
                   Taller: {inscripcionSeleccionada.programa}
                 </span>
-                <span className="sub" style={{ fontWeight: 800, color: "#0c1a30", display: "flex", gap: "6px" }}>
-                  Costo Original: <span style={{ color: "#0c8569" }}>{formatearSoles(inscripcionSeleccionada.costoOriginal || inscripcionSeleccionada.costo)}</span>
+                <span className="sub" style={{ fontWeight: 500, color: "#000000", display: "flex", gap: "6px" }}>
+                  Costo Original: <span style={{ color: "#000000" }}>{formatearSoles(inscripcionSeleccionada.costoOriginal || inscripcionSeleccionada.costo)}</span>
                 </span>
               </div>
             </div>
@@ -294,7 +278,7 @@ export default function DireccionDescuentos({
             onChange={(val) => setDatosBeneficio({ ...datosBeneficio, tipo: val || "beca", valor: "" })}
             allowDeselect={false}
             styles={{
-              label: { fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "6px" },
+              label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "6px" },
               input: { borderRadius: "8px", borderColor: "#cbd5e1" }
             }}
           />
@@ -309,7 +293,7 @@ export default function DireccionDescuentos({
               min="1"
               required
               styles={{
-                label: { fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "6px" },
+                label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "6px" },
                 input: { borderRadius: "8px", borderColor: "#cbd5e1" }
               }}
             />
@@ -323,7 +307,7 @@ export default function DireccionDescuentos({
             rows={3}
             required
             styles={{
-              label: { fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "6px" },
+              label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "6px" },
               input: { borderRadius: "8px", borderColor: "#cbd5e1" }
             }}
           />
@@ -340,7 +324,7 @@ export default function DireccionDescuentos({
                 loading={buscandoDescuento}
                 styles={{
                   root: {
-                    fontWeight: 750,
+                    fontWeight: 600,
                     fontSize: "12.5px"
                   }
                 }}
@@ -351,18 +335,18 @@ export default function DireccionDescuentos({
               <div />
             )}
             <div style={{ display: "flex", gap: "10px" }}>
-              <Button variant="subtle" color="gray" onClick={cerrarModalBeneficio} styles={{ root: { fontWeight: 600 } }}>
+              <Button variant="subtle" color="gray" onClick={cerrarModalBeneficio} styles={{ root: { fontWeight: 500 } }}>
                 Cancelar
               </Button>
               <Button
-                color="teal"
                 onClick={guardarBeneficio}
                 loading={buscandoDescuento}
                 styles={{
                   root: {
                     borderRadius: "8px",
-                    fontWeight: 700,
-                    background: "linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)",
+                    fontWeight: 600,
+                    background: "#000000",
+                    color: "#ffffff",
                     padding: "0 16px"
                   }
                 }}

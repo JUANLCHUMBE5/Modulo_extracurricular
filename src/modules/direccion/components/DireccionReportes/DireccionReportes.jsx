@@ -205,7 +205,7 @@ export default function DireccionReportes({
 
                 {/* Rango de Fechas */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569" }}>Fecha Inicio</span>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#000000" }}>Fecha Inicio</span>
                   <input
                     type="date"
                     value={fechaInicio}
@@ -217,14 +217,14 @@ export default function DireccionReportes({
                       borderRadius: "6px",
                       fontSize: "12px",
                       backgroundColor: "#ffffff",
-                      color: "#495057",
+                      color: "#000000",
                       height: "30px",
                       cursor: "pointer",
                     }}
                   />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#475569" }}>Fecha Fin</span>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#000000" }}>Fecha Fin</span>
                   <input
                     type="date"
                     value={fechaFin}
@@ -236,7 +236,7 @@ export default function DireccionReportes({
                       borderRadius: "6px",
                       fontSize: "12px",
                       backgroundColor: "#ffffff",
-                      color: "#495057",
+                      color: "#000000",
                       height: "30px",
                       cursor: "pointer",
                     }}
@@ -265,7 +265,7 @@ export default function DireccionReportes({
                   onChange={(e) => setIncluirInactivos(e.currentTarget.checked)}
                   size="xs"
                   styles={{
-                    label: { fontSize: "11px", color: "#64748b", fontWeight: 500 },
+                    label: { fontSize: "11px", color: "#000000", fontWeight: 700 },
                     root: { marginTop: "8px" }
                   }}
                 />
@@ -317,8 +317,8 @@ export default function DireccionReportes({
         <div className="dir-builder-preview-section" style={{ marginTop: "20px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
           <div className="dir-preview-table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#0c1a30" }}>Vista Previa del Reporte</h3>
-              <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#64748b" }}>
+              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#000000" }}>Vista Previa del Reporte</h3>
+              <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#000000" }}>
                 Mostrando los primeros 10 de {registrosFiltrados.length} registros filtrados
               </p>
             </div>

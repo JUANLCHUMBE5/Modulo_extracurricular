@@ -415,7 +415,7 @@ function SeccionFechasHorarios({
                   <strong>{esFormularioVerano ? "Configuración de talleres específicos de verano por edades y horarios" : "Configuración de Deportes por Edades y Horarios"}</strong>
                 </div>
                 <div className={`coord-taller-builder-grid ${indiceTallerEditando !== null ? "is-editing" : ""}`}>
-                  <div className="coord-field coord-taller-col-4">
+                  <div className={`coord-field ${esDeportivoForm ? "coord-taller-col-3" : "coord-taller-col-4"}`}>
                     <label>{esFormularioVerano ? "Taller específico" : "Deporte"}</label>
                     <select value={tallerDepForm.deporte} onChange={e => setTallerDepForm(prev => ({ ...prev, deporte: e.target.value }))}>
                       {esFormularioVerano ? (
@@ -458,7 +458,7 @@ function SeccionFechasHorarios({
                   </div>
 
                   {esDeportivoForm && (
-                    <div className="coord-field coord-taller-col-3">
+                    <div className="coord-field coord-taller-col-2">
                       <label>Nivel</label>
                       <select value={tallerDepForm.nivel} onChange={e => setTallerDepForm(prev => ({ ...prev, nivel: e.target.value }))}>
                         <option value="Formativo">Formativo</option>
@@ -467,7 +467,7 @@ function SeccionFechasHorarios({
                     </div>
                   )}
 
-                  <div className="coord-field coord-taller-col-5">
+                  <div className={`coord-field ${esDeportivoForm ? "coord-taller-col-3" : "coord-taller-col-4"}`}>
                     <label>Edad (Mín / Máx)</label>
                     <div className="coord-flex-range">
                       <select value={tallerDepForm.minEdad} onChange={e => setTallerDepForm(prev => ({ ...prev, minEdad: e.target.value }))}>
@@ -484,7 +484,7 @@ function SeccionFechasHorarios({
                     </div>
                   </div>
 
-                  <div className="coord-field coord-taller-col-3">
+                  <div className="coord-field coord-taller-col-4">
                     <label>Días de atención</label>
                     <div className="coord-day-list coord-day-list-sm" style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginTop: "4px" }}>
                       {diasSemana.map((dia) => {
@@ -528,7 +528,7 @@ function SeccionFechasHorarios({
                     <input type="number" min="1" value={tallerDepForm.cupos} onChange={e => setTallerDepForm(prev => ({ ...prev, cupos: e.target.value }))} />
                   </div>
 
-                  <div className="coord-field coord-taller-col-2">
+                  <div className="coord-field coord-taller-col-3">
                     <label>Tutor / Docente</label>
                     <input
                       type="text"
@@ -538,7 +538,7 @@ function SeccionFechasHorarios({
                     />
                   </div>
 
-                  <div className="coord-field coord-taller-col-2" style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
+                  <div className="coord-field coord-taller-col-4" style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
                     <button type="button" className="coord-add-taller-btn" onClick={agregarTallerDeportivo} style={{ flex: 1 }}>
                       {indiceTallerEditando !== null ? <>Guardar</> : <><Plus size={14} /> Añadir taller</>}
                     </button>

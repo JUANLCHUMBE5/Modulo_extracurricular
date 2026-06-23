@@ -25,11 +25,9 @@ function SecretariaSearchCard({
   modoBusquedaAsistencia = false,
 }) {
   const [filtroNivel, setFiltroNivel] = useState("");
-  const [filtroGrado, setFiltroGrado] = useState("");
 
   useEffect(() => {
     setFiltroNivel("");
-    setFiltroGrado("");
   }, [resultadosNombre]);
 
   const obtenerNivelAlumno = (item) => {
@@ -52,23 +50,9 @@ function SecretariaSearchCard({
     new Set(resultadosNombre.map(obtenerNivelAlumno).filter(Boolean))
   ).sort();
 
-  const resultadosNivel = filtroNivel
+  const resultadosFiltrados = filtroNivel
     ? resultadosNombre.filter((item) => obtenerNivelAlumno(item) === filtroNivel)
     : resultadosNombre;
-
-  const gradosDisponibles = Array.from(
-    new Set(resultadosNivel.map((item) => item.grado).filter(Boolean))
-  ).sort();
-
-  useEffect(() => {
-    if (filtroGrado && !gradosDisponibles.includes(filtroGrado)) {
-      setFiltroGrado("");
-    }
-  }, [filtroNivel, gradosDisponibles, filtroGrado]);
-
-  const resultadosFiltrados = filtroGrado
-    ? resultadosNivel.filter((item) => item.grado === filtroGrado)
-    : resultadosNivel;
   return (
     <article className="secretaria-card secretaria-search-card">
       <div className="secretaria-card-title">
@@ -138,66 +122,35 @@ function SecretariaSearchCard({
 
       {resultadosNombre.length ? (
         <div className="secretaria-name-results-container">
-          {(nivelesDisponibles.length > 1 || gradosDisponibles.length > 1) && (
-            <div className="secretaria-filter-row" style={{ display: "flex", alignItems: "center", gap: "24px", marginTop: "16px", marginBottom: "16px", padding: "0 4px", flexWrap: "wrap" }}>
-              {nivelesDisponibles.length > 1 && (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <label htmlFor="filtro-nivel" style={{ fontSize: "13px", fontWeight: "700", color: "#111827" }}>
-                    Filtrar por nivel:
-                  </label>
-                  <select
-                    id="filtro-nivel"
-                    value={filtroNivel}
-                    onChange={(e) => setFiltroNivel(e.target.value)}
-                    style={{
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                      border: "1px solid #9ca3af",
-                      fontSize: "13px",
-                      color: "#111827",
-                      backgroundColor: "#fff",
-                      cursor: "pointer",
-                      fontWeight: "500"
-                    }}
-                  >
-                    <option value="">Todos los niveles</option>
-                    {nivelesDisponibles.map((nivel) => (
-                      <option key={nivel} value={nivel}>
-                        {nivel}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              {gradosDisponibles.length > 1 && (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <label htmlFor="filtro-grado" style={{ fontSize: "13px", fontWeight: "700", color: "#111827" }}>
-                    Filtrar por grado:
-                  </label>
-                  <select
-                    id="filtro-grado"
-                    value={filtroGrado}
-                    onChange={(e) => setFiltroGrado(e.target.value)}
-                    style={{
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                      border: "1px solid #9ca3af",
-                      fontSize: "13px",
-                      color: "#111827",
-                      backgroundColor: "#fff",
-                      cursor: "pointer",
-                      fontWeight: "500"
-                    }}
-                  >
-                    <option value="">Todos los grados</option>
-                    {gradosDisponibles.map((grado) => (
-                      <option key={grado} value={grado}>
-                        {grado}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+          {nivelesDisponibles.length > 1 && (
+            <div className="secretaria-filter-row" style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "8px", marginBottom: "8px", padding: "0 4px", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <label htmlFor="filtro-nivel" style={{ fontSize: "13px", fontWeight: "700", color: "#111827" }}>
+                  Filtrar por nivel:
+                </label>
+                <select
+                  id="filtro-nivel"
+                  value={filtroNivel}
+                  onChange={(e) => setFiltroNivel(e.target.value)}
+                  style={{
+                    padding: "2px 6px",
+                    borderRadius: "6px",
+                    border: "1px solid #9ca3af",
+                    fontSize: "13px",
+                    color: "#111827",
+                    backgroundColor: "#fff",
+                    cursor: "pointer",
+                    fontWeight: "500"
+                  }}
+                >
+                  <option value="">Todos los niveles</option>
+                  {nivelesDisponibles.map((nivel) => (
+                    <option key={nivel} value={nivel}>
+                      {nivel}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           )}
           <div className="secretaria-name-results">

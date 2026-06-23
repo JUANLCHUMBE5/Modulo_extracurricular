@@ -34,21 +34,20 @@ export default function CoordinacionSidebar({
   return (
     <aside className="coord-sidebar">
       <div className="coord-sidebar-brand-row">
-        {sidebarAbierta && (
-          <div className="coord-brand" aria-label="Colegio San Rafael">
-            <img className="coord-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
-          </div>
-        )}
         <button
           className="coord-menu-toggle-btn"
           type="button"
           onClick={() => setSidebarAbierta(!sidebarAbierta)}
           aria-label={sidebarAbierta ? "Cerrar barra lateral" : "Abrir barra lateral"}
           title={sidebarAbierta ? "Cerrar barra lateral" : "Abrir barra lateral"}
-          style={{ marginLeft: sidebarAbierta ? "auto" : "0" }}
         >
           <Menu size={20} />
         </button>
+        {sidebarAbierta && (
+          <div className="coord-brand" aria-label="Colegio San Rafael">
+            <img className="coord-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
+          </div>
+        )}
       </div>
       {sidebarAbierta && <p className="coord-module-label">{esProfesor ? "Modulo Profesores" : "Módulo Coordinación Académica"}</p>}
       <nav className="coord-nav">

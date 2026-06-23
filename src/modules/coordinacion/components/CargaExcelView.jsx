@@ -420,7 +420,7 @@ function CargaExcelView({
           <div className="coord-upload-tabs" role="tablist" aria-label="Tipo de carga de alumnos">
             <button
               type="button"
-              className={modoCargaAlumnos === "masiva" ? "is-active" : ""}
+              className={`coord-upload-tab-masiva ${modoCargaAlumnos === "masiva" ? "is-active" : ""}`}
               onClick={() => {
                 setModoCargaAlumnos("masiva");
                 setMensaje("");
@@ -431,7 +431,7 @@ function CargaExcelView({
             </button>
             <button
               type="button"
-              className={modoCargaAlumnos === "individual" ? "is-active" : ""}
+              className={`coord-upload-tab-individual ${modoCargaAlumnos === "individual" ? "is-active" : ""}`}
               onClick={() => {
                 setModoCargaAlumnos("individual");
                 setPreviewCarga(null);
@@ -444,7 +444,7 @@ function CargaExcelView({
             </button>
             <button
               type="button"
-              className={modoCargaAlumnos === "exportar" ? "is-active" : ""}
+              className={`coord-upload-tab-exportar ${modoCargaAlumnos === "exportar" ? "is-active" : ""}`}
               onClick={() => {
                 setModoCargaAlumnos("exportar");
                 setPreviewCarga(null);
@@ -541,11 +541,11 @@ function CargaExcelView({
                 </select>
               </div>
 
-              <div style={{ marginTop: "16px", marginBottom: "20px" }}>
-                <p style={{ fontSize: "14px", color: "#4b5563" }}>
+              <div style={{ marginTop: "8px", marginBottom: "12px" }}>
+                <p style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>
                   Se generarán <b>{cargandoInvitados ? "..." : cantidadAlumnosExportar}</b> fichas/comunicados en total para los alumnos cargados en esta selección.
                 </p>
-                <p style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                <p style={{ fontSize: "11px", color: "#000000", marginTop: "3px", fontWeight: 500 }}>
                   * Nota: Las fichas se rellenarán automáticamente con los nombres y grados de los alumnos. El campo del apoderado quedará en blanco si el estudiante no tiene un apoderado previamente registrado en el sistema.
                 </p>
               </div>
@@ -741,122 +741,7 @@ function CargaExcelView({
             </div>
           ) : null}
 
-          {modoCargaAlumnos !== "exportar" && (
-            <div className="coord-upload-history">
-              <div className="coord-upload-history-header">
-                <div>
-                  <h2>Historial de cargas</h2>
-                  <p>Desde aquí puede borrar una carga confirmada si sus alumnos aún no tienen inscripción activa.</p>
-                </div>
-              </div>
 
-              {historialFiltrado.length ? (
-                <>
-                  <div className="coord-table-wrap">
-                    <table className="coord-table">
-                      <thead>
-                        <tr>
-                          <th>Fecha</th>
-                          <th>Archivo</th>
-                          <th>Grado</th>
-                          <th>Taller</th>
-                          <th>Nivel</th>
-                          <th>Importados</th>
-                          <th>Errores</th>
-                          <th>Acción</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {historialPaginado.map((carga) => (
-                          <tr key={carga.id}>
-                            <td>{formatearFechaCarga(carga.fecha)}</td>
-                            <td>{Array.isArray(carga.archivos) && carga.archivos.length ? carga.archivos.join(", ") : carga.archivoNombre || carga.id}</td>
-                            <td>{resumirCampoCarga(carga, (item) => item.grado)}</td>
-                            <td>{resumirProgramasCarga(carga)}</td>
-                            <td>{resumirCampoCarga(carga, (item) => item.nivelEducativo || obtenerNivelDesdeGrado(item.grado))}</td>
-                            <td>{carga.resumen?.importados ?? carga.resumen?.validos ?? carga.registros?.length ?? 0}</td>
-                            <td>{carga.resumen?.errores ?? 0}</td>
-                             <td style={{ display: "flex", gap: "8px", justifyContent: "flex-start", alignItems: "center" }}>
-                               <button
-                                 className="coord-primary-button coord-upload-history-download"
-                                 type="button"
-                                 onClick={() => descargarFichasLote(carga)}
-                                 disabled={descargandoCargaId === carga.id}
-                                 style={{
-                                   padding: "6px 12px",
-                                   fontSize: "13px",
-                                   height: "auto",
-                                   backgroundColor: "#2b8a3e",
-                                   borderColor: "#2b8a3e",
-                                   display: "inline-flex",
-                                   alignItems: "center",
-                                   gap: "6px"
-                                 }}
-                               >
-                                 {descargandoCargaId === carga.id ? (
-                                   <Loader2 className="coord-spin" size={14} />
-                                 ) : (
-                                   <Download size={14} />
-                                 )}
-                                 <span>{descargandoCargaId === carga.id ? "Generando PDF..." : "Descargar PDF Único"}</span>
-                               </button>
-                               <button
-                                 className="coord-danger-button coord-upload-history-delete"
-                                 type="button"
-                                 onClick={() => eliminarCargaExcel(carga)}
-                                 disabled={eliminandoCargaId === carga.id}
-                                 style={{
-                                   padding: "6px 12px",
-                                   fontSize: "13px",
-                                   height: "auto",
-                                   display: "inline-flex",
-                                   alignItems: "center",
-                                   gap: "6px"
-                                 }}
-                               >
-                                 {eliminandoCargaId === carga.id ? <Loader2 className="coord-spin" size={14} /> : <Trash size={14} />}
-                                 <span>{eliminandoCargaId === carga.id ? "Borrando" : "Borrar"}</span>
-                               </button>
-                             </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {totalPaginas > 1 && (
-                    <div className="coord-pagination" style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "12px", marginTop: "20px" }}>
-                      <button
-                        type="button"
-                        className="coord-secondary-button"
-                        style={{ minWidth: "100px", padding: "6px 12px" }}
-                        onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
-                        disabled={paginaActual === 1}
-                      >
-                        Anterior
-                      </button>
-                      <span style={{ fontSize: "14px", fontWeight: "500", color: "#4b5563" }}>
-                        Página {paginaActual} de {totalPaginas}
-                      </span>
-                      <button
-                        type="button"
-                        className="coord-secondary-button"
-                        style={{ minWidth: "100px", padding: "6px 12px" }}
-                        onClick={() => setPaginaActual((prev) => Math.min(prev + 1, totalPaginas))}
-                        disabled={paginaActual === totalPaginas}
-                      >
-                        Siguiente
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="coord-empty coord-upload-history-empty">
-                  <ListCheck size={18} />
-                  <p>Aún no hay cargas confirmadas para mostrar.</p>
-                </div>
-              )}
-            </div>
-          )}
         </article>
       </section>
     </>

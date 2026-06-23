@@ -73,6 +73,9 @@ function ProgramasView({
   clonarPrograma,
   restaurarPrograma,
 }) {
+  const programasEscolar = programas.filter(p => String(p.periodo || "").toLowerCase() !== "verano");
+  const programasVerano = programas.filter(p => String(p.periodo || "").toLowerCase() === "verano");
+
   const limpiarTodosFiltros = () => {
     setBusqueda("");
     setFiltroCategoria("todos");
@@ -176,22 +179,22 @@ function ProgramasView({
               <div className="coord-filter-search">
                 <TextInput
                   label={
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
-                      <Search size={14} style={{ color: "#176c60" }} /> Buscar taller
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 500, color: "#000000" }}>
+                      <Search size={13} style={{ color: "#176c60" }} /> Buscar taller
                     </span>
                   }
                   placeholder="Nombre o código..."
                   value={busqueda}
                   onChange={(e) => setBusqueda(e.target.value)}
-                  leftSection={<Search size={16} color="#94a3b8" />}
+                  leftSection={<Search size={14} color="#94a3b8" />}
                   rightSection={
                     busqueda && (
-                      <ActionIcon size="sm" variant="subtle" color="gray" onClick={() => setBusqueda("")}>
-                        <X size={16} />
+                      <ActionIcon size="xs" variant="subtle" color="gray" onClick={() => setBusqueda("")}>
+                        <X size={14} />
                       </ActionIcon>
                     )
                   }
-                  size="md"
+                  size="sm"
                 />
               </div>
 
@@ -199,8 +202,8 @@ function ProgramasView({
               <div className="coord-filter-category">
                 <Select
                   label={
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
-                      <Filter size={14} style={{ color: "#176c60" }} /> Categoría
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 500, color: "#000000" }}>
+                      <Filter size={13} style={{ color: "#176c60" }} /> Categoría
                     </span>
                   }
                   value={filtroCategoria}
@@ -209,7 +212,7 @@ function ProgramasView({
                     { value: "todos", label: "Todas" },
                     ...categoriasFiltradasOptions
                   ]}
-                  size="md"
+                  size="sm"
                   allowDeselect={false}
                 />
               </div>
@@ -218,8 +221,8 @@ function ProgramasView({
               <div className="coord-filter-period">
                 <Select
                   label={
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
-                      <CalendarDays size={14} style={{ color: "#176c60" }} /> Periodo
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 500, color: "#000000" }}>
+                      <CalendarDays size={13} style={{ color: "#176c60" }} /> Periodo
                     </span>
                   }
                   value={filtroPeriodo}
@@ -229,7 +232,7 @@ function ProgramasView({
                     { value: "escolar", label: "Año escolar" },
                     { value: "verano", label: "Ciclo verano" }
                   ]}
-                  size="md"
+                  size="sm"
                   allowDeselect={false}
                 />
               </div>
@@ -239,8 +242,8 @@ function ProgramasView({
                 <div className="coord-filter-status">
                   <Select
                     label={
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#000000" }}>
-                        <Filter size={14} style={{ color: "#176c60" }} /> Disponibilidad
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 500, color: "#000000" }}>
+                        <Filter size={13} style={{ color: "#176c60" }} /> Disponibilidad
                       </span>
                     }
                     value={filtroEstado}
@@ -251,7 +254,7 @@ function ProgramasView({
                       { value: "deshabilitados", label: "Deshabilitados" },
                       { value: "finalizados", label: "Finalizados" }
                     ]}
-                    size="md"
+                    size="sm"
                     allowDeselect={false}
                   />
                 </div>
@@ -263,8 +266,9 @@ function ProgramasView({
                   <Button
                     color="sanrafael"
                     onClick={abrirCrear}
-                    leftSection={<Plus size={17} />}
-                    size="md"
+                    leftSection={<Plus size={15} />}
+                    size="sm"
+                    style={{ height: "34px" }}
                   >
                     Nuevo programa
                   </Button>
@@ -274,8 +278,8 @@ function ProgramasView({
 
             {/* Filtros Activos Resumen */}
             {hasActiveFilters && (
-              <Group gap="xs" style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1px dashed #e2e8f0" }}>
-                <span style={{ fontSize: "12px", fontWeight: 700, color: "#64748b" }}>Filtros activos:</span>
+              <Group gap="xs" style={{ marginTop: "10px", paddingTop: "8px", borderTop: "1px dashed #e2e8f0" }}>
+                <span style={{ fontSize: "12px", fontWeight: 500, color: "#000000" }}>Filtros activos:</span>
                 {busqueda.trim() && (
                   <Badge color="sanrafael" variant="light" rightSection={<X size={12} onClick={() => setBusqueda("")} style={{ cursor: "pointer" }} />}>
                     Búsqueda: {busqueda}
@@ -341,17 +345,17 @@ function ProgramasView({
               )}
             </div>
           ) : mostrarSoloArchivados ? (
-            <div style={{ background: "#ffffff", borderRadius: "12px", border: "1px solid #e2e8f0", overflow: "hidden", marginTop: "16px" }}>
-              <Table highlightOnHover verticalSpacing="md" horizontalSpacing="lg">
+            <div style={{ background: "#ffffff", borderRadius: "10px", border: "1px solid #e2e8f0", overflow: "hidden", marginTop: "10px" }}>
+              <Table highlightOnHover verticalSpacing="sm" horizontalSpacing="md">
                 <Table.Thead style={{ background: "#f8fafc" }}>
                   <Table.Tr>
-                    <Table.Th style={{ color: "#475569", fontWeight: 700 }}>Taller</Table.Th>
-                    <Table.Th style={{ color: "#475569", fontWeight: 700 }}>Periodo</Table.Th>
-                    <Table.Th style={{ color: "#475569", fontWeight: 700 }}>Tutor</Table.Th>
-                    <Table.Th style={{ color: "#475569", fontWeight: 700 }}>Vigencia</Table.Th>
-                    <Table.Th style={{ color: "#475569", fontWeight: 700, textAlign: "center" }}>Cupos</Table.Th>
-                    <Table.Th style={{ color: "#475569", fontWeight: 700, textAlign: "center" }}>Costo</Table.Th>
-                    <Table.Th style={{ color: "#475569", fontWeight: 700, textAlign: "right" }}>Acciones</Table.Th>
+                    <Table.Th style={{ color: "#000000", fontWeight: 600 }}>Taller</Table.Th>
+                    <Table.Th style={{ color: "#000000", fontWeight: 600 }}>Periodo</Table.Th>
+                    <Table.Th style={{ color: "#000000", fontWeight: 600 }}>Tutor</Table.Th>
+                    <Table.Th style={{ color: "#000000", fontWeight: 600 }}>Vigencia</Table.Th>
+                    <Table.Th style={{ color: "#000000", fontWeight: 600, textAlign: "center" }}>Cupos</Table.Th>
+                    <Table.Th style={{ color: "#000000", fontWeight: 600, textAlign: "center" }}>Costo</Table.Th>
+                    <Table.Th style={{ color: "#000000", fontWeight: 600, textAlign: "right" }}>Acciones</Table.Th>
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -363,8 +367,8 @@ function ProgramasView({
                             {obtenerIconoCategoria(programa.categoria)}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 700, color: "#1e293b", fontSize: "14.5px" }}>{programa.nombre}</div>
-                            <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>{programa.id} • {programa.categoria || "General"}</div>
+                            <div style={{ fontWeight: 600, color: "#000000", fontSize: "14px" }}>{programa.nombre}</div>
+                            <div style={{ fontSize: "11px", color: "#000000", marginTop: "2px", fontWeight: 500 }}>{programa.id} • {programa.categoria || "General"}</div>
                           </div>
                         </div>
                       </Table.Td>
@@ -373,10 +377,10 @@ function ProgramasView({
                           {String(programa.periodo || "").toLowerCase() === "verano" ? "Verano" : "Escolar"}
                         </Badge>
                       </Table.Td>
-                      <Table.Td style={{ fontSize: "13px", color: "#334155" }}>
+                      <Table.Td style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>
                         {programa.responsable ? String(programa.responsable).replace(/\s*-\s*/g, ", ").trim() : "No asignado"}
                       </Table.Td>
-                      <Table.Td style={{ fontSize: "13px", color: "#334155" }}>
+                      <Table.Td style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>
                         <VigenciaTabla
                           inicio={programa.fechaInicio}
                           fin={programa.fechaFin}
@@ -389,7 +393,7 @@ function ProgramasView({
                           <CuposTabla programa={programa} />
                         </div>
                       </Table.Td>
-                      <Table.Td style={{ fontWeight: 700, color: "#0f172a", fontSize: "13.5px", textAlign: "center" }}>
+                      <Table.Td style={{ fontWeight: 600, color: "#000000", fontSize: "13.5px", textAlign: "center" }}>
                         {formatearSoles(programa.costo)}
                       </Table.Td>
                       <Table.Td style={{ textAlign: "right" }}>
@@ -444,8 +448,8 @@ function ProgramasView({
               </Table>
             </div>
           ) : (
-            <div className="coord-program-card-list">
-              {programas.map((programa) => (
+            (() => {
+              const renderCard = (programa) => (
                 <article
                   key={programa.id}
                   className={`coord-program-card-item coord-program-card-${String(programa.estado || "").toLowerCase()} coord-cat-${obtenerClaseCategoria(programa.categoria)}`}
@@ -461,6 +465,9 @@ function ProgramasView({
                           <span>{programa.id || "Sin código"}</span>
                           <span className={`coord-badge-cat coord-badge-cat-${obtenerClaseCategoria(programa.categoria)}`}>
                             {programa.categoria || "General"}
+                          </span>
+                          <span className={`coord-badge-period coord-badge-period-${String(programa.periodo || "").toLowerCase()}`}>
+                            {String(programa.periodo || "").toLowerCase() === "verano" ? "Ciclo verano" : "Año escolar"}
                           </span>
                           <span>Tutor: {programa.responsable ? String(programa.responsable).replace(/\s*-\s*/g, ", ").trim() : "No asignado"}</span>
                         </div>
@@ -625,8 +632,19 @@ function ProgramasView({
                     </div>
                   ) : null}
                 </article>
-              ))}
-            </div>
+              );
+
+              const todosOrdenados = [
+                ...programasEscolar,
+                ...programasVerano
+              ];
+
+              return (
+                <div className="coord-program-card-list" style={{ display: "grid", gap: "12px" }}>
+                  {todosOrdenados.map(renderCard)}
+                </div>
+              );
+            })()
           )}
         </article>
       </section>

@@ -289,6 +289,8 @@ export function adaptarPago(apiPago) {
     telefono: apiPago.telefono || apiPago.telefono_apoderado || "",
     puedePagarCaja: Boolean(apiPago.puedePagarCaja),
     nroRecibo: apiPago.nro_recibo || apiPago.nroRecibo || "",
+    grado: apiPago.grado || apiPago.gradoEstudiante || "",
+    seccion: apiPago.seccion || apiPago.seccionEstudiante || "",
     descuentoAprobado: Boolean(apiPago.descuento_aprobado || apiPago.descuentoAprobado),
     descuentoTipo: apiPago.descuento_tipo || apiPago.descuentoTipo || "",
     descuentoMonto: apiPago.descuento_monto !== undefined ? Number(apiPago.descuento_monto) : Number(apiPago.descuentoMonto || 0),

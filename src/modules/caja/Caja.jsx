@@ -95,6 +95,8 @@ export default function Caja({
     programa: "todos",
     medioPago: "todos",
     estadoPago: "todos",
+    grado: "todos",
+    seccion: "todos",
   });
 
   // Estados de verificacion de pagos web Yape
@@ -160,7 +162,11 @@ export default function Caja({
     window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("storage", refrescarPorStorage);
     window.addEventListener("focus", handleFocusUpdate);
-    const intervalo = window.setInterval(refrescarCaja, 30000);
+    const intervalo = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        refrescarCaja();
+      }
+    }, 60000);
 
     return () => {
       window.removeEventListener("api-db-updated", refrescarCaja);
@@ -188,10 +194,26 @@ export default function Caja({
     });
   }, [busqueda, filtroEstado, pagos]);
 
+  const gradosDisponibles = useMemo(() => {
+    return Array.from(new Set(reporteCaja.map(f => f.grado).filter(Boolean))).sort();
+  }, [reporteCaja]);
+
+  const seccionesDisponibles = useMemo(() => {
+    return Array.from(new Set(reporteCaja.map(f => f.seccion).filter(Boolean))).sort();
+  }, [reporteCaja]);
+
+  const reporteCajaFiltrado = useMemo(() => {
+    return reporteCaja.filter(fila => {
+      if (filtrosReporte.grado && filtrosReporte.grado !== "todos" && fila.grado !== filtrosReporte.grado) return false;
+      if (filtrosReporte.seccion && filtrosReporte.seccion !== "todos" && fila.seccion !== filtrosReporte.seccion) return false;
+      return true;
+    });
+  }, [reporteCaja, filtrosReporte.grado, filtrosReporte.seccion]);
+
   const reporte = useMemo(() => {
-    const totalVisible = reporteCaja.reduce((sum, fila) => sum + Number(fila.monto || 0), 0);
-    const pagados = reporteCaja.filter((fila) => fila.estadoPago === "pagado");
-    const pendientes = reporteCaja.filter(
+    const totalVisible = reporteCajaFiltrado.reduce((sum, fila) => sum + Number(fila.monto || 0), 0);
+    const pagados = reporteCajaFiltrado.filter((fila) => fila.estadoPago === "pagado");
+    const pendientes = reporteCajaFiltrado.filter(
       (fila) => fila.estadoPago === "pendiente" || fila.estadoPago === "verificando" || fila.estadoPago === "observado"
     );
     return {
@@ -201,7 +223,7 @@ export default function Caja({
       cantidadPagada: pagados.length,
       cantidadPendiente: pendientes.length,
     };
-  }, [reporteCaja]);
+  }, [reporteCajaFiltrado]);
 
   async function cargarDatos() {
     lastFetchTimeRef.current = Date.now();
@@ -707,7 +729,12 @@ export default function Caja({
         medioPago: filtrosReporte.medioPago,
         estadoPago: filtrosReporte.estadoPago,
       });
-      const csv = generarCSVReporteCaja(datos);
+      const datosFiltrados = datos.filter(fila => {
+        if (filtrosReporte.grado && filtrosReporte.grado !== "todos" && fila.grado !== filtrosReporte.grado) return false;
+        if (filtrosReporte.seccion && filtrosReporte.seccion !== "todos" && fila.seccion !== filtrosReporte.seccion) return false;
+        return true;
+      });
+      const csv = generarCSVReporteCaja(datosFiltrados);
       const nombre = `reporte-caja-${periodo}-${fechaActualInput()}.csv`;
       descargarArchivoCsv(csv, nombre);
       toast.success("Reporte descargado", { description: "El archivo CSV se genero correctamente." });
@@ -748,9 +775,13 @@ export default function Caja({
                 setPeriodo={setPeriodo}
                 descargarReporte={descargarReporte}
                 reporte={reporte}
-                reporteCaja={reporteCaja}
+                reporteCaja={reporteCajaFiltrado}
                 filtrosReporte={filtrosReporte}
-                opcionesReporte={opcionesReporte}
+                opcionesReporte={{
+                  ...opcionesReporte,
+                  grados: gradosDisponibles,
+                  secciones: seccionesDisponibles,
+                }}
                 actualizarFiltroReporte={actualizarFiltroReporte}
                 abrirPagoDesdeReporte={abrirPagoDesdeReporte}
                 aprobarPagoWebDirecto={aprobarPagoWebDirecto}

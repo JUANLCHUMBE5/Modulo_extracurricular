@@ -3493,19 +3493,73 @@
 
 /* ── 11. Message alert ──────────────────────────────────────────────────── */
 .secretaria-message {
-  margin-top: 8px !important;
+  margin-top: 6px !important;
   border-radius: 8px !important;
 }
 
 /* ── 12. Name results list ──────────────────────────────────────────────── */
 .secretaria-name-results {
-  gap: 4px !important;
-  margin: 8px 0 6px !important;
+  gap: 3px !important;
+  margin: 6px 0 4px !important;
 }
 
 .secretaria-name-results button {
-  padding: 8px 12px !important;
+  padding: 5px 10px !important;
+  border-radius: 6px !important;
+  gap: 1px !important;
+}
+
+.secretaria-name-results button strong {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+}
+
+.secretaria-name-results button span {
+  font-size: 11px !important;
+}
+
+/* ── 12b. Search Card Compactness Overrides ─────────────────────────────── */
+.secretaria-search-card {
+  padding: 12px 18px 12px !important;
+}
+
+.secretaria-search-card .secretaria-card-title {
+  margin-bottom: 8px !important;
+}
+
+.secretaria-search-card .secretaria-card-title h2 {
+  font-size: 16px !important;
+}
+
+.secretaria-search-card .secretaria-card-title p {
+  font-size: 12px !important;
+  margin-top: 2px !important;
+}
+
+.secretaria-search-form-compact {
+  padding: 6px 10px !important;
+  gap: 8px !important;
+}
+
+.secretaria-search-form-compact select,
+.secretaria-search-form-compact .secretaria-input-wrap,
+.secretaria-search-form-compact .secretaria-primary-button,
+.secretaria-search-form-compact .secretaria-new-summer-student {
+  height: 34px !important;
+  min-height: 34px !important;
   border-radius: 8px !important;
+  font-size: 13px !important;
+}
+
+.secretaria-search-form-compact .secretaria-input-wrap input {
+  height: 32px !important;
+  font-size: 13px !important;
+}
+
+.secretaria-search-form-compact .secretaria-field label {
+  font-size: 11.5px !important;
+  gap: 4px !important;
+  margin-bottom: 2px !important;
 }
 
 /* ── 13. New search button ──────────────────────────────────────────────── */
@@ -3538,4 +3592,40 @@
   .secretaria-final-actions {
     grid-template-columns: 1fr !important;
   }
+}
+
+/* ── 15. Sidebar Navigation Cleanup & Border-Radius ──────────────────────── */
+.secretaria-nav-item,
+.secretaria-logout {
+  border-radius: 8px !important;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.75) !important;
+  transition: background 0.15s ease, color 0.15s ease !important;
+}
+
+.secretaria-nav-item:hover,
+.secretaria-logout:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.secretaria-nav-item svg,
+.secretaria-logout svg,
+.secretaria-nav-item span,
+.secretaria-logout span {
+  color: inherit !important;
+  stroke: currentColor !important;
+}
+
+.secretaria-nav-item-active {
+  background: #ffffff !important;
+  color: #0c332e !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
+.secretaria-nav-item-active svg,
+.secretaria-nav-item-active span {
+  color: #0c332e !important;
+  stroke: #0c332e !important;
 }

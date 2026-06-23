@@ -560,7 +560,7 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
           formaPago: p.formaPago,
           numeroOperacion: p.numeroOperacion || "",
           telefonoOperacion: p.telefonoOperacion || "",
-          origen: p.origenRegistro || "Portal padres",
+          origen: p.origenRegistro || "Portal parents",
           fuente: "pago",
           fecha: p.fechaPago || p.fecha || "",
           fechaRegistro: p.fecha || "",
@@ -568,10 +568,13 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
           apoderado: student ? student.apoderado : "",
           telefono: student ? student.telefonoApoderado : "",
           nroRecibo: p.nroRecibo || p.nro_recibo || "",
+          grado: e ? (e.gradoEstudiante || e.grado || (student ? student.grado : "")) : (student ? student.grado : ""),
+          seccion: e ? (e.seccionEstudiante || e.seccion || (student ? student.seccion : "")) : (student ? student.seccion : ""),
           descuentoAprobado: e ? (e.descuentoAprobado || false) : false,
           descuentoTipo: e ? (e.descuentoTipo || "") : "",
           descuentoMonto: e ? (e.descuentoMonto || 0) : 0,
-          descuentoJustificacion: e ? (e.descuentoJustificacion || "") : ""
+          descuentoJustificacion: e ? (e.descuentoJustificacion || "") : "",
+          observaciones: p.observaciones || p.observacion || p.pagoObservacionCaja || ""
         };
       });
     } else {
@@ -607,10 +610,13 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
           telefono: e.telefono || "",
           puedePagarCaja: true,
           nroRecibo: p ? (p.nroRecibo || p.nro_recibo || "") : "",
+          grado: e.gradoEstudiante || e.grado || (student ? student.grado : ""),
+          seccion: e.seccionEstudiante || e.seccion || (student ? student.seccion : ""),
           descuentoAprobado: e.descuentoAprobado || false,
           descuentoTipo: e.descuentoTipo || "",
           descuentoMonto: e.descuentoMonto || 0,
-          descuentoJustificacion: e.descuentoJustificacion || ""
+          descuentoJustificacion: e.descuentoJustificacion || "",
+          observaciones: p ? (p.observaciones || p.observacion || p.pagoObservacionCaja || "") : (e.pagoObservacionCaja || "")
         };
       });
     }

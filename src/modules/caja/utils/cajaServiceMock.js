@@ -406,6 +406,7 @@ export async function generarReporteCajaMock(filtros = {}) {
     const pago = encontrarPagoInscripcion(inscripcion, pagos);
     const programa = resolverProgramaVigenteCaja(inscripcion, programasVigentes);
     if (!programa) return null;
+    const estudiante = apiDb.estudiantes?.[inscripcion.dniEstudiante] || null;
     const monto = Number(pago?.monto ?? inscripcion.costo ?? programa.costo ?? 0);
     const estadoPago = normalizarEstadoPago(pago?.estado || inscripcion.estadoPago);
     const fechaBase = pago?.fechaPago || pago?.fecha || inscripcion.fechaRegistro || "";
@@ -441,10 +442,13 @@ export async function generarReporteCajaMock(filtros = {}) {
       telefono: inscripcion.telefono || "",
       puedePagarCaja: true,
       nroRecibo: pago?.nroRecibo || pago?.nro_recibo || "",
+      grado: inscripcion.gradoEstudiante || inscripcion.grado || (estudiante ? estudiante.grado : ""),
+      seccion: inscripcion.seccion || inscripcion.seccionEstudiante || (estudiante ? estudiante.seccion : ""),
       descuentoAprobado: inscripcion.descuentoAprobado || false,
       descuentoTipo: inscripcion.descuentoTipo || "",
       descuentoMonto: inscripcion.descuentoMonto || 0,
       descuentoJustificacion: inscripcion.descuentoJustificacion || "",
+      observaciones: pago ? (pago.observaciones || pago.observacion || pago.pagoObservacionCaja || "") : (inscripcion.pagoObservacionCaja || ""),
     };
   }).filter(Boolean);
 
@@ -621,6 +625,7 @@ function crearFilaPago(pago, programasVigentes = null) {
   if (!program) return null;
 
   const inscripcion = (apiDb.inscripciones || []).find((ins) => ins.id === pago.inscripcionId) || null;
+  const estudiante = apiDb.estudiantes?.[pago.dniEstudiante || pago.estudianteDni] || null;
   const esWebReserva = inscripcion ? (inscripcion.derivadoCaja || inscripcion.estadoCaja === "reservado_caja" || String(inscripcion.estadoInscripcion).toLowerCase().includes("reserva")) : false;
 
   const formaPago = esWebReserva
@@ -650,10 +655,13 @@ function crearFilaPago(pago, programasVigentes = null) {
     apoderado: pago.apoderado || "",
     telefono: pago.telefono || "",
     nroRecibo: pago.nroRecibo || pago.nro_recibo || "",
+    grado: inscripcion ? (inscripcion.gradoEstudiante || inscripcion.grado || (estudiante ? estudiante.grado : "")) : (estudiante ? estudiante.grado : ""),
+    seccion: inscripcion ? (inscripcion.seccion || inscripcion.seccionEstudiante || (estudiante ? estudiante.seccion : "")) : (estudiante ? estudiante.seccion : ""),
     descuentoAprobado: inscripcion ? (inscripcion.descuentoAprobado || false) : false,
     descuentoTipo: inscripcion ? (inscripcion.descuentoTipo || "") : "",
     descuentoMonto: inscripcion ? (inscripcion.descuentoMonto || 0) : 0,
     descuentoJustificacion: inscripcion ? (inscripcion.descuentoJustificacion || "") : "",
+    observaciones: pago.observaciones || pago.observacion || (inscripcion ? inscripcion.pagoObservacionCaja : "") || "",
   };
 }
 

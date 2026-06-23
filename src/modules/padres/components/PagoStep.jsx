@@ -93,9 +93,42 @@ function normalizarTexto(valor) {
 function leerArchivoComoBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = () => reject(new Error("No se pudo leer la captura del pago."));
     reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const maxWidth = 800;
+        const maxHeight = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const base64 = canvas.toDataURL("image/jpeg", 0.7);
+        resolve(base64);
+      };
+      img.onerror = () => {
+        resolve(event.target.result);
+      };
+    };
+    reader.onerror = () => reject(new Error("No se pudo leer la captura del pago."));
   });
 }
 
@@ -384,7 +417,7 @@ export default function PagoStep({
     const base64 = await leerArchivoComoBase64(file);
     setCaptura({
       nombre: file.name,
-      tipo: file.type,
+      tipo: "image/jpeg",
       base64,
     });
     setArchivoNombre(file.name);
