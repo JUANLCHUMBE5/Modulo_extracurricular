@@ -1,15 +1,15 @@
 import { Button } from "@mantine/core";
 import {
+  IconClipboardList as ClipboardList,
   IconReceipt2 as Receipt,
   IconSearch as Search,
 } from "@tabler/icons-react";
 import { formatearFechaPeru } from "../../../services/dateService";
-import { formatearSoles, limpiarDni, obtenerIniciales } from "../utils/cajaFormatters";
+import { formatearSoles, limpiarDni } from "../utils/cajaFormatters";
 
 export default function CajaFields({
   buscando,
   dni,
-  estudiante,
   formulario,
   modoEdicion,
   onBuscar,
@@ -17,11 +17,36 @@ export default function CajaFields({
   setFormulario,
   mensaje,
   siguienteRecibo,
+  correlativos,
+  inscripcionesCaja = [],
+  onSeleccionarInscripcionCaja,
 }) {
   const pagoHabilitado = modoEdicion || Boolean(formulario.inscripcionId);
+  const mostrarSelectorTallerCaja = !pagoHabilitado && !modoEdicion && inscripcionesCaja.length > 0;
+  const mensajeEsInfo = /seleccione|pago registrado/i.test(mensaje || "");
 
   function actualizar(campo, valor) {
-    setFormulario((actual) => ({ ...actual, [campo]: valor }));
+    setFormulario((actual) => {
+      const nuevo = { ...actual, [campo]: valor };
+      if (campo === "formaPago" && correlativos) {
+        const metodoAnterior = String(actual.formaPago || "").toLowerCase().trim();
+        const metodoNuevo = String(valor || "").toLowerCase().trim();
+        const eraVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(metodoAnterior);
+        const esVirtualNuevo = ["yape", "plin", "transferencia", "tarjeta"].includes(metodoNuevo);
+
+        const corrAnterior = eraVirtual 
+          ? (correlativos.reciboVirtualSiguiente || correlativos.reciboVirtual || "") 
+          : (correlativos.reciboSiguiente || correlativos.recibo || "");
+        const corrNuevo = esVirtualNuevo 
+          ? (correlativos.reciboVirtualSiguiente || correlativos.reciboVirtual || "") 
+          : (correlativos.reciboSiguiente || correlativos.recibo || "");
+
+        if (!actual.nroRecibo || String(actual.nroRecibo).trim() === corrAnterior) {
+          nuevo.nroRecibo = corrNuevo;
+        }
+      }
+      return nuevo;
+    });
   }
 
   let labelEstado = "Pendiente";
@@ -67,22 +92,47 @@ export default function CajaFields({
             </Button>
           </form>
           {mensaje ? (
-            <div className="mt-3 rounded-lg border border-[#f8c7c1] bg-[#fff0ef] px-3 py-2 text-[13px] font-extrabold text-[#b42318]">
+            <div className={`mt-3 rounded-lg border px-3 py-2 text-[13px] font-extrabold ${
+              mensajeEsInfo
+                ? "border-[#b9e6dc] bg-[#eefbf7] text-[#087364]"
+                : "border-[#f8c7c1] bg-[#fff0ef] text-[#b42318]"
+            }`}>
               {mensaje}
             </div>
           ) : null}
-          {estudiante ? (
-            <div className="caja-student-card">
-              <span>{obtenerIniciales(estudiante)}</span>
-              <div>
-                <strong>{`${estudiante.nombres || ""} ${estudiante.apellidos || ""}`.trim()}</strong>
-                <small>
-                  {estudiante.codigoEstudiante || "Sin codigo"} - {estudiante.grado || "Sin grado"}
-                  {estudiante.seccion ? ` ${estudiante.seccion}` : ""}
-                </small>
-              </div>
+        </section>
+      ) : null}
+
+      {mostrarSelectorTallerCaja ? (
+        <section className="caja-form-block caja-course-picker">
+          <div className="caja-form-title">
+            <ClipboardList size={18} />
+            <div>
+              <h3>Talleres derivados a Caja</h3>
             </div>
-          ) : null}
+          </div>
+          <div className="caja-course-list">
+            {inscripcionesCaja.map((inscripcion) => (
+              <button
+                className="caja-course-option"
+                key={inscripcion.id || `${inscripcion.programaId}-${inscripcion.programa}`}
+                onClick={() => onSeleccionarInscripcionCaja?.(inscripcion)}
+                type="button"
+              >
+                <div className="caja-course-main">
+                  <strong>{inscripcion.programa || "Taller sin nombre"}</strong>
+                  <span>
+                    {inscripcion.origenRegistro || inscripcion.origen || "Derivado por Asistente"}
+                    {inscripcion.fechaRegistro ? ` - ${formatearFechaPeru(inscripcion.fechaRegistro)}` : ""}
+                  </span>
+                </div>
+                <div className="caja-course-amount">
+                  <span>Monto</span>
+                  <strong>{formatearSoles(inscripcion.costo)}</strong>
+                </div>
+              </button>
+            ))}
+          </div>
         </section>
       ) : null}
 
@@ -151,23 +201,25 @@ export default function CajaFields({
               </div>
             )}
             {datosLectura.map(([etiqueta, valor]) => {
-              const isPrograma = etiqueta === "Programa";
-              const isEstado = etiqueta === "Estado";
-              let extraClass = "";
-              if (isPrograma) extraClass = "field-programa";
-              if (isEstado) {
-                if (valor === "Pagado") extraClass = "status-pagado";
-                else if (valor === "Por Verificar") extraClass = "status-verificando";
-                else extraClass = "status-pendiente";
+              const classNames = [];
+              if (etiqueta === "Programa") classNames.push("field-programa");
+              if (etiqueta === "Monto") classNames.push("field-monto");
+              if (etiqueta === "Concepto") classNames.push("field-concepto");
+              if (etiqueta === "Fecha") classNames.push("field-fecha");
+              if (etiqueta === "Estado") {
+                classNames.push("field-estado");
+                if (valor === "Pagado") classNames.push("status-pagado");
+                else if (valor === "Por Verificar") classNames.push("status-verificando");
+                else classNames.push("status-pendiente");
               }
               return (
-                <div className={`caja-readonly-field ${extraClass}`} key={etiqueta}>
+                <div className={`caja-readonly-field ${classNames.join(" ")}`} key={etiqueta}>
                   <span>{etiqueta}</span>
                   <strong>{valor}</strong>
                 </div>
               );
             })}
-            <label className="caja-payment-method">
+            <label className="caja-payment-method field-payment-method">
               Forma de pago
               <select
                 value={formulario.formaPago}
@@ -187,19 +239,17 @@ export default function CajaFields({
                 <option value="Tarjeta">Tarjeta</option>
               </select>
             </label>
-            <label className="caja-payment-method">
-              Nro. recibo SIADED
+            <label className="caja-payment-method field-receipt">
+              N° de comprobante
               <input
                 type="text"
                 placeholder={siguienteRecibo ? `${siguienteRecibo} (Autogenerado)` : "Ej. 51614"}
                 value={formulario.nroRecibo || ""}
                 onChange={(event) => actualizar("nroRecibo", event.currentTarget.value)}
-                disabled={esPorVerificar}
+                disabled={true}
               />
               <span style={{ fontSize: "11px", color: "#64748b", marginTop: "4px", display: "block" }}>
-                {siguienteRecibo
-                  ? "Si se deja vacío, se generará el correlativo automático."
-                  : "Ingrese el número de recibo manual."}
+                El número de comprobante es autogenerado y no modificable.
               </span>
             </label>
             {esPorVerificar ? (

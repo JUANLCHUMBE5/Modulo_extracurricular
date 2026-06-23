@@ -56,7 +56,7 @@ export default function ReporteTabla({
               <Table.Th>Programa</Table.Th>
               <Table.Th>Monto</Table.Th>
               <Table.Th>Pago</Table.Th>
-              <Table.Th>Recibo SIADED</Table.Th>
+              <Table.Th>N° de comprobante</Table.Th>
               <Table.Th>Cod. operacion</Table.Th>
               <Table.Th>Telefono</Table.Th>
               <Table.Th>Medio / canal</Table.Th>

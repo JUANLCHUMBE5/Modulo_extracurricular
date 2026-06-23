@@ -87,7 +87,7 @@ export default function HistorialPagosModal({
                       </div>
                       {pagoDetalle.nroRecibo && (
                         <div>
-                          <dt>Recibo SIADED</dt>
+                          <dt>N° de comprobante</dt>
                           <dd>{pagoDetalle.nroRecibo}</dd>
                         </div>
                       )}

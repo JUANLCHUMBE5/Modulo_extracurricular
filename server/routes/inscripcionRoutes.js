@@ -8,6 +8,7 @@ import { registrarAuditoria } from "../audit.js";
 import { limpiarDni as limpiarDniHelper, normalizarComparacion } from "../fileProcessing.js";
 import {
   mapDbEnrollmentToApi,
+  mapDbPaymentToApi,
   obtenerGradoCompletoApi,
   obtenerCamposProgramaInvitacionApi,
   obtenerPlantillaProgramaApi,

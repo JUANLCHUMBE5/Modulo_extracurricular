@@ -1,28 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Button, Group, Modal, Select, Text, Textarea } from "@mantine/core";
+import { Button, Group, Modal, Text, Textarea } from "@mantine/core";
 import { toast } from "sonner";
-import {
-  IconChartBar as ChartBar,
-  IconCheck as Check,
-  IconDownload as Download,
-  IconLogout as LogOut,
-  IconReceipt2 as Receipt,
-  IconX as X,
-  IconAlertTriangle as AlertTriangle,
-  IconEye as Eye,
-  IconMenu2 as Menu,
-} from "@tabler/icons-react";
+import { IconCheck as Check, IconX as X } from "@tabler/icons-react";
+
 import CajaFields from "./components/CajaFields";
 import CajaPagoWebModals from "./components/CajaPagoWebModals";
-import ReporteFiltros from "./components/ReporteFiltros";
-import ReporteResumenCards from "./components/ReporteResumenCards";
-import ReporteTabla from "./components/ReporteTabla";
-import {
-  LOGO_COLEGIO_SRC,
-  alertClass,
-  formularioInicial,
-} from "./constants/cajaConstants";
+import CajaSidebar from "./components/CajaSidebar/CajaSidebar";
+import CajaCobros from "./components/CajaCobros/CajaCobros";
+import CajaReportes from "./components/CajaReportes/CajaReportes";
+
+import { formularioInicial } from "./constants/cajaConstants";
 import {
   actualizarPago,
   generarReporteCaja,
@@ -38,7 +26,7 @@ import {
   anularPago,
 } from "./cajaService";
 import { obtenerCorrelativos } from "../direccion/direccionService";
-import { fechaActualInput } from "../../services/dateService";
+import { fechaActualInput, fechaActualIso } from "../../services/dateService";
 import { validarDni } from "../../services/validators";
 import { formatearSoles } from "./utils/cajaFormatters";
 import {
@@ -66,6 +54,7 @@ export default function Caja({
       navigate(`/caja/${newView}`);
     }
   };
+
   const [sidebarExpanded, setSidebarExpanded] = useState(() => {
     const saved = localStorage.getItem("caja_sidebar_expanded");
     return saved !== null ? JSON.parse(saved) : true;
@@ -87,6 +76,7 @@ export default function Caja({
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [estudiante, setEstudiante] = useState(null);
+  const [inscripcionesCaja, setInscripcionesCaja] = useState([]);
   const [dni, setDni] = useState("");
   const [modalAbierto, setModalAbierto] = useState(false);
   const [pagoSeleccionado, setPagoSeleccionado] = useState(null);
@@ -213,8 +203,6 @@ export default function Caja({
     };
   }, [reporteCaja]);
 
-  // Vista embebida sincronizada mediante URL por el padre
-
   async function cargarDatos() {
     lastFetchTimeRef.current = Date.now();
     setCargando(true);
@@ -255,10 +243,78 @@ export default function Caja({
     }
   }
 
+  function pagoEstaCerrado(inscripcion) {
+    const estado = String(`${inscripcion?.estadoPago || ""} ${inscripcion?.estadoInscripcion || ""}`).toLowerCase();
+    return ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some((item) => estado.includes(item));
+  }
+
+  async function seleccionarInscripcionCaja(inscripcion, estudianteBase = estudiante) {
+    if (!inscripcion) return;
+
+    let pagoAsociado = null;
+    if (inscripcion?.pagoId) {
+      try {
+        pagoAsociado = await obtenerPagoPorId(inscripcion.pagoId);
+      } catch (e) {
+        console.error("Error al cargar pago asociado:", e);
+      }
+    }
+
+    const estadoPagoSistema = normalizarEstadoPagoVista(
+      inscripcion?.estadoPago,
+      inscripcion?.estadoInscripcion,
+      pagoAsociado?.estado,
+      pagoAsociado?.estadoVerificacion
+    );
+
+    if (estadoPagoSistema === "pagado") {
+      setMensaje(`El taller "${inscripcion.programa}" ya cuenta con pago aprobado.`);
+      return;
+    }
+
+    const nombre = `${estudianteBase?.nombres || ""} ${estudianteBase?.apellidos || ""}`.trim();
+    const defaultFormaPago = pagoAsociado?.formaPago || (inscripcion?.descuentoAprobado ? (String(inscripcion.descuentoTipo).toLowerCase() === "beca" ? "Beca" : "Descuento") : "Efectivo");
+    const defaultFormaPagoStr = String(defaultFormaPago).toLowerCase().trim();
+    const esVirtualDefault = ["yape", "plin", "transferencia", "tarjeta"].includes(defaultFormaPagoStr);
+    const defaultNroRecibo = esVirtualDefault ? (correlativos.reciboVirtual || "") : (correlativos.recibo || "");
+
+    setPagoConfirmado(null);
+    setMensaje(
+      estadoPagoSistema === "verificando"
+        ? `El padre ya envio un pago web para "${inscripcion.programa}". Cajera debe aprobarlo u observarlo, no cobrarlo nuevamente.`
+        : ""
+    );
+    setFormulario((actual) => ({
+      ...actual,
+      inscripcionId: inscripcion?.id || "",
+      estudianteDni: inscripcion?.dniEstudiante || dni,
+      estudianteNombre: inscripcion?.nombresEstudiante || nombre,
+      programaId: inscripcion?.programaId || estudianteBase?.programaAsignado || actual.programaId || "",
+      programaNombre: inscripcion?.programa || estudianteBase?.programaNombre || actual.programaNombre || "",
+      periodo: inscripcion?.periodo || estudianteBase?.periodo || actual.periodo || "",
+      tipoAlumno: inscripcion?.tipoAlumno || estudianteBase?.tipoAlumno || (inscripcion?.esExterno ? "Alumno externo" : "Alumno interno"),
+      monto: inscripcion?.costo ? String(inscripcion.costo) : estudianteBase?.programaCosto ? String(estudianteBase.programaCosto) : actual.monto,
+      pagoId: pagoAsociado?.id || "",
+      estadoPago: estadoPagoSistema === "verificando" ? "verificando" : pagoAsociado?.estado || inscripcion?.estadoPago || "pendiente",
+      numeroOperacion: pagoAsociado?.numeroOperacion || "",
+      telefonoOperacion: pagoAsociado?.telefonoOperacion || "",
+      capturaPagoBase64: pagoAsociado?.capturaPagoBase64 || "",
+      formaPago: defaultFormaPago,
+      nroRecibo: pagoAsociado?.nroRecibo || pagoAsociado?.nro_recibo || defaultNroRecibo || "",
+      descuentoMonto: inscripcion?.descuentoMonto ? String(inscripcion.descuentoMonto) : "",
+      descuentoTipo: inscripcion?.descuentoTipo || "",
+      descuentoJustificacion: inscripcion?.descuentoJustificacion || "",
+      costoOriginal: inscripcion?.costoOriginal ? String(inscripcion.costoOriginal) : "",
+      descuentoAprobado: inscripcion?.descuentoAprobado || false,
+    }));
+  }
+
   async function buscarEstudiante(event) {
     event?.preventDefault();
     setMensaje("");
     setPagoConfirmado(null);
+    setInscripcionesCaja([]);
+    setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
     if (!validarDni(dni)) {
       setMensaje("Ingrese un DNI valido de 8 digitos.");
       return;
@@ -272,75 +328,31 @@ export default function Caja({
         setMensaje("No se encontro un estudiante con ese DNI.");
         return;
       }
-      if (encontrado.sinInscripcionCaja) {
+
+      const listaCaja = Array.isArray(encontrado.inscripcionesCaja)
+        ? encontrado.inscripcionesCaja
+        : encontrado.inscripcionCaja
+          ? [encontrado.inscripcionCaja]
+          : [];
+      const pendientesCaja = listaCaja.filter((item) => item?.derivadoCaja && !pagoEstaCerrado(item));
+
+      if (!pendientesCaja.length) {
         setEstudiante(null);
-        setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
         setMensaje(
           encontrado.requiereDerivacionCaja
-            ? "El estudiante tiene inscripcion, pero Asistente aun no la derivo a Cajera."
-            : "El estudiante aun no paso por Asistente. Primero debe existir una inscripcion registrada."
+            ? "El estudiante tiene inscripciones, pero Asistente aun no derivo ningun taller pendiente a Cajera."
+            : "El estudiante no tiene talleres pendientes derivados a Cajera."
         );
         return;
       }
-      const inscripcion = encontrado.inscripcionCaja;
 
-      const estadoPagoNormalizado = String(inscripcion?.estadoPago || "").toLowerCase().trim();
-      const estaPagado = estadoPagoNormalizado === "pagado" || estadoPagoNormalizado === "pago validado" || estadoPagoNormalizado === "completado";
-      if (estaPagado) {
-        setEstudiante(null);
-        setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
-        setMensaje(`El estudiante ya cuenta con un pago registrado y aprobado para el programa "${inscripcion.programa}". No se puede registrar el pago nuevamente a menos que se genere una nueva derivacion.`);
-        return;
-      }
-
-      let pagoAsociado = null;
-      if (inscripcion?.pagoId) {
-        try {
-          pagoAsociado = await obtenerPagoPorId(inscripcion.pagoId);
-        } catch (e) {
-          console.error("Error al cargar pago asociado:", e);
-        }
-      }
-      const estadoPagoSistema = normalizarEstadoPagoVista(
-        inscripcion?.estadoPago,
-        inscripcion?.estadoInscripcion,
-        pagoAsociado?.estado,
-        pagoAsociado?.estadoVerificacion
-      );
-      if (estadoPagoSistema === "pagado") {
-        setEstudiante(null);
-        setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
-        setMensaje(`El estudiante ya cuenta con un pago registrado y aprobado para el programa "${inscripcion.programa}". No se puede registrar el pago nuevamente.`);
-        return;
-      }
-      if (estadoPagoSistema === "verificando") {
-        setMensaje(`El padre ya envio un pago web para "${inscripcion.programa}". Cajera debe aprobarlo u observarlo, no cobrarlo nuevamente.`);
-      }
-
-      const nombre = `${encontrado.nombres || ""} ${encontrado.apellidos || ""}`.trim();
       setEstudiante(encontrado);
-      setFormulario((actual) => ({
-        ...actual,
-        inscripcionId: inscripcion?.id || "",
-        estudianteDni: dni,
-        estudianteNombre: inscripcion?.nombresEstudiante || nombre,
-        programaId: inscripcion?.programaId || encontrado.programaAsignado || actual.programaId || "",
-        programaNombre: inscripcion?.programa || encontrado.programaNombre || actual.programaNombre || "",
-        periodo: inscripcion?.periodo || encontrado.periodo || actual.periodo || "",
-        tipoAlumno: inscripcion?.tipoAlumno || encontrado.tipoAlumno || (inscripcion?.esExterno ? "Alumno externo" : "Alumno interno"),
-        monto: inscripcion?.costo ? String(inscripcion.costo) : encontrado.programaCosto ? String(encontrado.programaCosto) : actual.monto,
-        pagoId: pagoAsociado?.id || "",
-        estadoPago: estadoPagoSistema === "verificando" ? "verificando" : pagoAsociado?.estado || inscripcion?.estadoPago || "pendiente",
-        numeroOperacion: pagoAsociado?.numeroOperacion || "",
-        telefonoOperacion: pagoAsociado?.telefonoOperacion || "",
-        capturaPagoBase64: pagoAsociado?.capturaPagoBase64 || "",
-        formaPago: pagoAsociado?.formaPago || (inscripcion?.descuentoAprobado ? (String(inscripcion.descuentoTipo).toLowerCase() === "beca" ? "Beca" : "Descuento") : "Efectivo"),
-        descuentoMonto: inscripcion?.descuentoMonto ? String(inscripcion.descuentoMonto) : "",
-        descuentoTipo: inscripcion?.descuentoTipo || "",
-        descuentoJustificacion: inscripcion?.descuentoJustificacion || "",
-        costoOriginal: inscripcion?.costoOriginal ? String(inscripcion.costoOriginal) : "",
-        descuentoAprobado: inscripcion?.descuentoAprobado || false,
-      }));
+      setInscripcionesCaja(pendientesCaja);
+      if (pendientesCaja.length === 1) {
+        seleccionarInscripcionCaja(pendientesCaja[0], encontrado);
+      } else {
+        setMensaje("Seleccione el taller derivado para continuar con el pago.");
+      }
     } catch (error) {
       setMensaje(error.message || "No se pudo buscar el estudiante.");
     } finally {
@@ -378,9 +390,22 @@ export default function Caja({
         toast.success("Pago actualizado", { description: "El registro quedo actualizado correctamente." });
         cerrarModal();
       } else {
+        const inscripcionPagadaId = formulario.inscripcionId;
         const pago = await registrarPago(payload);
-        setPagoConfirmado(pago);
         toast.success("Pago aprobado", { description: "El pago quedo confirmado y guardado en Cajera." });
+        const pendientesRestantes = inscripcionesCaja.filter((item) => item.id !== inscripcionPagadaId);
+        if (pendientesRestantes.length) {
+          setPagoConfirmado(null);
+          setInscripcionesCaja(pendientesRestantes);
+          setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
+          setMensaje("Pago registrado. Seleccione el siguiente taller pendiente para continuar.");
+        } else {
+          setPagoConfirmado(pago);
+          setInscripcionesCaja([]);
+          setEstudiante(null);
+          setDni("");
+          setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
+        }
       }
       await cargarDatos();
       await cargarReporteCaja();
@@ -403,10 +428,6 @@ export default function Caja({
     }
     if (!formulario.fechaPago) return "Seleccione la fecha de pago.";
     return "";
-  }
-
-  function abrirModalNuevo() {
-    limpiarPagoActual();
   }
 
   function abrirPagoDesdeReporte(fila) {
@@ -432,6 +453,7 @@ export default function Caja({
     });
     setDni(fila.dniEstudiante || "");
     setEstudiante(null);
+    setInscripcionesCaja([]);
     setMensaje("");
     setModoEdicion(false);
     setModalAbierto(true);
@@ -466,6 +488,7 @@ export default function Caja({
   function limpiarPagoActual() {
     setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
     setEstudiante(null);
+    setInscripcionesCaja([]);
     setDni("");
     setMensaje("");
     setModoEdicion(false);
@@ -700,35 +723,16 @@ export default function Caja({
   return (
     <main className={embedded ? "caja-page caja-page-embedded" : `caja-page ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
       {!embedded ? (
-        <aside className="caja-sidebar">
-          <div className="caja-sidebar-brand-row">
-            <button className="caja-menu-toggle-btn" type="button" onClick={toggleSidebar} aria-label="Alternar barra lateral">
-              <Menu size={20} />
-            </button>
-            {sidebarExpanded && (
-              <div className="caja-brand" aria-label="Colegio San Rafael">
-                <img className="caja-brand-logo" src={LOGO_COLEGIO_SRC} alt="Colegio San Rafael" />
-              </div>
-            )}
-          </div>
-          {sidebarExpanded && <p className="caja-module-label">Módulo Cajera</p>}
-          <nav className="caja-nav" aria-label="Modulo de cajera">
-            <button className={!delegatedContent && vista === "pagos" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("pagos"); }} type="button" title="Registrar Cobro">
-              <Receipt size={17} /> {sidebarExpanded && <span>Registrar Cobro</span>}
-            </button>
-            <button className={!delegatedContent && vista === "reportes" ? "is-active" : ""} onClick={() => { onClearDelegatedModule?.(); setVista("reportes"); }} type="button" title="Control y Exportacion">
-              <ChartBar size={17} /> {sidebarExpanded && <span>Control y Exportacion</span>}
-            </button>
-          </nav>
-          {moduleSwitcher && sidebarExpanded ? (
-            <div className="pt-3">
-              {moduleSwitcher}
-            </div>
-          ) : null}
-          <button className="caja-logout" onClick={onLogout} type="button" title="Cerrar sesion">
-            <LogOut size={17} /> {sidebarExpanded && <span>Cerrar sesion</span>}
-          </button>
-        </aside>
+        <CajaSidebar
+          sidebarExpanded={sidebarExpanded}
+          toggleSidebar={toggleSidebar}
+          vista={vista}
+          setVista={setVista}
+          moduleSwitcher={moduleSwitcher}
+          onClearDelegatedModule={onClearDelegatedModule}
+          onLogout={onLogout}
+          delegatedContent={delegatedContent}
+        />
       ) : null}
 
       <section className={embedded ? "caja-main caja-main-embedded" : "caja-main"}>
@@ -737,149 +741,46 @@ export default function Caja({
         ) : (
           <>
             {vista === "reportes" ? (
-              <header className="caja-header">
-                <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                  {!sidebarExpanded && (
-                    <button
-                      className="caja-menu-toggle-btn-header"
-                      type="button"
-                      onClick={toggleSidebar}
-                      aria-label="Mostrar barra lateral"
-                      title="Mostrar barra lateral"
-                    >
-                      <Menu size={22} />
-                    </button>
-                  )}
-                  <div>
-                    <span>Control y exportacion</span>
-                    <h1>Consulta de Transacciones</h1>
-                  </div>
-                </div>
-                <div className="caja-header-actions">
-                  <Select
-                    aria-label="Periodo"
-                    className="caja-period"
-                    data={[
-                      { value: "escolar", label: "Año escolar" },
-                      { value: "verano", label: "Ciclo verano" },
-                    ]}
-                    onChange={(valor) => setPeriodo(valor || "escolar")}
-                    value={periodo}
-                  />
-                  <Button leftSection={<Download size={17} />} onClick={descargarReporte}>
-                    Descargar CSV
-                  </Button>
-                </div>
-              </header>
-            ) : null}
-
-            {vista === "pagos" ? (
-              <>
-                {!sidebarExpanded && (
-                  <div style={{ marginBottom: "6px" }}>
-                    <button
-                      className="caja-menu-toggle-btn-header"
-                      type="button"
-                      onClick={toggleSidebar}
-                      aria-label="Mostrar barra lateral"
-                      title="Mostrar barra lateral"
-                    >
-                      <Menu size={22} />
-                    </button>
-                  </div>
-                )}
-                <section className="caja-payment-workspace">
-                  {pagoConfirmado ? (
-                    <div className="caja-payment-approved" role="status">
-                      <Check size={20} />
-                      <div>
-                        <strong>Pago aprobado</strong>
-                        <span>
-                          {formulario.estudianteNombre} quedo como pagado por {formatearSoles(formulario.monto)}.
-                        </span>
-                      </div>
-                    </div>
-                  ) : null}
-                  <CajaFields
-                    buscando={buscando}
-                    dni={dni}
-                    estudiante={estudiante}
-                    formulario={formulario}
-                    modoEdicion={false}
-                    onBuscar={buscarEstudiante}
-                    setDni={setDni}
-                    setFormulario={setFormulario}
-                    mensaje={mensaje}
-                    siguienteRecibo={correlativos.recibo}
-                  />
-                  {formulario.inscripcionId ? (
-                    formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar" ? (
-                      <Group className="caja-payment-actions" justify="flex-end">
-                        <Button onClick={limpiarPagoActual} variant="default">
-                          Limpiar
-                        </Button>
-                        <Button
-                          color="red"
-                          leftSection={<X size={15} />}
-                          onClick={() => abrirRechazarModal(formulario)}
-                        >
-                          Rechazar Pago
-                        </Button>
-                        <Button
-                          color="orange"
-                          leftSection={<AlertTriangle size={15} />}
-                          onClick={() => abrirObservarModal(formulario)}
-                        >
-                          Observar Pago
-                        </Button>
-                        <Button
-                          color="green"
-                          leftSection={<Check size={15} />}
-                          onClick={() => aprobarPagoWebDirecto(formulario)}
-                        >
-                          Aprobar Pago
-                        </Button>
-                      </Group>
-                    ) : (
-                      <Group className="caja-payment-actions" justify="flex-end">
-                        <Button onClick={limpiarPagoActual} variant="default">
-                          Limpiar
-                        </Button>
-                        <Button leftSection={<Check size={17} />} loading={guardando} onClick={guardarPago}>
-                          Registrar pago
-                        </Button>
-                      </Group>
-                    )
-                  ) : null}
-                </section>
-              </>
+              <CajaReportes
+                sidebarExpanded={sidebarExpanded}
+                toggleSidebar={toggleSidebar}
+                periodo={periodo}
+                setPeriodo={setPeriodo}
+                descargarReporte={descargarReporte}
+                reporte={reporte}
+                reporteCaja={reporteCaja}
+                filtrosReporte={filtrosReporte}
+                opcionesReporte={opcionesReporte}
+                actualizarFiltroReporte={actualizarFiltroReporte}
+                abrirPagoDesdeReporte={abrirPagoDesdeReporte}
+                aprobarPagoWebDirecto={aprobarPagoWebDirecto}
+                abrirObservarModal={abrirObservarModal}
+                abrirRechazarModal={abrirRechazarModal}
+                verificarPagoWeb={verificarPagoWeb}
+                abrirAnularModal={abrirAnularModal}
+              />
             ) : (
-              <section className="caja-report-layout">
-                <ReporteResumenCards reporte={reporte} totalRegistros={reporteCaja.length} />
-                <ReporteFiltros
-                  filtros={filtrosReporte}
-                  mediosPago={opcionesReporte.mediosPago}
-                  onChange={actualizarFiltroReporte}
-                  programas={opcionesReporte.programas}
-                />
-                <section className="caja-panel">
-                  <div className="caja-panel-header">
-                    <div>
-                      <h2>Resultado del reporte</h2>
-                      <p>{reporteCaja.length} registros encontrados</p>
-                    </div>
-                  </div>
-                  <ReporteTabla
-                    filas={reporteCaja}
-                    onPagar={abrirPagoDesdeReporte}
-                    onValidarWebPago={aprobarPagoWebDirecto}
-                    onObservarWebPago={abrirObservarModal}
-                    onRechazarWebPago={abrirRechazarModal}
-                    onVerCapturaWebPago={verificarPagoWeb}
-                    onAnularPago={abrirAnularModal}
-                  />
-                </section>
-              </section>
+              <CajaCobros
+                pagoConfirmado={pagoConfirmado}
+                formulario={formulario}
+                buscando={buscando}
+                dni={dni}
+                buscarEstudiante={buscarEstudiante}
+                setDni={setDni}
+                setFormulario={setFormulario}
+                mensaje={mensaje}
+                correlativos={correlativos}
+                inscripcionesCaja={inscripcionesCaja}
+                seleccionarInscripcionCaja={seleccionarInscripcionCaja}
+                limpiarPagoActual={limpiarPagoActual}
+                abrirRechazarModal={abrirRechazarModal}
+                abrirObservarModal={abrirObservarModal}
+                aprobarPagoWebDirecto={aprobarPagoWebDirecto}
+                guardando={guardando}
+                guardarPago={guardarPago}
+                sidebarExpanded={sidebarExpanded}
+                toggleSidebar={toggleSidebar}
+              />
             )}
           </>
         )}
@@ -907,7 +808,6 @@ export default function Caja({
         <CajaFields
           buscando={buscando}
           dni={dni}
-          estudiante={estudiante}
           formulario={formulario}
           modoEdicion={modoEdicion}
           onBuscar={buscarEstudiante}
@@ -972,7 +872,7 @@ export default function Caja({
               
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                 <div>
-                  <Text size="xs" color="dimmed">Recibo SIADED:</Text>
+                  <Text size="xs" color="dimmed">N° de comprobante:</Text>
                   <Text size="sm" fw={700}>{pagoAnular.nroRecibo || "-"}</Text>
                 </div>
                 <div>

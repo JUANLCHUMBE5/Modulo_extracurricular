@@ -25,6 +25,43 @@ function incrementarCorrelativo(valor) {
   return prefix + paddedNum;
 }
 
+function calcularSiguienteRecibo(startValue, existingNros) {
+  if (!startValue) return "";
+  const match = String(startValue).match(/^(.*?)(\d+)$/);
+  if (!match) return startValue;
+  const prefix = match[1];
+  const startNumStr = match[2];
+  const S = Number(startNumStr);
+  const padLength = startNumStr.length;
+
+  let maxM = 0;
+  let foundAny = false;
+
+  for (const nro of existingNros) {
+    if (!nro) continue;
+    const nroStr = String(nro).trim();
+    if (nroStr.startsWith(prefix)) {
+      const numPart = nroStr.slice(prefix.length);
+      if (/^\d+$/.test(numPart)) {
+        const val = Number(numPart);
+        if (!foundAny || val > maxM) {
+          maxM = val;
+          foundAny = true;
+        }
+      }
+    }
+  }
+
+  let nextVal;
+  if (!foundAny || maxM < S) {
+    nextVal = S;
+  } else {
+    nextVal = maxM + 1;
+  }
+
+  return prefix + String(nextVal).padStart(padLength, "0");
+}
+
 // --- REPORTE CONSOLIDADO ---
 router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => {
   try {
@@ -411,7 +448,23 @@ router.delete("/direccion/descuentos/remover/:inscripcionId", requireRole(["dire
 router.get("/direccion/correlativos", requireRole(["direccion", "caja"]), async (req, res) => {
   try {
     const db = await getDb();
-    res.json({ success: true, data: db.correlativos || { recibo: "", egreso: "" } });
+    const corr = db.correlativos || { recibo: "", egreso: "" };
+    if (corr.reciboVirtual === undefined) {
+      corr.reciboVirtual = "V-0001";
+    }
+
+    const existingNros = (db.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
+    const reciboSiguiente = calcularSiguienteRecibo(corr.recibo, existingNros);
+    const reciboVirtualSiguiente = calcularSiguienteRecibo(corr.reciboVirtual, existingNros);
+
+    res.json({
+      success: true,
+      data: {
+        ...corr,
+        reciboSiguiente,
+        reciboVirtualSiguiente
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -419,10 +472,11 @@ router.get("/direccion/correlativos", requireRole(["direccion", "caja"]), async 
 
 router.put("/direccion/correlativos", requireRole(["direccion"]), async (req, res) => {
   try {
-    const { recibo, egreso } = req.body;
+    const { recibo, reciboVirtual, egreso } = req.body;
     const db = await getDb();
     db.correlativos = {
       recibo: String(recibo || "").trim(),
+      reciboVirtual: String(reciboVirtual || "").trim(),
       egreso: String(egreso || "").trim()
     };
     await saveDb(db);

@@ -19,10 +19,21 @@ export default function DireccionCorrelativos({
 
         <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "400px" }}>
           <TextInput
-            label="Próximo Correlativo de Recibo"
+            label="Próximo Correlativo de Recibo Físico"
             placeholder="Ej. REC-00001 o 000125"
             value={correlativosForm.recibo}
             onChange={(e) => setCorrelativosForm({ ...correlativosForm, recibo: e.target.value })}
+            styles={{
+              label: { fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "6px" },
+              input: { borderRadius: "8px", borderColor: "#cbd5e1", height: "40px" }
+            }}
+          />
+
+          <TextInput
+            label="Próximo Correlativo de Recibo Virtual"
+            placeholder="Ej. V-00001 o V-0125"
+            value={correlativosForm.reciboVirtual || ""}
+            onChange={(e) => setCorrelativosForm({ ...correlativosForm, reciboVirtual: e.target.value })}
             styles={{
               label: { fontSize: "13px", fontWeight: 700, color: "#334155", marginBottom: "6px" },
               input: { borderRadius: "8px", borderColor: "#cbd5e1", height: "40px" }

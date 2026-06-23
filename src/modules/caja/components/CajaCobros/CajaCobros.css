@@ -1,0 +1,413 @@
+.caja-payment-workspace {
+  display: grid;
+  gap: 18px;
+  margin-bottom: 16px;
+  padding: 24px 28px;
+  border: 1px solid #d8e5e1;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfc 100%);
+  box-shadow: 0 14px 34px rgba(16, 24, 40, 0.06);
+}
+
+.caja-payment-actions {
+  padding-top: 2px;
+}
+
+.caja-payment-approved {
+  border: 1px solid #abefc6;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  color: #067647;
+  background: #ecfdf3;
+}
+
+.caja-payment-approved svg {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  padding: 7px;
+  color: #ffffff;
+  background: #17b26a;
+}
+
+.caja-payment-approved strong,
+.caja-payment-approved span {
+  display: block;
+}
+
+.caja-payment-approved strong {
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.caja-payment-approved span {
+  margin-top: 2px;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.caja-menu-toggle-btn-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #334155;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.caja-menu-toggle-btn-header:hover {
+  background: #f8fafc;
+}
+
+/* CajaFields Styles */
+.caja-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.caja-form.is-search-only {
+  grid-template-columns: 1fr;
+}
+
+.caja-form.has-payment .caja-form-block {
+  width: 100%;
+}
+
+.caja-form-block {
+  padding: 14px 16px;
+  border: 1px solid #dce7e4;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.caja-form.is-search-only .caja-form-block {
+  padding: 14px 16px;
+  border: 1px solid #dce7e4;
+  background: #ffffff;
+}
+
+.caja-form-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+
+.caja-form-title > svg {
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  border-radius: 6px;
+  color: #0f766e;
+  background: #e6fffa;
+}
+
+.caja-form-title h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.caja-form-title p {
+  margin: 2px 0 0;
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.caja-search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 120px;
+  gap: 10px;
+}
+
+.caja-search-form input,
+.caja-payment-method select,
+.caja-payment-method input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #cfded9;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #101828;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.caja-search-form input:focus,
+.caja-payment-method select:focus,
+.caja-payment-method input:focus {
+  border-color: #159b8a;
+  box-shadow: 0 0 0 3px rgba(21, 155, 138, 0.12);
+}
+
+.caja-course-picker {
+  background: #fbfefd;
+}
+
+.caja-course-list {
+  display: grid;
+  gap: 10px;
+}
+
+.caja-course-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(108px, 132px);
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 74px;
+  padding: 13px 14px;
+  border: 1px solid #cfe1dc;
+  border-radius: 8px;
+  color: #101828;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.caja-course-option:hover,
+.caja-course-option:focus-visible {
+  border-color: #159b8a;
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.12);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.caja-course-main {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.caja-course-main strong {
+  color: #101828;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.caja-course-main span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.caja-course-amount {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  min-width: 0;
+}
+
+.caja-course-amount span {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.caja-course-amount strong {
+  color: #087364;
+  font-size: 17px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.caja-payment-summary {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.caja-readonly-field,
+.caja-payment-method {
+  grid-column: span 4;
+  min-width: 0;
+  border: 1px solid #e2ebe8;
+  border-radius: 8px;
+  background: #f8fbfa;
+}
+
+.caja-readonly-field {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-height: 70px;
+  padding: 11px 12px;
+}
+
+.caja-readonly-field span,
+.caja-payment-method {
+  color: #475467;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.caja-readonly-field strong {
+  min-width: 0;
+  color: #101828;
+  font-size: 14px;
+  font-weight: 950;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.caja-readonly-field.field-programa {
+  grid-column: span 6;
+}
+
+.caja-readonly-field.field-monto {
+  grid-column: span 3;
+  border-color: #bfe4dc;
+  background: #effaf7;
+}
+
+.caja-readonly-field.field-concepto,
+.caja-readonly-field.field-estado,
+.caja-readonly-field.field-fecha {
+  grid-column: span 3;
+}
+
+.caja-readonly-field.field-monto strong {
+  color: #087364;
+  font-size: 18px;
+}
+
+.caja-readonly-field.status-pagado,
+.caja-readonly-field.status-pendiente,
+.caja-readonly-field.status-verificando {
+  align-content: center;
+}
+
+.caja-readonly-field.status-pagado strong,
+.caja-readonly-field.status-pendiente strong,
+.caja-readonly-field.status-verificando strong {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.caja-readonly-field.status-pagado strong {
+  color: #067647;
+  background: #dcfae6;
+}
+
+.caja-readonly-field.status-pendiente strong {
+  color: #b54708;
+  background: #fef0c7;
+}
+
+.caja-readonly-field.status-verificando strong {
+  color: #175cd3;
+  background: #d1e9ff;
+}
+
+.caja-payment-method {
+  display: grid;
+  gap: 7px;
+  padding: 11px 12px 10px;
+  background: #ffffff;
+}
+
+.caja-payment-method.field-payment-method {
+  grid-column: span 6;
+}
+
+.caja-payment-method.field-receipt {
+  grid-column: 1 / -1;
+}
+
+.caja-payment-method select,
+.caja-payment-method input {
+  min-height: 38px;
+}
+
+.caja-payment-method > span {
+  color: #667085 !important;
+  font-size: 11px !important;
+  font-weight: 700;
+}
+
+.caja-form-block.is-disabled {
+  background: #f7faf9;
+}
+
+.caja-payment-method select:disabled,
+.caja-payment-method input:disabled {
+  color: #667085;
+  background: #f2f6f4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 920px) {
+  .caja-readonly-field,
+  .caja-readonly-field.field-programa,
+  .caja-readonly-field.field-monto,
+  .caja-readonly-field.field-concepto,
+  .caja-readonly-field.field-estado,
+  .caja-readonly-field.field-fecha,
+  .caja-payment-method.field-payment-method {
+    grid-column: span 6;
+  }
+
+  .caja-payment-method.field-receipt {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .caja-payment-workspace {
+    padding: 16px;
+  }
+
+  .caja-search-form,
+  .caja-payment-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .caja-course-option {
+    grid-template-columns: 1fr;
+  }
+
+  .caja-course-amount {
+    justify-items: start;
+  }
+
+  .caja-search-form {
+    gap: 8px;
+  }
+
+  .caja-search-form button,
+  .caja-readonly-field,
+  .caja-readonly-field.field-programa,
+  .caja-readonly-field.field-monto,
+  .caja-readonly-field.field-concepto,
+  .caja-readonly-field.field-estado,
+  .caja-readonly-field.field-fecha,
+  .caja-payment-method {
+    grid-column: 1;
+  }
+}

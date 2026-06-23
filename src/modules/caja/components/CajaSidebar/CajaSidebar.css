@@ -1,0 +1,121 @@
+.caja-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  width: var(--caja-sidebar);
+  height: 100dvh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px 14px;
+  border-right: 1px solid #dce7e4;
+  background: #ffffff;
+  overflow: hidden;
+  transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+}
+
+.caja-sidebar.collapsed {
+  width: 68px;
+  padding: 20px 8px;
+}
+
+.caja-sidebar.collapsed .caja-brand,
+.caja-sidebar.collapsed .caja-module-label {
+  display: none;
+}
+
+.caja-sidebar-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.caja-menu-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #cfded9;
+  border-radius: 8px;
+  color: #176c60;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.caja-menu-toggle-btn:hover {
+  background: #f0fdfa;
+  border-color: #aee0d2;
+}
+
+.caja-brand {
+  display: grid;
+  justify-items: center;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.caja-brand-logo {
+  width: min(168px, 100%);
+  height: auto;
+  display: block;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.caja-module-label {
+  margin: 0 0 8px;
+  color: #176c60;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.caja-nav {
+  display: grid;
+  gap: 8px;
+}
+
+.caja-nav button,
+.caja-logout {
+  width: 100%;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #172331;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.caja-nav button {
+  border-color: #d6e2df;
+}
+
+.caja-nav button.is-active {
+  color: #05604f;
+  background: #eaf8f3;
+  border-color: #aee0d2;
+}
+
+.caja-nav button svg,
+.caja-logout svg {
+  color: currentColor;
+  stroke: currentColor;
+}
+
+.caja-logout {
+  margin-top: auto;
+  border-color: #d6e2df;
+}

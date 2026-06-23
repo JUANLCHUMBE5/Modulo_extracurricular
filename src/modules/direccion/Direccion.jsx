@@ -150,7 +150,7 @@ export default function Direccion({ onLogout, user }) {
   const lastFetchTimeRef = useRef(0);
 
   // Correlativos settings state
-  const [correlativosForm, setCorrelativosForm] = useState({ recibo: "", egreso: "" });
+  const [correlativosForm, setCorrelativosForm] = useState({ recibo: "", reciboVirtual: "", egreso: "" });
   const [guardandoCorrelativos, setGuardandoCorrelativos] = useState(false);
 
   useEffect(() => {
@@ -158,7 +158,7 @@ export default function Direccion({ onLogout, user }) {
       const cargarCorrelativos = async () => {
         try {
           const res = await obtenerCorrelativos();
-          setCorrelativosForm(res || { recibo: "", egreso: "" });
+          setCorrelativosForm(res || { recibo: "", reciboVirtual: "", egreso: "" });
         } catch (err) {
           toast.error("Error", { description: "No se pudieron cargar los correlativos." });
         }

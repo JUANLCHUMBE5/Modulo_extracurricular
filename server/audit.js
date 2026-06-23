@@ -40,17 +40,38 @@ export function prepararLogsAcceso(logs = []) {
 export async function registrarAuditoria(usuario, rol, accion, detalles = null) {
   try {
     const rolNormalizado = normalizarRolAuditoria(rol);
-    const detallesStr = detalles
-      ? (typeof detalles === "object" ? JSON.stringify(detalles) : String(detalles))
-      : crearDetalleAcceso(rolNormalizado);
+    let detallesObj = {};
+    if (detalles) {
+      if (typeof detalles === "object") {
+        detallesObj = { ...detalles };
+      } else {
+        try {
+          detallesObj = JSON.parse(detalles);
+        } catch (e) {
+          detallesObj = { detalleTexto: String(detalles) };
+        }
+      }
+    } else {
+      detallesObj = { modulo: modulosAuditables[rolNormalizado] || rolNormalizado };
+    }
+
+    const usuarioLower = String(usuario || "sistema").trim().toLowerCase();
+    const USUARIOS_VALIDOS = ["admin", "secretaria", "caja", "coordinacion", "aux", "dir", "profe"];
+    let usuarioFinal = "admin";
+
+    if (USUARIOS_VALIDOS.includes(usuarioLower)) {
+      usuarioFinal = usuarioLower;
+    } else {
+      detallesObj._usuario_original = usuario || "sistema";
+    }
 
     const log = {
       id: `AUD-${String(Date.now()).slice(-6)}-${randomUUID().slice(0, 4)}`,
-      usuario: usuario || "sistema",
+      usuario: usuarioFinal,
       rol: rolNormalizado,
       fecha: new Date().toISOString(),
       accion,
-      detalles: detallesStr,
+      detalles: JSON.stringify(detallesObj),
     };
 
     await updateDb((db) => {

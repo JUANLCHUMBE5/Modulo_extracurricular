@@ -1,0 +1,250 @@
+.caja-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px 14px;
+  border: 1px solid #d8e5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.04);
+}
+
+.caja-header span {
+  color: #04735f;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.caja-header h1 {
+  margin: 2px 0 0;
+  color: #111827;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.caja-header p {
+  margin: 5px 0 0;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.caja-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.caja-period {
+  width: 170px;
+}
+
+.caja-report-layout {
+  display: grid;
+  gap: 10px;
+}
+
+.caja-report-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #d8e5e1;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.caja-report-filters label {
+  display: grid;
+  gap: 4px;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.caja-report-filters input,
+.caja-report-filters select {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid #cfded9;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #101828;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.caja-report-filters input:disabled {
+  color: #98a2b3;
+  background: #f2f6f4;
+}
+
+.caja-report-table {
+  min-width: 1100px;
+}
+
+.caja-pay-row-button {
+  min-width: 86px;
+  color: #08735f;
+}
+
+.caja-row-muted {
+  color: #8a98a8;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.caja-operation-code {
+  display: inline-block;
+  min-width: 72px;
+  color: #0f172a;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.caja-phone-channel {
+  color: #101828;
+  font-size: 13px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.caja-panel {
+  border: 1px solid #d8e5e1;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.caja-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 14px;
+  border-bottom: 1px solid #e3ece9;
+}
+
+.caja-panel-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.caja-panel-header p {
+  margin: 4px 0 0;
+  color: #667085;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.caja-filters {
+  min-width: min(560px, 100%);
+  display: grid;
+  grid-template-columns: auto minmax(220px, 1fr) 150px;
+  align-items: center;
+  gap: 10px;
+}
+
+.caja-filter-label {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.caja-search {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #cfded9;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #ffffff;
+}
+
+.caja-search svg {
+  color: #52756c;
+}
+
+.caja-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  font-weight: 700;
+}
+
+.caja-table-wrap {
+  overflow-x: auto;
+}
+
+.caja-table {
+  min-width: 900px;
+}
+
+.caja-table th {
+  color: #475467;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.caja-table td {
+  color: #101828;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.caja-student-cell {
+  display: grid;
+  gap: 2px;
+}
+
+.caja-student-cell strong {
+  font-weight: 900;
+}
+
+.caja-student-cell span {
+  color: #667085;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.caja-amount {
+  color: #075e50 !important;
+  font-weight: 950 !important;
+}
+
+.caja-empty {
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  color: #667085;
+  text-align: center;
+}
+
+.caja-empty svg {
+  color: #879b95;
+}
+
+.caja-empty strong {
+  color: #1d2939;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.caja-empty span {
+  font-weight: 700;
+}

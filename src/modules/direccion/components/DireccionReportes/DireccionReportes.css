@@ -239,6 +239,13 @@
   font-weight: 800;
 }
 
+.dir-builder-subtitle {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .dir-builder-header-actions {
   display: flex;
   align-items: center;
@@ -299,6 +306,10 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px dashed #cbd5e1;
+}
+
+.dir-report-type-select {
+  grid-column: 1 / -1;
 }
 
 .dir-builder-empty-filters {
@@ -391,6 +402,13 @@
   border-radius: 10px;
   padding: 12px;
   min-height: auto;
+}
+
+.dir-columns-select-container {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 12px;
 }
 
 /* Tiles Interactivas para Checkboxes */

@@ -23,7 +23,12 @@ let cachedDbMtimeMs = 0;
 
 const COLUMNAS_USUARIOS = ["id", "nombre", "usuario", "rol", "estado", "contrasena"];
 const COLUMNAS_ESTUDIANTES = ["dni", "codigoEstudiante", "nombres", "grado", "seccion", "nivel", "sexo", "fechaNacimiento", "tipoAlumno", "estadoMatricula", "apoderado", "telefonoApoderado", "correoApoderado", "estadoInscripcion", "estadoCaja"];
-const COLUMNAS_PROGRAMAS = ["id", "nombre", "categoria", "fechaInicio", "fechaFin", "costo", "cupos", "cuposOcupados", "gradosAplicables", "periodo", "modalidadCobro", "duracionAvisoDias", "requiereUniforme", "requiereIndumentaria", "horario", "grupo", "plantilla", "plantillaBase64"];
+const COLUMNAS_PROGRAMAS = ["id", "nombre", "categoria", "fechaInicio", "fechaFin", "costo", "cupos", "cuposOcupados", "gradosAplicables", "periodo", "modalidadCobro", "horario", "grupo"];
+const COLUMNAS_PROGRAMAS_CONFIG = ["programaId", "duracionAvisoDias", "horaLimiteAviso", "edadMinima", "edadMaxima", "grupoEtario", "requisitos", "comunicado", "comunicadoCompleto", "detalleCosto", "creadoDesdeDocumento", "duracionTaller", "invitacionMasiva", "alcanceInvitacionMasiva", "tipoComunicado", "motivoJustificacion", "duracion", "docente", "responsable", "estado"];
+const COLUMNAS_PROGRAMAS_HORARIOS = ["programaId", "horaInicio", "horaFin", "horariosPorGrupo", "tablaHorariosNivel"];
+const COLUMNAS_PROGRAMAS_SERVICIOS = ["programaId", "requiereUniforme", "requiereIndumentaria", "talleresDeportivos", "incluyeAlmuerzo", "horarioRecepcionAlmuerzo", "concesionarios", "detalleAlmuerzo", "nivelCambridge", "modalidadesCambridge", "costoCiclo", "montoPrimerPago", "cicloI", "cicloII", "nombreCiclo"];
+const COLUMNAS_PROGRAMAS_DOCUMENTOS = ["programaId", "plantilla", "plantillaBase64", "plantillaVariables", "plantillaValidada", "tipoDocumento", "numeroDocumento", "areaTematica"];
+const COLUMNAS_PROGRAMAS_ANUNCIOS = ["programaId", "anuncioImagen", "anuncioImagenNombre", "anuncioImagenTamano", "anuncioImagenComprimida"];
 const COLUMNAS_INSCRIPCIONES = [
   "id", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "gradoEstudiante", "seccion",
   "programaId", "programa", "categoria", "periodo", "horario", "docente", "costo",
@@ -58,7 +63,8 @@ async function readFromSupabase() {
     const [
       resUsuarios, resEstudiantes, resProgramas, resInscripciones,
       resPagos, resAsistencias, resInvitados, resLogs, resCategorias, resHistorial,
-      resConfiguracion
+      resConfiguracion,
+      resProgConfig, resProgHorarios, resProgServicios, resProgDocumentos, resProgAnuncios
     ] = await Promise.all([
       supabase.from("usuarios").select("*"),
       supabase.from("estudiantes").select("*"),
@@ -70,7 +76,13 @@ async function readFromSupabase() {
       supabase.from("audit_logs").select("*"),
       supabase.from("categorias").select("*"),
       supabase.from("historial_cargas").select("*"),
-      supabase.from("configuracion").select("*")
+      supabase.from("configuracion").select("*"),
+      // Tablas normalizadas 1:1 de programas
+      supabase.from("programas_configuraciones").select("*"),
+      supabase.from("programas_horarios").select("*"),
+      supabase.from("programas_servicios").select("*"),
+      supabase.from("programas_documentos").select("*"),
+      supabase.from("programas_anuncios").select("*")
     ]);
 
     // 2. Mapeo y transformación de formatos (De Filas SQL a Objetos Indexados JSON)
@@ -92,6 +104,21 @@ async function readFromSupabase() {
         });
       }
     });
+
+    const progConfigMap = new Map();
+    (resProgConfig.data || []).forEach(row => progConfigMap.set(row.programaId, row));
+
+    const progHorariosMap = new Map();
+    (resProgHorarios.data || []).forEach(row => progHorariosMap.set(row.programaId, row));
+
+    const progServiciosMap = new Map();
+    (resProgServicios.data || []).forEach(row => progServiciosMap.set(row.programaId, row));
+
+    const progDocumentosMap = new Map();
+    (resProgDocumentos.data || []).forEach(row => progDocumentosMap.set(row.programaId, row));
+
+    const progAnunciosMap = new Map();
+    (resProgAnuncios.data || []).forEach(row => progAnunciosMap.set(row.programaId, row));
 
     const EXTRA_FIELDS = [
       "horaInicio",
@@ -141,13 +168,26 @@ async function readFromSupabase() {
 
     const rawProgramas = resProgramas.data || [];
     const programasList = rawProgramas.map(p => {
+      // Unir los campos desde las 5 tablas de relacion 1:1
+      const config = progConfigMap.get(p.id) || {};
+      const horarios = progHorariosMap.get(p.id) || {};
+      const servicios = progServiciosMap.get(p.id) || {};
+      const documentos = progDocumentosMap.get(p.id) || {};
+      const anuncios = progAnunciosMap.get(p.id) || {};
+
+      Object.assign(p, config, horarios, servicios, documentos, anuncios);
+      delete p.programaId; // Limpiamos la columna de unión de tablas secundarias
+
+      // Mapear campos antiguos del campo serializado 'grupo' para retrocompatibilidad total
       let restoredGrupo = p.grupo;
       if (p.grupo && p.grupo.startsWith("{")) {
         try {
           const meta = JSON.parse(p.grupo);
           EXTRA_FIELDS.forEach(field => {
-            if (meta[field] !== undefined) {
-              p[field] = meta[field];
+            if (p[field] === undefined || p[field] === null) {
+              if (meta[field] !== undefined) {
+                p[field] = meta[field];
+              }
             }
           });
           restoredGrupo = meta.originalGrupo || "";
@@ -270,6 +310,17 @@ async function readFromSupabase() {
 }
 
 async function writeToSupabase(db) {
+  const normalizarNumero = (val) => {
+    if (val === undefined || val === null || val === "") return null;
+    const num = Number(val);
+    return isNaN(num) ? null : num;
+  };
+
+  const normalizarFecha = (val) => {
+    if (val === undefined || val === null || val === "" || String(val).trim() === "") return null;
+    return val;
+  };
+
   try {
     // 1. Preparamos inserciones limpias limpiando objetos y transformándolos a listas SQL
     const usuarios = db.usuarios || [];
@@ -278,7 +329,11 @@ async function writeToSupabase(db) {
       return {
         ...ins,
         pagoId: (ins.pagoId === "" || ins.pagoId === "null" || ins.pagoId === undefined) ? null : ins.pagoId,
-        estadoPago: ins.estadoPago || ins.estadoInscripcion || "Pendiente de pago"
+        estadoPago: ins.estadoPago || ins.estadoInscripcion || "Pendiente de pago",
+        fechaInicio: normalizarFecha(ins.fechaInicio),
+        fechaFin: normalizarFecha(ins.fechaFin),
+        descuentoFechaAprobacion: normalizarFecha(ins.descuentoFechaAprobacion),
+        fechaRegistro: normalizarFecha(ins.fechaRegistro)
       };
     });
     const pagos = (db.pagos || []).map(pag => {
@@ -290,7 +345,8 @@ async function writeToSupabase(db) {
         formaPago: pag.formaPago || pag.metodoPago || "Yape",
         numeroOperacion: pag.numeroOperacion || pag.nroOperacion || "",
         telefonoOperacion: pag.telefonoOperacion || pag.telefono || "",
-        nro_recibo: pag.nroRecibo || pag.nro_recibo || ""
+        nro_recibo: pag.nroRecibo || pag.nro_recibo || "",
+        fechaPago: normalizarFecha(pag.fechaPago || pag.fechaRegistro)
       };
     });
     const asistencias = (db.asistencias || []).map(ast => {
@@ -299,14 +355,15 @@ async function writeToSupabase(db) {
         pagoId: (ast.pagoId === "" || ast.pagoId === "null" || ast.pagoId === undefined) ? null : ast.pagoId,
         inscripcionId: (ast.inscripcionId === "" || ast.inscripcionId === "null" || ast.inscripcionId === undefined) ? null : ast.inscripcionId,
         dniEstudiante: (ast.dniEstudiante === "" || ast.dniEstudiante === "null" || ast.dniEstudiante === undefined) ? null : ast.dniEstudiante,
-        programaId: (ast.programaId === "" || ast.programaId === "null" || ast.programaId === undefined) ? null : ast.programaId
+        programaId: (ast.programaId === "" || ast.programaId === "null" || ast.programaId === undefined) ? null : ast.programaId,
+        fechaRegistro: normalizarFecha(ast.fechaRegistro)
       };
     });
     const auditLogs = db.auditLogs || [];
     const historialCargas = (db.historialCargas || []).map(hc => {
       return {
         id: hc.id,
-        fecha: hc.fecha,
+        fecha: normalizarFecha(hc.fecha),
         periodo: hc.periodo,
         archivoNombre: hc.archivoNombre,
         archivos: hc.archivos || [],
@@ -370,7 +427,13 @@ async function writeToSupabase(db) {
         plantilla: p.plantilla || "",
         plantillaBase64: p.plantillaBase64 || templateData.plantillaBase64 || "",
         plantillaVariables: p.plantillaVariables || templateData.plantillaVariables || [],
-        plantillaValidada: p.plantillaValidada !== undefined ? p.plantillaValidada : (templateData.plantillaValidada !== undefined ? templateData.plantillaValidada : false)
+        plantillaValidada: p.plantillaValidada !== undefined ? p.plantillaValidada : (templateData.plantillaValidada !== undefined ? templateData.plantillaValidada : false),
+        duracionAvisoDias: normalizarNumero(p.duracionAvisoDias),
+        edadMinima: normalizarNumero(p.edadMinima),
+        edadMaxima: normalizarNumero(p.edadMaxima),
+        costoCiclo: normalizarNumero(p.costoCiclo),
+        montoPrimerPago: normalizarNumero(p.montoPrimerPago),
+        anuncioImagenTamano: normalizarNumero(p.anuncioImagenTamano)
       };
 
       // Serializamos los campos adicionales en la columna 'grupo'
@@ -381,12 +444,17 @@ async function writeToSupabase(db) {
         }
       });
       meta.originalGrupo = baseProg.grupo || "";
-
       return {
         ...baseProg,
         grupo: JSON.stringify(meta)
       };
     });
+
+    const programasConfig = (programas || []).map(p => ({ programaId: p.id, ...p }));
+    const programasHorarios = (programas || []).map(p => ({ programaId: p.id, ...p }));
+    const programasServicios = (programas || []).map(p => ({ programaId: p.id, ...p }));
+    const programasDocumentos = (programas || []).map(p => ({ programaId: p.id, ...p }));
+    const programasAnuncios = (programas || []).map(p => ({ programaId: p.id, ...p }));
 
     const invitados_programa = [];
     Object.entries(db.invitadosPorPrograma || {}).forEach(([progId, lista]) => {
@@ -469,25 +537,64 @@ async function writeToSupabase(db) {
       }
     }
 
-    // Grupo 2: Pagos (depende de estudiantes y programas que ya existen en el Grupo 1)
-    if (pagos.length) {
-      const resPago = await supabase.from("pagos").upsert(sanearLista(pagos, COLUMNAS_PAGOS));
-      if (resPago.error) {
-        throw new Error(`Error en operación de base de datos Supabase (Grupo 2 - Pagos): ${resPago.error.message || JSON.stringify(resPago.error)}`);
+    // Grupo 1.5: Tablas dependientes de programas (1:1)
+    if (programas.length) {
+      const configRes = await Promise.all([
+        supabase.from("programas_configuraciones").upsert(sanearLista(programasConfig, COLUMNAS_PROGRAMAS_CONFIG)),
+        supabase.from("programas_horarios").upsert(sanearLista(programasHorarios, COLUMNAS_PROGRAMAS_HORARIOS)),
+        supabase.from("programas_servicios").upsert(sanearLista(programasServicios, COLUMNAS_PROGRAMAS_SERVICIOS)),
+        supabase.from("programas_documentos").upsert(sanearLista(programasDocumentos, COLUMNAS_PROGRAMAS_DOCUMENTOS)),
+        supabase.from("programas_anuncios").upsert(sanearLista(programasAnuncios, COLUMNAS_PROGRAMAS_ANUNCIOS))
+      ]);
+      for (const res of configRes) {
+        if (res && res.error) {
+          throw new Error(`Error en operación de base de datos Supabase (Tablas secundarias de programas): ${res.error.message || JSON.stringify(res.error)}`);
+        }
       }
     }
 
-    // Grupo 3: Inscripciones, Asistencias, Invitados, Logs y Cargas (dependen de pagos, estudiantes o programas)
-    const grupo3 = await Promise.all([
-      inscripciones.length ? supabase.from("inscripciones").upsert(sanearLista(inscripciones, COLUMNAS_INSCRIPCIONES)) : Promise.resolve({ error: null }),
+    // Grupo 2: Inscripciones (depende de estudiantes y programas que ya existen en el Grupo 1)
+    // Para romper la dependencia circular con pagos, insertamos inicialmente con pagoId = null
+    const inscripcionesSinPago = inscripciones.map(ins => ({ ...ins, pagoId: null }));
+    if (inscripciones.length) {
+      const resInscripcion = await supabase.from("inscripciones").upsert(sanearLista(inscripcionesSinPago, COLUMNAS_INSCRIPCIONES));
+      if (resInscripcion.error) {
+        throw new Error(`Error en operación de base de datos Supabase (Grupo 2 - Inscripciones): ${resInscripcion.error.message || JSON.stringify(resInscripcion.error)}`);
+      }
+    }
+
+    // Grupo 3: Pagos (depende de inscripciones, estudiantes y programas)
+    if (pagos.length) {
+      const resPago = await supabase.from("pagos").upsert(sanearLista(pagos, COLUMNAS_PAGOS));
+      if (resPago.error) {
+        throw new Error(`Error en operación de base de datos Supabase (Grupo 3 - Pagos): ${resPago.error.message || JSON.stringify(resPago.error)}`);
+      }
+    }
+
+    // Grupo 3.5: Asistencias, Invitados, Logs y Cargas (dependen de pagos, inscripciones o estudiantes)
+    const grupo3_5 = await Promise.all([
       asistencias.length ? supabase.from("asistencias").upsert(sanearLista(asistencias, COLUMNAS_ASISTENCIAS)) : Promise.resolve({ error: null }),
       invitados_programa.length ? supabase.from("invitados_programa").insert(sanearLista(invitados_programa, COLUMNAS_INVITADOS)) : Promise.resolve({ error: null }),
       auditLogs.length ? supabase.from("audit_logs").upsert(auditLogs) : Promise.resolve({ error: null }),
       historialCargas.length ? supabase.from("historial_cargas").upsert(sanearLista(historialCargas, COLUMNAS_HISTORIAL_CARGAS)) : Promise.resolve({ error: null })
     ]);
-    for (const res of grupo3) {
+
+    for (const res of grupo3_5) {
       if (res && res.error) {
-        throw new Error(`Error en operación de base de datos Supabase (Grupo 3): ${res.error.message || JSON.stringify(res.error)}`);
+        throw new Error(`Error en operación de base de datos Supabase (Grupo 3.5): ${res.error.message || JSON.stringify(res.error)}`);
+      }
+    }
+    // Grupo 4: Enlazar pagoId en inscripciones (ahora que los pagos ya existen, evitamos la dependencia circular)
+    const inscripcionesConPago = inscripciones.filter(ins => ins.pagoId !== null && ins.pagoId !== undefined && ins.pagoId !== "");
+    if (inscripcionesConPago.length) {
+      const enlacePromesas = inscripcionesConPago.map(ins => 
+        supabase.from("inscripciones").update({ pagoId: ins.pagoId }).eq("id", ins.id)
+      );
+      const enlaceResultados = await Promise.all(enlacePromesas);
+      for (const res of enlaceResultados) {
+        if (res.error) {
+          console.warn(`⚠️ Warning: No se pudo enlazar pagoId en inscripciones: ${res.error.message}`);
+        }
       }
     }
 
@@ -689,6 +796,7 @@ function mergeWithDefaults(stored, defaults) {
   return {
     ...defaults,
     ...stored,
+    correlativos: correlativosObj,
     categorias: (stored.categorias || defaults.categorias || [])
       .filter(c => !String(c).startsWith("CONFIG_CORRELATIVOS:"))
       .filter(c => {

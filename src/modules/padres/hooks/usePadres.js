@@ -166,6 +166,18 @@ function usePadres(user) {
       setPagoConfirmado(freshPago);
     }
   }, [inscripciones, pagoConfirmado, pagos]);
+ 
+  // Initialize pagoConfirmado from pagos list if it is in a pending/verificando or observed state
+  useEffect(() => {
+    if (!inscripcion || pagoConfirmado) return;
+    const pendingPago = pagos.find((item) =>
+      item.inscripcionId === inscripcion.id &&
+      ["por verificar", "pendiente", "verificando", "observado", "rechazado"].includes(String(item.estado || "").toLowerCase())
+    );
+    if (pendingPago) {
+      setPagoConfirmado(pendingPago);
+    }
+  }, [inscripcion, pagos, pagoConfirmado]);
 
   const tipoReforzamiento = useMemo(() => obtenerTipoReforzamiento(programa), [programa]);
   const nombreCorto = obtenerNombreCorto(estudiante?.nombres);

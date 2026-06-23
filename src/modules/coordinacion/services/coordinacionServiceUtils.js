@@ -5,6 +5,7 @@ import {
   normalizarFecha,
 } from "../../../services/dateService";
 import { esProgramaCambridge } from "../utils/coordinacionProgramUtils";
+import { apiDb } from "../../../services/dbApi";
 
 export function conCuposDisponibles(programa) {
   return {
@@ -176,7 +177,7 @@ export function agregarGradoProgramaDesdeAlumno(programa, gradoAlumno) {
   }
 }
 
-function sincronizarGradosProgramaConInvitados(programaId) {
+export function sincronizarGradosProgramaConInvitados(programaId) {
   const programa = apiDb.programas.find((item) => item.id === programaId);
   if (!programa) return;
 

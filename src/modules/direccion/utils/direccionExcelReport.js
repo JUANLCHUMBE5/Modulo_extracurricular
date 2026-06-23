@@ -127,7 +127,7 @@ export async function descargarReporteDireccionExcel(panel, tipoReporte, filtros
       { header: "Estado", key: "estado", width: 16 },
       { header: "Medio", key: "medio", width: 18 },
       { header: "Fecha", key: "fecha", width: 22 },
-      { header: "Recibo SIADED", key: "nroRecibo", width: 18 },
+      { header: "N° de comprobante", key: "nroRecibo", width: 18 },
     ]);
   }
 
@@ -512,7 +512,7 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
     medioPago: { header: "Medio de Pago", width: 18 },
     fechaPago: { header: "FECHA", width: 15 },
     nroOperacion: { header: "N° Operación", width: 16 },
-    nroRecibo: { header: "RECIBO", width: 15 },
+    nroRecibo: { header: "N° de comprobante", width: 18 },
   };
 
   let sheetColumns = [];

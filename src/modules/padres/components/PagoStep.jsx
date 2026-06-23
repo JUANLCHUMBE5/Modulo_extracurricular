@@ -32,8 +32,10 @@ function esPagoEnVerificacion(inscripcion, pagoConfirmado) {
   if (["observado", "observada", "rechazado", "rechazada", "no coincide"].some((item) => estadoPago.includes(item))) return false;
   return tienePagoRegistrado && (estadoInscripcion.includes("verificacion") ||
     estadoInscripcion.includes("validacion") ||
+    estadoInscripcion.includes("proceso") ||
     estadoPago.includes("verificando") ||
     estadoPago.includes("por verificar") ||
+    estadoPago.includes("proceso") ||
     estadoPago.includes("validacion"));
 }
 

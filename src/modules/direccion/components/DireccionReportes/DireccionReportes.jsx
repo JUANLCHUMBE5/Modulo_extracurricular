@@ -1,4 +1,4 @@
-import { Button, SegmentedControl, Select, MultiSelect, Checkbox, Grid, Group, Table } from "@mantine/core";
+import { Button, Select, MultiSelect, Checkbox, Group, Table } from "@mantine/core";
 import {
   IconDownload as Download,
   IconFilter as Filter,
@@ -48,6 +48,10 @@ export default function DireccionReportes({
   programasOptions,
   gradosOptions,
 }) {
+  const columnasDisponibles = columnasDisponiblesMap[customTipo] || [];
+  const columnasOptions = columnasDisponibles.map((col) => ({ value: col.key, label: col.label }));
+  const reporteActual = opcionesReportesSimplificados.find((item) => item.value === reporteSeleccionado);
+
   return (
     <section className="dir-reports-view">
       {/* ── GENERADOR DE REPORTES A LA MEDIDA (PERSONALIZADO POR MÓDULO) ── */}
@@ -56,6 +60,9 @@ export default function DireccionReportes({
           <div>
             <span className="dir-tag">Descargas</span>
             <h2>Generador de Reportes</h2>
+            <p className="dir-builder-subtitle">
+              {reporteActual?.label || "Seleccione el reporte que desea preparar"}
+            </p>
           </div>
           <div className="dir-builder-header-actions">
             <Button
@@ -72,31 +79,20 @@ export default function DireccionReportes({
           </div>
         </header>
 
-        <div style={{ marginTop: "10px", display: "flex", gap: "10px" }}>
-          <SegmentedControl
-            value={reporteSeleccionado}
-            onChange={setReporteSeleccionado}
-            data={opcionesReportesSimplificados}
-            color="teal"
-            size="sm"
-            radius="md"
-            styles={{
-              root: {
-                background: "#f1f5f9",
-                padding: "4px",
-              },
-              control: {
-                fontWeight: 700,
-              }
-            }}
-          />
-        </div>
-
-        <div className="dir-builder-content" style={{ marginTop: "14px" }}>
+        <div className="dir-builder-content">
           <div className="dir-builder-sidebar">
             <div className="dir-builder-form-group">
-              <label className="dir-builder-label"><Filter size={14} /> Filtros</label>
+              <label className="dir-builder-label"><Filter size={14} /> Configuracion del reporte</label>
               <div className="dir-builder-filters">
+                <Select
+                  label="Tipo de reporte"
+                  data={opcionesReportesSimplificados}
+                  value={reporteSeleccionado}
+                  onChange={(val) => setReporteSeleccionado(val || "direccion_alumnos_pagos")}
+                  allowDeselect={false}
+                  size="xs"
+                  className="dir-report-type-select"
+                />
                 <Select
                   label="Año"
                   data={aniosOptions}
@@ -285,7 +281,7 @@ export default function DireccionReportes({
                   variant="subtle"
                   color="teal"
                   size="xs"
-                  onClick={() => setCustomColumnas(columnasDisponiblesMap[customTipo]?.map((c) => c.key) || [])}
+                  onClick={() => setCustomColumnas(columnasDisponibles.map((c) => c.key))}
                 >
                   Seleccionar todo
                 </Button>
@@ -300,28 +296,19 @@ export default function DireccionReportes({
               </Group>
             </div>
 
-            <div className="dir-columns-checkbox-container">
-              <Grid>
-                {columnasDisponiblesMap[customTipo]?.map((col) => {
-                  const isChecked = customColumnas.includes(col.key);
-                  return (
-                    <Grid.Col span={{ base: 12, sm: 6, md: 4 }} key={col.key}>
-                      <Checkbox
-                        label={col.label}
-                        checked={isChecked}
-                        color="teal"
-                        onChange={(event) => {
-                          if (event.currentTarget.checked) {
-                            setCustomColumnas([...customColumnas, col.key]);
-                          } else {
-                            setCustomColumnas(customColumnas.filter((k) => k !== col.key));
-                          }
-                        }}
-                      />
-                    </Grid.Col>
-                  );
-                })}
-              </Grid>
+            <div className="dir-columns-select-container">
+              <MultiSelect
+                data={columnasOptions}
+                value={customColumnas}
+                onChange={setCustomColumnas}
+                placeholder="Seleccione las columnas del Excel"
+                searchable
+                clearable
+                hidePickedOptions
+                maxDropdownHeight={260}
+                nothingFoundMessage="Sin columnas"
+                size="sm"
+              />
             </div>
           </div>
         </div>

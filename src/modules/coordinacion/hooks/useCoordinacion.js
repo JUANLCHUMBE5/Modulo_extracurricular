@@ -4,34 +4,25 @@ import { toast } from "sonner";
 import {
   listarProgramas,
   crearPrograma,
-  crearProgramaDesdeDocumento,
   editarPrograma,
   cambiarEstadoPrograma,
   eliminarPrograma,
   listarCategorias,
   crearCategoria,
   eliminarCategoria,
-  listarInvitados,
-  listarMatriculados,
-  listarAsistenciasPrograma,
-  previsualizarCargaAlumnosMasiva,
-  confirmarCargaAlumnos,
   listarHistorialCargas,
-  eliminarCargaAlumnos,
-  obtenerActividadPrograma,
-  registrarAlumnoIndividualCarga,
-  buscarAlumnoCargaPorDni,
+  listarAsistenciasPrograma,
+  listarMatriculados,
 } from "../services/coordinacionService";
-import { calcularDuracionTexto, fechaActualIso, normalizarDuracionAvisoDias, fechaActualInput } from "../../../services/dateService";
-import { formInicial, horarioGrupoInicial, TEMPLATES_POR_TIPO } from "../constants/coordinacionFormDefaults";
-import { esCostoValido, normalizarComparacion } from "../utils/coordinacionFormatters";
+import { calcularDuracionTexto, normalizarDuracionAvisoDias, fechaActualInput } from "../../../services/dateService";
+import { formInicial, horarioGrupoInicial } from "../constants/coordinacionFormDefaults";
+import { esCostoValido } from "../utils/coordinacionFormatters";
 import { puedeVerVista, tienePermisoAsignado } from "../utils/coordinacionPermissions";
 import {
   calcularRangoEdades,
   comprimirImagenAnuncio,
   esProgramaCambridge,
   esProgramaDeportivo,
-  nombreProgramaDesdeArchivo,
   normalizarHorariosPorGrupo,
   normalizarListaGrados,
   normalizarListaTexto,
@@ -48,17 +39,10 @@ import {
   calcularTextoCiclosCambridge,
   obtenerDiasEntreFechas,
 } from "../utils/coordinacionProgramUtils";
-import { descargarListaAlumnosExcel } from "../utils/excelUtils";
-import { descargarListaAlumnosPdf } from "../utils/pdfUtils";
-import {
-  contarDatosDetectados,
-  extraerDatosProgramaDesdeWord,
-  filtrarDatosDocumento,
-  leerArchivoBase64,
-  leerDocumentoWordDesdeBase64,
-  leerPlantillaWord,
-} from "../utils/wordTemplateUtils";
-import { apiDb } from "../../../services/dbApi";
+
+import useCoordinacionCarga from "./useCoordinacionCarga";
+import useCoordinacionDocumentos from "./useCoordinacionDocumentos";
+import useCoordinacionInvitados from "./useCoordinacionInvitados";
 
 const sugerirNumeroDocumento = (tipoDoc, programasList = []) => {
   const anio = new Date().getFullYear();
@@ -131,6 +115,7 @@ export default function useCoordinacion({
       navigate(`/coordinacion/${newView}`);
     }
   };
+
   const [programas, setProgramas] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -151,13 +136,16 @@ export default function useCoordinacion({
   const [nuevaCat, setNuevaCat] = useState("");
   const [catAEliminar, setCatAEliminar] = useState("");
   const [mostrarGestorCategorias, setMostrarGestorCategorias] = useState(false);
-  const [plantillaInputKey, setPlantillaInputKey] = useState(0);
 
   // Estado local unificado para añadir talleres deportivos
   const [tallerDepForm, setTallerDepForm] = useState(tallerDepFormInicial);
   const [indiceTallerEditando, setIndiceTallerEditando] = useState(null);
-  const [programaDocsId, setProgramaDocsId] = useState("");
-  const [lecturaDocumento, setLecturaDocumento] = useState(null);
+  const [ultimoLoteId, setUltimoLoteId] = useState("");
+  const [programaCargaId, setProgramaCargaId] = useState("");
+  const [historialCargas, setHistorialCargas] = useState([]);
+  const [programaAFinalizar, setProgramaAFinalizar] = useState(null);
+  const [programaAArchivar, setProgramaAArchivar] = useState(null);
+
   const [sidebarAbierta, setSidebarAbierta] = useState(() => {
     try {
       const saved = localStorage.getItem("coord_sidebar_expanded");
@@ -179,118 +167,7 @@ export default function useCoordinacion({
     });
   };
 
-  // Modal invitados
-  const [showInvitados, setShowInvitados] = useState(false);
-  const [invitados, setInvitados] = useState([]);
-  const [matriculados, setMatriculados] = useState([]);
-  const [asistenciasPrograma, setAsistenciasPrograma] = useState([]);
-  const [subVistaAlumnos, setSubVistaAlumnos] = useState("preinscritos");
-  const [progSeleccionado, setProgSeleccionado] = useState(null);
-  const [programaAFinalizar, setProgramaAFinalizar] = useState(null);
-  const [programaAArchivar, setProgramaAArchivar] = useState(null);
-
-  // Carga Excel
   const cargaPeriodo = "escolar";
-  const [archivosExcel, setArchivosExcel] = useState([]);
-  const [archivoInputKey, setArchivoInputKey] = useState(0);
-  const [previewCarga, setPreviewCarga] = useState(null);
-  const [cargandoPreview, setCargandoPreview] = useState(false);
-  const [progresoCarga, setProgresoCarga] = useState(null);
-  const [confirmandoCarga, setConfirmandoCarga] = useState(false);
-  const [historialCargas, setHistorialCargas] = useState([]);
-  const [eliminandoCargaId, setEliminandoCargaId] = useState("");
-  const [modoCargaAlumnos, setModoCargaAlumnos] = useState("masiva");
-  const [alumnoIndividual, setAlumnoIndividual] = useState({ dni: "", nombre: "", grado: "" });
-  const [programaCargaId, setProgramaCargaId] = useState("");
-  const [guardandoIndividual, setGuardandoIndividual] = useState(false);
-  const [estadoAlumnoIndividual, setEstadoAlumnoIndividual] = useState({ buscando: false, mensaje: "", encontrado: false });
-  const [ultimoLoteId, setUltimoLoteId] = useState("");
-
-  function actualizarAlumnoIndividual(campo, valor) {
-    if (campo === "dni") {
-      const dni = String(valor || "").replace(/\D/g, "").slice(0, 8);
-      setAlumnoIndividual((prev) => ({ ...prev, dni }));
-      return;
-    }
-    setAlumnoIndividual((prev) => ({ ...prev, [campo]: valor }));
-  }
-
-  useEffect(() => {
-    if (modoCargaAlumnos !== "individual") return;
-    const dni = String(alumnoIndividual.dni || "").replace(/\D/g, "");
-    if (dni.length !== 8) {
-      setEstadoAlumnoIndividual({ buscando: false, mensaje: "", encontrado: false });
-      return;
-    }
-
-    let activo = true;
-    const timer = setTimeout(async () => {
-      setEstadoAlumnoIndividual({ buscando: true, mensaje: "Buscando alumno en la base de datos...", encontrado: false });
-      try {
-        const alumno = await buscarAlumnoCargaPorDni(dni, cargaPeriodo);
-        if (!activo) return;
-        if (alumno) {
-          setAlumnoIndividual((prev) => {
-            if (String(prev.dni || "").replace(/\D/g, "") !== dni) return prev;
-            return {
-              ...prev,
-              nombre: alumno.nombre || prev.nombre,
-              grado: alumno.grado || prev.grado,
-            };
-          });
-          setEstadoAlumnoIndividual({ buscando: false, mensaje: "Datos encontrados y completados automaticamente.", encontrado: true });
-          return;
-        }
-        setEstadoAlumnoIndividual({ buscando: false, mensaje: "DNI no encontrado. Complete nombre y grado manualmente.", encontrado: false });
-      } catch (err) {
-        if (!activo) return;
-        setEstadoAlumnoIndividual({ buscando: false, mensaje: err.message || "No se pudo consultar el DNI.", encontrado: false });
-      }
-    }, 250);
-
-    return () => {
-      activo = false;
-      clearTimeout(timer);
-    };
-  }, [alumnoIndividual.dni, modoCargaAlumnos]);
-
-  async function guardarAlumnoIndividual() {
-    if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para registrar alumnos.");
-    if (!programaCargaId) return mostrarMsg("Seleccione un programa académico.");
-    if (!alumnoIndividual.dni || alumnoIndividual.dni.length !== 8) {
-      return mostrarMsg("El DNI debe tener exactamente 8 dígitos.");
-    }
-    if (!alumnoIndividual.nombre.trim()) {
-      return mostrarMsg("Ingrese el nombre completo del alumno.");
-    }
-    if (!alumnoIndividual.grado.trim()) {
-      return mostrarMsg("Ingrese el grado del alumno.");
-    }
-
-    setGuardandoIndividual(true);
-    try {
-      const resultado = await registrarAlumnoIndividualCarga({
-        periodo: cargaPeriodo,
-        programaId: programaCargaId,
-        dni: alumnoIndividual.dni,
-        nombre: alumnoIndividual.nombre,
-        grado: alumnoIndividual.grado,
-      });
-      await cargarDatos();
-      setAlumnoIndividual({ dni: "", nombre: "", grado: "" });
-      setEstadoAlumnoIndividual({ buscando: false, mensaje: "", encontrado: false });
-      if (resultado && resultado.cargaId) {
-        setUltimoLoteId(resultado.cargaId);
-      } else if (resultado && resultado.cargaIds && resultado.cargaIds.length > 0) {
-        setUltimoLoteId(resultado.cargaIds[0]);
-      }
-      mostrarMsg("Alumno registrado individualmente con éxito.", "success");
-    } catch (err) {
-      mostrarMsg(err.message || "Error al registrar el alumno.");
-    } finally {
-      setGuardandoIndividual(false);
-    }
-  }
 
   const puedeCrearProgramas = tienePermisoAsignado(user, "programas.crear");
   const puedeEditarProgramas = tienePermisoAsignado(user, "programas.editar");
@@ -301,153 +178,35 @@ export default function useCoordinacion({
   const puedeGestionarGruposFormulario = modoEditar ? puedeEditarGrupos : puedeCrearGrupos;
   const tieneAccionesPrograma = puedeEditarProgramas || puedeVerAlumnos;
 
-  async function refrescarAlumnosModal(prog) {
-    if (!prog) return;
-    try {
-      const lista = await listarInvitados(prog.id);
-      const listaMatriculados = await listarMatriculados(prog.id);
-      const listaAsistencias = await listarAsistenciasPrograma(prog.id);
-      setInvitados(lista);
-      setMatriculados(listaMatriculados);
-      setAsistenciasPrograma(listaAsistencias);
-    } catch (err) {
-      console.warn("Error refrescando alumnos modal:", err);
-    }
-  }
-
-  useEffect(() => {
-    cargarDatos();
-  }, []);
-
-  useEffect(() => {
-    const handleUpdate = () => {
-      cargarDatos();
-      if (progSeleccionado) {
-        refrescarAlumnosModal(progSeleccionado);
-      }
-    };
-    const handleFocusUpdate = () => {
-      const now = Date.now();
-      // Only refetch on focus if the last fetch was more than 30 seconds ago (cooldown to prevent loop / multiple focus spikes)
-      if (now - lastFetchTimeRef.current > 30000) {
-        handleUpdate();
-      }
-    };
-    window.addEventListener("api-db-updated", handleUpdate);
-    window.addEventListener("mock-db-updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    window.addEventListener("focus", handleFocusUpdate);
-    return () => {
-      window.removeEventListener("api-db-updated", handleUpdate);
-      window.removeEventListener("mock-db-updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-      window.removeEventListener("focus", handleFocusUpdate);
-    };
-  }, [progSeleccionado]);
-
-  useEffect(() => {
-    if (!embedded || !initialView) return;
-    setMensaje("");
-  }, [embedded, initialView]);
-
-  async function cargarDatos() {
-    lastFetchTimeRef.current = Date.now();
-    setCargando(true);
-    try {
-      const [progs, cats, cargas] = await Promise.all([
-        listarProgramas(),
-        listarCategorias(),
-        listarHistorialCargas(),
-      ]);
-      setProgramas(progs);
-      setCategorias(cats);
-      setHistorialCargas(cargas);
-    } catch (err) {
-      mostrarMsg(err.message || "No se pudieron cargar los datos de Coordinación Académica.");
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  function mostrarMsg(texto, tipo = "error") {
-    setMensaje(texto);
-    setTipoMsg(tipo);
-    const titulo = tipo === "success" ? "Coordinación Académica" : "Revisar datos";
-    if (tipo === "success") {
-      toast.success(titulo, { description: texto });
-    } else {
-      toast.warning(titulo, { description: texto });
-    }
-    if (tipo === "success") setTimeout(() => setMensaje(""), 4000);
-  }
-
-  function mostrarAlertaConfiguracion(detalle = "") {
-    const texto = detalle
-      ? `Complete la configuracion del taller antes de habilitarlo. ${detalle}`
-      : "Complete la configuracion del taller antes de habilitarlo.";
-    setAlertaConfiguracion(texto);
-    return mostrarMsg(texto);
-  }
-
-  // ── Filtrar programas ──
-  const programasFiltrados = programas.filter((p) => {
-    if (p.estado === "Archivado") return false;
-    const textoBusqueda = busqueda.trim().toLowerCase();
-    const coincide =
-      !textoBusqueda ||
-      String(p.nombre || "").toLowerCase().includes(textoBusqueda) ||
-      String(p.id || "").toLowerCase().includes(textoBusqueda);
-    const filtraPeriodo = filtroPeriodo === "todos" || normalizarPeriodoVista(p.periodo) === filtroPeriodo;
-    const filtraCategoria =
-      filtroCategoria === "todos" || String(p.categoria || "").toLowerCase() === filtroCategoria.toLowerCase();
-    const filtraEstado =
-      filtroEstado === "todos" ||
-      (filtroEstado === "disponibles" && p.estado === "Habilitado") ||
-      (filtroEstado === "deshabilitados" && p.estado === "Deshabilitado") ||
-      (filtroEstado === "finalizados" && p.estado === "Finalizado");
-    return coincide && filtraPeriodo && filtraCategoria && filtraEstado;
+  // ── Delegated Custom Hooks ──
+  const carga = useCoordinacionCarga({
+    puedeCargarAlumnos,
+    cargaPeriodo,
+    programaCargaId,
+    setProgramaCargaId,
+    mostrarMsg,
+    cargarDatos,
+    setUltimoLoteId,
   });
 
-  const programasArchivadosFiltrados = programas.filter((p) => {
-    if (p.estado !== "Archivado") return false;
-    const textoBusqueda = busqueda.trim().toLowerCase();
-    const coincide =
-      !textoBusqueda ||
-      String(p.nombre || "").toLowerCase().includes(textoBusqueda) ||
-      String(p.id || "").toLowerCase().includes(textoBusqueda);
-    const filtraPeriodo = filtroPeriodo === "todos" || normalizarPeriodoVista(p.periodo) === filtroPeriodo;
-    const filtraCategoria =
-      filtroCategoria === "todos" || String(p.categoria || "").toLowerCase() === filtroCategoria.toLowerCase();
-    return coincide && filtraPeriodo && filtraCategoria;
+  const documentos = useCoordinacionDocumentos({
+    puedeCrearProgramas,
+    puedeEditarProgramas,
+    form,
+    setForm,
+    actualizarForm,
+    programas,
+    categorias,
+    mostrarMsg,
+    cargarDatos,
+    datosProgramaAFormulario,
+    setGuardando,
   });
 
-  const programaDocs = programas.find((item) => item.id === programaDocsId);
-  const historialPlantillas = programas.filter(
-    (programa) => programa.plantilla && (programa.plantillaBase64 || apiDb.plantillasPorPrograma?.[programa.id]?.plantillaBase64)
-  );
-
-  // ── Abrir modal crear ──
-  function abrirCrear() {
-    if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas.");
-    const numSugerido = sugerirNumeroDocumento("Comunicado", programas);
-    setForm({
-      ...formInicial,
-      numeroDocumento: numSugerido
-    });
-    setModoEditar(false);
-    setIndiceTallerEditando(null);
-    setTallerDepForm(tallerDepFormInicial);
-    setProgramaDocsId("");
-    setLecturaDocumento(null);
-    setPlantillaInputKey((actual) => actual + 1);
-    setAlertaConfiguracion("");
-    setMensaje("");
-    if (!embedded) {
-      navigate("/coordinacion/registrar-programa");
-    } else {
-      setShowModal(true);
-    }
-  }
+  const invitadosState = useCoordinacionInvitados({
+    puedeVerAlumnos,
+    mostrarMsg,
+  });
 
   function datosProgramaAFormulario(prog) {
     const talleres = Array.isArray(prog.talleresDeportivos) ? prog.talleresDeportivos : [];
@@ -577,6 +336,40 @@ export default function useCoordinacion({
   }
 
   useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      cargarDatos();
+      if (invitadosState.progSeleccionado) {
+        invitadosState.refrescarAlumnosModal(invitadosState.progSeleccionado);
+      }
+    };
+    const handleFocusUpdate = () => {
+      const now = Date.now();
+      if (now - lastFetchTimeRef.current > 30000) {
+        handleUpdate();
+      }
+    };
+    window.addEventListener("api-db-updated", handleUpdate);
+    window.addEventListener("mock-db-updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+    window.addEventListener("focus", handleFocusUpdate);
+    return () => {
+      window.removeEventListener("api-db-updated", handleUpdate);
+      window.removeEventListener("mock-db-updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+      window.removeEventListener("focus", handleFocusUpdate);
+    };
+  }, [invitadosState.progSeleccionado]);
+
+  useEffect(() => {
+    if (!embedded || !initialView) return;
+    setMensaje("");
+  }, [embedded, initialView]);
+
+  useEffect(() => {
     if (vista === "registrar-programa") {
       if (queryProgId) {
         const prog = programas.find((item) => item.id === queryProgId);
@@ -596,15 +389,112 @@ export default function useCoordinacion({
           setModoEditar(false);
           setIndiceTallerEditando(null);
           setTallerDepForm(tallerDepFormInicial);
-          setProgramaDocsId("");
-          setLecturaDocumento(null);
+          documentos.setProgramaDocsId("");
+          documentos.setLecturaDocumento(null);
           setAlertaConfiguracion("");
         }
       }
     }
   }, [vista, queryProgId, programas]);
 
-  // ── Abrir modal editar ──
+  async function cargarDatos() {
+    lastFetchTimeRef.current = Date.now();
+    setCargando(true);
+    try {
+      const [progs, cats, cargas] = await Promise.all([
+        listarProgramas(),
+        listarCategorias(),
+        listarHistorialCargas(),
+      ]);
+      setProgramas(progs);
+      setCategorias(cats);
+      setHistorialCargas(cargas);
+    } catch (err) {
+      mostrarMsg(err.message || "No se pudieron cargar los datos de Coordinación Académica.");
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  function mostrarMsg(texto, tipo = "error") {
+    setMensaje(texto);
+    setTipoMsg(tipo);
+    const titulo = tipo === "success" ? "Coordinación Académica" : "Revisar datos";
+    if (tipo === "success") {
+      toast.success(titulo, { description: texto });
+    } else if (texto) {
+      toast.warning(titulo, { description: texto });
+    }
+    if (tipo === "success") setTimeout(() => setMensaje(""), 4000);
+  }
+
+  function mostrarAlertaConfiguracion(detalle = "") {
+    const texto = detalle
+      ? `Complete la configuracion del taller antes de habilitarlo. ${detalle}`
+      : "Complete la configuracion del taller antes de habilitarlo.";
+    setAlertaConfiguracion(texto);
+    return mostrarMsg(texto);
+  }
+
+  // ── Filtrar programas ──
+  const programasFiltrados = programas.filter((p) => {
+    if (p.estado === "Archivado") return false;
+    const textoBusqueda = busqueda.trim().toLowerCase();
+    const coincide =
+      !textoBusqueda ||
+      String(p.nombre || "").toLowerCase().includes(textoBusqueda) ||
+      String(p.id || "").toLowerCase().includes(textoBusqueda);
+    const filtraPeriodo = filtroPeriodo === "todos" || normalizarPeriodoVista(p.periodo) === filtroPeriodo;
+    const filtraCategoria =
+      filtroCategoria === "todos" || String(p.categoria || "").toLowerCase() === filtroCategoria.toLowerCase();
+    const filtraEstado =
+      filtroEstado === "todos" ||
+      (filtroEstado === "disponibles" && p.estado === "Habilitado") ||
+      (filtroEstado === "deshabilitados" && p.estado === "Deshabilitado") ||
+      (filtroEstado === "finalizados" && p.estado === "Finalizado");
+    return coincide && filtraPeriodo && filtraCategoria && filtraEstado;
+  });
+
+  const programasArchivadosFiltrados = programas.filter((p) => {
+    if (p.estado !== "Archivado") return false;
+    const textoBusqueda = busqueda.trim().toLowerCase();
+    const coincide =
+      !textoBusqueda ||
+      String(p.nombre || "").toLowerCase().includes(textoBusqueda) ||
+      String(p.id || "").toLowerCase().includes(textoBusqueda);
+    const filtraPeriodo = filtroPeriodo === "todos" || normalizarPeriodoVista(p.periodo) === filtroPeriodo;
+    const filtraCategoria =
+      filtroCategoria === "todos" || String(p.categoria || "").toLowerCase() === filtroCategoria.toLowerCase();
+    return coincide && filtraPeriodo && filtraCategoria;
+  });
+
+  const programaDocs = programas.find((item) => item.id === documentos.programaDocsId);
+  const historialPlantillas = programas.filter(
+    (programa) => programa.plantilla && (programa.plantillaBase64 || window.apiDb?.plantillasPorPrograma?.[programa.id]?.plantillaBase64)
+  );
+
+  function abrirCrear() {
+    if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas.");
+    const numSugerido = sugerirNumeroDocumento("Comunicado", programas);
+    setForm({
+      ...formInicial,
+      numeroDocumento: numSugerido
+    });
+    setModoEditar(false);
+    setIndiceTallerEditando(null);
+    setTallerDepForm(tallerDepFormInicial);
+    documentos.setProgramaDocsId("");
+    documentos.setLecturaDocumento(null);
+    documentos.setPlantillaInputKey((actual) => actual + 1);
+    setAlertaConfiguracion("");
+    setMensaje("");
+    if (!embedded) {
+      navigate("/coordinacion/registrar-programa");
+    } else {
+      setShowModal(true);
+    }
+  }
+
   function abrirEditar(prog) {
     if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar programas.");
     setForm(datosProgramaAFormulario(prog));
@@ -617,9 +507,9 @@ export default function useCoordinacion({
         ? (prog.categoria === "Talleres Deportivos" ? "Fútbol" : "Danza")
         : "Vóley"
     });
-    setProgramaDocsId("");
-    setLecturaDocumento(null);
-    setPlantillaInputKey((actual) => actual + 1);
+    documentos.setProgramaDocsId("");
+    documentos.setLecturaDocumento(null);
+    documentos.setPlantillaInputKey((actual) => actual + 1);
     setAlertaConfiguracion("");
     setMensaje("");
     if (!embedded) {
@@ -629,7 +519,6 @@ export default function useCoordinacion({
     }
   }
 
-  // ── Validar y guardar ──
   async function guardar(e) {
     e.preventDefault();
     setAlertaConfiguracion("");
@@ -774,8 +663,8 @@ export default function useCoordinacion({
 
     if (!form.fechaInicio || !form.fechaFin) return mostrarAlertaConfiguracion("Revise: fechas de inicio y fin.");
     if (form.fechaInicio > form.fechaFin) return mostrarMsg("La fecha de inicio no puede ser mayor a la de fin.");
-    const duracionAvisoDias = normalizarDuracionAvisoDias(form.duracionAvisoDias, 7);
-    if (String(duracionAvisoDias) !== String(form.duracionAvisoDias)) {
+    const duracionAvisoDiasVal = normalizarDuracionAvisoDias(form.duracionAvisoDias, 7);
+    if (String(duracionAvisoDiasVal) !== String(form.duracionAvisoDias)) {
       return mostrarMsg("El aviso de inscripción puede durar de 1 a 7 días como máximo.");
     }
     if (!form.cupos || Number(form.cupos) <= 0) return mostrarAlertaConfiguracion("Revise: cupos.");
@@ -811,14 +700,14 @@ export default function useCoordinacion({
       duracionTaller: (form.tipoComunicado && form.tipoComunicado !== "Otro genérico")
         ? (form.duracionTaller || calcularDuracionTexto(form.fechaInicio, form.fechaFin))
         : calcularDuracionTexto(form.fechaInicio, form.fechaFin),
-      cicloI: esCambridgeGuardar ? ciclosCambridgeGuardar.cicloI : form.cicloI || "",
-      cicloII: esCambridgeGuardar ? ciclosCambridgeGuardar.cicloII : form.cicloII || "",
-      modalidadesCambridge: esCambridgeGuardar ? ["Certificado Oficial"] : [],
-      duracionAvisoDias,
+      cicloI: esCambridgeForm ? ciclosCambridgeGuardar.cicloI : form.cicloI || "",
+      cicloII: esCambridgeForm ? ciclosCambridgeGuardar.cicloII : form.cicloII || "",
+      modalidadesCambridge: esCambridgeForm ? ["Certificado Oficial"] : [],
+      duracionAvisoDias: duracionAvisoDiasVal,
       dias: diasFinales,
       horariosPorGrupo: gruposHorario,
       usaHorariosPorBloque: gruposHorario.length > 0,
-      grupo: esCambridgeGuardar
+      grupo: esCambridgeForm
         ? "Asignado por Excel"
         : usaTalleresPorEdad
         ? resumenGrupoDeportivo(talleres)
@@ -831,7 +720,7 @@ export default function useCoordinacion({
       anuncioImagenNombre: form.invitacionMasiva ? form.anuncioImagenNombre : "",
       anuncioImagenTamano: form.invitacionMasiva ? form.anuncioImagenTamano : 0,
       anuncioImagenComprimida: form.invitacionMasiva ? Boolean(form.anuncioImagenComprimida) : false,
-      horario: esCambridgeGuardar
+      horario: esCambridgeForm
         ? "Asignado por carga Excel"
         : usaTalleresPorEdad
         ? resumenHorarioDeportivo(talleres)
@@ -882,7 +771,6 @@ export default function useCoordinacion({
     }
   }
 
-  // ── Cambiar estado ──
   async function toggleEstado(prog) {
     if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para cambiar el estado de programas.");
     const nuevo = prog.estado === "Habilitado" ? "Deshabilitado" : "Habilitado";
@@ -913,7 +801,6 @@ export default function useCoordinacion({
     }
   }
 
-  // ── Ver invitados ──
   async function eliminarCurso(prog) {
     if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para archivar programas.");
     setProgramaAArchivar(prog);
@@ -956,9 +843,9 @@ export default function useCoordinacion({
       numeroDocumento: numSugerido
     });
     setModoEditar(false);
-    setProgramaDocsId("");
-    setLecturaDocumento(null);
-    setPlantillaInputKey((actual) => actual + 1);
+    documentos.setProgramaDocsId("");
+    documentos.setLecturaDocumento(null);
+    documentos.setPlantillaInputKey((actual) => actual + 1);
     setAlertaConfiguracion("");
     setMensaje("");
     mostrarMsg(`Datos del taller "${prog.nombre}" clonados. Asigne las nuevas fechas y guarde.`, "success");
@@ -969,112 +856,6 @@ export default function useCoordinacion({
     }
   }
 
-  async function verInvitados(prog) {
-    if (!puedeVerAlumnos) return mostrarMsg("No tiene permiso para ver alumnos.");
-    setProgSeleccionado(prog);
-    setSubVistaAlumnos("preinscritos");
-    const lista = await listarInvitados(prog.id);
-    const listaMatriculados = await listarMatriculados(prog.id);
-    const listaAsistencias = await listarAsistenciasPrograma(prog.id);
-    setInvitados(lista);
-    setMatriculados(listaMatriculados);
-    setAsistenciasPrograma(listaAsistencias);
-    setShowInvitados(true);
-  }
-
-  function descargarPdfAlumnos(tipo) {
-    if (!progSeleccionado) return;
-    if (tipo === "preinscritos") {
-      mostrarMsg("Solo se puede descargar la lista de alumnos matriculados.", "warning");
-      return;
-    }
-    const isPre = tipo === "preinscritos";
-    const lista = isPre ? invitados : matriculados;
-    if (!lista.length) {
-      mostrarMsg("No hay alumnos en esta lista para descargar.", "warning");
-      return;
-    }
-
-    descargarListaAlumnosPdf(progSeleccionado, lista);
-    mostrarMsg("Lista de alumnos descargada en PDF.", "success");
-  }
-
-  async function exportarAExcel(tipo) {
-    if (!progSeleccionado) return;
-    if (tipo === "preinscritos") {
-      mostrarMsg("Solo se puede exportar la lista de alumnos matriculados.", "warning");
-      return;
-    }
-    const isPre = tipo === "preinscritos";
-    const data = isPre ? invitados : matriculados;
-    if (!data.length) {
-      mostrarMsg("No hay datos para exportar.", "warning");
-      return;
-    }
-
-    try {
-      await descargarListaAlumnosExcel(progSeleccionado, tipo, data);
-      mostrarMsg("Archivo Excel descargado.", "success");
-    } catch (err) {
-      mostrarMsg(err.message || "No se pudo exportar el archivo Excel.");
-    }
-  }
-
-  function abrirDocumentosPrograma(prog) {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar documentos del programa.");
-    setForm(datosProgramaAFormulario(prog));
-    setModoEditar(true);
-    setProgramaDocsId(prog.id);
-    setLecturaDocumento(null);
-    setPlantillaInputKey((actual) => actual + 1);
-    setMensaje("");
-  }
-
-  async function guardarDocumentoComoPrograma() {
-    if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas desde documentos.");
-    if (!form.plantillaBase64) return mostrarMsg("Primero suba el documento Word.");
-    if (!form.plantillaValidada) return mostrarMsg("El Word debe tener variables editables antes de guardarlo.");
-    const nombreDocumento = form.nombre.trim() || nombreProgramaDesdeArchivo(form.plantilla);
-    if (!nombreDocumento) return mostrarMsg("Ingrese el nombre del programa.");
-
-    setGuardando(true);
-    try {
-      const creado = await crearProgramaDesdeDocumento({
-        ...form,
-        nombre: nombreDocumento,
-        categoria: form.categoria || categorias[0] || "General",
-      });
-      await cargarDatos();
-      setProgramaDocsId("");
-      setForm(formInicial);
-      setLecturaDocumento(null);
-      setPlantillaInputKey((actual) => actual + 1);
-      mostrarMsg(`Plantilla de ${creado.nombre} guardada en el historial.`, "success");
-    } catch (err) {
-      mostrarMsg(err.message);
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function guardarDocumentosPrograma() {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar documentos del programa.");
-    if (!form.id) return mostrarMsg("Seleccione un programa para gestionar sus documentos.");
-    if (form.plantilla && !form.plantillaValidada) return mostrarMsg("La plantilla Word debe estar validada antes de guardar.");
-
-    setGuardando(true);
-    try {
-      await editarPrograma(form.id, form);
-      await cargarDatos();
-      mostrarMsg("Documentos del programa actualizados correctamente.", "success");
-    } catch (err) {
-      mostrarMsg(err.message);
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  // ── Agregar categoría ──
   async function agregarCategoria() {
     if (!nuevaCat.trim()) return;
     try {
@@ -1409,261 +1190,9 @@ export default function useCoordinacion({
     setForm((f) => ({ ...f, costo: Number.isFinite(numero) ? numero.toFixed(2) : "" }));
   }
 
-  async function seleccionarPlantilla(event) {
-    if (modoEditar && !puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar plantillas.");
-    if (!modoEditar && !puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear plantillas.");
-    const archivo = event.target.files?.[0];
-    if (!archivo) return;
-
-    if (!/\.docx$/i.test(archivo.name)) {
-      setPlantillaInputKey((actual) => actual + 1);
-      return mostrarMsg("Solo se permiten plantillas Word en formato .docx.");
-    }
-
-    if (modoEditar && form.id && form.plantilla) {
-      const actividad = await obtenerActividadPrograma(form.id);
-      if (actividad.tieneActividad) {
-        const confirmado = window.confirm(
-          `Este programa ya tiene ${actividad.alumnos} alumno(s), ${actividad.inscripciones} inscripción(es) y ${actividad.documentos} documento(s). ¿Desea reemplazar la plantilla?`
-        );
-        if (!confirmado) {
-          setPlantillaInputKey((actual) => actual + 1);
-          return;
-        }
-      }
-    }
-
-    try {
-      const lectura = await leerPlantillaWord(archivo);
-      const { variablesDetectadas, textoPlano } = lectura;
-      const plantillaBase64 = await leerArchivoBase64(archivo);
-      const datosDetectados = extraerDatosProgramaDesdeWord(textoPlano, archivo.name, categorias);
-      const datosAplicables = vista === "documentos" ? filtrarDatosDocumento(datosDetectados) : datosDetectados;
-      if (vista === "documentos" && textoPlano) datosAplicables.comunicadoCompleto = textoPlano;
-      const nombreDocumento = datosDetectados.nombre || nombreProgramaDesdeArchivo(archivo.name);
-      const plantillaExistente =
-        vista === "documentos"
-          ? programas.find((programa) => normalizarComparacion(programa.plantilla) === normalizarComparacion(archivo.name))
-          : null;
-      const totalDetectados = contarDatosDetectados(datosAplicables);
-      if (vista === "documentos") {
-        setLecturaDocumento({
-          archivo: archivo.name,
-          texto: textoPlano,
-          datos: datosAplicables,
-          variables: variablesDetectadas,
-          variablesListasModelo: lectura.variablesListasModelo,
-          variablesRequeridasModelo: lectura.variablesRequeridasModelo,
-          variablesFaltantes: lectura.variablesFaltantes,
-          plantillaModelo: lectura.plantillaModelo,
-        });
-      }
-      if (plantillaExistente) {
-        setProgramaDocsId(plantillaExistente.id);
-        setModoEditar(true);
-      }
-      setForm((actual) => ({
-        ...actual,
-        ...(plantillaExistente ? datosProgramaAFormulario(plantillaExistente) : {}),
-        ...datosAplicables,
-        nombre:
-          vista === "documentos" && !programaDocsId
-            ? plantillaExistente?.nombre || nombreDocumento || actual.nombre
-            : actual.nombre || plantillaExistente?.nombre || nombreDocumento,
-        categoria: plantillaExistente?.categoria || actual.categoria || datosDetectados.categoria || categorias[0] || "",
-        plantilla: archivo.name,
-        plantillaBase64,
-        plantillaVariables: variablesDetectadas,
-        plantillaValidada: lectura.plantillaValida,
-        plantillaActualizadaEn: fechaActualIso(),
-      }));
-      mostrarMsg(
-        plantillaExistente
-          ? `La plantilla ya estaba guardada como ${plantillaExistente.nombre}. No es necesario volver a subirla.`
-          : totalDetectados > 0
-          ? `Plantilla validada. Se autocompletaron ${totalDetectados} dato(s) del programa.`
-          : "Plantilla validada. No se encontraron datos del programa para autocompletar.",
-        "success"
-      );
-    } catch (err) {
-      setLecturaDocumento(null);
-      setForm((actual) => ({
-        ...actual,
-        plantilla: archivo.name,
-        plantillaBase64: "",
-        plantillaVariables: [],
-        plantillaValidada: false,
-        plantillaActualizadaEn: "",
-      }));
-      mostrarMsg(err.message || "No se pudo validar la plantilla Word.");
-    }
-  }
-
-  async function autocompletarDesdePlantilla() {
-    if (!form.plantillaBase64) {
-      return mostrarMsg(vista === "documentos" ? "Primero suba un documento Word." : "Primero suba y valide una plantilla Word.");
-    }
-
-    try {
-      const lectura = await leerDocumentoWordDesdeBase64(form.plantillaBase64);
-      const { textoPlano, variablesDetectadas } = lectura;
-      const datosDetectados = extraerDatosProgramaDesdeWord(textoPlano, form.plantilla, categorias);
-      const datosAplicables = vista === "documentos" ? filtrarDatosDocumento(datosDetectados) : datosDetectados;
-      if (vista === "documentos" && textoPlano) datosAplicables.comunicadoCompleto = textoPlano;
-      const totalDetectados = contarDatosDetectados(datosAplicables);
-      if (vista === "documentos") {
-        setLecturaDocumento({
-          archivo: form.plantilla,
-          texto: textoPlano,
-          datos: datosAplicables,
-          variables: variablesDetectadas,
-          variablesListasModelo: lectura.variablesListasModelo,
-          variablesRequeridasModelo: lectura.variablesRequeridasModelo,
-          variablesFaltantes: lectura.variablesFaltantes,
-          plantillaModelo: lectura.plantillaModelo,
-        });
-      }
-
-      if (totalDetectados === 0) {
-        return mostrarMsg(
-          vista === "documentos"
-            ? "Documento leído. No se detectaron secciones automáticas para guardar."
-            : "No se encontraron datos del programa dentro del Word. Complete los campos manualmente."
-        );
-      }
-
-      setForm((actual) => ({
-        ...actual,
-        ...datosAplicables,
-        ...(vista === "documentos" && !programaDocsId
-          ? { nombre: datosDetectados.nombre || nombreProgramaDesdeArchivo(form.plantilla) || actual.nombre }
-          : {}),
-      }));
-      return mostrarMsg(`Se autocompletaron ${totalDetectados} dato(s) del programa.`, "success");
-    } catch (err) {
-      return mostrarMsg(err.message || "No se pudo leer la plantilla guardada.");
-    }
-  }
-
-  async function quitarPlantilla() {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para eliminar plantillas.");
-    if (vista === "documentos" && form.id && form.plantilla) {
-      const confirmado = window.confirm(`¿Está seguro que desea eliminar esta plantilla?\n\n${form.plantilla}`);
-      if (!confirmado) return;
-    }
-
-    const datosLimpios = {
-      plantilla: "",
-      plantillaBase64: "",
-      plantillaVariables: [],
-      plantillaValidada: false,
-      plantillaActualizadaEn: "",
-      requisitos: "",
-      comunicado: "",
-      comunicadoCompleto: "",
-      detalleCosto: "",
-      detalleAlmuerzo: "",
-      concesionarios: "",
-    };
-
-    const siguienteForm = {
-      ...form,
-      ...datosLimpios,
-    };
-
-    setForm((actual) => ({
-      ...actual,
-      ...datosLimpios,
-    }));
-    setLecturaDocumento(null);
-    setPlantillaInputKey((actual) => actual + 1);
-
-    if (vista !== "documentos" || !form.id) return;
-
-    setGuardando(true);
-    try {
-      await editarPrograma(form.id, siguienteForm);
-      await cargarDatos();
-      mostrarMsg("Documento eliminado del programa.", "success");
-    } catch (err) {
-      mostrarMsg(err.message);
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function eliminarPlantillaHistorial(programa) {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para eliminar plantillas.");
-    const confirmado = window.confirm(`¿Está seguro que desea eliminar esta plantilla?\n\n${programa.plantilla}`);
-    if (!confirmado) return;
-
-    const datosLimpios = {
-      plantilla: "",
-      plantillaBase64: "",
-      plantillaVariables: [],
-      plantillaValidada: false,
-      plantillaActualizadaEn: "",
-      requisitos: "",
-      comunicado: "",
-      comunicadoCompleto: "",
-      detalleCosto: "",
-      detalleAlmuerzo: "",
-      concesionarios: "",
-    };
-
-    setGuardando(true);
-    try {
-      await editarPrograma(programa.id, {
-        ...datosProgramaAFormulario(programa),
-        ...datosLimpios,
-      });
-      if (programaDocsId === programa.id) {
-        setProgramaDocsId("");
-        setForm(formInicial);
-        setLecturaDocumento(null);
-      }
-      await cargarDatos();
-      mostrarMsg("Plantilla eliminada correctamente.", "success");
-    } catch (err) {
-      mostrarMsg(err.message);
-    } finally {
-      setGuardando(false);
-    }
-  }
-
-  async function usarPlantillaExistente(programaId) {
-    const programa = programas.find((item) => item.id === programaId);
-    if (!programa || !programa.plantillaBase64) {
-      return mostrarMsg("Seleccione un programa con plantilla validada.");
-    }
-
-    if (modoEditar && form.id && form.plantilla) {
-      const actividad = await obtenerActividadPrograma(form.id);
-      if (actividad.alumnos || actividad.inscripciones || actividad.documentos) {
-        const confirmado = window.confirm(
-          `Este programa ya tiene ${actividad.alumnos} alumno(s), ${actividad.inscripciones} inscripción(es) y ${actividad.documentos} documento(s). ¿Desea reemplazar la plantilla?`
-        );
-        if (!confirmado) return;
-      }
-    }
-
-    setForm((actual) => ({
-      ...actual,
-      plantilla: programa.plantilla || "",
-      plantillaBase64: programa.plantillaBase64 || "",
-      plantillaVariables: programa.plantillaVariables || [],
-      plantillaValidada: Boolean(programa.plantillaValidada),
-      plantillaActualizadaEn: fechaActualIso(),
-    }));
-    setPlantillaInputKey((actual) => actual + 1);
-    mostrarMsg(`Se usará la plantilla de ${programa.nombre}.`, "success");
-  }
-
   function cambiarPeriodoFormulario(valor) {
     const periodoNormalizado = normalizarPeriodoVista(valor);
-    const catLower = String(form.categoria || "").toLowerCase();
 
-    // Validar y resetear categoría si cambia de periodo y es incompatible
     let nuevaCategoria = form.categoria;
     const catLowerNew = String(form.categoria || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     if (periodoNormalizado === "verano") {
@@ -1737,7 +1266,6 @@ export default function useCoordinacion({
         ? normalizarListaGrados(f.gradosAplicables).filter((item) => item !== valor)
         : [...normalizarListaGrados(f.gradosAplicables), valor];
 
-      // Sincronizar con los grupos de horarios abajo
       let nuevosGrupos = f.horariosPorGrupo;
       if (yaExiste && Array.isArray(f.horariosPorGrupo)) {
         nuevosGrupos = f.horariosPorGrupo.map((grupo) => ({
@@ -1746,17 +1274,14 @@ export default function useCoordinacion({
         }));
       }
 
-      // Sincronizar tablaHorariosNivel
       let nuevaTabla = Array.isArray(f.tablaHorariosNivel) ? [...f.tablaHorariosNivel] : [];
       const [nivel] = valor.split(":");
       if (nivel) {
         const hasGradesForNivel = nuevosGrados.some((g) => g.startsWith(`${nivel}:`));
         const hasRowForNivel = nuevaTabla.some((row) => row.nivel === nivel);
         if (hasGradesForNivel && !hasRowForNivel) {
-          // Si tiene grados seleccionados y no hay fila para ese nivel, añadirla
           nuevaTabla.push({ nivel, dia: "", horarioAlmuerzo: "", horarioClase: "" });
         } else if (!hasGradesForNivel && hasRowForNivel) {
-          // Si no tiene grados de este nivel y hay fila, quitarla
           nuevaTabla = nuevaTabla.filter((row) => row.nivel !== nivel);
         }
       }
@@ -1850,116 +1375,6 @@ export default function useCoordinacion({
     }));
   }
 
-  async function generarPreviewExcel() {
-    if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para cargar alumnos.");
-    setMensaje("");
-    setPreviewCarga(null);
-    setProgresoCarga(null);
-
-    if (!archivosExcel.length) return mostrarMsg("Seleccione al menos un archivo Excel.");
-    if (archivosExcel.length > 15) return mostrarMsg("Puede subir hasta 15 archivos Excel por carga.");
-
-    const invalido = archivosExcel.find((archivo) => !/\.(xlsx|xls)$/i.test(archivo.name));
-    const pesado = archivosExcel.find((archivo) => archivo.size > 5 * 1024 * 1024);
-    const totalBytes = archivosExcel.reduce((total, archivo) => total + Number(archivo.size || 0), 0);
-    const extensionValida = !invalido;
-    if (!extensionValida) return mostrarMsg("Solo se permiten archivos .xlsx o .xls.");
-    if (pesado) return mostrarMsg("Cada archivo no debe superar 5 MB.");
-    if (totalBytes > 50 * 1024 * 1024) return mostrarMsg("La carga masiva no debe superar 50 MB en total.");
-
-    setCargandoPreview(true);
-    setProgresoCarga({
-      actual: 0,
-      total: archivosExcel.length,
-      porcentaje: 0,
-      archivo: "",
-      estado: "preparando",
-    });
-    try {
-      const preview = await previsualizarCargaAlumnosMasiva({
-        periodo: cargaPeriodo,
-        archivos: archivosExcel,
-        programaId: programaCargaId,
-        onProgress: setProgresoCarga,
-      });
-      setPreviewCarga(preview);
-      setProgresoCarga({
-        actual: archivosExcel.length,
-        total: archivosExcel.length,
-        porcentaje: 100,
-        archivo: "",
-        estado: "listo",
-      });
-      if (preview.resumen.validos === 0) {
-        mostrarMsg(
-          "La vista previa no tiene alumnos listos para guardar. Revise la columna Detalle y confirme que curso_programa coincida con un programa habilitado de Año escolar."
-        );
-      } else {
-        mostrarMsg(`Vista previa generada: ${preview.resumen.validos} alumno(s) listos para guardar.`, "success");
-      }
-    } catch (err) {
-      mostrarMsg(err.message || "No se pudo leer el archivo Excel.");
-      setProgresoCarga(null);
-    } finally {
-      setCargandoPreview(false);
-    }
-  }
-
-  async function confirmarCargaExcel() {
-    if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para confirmar cargas de alumnos.");
-    if (!previewCarga || previewCarga.resumen.validos === 0) {
-      return mostrarMsg("No hay registros válidos para confirmar.");
-    }
-
-    setConfirmandoCarga(true);
-    try {
-      const resultado = await confirmarCargaAlumnos(previewCarga);
-      await cargarDatos();
-      setPreviewCarga(null);
-      setProgresoCarga(null);
-      setArchivosExcel([]);
-      setArchivoInputKey((actual) => actual + 1);
-      if (resultado && resultado.cargaId) {
-        setUltimoLoteId(resultado.cargaId);
-      } else if (resultado && resultado.cargaIds && resultado.cargaIds.length > 0) {
-        setUltimoLoteId(resultado.cargaIds[0]);
-      }
-      mostrarMsg("Carga confirmada correctamente.", "success");
-    } catch (err) {
-      mostrarMsg(err.message);
-    } finally {
-      setConfirmandoCarga(false);
-    }
-  }
-
-  async function eliminarCargaExcel(carga) {
-    if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para borrar cargas.");
-    const nombreCarga = Array.isArray(carga.archivos) && carga.archivos.length ? carga.archivos.join(", ") : carga.id;
-    const confirmado = window.confirm(
-      `¿Borrar esta carga de Excel?\n\n${nombreCarga}\n\nSe retirarán los alumnos importados mientras no tengan inscripción activa.`
-    );
-    if (!confirmado) return;
-
-    setEliminandoCargaId(carga.id);
-    try {
-      const resultado = await eliminarCargaAlumnos(carga.id);
-      await cargarDatos();
-      mostrarMsg(`Carga eliminada. Alumnos retirados: ${resultado.eliminados || 0}.`, "success");
-    } catch (err) {
-      mostrarMsg(err.message || "No se pudo borrar la carga.");
-    } finally {
-      setEliminandoCargaId("");
-    }
-  }
-
-  function cancelarCargaExcel() {
-    setArchivosExcel([]);
-    setPreviewCarga(null);
-    setProgresoCarga(null);
-    setMensaje("");
-    setArchivoInputKey((actual) => actual + 1);
-  }
-
   // Computed Values
   const vistasDisponibles = vistasNav.filter((item) => puedeVerVista(user, item));
   const vistaActualDisponible = vistasDisponibles.some((item) => item.id === vista);
@@ -2010,6 +1425,9 @@ export default function useCoordinacion({
     form,
     setForm,
     guardando,
+    tallerDepForm,
+    setTallerDepForm,
+    indiceTallerEditando,
     alertaConfiguracion,
     setAlertaConfiguracion,
     nuevaCat,
@@ -2018,49 +1436,67 @@ export default function useCoordinacion({
     setCatAEliminar,
     mostrarGestorCategorias,
     setMostrarGestorCategorias,
-    plantillaInputKey,
-    tallerDepForm,
-    setTallerDepForm,
-    indiceTallerEditando,
-    programaDocsId,
-    lecturaDocumento,
     sidebarAbierta,
     setSidebarAbierta: handleSetSidebarAbierta,
-    showInvitados,
-    setShowInvitados,
-    invitados,
-    matriculados,
-    asistenciasPrograma,
-    subVistaAlumnos,
-    setSubVistaAlumnos,
-    progSeleccionado,
     programaAFinalizar,
     setProgramaAFinalizar,
     programaAArchivar,
     setProgramaAArchivar,
-    archivosExcel,
-    setArchivosExcel,
-    archivoInputKey,
-    previewCarga,
-    setPreviewCarga,
-    cargandoPreview,
-    progresoCarga,
-    confirmandoCarga,
-    historialCargas,
-    eliminandoCargaId,
-    modoCargaAlumnos,
-    setModoCargaAlumnos,
-    alumnoIndividual,
-    estadoAlumnoIndividual,
-    guardandoIndividual,
     ultimoLoteId,
     setUltimoLoteId,
     programaCargaId,
     setProgramaCargaId,
 
-    // Methods
-    actualizarAlumnoIndividual,
-    guardarAlumnoIndividual,
+    // Carga Excel Sub-hook delegates
+    archivosExcel: carga.archivosExcel,
+    setArchivosExcel: carga.setArchivosExcel,
+    archivoInputKey: carga.archivoInputKey,
+    previewCarga: carga.previewCarga,
+    setPreviewCarga: carga.setPreviewCarga,
+    cargandoPreview: carga.cargandoPreview,
+    progresoCarga: carga.progresoCarga,
+    confirmandoCarga: carga.confirmandoCarga,
+    eliminandoCargaId: carga.eliminandoCargaId,
+    modoCargaAlumnos: carga.modoCargaAlumnos,
+    setModoCargaAlumnos: carga.setModoCargaAlumnos,
+    alumnoIndividual: carga.alumnoIndividual,
+    estadoAlumnoIndividual: carga.estadoAlumnoIndividual,
+    guardandoIndividual: carga.guardandoIndividual,
+    actualizarAlumnoIndividual: carga.actualizarAlumnoIndividual,
+    guardarAlumnoIndividual: carga.guardarAlumnoIndividual,
+    generarPreviewExcel: carga.generarPreviewExcel,
+    confirmarCargaExcel: carga.confirmarCargaExcel,
+    eliminarCargaExcel: carga.eliminarCargaExcel,
+    cancelarCargaExcel: carga.cancelarCargaExcel,
+
+    // Documentos/Word Sub-hook delegates
+    programaDocsId: documentos.programaDocsId,
+    lecturaDocumento: documentos.lecturaDocumento,
+    plantillaInputKey: documentos.plantillaInputKey,
+    abrirDocumentosPrograma: documentos.abrirDocumentosPrograma,
+    guardarDocumentoComoPrograma: documentos.guardarDocumentoComoPrograma,
+    guardarDocumentosPrograma: documentos.guardarDocumentosPrograma,
+    seleccionarPlantilla: documentos.seleccionarPlantilla,
+    autocompletarDesdePlantilla: documentos.autocompletarDesdePlantilla,
+    quitarPlantilla: documentos.quitarPlantilla,
+    eliminarPlantillaHistorial: documentos.eliminarPlantillaHistorial,
+    usarPlantillaExistente: documentos.usarPlantillaExistente,
+
+    // Invitados Sub-hook delegates
+    showInvitados: invitadosState.showInvitados,
+    setShowInvitados: invitadosState.setShowInvitados,
+    invitados: invitadosState.invitados,
+    matriculados: invitadosState.matriculados,
+    asistenciasPrograma: invitadosState.asistenciasPrograma,
+    subVistaAlumnos: invitadosState.subVistaAlumnos,
+    setSubVistaAlumnos: invitadosState.setSubVistaAlumnos,
+    progSeleccionado: invitadosState.progSeleccionado,
+    refrescarAlumnosModal: invitadosState.refrescarAlumnosModal,
+    verInvitados: invitadosState.verInvitados,
+    descargarPdfAlumnos: invitadosState.descargarPdfAlumnos,
+    exportarAExcel: invitadosState.exportarAExcel,
+
+    // Main hooks and methods
     cargarDatos,
     mostrarMsg,
     mostrarAlertaConfiguracion,
@@ -2072,12 +1508,6 @@ export default function useCoordinacion({
     confirmarFinalizar,
     confirmarArchivar,
     eliminarCurso,
-    verInvitados,
-    descargarPdfAlumnos,
-    exportarAExcel,
-    abrirDocumentosPrograma,
-    guardarDocumentoComoPrograma,
-    guardarDocumentosPrograma,
     agregarCategoria,
     quitarCategoria,
     actualizarForm,
@@ -2092,11 +1522,6 @@ export default function useCoordinacion({
     actualizarCategoriaPrograma,
     actualizarCosto,
     formatearCostoFormulario,
-    seleccionarPlantilla,
-    autocompletarDesdePlantilla,
-    quitarPlantilla,
-    eliminarPlantillaHistorial,
-    usarPlantillaExistente,
     cambiarPeriodoFormulario,
     actualizarFechaNacimientoVerano,
     toggleGrado,
@@ -2105,10 +1530,6 @@ export default function useCoordinacion({
     quitarGrupoHorario,
     actualizarGrupoHorario,
     toggleGradoGrupo,
-    generarPreviewExcel,
-    confirmarCargaExcel,
-    eliminarCargaExcel,
-    cancelarCargaExcel,
     restaurarPrograma,
     clonarPrograma,
     listarAsistenciasPrograma,
@@ -2151,7 +1572,7 @@ const vistasNav = [
   {
     id: "programas",
     label: "Gestion de Programas",
-    icon: null, // we map icons in layout
+    icon: null,
     permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"],
   },
   {

@@ -568,7 +568,6 @@ export function mapDbEnrollmentToApi(item, db = null) {
       }
       return "pendiente";
     })(),
-    estado_inscripcion: item.estadoInscripcion || "",
     pago_id: item.pagoId || "",
     pago_referencia: item.pagoReferencia || "",
     pago_telefono: item.pagoTelefono || "",

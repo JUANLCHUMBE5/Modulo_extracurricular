@@ -20,7 +20,8 @@ import {
   agregarGradoProgramaDesdeAlumnoApi,
   programaListoParaPortalPadresApi,
   programaDisponibleParaGradoApi,
-  obtenerGradoCompletoApi
+  obtenerGradoCompletoApi,
+  mapDbEnrollmentToApi
 } from "../apiMappers.js";
 
 const router = express.Router();

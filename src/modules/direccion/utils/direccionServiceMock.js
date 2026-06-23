@@ -467,13 +467,14 @@ export async function removerDescuentoInscripcionMock(inscripcionId) {
 
 export async function obtenerCorrelativosMock() {
   await syncApiDb();
-  return apiDb.correlativos || { recibo: "", egreso: "" };
+  return apiDb.correlativos || { recibo: "", reciboVirtual: "", egreso: "" };
 }
 
-export async function guardarCorrelativosMock({ recibo, egreso }) {
+export async function guardarCorrelativosMock({ recibo, reciboVirtual, egreso }) {
   await syncApiDb();
   apiDb.correlativos = {
     recibo: String(recibo || "").trim(),
+    reciboVirtual: String(reciboVirtual || "").trim(),
     egreso: String(egreso || "").trim()
   };
   await saveApiDb();

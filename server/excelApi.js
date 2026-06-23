@@ -177,7 +177,7 @@ app.use("/api/v1/extracurricular", requireAuth);
 app.use("/", programaRouter);
 app.use("/", inscripcionRouter);
 app.use("/", pagoRouter);
-app.use("/", direccionRouter);
+app.use("/api/v1/extracurricular", direccionRouter);
 
 // --- MULTER & GLOBAL ERROR HANDLING ---
 app.use((error, _req, res, _next) => {

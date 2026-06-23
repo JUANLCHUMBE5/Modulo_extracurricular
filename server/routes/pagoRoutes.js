@@ -30,6 +30,43 @@ function incrementarCorrelativo(valor) {
   return prefix + paddedNum;
 }
 
+function calcularSiguienteRecibo(startValue, existingNros) {
+  if (!startValue) return "";
+  const match = String(startValue).match(/^(.*?)(\d+)$/);
+  if (!match) return startValue;
+  const prefix = match[1];
+  const startNumStr = match[2];
+  const S = Number(startNumStr);
+  const padLength = startNumStr.length;
+
+  let maxM = 0;
+  let foundAny = false;
+
+  for (const nro of existingNros) {
+    if (!nro) continue;
+    const nroStr = String(nro).trim();
+    if (nroStr.startsWith(prefix)) {
+      const numPart = nroStr.slice(prefix.length);
+      if (/^\d+$/.test(numPart)) {
+        const val = Number(numPart);
+        if (!foundAny || val > maxM) {
+          maxM = val;
+          foundAny = true;
+        }
+      }
+    }
+  }
+
+  let nextVal;
+  if (!foundAny || maxM < S) {
+    nextVal = S;
+  } else {
+    nextVal = maxM + 1;
+  }
+
+  return prefix + String(nextVal).padStart(padLength, "0");
+}
+
 function normalizarEstadoPagoReporteCaja(pago = null, inscripcion = null) {
   if (pago) {
     const estadoPago = normalizarTextoApi(pago.estado);
@@ -102,11 +139,14 @@ router.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, 
     const programa = body.programa || body.programaNombre || "";
     const periodo = body.periodo || "escolar";
     let assignedNroRecibo = body.nroRecibo || body.nro_recibo || "";
-    if (!assignedNroRecibo) {
-      if (db.correlativos && db.correlativos.recibo) {
-        assignedNroRecibo = db.correlativos.recibo;
-        db.correlativos.recibo = incrementarCorrelativo(db.correlativos.recibo);
-      }
+    if (!assignedNroRecibo && db.correlativos) {
+      const formaPagoStr = String(forma_pago).toLowerCase().trim();
+      const esVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoStr);
+      const startValue = esVirtual
+        ? (db.correlativos.reciboVirtual || "V-0001")
+        : (db.correlativos.recibo || "REC-0001");
+      const existingNros = (db.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
+      assignedNroRecibo = calcularSiguienteRecibo(startValue, existingNros);
     }
 
     const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
@@ -233,12 +273,29 @@ router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]
     if (!student) return res.json({ success: true, data: null });
 
     const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
-    const isPaid = (item) => ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(est => String(item.estadoPago || "").toLowerCase().includes(est) || String(item.estadoInscripcion || "").toLowerCase().includes(est));
-    const activeInscrip = inscripciones.find(item => item.derivadoCaja && !isPaid(item))
-      || inscripciones.find(item => !isPaid(item))
-      || inscripciones.find(item => item.derivadoCaja)
-      || inscripciones[0]
-      || null;
+    const pagosEstudiante = (db.pagos || []).filter(pago => pago.dniEstudiante === dni || pago.estudianteDni === dni);
+    const estadosCerrados = ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"];
+    const esEstadoCerrado = (...valores) => {
+      const texto = valores.map(valor => normalizarTextoApi(valor)).join(" ");
+      return estadosCerrados.some(est => texto.includes(est));
+    };
+    const buscarPagoAsociado = (item) => pagosEstudiante.find(pago =>
+      (item.id && pago.inscripcionId === item.id) ||
+      (
+        (pago.dniEstudiante || pago.estudianteDni) === item.dniEstudiante &&
+        (
+          (item.programaId && pago.programaId === item.programaId) ||
+          normalizarTextoApi(pago.programa || pago.programaNombre) === normalizarTextoApi(item.programa)
+        )
+      )
+    );
+    const isPaid = (item) => {
+      const pagoAsociado = buscarPagoAsociado(item);
+      return esEstadoCerrado(item.estadoPago, item.estadoInscripcion, pagoAsociado?.estado, pagoAsociado?.estadoPago, pagoAsociado?.estadoVerificacion);
+    };
+    const derivadas = inscripciones.filter(item => item.derivadoCaja);
+    const derivadasPendientes = derivadas.filter(item => !isPaid(item));
+    const activeInscrip = derivadasPendientes[0] || derivadas[0] || null;
 
     if (activeInscrip) {
       res.json({
@@ -255,8 +312,9 @@ router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]
           programaCosto: activeInscrip.costo,
           periodo: activeInscrip.periodo,
           inscripcionCaja: activeInscrip,
-          sinInscripcionCaja: false,
-          requiereDerivacionCaja: !activeInscrip.derivadoCaja
+          inscripcionesCaja: derivadasPendientes,
+          sinInscripcionCaja: derivadasPendientes.length === 0,
+          requiereDerivacionCaja: false
         }
       });
     } else {
@@ -270,10 +328,11 @@ router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]
           seccion: student.seccion,
           tipoAlumno: student.tipoAlumno || "Alumno interno",
           sinInscripcionCaja: true,
-          requiereDerivacionCaja: false
+          requiereDerivacionCaja: inscripciones.length > 0
         }
       });
     }
+
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -315,9 +374,10 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
     if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
 
     if (!db.pagos[idx].nroRecibo) {
-      if (db.correlativos && db.correlativos.recibo) {
-        db.pagos[idx].nroRecibo = db.correlativos.recibo;
-        db.correlativos.recibo = incrementarCorrelativo(db.correlativos.recibo);
+      if (db.correlativos) {
+        const startValue = db.correlativos.reciboVirtual || "V-0001";
+        const existingNros = (db.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
+        db.pagos[idx].nroRecibo = calcularSiguienteRecibo(startValue, existingNros);
       }
     }
 
@@ -507,6 +567,7 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
           fechaPago: p.fechaPago || "",
           apoderado: student ? student.apoderado : "",
           telefono: student ? student.telefonoApoderado : "",
+          nroRecibo: p.nroRecibo || p.nro_recibo || "",
           descuentoAprobado: e ? (e.descuentoAprobado || false) : false,
           descuentoTipo: e ? (e.descuentoTipo || "") : "",
           descuentoMonto: e ? (e.descuentoMonto || 0) : 0,
@@ -545,6 +606,7 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
           apoderado: e.apoderado || "",
           telefono: e.telefono || "",
           puedePagarCaja: true,
+          nroRecibo: p ? (p.nroRecibo || p.nro_recibo || "") : "",
           descuentoAprobado: e.descuentoAprobado || false,
           descuentoTipo: e.descuentoTipo || "",
           descuentoMonto: e.descuentoMonto || 0,

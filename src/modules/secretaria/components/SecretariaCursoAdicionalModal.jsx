@@ -68,63 +68,61 @@ function SecretariaCursoAdicionalModal({
           </select>
 
           {programaSeleccionado ? (
-            <div className="secretaria-program-details-card" style={{ marginTop: "1rem", marginBottom: "1.25rem", width: "100%", boxSizing: "border-box" }}>
-              <h4 className="secretaria-details-card-title" style={{ fontSize: "0.95rem", fontWeight: "600", marginBottom: "0.75rem", color: "#1e293b" }}>
+            <div className="secretaria-program-details-card secretaria-add-course-summary">
+              <h4 className="secretaria-details-card-title">
                 Resumen del Taller
               </h4>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "0.75rem", marginBottom: "0.75rem" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
+              <div className="secretaria-add-course-meta">
+                <div className="secretaria-add-course-meta-item is-schedule">
+                  <span>
                     <Clock size={13} /> Horario
                   </span>
-                  <strong style={{ fontSize: "0.85rem", color: "#334155" }}>
+                  <strong>
                     {programaSeleccionado.horario || "Por definir"}
                   </strong>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
+                <div className="secretaria-add-course-meta-item">
+                  <span>
                     <User size={13} /> Tutor
                   </span>
-                  <strong style={{ fontSize: "0.85rem", color: "#334155" }}>
+                  <strong>
                     {programaSeleccionado.docente || "No asignado"}
                   </strong>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
+                <div className="secretaria-add-course-meta-item">
+                  <span>
                     <CalendarEvent size={13} /> Vigencia
                   </span>
-                  <strong style={{ fontSize: "0.85rem", color: "#334155" }}>
+                  <strong>
                     {programaSeleccionado.fechaInicio && programaSeleccionado.fechaFin
                       ? `${formatearFechaPeru(programaSeleccionado.fechaInicio)} al ${formatearFechaPeru(programaSeleccionado.fechaFin)}`
                       : "Por definir"}
                   </strong>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-                  <span style={{ fontSize: "0.75rem", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
+                <div className="secretaria-add-course-meta-item">
+                  <span>
                     <Users size={13} /> Cupos
                   </span>
-                  <strong style={{ fontSize: "0.85rem", color: "#16a34a" }}>
+                  <strong className="secretaria-add-course-cupos">
                     {formatearCuposSecretaria(programaSeleccionado)}
                   </strong>
                 </div>
               </div>
-              <div style={{ borderTop: "1px solid #e2e8f0", margin: "0.5rem 0", paddingTop: "0.5rem" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-                  <span style={{ fontSize: "0.75rem", color: "#64748b" }}>Costo del Taller</span>
-                  <strong style={{ fontSize: "1.1rem", color: "#1e3a8a" }}>
+              <div className="secretaria-add-course-cost">
+                <div>
+                  <span>Costo del Taller</span>
+                  <strong>
                     S/ {Number(programaSeleccionado.costo || 0).toFixed(2)}
                   </strong>
                 </div>
               </div>
               {programaSeleccionado.requisitos ? (
                 <>
-                  <div style={{ borderTop: "1px solid #e2e8f0", margin: "0.5rem 0", paddingTop: "0.5rem" }} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
-                    <span style={{ fontSize: "0.75rem", color: "#64748b", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <div className="secretaria-add-course-requirements">
+                    <span>
                       <InfoCircle size={13} /> Requisitos
                     </span>
-                    <p style={{ fontSize: "0.8rem", color: "#475569", margin: "0", lineHeight: "1.25" }}>
+                    <p>
                       {programaSeleccionado.requisitos}
                     </p>
                   </div>

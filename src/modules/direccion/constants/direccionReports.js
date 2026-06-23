@@ -38,7 +38,7 @@ export const columnasDisponiblesMap = {
     { key: "estado", label: "Estado Pago" },
     { key: "medio", label: "Medio de Pago" },
     { key: "fecha", label: "Fecha Pago" },
-    { key: "nroRecibo", label: "Recibo SIADED" },
+    { key: "nroRecibo", label: "N° de comprobante" },
     { key: "observaciones", label: "Observaciones / Motivo Anulación" },
   ],
   direccion_alumnos_pagos: [
@@ -47,7 +47,7 @@ export const columnasDisponiblesMap = {
     { key: "grado", label: "Grado" },
     { key: "seccion", label: "Sección" },
     { key: "fechaPago", label: "Fecha Pago" },
-    { key: "nroRecibo", label: "Recibo SIADED" },
+    { key: "nroRecibo", label: "N° de comprobante" },
     { key: "costo", label: "Costo / Pago" },
     { key: "dni", label: "DNI Estudiante" },
     { key: "apoderado", label: "Nombre Apoderado" },
@@ -81,6 +81,5 @@ export const columnasDisponiblesMap = {
 export const opcionesReportesSimplificados = [
   { value: "direccion_alumnos_pagos", label: "Consolidado de Alumnos, Pagos y Becas" },
   { value: "direccion_alumnos_asistencias", label: "Consolidado de Alumnos y Asistencias (Asistió ✓ / Faltó —)" },
-  { value: "pagos_historial", label: "Historial de Pagos y Transacciones (Recibos)" },
   { value: "programas_catalogo", label: "Resumen General por Taller" },
 ];

@@ -109,7 +109,28 @@ function HorarioTabla({ programa }) {
 
   const listaAgrupada = Object.values(gruposMap);
   if (listaAgrupada.length === 0) {
-    return <span className="coord-table-small-text">Por definir</span>;
+    return (
+      <div className="coord-table-schedule" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        {bloques.map((bloque, index) => {
+          const matchDeportivo = String(bloque).trim().match(/^(Lunes|Martes|Mi[eé]rcoles|Jueves|Viernes|S[aá]bado|Domingo):\s*(.+)$/i);
+          if (matchDeportivo) {
+            return (
+              <div key={index} style={{ fontSize: "11px", color: "var(--coord-ink)", lineHeight: "1.3" }}>
+                <strong style={{ color: "var(--coord-ink)", fontWeight: "750" }}>
+                  {matchDeportivo[1]}:
+                </strong>{" "}
+                <span style={{ color: "var(--coord-ink)" }}>{matchDeportivo[2]}</span>
+              </div>
+            );
+          }
+          return (
+            <div key={index} style={{ fontSize: "11px", color: "var(--coord-ink)", lineHeight: "1.3" }}>
+              {bloque.trim()}
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
   return (

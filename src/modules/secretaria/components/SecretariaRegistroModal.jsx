@@ -36,6 +36,7 @@ export default function SecretariaRegistroModal({
   horarioResumenRegistro,
   etiquetaPrograma,
   mensaje,
+  modoCursoAdicional = false,
   modoRegistro,
   mostrarSelectorPrograma,
   programaParaRegistro,
@@ -94,7 +95,7 @@ export default function SecretariaRegistroModal({
                   </span>
                   <div className="secretaria-modal-header-info">
                     <h2 id="secretaria-registration-title" className="secretaria-modal-title">
-                      {esCicloVerano ? "Registro Ciclo Verano" : "Registrar Inscripción"}
+                      {modoCursoAdicional ? "Registrar curso adicional" : esCicloVerano ? "Registro Ciclo Verano" : "Registrar Inscripción"}
                     </h2>
                   </div>
                 </div>
@@ -586,7 +587,7 @@ export default function SecretariaRegistroModal({
                         ) : (
                           <ClipboardCheck size={17} />
                         )}
-                        <span>{guardando ? "Guardando" : "Confirmar inscripcion"}</span>
+                        <span>{guardando ? "Guardando" : modoCursoAdicional ? "Confirmar curso adicional" : "Confirmar inscripcion"}</span>
                       </button>
                     );
                   })()}
