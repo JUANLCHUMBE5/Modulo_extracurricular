@@ -130,7 +130,10 @@ function AlumnosProgramaModal({
           ) : null}
 
           {subVistaAlumnos === "preinscritos" ? (
-            <TablaPreinscritos alumnos={invitados} />
+            <TablaPreinscritos
+              alumnos={invitados}
+              esCambridge={String(programa?.nombre || "").toLowerCase().includes("cambridge")}
+            />
           ) : subVistaAlumnos === "asistencias" ? (
             <TablaAsistencias asistencias={asistencias} />
           ) : (
@@ -142,11 +145,11 @@ function AlumnosProgramaModal({
   );
 }
 
-function TablaPreinscritos({ alumnos }) {
+function TablaPreinscritos({ alumnos, esCambridge }) {
   if (!alumnos.length) {
     return <p className="coord-process-note">No hay invitados registrados para este programa.</p>;
   }
-  const mostrarCambridge = alumnos.some((alumno) => alumno.seleccion || alumno.nivelCambridge);
+  const mostrarCambridge = esCambridge && alumnos.some((alumno) => alumno.seleccion || alumno.nivelCambridge);
 
   return (
     <div className="coord-table-wrap">
