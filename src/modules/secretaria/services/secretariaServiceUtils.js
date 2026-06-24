@@ -143,17 +143,26 @@ export function normalizarEstadoPagoSecretaria(valor = "") {
 }
 
 export function esProgramaCambridge(programa = {}) {
-  return normalizarTexto([
+  const texto = normalizarTexto([
     programa.nombre,
     programa.programa,
     programa.categoria,
+    programa.tipoComunicado,
+    programa.tipo_comunicado,
     programa.plantilla,
-  ].filter(Boolean).join(" ")).includes("cambridge");
+  ].filter(Boolean).join(" "));
+  return texto.includes("cambridge") ||
+    texto.includes("cambrigde") ||
+    texto.includes("cabringde") ||
+    texto.includes("camringde") ||
+    texto.includes("certificacion cam") ||
+    texto.includes("ingles") ||
+    texto.includes("ingless");
 }
 
 export function normalizarSeleccionCambridge(valor = "") {
   const seleccion = String(valor || "").trim().toUpperCase();
-  return ["A"].includes(seleccion) ? seleccion : "";
+  return ["A", "B", "C"].includes(seleccion) ? seleccion : "";
 }
 
 export function obtenerDatosCambridgeSeguros(programa, payload = {}) {

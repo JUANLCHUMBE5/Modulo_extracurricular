@@ -335,7 +335,7 @@ function validarFilaCarga(fila, programaDetectado) {
   if (!textoSeguro(fila.curso) && !textoSeguro(fila.nivelCambridge)) errores.push("Falta curso o nivel Cambridge.");
   if (fila.curso && !programaDetectado) errores.push("El programa indicado no existe en el periodo seleccionado.");
   if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
-  if (esCambridge && !/^[A]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A.");
+  if (esCambridge && !/^[ABC]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A, B o C.");
   if (programaDetectado && String(programaDetectado.estado || "Habilitado") !== "Habilitado") {
     errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} esta ${programaDetectado.estado}. Habilitelo antes de cargar alumnos.`);
   }
@@ -347,7 +347,7 @@ function detectarProgramaPorCurso(curso, programas) {
   if (!curso) return null;
   const directo = programas.find((programa) => coincideCurso(curso, programa.nombre));
   if (directo) return directo;
-  return /\bcambridge\b/.test(normalizarComparacion(curso)) ? detectarProgramaCambridge(programas) : null;
+  return /\b(cambridge|cambrigde|cabringde|camringde|ingles|ingless)\b/.test(normalizarComparacion(curso)) ? detectarProgramaCambridge(programas) : null;
 }
 
 function detectarProgramaCambridge(programas) {
@@ -360,11 +360,18 @@ function detectarProgramaCambridge(programas) {
 function esProgramaCambridge(programa) {
   const texto = normalizarComparacion([
     programa.nombre,
+    programa.programa,
     programa.categoria,
+    programa.tipoComunicado,
+    programa.tipo_comunicado,
     programa.plantilla,
     ...(programa.plantillaVariables || []),
   ].filter(Boolean).join(" "));
   return /\bcambridge\b/.test(texto) ||
+    /\bcambrigde\b/.test(texto) ||
+    /\bcabringde\b/.test(texto) ||
+    /\bcamringde\b/.test(texto) ||
+    /\bingles?s?\b/.test(texto) ||
     /\bcertificacion\b/.test(texto) ||
     /\bpreparacion\b/.test(texto) ||
     (programa.plantillaVariables || []).some((variable) =>

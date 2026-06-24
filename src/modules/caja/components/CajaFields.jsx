@@ -28,23 +28,6 @@ export default function CajaFields({
   function actualizar(campo, valor) {
     setFormulario((actual) => {
       const nuevo = { ...actual, [campo]: valor };
-      if (campo === "formaPago" && correlativos) {
-        const metodoAnterior = String(actual.formaPago || "").toLowerCase().trim();
-        const metodoNuevo = String(valor || "").toLowerCase().trim();
-        const eraVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(metodoAnterior);
-        const esVirtualNuevo = ["yape", "plin", "transferencia", "tarjeta"].includes(metodoNuevo);
-
-        const corrAnterior = eraVirtual 
-          ? (correlativos.reciboVirtualSiguiente || correlativos.reciboVirtual || "") 
-          : (correlativos.reciboSiguiente || correlativos.recibo || "");
-        const corrNuevo = esVirtualNuevo 
-          ? (correlativos.reciboVirtualSiguiente || correlativos.reciboVirtual || "") 
-          : (correlativos.reciboSiguiente || correlativos.recibo || "");
-
-        if (!actual.nroRecibo || String(actual.nroRecibo).trim() === corrAnterior) {
-          nuevo.nroRecibo = corrNuevo;
-        }
-      }
       return nuevo;
     });
   }
@@ -57,6 +40,11 @@ export default function CajaFields({
     labelEstado = "Por Verificar";
   }
   const esPorVerificar = labelEstado === "Por Verificar";
+  const formaPagoNormalizada = String(formulario.formaPago || "").toLowerCase().trim();
+  const esPagoVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoNormalizada);
+  const comprobanteVistaPrevia = formulario.nroRecibo || (esPagoVirtual
+    ? (correlativos?.reciboVirtualActual || correlativos?.reciboVirtualSiguiente || correlativos?.reciboVirtual || "")
+    : (correlativos?.reciboActual || correlativos?.reciboSiguiente || correlativos?.recibo || siguienteRecibo || ""));
 
   const datosLectura = [
     ["DNI", formulario.estudianteDni || "Sin DNI"],
@@ -243,14 +231,11 @@ export default function CajaFields({
               N° de comprobante
               <input
                 type="text"
-                placeholder={siguienteRecibo ? `${siguienteRecibo} (Autogenerado)` : "Ej. 51614"}
-                value={formulario.nroRecibo || ""}
-                onChange={(event) => actualizar("nroRecibo", event.currentTarget.value)}
+                placeholder="Pendiente de configurar"
+                value={comprobanteVistaPrevia}
+                readOnly
                 disabled={true}
               />
-              <span style={{ fontSize: "11px", color: "#64748b", marginTop: "4px", display: "block" }}>
-                El número de comprobante es autogenerado y no modificable.
-              </span>
             </label>
             {esPorVerificar ? (
               <div className="caja-yape-details-card" style={{

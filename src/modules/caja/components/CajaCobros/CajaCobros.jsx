@@ -3,6 +3,7 @@ import { Button, Group } from "@mantine/core";
 import { IconCheck as Check, IconX as X, IconAlertTriangle as AlertTriangle, IconMenu2 as Menu } from "@tabler/icons-react";
 import CajaFields from "../CajaFields";
 import { formatearSoles } from "../../utils/cajaFormatters";
+import { esRegistroWeb } from "../../cajaServiceUtils";
 import "./CajaCobros.css";
 
 export default function CajaCobros({
@@ -26,9 +27,8 @@ export default function CajaCobros({
   sidebarExpanded,
   toggleSidebar,
 }) {
-  const formaPagoStr = String(formulario.formaPago || "").toLowerCase().trim();
-  const esVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoStr);
-  const siguienteRecibo = esVirtual
+  const esWeb = esRegistroWeb(formulario.origenRegistro || "");
+  const siguienteRecibo = esWeb
     ? (correlativos.reciboVirtualSiguiente || correlativos.reciboVirtual || "")
     : (correlativos.reciboSiguiente || correlativos.recibo || "");
 

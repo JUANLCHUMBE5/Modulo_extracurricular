@@ -9,6 +9,7 @@ import CajaPagoWebModals from "./components/CajaPagoWebModals";
 import CajaSidebar from "./components/CajaSidebar/CajaSidebar";
 import CajaCobros from "./components/CajaCobros/CajaCobros";
 import CajaReportes from "./components/CajaReportes/CajaReportes";
+import CajaCancelarCorrelativo from "./components/CajaCancelarCorrelativo/CajaCancelarCorrelativo";
 
 import { formularioInicial } from "./constants/cajaConstants";
 import {
@@ -34,6 +35,7 @@ import {
   generarCSVReporteCaja,
   normalizarEstadoPagoVista,
 } from "./utils/cajaReportUtils";
+import { esRegistroWeb } from "./cajaServiceUtils";
 import "./Caja.css";
 
 export default function Caja({
@@ -296,10 +298,6 @@ export default function Caja({
 
     const nombre = `${estudianteBase?.nombres || ""} ${estudianteBase?.apellidos || ""}`.trim();
     const defaultFormaPago = pagoAsociado?.formaPago || (inscripcion?.descuentoAprobado ? (String(inscripcion.descuentoTipo).toLowerCase() === "beca" ? "Beca" : "Descuento") : "Efectivo");
-    const defaultFormaPagoStr = String(defaultFormaPago).toLowerCase().trim();
-    const esVirtualDefault = ["yape", "plin", "transferencia", "tarjeta"].includes(defaultFormaPagoStr);
-    const defaultNroRecibo = esVirtualDefault ? (correlativos.reciboVirtual || "") : (correlativos.recibo || "");
-
     setPagoConfirmado(null);
     setMensaje(
       estadoPagoSistema === "verificando"
@@ -322,12 +320,13 @@ export default function Caja({
       telefonoOperacion: pagoAsociado?.telefonoOperacion || "",
       capturaPagoBase64: pagoAsociado?.capturaPagoBase64 || "",
       formaPago: defaultFormaPago,
-      nroRecibo: pagoAsociado?.nroRecibo || pagoAsociado?.nro_recibo || defaultNroRecibo || "",
+      nroRecibo: pagoAsociado?.nroRecibo || pagoAsociado?.nro_recibo || "",
       descuentoMonto: inscripcion?.descuentoMonto ? String(inscripcion.descuentoMonto) : "",
       descuentoTipo: inscripcion?.descuentoTipo || "",
       descuentoJustificacion: inscripcion?.descuentoJustificacion || "",
       costoOriginal: inscripcion?.costoOriginal ? String(inscripcion.costoOriginal) : "",
       descuentoAprobado: inscripcion?.descuentoAprobado || false,
+      origenRegistro: inscripcion?.origenRegistro || pagoAsociado?.origenRegistro || "Caja",
     }));
   }
 
@@ -790,6 +789,17 @@ export default function Caja({
                 verificarPagoWeb={verificarPagoWeb}
                 abrirAnularModal={abrirAnularModal}
               />
+            ) : vista === "cancelar_correlativo" ? (
+              <CajaCancelarCorrelativo
+                sidebarExpanded={sidebarExpanded}
+                toggleSidebar={toggleSidebar}
+                periodo={periodo}
+                onCorrelativoCancelado={() => {
+                  cargarDatos();
+                  cargarReporteCaja();
+                  cargarCorrelativos();
+                }}
+              />
             ) : (
               <CajaCobros
                 pagoConfirmado={pagoConfirmado}
@@ -846,6 +856,7 @@ export default function Caja({
           setFormulario={setFormulario}
           mensaje={mensaje}
           siguienteRecibo={correlativos.recibo}
+          correlativos={correlativos}
         />
         <Group justify="flex-end" mt="lg">
           <Button onClick={cerrarModal} variant="default">

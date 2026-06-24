@@ -210,17 +210,7 @@ export default function DireccionReportes({
                     type="date"
                     value={fechaInicio}
                     onChange={handleFechaInicioChange}
-                    style={{
-                      width: "100%",
-                      padding: "5px 10px",
-                      border: "1px solid #ced4da",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      backgroundColor: "#ffffff",
-                      color: "#000000",
-                      height: "30px",
-                      cursor: "pointer",
-                    }}
+                    className="dir-builder-date-input"
                   />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
@@ -229,17 +219,7 @@ export default function DireccionReportes({
                     type="date"
                     value={fechaFin}
                     onChange={handleFechaFinChange}
-                    style={{
-                      width: "100%",
-                      padding: "5px 10px",
-                      border: "1px solid #ced4da",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      backgroundColor: "#ffffff",
-                      color: "#000000",
-                      height: "30px",
-                      cursor: "pointer",
-                    }}
+                    className="dir-builder-date-input"
                   />
                 </div>
 
@@ -345,7 +325,7 @@ export default function DireccionReportes({
                       {customColumnas.map((colKey) => {
                         let value = row[colKey];
                         // Formatear si es soles
-                        if (["costo", "costoOriginal", "descuentoMonto", "montoPagado", "pendiente", "proyectado", "recaudado", "porCobrar", "monto"].includes(colKey)) {
+                        if (["costo", "costoOriginal", "descuentoMonto", "montoPagado", "montoAnulado", "pendiente", "proyectado", "recaudado", "porCobrar", "monto"].includes(colKey)) {
                           value = formatearSoles(value);
                         }
                         // Formatear fechas

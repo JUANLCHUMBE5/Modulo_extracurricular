@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Alert as MantineAlert } from "@mantine/core";
 import {
   IconAlertCircle as AlertCircle,
@@ -283,12 +283,23 @@ function CargaExcelView({
   const [invitadosMap, setInvitadosMap] = useState({});
   const [cargandoInvitados, setCargandoInvitados] = useState(false);
 
+  const invitadosMapRef = useRef(invitadosMap);
+  useEffect(() => {
+    invitadosMapRef.current = invitadosMap;
+  }, [invitadosMap]);
+
   useEffect(() => {
     if (modoCargaAlumnos !== "exportar") return;
 
     let active = true;
     const cargarInvitadosExportar = async () => {
-      setCargandoInvitados(true);
+      const yaTenemosDatos = seleccionExportarId === "all"
+        ? (programasCarga.length > 0 && programasCarga.every(prog => Array.isArray(invitadosMapRef.current[prog.id])))
+        : Array.isArray(invitadosMapRef.current[seleccionExportarId]);
+
+      if (!yaTenemosDatos) {
+        setCargandoInvitados(true);
+      }
       try {
         const map = {};
         if (seleccionExportarId === "all") {

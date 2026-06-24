@@ -14,6 +14,8 @@ import {
   generarReporteCajaMock,
   obtenerPagoPorIdMock,
   anularPagoMock,
+  cancelarCorrelativoCajaMock,
+  buscarEstudiantesCajaQueryMock,
 } from "./utils/cajaServiceMock";
 
 export async function listarPagos(periodo = "escolar", filtros = {}) {
@@ -218,4 +220,30 @@ export async function anularPago(pagoId, observaciones = "Pago anulado por Cajer
     return adaptarPago(res.data);
   }
   return anularPagoMock(pagoId, observaciones);
+}
+
+export async function cancelarCorrelativoCaja(tipo, motivo, dniEstudiante = "", nombresEstudiante = "", nroRecibo = "") {
+  if (isApiMode()) {
+    const res = await apiClient.post("/api/v1/extracurricular/caja/correlativos/cancelar", {
+      tipo,
+      motivo,
+      dniEstudiante,
+      nombresEstudiante,
+      nroRecibo
+    });
+    if (!res.success) throw new Error(res.message || "Error al cancelar correlativo");
+    return res.data;
+  }
+  return cancelarCorrelativoCajaMock(tipo, motivo, dniEstudiante, nombresEstudiante, nroRecibo);
+}
+
+export async function buscarEstudiantesCajaQuery(query) {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/caja/estudiantes/buscar/query", {
+      params: { q: query }
+    });
+    if (!res.success) return [];
+    return res.data;
+  }
+  return buscarEstudiantesCajaQueryMock(query);
 }

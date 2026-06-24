@@ -172,6 +172,7 @@ export function programaDisponibleParaAlcanceMasivoApi(programa, gradoAlumno = "
 }
 
 export function programaDisponibleParaGradoApi(programa, gradoAlumno = "") {
+  if (esProgramaCambridgeApi(programa)) return false;
   if (programa?.invitacionMasiva) return programaDisponibleParaAlcanceMasivoApi(programa, gradoAlumno);
 
   if (tieneHorariosPorGrupoApi(programa)) {
@@ -185,6 +186,31 @@ export function programaDisponibleParaGradoApi(programa, gradoAlumno = "") {
   if (!gradoNormalizado.numero) return false;
 
   return gradosAplicables.some((grado) => coincideGradoApi(grado, gradoNormalizado));
+}
+
+export function esProgramaCambridgeApi(programa = {}) {
+  const variables = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
+  const texto = normalizarTextoApi([
+    programa.nombre,
+    programa.programa,
+    programa.categoria,
+    programa.tipoComunicado,
+    programa.plantilla,
+    ...variables,
+  ].filter(Boolean).join(" "));
+
+  return texto.includes("cambridge") ||
+    texto.includes("cambrigde") ||
+    texto.includes("cabringde") ||
+    texto.includes("camringde") ||
+    texto.includes("certificacion cam") ||
+    texto.includes("ingles") ||
+    texto.includes("ingless") ||
+    texto.includes("certificacion") ||
+    texto.includes("preparacion") ||
+    variables.some((variable) =>
+      ["anio_cert", "nivel_cambridge", "chk_a", "chk_b", "chk_c"].includes(String(variable || "").toLowerCase())
+    );
 }
 
 function formatearGradoApi(valor) {
@@ -373,6 +399,10 @@ export function gradoCorrespondeAlProgramaApi(programa = {}, gradoAlumno = "") {
 export function sincronizarGradosProgramaConInvitadosApi(db, programaId) {
   const programa = (db.programas || []).find(p => p.id === programaId);
   if (!programa) return;
+  if (esProgramaCambridgeApi(programa)) {
+    programa.gradosAplicables = [];
+    return;
+  }
 
   const grados = [];
   (db.invitadosPorPrograma?.[programaId] || []).forEach((invitado) => {
@@ -458,7 +488,7 @@ export function mapDbProgramToApi(p, db = null) {
     cupos_disponibles: p.cupos,
     cupos_ocupados: p.cuposOcupados || 0,
     estado_programa: normalizeProgramStateToFrontend(p.estado || "Habilitado"),
-    grados: p.gradosAplicables || [],
+    grados: esProgramaCambridgeApi(p) ? [] : (p.gradosAplicables || []),
     responsable: p.responsable || p.docente || "",
     horario: p.horario || "",
     grupo: p.grupo || "",

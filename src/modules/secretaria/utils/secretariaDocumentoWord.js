@@ -188,11 +188,15 @@ export function crearLineasInvitacionEspecial(ficha, inscripcion, estudiante) {
   }
 
   // 8. Cambridge
-  if (inscripcion.tipoComunicado === "Certificación Cambridge") {
+  if (inscripcion.tipoComunicado === "Cambridge" || inscripcion.tipoComunicado === "Certificación Cambridge") {
     const nivel = inscripcion.nivelCambridge ? `Nivel de examen: ${inscripcion.nivelCambridge}. ` : "";
-    const mod = Array.isArray(inscripcion.modalidadesCambridge) && inscripcion.modalidadesCambridge.length > 0
-      ? `Modalidad de ingreso: ${inscripcion.modalidadesCambridge.join(", ")}. `
-      : "";
+    const opcionesIngreso = {
+      A: "A - Promovido/a por Certificado Oficial 2025",
+      B: "B - Ingresante por Admission Test",
+      C: "C - Ingresante por Desempeno Academico",
+    };
+    const seleccionIngreso = String(inscripcion.seleccion || "").trim().toUpperCase();
+    const mod = opcionesIngreso[seleccionIngreso] ? `Modalidad de ingreso: ${opcionesIngreso[seleccionIngreso]}. ` : "";
     const costoVal = inscripcion.costoCiclo || inscripcion.costo;
     const costoCiclo = costoVal ? `Costo total del ciclo: S/ ${Number(costoVal).toFixed(2)}. ` : "";
     const pago1 = inscripcion.montoPrimerPago ? `Monto primer pago: S/ ${Number(inscripcion.montoPrimerPago).toFixed(2)}.` : "";

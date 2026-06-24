@@ -138,7 +138,7 @@ function SeccionDatosGenerales({
 
                 const templates = {
                   "Club de Tareas": {
-                    comunicado: "Club de Tareas está diseñado para brindar a nuestros estudiantes un espacio guiado y estructurado para la resolución y presentación oportuna de sus tareas escolares, fortaleciendo sus hábitos de estudio, autonomía y organization bajo el acompañamiento de docentes especialistas.",
+                    comunicado: "Club de Tareas está diseñado para brindar a nuestros estudiantes un espacio guiado y estructurado para la resolución y presentación oportuna de sus tareas escolares, fortaleciendo sus hábitos de estudio, autonomía y organización bajo el acompañamiento de docentes especialistas.",
                     requisitos: "Cuaderno de apuntes, cartuchera completa (lápiz, borrador, tajador, regla, colores), agenda escolar física, y los textos/cuadernos de trabajo del colegio correspondientes a las tareas pendientes del día."
                   },
                   "Reforzamiento (Circular)": {
@@ -149,6 +149,10 @@ function SeccionDatosGenerales({
                     comunicado: "La preparación para la Certificación Internacional de Cambridge English brinda a nuestros alumnos la oportunidad de certificar oficialmente su nivel de dominio del idioma inglés bajo el Marco Común Europeo de Referencia para las Lenguas (MCER), potenciando su perfil académico global.",
                     requisitos: "Libro de preparación oficial Cambridge (según el nivel asignado), cuaderno A4 cuadriculado para apuntes, cartuchera personal completa, y auriculares con conexión auxiliar de 3.5mm para las prácticas de Listening."
                   },
+                  "Cambridge": {
+                    comunicado: "La preparación para la Certificación Internacional de Cambridge English brinda a nuestros alumnos la oportunidad de certificar oficialmente su nivel de dominio del idioma inglés bajo el Marco Común Europeo de Referencia para las Lenguas (MCER), potenciando su perfil académico global.",
+                    requisitos: "Libro de preparación oficial Cambridge (según el nivel asignado), cuaderno A4 cuadriculado para apuntes, cartuchera personal completa, y auriculares con conexión auxiliar de 3.5mm para las prácticas de Listening."
+                  },
                   "Otro genérico": {
                     comunicado: "",
                     requisitos: ""
@@ -156,7 +160,7 @@ function SeccionDatosGenerales({
                 };
 
                 const template = templates[nuevoTipo] || { comunicado: "", requisitos: "" };
-                const tipoDocSugerido = nuevoTipo === "Certificación Cambridge" ? "Carta" : "Comunicado";
+                const tipoDocSugerido = (nuevoTipo === "Cambridge" || nuevoTipo === "Certificación Cambridge") ? "Carta" : "Comunicado";
                 const prefix = tipoDocSugerido === "Carta" ? "CAR" : "COM";
                 const anio = new Date().getFullYear();
                 const randomId = Math.floor(Math.random() * 90) + 10;
@@ -192,11 +196,11 @@ function SeccionDatosGenerales({
                     horaInicio: "",
                     horaFin: "",
                   };
-                } else if (nuevoTipo === "Certificación Cambridge") {
+                } else if (nuevoTipo === "Cambridge" || nuevoTipo === "Certificación Cambridge") {
                   reseteos = {
                     incluyeAlmuerzo: false,
                     horarioRecepcionAlmuerzo: "",
-                    areaTematica: "Matemática",
+                    areaTematica: "Inglés / Cambridge",
                   };
                 } else {
                   reseteos = {
@@ -240,7 +244,10 @@ function SeccionDatosGenerales({
               <option value="Otro genérico">Otro genérico (Taller común)</option>
               <option value="Club de Tareas">Club de Tareas</option>
               <option value="Reforzamiento (Circular)">Reforzamiento (Circular)</option>
-              <option value="Certificación Cambridge">Certificación Cambridge</option>
+              <option value="Cambridge">Cambridge</option>
+              {form.tipoComunicado === "Certificación Cambridge" && (
+                <option value="Certificación Cambridge" style={{ display: "none" }}>Certificación Cambridge</option>
+              )}
             </select>
           </div>
         )}

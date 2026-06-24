@@ -11,6 +11,16 @@ export default function DireccionCorrelativos({
   const [editando, setEditando] = useState(false);
   const [backupForm, setBackupForm] = useState(null);
 
+  const incrementarCorrelativo = (value) => {
+    if (!value) return "";
+    const match = String(value).match(/^(.*?)(\d+)$/);
+    if (!match) return value;
+    const prefix = match[1];
+    const numStr = match[2];
+    const nextNum = Number(numStr) + 1;
+    return prefix + String(nextNum).padStart(numStr.length, "0");
+  };
+
   const handleIniciarEdicion = () => {
     setBackupForm({ ...correlativosForm });
     setEditando(true);
@@ -30,87 +40,117 @@ export default function DireccionCorrelativos({
     }
   };
 
+  const handleInicioChange = (type, val) => {
+    const inicioKey = `${type}Inicio`;
+    const actualKey = `${type}Actual`;
+    const inicioAnterior = correlativosForm[inicioKey] || "";
+    const actualAnterior = correlativosForm[actualKey] || "";
+    const updated = { ...correlativosForm };
+    updated[inicioKey] = val;
+    if (!actualAnterior || actualAnterior === inicioAnterior) {
+      updated[actualKey] = val;
+    }
+    setCorrelativosForm(updated);
+  };
+
+  const inputStyles = {
+    label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "4px" },
+    input: {
+      borderRadius: "8px",
+      borderColor: "#cbd5e1",
+      height: "36px",
+      backgroundColor: !editando ? "#f8fafc" : "#ffffff",
+      color: "#000000",
+      opacity: 1,
+      "&:disabled": {
+        color: "#000000",
+        backgroundColor: "#f8fafc",
+        cursor: "not-allowed"
+      }
+    }
+  };
+
   return (
     <section className="dir-correlativos-view" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       <article className="dir-correlativos-container" style={{ borderRadius: "12px", overflow: "hidden", padding: "12px 0" }}>
-        <div style={{ marginBottom: "12px" }}>
+        <div style={{ marginBottom: "16px" }}>
           <h2 style={{ margin: 0, color: "#000000", fontSize: "20px", fontWeight: 800 }}>Correlativos del Sistema</h2>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", maxWidth: "400px" }}>
-          <TextInput
-            label="Próximo Correlativo de Recibo Físico"
-            placeholder="Ej. REC-00001 o 000125"
-            value={correlativosForm.recibo}
-            onChange={(e) => setCorrelativosForm({ ...correlativosForm, recibo: e.target.value })}
-            disabled={!editando}
-            styles={{
-              label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "4px" },
-              input: {
-                borderRadius: "8px",
-                borderColor: "#cbd5e1",
-                height: "36px",
-                backgroundColor: !editando ? "#f8fafc" : "#ffffff",
-                color: "#000000",
-                opacity: 1,
-                "&:disabled": {
-                  color: "#000000",
-                  backgroundColor: "#f8fafc",
-                  cursor: "not-allowed"
-                }
-              }
-            }}
-          />
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "600px" }}>
+          {/* Recibo Físico */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>Recibo Físico</span>
+            <div style={{ display: "flex", gap: "16px" }}>
+              <TextInput
+                label="Inicio (Valor Inicial)"
+                placeholder="Ej. REC-0500"
+                value={correlativosForm.reciboInicio || ""}
+                onChange={(e) => handleInicioChange("recibo", e.target.value)}
+                disabled={!editando}
+                styles={inputStyles}
+                style={{ flex: 1 }}
+              />
+              <TextInput
+                label="Actual (Siguiente a Generar)"
+                placeholder="Ej. REC-0500"
+                value={correlativosForm.reciboActual || ""}
+                disabled={true}
+                styles={inputStyles}
+                style={{ flex: 1 }}
+              />
+            </div>
+          </div>
 
-          <TextInput
-            label="Próximo Correlativo de Recibo Virtual"
-            placeholder="Ej. V-00001 o V-0125"
-            value={correlativosForm.reciboVirtual || ""}
-            onChange={(e) => setCorrelativosForm({ ...correlativosForm, reciboVirtual: e.target.value })}
-            disabled={!editando}
-            styles={{
-              label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "4px" },
-              input: {
-                borderRadius: "8px",
-                borderColor: "#cbd5e1",
-                height: "36px",
-                backgroundColor: !editando ? "#f8fafc" : "#ffffff",
-                color: "#000000",
-                opacity: 1,
-                "&:disabled": {
-                  color: "#000000",
-                  backgroundColor: "#f8fafc",
-                  cursor: "not-allowed"
-                }
-              }
-            }}
-          />
+          {/* Recibo Virtual */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>Recibo Virtual (Yape, Transferencias, etc.)</span>
+            <div style={{ display: "flex", gap: "16px" }}>
+              <TextInput
+                label="Inicio (Valor Inicial)"
+                placeholder="Ej. V-1000"
+                value={correlativosForm.reciboVirtualInicio || ""}
+                onChange={(e) => handleInicioChange("reciboVirtual", e.target.value)}
+                disabled={!editando}
+                styles={inputStyles}
+                style={{ flex: 1 }}
+              />
+              <TextInput
+                label="Actual (Siguiente a Generar)"
+                placeholder="Ej. V-1000"
+                value={correlativosForm.reciboVirtualActual || ""}
+                disabled={true}
+                styles={inputStyles}
+                style={{ flex: 1 }}
+              />
+            </div>
+          </div>
 
-          <TextInput
-            label="Próximo Correlativo de Egreso"
-            placeholder="Ej. EGR-00001 o 000045"
-            value={correlativosForm.egreso}
-            onChange={(e) => setCorrelativosForm({ ...correlativosForm, egreso: e.target.value })}
-            disabled={!editando}
-            styles={{
-              label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "4px" },
-              input: {
-                borderRadius: "8px",
-                borderColor: "#cbd5e1",
-                height: "36px",
-                backgroundColor: !editando ? "#f8fafc" : "#ffffff",
-                color: "#000000",
-                opacity: 1,
-                "&:disabled": {
-                  color: "#000000",
-                  backgroundColor: "#f8fafc",
-                  cursor: "not-allowed"
-                }
-              }
-            }}
-          />
+          {/* Egreso */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>Comprobante de Egreso</span>
+            <div style={{ display: "flex", gap: "16px" }}>
+              <TextInput
+                label="Inicio (Valor Inicial)"
+                placeholder="Ej. EGR-0200"
+                value={correlativosForm.egresoInicio || ""}
+                onChange={(e) => handleInicioChange("egreso", e.target.value)}
+                disabled={!editando}
+                styles={inputStyles}
+                style={{ flex: 1 }}
+              />
+              <TextInput
+                label="Actual (Siguiente a Generar)"
+                placeholder="Ej. EGR-0200"
+                value={correlativosForm.egresoActual || ""}
+                disabled={true}
+                styles={inputStyles}
+                style={{ flex: 1 }}
+              />
+            </div>
+          </div>
 
-          <div style={{ marginTop: "4px", display: "flex", gap: "12px" }}>
+          <div style={{ marginTop: "12px", display: "flex", gap: "12px" }}>
             {!editando ? (
               <Button
                 onClick={handleIniciarEdicion}

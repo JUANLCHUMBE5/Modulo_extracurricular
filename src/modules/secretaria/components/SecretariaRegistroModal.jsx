@@ -21,7 +21,9 @@ import {
 function describirSeleccionCambridge(valor = "") {
   const seleccion = String(valor || "").trim().toUpperCase();
   const opciones = {
-    A: "A - Promovido por certificado oficial",
+    A: "A - Promovido/a por Certificado Oficial 2025",
+    B: "B - Ingresante por Admission Test",
+    C: "C - Ingresante por Desempeno Academico",
   };
   return opciones[seleccion] || "";
 }
@@ -47,16 +49,18 @@ export default function SecretariaRegistroModal({
   const modalRef = useRef(null);
   const formRef = useRef(null);
   const obtenerEtiquetaPrograma = etiquetaPrograma || ((programa) => programa?.nombre || "");
+  const programaUnicoSelector = programasParaSelector.length === 1 ? programasParaSelector[0] : null;
+  const programaRegistroVista = programaParaRegistro || programaUnicoSelector;
   const esCambridge = /cambridge/i.test([
-    programaParaRegistro?.nombre,
-    programaParaRegistro?.programa,
-    programaParaRegistro?.plantilla,
+    programaRegistroVista?.nombre,
+    programaRegistroVista?.programa,
+    programaRegistroVista?.plantilla,
   ].filter(Boolean).join(" "));
-  const seleccionCambridge = programaParaRegistro?.seleccion || "";
+  const seleccionCambridge = programaRegistroVista?.seleccion || "";
   const ingresoCambridge = describirSeleccionCambridge(seleccionCambridge);
-  const nivelCambridge = programaParaRegistro?.nivelCambridge || "";
-  const requiereSeleccionPrograma = esCicloVerano || mostrarSelectorPrograma;
-  const mostrarDetallePrograma = Boolean(programaParaRegistro) && (
+  const nivelCambridge = programaRegistroVista?.nivelCambridge || "";
+  const requiereSeleccionPrograma = (esCicloVerano || mostrarSelectorPrograma) && programasParaSelector.length > 1;
+  const mostrarDetallePrograma = Boolean(programaRegistroVista) && (
     !requiereSeleccionPrograma || Boolean(formulario.programa)
   );
 
@@ -227,26 +231,30 @@ export default function SecretariaRegistroModal({
                         <span>Seleccione el taller de verano</span>
                       </div>
 
-                      <div className="secretaria-field secretaria-field-full secretaria-summer-program-select">
-                        <label htmlFor="programa">Programa o taller</label>
-                        <select
-                          id="programa"
-                          value={formulario.programa}
-                          disabled={programasParaSelector.length === 0}
-                          onChange={(event) =>
-                            actualizarFormulario("programa", event.target.value)
-                          }
-                        >
-                          <option value="">
-                            {programasParaSelector.length ? "Seleccione programa" : "No hay programas de ciclo verano disponibles"}
-                          </option>
-                          {programasParaSelector.map((programa) => (
-                            <option key={programa.id} value={programa.id}>
-                              {obtenerEtiquetaPrograma(programa)}
+                      {programasParaSelector.length > 1 ? (
+                        <div className="secretaria-field secretaria-field-full secretaria-summer-program-select">
+                          <label htmlFor="programa">Programa o taller</label>
+                          <select
+                            id="programa"
+                            value={formulario.programa}
+                            disabled={programasParaSelector.length === 0}
+                            onChange={(event) =>
+                              actualizarFormulario("programa", event.target.value)
+                            }
+                          >
+                            <option value="">
+                              {programasParaSelector.length ? "Seleccione programa" : "No hay programas de ciclo verano disponibles"}
                             </option>
-                          ))}
-                        </select>
-                      </div>
+                            {programasParaSelector.map((programa) => (
+                              <option key={programa.id} value={programa.id}>
+                                {obtenerEtiquetaPrograma(programa)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : (
+                        <CampoLectura className="secretaria-program-readonly-field" label="Programa / taller" value={programaRegistroVista?.nombre || ""} />
+                      )}
 
                       {programasParaSelector.length === 0 ? (
                         <MantineAlert
@@ -261,7 +269,7 @@ export default function SecretariaRegistroModal({
                         <div className="secretaria-program-details-card secretaria-field-full">
                           <h4 className="secretaria-details-card-title">Resumen del Taller</h4>
                           <div className="secretaria-schedule-summary">
-                            <DatoHorario label="Grupo" value={programaParaRegistro.grupoEtario || programaParaRegistro.grupo} icon={Users} themeClass="is-grupo" />
+                            <DatoHorario label="Grupo" value={programaRegistroVista.grupoEtario || programaRegistroVista.grupo} icon={Users} themeClass="is-grupo" />
                             <DatoHorario label="Día" value={horarioResumenRegistro.dia} icon={Calendar} themeClass="is-dia" />
                             <DatoHorario label="Clase" value={horarioResumenRegistro.clase} icon={Clock} themeClass="is-clase" />
                             <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} icon={Coffee} themeClass="is-almuerzo" />
@@ -270,11 +278,11 @@ export default function SecretariaRegistroModal({
                           <div className="secretaria-details-meta-grid">
                             <div className="secretaria-meta-item">
                               <span>Costo Referencial</span>
-                              <strong>S/ {Number(programaParaRegistro.costo).toFixed(2)}</strong>
+                              <strong>S/ {Number(programaRegistroVista.costo).toFixed(2)}</strong>
                             </div>
                             <div className="secretaria-meta-item">
                               <span>Cupos Disponibles</span>
-                              <strong className="secretaria-highlight-green">{formatearCuposSecretaria(programaParaRegistro)}</strong>
+                              <strong className="secretaria-highlight-green">{formatearCuposSecretaria(programaRegistroVista)}</strong>
                             </div>
                           </div>
                         </div>
@@ -406,7 +414,7 @@ export default function SecretariaRegistroModal({
                     </select>
                   </div>
                 ) : (
-                  <CampoLectura label="Programa / taller" value={programaParaRegistro?.nombre || estudiante.programaNombre || ""} />
+                  <CampoLectura className="secretaria-program-readonly-field" label="Programa / taller" value={programaRegistroVista?.nombre || estudiante.programaNombre || ""} />
                 )}
 
                 {programasParaSelector.length === 0 && (esCicloVerano || !estudiante.tieneInvitacion) ? (
@@ -440,17 +448,17 @@ export default function SecretariaRegistroModal({
                       ) : null}
                       <div className="secretaria-meta-item">
                         <span>Costo Referencial</span>
-                        <strong>S/ {Number(programaParaRegistro.costo).toFixed(2)}</strong>
+                        <strong>S/ {Number(programaRegistroVista.costo).toFixed(2)}</strong>
                       </div>
                       <div className="secretaria-meta-item">
                         <span>Cupos Disponibles</span>
-                        <strong className="secretaria-highlight-green">{formatearCuposSecretaria(programaParaRegistro)}</strong>
+                        <strong className="secretaria-highlight-green">{formatearCuposSecretaria(programaRegistroVista)}</strong>
                       </div>
                     </div>
                   </div>
                 ) : null}
 
-                {programaParaRegistro?.requiereUniforme ? (
+                {programaRegistroVista?.requiereUniforme ? (
                   <div className="secretaria-field">
                     <label htmlFor="talla">Talla de uniforme</label>
                     <select
@@ -469,7 +477,7 @@ export default function SecretariaRegistroModal({
                   </div>
                 ) : null}
 
-                {programaParaRegistro?.requiereIndumentaria ? (
+                {programaRegistroVista?.requiereIndumentaria ? (
                   <>
                     <div className="secretaria-field">
                       <label htmlFor="tallaPolo">Talla de polo</label>
@@ -575,7 +583,7 @@ export default function SecretariaRegistroModal({
                   {(() => {
                     const tieneProgramaValido = requiereSeleccionPrograma
                       ? Boolean(formulario.programa)
-                      : Boolean(programaParaRegistro);
+                      : Boolean(programaRegistroVista);
                     return (
                       <button
                         className="secretaria-register-button"

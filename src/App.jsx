@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useNavigate, useParams } from "react-router-do
 import Login from "./components/Login/Login";
 import { apiDb, syncApiDb } from "./services/dbApi";
 import { isApiMode, apiClient } from "./services/apiClient";
+import { startSyncEventsClient } from "./services/syncEventsClient";
 import { normalizeUser } from "./modules/administrador/models/usuarioModel";
 import {
   IconBook as BookOpen,
@@ -242,6 +243,13 @@ function App() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return undefined;
+    return startSyncEventsClient({
+      getToken: () => window.sessionStorage.getItem("san_rafael_token") || "",
+    });
+  }, [user?.username, user?.role]);
+
+  useEffect(() => {
     if (!user?.username || user.role === "padres") return;
 
     const actualizarUsuarioActivo = async () => {
@@ -330,7 +338,7 @@ function App() {
       if (document.visibilityState === "visible") {
         actualizarUsuarioActivo();
       }
-    }, 60000);
+    }, 180000);
     window.addEventListener("api-db-updated", actualizarUsuarioActivo);
     window.addEventListener("mock-db-updated", handleMockDbUpdated);
     window.addEventListener("storage", actualizarUsuarioActivo);

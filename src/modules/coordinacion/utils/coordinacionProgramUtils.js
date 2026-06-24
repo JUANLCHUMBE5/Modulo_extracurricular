@@ -48,12 +48,18 @@ export function esProgramaCambridge(programa = {}) {
   const variables = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
   const texto = normalizarTextoBusqueda([
     programa.nombre,
+    programa.programa,
     programa.categoria,
+    programa.tipoComunicado,
+    programa.tipo_comunicado,
     programa.plantilla,
     ...variables,
   ].filter(Boolean).join(" "));
 
-  return /\bingles\b/.test(texto) ||
+  return /\bingl(e|e?s|i?sh)\b/.test(texto) ||
+    /\bcambr(i|í)?(d?g|g)d?e\b/.test(texto) ||
+    /\bcabringde\b/.test(texto) ||
+    /\bcamringde\b/.test(texto) ||
     /\bcambridge\b/.test(texto) ||
     /\bcertificacion\b/.test(texto) ||
     /\bpreparacion\b/.test(texto) ||

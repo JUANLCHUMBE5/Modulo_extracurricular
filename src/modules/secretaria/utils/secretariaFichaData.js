@@ -413,7 +413,9 @@ function normalizarSeleccionCambridge(valor) {
 function describirSeleccionCambridgeFicha(valor = "") {
   const seleccion = normalizarSeleccionCambridge(valor);
   const opciones = {
-    A: "A - Promovido por certificado oficial",
+    A: "A - Promovido/a por Certificado Oficial 2025",
+    B: "B - Ingresante por Admission Test",
+    C: "C - Ingresante por Desempeno Academico",
   };
   return opciones[seleccion] || "Pendiente de definir";
 }

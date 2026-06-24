@@ -177,18 +177,6 @@ export default function ReporteTabla({
                           {fila.estadoPago === "pagado" ? (
                             <Group gap={6} wrap="nowrap" style={{ display: "inline-flex", alignItems: "center" }}>
                               <span style={{ color: "#16a34a", fontWeight: 700 }}>Aprobado</span>
-                              {onAnularPago && (
-                                <Tooltip label="Anular recibo / pago">
-                                  <ActionIcon
-                                    color="red"
-                                    onClick={() => onAnularPago(fila)}
-                                    size="xs"
-                                    variant="subtle"
-                                  >
-                                    <IconX size={13} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              )}
                             </Group>
                           ) : fila.estadoPago === "observado" ? (
                             "Observado"

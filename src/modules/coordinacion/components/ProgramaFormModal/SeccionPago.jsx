@@ -10,18 +10,20 @@ function SeccionPago({
   actualizarForm,
   actualizarInvitacionMasiva,
 }) {
+  const esCambridge = String(form.tipoComunicado || "").toLowerCase().includes("cambridge");
+
   return (
     <section className="coord-form-section">
       <div className="coord-section-heading">
         <DollarSign size={18} />
         <div>
-          <h3>{esFormularioVerano ? "Pago de verano" : esDeportivoForm ? "Cobro e Indumentaria" : "Cobro"}</h3>
+          <h3>{esCambridge ? "Cobro Cambridge" : esFormularioVerano ? "Pago de verano" : esDeportivoForm ? "Cobro e Indumentaria" : "Cobro"}</h3>
         </div>
       </div>
       <div className="coord-section-grid coord-payment-grid">
         <div className="coord-field">
           <label>
-            {form.tipoComunicado === "Certificación Cambridge"
+            {(form.tipoComunicado === "Cambridge" || form.tipoComunicado === "Certificación Cambridge")
               ? "Costo total del ciclo (S/) *"
               : esFormularioVerano
                 ? "Costo de verano (S/)"

@@ -9,6 +9,7 @@ import {
   resetOfficialDb,
   saveOfficialDb,
 } from "./officialApiDb.js";
+import { createSyncEvent, emitSyncEvent } from "./syncBus.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, "db.json");
@@ -17,6 +18,7 @@ let mutationQueue = Promise.resolve();
 let cachedDb = null;
 let cachedDbMtimeMs = 0;
 let lastFetchedTime = 0;
+const MAX_SYNC_EVENTS = 100;
 const CACHE_TTL_MS = Number(process.env.SUPABASE_CACHE_TTL_MS || 300000); // 5 minutos por defecto para caché en memoria de Supabase
 
 // ==========================================
@@ -99,6 +101,29 @@ function getDifferences(newList, oldList, keyField, columnKeys) {
   }
 
   return { added, modified, deletedIds };
+}
+
+function stringifyComparable(value) {
+  return JSON.stringify(value ?? null);
+}
+
+function detectSyncChanges(newDb = {}, oldDb = {}) {
+  const checks = [
+    ["usuarios", newDb.usuarios, oldDb.usuarios],
+    ["estudiantes", newDb.estudiantes, oldDb.estudiantes],
+    ["programas", newDb.programas, oldDb.programas],
+    ["inscripciones", newDb.inscripciones, oldDb.inscripciones],
+    ["pagos", newDb.pagos, oldDb.pagos],
+    ["asistencias", newDb.asistencias, oldDb.asistencias],
+    ["invitados", newDb.invitadosPorPrograma, oldDb.invitadosPorPrograma],
+    ["correlativos", newDb.correlativos, oldDb.correlativos],
+    ["categorias", newDb.categorias, oldDb.categorias],
+    ["configuracionInstitucional", newDb.configuracionInstitucional, oldDb.configuracionInstitucional],
+  ];
+
+  return checks
+    .filter(([, nextValue, prevValue]) => stringifyComparable(nextValue) !== stringifyComparable(prevValue))
+    .map(([name]) => name);
 }
 
 async function readFromSupabase() {
@@ -277,6 +302,8 @@ async function readFromSupabase() {
     const categoriasArray = (resCategorias.data || []).map(c => c.categoria);
 
     let correlativosObj = { recibo: "", egreso: "" };
+    let syncEvents = [];
+    let configuracionInstitucional = {};
     
     // Intentar leer de la tabla configuracion primero
     if (resConfiguracion && resConfiguracion.data) {
@@ -286,6 +313,22 @@ async function readFromSupabase() {
           correlativosObj = JSON.parse(row.valor);
         } catch (e) {
           console.error("Error parsing correlativos from configuracion table:", e);
+        }
+      }
+      const syncRow = resConfiguracion.data.find(r => r.clave === "sync_events");
+      if (syncRow && syncRow.valor) {
+        try {
+          syncEvents = JSON.parse(syncRow.valor);
+        } catch (e) {
+          console.error("Error parsing sync_events from configuracion table:", e);
+        }
+      }
+      const institucionRow = resConfiguracion.data.find(r => r.clave === "configuracion_institucional");
+      if (institucionRow && institucionRow.valor) {
+        try {
+          configuracionInstitucional = JSON.parse(institucionRow.valor);
+        } catch (e) {
+          console.error("Error parsing configuracion_institucional from configuracion table:", e);
         }
       }
     }
@@ -340,7 +383,9 @@ async function readFromSupabase() {
       auditLogs: resLogs.data || [],
       plantillasPorPrograma: plantillasObj,
       categorias: finalCategorias,
+      configuracionInstitucional,
       correlativos: correlativosObj,
+      syncEvents: Array.isArray(syncEvents) ? syncEvents.slice(-MAX_SYNC_EVENTS) : [],
       documentosGenerados: [],
       historialCargas: (resHistorial && resHistorial.data) ? resHistorial.data.map(hc => {
         return {
@@ -372,6 +417,15 @@ async function writeToSupabase(db, currentDb) {
   const normalizarFecha = (val) => {
     if (val === undefined || val === null || val === "" || String(val).trim() === "") return null;
     return val;
+  };
+
+  const normalizarBoolean = (val) => {
+    if (val === undefined || val === null || val === "") return null;
+    if (typeof val === "boolean") return val;
+    const s = String(val).toLowerCase().trim();
+    if (s === "true" || s === "1" || s === "si" || s === "yes") return true;
+    if (s === "false" || s === "0" || s === "no") return false;
+    return null;
   };
 
   const EXTRA_FIELDS = [
@@ -432,6 +486,7 @@ async function writeToSupabase(db, currentDb) {
       auditLogs: [],
       historialCargas: [],
       categorias: [],
+      configuracionInstitucional: {},
       correlativos: { recibo: "", egreso: "" }
     };
 
@@ -446,7 +501,11 @@ async function writeToSupabase(db, currentDb) {
       fechaInicio: normalizarFecha(ins.fechaInicio),
       fechaFin: normalizarFecha(ins.fechaFin),
       descuentoFechaAprobacion: normalizarFecha(ins.descuentoFechaAprobacion),
-      fechaRegistro: normalizarFecha(ins.fechaRegistro)
+      fechaRegistro: normalizarFecha(ins.fechaRegistro),
+      costo: normalizarNumero(ins.costo),
+      costoOriginal: normalizarNumero(ins.costoOriginal),
+      descuentoValor: normalizarNumero(ins.descuentoValor),
+      descuentoMonto: normalizarNumero(ins.descuentoMonto)
     }));
 
     const normalizedPagos = (db.pagos || []).map(pag => ({
@@ -458,7 +517,8 @@ async function writeToSupabase(db, currentDb) {
       numeroOperacion: pag.numeroOperacion || pag.nroOperacion || "",
       telefonoOperacion: pag.telefonoOperacion || pag.telefono || "",
       nro_recibo: pag.nroRecibo || pag.nro_recibo || "",
-      fechaPago: normalizarFecha(pag.fechaPago || pag.fechaRegistro)
+      fechaPago: normalizarFecha(pag.fechaPago || pag.fechaRegistro),
+      monto: normalizarNumero(pag.monto)
     }));
 
     const normalizedAsistencias = (db.asistencias || []).map(ast => ({
@@ -490,13 +550,25 @@ async function writeToSupabase(db, currentDb) {
         plantilla: p.plantilla || "",
         plantillaBase64: p.plantillaBase64 || templateData.plantillaBase64 || "",
         plantillaVariables: p.plantillaVariables || templateData.plantillaVariables || [],
-        plantillaValidada: p.plantillaValidada !== undefined ? p.plantillaValidada : (templateData.plantillaValidada !== undefined ? templateData.plantillaValidada : false),
+        plantillaValidada: normalizarBoolean(p.plantillaValidada !== undefined ? p.plantillaValidada : (templateData.plantillaValidada !== undefined ? templateData.plantillaValidada : false)),
         duracionAvisoDias: normalizarNumero(p.duracionAvisoDias),
         edadMinima: normalizarNumero(p.edadMinima),
         edadMaxima: normalizarNumero(p.edadMaxima),
         costoCiclo: normalizarNumero(p.costoCiclo),
         montoPrimerPago: normalizarNumero(p.montoPrimerPago),
-        anuncioImagenTamano: normalizarNumero(p.anuncioImagenTamano)
+        anuncioImagenTamano: normalizarNumero(p.anuncioImagenTamano),
+        costo: normalizarNumero(p.costo),
+        cupos: normalizarNumero(p.cupos),
+        cuposOcupados: normalizarNumero(p.cuposOcupados),
+        duracionTaller: normalizarNumero(p.duracionTaller),
+        duracion: normalizarNumero(p.duracion),
+        invitacionMasiva: normalizarBoolean(p.invitacionMasiva),
+        creadoDesdeDocumento: normalizarBoolean(p.creadoDesdeDocumento),
+        requiereUniforme: normalizarBoolean(p.requiereUniforme),
+        requiereIndumentaria: normalizarBoolean(p.requiereIndumentaria),
+        incluyeAlmuerzo: normalizarBoolean(p.incluyeAlmuerzo),
+        cicloI: normalizarBoolean(p.cicloI),
+        cicloII: normalizarBoolean(p.cicloII)
       };
 
       const meta = {};
@@ -525,7 +597,11 @@ async function writeToSupabase(db, currentDb) {
       fechaInicio: normalizarFecha(ins.fechaInicio),
       fechaFin: normalizarFecha(ins.fechaFin),
       descuentoFechaAprobacion: normalizarFecha(ins.descuentoFechaAprobacion),
-      fechaRegistro: normalizarFecha(ins.fechaRegistro)
+      fechaRegistro: normalizarFecha(ins.fechaRegistro),
+      costo: normalizarNumero(ins.costo),
+      costoOriginal: normalizarNumero(ins.costoOriginal),
+      descuentoValor: normalizarNumero(ins.descuentoValor),
+      descuentoMonto: normalizarNumero(ins.descuentoMonto)
     }));
 
     const oldPagos = (oldDb.pagos || []).map(pag => ({
@@ -537,7 +613,8 @@ async function writeToSupabase(db, currentDb) {
       numeroOperacion: pag.numeroOperacion || pag.nroOperacion || "",
       telefonoOperacion: pag.telefonoOperacion || pag.telefono || "",
       nro_recibo: pag.nroRecibo || pag.nro_recibo || "",
-      fechaPago: normalizarFecha(pag.fechaPago || pag.fechaRegistro)
+      fechaPago: normalizarFecha(pag.fechaPago || pag.fechaRegistro),
+      monto: normalizarNumero(pag.monto)
     }));
 
     const oldAsistencias = (oldDb.asistencias || []).map(ast => ({
@@ -686,15 +763,21 @@ async function writeToSupabase(db, currentDb) {
       const progDocumentos = toUpsert.map(p => ({ programaId: p.id, ...p }));
       const progAnuncios = toUpsert.map(p => ({ programaId: p.id, ...p }));
 
-      const subRes = await Promise.all([
-        supabase.from("programas_configuraciones").upsert(sanearLista(progConfigs, COLUMNAS_PROGRAMAS_CONFIG)),
-        supabase.from("programas_horarios").upsert(sanearLista(progHorarios, COLUMNAS_PROGRAMAS_HORARIOS)),
-        supabase.from("programas_servicios").upsert(sanearLista(progServicios, COLUMNAS_PROGRAMAS_SERVICIOS)),
-        supabase.from("programas_documentos").upsert(sanearLista(progDocumentos, COLUMNAS_PROGRAMAS_DOCUMENTOS)),
-        supabase.from("programas_anuncios").upsert(sanearLista(progAnuncios, COLUMNAS_PROGRAMAS_ANUNCIOS))
-      ]);
-      for (const r of subRes) {
-        if (r.error) throw new Error(`Error en tablas secundarias de programas: ${r.error.message}`);
+      const tablesToUpsert = [
+        { name: "programas_configuraciones", data: progConfigs, columns: COLUMNAS_PROGRAMAS_CONFIG },
+        { name: "programas_horarios", data: progHorarios, columns: COLUMNAS_PROGRAMAS_HORARIOS },
+        { name: "programas_servicios", data: progServicios, columns: COLUMNAS_PROGRAMAS_SERVICIOS },
+        { name: "programas_documentos", data: progDocumentos, columns: COLUMNAS_PROGRAMAS_DOCUMENTOS },
+        { name: "programas_anuncios", data: progAnuncios, columns: COLUMNAS_PROGRAMAS_ANUNCIOS }
+      ];
+
+      for (const t of tablesToUpsert) {
+        const { error } = await supabase.from(t.name).upsert(sanearLista(t.data, t.columns));
+        if (error) {
+          console.error(`❌ Error en tabla secundaria de programas '${t.name}':`, error.message);
+          console.error("Lote afectado:", JSON.stringify(t.data, null, 2));
+          throw new Error(`Error en tablas secundarias de programas: ${error.message}`);
+        }
       }
     }
 
@@ -834,6 +917,40 @@ async function writeToSupabase(db, currentDb) {
         }
       }
     }
+
+    const newSyncEvents = Array.isArray(db.syncEvents) ? db.syncEvents.slice(-MAX_SYNC_EVENTS) : [];
+    const oldSyncEvents = Array.isArray(oldDb.syncEvents) ? oldDb.syncEvents.slice(-MAX_SYNC_EVENTS) : [];
+    if (JSON.stringify(newSyncEvents) !== JSON.stringify(oldSyncEvents)) {
+      try {
+        const resSync = await supabase.from("configuracion").upsert({
+          clave: "sync_events",
+          valor: JSON.stringify(newSyncEvents),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "clave" });
+        if (resSync.error) {
+          console.warn(`Warning: No se pudo guardar sync_events en Supabase: ${resSync.error.message}`);
+        }
+      } catch (syncErr) {
+        console.warn("Warning: Error guardando sync_events:", syncErr);
+      }
+    }
+
+    const newInstitutionConfig = db.configuracionInstitucional || {};
+    const oldInstitutionConfig = oldDb.configuracionInstitucional || {};
+    if (JSON.stringify(newInstitutionConfig) !== JSON.stringify(oldInstitutionConfig)) {
+      try {
+        const resInstitution = await supabase.from("configuracion").upsert({
+          clave: "configuracion_institucional",
+          valor: JSON.stringify(newInstitutionConfig),
+          updated_at: new Date().toISOString()
+        }, { onConflict: "clave" });
+        if (resInstitution.error) {
+          console.warn(`Warning: No se pudo guardar configuracion_institucional en Supabase: ${resInstitution.error.message}`);
+        }
+      } catch (institutionErr) {
+        console.warn("Warning: Error guardando configuracion_institucional:", institutionErr);
+      }
+    }
   } catch (err) {
     console.error("❌ Error al persistir en Supabase:", err);
     throw err;
@@ -899,14 +1016,25 @@ export async function saveDb(data) {
     }
   }
 
+  const changes = currentDb ? detectSyncChanges(db, currentDb) : [];
+  const syncEvent = createSyncEvent(changes);
+  if (syncEvent) {
+    db.syncEvents = [
+      ...(Array.isArray(db.syncEvents) ? db.syncEvents : []),
+      syncEvent,
+    ].slice(-MAX_SYNC_EVENTS);
+  }
+
   if (isSupabase) {
     await writeToSupabase(db, currentDb);
     cachedDb = db;
     lastFetchedTime = Date.now();
+    emitSyncEvent(syncEvent);
     return db;
   }
 
   await queueDbWrite(db);
+  emitSyncEvent(syncEvent);
   return db;
 }
 
@@ -1013,6 +1141,7 @@ function mergeWithDefaults(stored, defaults) {
     ...defaults,
     ...stored,
     correlativos: correlativosObj,
+    configuracionInstitucional: stored.configuracionInstitucional || defaults.configuracionInstitucional || {},
     categorias: (stored.categorias || defaults.categorias || [])
       .filter(c => !String(c).startsWith("CONFIG_CORRELATIVOS:"))
       .filter(c => {
@@ -1030,6 +1159,7 @@ function mergeWithDefaults(stored, defaults) {
     pagos: stored.pagos || defaults.pagos,
     asistencias: stored.asistencias || defaults.asistencias,
     historialCargas: stored.historialCargas || defaults.historialCargas,
+    syncEvents: Array.isArray(stored.syncEvents) ? stored.syncEvents.slice(-MAX_SYNC_EVENTS) : [],
     plantillasPorPrograma: {
       ...(defaults.plantillasPorPrograma || {}),
       ...(stored.plantillasPorPrograma || {}),

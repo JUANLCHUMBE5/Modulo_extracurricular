@@ -292,3 +292,19 @@
 .caja-pagination-count {
   margin-left: 4px !important;
 }
+
+/* Reglas responsivas para formularios de búsqueda y contenedores en Caja */
+@media (max-width: 576px) {
+  .caja-search-form-responsive {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  .caja-search-form-responsive button {
+    width: 100% !important;
+    height: 38px !important;
+  }
+  .caja-main {
+    padding: 16px 12px !important;
+  }
+}

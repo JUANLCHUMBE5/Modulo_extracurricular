@@ -150,7 +150,14 @@ export default function Direccion({ onLogout, user }) {
   const lastFetchTimeRef = useRef(0);
 
   // Correlativos settings state
-  const [correlativosForm, setCorrelativosForm] = useState({ recibo: "", reciboVirtual: "", egreso: "" });
+  const [correlativosForm, setCorrelativosForm] = useState({
+    reciboInicio: "",
+    reciboActual: "",
+    reciboVirtualInicio: "",
+    reciboVirtualActual: "",
+    egresoInicio: "",
+    egresoActual: ""
+  });
   const [guardandoCorrelativos, setGuardandoCorrelativos] = useState(false);
 
   useEffect(() => {
@@ -158,7 +165,14 @@ export default function Direccion({ onLogout, user }) {
       const cargarCorrelativos = async () => {
         try {
           const res = await obtenerCorrelativos();
-          setCorrelativosForm(res || { recibo: "", reciboVirtual: "", egreso: "" });
+          setCorrelativosForm(res || {
+            reciboInicio: "",
+            reciboActual: "",
+            reciboVirtualInicio: "",
+            reciboVirtualActual: "",
+            egresoInicio: "",
+            egresoActual: ""
+          });
         } catch (err) {
           toast.error("Error", { description: "No se pudieron cargar los correlativos." });
         }
@@ -201,10 +215,10 @@ export default function Direccion({ onLogout, user }) {
 
     if (reporteSeleccionado === "pagos_historial") {
       tipo = "pagos";
-      defaultCols = ["id", "dni", "estudiante", "programa", "monto", "estado", "medio", "fecha", "nroRecibo"];
+      defaultCols = ["id", "dni", "estudiante", "programa", "beca", "descuento", "anulado", "estadoFinanciero", "montoPagado", "montoAnulado", "medio", "fecha", "nroRecibo", "observaciones"];
     } else if (reporteSeleccionado === "direccion_alumnos_pagos") {
       tipo = "direccion_alumnos_pagos";
-      defaultCols = ["index", "estudiante", "grado", "seccion", "fechaPago", "nroRecibo", "costo"];
+      defaultCols = ["index", "estudiante", "grado", "seccion", "fechaPago", "nroRecibo", "beca", "descuento", "anulado", "estadoFinanciero", "montoPagado", "montoAnulado", "observaciones"];
     } else if (reporteSeleccionado === "direccion_alumnos_asistencias") {
       tipo = "direccion_alumnos_asistencias";
       defaultCols = ["index", "estudiante", "grado", "seccion"];
@@ -277,7 +291,7 @@ export default function Direccion({ onLogout, user }) {
       if (document.visibilityState === "visible") {
         recargarSilencioso();
       }
-    }, 60000);
+    }, 180000);
 
     return () => {
       window.clearTimeout(recargaTimerRef.current);

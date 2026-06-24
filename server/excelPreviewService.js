@@ -320,11 +320,18 @@ function detectarProgramaCambridge(programas) {
 function esProgramaCambridge(programa) {
   const texto = normalizarComparacion([
     programa.nombre,
+    programa.programa,
     programa.categoria,
+    programa.tipoComunicado,
+    programa.tipo_comunicado,
     programa.plantilla,
     ...(programa.plantillaVariables || []),
   ].filter(Boolean).join(" "));
   return /\bcambridge\b/.test(texto) ||
+    /\bcambrigde\b/.test(texto) ||
+    /\bcabringde\b/.test(texto) ||
+    /\bcamringde\b/.test(texto) ||
+    /\bingles?s?\b/.test(texto) ||
     /\bcertificacion\b/.test(texto) ||
     /\bpreparacion\b/.test(texto) ||
     (programa.plantillaVariables || []).some((variable) =>

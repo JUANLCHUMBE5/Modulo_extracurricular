@@ -5,6 +5,7 @@ import {
   IconEdit as Edit3,
   IconFileText as FileText,
   IconLoader2 as Loader2,
+  IconPhoto as Photo,
   IconTrash as Trash2,
 } from "@tabler/icons-react";
 import SummaryBox from "./SummaryBox";
@@ -18,6 +19,16 @@ function normalizarNombrePlantilla(valor = "") {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 }
+
+const recursosInstitucionales = [
+  { id: "logoInstitucion", label: "Logo del colegio", hint: "Encabezado de comunicados y cartas." },
+  { id: "logoCambridge", label: "Logo Cambridge", hint: "Solo para formatos Cambridge." },
+  { id: "firmaCoordinacion", label: "Firma de Coordinacion", hint: "Firma que aparece como Coordinacion." },
+  { id: "firmaDireccion", label: "Firma de Direccion", hint: "Firma del Director General." },
+  { id: "selloInstitucion", label: "Sello institucional", hint: "Opcional para documentos impresos." },
+];
+
+const MAX_IMAGE_BYTES = 1.5 * 1024 * 1024;
 
 function DocumentosView({
   abrirEditar,
@@ -41,6 +52,12 @@ function DocumentosView({
   variablesPlantillaAceptadas,
   variablesPlantillaRequeridas,
   categorias = [],
+  configInstitucional = {},
+  cargandoConfigInstitucional = false,
+  guardandoConfigInstitucional = false,
+  actualizarConfigInstitucionalImagen,
+  quitarConfigInstitucionalImagen,
+  guardarConfigInstitucional,
   toggleSidebarButton,
 }) {
   const variablesRequeridasDocumento = lecturaDocumento?.variablesRequeridasModelo || variablesPlantillaRequeridas.map((item) => item.id);
@@ -53,6 +70,31 @@ function DocumentosView({
   const variablesPendientesTexto = variablesFaltantesDocumento.length
     ? `Faltan: ${variablesFaltantesDocumento.join(", ").toUpperCase()}`
     : "Formato completo";
+
+  const seleccionarRecursoInstitucional = (campo, event) => {
+    const archivo = event.target.files?.[0];
+    event.target.value = "";
+    if (!archivo) return;
+    if (!archivo.type.startsWith("image/")) {
+      window.alert("Seleccione una imagen PNG, JPG o WebP.");
+      return;
+    }
+    if (archivo.size > MAX_IMAGE_BYTES) {
+      window.alert("La imagen no debe superar 1.5 MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      actualizarConfigInstitucionalImagen?.(campo, {
+        nombre: archivo.name,
+        tipo: archivo.type,
+        dataUrl: String(reader.result || ""),
+        actualizadoEn: new Date().toISOString(),
+      });
+    };
+    reader.readAsDataURL(archivo);
+  };
 
   return (
     <>
@@ -83,6 +125,65 @@ function DocumentosView({
           )}
 
           <div className="coord-template-workspace">
+            <div className="coord-document-read coord-institution-assets">
+              <div className="coord-document-read-head">
+                <div>
+                  <strong>Recursos institucionales para documentos</strong>
+                  <span>Firmas, logos y sello disponibles para los formatos institucionales.</span>
+                </div>
+                <button
+                  className="coord-register-button coord-assets-save"
+                  type="button"
+                  onClick={guardarConfigInstitucional}
+                  disabled={guardandoConfigInstitucional || cargandoConfigInstitucional}
+                >
+                  {guardandoConfigInstitucional ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
+                  <span>{guardandoConfigInstitucional ? "Guardando" : "Guardar recursos"}</span>
+                </button>
+              </div>
+
+              <div className="coord-assets-grid">
+                {recursosInstitucionales.map((recurso) => {
+                  const item = configInstitucional?.[recurso.id];
+                  const tieneImagen = Boolean(item?.dataUrl);
+                  return (
+                    <div className="coord-asset-tile" key={recurso.id}>
+                      <div className="coord-asset-preview">
+                        {tieneImagen ? (
+                          <img src={item.dataUrl} alt={recurso.label} />
+                        ) : (
+                          <Photo size={28} />
+                        )}
+                      </div>
+                      <div className="coord-asset-info">
+                        <strong>{recurso.label}</strong>
+                        <span>{tieneImagen ? item.nombre : recurso.hint}</span>
+                      </div>
+                      <div className="coord-asset-actions">
+                        <label className="coord-secondary-button coord-asset-upload">
+                          <input
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            onChange={(event) => seleccionarRecursoInstitucional(recurso.id, event)}
+                          />
+                          <span>{tieneImagen ? "Cambiar" : "Subir"}</span>
+                        </label>
+                        {tieneImagen ? (
+                          <button
+                            className="coord-danger-button coord-asset-remove"
+                            type="button"
+                            onClick={() => quitarConfigInstitucionalImagen?.(recurso.id)}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="coord-documents-simple-panel">
               {plantillaYaGuardada ? (
                 <div className="coord-documents-saved-state">

@@ -37,6 +37,7 @@ export function tieneHorariosPorGrupo(programa) {
 }
 
 export function programaDisponibleParaGrado(programa, gradoAlumno = "") {
+  if (esProgramaCambridgePadres(programa)) return false;
   if (programa?.invitacionMasiva) return programaDisponibleParaAlcanceMasivo(programa, gradoAlumno);
 
   if (tieneHorariosPorGrupo(programa)) {
@@ -50,6 +51,31 @@ export function programaDisponibleParaGrado(programa, gradoAlumno = "") {
   if (!gradoNormalizado.numero) return false;
 
   return gradosAplicables.some((grado) => coincideGrado(grado, gradoNormalizado));
+}
+
+export function esProgramaCambridgePadres(programa = {}) {
+  const variables = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
+  const texto = normalizarTexto([
+    programa.nombre,
+    programa.programa,
+    programa.categoria,
+    programa.tipoComunicado,
+    programa.plantilla,
+    ...variables,
+  ].filter(Boolean).join(" "));
+
+  return texto.includes("cambridge") ||
+    texto.includes("cambrigde") ||
+    texto.includes("cabringde") ||
+    texto.includes("camringde") ||
+    texto.includes("certificacion cam") ||
+    texto.includes("ingles") ||
+    texto.includes("ingless") ||
+    texto.includes("certificacion") ||
+    texto.includes("preparacion") ||
+    variables.some((variable) =>
+      ["anio_cert", "nivel_cambridge", "chk_a", "chk_b", "chk_c"].includes(String(variable || "").toLowerCase())
+    );
 }
 
 export function programaDisponibleParaAlcanceMasivo(programa, gradoAlumno = "") {

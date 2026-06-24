@@ -14,6 +14,8 @@ import { describirSeleccionCambridgePadres, obtenerTipoCampo, convertirHorasAMPM
 
 const opcionesCambridge = [
   { id: "A", titulo: "A", detalle: "Promovido/a por Certificado Oficial 2025" },
+  { id: "B", titulo: "B", detalle: "Ingresante por Admission Test" },
+  { id: "C", titulo: "C", detalle: "Ingresante por Desempeno Academico" },
 ];
 
 function obtenerTalleresEstructurados(programa) {

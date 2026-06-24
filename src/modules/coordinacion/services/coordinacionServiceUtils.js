@@ -180,6 +180,10 @@ export function agregarGradoProgramaDesdeAlumno(programa, gradoAlumno) {
 export function sincronizarGradosProgramaConInvitados(programaId) {
   const programa = apiDb.programas.find((item) => item.id === programaId);
   if (!programa) return;
+  if (esProgramaCambridgeLocal(programa)) {
+    programa.gradosAplicables = [];
+    return;
+  }
 
   const normalizar = (valor) => String(valor || "")
     .trim()
@@ -197,6 +201,29 @@ export function sincronizarGradosProgramaConInvitados(programaId) {
   if (grados.length) {
     programa.gradosAplicables = ordenarGradosAplicables(grados);
   }
+}
+
+function esProgramaCambridgeLocal(programa = {}) {
+  const variables = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
+  const texto = String([
+    programa.nombre,
+    programa.programa,
+    programa.categoria,
+    programa.tipoComunicado,
+    programa.plantilla,
+    ...variables,
+  ].filter(Boolean).join(" "))
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  return texto.includes("cambridge") ||
+    texto.includes("certificacion") ||
+    texto.includes("preparacion") ||
+    variables.some((variable) =>
+      ["anio_cert", "nivel_cambridge", "chk_a", "chk_b", "chk_c"].includes(String(variable || "").toLowerCase())
+    );
 }
 
 export function ordenarGradosAplicables(grados) {

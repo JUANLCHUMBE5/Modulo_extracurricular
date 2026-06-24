@@ -243,11 +243,20 @@ export async function crearPrograma(datos) {
       requisitos: datos.requisitos || "",
       comunicado: datos.comunicado || "",
       comunicado_completo: datos.comunicadoCompleto || "",
+      tipo_comunicado: datos.tipoComunicado || "",
+      tipo_documento: datos.tipoDocumento || "",
+      numero_documento: datos.numeroDocumento || "",
+      area_tematica: datos.areaTematica || "",
+      motivo_justificacion: datos.motivoJustificacion || datos.comunicado || "",
       detalle_costo: datos.detalleCosto || "",
       detalle_almuerzo: datos.detalleAlmuerzo || "",
       concesionarios: datos.concesionarios || "",
       incluye_almuerzo: Boolean(datos.incluyeAlmuerzo),
       horario_recepcion_almuerzo: datos.horarioRecepcionAlmuerzo || "",
+      nivel_cambridge: datos.nivelCambridge || "",
+      modalidades_cambridge: datos.modalidadesCambridge || [],
+      costo_ciclo: datos.costoCiclo || datos.costo || "",
+      monto_primer_pago: datos.montoPrimerPago || "",
       invitacion_masiva: Boolean(datos.invitacionMasiva),
       alcance_invitacion_masiva: datos.alcanceInvitacionMasiva || "colegio",
       plantilla: datos.plantilla || "",
@@ -277,12 +286,21 @@ export async function crearProgramaDesdeDocumento(datos) {
       plantilla_variables: datos.plantillaVariables || [],
       comunicado: datos.comunicado || "",
       comunicado_completo: datos.comunicadoCompleto || "",
+      tipo_comunicado: datos.tipoComunicado || "",
+      tipo_documento: datos.tipoDocumento || "",
+      numero_documento: datos.numeroDocumento || "",
+      area_tematica: datos.areaTematica || "",
+      motivo_justificacion: datos.motivoJustificacion || datos.comunicado || "",
       requisitos: datos.requisitos || "",
       detalle_costo: datos.detalleCosto || "",
       detalle_almuerzo: datos.detalleAlmuerzo || "",
       concesionarios: datos.concesionarios || "",
       incluye_almuerzo: Boolean(datos.incluyeAlmuerzo),
       horario_recepcion_almuerzo: datos.horarioRecepcionAlmuerzo || "",
+      nivel_cambridge: datos.nivelCambridge || "",
+      modalidades_cambridge: datos.modalidadesCambridge || [],
+      costo_ciclo: datos.costoCiclo || datos.costo || "",
+      monto_primer_pago: datos.montoPrimerPago || "",
       creado_desde_documento: true,
       periodo: datos.periodo || "escolar",
       modalidad_cobro: datos.modalidadCobro || "Mensual",
@@ -336,11 +354,20 @@ export async function editarPrograma(id, datos) {
       requisitos: datos.requisitos || "",
       comunicado: datos.comunicado || "",
       comunicado_completo: datos.comunicadoCompleto || "",
+      tipo_comunicado: datos.tipoComunicado || "",
+      tipo_documento: datos.tipoDocumento || "",
+      numero_documento: datos.numeroDocumento || "",
+      area_tematica: datos.areaTematica || "",
+      motivo_justificacion: datos.motivoJustificacion || datos.comunicado || "",
       detalle_costo: datos.detalleCosto || "",
       detalle_almuerzo: datos.detalleAlmuerzo || "",
       concesionarios: datos.concesionarios || "",
       incluye_almuerzo: Boolean(datos.incluyeAlmuerzo),
       horario_recepcion_almuerzo: datos.horarioRecepcionAlmuerzo || "",
+      nivel_cambridge: datos.nivelCambridge || "",
+      modalidades_cambridge: datos.modalidadesCambridge || [],
+      costo_ciclo: datos.costoCiclo || datos.costo || "",
+      monto_primer_pago: datos.montoPrimerPago || "",
       invitacion_masiva: Boolean(datos.invitacionMasiva),
       alcance_invitacion_masiva: datos.alcanceInvitacionMasiva || "colegio",
       plantilla: datos.plantilla || "",
@@ -589,6 +616,47 @@ export async function listarHistorialCargas() {
     return Array.isArray(res.data) ? res.data : [];
   }
   return listarHistorialCargasMock();
+}
+
+const CONFIG_INSTITUCIONAL_INICIAL = {
+  logoInstitucion: null,
+  logoCambridge: null,
+  firmaCoordinacion: null,
+  firmaDireccion: null,
+  selloInstitucion: null,
+};
+
+function normalizarConfiguracionInstitucional(valor = {}) {
+  return {
+    ...CONFIG_INSTITUCIONAL_INICIAL,
+    ...(valor && typeof valor === "object" ? valor : {}),
+  };
+}
+
+export async function obtenerConfiguracionInstitucional() {
+  if (isApiMode()) {
+    const res = await apiClient.get("/api/v1/extracurricular/coordinacion/configuracion-institucional");
+    if (!res.success) throw new Error(res.message || "Error al obtener configuracion institucional");
+    return normalizarConfiguracionInstitucional(res.data);
+  }
+
+  await syncApiDb();
+  return normalizarConfiguracionInstitucional(apiDb.configuracionInstitucional);
+}
+
+export async function guardarConfiguracionInstitucional(configuracion) {
+  const normalizada = normalizarConfiguracionInstitucional(configuracion);
+  if (isApiMode()) {
+    const res = await apiClient.put("/api/v1/extracurricular/coordinacion/configuracion-institucional", normalizada);
+    if (!res.success) throw new Error(res.message || "Error al guardar configuracion institucional");
+    dispatchApiDbUpdated();
+    return normalizarConfiguracionInstitucional(res.data);
+  }
+
+  await syncApiDb();
+  apiDb.configuracionInstitucional = normalizada;
+  await saveApiDb();
+  return normalizada;
 }
 
 export async function eliminarCargaAlumnos(cargaId) {

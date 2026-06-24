@@ -91,24 +91,38 @@ export function generarCSVReporteCaja(datos) {
     "SECCION",
     "FECHA",
     "RECIBO",
-    "DESCUENTO / BECA",
+    "BECA",
+    "DESCUENTO",
+    "ANULADO",
     "ESTADO",
-    "COSTO",
+    "MONTO PAGADO",
+    "MONTO ANULADO",
     "JUSTIFICACION / OBSERVACION"
   ];
-  const filas = datos.map((fila, index) => [
-    index + 1,
-    fila.estudiante ? String(fila.estudiante).toUpperCase() : "SIN NOMBRE",
-    fila.programa ? String(fila.programa).toUpperCase() : "-",
-    fila.grado || "-",
-    fila.seccion || "-",
-    formatearFechaPeru(fila.fecha || fila.fechaPago || fila.fechaRegistro),
-    fila.nroRecibo || fila.nro_recibo || "-",
-    fila.descuentoAprobado ? String(fila.descuentoTipo || "DESCUENTO").toUpperCase() : "-",
-    fila.estadoPago ? String(fila.estadoPago).toUpperCase() : "-",
-    `S/ ${Number(fila.monto || 0).toFixed(2)}`,
-    fila.observaciones || fila.descuentoJustificacion || "-",
-  ]);
+  const filas = datos.map((fila, index) => {
+    const estadoNormalizado = normalizarEstadoPagoVista(fila.estadoPago, fila.estado, fila.estadoVerificacion);
+    const descuentoTipo = String(fila.descuentoTipo || "").trim();
+    const descuentoEsBeca = fila.descuentoAprobado && descuentoTipo.toLowerCase() === "beca";
+    const descuentoNoBeca = fila.descuentoAprobado && !descuentoEsBeca;
+    const monto = `S/ ${Number(fila.monto || 0).toFixed(2)}`;
+
+    return [
+      index + 1,
+      fila.estudiante ? String(fila.estudiante).toUpperCase() : "SIN NOMBRE",
+      fila.programa ? String(fila.programa).toUpperCase() : "-",
+      fila.grado || "-",
+      fila.seccion || "-",
+      formatearFechaPeru(fila.fecha || fila.fechaPago || fila.fechaRegistro),
+      fila.nroRecibo || fila.nro_recibo || "-",
+      descuentoEsBeca ? "SI" : "-",
+      descuentoNoBeca ? String(descuentoTipo || "DESCUENTO").toUpperCase() : "-",
+      estadoNormalizado === "anulado" ? "SI" : "-",
+      fila.estadoPago ? String(fila.estadoPago).toUpperCase() : "-",
+      estadoNormalizado === "anulado" ? "-" : monto,
+      estadoNormalizado === "anulado" ? monto : "-",
+      fila.observaciones || fila.descuentoJustificacion || "-",
+    ];
+  });
   const csvContent = [encabezados, ...filas]
     .map((fila) => fila.map((valor) => `"${String(valor || "").replace(/"/g, '""')}"`).join(";"))
     .join("\n");

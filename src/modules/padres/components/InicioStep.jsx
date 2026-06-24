@@ -199,27 +199,16 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
               </span>
               <div className="info-tile-text-container">
                 {datosHorario ? (
-                  <>
-                    <span className="custom-inline-label">
-                      Horario: <strong className="inline-value">{datosHorario.dia}</strong>
-                    </span>
-                    <div className="custom-inline-pills">
-                      <div className="padres-schedule-item">
-                        <CalendarDays size={12} />
-                        <span>Almuerzo: {convertirHorasAMPM(datosHorario.almuerzo)}</span>
-                      </div>
-                      <div className="padres-schedule-item">
-                        <CalendarDays size={12} />
-                        <span>Clase: {convertirHorasAMPM(datosHorario.clase)}</span>
-                      </div>
-                    </div>
-                  </>
+                  <div className="custom-schedule-stack">
+                    <span className="custom-schedule-label">Horario</span>
+                    <strong className="custom-schedule-day">{datosHorario.dia || "Por confirmar"}</strong>
+                    <span className="custom-schedule-class">Clase {convertirHorasAMPM(datosHorario.clase) || "Por confirmar"}</span>
+                  </div>
                 ) : (
-                  <>
-                    <span className="custom-inline-label">
-                      Horario: <strong className="inline-value">{convertirHorasAMPM(programa.horario) || "Por confirmar"}</strong>
-                    </span>
-                  </>
+                  <div className="custom-schedule-stack">
+                    <span className="custom-schedule-label">Horario</span>
+                    <strong className="custom-schedule-day">{convertirHorasAMPM(programa.horario) || "Por confirmar"}</strong>
+                  </div>
                 )}
               </div>
             </div>

@@ -1,4 +1,4 @@
-const API_BASE_URL = String(
+export const API_BASE_URL = String(
   import.meta.env?.VITE_API_URL ||
   (import.meta.env?.DEV ? import.meta.env?.VITE_LOCAL_API_URL : "") ||
   ""

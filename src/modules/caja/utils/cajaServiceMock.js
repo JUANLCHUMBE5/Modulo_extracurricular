@@ -77,15 +77,16 @@ export async function registrarPagoMock(datosPago) {
 
   if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
 
-  let nroRecibo = datosPago.nroRecibo || "";
-  if (!nroRecibo && apiDb.correlativos) {
-    const formaPagoStr = String(datosPago.formaPago || "").toLowerCase().trim();
-    const esVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoStr);
-    const startValue = esVirtual
-      ? (apiDb.correlativos.reciboVirtual || "V-0001")
-      : (apiDb.correlativos.recibo || "REC-0001");
-    const existingNros = (apiDb.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
-    nroRecibo = calcularSiguienteRecibo(startValue, existingNros);
+  if (!apiDb.correlativos) apiDb.correlativos = {};
+  const formaPagoStr = String(datosPago.formaPago || "").toLowerCase().trim();
+  const esVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoStr);
+  const nroRecibo = esVirtual
+    ? (apiDb.correlativos.reciboVirtualActual || apiDb.correlativos.reciboVirtual || "V-0001")
+    : (apiDb.correlativos.reciboActual || apiDb.correlativos.recibo || "REC-0001");
+  if (esVirtual) {
+    apiDb.correlativos.reciboVirtualActual = incrementarCorrelativo(nroRecibo);
+  } else {
+    apiDb.correlativos.reciboActual = incrementarCorrelativo(nroRecibo);
   }
 
   const DniEstudiante = datosPago.dniEstudiante || datosPago.estudianteDni || "";
@@ -349,10 +350,10 @@ export async function validarPagoWebMock(pagoId, observaciones = "") {
   let nroRecibo = "";
   if (idx !== -1) {
     nroRecibo = apiDb.pagos[idx].nroRecibo || "";
-    if (!nroRecibo && apiDb.correlativos) {
-      const startValue = apiDb.correlativos.reciboVirtual || "V-0001";
-      const existingNros = (apiDb.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
-      nroRecibo = calcularSiguienteRecibo(startValue, existingNros);
+    if (!nroRecibo) {
+      if (!apiDb.correlativos) apiDb.correlativos = {};
+      nroRecibo = apiDb.correlativos.reciboVirtualActual || apiDb.correlativos.reciboVirtual || "V-0001";
+      apiDb.correlativos.reciboVirtualActual = incrementarCorrelativo(nroRecibo);
     }
   }
 
@@ -735,3 +736,89 @@ function incrementarCorrelativo(valor) {
   const paddedNum = String(nextNum).padStart(numStr.length, "0");
   return prefix + paddedNum;
 }
+
+export async function buscarEstudiantesCajaQueryMock(query) {
+  await esperar(200);
+  await syncApiDb();
+  const q = normalizarTexto(query);
+  if (!q) return [];
+
+  const estudiantes = Object.values(apiDb.estudiantes || {});
+  const matchingEstudiantes = estudiantes.filter((e) => {
+    const nombresComp = `${e.nombres || ""} ${e.apellidos || ""}`;
+    return (
+      normalizarTexto(e.dni || "").includes(q) ||
+      normalizarTexto(e.nombres || "").includes(q) ||
+      normalizarTexto(e.apellidos || "").includes(q) ||
+      normalizarTexto(nombresComp).includes(q)
+    );
+  });
+
+  return matchingEstudiantes.map((e) => ({
+    dni: e.dni || "",
+    nombres: `${e.nombres || ""} ${e.apellidos || ""}`.trim() || "Sin Nombre",
+  }));
+}
+
+export async function cancelarCorrelativoCajaMock(tipo, motivo, dniEstudiante = "", nombresEstudiante = "", nroRecibo = "") {
+  await esperar(300);
+  await syncApiDb();
+
+  if (!apiDb.correlativos) apiDb.correlativos = {};
+  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
+
+  let val = "";
+  if (nroRecibo) {
+    val = String(nroRecibo).trim();
+    if (tipo === "recibo" && val === apiDb.correlativos.reciboActual) {
+      apiDb.correlativos.reciboActual = incrementarCorrelativo(val);
+    } else if (tipo === "reciboVirtual" && val === apiDb.correlativos.reciboVirtualActual) {
+      apiDb.correlativos.reciboVirtualActual = incrementarCorrelativo(val);
+    } else if (tipo === "egreso" && val === apiDb.correlativos.egresoActual) {
+      apiDb.correlativos.egresoActual = incrementarCorrelativo(val);
+    }
+  } else {
+    if (tipo === "recibo") {
+      val = apiDb.correlativos.reciboActual || "REC-0001";
+      apiDb.correlativos.reciboActual = incrementarCorrelativo(val);
+    } else if (tipo === "reciboVirtual") {
+      val = apiDb.correlativos.reciboVirtualActual || "V-0001";
+      apiDb.correlativos.reciboVirtualActual = incrementarCorrelativo(val);
+    } else if (tipo === "egreso") {
+      val = apiDb.correlativos.egresoActual || "EGR-0001";
+      apiDb.correlativos.egresoActual = incrementarCorrelativo(val);
+    } else {
+      throw new Error("Tipo de correlativo no válido.");
+    }
+  }
+
+  if (!val) {
+    throw new Error("No se encontró un correlativo actual para este tipo.");
+  }
+
+  const nuevoPagoAnulado = {
+    id: `PAG-CANC-${String(Date.now()).slice(-6)}`,
+    inscripcionId: null,
+    dniEstudiante: dniEstudiante || "ANULADO",
+    nombresEstudiante: nombresEstudiante || (tipo === "egreso" ? `EGRESO ANULADO: ${val}` : `RECIBO ANULADO: ${val}`),
+    programa: "",
+    programaId: "",
+    periodo: "escolar",
+    monto: 0,
+    formaPago: tipo === "reciboVirtual" ? "Yape" : "Efectivo",
+    nroRecibo: val,
+    estado: "anulado",
+    fecha: fechaActualIso(),
+    fechaPago: fechaActualIso(),
+    origenRegistro: "Caja",
+    observaciones: `Correlativo cancelado/anulado por Cajera. Motivo: ${motivo}`,
+    createdAt: fechaActualIso(),
+  };
+
+  apiDb.pagos.push(nuevoPagoAnulado);
+  await saveApiDb();
+  window.dispatchEvent(new Event("mock-db-updated"));
+
+  return nuevoPagoAnulado;
+}
+

@@ -11,7 +11,7 @@ export const formInicial = {
   comunicado: "", comunicadoCompleto: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
   requiereUniforme: false, requiereIndumentaria: false, invitacionMasiva: false, alcanceInvitacionMasiva: "colegio",
   anuncioImagen: "", anuncioImagenNombre: "", anuncioImagenTamano: 0, anuncioImagenComprimida: false,
-  
+
   // Nuevos campos condicionales por tipo de circular
   tipoComunicado: "Otro genérico",
   tipoDocumento: "Comunicado",
@@ -23,6 +23,7 @@ export const formInicial = {
   horarioRecepcionAlmuerzo: "",
   nivelCambridge: "",
   modalidadesCambridge: [],
+  costoCiclo: "",
   montoPrimerPago: "",
 };
 
@@ -51,9 +52,12 @@ export const TEMPLATES_POR_TIPO = {
     comunicado: "La preparación para la Certificación Internacional de Cambridge English brinda a nuestros alumnos la oportunidad de certificar oficialmente su nivel de dominio del idioma inglés bajo el Marco Común Europeo de Referencia para las Lenguas (MCER), potenciando su perfil académico global.",
     requisitos: "Libro de preparación oficial Cambridge (según el nivel asignado), cuaderno A4 cuadriculado para apuntes, cartuchera personal completa, y auriculares con conexión auxiliar de 3.5mm para las prácticas de Listening."
   },
+  "Cambridge": {
+    comunicado: "La preparación para la Certificación Internacional de Cambridge English brinda a nuestros alumnos la oportunidad de certificar oficialmente su nivel de dominio del idioma inglés bajo el Marco Común Europeo de Referencia para las Lenguas (MCER), potenciando su perfil académico global.",
+    requisitos: "Libro de preparación oficial Cambridge (según el nivel asignado), cuaderno A4 cuadriculado para apuntes, cartuchera personal completa, y auriculares con conexión auxiliar de 3.5mm para las prácticas de Listening."
+  },
   "Otro genérico": {
     comunicado: "",
     requisitos: ""
   }
 };
-

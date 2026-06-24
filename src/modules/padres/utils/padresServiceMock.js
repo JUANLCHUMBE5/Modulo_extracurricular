@@ -7,6 +7,7 @@ import {
 } from "../../../services/dateService";
 import {
   calcularEstadoGeneral,
+  esProgramaCambridgePadres,
   extraerDiasHorario,
   limpiarTexto,
   normalizarEstadoPagoPadres,
@@ -114,12 +115,13 @@ export async function registrarInscripcionPadresMock(dni, datos, programaId = ""
   const programa = apiDb.programas.find((item) => item.id === programaSeleccionadoId);
   if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
   if (programa.estado !== "Habilitado") throw new Error("El programa no está habilitado.");
+  const esCambridge = esProgramaCambridgePadres(programa);
   const gradoRegistro = invitacion?.grado || estudiante.grado;
   const seccionRegistro = invitacion?.seccion || estudiante.seccion;
   const codigoRegistro = invitacion?.codigoEstudiante || estudiante.codigoEstudiante || "";
   const nombresRegistro = invitacion?.nombres || estudiante.nombres;
 
-  if (!invitacion && !programa.invitacionMasiva) {
+  if (!invitacion && (esCambridge || !programa.invitacionMasiva)) {
     throw new Error("Este programa requiere invitacion de Coordinación Académica.");
   }
 
@@ -129,7 +131,7 @@ export async function registrarInscripcionPadresMock(dni, datos, programaId = ""
     throw new Error("El programa no tiene cupos disponibles.");
   }
 
-  if (!programaDisponibleParaGrado(programa, gradoRegistro)) {
+  if (!esCambridge && !programaDisponibleParaGrado(programa, gradoRegistro)) {
     throw new Error("El programa no esta disponible para el grado del estudiante.");
   }
 
@@ -356,7 +358,8 @@ export async function obtenerProgramasCoordinacionMock() {
     const cuposDisponibles = Math.max(0, cupos - cuposOcupados);
     const duracionAvisoDias = normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7);
     const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias, programa.horaLimiteAviso);
-    const requiereGradoCompatible = !programa.invitacionMasiva && (
+    const esCambridge = esProgramaCambridgePadres(programa);
+    const requiereGradoCompatible = !esCambridge && !programa.invitacionMasiva && (
       tieneHorariosPorGrupo(programa) ||
       (Array.isArray(programa.gradosAplicables) && programa.gradosAplicables.length > 0)
     );
@@ -394,7 +397,7 @@ export async function obtenerProgramasCoordinacionMock() {
       duracionAvisoDias,
       horaLimiteAviso: programa.horaLimiteAviso || "23:59",
       ventanaInscripcion,
-      registrable: Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0,
+      registrable: !esCambridge && Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0,
     };
   });
 }
@@ -459,12 +462,13 @@ function obtenerInvitaciones(dni, estudiante = null) {
     }
 
     const invitados = apiDb.invitadosPorPrograma[programa.id] || [];
+    const esCambridge = esProgramaCambridgePadres(programa);
     invitados
       .filter((invitado) => invitado.dni === dni)
       .forEach((invitado) => {
         if (resultado.some((item) => item.programaId === programa.id)) return;
         const gradoEstudiante = obtenerGradoCompleto(invitado.grado, invitado.nivelEducativo || invitado.nivel, estudiante?.grado);
-        if (!programaDisponibleParaGrado(programa, gradoEstudiante)) return;
+        if (!esCambridge && !programaDisponibleParaGrado(programa, gradoEstudiante)) return;
 
         resultado.push({
           id: `${programa.id}-${invitado.dni || invitado.codigoEstudiante || invitado.nombres}`,

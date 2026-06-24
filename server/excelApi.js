@@ -22,6 +22,7 @@ import programaRouter from "./routes/programaRoutes.js";
 import inscripcionRouter from "./routes/inscripcionRoutes.js";
 import pagoRouter from "./routes/pagoRoutes.js";
 import direccionRouter from "./routes/direccionRoutes.js";
+import syncRouter from "./routes/syncRoutes.js";
 
 const app = express();
 const PORT = Number(process.env.PORT || process.env.EXCEL_API_PORT || 5175);
@@ -169,6 +170,7 @@ app.post("/api/secretaria/documentos/pdf", documentUpload.single("archivo"), asy
 
 // 1. Authentication and Admin (Includes login and parent validation)
 app.use("/", authRouter);
+app.use("/", syncRouter);
 
 // 2. Require Authentication for Extracurricular endpoints
 app.use("/api/v1/extracurricular", requireAuth);

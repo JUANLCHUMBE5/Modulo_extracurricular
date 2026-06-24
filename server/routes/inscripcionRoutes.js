@@ -18,7 +18,8 @@ import {
   normalizarPeriodoApi,
   normalizarTextoApi,
   programaListoParaPortalPadresApi,
-  programaDisponibleParaGradoApi
+  programaDisponibleParaGradoApi,
+  esProgramaCambridgeApi
 } from "../apiMappers.js";
 
 const router = express.Router();
@@ -452,7 +453,7 @@ router.post("/api/v1/extracurricular/inscripciones", requireRole(["secretaria", 
     const invitacionRegistro = invitadosPrograma.find(
       inv => String(inv.dni).replace(/\D/g, "") === String(estudiante_id).replace(/\D/g, "")
     );
-    if (req.user.role === "padres" && !prog.invitacionMasiva) {
+    if (req.user.role === "padres" && (esProgramaCambridgeApi(prog) || !prog.invitacionMasiva)) {
       if (!invitacionRegistro) {
         return res.status(400).json({ success: false, message: "El estudiante no se encuentra en la lista de invitados para este programa." });
       }

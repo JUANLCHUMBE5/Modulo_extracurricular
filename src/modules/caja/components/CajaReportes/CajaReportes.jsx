@@ -26,7 +26,7 @@ export default function CajaReportes({
 }) {
   return (
     <>
-      <header className="caja-header">
+      <header className="caja-report-header">
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           {!sidebarExpanded && (
             <button
@@ -72,7 +72,7 @@ export default function CajaReportes({
           grados={opcionesReporte.grados}
           secciones={opcionesReporte.secciones}
         />
-        <section className="caja-panel">
+        <section className="caja-report-panel">
           <div className="caja-panel-header">
             <div>
               <h2>Resultado del reporte</h2>

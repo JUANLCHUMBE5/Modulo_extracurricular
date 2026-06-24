@@ -13,6 +13,7 @@ import SeccionDatosGenerales from "./ProgramaFormModal/SeccionDatosGenerales";
 import SeccionDocumentoOficial from "./ProgramaFormModal/SeccionDocumentoOficial";
 import SeccionFechasHorarios from "./ProgramaFormModal/SeccionFechasHorarios";
 import SeccionPago from "./ProgramaFormModal/SeccionPago";
+import SeccionCambridge from "./ProgramaFormModal/SeccionCambridge";
 import SeccionComunicadoPadres from "./ProgramaFormModal/SeccionComunicadoPadres";
 import SeccionRequisitosMateriales from "./ProgramaFormModal/SeccionRequisitosMateriales";
 import SeccionAlmuerzo from "./ProgramaFormModal/SeccionAlmuerzo";
@@ -118,20 +119,45 @@ function ProgramaFormModal({
   }, [show, form.comunicado, form.comunicadoCompleto]);
 
   useEffect(() => {
-    if (show && duracionTallerFormulario && !form.duracionTaller) {
+    if (show && duracionTallerFormulario && form.duracionTaller !== duracionTallerFormulario) {
       actualizarForm("duracionTaller", duracionTallerFormulario);
     }
   }, [show, duracionTallerFormulario, form.duracionTaller]);
 
+  useEffect(() => {
+    if (!show || !esCambridgeForm) return;
+    const defaults = {};
+    if (form.tipoComunicado !== "Cambridge") defaults.tipoComunicado = "Cambridge";
+    if (form.tipoDocumento !== "Carta") defaults.tipoDocumento = "Carta";
+    if (form.numeroDocumento && /^COM-/i.test(form.numeroDocumento)) {
+      defaults.numeroDocumento = form.numeroDocumento.replace(/^COM-/i, "CAR-");
+    }
+    if (form.areaTematica !== "Inglés / Cambridge") defaults.areaTematica = "Inglés / Cambridge";
+    if (!form.costo) defaults.costo = "150";
+    if (!form.costoCiclo) defaults.costoCiclo = form.costo || "150";
+    if (!form.montoPrimerPago) defaults.montoPrimerPago = form.costo || "150";
+    if (!form.modalidadCobro || form.modalidadCobro === "Mensual") defaults.modalidadCobro = "Unico";
+    if (!form.detalleCosto) {
+      defaults.detalleCosto = "Opcion A: Inscripcion presencial. Acercarse al area de Caja del colegio con esta invitacion y realizar el primer pago de S/ 150. Presentar nombres y apellidos del alumno, grado, seccion y nivel, nombres completos del apoderado, DNI del apoderado y numero de celular del apoderado.\n\nOpcion B: Inscripcion virtual por Yape. Realizar el primer pago de S/ 150 al numero 970 836 322 y enviar la captura del pago junto con los mismos datos al numero de la institucion 970 836 322.";
+    }
+    if (!form.requisitos || /auriculares|listening|libro de prepar/i.test(String(form.requisitos))) {
+      defaults.requisitos = "Libros de preparacion. Simulacros del examen oficial Cambridge en todos los niveles. Material adicional requerido.";
+    }
+    if (Object.keys(defaults).length) {
+      actualizarForm(defaults);
+    }
+  }, [show, esCambridgeForm, form.tipoComunicado]);
+
   if (!show) return null;
 
   const catLowerClean = String(form.categoria || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const esAcademico = catLowerClean === "academico" || catLowerClean === "vacaciones utiles";
-  const esNoAcademico = catLowerClean && catLowerClean !== "academico" && catLowerClean !== "vacaciones utiles";
+  const esAcademico = catLowerClean.includes("academico") || catLowerClean.includes("reforzamiento") || catLowerClean.includes("tareas") || catLowerClean === "vacaciones utiles";
+  const esNoAcademico = catLowerClean && !esAcademico;
   const esCircularEspecial = form.tipoComunicado && form.tipoComunicado !== "Otro genérico";
   const esMostrarSeccionAlmuerzo = esAcademico ||
     form.tipoComunicado === "Club de Tareas" ||
     form.tipoComunicado === "Reforzamiento (Circular)" ||
+    form.tipoComunicado === "Cambridge" ||
     form.tipoComunicado === "Certificación Cambridge";
 
   const categoriasEscolar = (categorias || []).filter(c => {
@@ -189,6 +215,7 @@ function ProgramaFormModal({
             <SeccionDocumentoOficial
               form={form}
               actualizarForm={actualizarForm}
+              esCambridgeForm={esCambridgeForm}
             />
 
             <SeccionFechasHorarios
@@ -227,6 +254,12 @@ function ProgramaFormModal({
               formatearCostoFormulario={formatearCostoFormulario}
               actualizarForm={actualizarForm}
               actualizarInvitacionMasiva={actualizarInvitacionMasiva}
+            />
+
+            <SeccionCambridge
+              form={form}
+              esCambridgeForm={esCambridgeForm}
+              actualizarForm={actualizarForm}
             />
 
             <SeccionComunicadoPadres

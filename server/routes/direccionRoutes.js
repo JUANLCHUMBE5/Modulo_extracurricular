@@ -68,7 +68,7 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
     const { periodo, anio } = req.query;
     const db = await getDb();
 
-    const period = normalizarPeriodoApi(periodo || "todos");
+    const period = (periodo === "todos" || !periodo) ? "todos" : normalizarPeriodoApi(periodo);
     const year = anio || "todos";
 
     const filtrarPorPeriodo = (items) => {
@@ -127,17 +127,30 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
     };
 
     const crearFilaPago = (item) => {
+      const inscripcion = (db.inscripciones || []).find((ins) =>
+        (item.inscripcionId && ins.id === item.inscripcionId) ||
+        (item.dniEstudiante && ins.dniEstudiante === item.dniEstudiante && normalizarTextoApi(ins.programa) === normalizarTextoApi(item.programa))
+      ) || null;
+
       return {
         id: item.id || "",
+        inscripcionId: item.inscripcionId || "",
+        programaId: item.programaId || inscripcion?.programaId || "",
         dni: item.dniEstudiante || item.estudianteDni || "",
         estudiante: item.nombresEstudiante || item.estudianteNombre || "",
         programa: item.programa || item.programaNombre || "",
         monto: Number(item.monto || 0),
         estado: normalizarEstadoPago(item.estado),
+        estadoVerificacion: item.estadoVerificacion || "",
         medio: item.formaPago || item.medioPago || "",
         fecha: item.fechaPago || item.fecha || "",
         nroRecibo: item.nroRecibo || item.nro_recibo || "",
         observaciones: item.observaciones || "",
+        descuentoAprobado: Boolean(inscripcion?.descuentoAprobado),
+        descuentoTipo: inscripcion?.descuentoTipo || "",
+        descuentoValor: Number(inscripcion?.descuentoValor || 0),
+        descuentoMonto: Number(inscripcion?.descuentoMonto || 0),
+        descuentoJustificacion: inscripcion?.descuentoJustificacion || "",
       };
     };
 
@@ -157,46 +170,169 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
       pagos = pagos.filter(p => programaIdsInYear.has(p.programaId));
     }
 
+    const filasProgramas = programas.map((programa) => {
+      const inscripcionesPrograma = inscripciones.filter((item) =>
+        item.programaId === programa.id || normalizarTextoApi(item.programa) === normalizarTextoApi(programa.nombre)
+      );
+      const pagosPrograma = pagos.filter((item) =>
+        item.programaId === programa.id || normalizarTextoApi(item.programa || item.programaNombre) === normalizarTextoApi(programa.nombre)
+      );
+      const inscritos = inscripcionesPrograma.length;
+      const cupos = Number(programa.cupos || programa.cuposDisponibles || 0);
+      const ocupados = Math.max(Number(programa.cuposOcupados || 0), inscritos);
+      const proyectado = inscripcionesPrograma.reduce((sum, item) => sum + Number(item.costo ?? programa.costo ?? 0), 0);
+      const recaudado = pagosPrograma
+        .filter((item) => normalizarEstadoPago(item.estado) === "Pagado")
+        .reduce((sum, item) => sum + Number(item.monto || 0), 0);
+
+      const conBeca = inscripcionesPrograma.filter((item) => item.descuentoAprobado).length;
+      const porCobrar = Math.max(0, proyectado - recaudado);
+
+      return {
+        id: programa.id,
+        nombre: programa.nombre || "Programa sin nombre",
+        periodo: normalizarPeriodoApi(programa.periodo || "escolar"),
+        estado: programa.estado || "Sin estado",
+        categoria: programa.categoria || "Sin categoria",
+        responsable: programa.responsable || programa.docente || programa.tutora || "Sin responsable",
+        cupos,
+        ocupados,
+        inscritos,
+        conBeca,
+        costo: Number(programa.costo || 0),
+        proyectado,
+        recaudado,
+        porCobrar,
+        avance: cupos > 0 ? Math.round((ocupados / cupos) * 100) : 0,
+        gradosAplicables: programa.gradosAplicables || [],
+      };
+    }).sort((a, b) => b.inscritos - a.inscritos);
+
+    const totalRecaudado = pagos
+      .filter((item) => normalizarEstadoPago(item.estado) === "Pagado")
+      .reduce((sum, item) => sum + Number(item.monto || 0), 0);
+    const totalProyectado = inscripciones.reduce((sum, item) => sum + Number(item.costo || 0), 0);
+    const pendientesPago = inscripciones.filter((item) => normalizarEstadoPago(item.estadoPago) !== "Pagado");
+    const familias = new Set(inscripciones.map((item) => item.telefono || item.apoderado || item.dniEstudiante).filter(Boolean));
+
+    // --- Procesamiento de Asistencia ---
+    const asistencias = db.asistencias || [];
+
+    const obtenerFechaPeru = (fechaStr) => {
+      if (!fechaStr) return "";
+      const str = String(fechaStr);
+      if (str.includes("T") || str.length > 10) {
+        try {
+          const d = new Date(str);
+          const dPeru = new Date(d.getTime() - 5 * 60 * 60 * 1000);
+          return dPeru.toISOString().slice(0, 10);
+        } catch {
+          return str.slice(0, 10);
+        }
+      }
+      return str.slice(0, 10);
+    };
+
+    const hoyStr = new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD local
+
+    const asistenciasHoy = asistencias.filter(item => {
+      if (!item.fechaRegistro) return false;
+      return obtenerFechaPeru(item.fechaRegistro) === hoyStr;
+    });
+
+    const asistidosHoyUnicos = new Set(
+      asistenciasHoy.map(item => item.dniEstudiante || item.codigoEstudiante || item.nombresEstudiante).filter(Boolean)
+    ).size;
+
+    const asistenciaPorPrograma = filasProgramas.slice(0, 8).map((prog) => {
+      const asistidosHoy = new Set(
+        asistenciasHoy
+          .filter(item => {
+            const idCoincide = item.programaId && prog.id && String(item.programaId) === String(prog.id);
+            const nombreCoincide = item.programa && prog.nombre && normalizarTextoApi(item.programa) === normalizarTextoApi(prog.nombre);
+            return idCoincide || nombreCoincide;
+          })
+          .map(item => item.dniEstudiante || item.codigoEstudiante || item.nombresEstudiante).filter(Boolean)
+      ).size;
+
+      return {
+        programa: abreviar(prog.nombre),
+        matriculados: prog.inscritos,
+        asistidos: asistidosHoy,
+      };
+    });
+
+    const ultimosIngresos = [...asistencias]
+      .sort((a, b) => new Date(b.fechaRegistro || 0).getTime() - new Date(a.fechaRegistro || 0).getTime())
+      .slice(0, 15)
+      .map(item => {
+        let horaFormateada = "—";
+        if (item.fechaRegistro) {
+          try {
+            const date = new Date(item.fechaRegistro);
+            horaFormateada = date.toLocaleTimeString("es-PE", { hour: "2-digit", minute: "2-digit", hour12: true });
+          } catch {
+            horaFormateada = String(item.fechaRegistro).slice(11, 16);
+          }
+        }
+        return {
+          id: item.id || "",
+          hora: horaFormateada,
+          estudiante: item.nombresEstudiante || "Estudiante",
+          dni: item.dniEstudiante || "",
+          programa: item.programa || "Sin programa",
+          estadoPago: item.estadoPago || "Pendiente",
+          estadoAcceso: item.estadoAcceso || "no_registrado",
+          observacion: item.observacion || "",
+        };
+      });
+
     const inscripcionesMapeadas = inscripciones.map(crearFilaInscripcion);
     const pagosMapeados = pagos.map(crearFilaPago);
     const programasMapeados = programas.map(mapDbProgramToApi);
 
-    const totalRecaudado = pagos
-      .filter((p) => ["completado", "validado", "pagado"].includes(normalizarTextoApi(p.estado)))
-      .reduce((sum, p) => sum + Number(p.monto || 0), 0);
-
-    const totalBecas = inscripciones
-      .filter((ins) => ins.descuentoAprobado)
-      .reduce((sum, ins) => sum + Number(ins.descuentoMonto || 0), 0);
-
-    const totalEsperado = inscripciones.reduce((sum, ins) => sum + Number(ins.costo || 0), 0);
-    const totalPorCobrar = Math.max(0, totalEsperado - totalRecaudado);
-
-    const totalTalleres = programas.length;
-    const totalMatriculados = inscripciones.length;
-
-    const matriculasPorGrado = contarPor(inscripciones, (item) => item.gradoEstudiante || item.grado);
-    const matriculasPorTaller = contarPor(inscripciones, (item) => abreviar(item.programa));
-    const estadoPagos = contarPor(inscripciones, (item) => normalizarEstadoPago(item.estadoPago));
-
     res.json({
       success: true,
       data: {
-        totalRecaudado,
-        totalBecas,
-        totalPorCobrar,
-        totalTalleres,
-        totalMatriculados,
+        resumen: {
+          programas: programas.length,
+          programasHabilitados: programas.filter((item) => item.estado === "Habilitado").length,
+          inscripciones: inscripciones.length,
+          familias: familias.size,
+          totalRecaudado,
+          totalProyectado,
+          totalPendiente: pendientesPago.reduce((sum, item) => sum + Number(item.costo || 0), 0),
+          cupos: filasProgramas.reduce((sum, item) => sum + Number(item.cupos || 0), 0),
+          ocupados: filasProgramas.reduce((sum, item) => sum + Number(item.ocupados || 0), 0),
+          asistidosHoy: asistidosHoyUnicos,
+        },
+        filasProgramas,
+        ultimosIngresos,
         graficos: {
-          matriculasPorGrado,
-          matriculasPorTaller,
-          estadoPagos,
+          inscripcionesPorPrograma: filasProgramas.slice(0, 8).map((item) => ({
+            programa: abreviar(item.nombre),
+            inscripciones: item.inscritos,
+          })),
+          ingresosPorPrograma: filasProgramas.slice(0, 8).map((item) => ({
+            programa: abreviar(item.nombre),
+            proyectado: item.proyectado,
+            recaudado: item.recaudado,
+          })),
+          estadoPago: contarPor(inscripciones, (item) => normalizarEstadoPago(item.estadoPago)),
+          origen: contarPor(inscripciones, (item) => item.origenRegistro || "Sin origen"),
+          asistenciaPorPrograma,
         },
         reportes: {
+          programas: programasMapeados,
           inscripciones: inscripcionesMapeadas,
           pagos: pagosMapeados,
-          programas: programasMapeados,
         },
+        aniosDisponibles: Array.from(new Set(
+          (db.programas || []).map(p => p.fechaInicio ? String(p.fechaInicio).slice(0, 4) : "").filter(Boolean)
+        )).sort((a, b) => b.localeCompare(a)),
+        categorias: Array.from(new Set(
+          (db.programas || []).map(p => p.categoria).filter(Boolean)
+        ))
       },
     });
   } catch (error) {

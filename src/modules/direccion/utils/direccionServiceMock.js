@@ -72,17 +72,30 @@ function crearFilaInscripcion(item) {
 }
 
 function crearFilaPago(item) {
+  const inscripcion = (apiDb.inscripciones || []).find((ins) =>
+    (item.inscripcionId && ins.id === item.inscripcionId) ||
+    (item.dniEstudiante && ins.dniEstudiante === item.dniEstudiante && normalizarTexto(ins.programa) === normalizarTexto(item.programa))
+  ) || null;
+
   return {
     id: item.id || "",
+    inscripcionId: item.inscripcionId || "",
+    programaId: item.programaId || inscripcion?.programaId || "",
     dni: item.dniEstudiante || item.estudianteDni || "",
     estudiante: item.nombresEstudiante || item.estudianteNombre || "",
     programa: item.programa || item.programaNombre || "",
     monto: Number(item.monto || 0),
     estado: normalizarEstadoPago(item.estado),
+    estadoVerificacion: item.estadoVerificacion || "",
     medio: item.formaPago || item.medioPago || "",
     fecha: item.fechaPago || item.fecha || "",
     nroRecibo: item.nroRecibo || "",
     observaciones: item.observaciones || "",
+    descuentoAprobado: Boolean(inscripcion?.descuentoAprobado),
+    descuentoTipo: inscripcion?.descuentoTipo || "",
+    descuentoValor: Number(inscripcion?.descuentoValor || 0),
+    descuentoMonto: Number(inscripcion?.descuentoMonto || 0),
+    descuentoJustificacion: inscripcion?.descuentoJustificacion || "",
   };
 }
 
@@ -467,15 +480,39 @@ export async function removerDescuentoInscripcionMock(inscripcionId) {
 
 export async function obtenerCorrelativosMock() {
   await syncApiDb();
-  return apiDb.correlativos || { recibo: "", reciboVirtual: "", egreso: "" };
+  const c = apiDb.correlativos || {};
+  if (c.reciboInicio === undefined) c.reciboInicio = c.recibo || "REC-0500";
+  if (c.reciboActual === undefined) c.reciboActual = c.recibo || "REC-0500";
+  if (c.reciboVirtualInicio === undefined) c.reciboVirtualInicio = c.reciboVirtual || "V-1000";
+  if (c.reciboVirtualActual === undefined) c.reciboVirtualActual = c.reciboVirtual || "V-1000";
+  if (c.egresoInicio === undefined) c.egresoInicio = c.egreso || "EGR-0200";
+  if (c.egresoActual === undefined) c.egresoActual = c.egreso || "EGR-0200";
+  return c;
 }
 
-export async function guardarCorrelativosMock({ recibo, reciboVirtual, egreso }) {
+export async function guardarCorrelativosMock(correlativos) {
   await syncApiDb();
+  const actuales = await obtenerCorrelativosMock();
+  const resolverValorInicial = (nuevoValor, valorAnterior) => {
+    const limpio = String(nuevoValor || "").trim();
+    return limpio || valorAnterior || "";
+  };
+  const resolverValorActual = (nuevoInicio, inicioAnterior, actualAnterior) => {
+    if (!actualAnterior || actualAnterior === inicioAnterior) return nuevoInicio;
+    return actualAnterior;
+  };
+
+  const reciboInicio = resolverValorInicial(correlativos.reciboInicio, actuales.reciboInicio);
+  const reciboVirtualInicio = resolverValorInicial(correlativos.reciboVirtualInicio, actuales.reciboVirtualInicio);
+  const egresoInicio = resolverValorInicial(correlativos.egresoInicio, actuales.egresoInicio);
+
   apiDb.correlativos = {
-    recibo: String(recibo || "").trim(),
-    reciboVirtual: String(reciboVirtual || "").trim(),
-    egreso: String(egreso || "").trim()
+    reciboInicio,
+    reciboActual: resolverValorActual(reciboInicio, actuales.reciboInicio, actuales.reciboActual),
+    reciboVirtualInicio,
+    reciboVirtualActual: resolverValorActual(reciboVirtualInicio, actuales.reciboVirtualInicio, actuales.reciboVirtualActual),
+    egresoInicio,
+    egresoActual: resolverValorActual(egresoInicio, actuales.egresoInicio, actuales.egresoActual)
   };
   await saveApiDb();
   window.dispatchEvent(new Event("mock-db-updated"));

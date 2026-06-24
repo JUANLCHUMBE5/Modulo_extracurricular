@@ -8,6 +8,51 @@ import {
   formatearRangoHoraDocumento,
   agruparGradosConsecutivos,
 } from "./secretariaFichaData";
+import { obtenerConfiguracionInstitucional } from "../../coordinacion/services/coordinacionService";
+
+let configuracionInstitucionalCache = null;
+
+async function obtenerRecursosInstitucionales() {
+  try {
+    configuracionInstitucionalCache = await obtenerConfiguracionInstitucional();
+    return configuracionInstitucionalCache;
+  } catch {
+    return configuracionInstitucionalCache || {};
+  }
+}
+
+function dataUrlRecurso(configuracion, campo) {
+  const recurso = configuracion?.[campo];
+  if (!recurso) return "";
+  if (typeof recurso === "string") return recurso;
+  return recurso.dataUrl || "";
+}
+
+function formatoImagenDataUrl(dataUrl = "") {
+  const formato = String(dataUrl).match(/^data:image\/([^;]+)/i)?.[1]?.toUpperCase();
+  if (!formato) return "PNG";
+  return formato === "JPG" ? "JPEG" : formato;
+}
+
+function agregarImagenPdf(doc, dataUrl, x, y, ancho, alto) {
+  if (!dataUrl) return false;
+  try {
+    doc.addImage(dataUrl, formatoImagenDataUrl(dataUrl), x, y, ancho, alto, undefined, "FAST");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function esDocumentoCambridge(ficha) {
+  const texto = [
+    ficha?.programa?.tipoComunicado,
+    ficha?.programa?.nombre,
+    ficha?.programa?.areaTematica,
+    ficha?.programa?.plantilla,
+  ].filter(Boolean).join(" ").toLowerCase();
+  return /cambridge|cambrigde|cabringde|camringde|ingles/.test(texto);
+}
 
 export function prepararVistaDocxParaImpresion(contenedor) {
   const paginas = Array.from(contenedor?.querySelectorAll(".docx") || []);
@@ -131,7 +176,13 @@ function extraerAlmuerzoHorario(horario) {
 export async function crearPdfInvitacionDocumento(documento) {
   const { jsPDF } = await import("jspdf");
   const ficha = documento.ficha || {};
+  const recursosInstitucionales = await obtenerRecursosInstitucionales();
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const logoColegio = dataUrlRecurso(recursosInstitucionales, "logoInstitucion");
+  const logoCambridge = dataUrlRecurso(recursosInstitucionales, "logoCambridge");
+  const firmaDireccion = dataUrlRecurso(recursosInstitucionales, "firmaDireccion");
+  const selloInstitucion = dataUrlRecurso(recursosInstitucionales, "selloInstitucion");
+  const mostrarCambridge = esDocumentoCambridge(ficha);
 
   const nombreEstudiante = (ficha.estudiante?.nombre || "").toUpperCase();
   const gradoEstudiante = (ficha.estudiante?.grado || "").toUpperCase();
@@ -154,7 +205,9 @@ export async function crearPdfInvitacionDocumento(documento) {
   doc.setFont("helvetica", "italic");
   doc.setFontSize(7.5);
   doc.setTextColor(100, 116, 139); // slate 500
-  doc.text('"Año de la Esperanza y el Fortalecimiento de la Democracia"', 192, 14, { align: "right" });
+  if (!mostrarCambridge) {
+    doc.text('"Año de la Esperanza y el Fortalecimiento de la Democracia"', 192, 14, { align: "right" });
+  }
 
   // 2. School Brand info with decorative icons
   doc.setDrawColor(20, 83, 45); // dark green
@@ -173,6 +226,25 @@ export async function crearPdfInvitacionDocumento(documento) {
   doc.setTextColor(71, 85, 105);
   doc.text("Matemático y Ecológico", 27, 20.5);
 
+  if (logoColegio) {
+    doc.setFillColor(255, 255, 255);
+    doc.rect(15, 5, 64, 21, "F");
+    agregarImagenPdf(doc, logoColegio, 18, 7, 48, 17);
+  }
+
+  if (mostrarCambridge && logoCambridge) {
+    doc.setFillColor(255, 255, 255);
+    doc.rect(145, 5, 50, 21, "F");
+    agregarImagenPdf(doc, logoCambridge, 158, 7, 34, 17);
+
+    doc.setFillColor(255, 255, 255);
+    doc.rect(70, 7, 70, 9, "F");
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text('"Año de la Esperanza y el Fortalecimiento de la Democracia"', 105, 14, { align: "center" });
+  }
+
   // 3. Document ID and Date
   const docNumRaw = ficha.programa?.numeroDocumento || ficha.programa?.id || "N° 29";
   const nCom = `COMUNICADO CMSR-${docNumRaw.toUpperCase()}`;
@@ -180,20 +252,20 @@ export async function crearPdfInvitacionDocumento(documento) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(nCom, 18, 26);
+  doc.text(nCom, 18, 31);
 
   const fechaStr = `Carabayllo, ${formatearFechaLarga(ficha.fecha) || "marzo de 2026"}`;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(15, 23, 42);
-  doc.text(fechaStr, 192, 26, { align: "right" });
+  doc.text(fechaStr, 192, 31, { align: "right" });
 
   // 4. Header Underline
   doc.setDrawColor(203, 213, 225);
   doc.setLineWidth(0.4);
-  doc.line(18, 28, 192, 28);
+  doc.line(18, 33, 192, 33);
 
-  let y = 36;
+  let y = 41;
 
   // 5. Title
   doc.setFont("helvetica", "bold");
@@ -420,6 +492,10 @@ export async function crearPdfInvitacionDocumento(documento) {
   doc.text("Atentamente,", 105, y, { align: "center" });
   y += 11;
 
+  if (firmaDireccion) {
+    agregarImagenPdf(doc, firmaDireccion, 75, y - 12, 36, 10);
+  }
+
   // Signature line
   doc.setDrawColor(20, 83, 45);
   doc.setLineWidth(0.35);
@@ -442,6 +518,16 @@ export async function crearPdfInvitacionDocumento(documento) {
   doc.text("SAN RAFAEL", 118, y - 3, { align: "center" });
   doc.text("DIRECCIÓN", 118, y - 1, { align: "center" });
   doc.text("GENERAL", 118, y + 1, { align: "center" });
+
+  if (selloInstitucion) {
+    doc.setFillColor(255, 255, 255);
+    doc.rect(108, y - 13, 22, 20, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(20, 83, 45);
+    doc.text("DIRECCIÓN GENERAL", 105, y + 4, { align: "center" });
+    agregarImagenPdf(doc, selloInstitucion, 126, y - 13, 16, 16);
+  }
 
   y += 12;
 

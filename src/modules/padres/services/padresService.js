@@ -142,13 +142,20 @@ export async function obtenerProgramasCoordinacion() {
         Array.isArray(programa.horariosPorGrupo) && programa.horariosPorGrupo.length > 0 ||
         (Array.isArray(programa.gradosAplicables) && programa.gradosAplicables.length > 0)
       );
+      const esCambridge = String([
+        programa.nombre,
+        programa.categoria,
+        programa.tipoComunicado,
+        programa.plantilla,
+        ...(programa.plantillaVariables || []),
+      ].join(" ")).toLowerCase().includes("cambridge");
 
       return {
         ...programa,
         duracionAvisoDias,
         ventanaInscripcion,
-        requiereGradoCompatible,
-        registrable: Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0,
+        requiereGradoCompatible: esCambridge ? false : requiereGradoCompatible,
+        registrable: !esCambridge && Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0,
       };
     });
   }

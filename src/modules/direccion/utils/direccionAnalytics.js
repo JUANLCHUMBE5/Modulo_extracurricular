@@ -1,5 +1,64 @@
 import { normalizarFecha } from "../../../services/dateService";
 
+function normalizarEstadoPagoVista(estado) {
+  const texto = String(estado || "").toLowerCase();
+  if (texto.includes("anul") || texto === "cancelado") return "Anulado";
+  if (texto.includes("pag") || texto === "completado" || texto === "validado" || texto === "aprobado") return "Pagado";
+  return "Pendiente";
+}
+
+function normalizarEstadoPagoClave(...valores) {
+  const texto = valores
+    .filter(Boolean)
+    .join(" ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (texto.includes("cancelado") || texto.includes("anulado")) return "anulado";
+  if (["completado", "pagado", "validado", "aprobado", "pago validado"].some((item) => texto.includes(item))) {
+    return "pagado";
+  }
+  if (["verificando", "verificacion", "por verificar", "revision"].some((item) => texto.includes(item))) {
+    return "verificando";
+  }
+  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) {
+    return "observado";
+  }
+  return "pendiente";
+}
+
+function esVerdadero(valor) {
+  if (typeof valor === "boolean") return valor;
+  const texto = String(valor ?? "").trim().toLowerCase();
+  if (!texto || ["false", "no", "0", "ninguno", "-"].includes(texto)) return false;
+  return true;
+}
+
+function construirDetalleFinanciero(row = {}, pago = null) {
+  const fuentePago = pago || row;
+  const estadoClave = normalizarEstadoPagoClave(
+    fuentePago?.estadoPago,
+    fuentePago?.estado,
+    fuentePago?.estadoVerificacion,
+    row?.estadoPago
+  );
+  const descuentoTipo = String(row.descuentoTipo || fuentePago?.descuentoTipo || "").trim();
+  const descuentoAprobado = esVerdadero(row.descuentoAprobado) || esVerdadero(fuentePago?.descuentoAprobado);
+  const descuentoEsBeca = descuentoAprobado && descuentoTipo.toLowerCase() === "beca";
+  const descuentoNoBeca = descuentoAprobado && !descuentoEsBeca;
+  const monto = Number(fuentePago?.monto ?? row.montoPagado ?? row.costo ?? 0);
+
+  return {
+    beca: descuentoEsBeca ? "SI" : "-",
+    descuento: descuentoNoBeca ? String(descuentoTipo || "DESCUENTO").toUpperCase() : "-",
+    anulado: estadoClave === "anulado" ? "SI" : "-",
+    estadoFinanciero: normalizarEstadoPagoVista(fuentePago?.estadoPago || fuentePago?.estado || row.estadoPago),
+    montoPagado: estadoClave === "anulado" ? 0 : monto,
+    montoAnulado: estadoClave === "anulado" ? monto : 0,
+  };
+}
+
 export function calcularMetricasAnalisis(panel) {
   const inscripcionesPeriodo = panel?.reportes?.inscripciones || [];
 
@@ -67,7 +126,10 @@ export function filtrarRegistrosReporte({
     const list = panel.reportes.programas || [];
     raw = incluirInactivos ? list : list.filter(p => String(p.estado || "").toLowerCase() === "habilitado");
   } else if (customTipo === "pagos") {
-    raw = panel.reportes.pagos || [];
+    raw = (panel.reportes.pagos || []).map((pago) => ({
+      ...pago,
+      ...construirDetalleFinanciero(pago),
+    }));
   } else if (customTipo === "direccion_alumnos_pagos") {
     const inscripciones = panel.reportes.inscripciones || [];
     const pagos = panel.reportes.pagos || [];
@@ -82,11 +144,13 @@ export function filtrarRegistrosReporte({
       const costo = Number(ins.costo || 0);
       const montoPagado = pago ? Number(pago.monto || 0) : 0;
       const pendiente = Math.max(0, costo - montoPagado);
+      const detalleFinanciero = construirDetalleFinanciero(ins, pago);
 
       return {
         dni: ins.dni || "",
         estudiante: ins.estudiante || "",
         grado: ins.grado || "",
+        seccion: ins.seccion || "",
         apoderado: ins.apoderado || "",
         telefono: ins.telefono || "",
         programa: ins.programa || "",
@@ -97,14 +161,16 @@ export function filtrarRegistrosReporte({
         descuentoValor: ins.descuentoValor || 0,
         descuentoMonto: ins.descuentoMonto || 0,
         costo,
-        montoPagado,
-        pendiente,
-        estadoPago: pago ? (pago.estado || "Pagado") : "Pendiente",
+        ...detalleFinanciero,
+        pendiente: detalleFinanciero.anulado === "SI" ? costo : pendiente,
+        estadoPago: detalleFinanciero.estadoFinanciero,
         medioPago: pago ? (pago.medio || "—") : "—",
         fechaPago: pago ? (pago.fecha || "—") : "—",
         nroOperacion: pago ? (pago.id || "—") : "—",
+        nroRecibo: pago ? (pago.nroRecibo || "—") : "—",
         origen: ins.origen || "",
         fechaRegistro: ins.fechaRegistro || "",
+        observaciones: pago ? (pago.observaciones || "—") : "—",
       };
     });
   } else if (customTipo === "direccion_alumnos_asistencias") {

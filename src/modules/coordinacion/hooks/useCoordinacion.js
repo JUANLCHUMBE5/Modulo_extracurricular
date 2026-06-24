@@ -10,12 +10,14 @@ import {
   listarCategorias,
   crearCategoria,
   eliminarCategoria,
+  obtenerConfiguracionInstitucional,
+  guardarConfiguracionInstitucional,
   listarHistorialCargas,
   listarAsistenciasPrograma,
   listarMatriculados,
 } from "../services/coordinacionService";
 import { calcularDuracionTexto, normalizarDuracionAvisoDias, fechaActualInput } from "../../../services/dateService";
-import { formInicial, horarioGrupoInicial } from "../constants/coordinacionFormDefaults";
+import { formInicial, horarioGrupoInicial, TEMPLATES_POR_TIPO } from "../constants/coordinacionFormDefaults";
 import { esCostoValido } from "../utils/coordinacionFormatters";
 import { puedeVerVista, tienePermisoAsignado } from "../utils/coordinacionPermissions";
 import {
@@ -143,6 +145,9 @@ export default function useCoordinacion({
   const [ultimoLoteId, setUltimoLoteId] = useState("");
   const [programaCargaId, setProgramaCargaId] = useState("");
   const [historialCargas, setHistorialCargas] = useState([]);
+  const [configInstitucional, setConfigInstitucional] = useState({});
+  const [cargandoConfigInstitucional, setCargandoConfigInstitucional] = useState(false);
+  const [guardandoConfigInstitucional, setGuardandoConfigInstitucional] = useState(false);
   const [programaAFinalizar, setProgramaAFinalizar] = useState(null);
   const [programaAArchivar, setProgramaAArchivar] = useState(null);
 
@@ -400,19 +405,23 @@ export default function useCoordinacion({
   async function cargarDatos() {
     lastFetchTimeRef.current = Date.now();
     setCargando(true);
+    setCargandoConfigInstitucional(true);
     try {
-      const [progs, cats, cargas] = await Promise.all([
+      const [progs, cats, cargas, config] = await Promise.all([
         listarProgramas(),
         listarCategorias(),
         listarHistorialCargas(),
+        obtenerConfiguracionInstitucional().catch(() => null),
       ]);
       setProgramas(progs);
       setCategorias(cats);
       setHistorialCargas(cargas);
+      if (config) setConfigInstitucional(config);
     } catch (err) {
       mostrarMsg(err.message || "No se pudieron cargar los datos de Coordinación Académica.");
     } finally {
       setCargando(false);
+      setCargandoConfigInstitucional(false);
     }
   }
 
@@ -437,6 +446,35 @@ export default function useCoordinacion({
   }
 
   // ── Filtrar programas ──
+  function actualizarConfigInstitucionalImagen(campo, imagen) {
+    setConfigInstitucional((actual) => ({
+      ...(actual || {}),
+      [campo]: imagen,
+    }));
+  }
+
+  function quitarConfigInstitucionalImagen(campo) {
+    setConfigInstitucional((actual) => ({
+      ...(actual || {}),
+      [campo]: null,
+    }));
+  }
+
+  async function guardarConfigInstitucional() {
+    setGuardandoConfigInstitucional(true);
+    try {
+      const guardada = await guardarConfiguracionInstitucional(configInstitucional);
+      setConfigInstitucional(guardada);
+      mostrarMsg("Recursos institucionales guardados correctamente.", "success");
+      return true;
+    } catch (err) {
+      mostrarMsg(err.message || "No se pudo guardar la configuracion institucional.");
+      return false;
+    } finally {
+      setGuardandoConfigInstitucional(false);
+    }
+  }
+
   const programasFiltrados = programas.filter((p) => {
     if (p.estado === "Archivado") return false;
     const textoBusqueda = busqueda.trim().toLowerCase();
@@ -590,6 +628,7 @@ export default function useCoordinacion({
     if (!form.cupos || Number(form.cupos) <= 0) camposFaltantes.push("cupos");
     if (!String(form.costo || "").trim()) camposFaltantes.push("costo");
     if (!form.modalidadCobro) camposFaltantes.push("modalidad de cobro");
+    if (esCambridgeGuardar && !String(form.responsable || "").trim()) camposFaltantes.push("docente/profesor responsable");
     if (esMaratonGuardar) {
       if (!form.horaInicio || !form.horaFin) camposFaltantes.push("horario");
     } else if (esVeranoGuardar && usaTalleresPorEdad) {
@@ -603,7 +642,7 @@ export default function useCoordinacion({
       }
     }
 
-    if (form.tipoComunicado && form.tipoComunicado !== "Otro genérico") {
+    if (!esCambridgeGuardar && form.tipoComunicado && form.tipoComunicado !== "Otro genérico") {
       if (gruposHorario.length === 0) {
         camposFaltantes.push("horarios por grado/bloque/docente");
       }
@@ -624,6 +663,12 @@ export default function useCoordinacion({
       if (form.horaInicio >= form.horaFin) {
         return mostrarMsg("La hora de inicio de la maratón debe ser menor a la hora de fin.");
       }
+    }
+
+    if (esCambridgeGuardar) {
+      if (diasFinales.length === 0) return mostrarMsg("Seleccione los días de clase del programa Cambridge.");
+      if (!form.horaInicio || !form.horaFin) return mostrarMsg("Seleccione hora de inicio y fin del programa Cambridge.");
+      if (form.horaInicio >= form.horaFin) return mostrarMsg("La hora de inicio debe ser menor a la hora de fin.");
     }
 
     if (!esCambridgeGuardar && !usaTalleresPorEdad && !esMaratonGuardar && usaHorariosPorBloqueGuardar && gruposHorario.length === 0) {
@@ -692,17 +737,15 @@ export default function useCoordinacion({
         ? resumenTutoraPorGrupo(form.tablaHorariosNivel, form.tutora)
         : form.tutora,
       costo: Number(form.costo).toFixed(2),
-      gradosAplicables: gradosFinales,
+      gradosAplicables: esCambridgeGuardar ? [] : gradosFinales,
       edadMinima: usaTalleresPorEdad ? edadMinimaVerano : "",
       edadMaxima: usaTalleresPorEdad ? edadMaximaVerano : "",
       fechaNacimientoDesde: "",
       fechaNacimientoHasta: "",
-      duracionTaller: (form.tipoComunicado && form.tipoComunicado !== "Otro genérico")
-        ? (form.duracionTaller || calcularDuracionTexto(form.fechaInicio, form.fechaFin))
-        : calcularDuracionTexto(form.fechaInicio, form.fechaFin),
+      duracionTaller: calcularDuracionTexto(form.fechaInicio, form.fechaFin),
       cicloI: esCambridgeForm ? ciclosCambridgeGuardar.cicloI : form.cicloI || "",
       cicloII: esCambridgeForm ? ciclosCambridgeGuardar.cicloII : form.cicloII || "",
-      modalidadesCambridge: esCambridgeForm ? ["Certificado Oficial"] : [],
+      modalidadesCambridge: [],
       duracionAvisoDias: duracionAvisoDiasVal,
       dias: diasFinales,
       horariosPorGrupo: gruposHorario,
@@ -715,13 +758,16 @@ export default function useCoordinacion({
       grupoEtario: usaTalleresPorEdad ? `Edades ${edadMinimaVerano} a ${edadMaximaVerano} anios` : "",
       requiereUniforme: false,
       requiereIndumentaria: Boolean(form.requiereIndumentaria),
-      alcanceInvitacionMasiva: form.invitacionMasiva ? form.alcanceInvitacionMasiva || "colegio" : "",
-      anuncioImagen: form.invitacionMasiva ? form.anuncioImagen : "",
-      anuncioImagenNombre: form.invitacionMasiva ? form.anuncioImagenNombre : "",
-      anuncioImagenTamano: form.invitacionMasiva ? form.anuncioImagenTamano : 0,
-      anuncioImagenComprimida: form.invitacionMasiva ? Boolean(form.anuncioImagenComprimida) : false,
+      invitacionMasiva: esCambridgeGuardar ? false : Boolean(form.invitacionMasiva),
+      alcanceInvitacionMasiva: !esCambridgeGuardar && form.invitacionMasiva ? form.alcanceInvitacionMasiva || "colegio" : "",
+      anuncioImagen: !esCambridgeGuardar && form.invitacionMasiva ? form.anuncioImagen : "",
+      anuncioImagenNombre: !esCambridgeGuardar && form.invitacionMasiva ? form.anuncioImagenNombre : "",
+      anuncioImagenTamano: !esCambridgeGuardar && form.invitacionMasiva ? form.anuncioImagenTamano : 0,
+      anuncioImagenComprimida: !esCambridgeGuardar && form.invitacionMasiva ? Boolean(form.anuncioImagenComprimida) : false,
       horario: esCambridgeForm
-        ? "Asignado por carga Excel"
+        ? (diasFinales.length && form.horaInicio && form.horaFin
+            ? resumenHorario(diasFinales, form.horaInicio, form.horaFin)
+            : "Asignado por carga Excel")
         : usaTalleresPorEdad
         ? resumenHorarioDeportivo(talleres)
         : gruposHorario.length
@@ -1107,9 +1153,11 @@ export default function useCoordinacion({
     setForm((actual) => {
       const esVerano = normalizarPeriodoVista(actual.periodo) === "verano";
       const catLower = String(actual.categoria || "").toLowerCase();
-      const esDeportivo = catLower === "deportivo" || catLower === "talleres deportivos" || esProgramaDeportivo(valor, actual.categoria);
+      const catClean = catLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const esAcademicoLocal = catClean.includes("academico") || catClean.includes("reforzamiento") || catClean.includes("tareas") || catClean === "vacaciones utiles";
+      const esDeportivo = catClean === "deportivo" || catClean === "talleres deportivos" || esProgramaDeportivo(valor, actual.categoria);
       const usaTalleresPorEdad = esVerano
-        ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
+        ? !esAcademicoLocal
         : esDeportivo;
       const talleres = Array.isArray(actual.talleresDeportivos) ? actual.talleresDeportivos : [];
       let nuevosCupos = actual.cupos;
@@ -1130,7 +1178,7 @@ export default function useCoordinacion({
       const esVerano = normalizarPeriodoVista(actual.periodo) === "verano";
       const catLower = String(valor || "").toLowerCase();
       const catClean = catLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const esAcademico = catClean === "academico" || catClean === "vacaciones utiles";
+      const esAcademico = catClean.includes("academico") || catClean.includes("reforzamiento") || catClean.includes("tareas") || catClean === "vacaciones utiles";
 
       const esDeportivo = catClean === "deportivo" || catClean === "talleres deportivos" || esProgramaDeportivo(actual.nombre, valor);
       const usaTalleresPorEdad = esVerano ? !esAcademico : esDeportivo;
@@ -1138,6 +1186,34 @@ export default function useCoordinacion({
       let nuevosCupos = actual.cupos;
       if (usaTalleresPorEdad && talleres.length > 0) {
         nuevosCupos = String(talleres.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0));
+      }
+
+      let nuevosCamposAcademico = {};
+      if (esAcademico) {
+        let sugeridoTipo = actual.tipoComunicado || "Otro genérico";
+        if (sugeridoTipo === "Otro genérico") {
+          if (catClean.includes("reforzamiento") || catClean.includes("circulo")) {
+            sugeridoTipo = "Reforzamiento (Circular)";
+          } else if (catClean.includes("tareas") || catClean.includes("club")) {
+            sugeridoTipo = "Club de Tareas";
+          } else if (catClean.includes("cambridge") || catClean.includes("ingles")) {
+            sugeridoTipo = "Cambridge";
+          }
+        }
+
+        if (sugeridoTipo !== actual.tipoComunicado) {
+          const template = TEMPLATES_POR_TIPO[sugeridoTipo] || { comunicado: "", requisitos: "" };
+          const tipoDocSugerido = (sugeridoTipo === "Cambridge" || sugeridoTipo === "Certificación Cambridge") ? "Carta" : "Comunicado";
+          const numDocSugerido = sugerirNumeroDocumento(tipoDocSugerido, programas);
+          nuevosCamposAcademico = {
+            tipoComunicado: sugeridoTipo,
+            comunicado: template.comunicado,
+            comunicadoCompleto: template.comunicado,
+            requisitos: template.requisitos,
+            tipoDocumento: tipoDocSugerido,
+            numeroDocumento: numDocSugerido,
+          };
+        }
       }
 
       const reseteosCircular = (!esAcademico) ? {
@@ -1161,6 +1237,7 @@ export default function useCoordinacion({
       return {
         ...actual,
         ...reseteosCircular,
+        ...nuevosCamposAcademico,
         categoria: valor,
         cupos: nuevosCupos,
         requiereIndumentaria: esDeportivo ? actual.requiereIndumentaria : false,
@@ -1446,6 +1523,9 @@ export default function useCoordinacion({
     setUltimoLoteId,
     programaCargaId,
     setProgramaCargaId,
+    configInstitucional,
+    cargandoConfigInstitucional,
+    guardandoConfigInstitucional,
 
     // Carga Excel Sub-hook delegates
     archivosExcel: carga.archivosExcel,
@@ -1500,6 +1580,9 @@ export default function useCoordinacion({
     cargarDatos,
     mostrarMsg,
     mostrarAlertaConfiguracion,
+    actualizarConfigInstitucionalImagen,
+    quitarConfigInstitucionalImagen,
+    guardarConfigInstitucional,
     abrirCrear,
     abrirEditar,
     guardar,

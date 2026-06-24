@@ -317,6 +317,12 @@ function CoordinacionInner({
                 variablesPlantillaAceptadas={variablesPlantillaAceptadas}
                 variablesPlantillaRequeridas={variablesPlantillaRequeridas}
                 categorias={state.categorias}
+                configInstitucional={state.configInstitucional}
+                cargandoConfigInstitucional={state.cargandoConfigInstitucional}
+                guardandoConfigInstitucional={state.guardandoConfigInstitucional}
+                actualizarConfigInstitucionalImagen={state.actualizarConfigInstitucionalImagen}
+                quitarConfigInstitucionalImagen={state.quitarConfigInstitucionalImagen}
+                guardarConfigInstitucional={state.guardarConfigInstitucional}
                 toggleSidebarButton={toggleSidebarButton}
               />
             )}

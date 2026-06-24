@@ -2,7 +2,7 @@ import { tiposReporte } from "../constants/cajaConstants";
 
 export default function ReporteFiltros({ filtros, mediosPago, onChange, programas, grados = [], secciones = [] }) {
   return (
-    <section className="caja-report-filters">
+    <section className="caja-report-filters-card">
       <label>
         Tipo de reporte
         <select value={filtros.tipoReporte} onChange={(event) => onChange("tipoReporte", event.currentTarget.value)}>

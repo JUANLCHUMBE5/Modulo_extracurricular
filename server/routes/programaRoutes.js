@@ -26,14 +26,47 @@ import {
 
 const router = express.Router();
 
+const INSTITUTIONAL_ASSET_KEYS = [
+  "logoInstitucion",
+  "logoCambridge",
+  "firmaCoordinacion",
+  "firmaDireccion",
+  "selloInstitucion",
+];
+
+function normalizarConfiguracionInstitucional(valor = {}) {
+  const origen = valor && typeof valor === "object" ? valor : {};
+  return INSTITUTIONAL_ASSET_KEYS.reduce((acc, key) => {
+    const item = origen[key];
+    acc[key] = item && typeof item === "object"
+      ? {
+          nombre: String(item.nombre || ""),
+          tipo: String(item.tipo || ""),
+          dataUrl: String(item.dataUrl || ""),
+          actualizadoEn: String(item.actualizadoEn || ""),
+        }
+      : null;
+    return acc;
+  }, {});
+}
+
 function esProgramaCambridgeApi(programa = {}) {
   const texto = normalizarTextoApi([
     programa.nombre,
+    programa.programa,
     programa.categoria,
+    programa.tipoComunicado,
+    programa.tipo_comunicado,
     programa.plantilla,
     ...(programa.plantillaVariables || []),
   ].filter(Boolean).join(" "));
   return texto.includes("cambridge") ||
+    texto.includes("cambrigde") ||
+    texto.includes("cabringde") ||
+    texto.includes("camringde") ||
+    texto.includes("certificacion cam") ||
+    texto.includes("ingles") ||
+    texto.includes("ingless") ||
     texto.includes("certificacion") ||
     texto.includes("preparacion") ||
     (programa.plantillaVariables || []).some((variable) =>
@@ -106,6 +139,35 @@ router.delete("/api/v1/extracurricular/categorias/:nombre", requireRole(["coordi
     db.categorias = (db.categorias || []).filter(c => String(c).toLowerCase() !== String(nombre).toLowerCase());
     await saveDb(db);
     res.json({ success: true, data: nombre });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.get("/api/v1/extracurricular/coordinacion/configuracion-institucional", requireRole(["coordinacion", "direccion"]), async (_req, res) => {
+  try {
+    const db = await getDb();
+    res.json({
+      success: true,
+      data: normalizarConfiguracionInstitucional(db.configuracionInstitucional),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+router.put("/api/v1/extracurricular/coordinacion/configuracion-institucional", requireRole(["coordinacion"]), async (req, res) => {
+  try {
+    const db = await getDb();
+    db.configuracionInstitucional = normalizarConfiguracionInstitucional(req.body || {});
+    await saveDb(db);
+    await registrarAuditoria(req.user?.username || "Coordinacion Academica", req.user?.role || "coordinacion", "CONFIG_INSTITUCIONAL_GUARDAR", {
+      recursos: INSTITUTIONAL_ASSET_KEYS.filter((key) => db.configuracionInstitucional[key]?.dataUrl),
+    });
+    res.json({
+      success: true,
+      data: db.configuracionInstitucional,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -195,6 +257,12 @@ router.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), 
       estado: "Habilitado"
     };
 
+    if (esProgramaCambridgeApi(nuevo)) {
+      nuevo.gradosAplicables = [];
+      nuevo.invitacionMasiva = false;
+      nuevo.alcanceInvitacionMasiva = "";
+    }
+
     sincronizarPlantillaProgramaApi(db, nuevo);
     db.programas.push(nuevo);
     await saveDb(db);
@@ -250,6 +318,12 @@ router.post("/api/v1/extracurricular/programas/documento", requireRole(["secreta
       creadoDesdeDocumento: true,
       estado: "Deshabilitado"
     };
+
+    if (esProgramaCambridgeApi(nuevo)) {
+      nuevo.gradosAplicables = [];
+      nuevo.invitacionMasiva = false;
+      nuevo.alcanceInvitacionMasiva = "";
+    }
 
     sincronizarPlantillaProgramaApi(db, nuevo);
     db.programas.push(nuevo);
@@ -337,6 +411,12 @@ router.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
       montoPrimerPago: req.body.monto_primer_pago ?? db.programas[idx].montoPrimerPago ?? "",
       estado: nuevoEstado
     };
+
+    if (esProgramaCambridgeApi(updated)) {
+      updated.gradosAplicables = [];
+      updated.invitacionMasiva = false;
+      updated.alcanceInvitacionMasiva = "";
+    }
 
     const oldName = db.programas[idx].nombre;
 
@@ -743,8 +823,10 @@ router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole
         grupoArchivo.duplicadosConfirmacion = (grupoArchivo.duplicadosConfirmacion || 0) + 1;
         return;
       }
-      agregarGradoProgramaDesdeAlumnoApi(programaCarga, gradoCompleto);
-      programasTocados.add(item.programaId);
+      if (!esProgramaCambridgeApi(programaCarga)) {
+        agregarGradoProgramaDesdeAlumnoApi(programaCarga, gradoCompleto);
+        programasTocados.add(item.programaId);
+      }
       const invitado = {
         cargaId,
         codigoEstudiante: item.codigoEstudiante || "",

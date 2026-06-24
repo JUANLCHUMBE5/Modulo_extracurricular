@@ -26,9 +26,9 @@ function CampoTexto({ label, icon, value, onChange, placeholder, maxLength, clas
   );
 }
 
-function CampoLectura({ label, value }) {
+function CampoLectura({ label, value, className = "" }) {
   return (
-    <div className="secretaria-field">
+    <div className={`secretaria-field ${className}`.trim()}>
       <label>{label}</label>
       <div className="secretaria-readonly-field">{value || "No definido"}</div>
     </div>

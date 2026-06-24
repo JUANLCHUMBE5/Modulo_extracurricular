@@ -2246,8 +2246,8 @@
 }
 
 .secretaria-registration-modal:not(.is-summer-registration) {
-  width: min(960px, calc(100vw - 32px)) !important;
-  max-height: min(90vh, 720px) !important;
+  width: min(900px, calc(100vw - 32px)) !important;
+  max-height: min(88vh, 700px) !important;
   padding: 0 !important;
   background: #ffffff !important;
   border-radius: 16px !important;
@@ -2335,7 +2335,7 @@
 /* 3. Form Clean Wrapper */
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-form-clean {
   display: grid !important;
-  grid-template-columns: 1.05fr 0.95fr !important;
+  grid-template-columns: 1fr 0.95fr !important;
   align-content: start !important;
   gap: 0 !important;
   padding: 0 !important;
@@ -2450,12 +2450,12 @@
   border: none !important;
   border-radius: 0 !important;
   border-right: 1px solid #eef2f6 !important; /* Subtle vertical division line between panes */
-  padding: 24px 28px !important;
+  padding: 20px 24px !important;
   box-shadow: none !important;
   grid-column: 1 / span 1 !important;
   display: grid !important; /* CSS grid instead of flex */
   grid-template-columns: 1.35fr 0.65fr !important; /* Unified 2-column grid layout for left section */
-  gap: 16px 24px !important;
+  gap: 14px 20px !important;
   order: 1 !important;
   align-content: start !important;
 }
@@ -2469,13 +2469,13 @@
   background: #ffffff !important;
   border: none !important;
   border-radius: 0 !important;
-  padding: 24px 28px !important;
+  padding: 20px 24px !important;
   box-shadow: none !important;
   grid-column: 2 / span 1 !important;
   align-self: stretch !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 20px !important;
+  gap: 16px !important;
   order: 2 !important;
 }
 
@@ -2665,6 +2665,41 @@
 
 .secretaria-registration-modal:not(.is-summer-registration) .secretaria-highlight-green {
   color: #059669 !important;
+}
+
+.secretaria-registration-modal .secretaria-program-readonly-field {
+  min-width: 0 !important;
+}
+
+.secretaria-registration-modal .secretaria-program-readonly-field .secretaria-readonly-field {
+  min-height: 42px !important;
+  padding: 0 14px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 10px !important;
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow-wrap: anywhere !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-program-readonly-field {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-registration-program {
+  row-gap: 14px !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item.is-clase {
+  grid-column: 1 / -1 !important;
+}
+
+.secretaria-registration-modal:not(.is-summer-registration) .secretaria-schedule-item.is-almuerzo:empty {
+  display: none !important;
 }
 
 /* 8. Contact Form Fields */

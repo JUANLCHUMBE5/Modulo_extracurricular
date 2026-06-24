@@ -19,6 +19,52 @@ function normalizarEstadoPago(estado) {
   return "Pendiente";
 }
 
+function normalizarEstadoPagoClave(...valores) {
+  const texto = valores
+    .filter(Boolean)
+    .join(" ")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  if (["cancelado", "anulado"].some((item) => texto.includes(item))) return "anulado";
+  if (["completado", "pagado", "validado", "aprobado", "pago validado"].some((item) => texto.includes(item))) return "pagado";
+  if (["verificando", "verificacion", "por verificar", "revision"].some((item) => texto.includes(item))) return "verificando";
+  if (["observado", "rechazado", "no coincide"].some((item) => texto.includes(item))) return "observado";
+  return "pendiente";
+}
+
+function esVerdadero(valor) {
+  if (typeof valor === "boolean") return valor;
+  const texto = String(valor ?? "").trim().toLowerCase();
+  if (!texto || ["false", "no", "0", "ninguno", "-"].includes(texto)) return false;
+  return true;
+}
+
+function construirDetalleFinanciero(row = {}, pago = null) {
+  const fuentePago = pago || row;
+  const estadoClave = normalizarEstadoPagoClave(
+    fuentePago?.estadoPago,
+    fuentePago?.estado,
+    fuentePago?.estadoVerificacion,
+    row?.estadoPago
+  );
+  const descuentoTipo = String(row.descuentoTipo || fuentePago?.descuentoTipo || "").trim();
+  const descuentoAprobado = esVerdadero(row.descuentoAprobado) || esVerdadero(fuentePago?.descuentoAprobado);
+  const descuentoEsBeca = descuentoAprobado && descuentoTipo.toLowerCase() === "beca";
+  const descuentoNoBeca = descuentoAprobado && !descuentoEsBeca;
+  const monto = Number(fuentePago?.monto ?? row.montoPagado ?? row.costo ?? 0);
+
+  return {
+    beca: descuentoEsBeca ? "SI" : "-",
+    descuento: descuentoNoBeca ? String(descuentoTipo || "DESCUENTO").toUpperCase() : "-",
+    anulado: estadoClave === "anulado" ? "SI" : "-",
+    estadoFinanciero: normalizarEstadoPago(fuentePago?.estadoPago || fuentePago?.estado || row.estadoPago),
+    montoPagado: estadoClave === "anulado" ? 0 : monto,
+    montoAnulado: estadoClave === "anulado" ? monto : 0,
+  };
+}
+
 function coincideEstadoPago(estado, filtro, excluirAnulados) {
   const valor = String(estado || "").toLowerCase();
   if (filtro === "Pagado") {
@@ -118,16 +164,25 @@ export async function descargarReporteDireccionExcel(panel, tipoReporte, filtros
   }
 
   if (tipoReporte === "completo" || tipoReporte === "pagos") {
-    agregarHoja(workbook, "Pagos", panel.reportes.pagos, [
+    const filasPagos = (panel.reportes.pagos || []).map((pago) => ({
+      ...pago,
+      ...construirDetalleFinanciero(pago),
+    }));
+    agregarHoja(workbook, "Pagos", filasPagos, [
       { header: "Codigo", key: "id", width: 16 },
       { header: "DNI", key: "dni", width: 12 },
       { header: "Estudiante", key: "estudiante", width: 32 },
       { header: "Programa", key: "programa", width: 32 },
-      { header: "Monto", key: "monto", width: 12 },
-      { header: "Estado", key: "estado", width: 16 },
+      { header: "Beca", key: "beca", width: 10 },
+      { header: "Descuento", key: "descuento", width: 18 },
+      { header: "Anulado", key: "anulado", width: 12 },
+      { header: "Estado", key: "estadoFinanciero", width: 16 },
+      { header: "Monto pagado", key: "montoPagado", width: 15 },
+      { header: "Monto anulado", key: "montoAnulado", width: 15 },
       { header: "Medio", key: "medio", width: 18 },
       { header: "Fecha", key: "fecha", width: 22 },
       { header: "N° de comprobante", key: "nroRecibo", width: 18 },
+      { header: "Observaciones / Motivo Anulación", key: "observaciones", width: 30 },
     ]);
   }
 
@@ -153,7 +208,10 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
     const list = panel.reportes.programas || [];
     rawData = filtros.incluirInactivos ? list : list.filter(p => String(p.estado || "").toLowerCase() === "habilitado");
   } else if (tipoDatos === "pagos") {
-    rawData = panel.reportes.pagos;
+    rawData = (panel.reportes.pagos || []).map((pago) => ({
+      ...pago,
+      ...construirDetalleFinanciero(pago),
+    }));
   } else if (tipoDatos === "direccion_alumnos_pagos") {
     const inscripciones = panel.reportes.inscripciones || [];
     const pagos = panel.reportes.pagos || [];
@@ -168,6 +226,7 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
       const costo = Number(ins.costo || 0);
       const montoPagado = pago ? Number(pago.monto || 0) : 0;
       const pendiente = Math.max(0, costo - montoPagado);
+      const detalleFinanciero = construirDetalleFinanciero(ins, pago);
 
       return {
         dni: ins.dni || "",
@@ -184,9 +243,9 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
         descuentoValor: ins.descuentoValor || 0,
         descuentoMonto: ins.descuentoMonto || 0,
         costo,
-        montoPagado,
-        pendiente,
-        estadoPago: pago ? (pago.estado || "Pagado") : "Pendiente",
+        ...detalleFinanciero,
+        pendiente: detalleFinanciero.anulado === "SI" ? costo : pendiente,
+        estadoPago: detalleFinanciero.estadoFinanciero,
         medioPago: pago ? (pago.medio || "—") : "—",
         fechaPago: pago ? (pago.fecha || "—") : "—",
         nroOperacion: pago ? (pago.id || "—") : "—",
@@ -487,6 +546,10 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
     descuentoTipo: { header: "Tipo Descuento", width: 18 },
     descuentoValor: { header: "Valor Descuento", width: 16 },
     descuentoMonto: { header: "Monto Descuento (S/)", width: 18 },
+    beca: { header: "BECA", width: 10 },
+    descuento: { header: "DESCUENTO", width: 18 },
+    anulado: { header: "ANULADO", width: 12 },
+    estadoFinanciero: { header: "ESTADO", width: 16 },
     costo: { header: "COSTO", width: 15 },
     origen: { header: "Origen / Canal", width: 24 },
     fechaRegistro: { header: "Fecha Registro", width: 22 },
@@ -508,11 +571,13 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
     medio: { header: "Medio", width: 18 },
     fecha: { header: "Fecha", width: 22 },
     montoPagado: { header: "Monto Pagado", width: 15 },
+    montoAnulado: { header: "Monto Anulado", width: 15 },
     pendiente: { header: "Monto Pendiente", width: 15 },
     medioPago: { header: "Medio de Pago", width: 18 },
     fechaPago: { header: "FECHA", width: 15 },
     nroOperacion: { header: "N° Operación", width: 16 },
     nroRecibo: { header: "N° de comprobante", width: 18 },
+    observaciones: { header: "Observaciones / Motivo Anulación", width: 30 },
   };
 
   let sheetColumns = [];
@@ -649,11 +714,11 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
               cell.value = formatGradoExcel(cell.value);
             } else if (["fechaPago", "fecha", "fechaRegistro"].includes(colKey)) {
               cell.value = formatFechaExcel(cell.value);
-            } else if (colKey === "costo" || colKey === "costoOriginal" || colKey === "montoPagado" || colKey === "pendiente" || colKey === "descuentoMonto") {
+            } else if (colKey === "costo" || colKey === "costoOriginal" || colKey === "montoPagado" || colKey === "montoAnulado" || colKey === "pendiente" || colKey === "descuentoMonto") {
               cell.value = Number(cell.value || 0);
               cell.numFmt = '"S/"#,##0.00';
               cell.alignment = { vertical: "middle", horizontal: "right" };
-            } else if (colKey === "descuentoAprobado" || colKey === "descuentoTipo" || colKey === "descuentoValor") {
+            } else if (["descuentoAprobado", "descuentoTipo", "descuentoValor", "beca", "descuento", "anulado", "estadoFinanciero"].includes(colKey)) {
               cell.alignment = { vertical: "middle", horizontal: "center" };
             }
           });

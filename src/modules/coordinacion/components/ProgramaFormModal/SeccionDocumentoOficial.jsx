@@ -1,7 +1,11 @@
 import { IconBook as BookOpen } from "@tabler/icons-react";
 
-function SeccionDocumentoOficial({ form, actualizarForm }) {
+function SeccionDocumentoOficial({ form, actualizarForm, esCambridgeForm = false }) {
   if (!form.tipoComunicado || form.tipoComunicado === "Otro genérico") return null;
+
+  const areaCambridge = "Inglés / Cambridge";
+  const tipoDocumentoValor = esCambridgeForm ? "Carta" : (form.tipoDocumento || "Comunicado");
+  const areaTematicaValor = esCambridgeForm ? areaCambridge : (form.areaTematica || "Matemática");
 
   return (
     <section className="coord-form-section" style={{ borderLeft: "4px solid #3b82f6", paddingLeft: "12px" }}>
@@ -15,7 +19,8 @@ function SeccionDocumentoOficial({ form, actualizarForm }) {
         <div className="coord-field">
           <label>Tipo de documento *</label>
           <select
-            value={form.tipoDocumento || "Comunicado"}
+            value={tipoDocumentoValor}
+            disabled={esCambridgeForm}
             onChange={e => {
               const nuevoTipoDoc = e.target.value;
               actualizarForm("tipoDocumento", nuevoTipoDoc);
@@ -45,11 +50,19 @@ function SeccionDocumentoOficial({ form, actualizarForm }) {
         <div className="coord-field">
           <label>Área temática *</label>
           <select
-            value={form.areaTematica || "Matemática"}
+            value={areaTematicaValor}
+            disabled={esCambridgeForm}
             onChange={e => actualizarForm("areaTematica", e.target.value)}
           >
-            <option value="Matemática">Matemática</option>
-            <option value="Comunicación">Comunicación</option>
+            {esCambridgeForm ? (
+              <option value={areaCambridge}>{areaCambridge}</option>
+            ) : (
+              <>
+                <option value="Matemática">Matemática</option>
+                <option value="Comunicación">Comunicación</option>
+                <option value="Matemática y Comunicación">Matemática y Comunicación</option>
+              </>
+            )}
           </select>
         </div>
         <div className="coord-field">

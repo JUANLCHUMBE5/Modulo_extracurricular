@@ -4,6 +4,7 @@ import {
   IconLogout as LogOut,
   IconReceipt2 as Receipt,
   IconMenu2 as Menu,
+  IconReceiptOff as ReceiptOff,
 } from "@tabler/icons-react";
 import { LOGO_COLEGIO_SRC } from "../../constants/cajaConstants";
 import "./CajaSidebar.css";
@@ -58,6 +59,17 @@ export default function CajaSidebar({
           title="Control y Exportacion"
         >
           <ChartBar size={17} /> {sidebarExpanded && <span>Control y Exportacion</span>}
+        </button>
+        <button
+          className={!delegatedContent && vista === "cancelar_correlativo" ? "is-active" : ""}
+          onClick={() => {
+            onClearDelegatedModule?.();
+            setVista("cancelar_correlativo");
+          }}
+          type="button"
+          title="Cancelar Correlativo"
+        >
+          <ReceiptOff size={17} /> {sidebarExpanded && <span>Cancelar Correlativo</span>}
         </button>
       </nav>
       {moduleSwitcher && sidebarExpanded ? (

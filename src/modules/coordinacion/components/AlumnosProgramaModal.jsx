@@ -44,7 +44,9 @@ function obtenerEstiloPago(estado = "") {
 function describirSeleccionCambridge(valor = "") {
   const seleccion = String(valor || "").trim().toUpperCase();
   const opciones = {
-    A: "A - Certificado oficial",
+    A: "A - Promovido/a por Certificado Oficial 2025",
+    B: "B - Ingresante por Admission Test",
+    C: "C - Ingresante por Desempeno Academico",
   };
   return opciones[seleccion] || (seleccion || "-");
 }

@@ -270,6 +270,101 @@
   resize: vertical;
 }
 
+.coord-institution-assets {
+  background: #fbfefd;
+}
+
+.coord-assets-save {
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.coord-assets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+}
+
+.coord-asset-tile {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #d8e7df;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.coord-asset-preview {
+  width: 76px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px dashed #bdd7cd;
+  border-radius: 8px;
+  color: #2f8f7a;
+  background: #f5fbf8;
+}
+
+.coord-asset-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.coord-asset-info {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.coord-asset-info strong {
+  color: var(--coord-ink);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.coord-asset-info span {
+  min-width: 0;
+  color: var(--coord-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coord-asset-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 36px;
+  gap: 8px;
+}
+
+.coord-asset-upload {
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.coord-asset-upload input {
+  display: none;
+}
+
+.coord-asset-remove {
+  width: 36px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
 .coord-template-history {
   display: grid;
   gap: 12px;
@@ -1058,6 +1153,20 @@
   height: 14px;
   padding: 0;
   accent-color: var(--coord-green);
+}
+
+.coord-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.coord-checkbox-grid .coord-check-label {
+  min-height: 42px;
+  border: 1px solid #d8e7df;
+  border-radius: 8px;
+  padding: 9px 11px;
+  background: #ffffff;
 }
 
 .coord-check-label-stacked {

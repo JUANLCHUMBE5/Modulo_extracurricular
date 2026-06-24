@@ -75,11 +75,11 @@ export async function obtenerCorrelativos() {
   return obtenerCorrelativosMock();
 }
 
-export async function guardarCorrelativos({ recibo, reciboVirtual, egreso }) {
+export async function guardarCorrelativos(correlativos) {
   if (isApiMode()) {
-    const res = await apiClient.put("/api/v1/extracurricular/direccion/correlativos", { recibo, reciboVirtual, egreso });
+    const res = await apiClient.put("/api/v1/extracurricular/direccion/correlativos", correlativos);
     if (!res.success) throw new Error(res.message || "Error al guardar correlativos");
     return res.data;
   }
-  return guardarCorrelativosMock({ recibo, reciboVirtual, egreso });
+  return guardarCorrelativosMock(correlativos);
 }

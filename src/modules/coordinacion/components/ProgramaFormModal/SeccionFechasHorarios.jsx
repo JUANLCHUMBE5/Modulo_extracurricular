@@ -32,7 +32,6 @@ function SeccionFechasHorarios({
   puedeGestionarGruposFormulario,
   usaTalleresPorEdad,
   duracionTallerFormulario,
-  ciclosCambridgeFormulario,
   formHorariosPorGrupo,
   diasSemana,
   esDeportivoForm,
@@ -225,21 +224,9 @@ function SeccionFechasHorarios({
           </div>
           <div className="coord-field">
             <label>Duración</label>
-            {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" ? (
-              <input
-                value={form.duracionTaller || ""}
-                onChange={e => actualizarForm("duracionTaller", e.target.value)}
-                placeholder="Ej: 4 semanas"
-                style={{
-                  width: "100%",
-                  padding: "8px 12px"
-                }}
-              />
-            ) : (
-              <div className="coord-readonly-field">
-                {duracionTallerFormulario || "Seleccione fechas"}
-              </div>
-            )}
+            <div className="coord-readonly-field">
+              {duracionTallerFormulario || "Seleccione fechas"}
+            </div>
           </div>
           <div className="coord-field">
             <label>Aviso (días) *</label>
@@ -266,7 +253,7 @@ function SeccionFechasHorarios({
             </div>
           )}
 
-          {usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad && (
+          {usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad && !esCambridgeForm && (
             <div className="coord-field">
               <label>Horarios</label>
               <button
@@ -298,31 +285,9 @@ function SeccionFechasHorarios({
           )}
         </div>
 
-        {esCambridgeForm && (
-          <div className="coord-field coord-field-full">
-            <div className="coord-section-grid">
-              <div className="coord-field">
-                <label>Ciclo I para carta Cambridge</label>
-                <div className="coord-readonly-field">
-                  {ciclosCambridgeFormulario?.cicloI || "No aplica segun fechas"}
-                </div>
-              </div>
-              <div className="coord-field">
-                <label>Ciclo II para carta Cambridge</label>
-                <div className="coord-readonly-field">
-                  {ciclosCambridgeFormulario?.cicloII || "No aplica segun fechas"}
-                </div>
-              </div>
-            </div>
-            <p className="coord-field-hint">
-              Se calculan automaticamente segun la fecha de inicio y fin del programa.
-            </p>
-          </div>
-        )}
-
         {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" ? (
           <>
-            {usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad && (
+            {usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad && !esCambridgeForm && (
               <div className="coord-field coord-field-full coord-block-form-panel" style={{ marginTop: "12px" }}>
                 {formHorariosPorGrupo.length ? (
                   <div className="coord-group-schedule-list coord-group-schedule-list-compact">
@@ -632,7 +597,7 @@ function SeccionFechasHorarios({
               </div>
             )}
 
-            {usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad && (
+            {usaFormularioPorBloques && puedeGestionarGruposFormulario && !usaTalleresPorEdad && !esCambridgeForm && (
               <div className="coord-field coord-field-full coord-block-form-panel">
                 <div className="coord-group-schedule-head">
                   <div>

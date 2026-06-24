@@ -67,6 +67,42 @@ function calcularSiguienteRecibo(startValue, existingNros) {
   return prefix + String(nextVal).padStart(padLength, "0");
 }
 
+function normalizarCorrelativos(db) {
+  if (!db.correlativos) {
+    db.correlativos = {};
+  }
+  const c = db.correlativos;
+  
+  // Legacy migration
+  if (c.recibo !== undefined && c.reciboInicio === undefined) {
+    c.reciboInicio = c.recibo;
+    const existingNros = (db.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
+    c.reciboActual = calcularSiguienteRecibo(c.recibo, existingNros);
+    delete c.recibo;
+  }
+  if (c.reciboVirtual !== undefined && c.reciboVirtualInicio === undefined) {
+    c.reciboVirtualInicio = c.reciboVirtual;
+    const existingNros = (db.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
+    c.reciboVirtualActual = calcularSiguienteRecibo(c.reciboVirtual, existingNros);
+    delete c.reciboVirtual;
+  }
+  if (c.egreso !== undefined && c.egresoInicio === undefined) {
+    c.egresoInicio = c.egreso;
+    c.egresoActual = c.egreso;
+    delete c.egreso;
+  }
+
+  // Ensure fields are defined with defaults
+  if (c.reciboInicio === undefined) c.reciboInicio = "REC-0500";
+  if (c.reciboActual === undefined) c.reciboActual = "REC-0501";
+  if (c.reciboVirtualInicio === undefined) c.reciboVirtualInicio = "V-1000";
+  if (c.reciboVirtualActual === undefined) c.reciboVirtualActual = "V-1001";
+  if (c.egresoInicio === undefined) c.egresoInicio = "EGR-0200";
+  if (c.egresoActual === undefined) c.egresoActual = "EGR-0201";
+
+  return c;
+}
+
 function normalizarEstadoPagoReporteCaja(pago = null, inscripcion = null) {
   if (pago) {
     const estadoPago = normalizarTextoApi(pago.estado);
@@ -111,10 +147,13 @@ router.get("/api/pagos", async (_req, res) => {
 // Caja: List payments by period
 router.get("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res) => {
   try {
-    const { periodo } = req.query;
+    const { periodo, estudianteDni } = req.query;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
-    const filtered = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
+    let filtered = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
+    if (estudianteDni) {
+      filtered = filtered.filter(p => p.dniEstudiante === estudianteDni || p.estudianteDni === estudianteDni);
+    }
     res.json({ success: true, data: filtered.map(mapDbPaymentToApi) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -138,15 +177,16 @@ router.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, 
     const nombres_estudiante = body.nombres_estudiante || body.nombresEstudiante || "";
     const programa = body.programa || body.programaNombre || "";
     const periodo = body.periodo || "escolar";
-    let assignedNroRecibo = body.nroRecibo || body.nro_recibo || "";
-    if (!assignedNroRecibo && db.correlativos) {
-      const formaPagoStr = String(forma_pago).toLowerCase().trim();
-      const esVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoStr);
-      const startValue = esVirtual
-        ? (db.correlativos.reciboVirtual || "V-0001")
-        : (db.correlativos.recibo || "REC-0001");
-      const existingNros = (db.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
-      assignedNroRecibo = calcularSiguienteRecibo(startValue, existingNros);
+    let assignedNroRecibo = "";
+    const corr = normalizarCorrelativos(db);
+    const formaPagoStr = String(forma_pago).toLowerCase().trim();
+    const esVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoStr);
+    if (esVirtual) {
+      assignedNroRecibo = corr.reciboVirtualActual || "V-1001";
+      corr.reciboVirtualActual = incrementarCorrelativo(assignedNroRecibo);
+    } else {
+      assignedNroRecibo = corr.reciboActual || "REC-0501";
+      corr.reciboActual = incrementarCorrelativo(assignedNroRecibo);
     }
 
     const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
@@ -240,7 +280,7 @@ router.get("/api/v1/extracurricular/caja/resumen", requireRole(["caja"]), async 
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
 
-    const pagos = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && p.estado === "completado");
+    const pagos = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && ["completado", "validado"].includes(p.estado));
     const totalCobrado = pagos.reduce((sum, p) => sum + Number(p.monto || 0), 0);
 
     const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
@@ -374,11 +414,10 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
     if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
 
     if (!db.pagos[idx].nroRecibo) {
-      if (db.correlativos) {
-        const startValue = db.correlativos.reciboVirtual || "V-0001";
-        const existingNros = (db.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
-        db.pagos[idx].nroRecibo = calcularSiguienteRecibo(startValue, existingNros);
-      }
+      const corr = normalizarCorrelativos(db);
+      const assigned = corr.reciboVirtualActual || "V-1001";
+      db.pagos[idx].nroRecibo = assigned;
+      corr.reciboVirtualActual = incrementarCorrelativo(assigned);
     }
 
     db.pagos[idx].estado = "validado";
@@ -719,6 +758,124 @@ router.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"])
     });
 
     res.json({ success: true, data: mapDbPaymentToApi(nuevoPago) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Caja: Search students by DNI or Name
+router.get("/api/v1/extracurricular/caja/estudiantes/buscar/query", requireRole(["caja"]), async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) return res.json({ success: true, data: [] });
+
+    const db = await getDb();
+    const query = normalizarTextoApi(q);
+
+    if (query.length < 3) return res.json({ success: true, data: [] });
+
+    const results = [];
+    const seenDnis = new Set();
+
+    Object.values(db.estudiantes || {}).forEach(student => {
+      const searchKey = normalizarTextoApi(`${student.nombres} ${student.dni}`);
+      if (searchKey.includes(query)) {
+        seenDnis.add(student.dni);
+        results.push({
+          dni: student.dni,
+          nombres: student.nombres
+        });
+      }
+    });
+
+    res.json({ success: true, data: results });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Caja: Cancel and skip a correlativo (Receipt or Egreso)
+router.post("/api/v1/extracurricular/caja/correlativos/cancelar", requireRole(["caja"]), async (req, res) => {
+  try {
+    const { tipo, motivo, dniEstudiante, nombresEstudiante, nroRecibo } = req.body;
+    if (!tipo || !motivo) {
+      return res.status(400).json({ success: false, message: "Tipo y motivo son obligatorios." });
+    }
+
+    const db = await getDb();
+    const corr = normalizarCorrelativos(db);
+    let val = "";
+    
+    if (nroRecibo) {
+      val = String(nroRecibo).trim();
+      if (tipo === "recibo" && val === corr.reciboActual) {
+        corr.reciboActual = incrementarCorrelativo(val);
+      } else if (tipo === "reciboVirtual" && val === corr.reciboVirtualActual) {
+        corr.reciboVirtualActual = incrementarCorrelativo(val);
+      } else if (tipo === "egreso" && val === corr.egresoActual) {
+        corr.egresoActual = incrementarCorrelativo(val);
+      }
+    } else {
+      if (tipo === "recibo") {
+        val = corr.reciboActual;
+        corr.reciboActual = incrementarCorrelativo(val);
+      } else if (tipo === "reciboVirtual") {
+        val = corr.reciboVirtualActual;
+        corr.reciboVirtualActual = incrementarCorrelativo(val);
+      } else if (tipo === "egreso") {
+        val = corr.egresoActual;
+        corr.egresoActual = incrementarCorrelativo(val);
+      } else {
+        return res.status(400).json({ success: false, message: "Tipo de correlativo no válido." });
+      }
+    }
+
+    if (!val) {
+      return res.status(400).json({ success: false, message: "No se encontró un correlativo actual para este tipo." });
+    }
+
+    // Registrar en pagos para dejar constancia/auditoría del recibo anulado
+    const nuevoPagoAnulado = {
+      id: `PAG-CANC-${String(Date.now()).slice(-6)}`,
+      inscripcionId: null,
+      dniEstudiante: dniEstudiante || "ANULADO",
+      nombresEstudiante: nombresEstudiante || (tipo === "egreso" ? `EGRESO ANULADO: ${val}` : `RECIBO ANULADO: ${val}`),
+      programa: "",
+      programaId: "",
+      periodo: "escolar",
+      monto: 0,
+      formaPago: tipo === "reciboVirtual" ? "Yape" : "Efectivo",
+      nroRecibo: val,
+      estado: "anulado",
+      fecha: new Date().toISOString(),
+      fechaPago: new Date().toISOString(),
+      origenRegistro: "Caja",
+      validadoPor: req.user?.username || "Cajera",
+      validadoEn: new Date().toISOString(),
+      observaciones: `Correlativo cancelado/anulado por Cajera. Motivo: ${motivo}`
+    };
+
+    db.pagos = db.pagos || [];
+    db.pagos.push(nuevoPagoAnulado);
+
+    await saveDb(db);
+
+    await registrarAuditoria(req.user?.username || "Cajera", req.user?.role || "caja", "CORRELATIVO_CANCELAR", {
+      tipo,
+      comprobante: val,
+      motivo,
+      dniEstudiante: dniEstudiante || "ANULADO",
+      nombresEstudiante: nombresEstudiante || ""
+    });
+
+    res.json({
+      success: true,
+      message: `Correlativo ${val} cancelado correctamente. El siguiente es ${tipo === "recibo" ? corr.reciboActual : (tipo === "reciboVirtual" ? corr.reciboVirtualActual : corr.egresoActual)}`,
+      data: {
+        comprobanteAnulado: val,
+        siguienteComprobante: tipo === "recibo" ? corr.reciboActual : (tipo === "reciboVirtual" ? corr.reciboVirtualActual : corr.egresoActual)
+      }
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

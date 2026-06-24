@@ -158,9 +158,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         ...programasCompatiblesFormulario.filter((programa) => programa.id !== programaAsignadoInvitacion.id),
       ]
       : programasCompatiblesFormulario;
-  const mostrarSelectorPrograma = true;
+  const programaUnicoDisponible = programasParaSelector.length === 1 ? programasParaSelector[0] : null;
+  const mostrarSelectorPrograma = programasParaSelector.length > 1;
 
-  const programaParaRegistro = programaSeleccionado || (registroAdicional ? null : (programaAsignado || programaAsignadoInvitacion));
+  const programaParaRegistro = programaSeleccionado || programaUnicoDisponible || (registroAdicional ? null : (programaAsignado || programaAsignadoInvitacion));
   const inscripcionMasivaSeleccionada = Boolean(programaParaRegistro?.invitacionMasiva);
   const gradoParaHorarioRegistro = estudiante?.esExterno
     ? formulario.gradoExterno
@@ -440,11 +441,12 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
 
     const seleccionoProgramaDistinto = Boolean(formulario.programa && formulario.programa !== estudiante.programaAsignado);
     const requiereSeleccionPrograma = periodo === "verano" || !estudiante.tieneInvitacion || registroAdicional || seleccionoProgramaDistinto;
+    const programaUnicoRegistro = programasParaSelector.length === 1 ? programasParaSelector[0] : null;
     const programaIdRegistro = requiereSeleccionPrograma
-      ? formulario.programa
+      ? (formulario.programa || programaUnicoRegistro?.id || "")
       : estudiante.programaAsignado;
 
-    if (requiereSeleccionPrograma && !formulario.programa) {
+    if (requiereSeleccionPrograma && !programaIdRegistro) {
       setMensaje(programas.length === 0
         ? "No hay programas habilitados para este periodo. Coordinación Académica debe registrar o habilitar uno."
         : "Seleccione el programa o taller disponible para este periodo.");

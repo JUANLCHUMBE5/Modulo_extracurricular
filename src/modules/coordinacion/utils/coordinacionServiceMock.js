@@ -98,6 +98,7 @@ export async function crearProgramaMock(datos) {
   finalizarProgramasVencidos();
   validarDatosPrograma(datos);
   const correlativo = nextApiId("nextProgramaId");
+  const esCambridge = esProgramaCambridge(datos);
   const nuevo = {
     id: `PROG-${String(correlativo).padStart(3, "0")}`,
     cuposOcupados: 0,
@@ -123,12 +124,13 @@ export async function crearProgramaMock(datos) {
     detalleCosto: datos.detalleCosto || "",
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
-    invitacionMasiva: Boolean(datos.invitacionMasiva),
-    alcanceInvitacionMasiva: datos.invitacionMasiva ? datos.alcanceInvitacionMasiva || "colegio" : "",
-    anuncioImagen: datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
-    anuncioImagenNombre: datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
-    anuncioImagenTamano: datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
-    anuncioImagenComprimida: datos.invitacionMasiva ? Boolean(datos.anuncioImagenComprimida) : false,
+    gradosAplicables: esCambridge ? [] : (datos.gradosAplicables || []),
+    invitacionMasiva: esCambridge ? false : Boolean(datos.invitacionMasiva),
+    alcanceInvitacionMasiva: !esCambridge && datos.invitacionMasiva ? datos.alcanceInvitacionMasiva || "colegio" : "",
+    anuncioImagen: !esCambridge && datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
+    anuncioImagenNombre: !esCambridge && datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
+    anuncioImagenTamano: !esCambridge && datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
+    anuncioImagenComprimida: !esCambridge && datos.invitacionMasiva ? Boolean(datos.anuncioImagenComprimida) : false,
     requiereIndumentaria: Boolean(datos.requiereIndumentaria),
   };
 
@@ -183,6 +185,8 @@ export async function crearProgramaDesdeDocumentoMock(datos) {
     plantillaVariables: datos.plantillaVariables || [],
     plantillaValidada: true,
     requisitos: datos.requisitos || "",
+    invitacionMasiva: esCambridge ? false : Boolean(datos.invitacionMasiva),
+    alcanceInvitacionMasiva: esCambridge ? "" : (datos.alcanceInvitacionMasiva || ""),
     comunicado: datos.comunicado || "",
     comunicadoCompleto: datos.comunicadoCompleto || "",
     detalleCosto: datos.detalleCosto || "",
@@ -190,12 +194,10 @@ export async function crearProgramaDesdeDocumentoMock(datos) {
     concesionarios: datos.concesionarios || "",
     requiereUniforme: Boolean(datos.requiereUniforme),
     requiereIndumentaria: Boolean(datos.requiereIndumentaria),
-    invitacionMasiva: Boolean(datos.invitacionMasiva),
-    alcanceInvitacionMasiva: datos.invitacionMasiva ? datos.alcanceInvitacionMasiva || "colegio" : "",
-    anuncioImagen: datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
-    anuncioImagenNombre: datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
-    anuncioImagenTamano: datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
-    anuncioImagenComprimida: datos.invitacionMasiva ? Boolean(datos.anuncioImagenComprimida) : false,
+    anuncioImagen: !esCambridge && datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
+    anuncioImagenNombre: !esCambridge && datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
+    anuncioImagenTamano: !esCambridge && datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
+    anuncioImagenComprimida: !esCambridge && datos.invitacionMasiva ? Boolean(datos.anuncioImagenComprimida) : false,
     creadoDesdeDocumento: true,
   };
 
@@ -222,6 +224,7 @@ export async function editarProgramaMock(id, datos) {
     }
   }
 
+  const esCambridge = esProgramaCambridge(datos);
   apiDb.programas[index] = {
     ...apiDb.programas[index],
     ...datos,
@@ -247,12 +250,13 @@ export async function editarProgramaMock(id, datos) {
     detalleCosto: datos.detalleCosto || "",
     detalleAlmuerzo: datos.detalleAlmuerzo || "",
     concesionarios: datos.concesionarios || "",
-    invitacionMasiva: Boolean(datos.invitacionMasiva),
-    alcanceInvitacionMasiva: datos.invitacionMasiva ? datos.alcanceInvitacionMasiva || "colegio" : "",
-    anuncioImagen: datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
-    anuncioImagenNombre: datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
-    anuncioImagenTamano: datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
-    anuncioImagenComprimida: datos.invitacionMasiva ? Boolean(datos.anuncioImagenComprimida) : false,
+    gradosAplicables: esCambridge ? [] : (datos.gradosAplicables || []),
+    invitacionMasiva: esCambridge ? false : Boolean(datos.invitacionMasiva),
+    alcanceInvitacionMasiva: !esCambridge && datos.invitacionMasiva ? datos.alcanceInvitacionMasiva || "colegio" : "",
+    anuncioImagen: !esCambridge && datos.invitacionMasiva ? datos.anuncioImagen || "" : "",
+    anuncioImagenNombre: !esCambridge && datos.invitacionMasiva ? datos.anuncioImagenNombre || "" : "",
+    anuncioImagenTamano: !esCambridge && datos.invitacionMasiva ? Number(datos.anuncioImagenTamano || 0) : 0,
+    anuncioImagenComprimida: !esCambridge && datos.invitacionMasiva ? Boolean(datos.anuncioImagenComprimida) : false,
     requiereIndumentaria: Boolean(datos.requiereIndumentaria),
   };
 
@@ -606,8 +610,10 @@ export async function confirmarCargaAlumnosMock(preview) {
       grupoArchivo.duplicadosConfirmacion = (grupoArchivo.duplicadosConfirmacion || 0) + 1;
       return;
     }
-    agregarGradoProgramaDesdeAlumno(programaCarga, item.grado);
-    programasTocados.add(item.programaId);
+    if (!esProgramaCambridge(programaCarga)) {
+      agregarGradoProgramaDesdeAlumno(programaCarga, item.grado);
+      programasTocados.add(item.programaId);
+    }
     const invitado = {
       cargaId,
       codigoEstudiante: item.codigoEstudiante || "",
