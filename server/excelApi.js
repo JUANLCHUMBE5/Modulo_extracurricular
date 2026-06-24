@@ -73,10 +73,6 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- BASE PATHS & HEALTH CHECKS ---
-app.get("/", (_req, res) => {
-  res.json({ ok: true, service: "modulo-extracurricular-api", dbSource: getDbSource() });
-});
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, dbSource: getDbSource() });
