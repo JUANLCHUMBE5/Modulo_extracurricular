@@ -604,7 +604,13 @@ router.get("/api/v1/extracurricular/programas/:programaId/invitados", requireRol
   try {
     const db = await getDb();
     const programaId = req.params.programaId;
-    const todosInvitados = db.invitadosPorPrograma?.[programaId] || [];
+    const rawInvitados = db.invitadosPorPrograma?.[programaId] || [];
+    
+    // Enriquecer invitados con el código de estudiante de la base general si no lo tienen
+    const todosInvitados = rawInvitados.map(inv => ({
+      ...inv,
+      codigoEstudiante: inv.codigoEstudiante || db.estudiantes?.[inv.dni]?.codigoEstudiante || ""
+    }));
 
     // Filtrar invitados que ya tienen una inscripción activa en este programa
     const inscripcionesActivas = (db.inscripciones || [])
