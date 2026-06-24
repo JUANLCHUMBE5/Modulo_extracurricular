@@ -60,6 +60,15 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "30mb" }));
 
+// Custom request logger for debugging timeouts
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - ${res.statusCode} (${Date.now() - start}ms)`);
+  });
+  next();
+});
+
 // --- BASE PATHS & HEALTH CHECKS ---
 app.get("/", (_req, res) => {
   res.json({ ok: true, service: "modulo-extracurricular-api", dbSource: getDbSource() });

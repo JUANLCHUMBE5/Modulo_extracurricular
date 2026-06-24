@@ -531,7 +531,8 @@ export function mapDbProgramToApi(p, db = null) {
     nivel_cambridge: p.nivelCambridge || "",
     modalidades_cambridge: p.modalidadesCambridge || [],
     costo_ciclo: p.costoCiclo || (p.costo ? String(p.costo) : ""),
-    monto_primer_pago: p.montoPrimerPago || ""
+    monto_primer_pago: p.montoPrimerPago || "",
+    dias: Array.isArray(p.dias) ? p.dias : []
   };
 }
 

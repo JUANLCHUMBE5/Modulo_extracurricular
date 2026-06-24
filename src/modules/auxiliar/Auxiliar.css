@@ -696,7 +696,8 @@
 .kiosk-state-dia-incorrecto .kiosk-status-card,
 .kiosk-state-pre-inscrito .kiosk-status-card,
 .kiosk-state-tarde .kiosk-status-card,
-.kiosk-state-ya-registrado .kiosk-status-card {
+.kiosk-state-ya-registrado .kiosk-status-card,
+.kiosk-state-anulado .kiosk-status-card {
   background: var(--color-error-bg);
   border-color: #fda4af;
   box-shadow: 0 20px 45px var(--color-error-glow);
@@ -1329,14 +1330,16 @@
 .kiosk-state-no-registrado .student-name,
 .kiosk-state-no-matriculado .student-name,
 .kiosk-state-dia-incorrecto .student-name,
-.kiosk-state-pre-inscrito .student-name {
+.kiosk-state-pre-inscrito .student-name,
+.kiosk-state-anulado .student-name {
   color: #9f1239 !important;
 }
 .kiosk-state-pendiente .kiosk-status-message,
 .kiosk-state-no-registrado .kiosk-status-message,
 .kiosk-state-no-matriculado .kiosk-status-message,
 .kiosk-state-dia-incorrecto .kiosk-status-message,
-.kiosk-state-pre-inscrito .kiosk-status-message {
+.kiosk-state-pre-inscrito .kiosk-status-message,
+.kiosk-state-anulado .kiosk-status-message {
   color: #b91c1c;
 }
 

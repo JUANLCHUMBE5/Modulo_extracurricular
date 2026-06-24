@@ -82,7 +82,7 @@ export default function Direccion({ onLogout, user }) {
   const [exportandoCustom, setExportandoCustom] = useState(false);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
-  const [consolidacionAsistencia, setConsolidacionAsistencia] = useState("semana");
+  const [consolidacionAsistencia, setConsolidacionAsistencia] = useState("dia");
   const [incluirInactivos, setIncluirInactivos] = useState(false);
   const [rangoRapido, setRangoRapido] = useState("todos");
 
@@ -221,7 +221,7 @@ export default function Direccion({ onLogout, user }) {
       defaultCols = ["index", "estudiante", "grado", "seccion", "fechaPago", "nroRecibo", "beca", "descuento", "anulado", "estadoFinanciero", "montoPagado", "montoAnulado", "observaciones"];
     } else if (reporteSeleccionado === "direccion_alumnos_asistencias") {
       tipo = "direccion_alumnos_asistencias";
-      defaultCols = ["index", "estudiante", "grado", "seccion"];
+      defaultCols = ["index", "estudiante", "grado", "seccion", "programa"];
     } else if (reporteSeleccionado === "programas_catalogo") {
       tipo = "programas";
       defaultCols = ["nombre", "categoria", "responsable", "inscritos", "conBeca", "cupos", "costo", "proyectado", "recaudado", "porCobrar"];

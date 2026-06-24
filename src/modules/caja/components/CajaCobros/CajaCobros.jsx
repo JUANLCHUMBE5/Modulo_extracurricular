@@ -26,6 +26,8 @@ export default function CajaCobros({
   guardarPago,
   sidebarExpanded,
   toggleSidebar,
+  resultadosBusqueda = [],
+  onSeleccionarEstudiante,
 }) {
   const esWeb = esRegistroWeb(formulario.origenRegistro || "");
   const siguienteRecibo = esWeb
@@ -72,6 +74,8 @@ export default function CajaCobros({
           correlativos={correlativos}
           inscripcionesCaja={inscripcionesCaja}
           onSeleccionarInscripcionCaja={seleccionarInscripcionCaja}
+          resultadosBusqueda={resultadosBusqueda}
+          onSeleccionarEstudiante={onSeleccionarEstudiante}
         />
         {formulario.inscripcionId ? (
           formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar" ? (

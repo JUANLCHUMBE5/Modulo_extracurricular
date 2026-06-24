@@ -26,7 +26,7 @@ const COLUMNS_DEF = {
   ],
   pagos: ["id", "inscripcionId", "dniEstudiante", "nombresEstudiante", "programaId", "programa", "periodo", "monto", "formaPago", "numeroOperacion", "telefonoOperacion", "capturaPagoNombre", "capturaPagoBase64", "estado", "fechaPago", "origenRegistro", "nro_recibo"],
   asistencias: ["id", "inscripcionId", "pagoId", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "programaId", "programa", "horario", "estadoPago", "estadoAcceso", "observacion", "origen", "fechaRegistro"],
-  invitados_programa: ["programaId", "dni", "nombres", "grado", "seccion"],
+  invitados_programa: ["programaId", "dni", "nombres", "grado", "seccion", "seleccion", "nivelCambridge"],
   historial_cargas: ["id", "fecha", "periodo", "archivoNombre", "archivos", "usuario", "resumen", "registros"],
   configuracion: ["clave", "valor", "updated_at"],
   categorias: ["id", "categoria"],

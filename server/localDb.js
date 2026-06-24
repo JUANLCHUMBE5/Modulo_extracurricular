@@ -43,7 +43,7 @@ const COLUMNAS_INSCRIPCIONES = [
 ];
 const COLUMNAS_PAGOS = ["id", "inscripcionId", "dniEstudiante", "nombresEstudiante", "programaId", "programa", "periodo", "monto", "formaPago", "numeroOperacion", "telefonoOperacion", "capturaPagoNombre", "capturaPagoBase64", "estado", "fechaPago", "origenRegistro", "nro_recibo"];
 const COLUMNAS_ASISTENCIAS = ["id", "inscripcionId", "pagoId", "dniEstudiante", "codigoEstudiante", "nombresEstudiante", "programaId", "programa", "horario", "estadoPago", "estadoAcceso", "observacion", "origen", "fechaRegistro"];
-const COLUMNAS_INVITADOS = ["programaId", "dni", "nombres", "grado", "seccion"];
+const COLUMNAS_INVITADOS = ["programaId", "dni", "nombres", "grado", "seccion", "seleccion", "nivelCambridge"];
 const COLUMNAS_HISTORIAL_CARGAS = ["id", "fecha", "periodo", "archivoNombre", "archivos", "usuario", "resumen", "registros"];
 
 function sanearObjeto(obj, llavesValidas) {
@@ -178,7 +178,9 @@ async function readFromSupabase() {
           dni: i.dni,
           nombres: i.nombres,
           grado: i.grado,
-          seccion: i.seccion
+          seccion: i.seccion,
+          seleccion: i.seleccion || "",
+          nivelCambridge: i.nivelCambridge || ""
         });
       }
     });
@@ -206,6 +208,7 @@ async function readFromSupabase() {
       "anuncioImagenNombre",
       "talleresDeportivos",
       "horariosPorGrupo",
+      "dias",
       "edadMinima",
       "edadMaxima",
       "grupoEtario",
@@ -436,6 +439,7 @@ async function writeToSupabase(db, currentDb) {
     "anuncioImagenNombre",
     "talleresDeportivos",
     "horariosPorGrupo",
+    "dias",
     "edadMinima",
     "edadMaxima",
     "grupoEtario",
@@ -858,7 +862,9 @@ async function writeToSupabase(db, currentDb) {
             dni: inv.dni,
             nombres: inv.nombres,
             grado: inv.grado,
-            seccion: inv.seccion
+            seccion: inv.seccion,
+            seleccion: inv.seleccion || "",
+            nivelCambridge: inv.nivelCambridge || ""
           }));
           const insRes = await supabase.from("invitados_programa").insert(sanearLista(guestRows, COLUMNAS_INVITADOS));
           if (insRes.error) {

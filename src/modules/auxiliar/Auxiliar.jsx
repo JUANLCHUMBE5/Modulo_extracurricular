@@ -306,6 +306,8 @@ export default function Auxiliar({ onLogout }) {
     if (!estudiante) return "esperando";
     if (estudiante.estadoAcceso === "pre_inscrito") return "pre-inscrito";
     if (estudiante.estadoAcceso === "ya_registrado") return "ya-registrado";
+    if (estudiante.estadoAcceso === "anulado") return "anulado";
+    if (estudiante.estadoAcceso === "dia-incorrecto" || estudiante.estadoAcceso === "dia_incorrecto") return "dia-incorrecto";
     if (estudiante.estadoAcceso === "pagado") {
       if (!esDiaCorrecto(estudiante.horario)) {
         return "dia-incorrecto";

@@ -36,9 +36,9 @@ export async function apiRequest(path, options = {}) {
   const token = typeof window !== "undefined" ? sessionStorage.getItem("san_rafael_token") : null;
   const authHeaders = token ? { "Authorization": `Bearer ${token}` } : {};
 
-  // 3. Timeout (15 segundos)
+  // 3. Timeout (30 segundos)
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   const response = await fetch(url, {
     ...requestOptions,

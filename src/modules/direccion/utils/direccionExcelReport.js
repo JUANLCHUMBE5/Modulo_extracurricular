@@ -1,5 +1,6 @@
 import { normalizarFecha, formatearFechaPeru } from "../../../services/dateService";
 import { apiDb } from "../../../services/dbApi";
+import { adaptarAsistencia } from "../../../services/adapters";
 
 function normalizarTexto(valor) {
   return String(valor || "").trim().toLowerCase();
@@ -443,14 +444,17 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
     let end = filtros.fechaFin ? normalizarFecha(filtros.fechaFin) : null;
 
     if (!start || !end) {
-      const asistenciasProg = (apiDb.asistencias || []).filter(a => {
+      const rawAsistencias = panel.reportes.asistencias || apiDb.asistencias || [];
+      const asistencias = rawAsistencias.map(a => a.asistencia_id ? adaptarAsistencia(a) : a);
+
+      const asistenciasProg = asistencias.filter(a => {
         if (!filtros.programa || filtros.programa === "todos") return true;
         return String(a.programaId) === String(filtros.programa) ||
                String(a.programa).toLowerCase().trim() === String(filtros.programa).toLowerCase().trim();
       });
 
       const fechasValidas = asistenciasProg
-        .map(a => normalizarFecha(a.fechaRegistro))
+        .map(a => normalizarFecha(a.fechaRegistro || a.fecha))
         .filter(Boolean);
 
       if (fechasValidas.length > 0) {
@@ -602,7 +606,8 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
       });
     });
 
-    const asistencias = apiDb.asistencias || [];
+    const rawAsistencias = panel.reportes.asistencias || apiDb.asistencias || [];
+    const asistencias = rawAsistencias.map(a => a.asistencia_id ? adaptarAsistencia(a) : a);
 
     finalRows = filteredData.map((ins) => {
       const rowData = { ...ins };
@@ -618,7 +623,7 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
 
       columnasTiempo.forEach((col) => {
         const count = studentAsistencias.filter((a) => {
-          const date = normalizarFecha(a.fechaRegistro);
+          const date = normalizarFecha(a.fechaRegistro || a.fecha);
           return date && date >= col.start && date <= col.end;
         }).length;
 

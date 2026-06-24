@@ -25,6 +25,7 @@ import {
   rechazarPagoWeb,
   obtenerPagoPorId,
   anularPago,
+  buscarEstudiantesCajaQuery,
 } from "./cajaService";
 import { obtenerCorrelativos } from "../direccion/direccionService";
 import { fechaActualInput, fechaActualIso } from "../../services/dateService";
@@ -80,6 +81,7 @@ export default function Caja({
   const [estudiante, setEstudiante] = useState(null);
   const [inscripcionesCaja, setInscripcionesCaja] = useState([]);
   const [dni, setDni] = useState("");
+  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
   const [modalAbierto, setModalAbierto] = useState(false);
   const [pagoSeleccionado, setPagoSeleccionado] = useState(null);
   const [pagoConfirmado, setPagoConfirmado] = useState(null);
@@ -335,45 +337,88 @@ export default function Caja({
     setMensaje("");
     setPagoConfirmado(null);
     setInscripcionesCaja([]);
+    setResultadosBusqueda([]);
     setFormulario({ ...formularioInicial, fechaPago: fechaActualInput() });
-    if (!validarDni(dni)) {
-      setMensaje("Ingrese un DNI valido de 8 digitos.");
+
+    const consulta = dni.trim();
+    if (!consulta) {
+      setMensaje("Ingrese un DNI o nombre del estudiante.");
       return;
     }
 
+    const esDni = /^\d{8}$/.test(consulta);
+
     setBuscando(true);
     try {
-      const encontrado = await obtenerEstudiantePorDni(dni);
-      if (!encontrado) {
-        setEstudiante(null);
-        setMensaje("No se encontro un estudiante con ese DNI.");
-        return;
-      }
-
-      const listaCaja = Array.isArray(encontrado.inscripcionesCaja)
-        ? encontrado.inscripcionesCaja
-        : encontrado.inscripcionCaja
-          ? [encontrado.inscripcionCaja]
-          : [];
-      const pendientesCaja = listaCaja.filter((item) => item?.derivadoCaja && !pagoEstaCerrado(item));
-
-      if (!pendientesCaja.length) {
-        setEstudiante(null);
-        setMensaje(
-          encontrado.requiereDerivacionCaja
-            ? "El estudiante tiene inscripciones, pero Asistente aun no derivo ningun taller pendiente a Cajera."
-            : "El estudiante no tiene talleres pendientes derivados a Cajera."
-        );
-        return;
-      }
-
-      setEstudiante(encontrado);
-      setInscripcionesCaja(pendientesCaja);
-      if (pendientesCaja.length === 1) {
-        seleccionarInscripcionCaja(pendientesCaja[0], encontrado);
+      if (esDni) {
+        // Búsqueda directa por DNI
+        await buscarPorDni(consulta);
       } else {
-        setMensaje("Seleccione el taller derivado para continuar con el pago.");
+        // Búsqueda por nombre
+        const resultados = await buscarEstudiantesCajaQuery(consulta);
+        if (!resultados || resultados.length === 0) {
+          setEstudiante(null);
+          setMensaje("No se encontraron estudiantes con ese nombre.");
+          return;
+        }
+        if (resultados.length === 1) {
+          // Si solo hay un resultado, buscar directo por su DNI
+          setDni(resultados[0].dni);
+          await buscarPorDni(resultados[0].dni);
+        } else {
+          // Mostrar lista de resultados para seleccionar
+          setResultadosBusqueda(resultados);
+          setMensaje(`Se encontraron ${resultados.length} estudiantes. Seleccione uno.`);
+        }
       }
+    } catch (error) {
+      setMensaje(error.message || "No se pudo buscar el estudiante.");
+    } finally {
+      setBuscando(false);
+    }
+  }
+
+  async function buscarPorDni(dniEstudiante) {
+    const encontrado = await obtenerEstudiantePorDni(dniEstudiante);
+    if (!encontrado) {
+      setEstudiante(null);
+      setMensaje("No se encontro un estudiante con ese DNI.");
+      return;
+    }
+
+    const listaCaja = Array.isArray(encontrado.inscripcionesCaja)
+      ? encontrado.inscripcionesCaja
+      : encontrado.inscripcionCaja
+        ? [encontrado.inscripcionCaja]
+        : [];
+    const pendientesCaja = listaCaja.filter((item) => item?.derivadoCaja && !pagoEstaCerrado(item));
+
+    if (!pendientesCaja.length) {
+      setEstudiante(null);
+      setMensaje(
+        encontrado.requiereDerivacionCaja
+          ? "El estudiante tiene inscripciones, pero Asistente aun no derivo ningun taller pendiente a Cajera."
+          : "El estudiante no tiene talleres pendientes derivados a Cajera."
+      );
+      return;
+    }
+
+    setEstudiante(encontrado);
+    setInscripcionesCaja(pendientesCaja);
+    if (pendientesCaja.length === 1) {
+      seleccionarInscripcionCaja(pendientesCaja[0], encontrado);
+    } else {
+      setMensaje("Seleccione el taller derivado para continuar con el pago.");
+    }
+  }
+
+  async function seleccionarEstudianteDesdeBusqueda(est) {
+    setResultadosBusqueda([]);
+    setDni(est.dni);
+    setBuscando(true);
+    setMensaje("");
+    try {
+      await buscarPorDni(est.dni);
     } catch (error) {
       setMensaje(error.message || "No se pudo buscar el estudiante.");
     } finally {
@@ -821,6 +866,8 @@ export default function Caja({
                 guardarPago={guardarPago}
                 sidebarExpanded={sidebarExpanded}
                 toggleSidebar={toggleSidebar}
+                resultadosBusqueda={resultadosBusqueda}
+                onSeleccionarEstudiante={seleccionarEstudianteDesdeBusqueda}
               />
             )}
           </>

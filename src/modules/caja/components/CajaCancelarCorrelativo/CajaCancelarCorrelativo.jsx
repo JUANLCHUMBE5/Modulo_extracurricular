@@ -245,7 +245,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
   const pagoResumen = getPagoSeleccionado();
 
   return (
-    <section className="caja-payment-workspace" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+    <section className="caja-payment-workspace" style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
       {!sidebarExpanded && (
         <div style={{ marginBottom: "6px" }}>
           <button
@@ -267,7 +267,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
         </h2>
       </div>
 
-      <Paper withBorder p="md" radius="md" style={{ background: "#fffbeb", borderColor: "#fef3c7" }}>
+      <Paper withBorder p="md" radius="md" style={{ background: "#fffbeb", borderColor: "#fef3c7", width: "100%" }}>
         <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
           <AlertTriangle size={20} style={{ color: "#d97706", flexShrink: 0, marginTop: "2px" }} />
           <div>
@@ -279,8 +279,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
         </div>
       </Paper>
 
-      <Paper withBorder p="lg" radius="md" shadow="sm" style={{ width: "100%", maxWidth: "600px", display: "flex", flexDirection: "column", gap: "20px" }}>
-        
+      <Paper withBorder p="lg" radius="md" shadow="sm" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "20px" }}>
         {/* BUSCADOR DE ESTUDIANTE (OPCIONAL) */}
         {!estudianteSeleccionado ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -422,7 +421,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
           ) : null}
           {!estudianteSeleccionado && getComprobanteFinal() ? (
             <Text size="xs" color="dimmed" style={{ marginTop: "4px" }}>
-              (Tipo detectado: {detectarTipoComprobante(getComprobanteFinal()) === "reciboVirtual" ? "Recibo Virtual" : (detectarTipoComprobante(getComprobanteFinal()) === "egreso" ? "Comprobante de Egreso" : "Recibo Físico")})
+              (Tipo detectado: {detectarTipoComprobante(getComprobanteFinal()) === "reciboVirtual" ? "Recibo Virtual" : (detectarTipoComprobante(getComprobanteFinal()) === "egreso" ? "Recibo de Egreso" : "Recibo de Ingreso (Físico)")})
             </Text>
           ) : null}
         </div>

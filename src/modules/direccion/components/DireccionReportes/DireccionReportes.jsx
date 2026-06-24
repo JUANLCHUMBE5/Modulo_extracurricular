@@ -233,7 +233,7 @@ export default function DireccionReportes({
                       { value: "mes", label: "Por Mes" },
                     ]}
                     value={consolidacionAsistencia}
-                    onChange={(val) => setConsolidacionAsistencia(val || "semana")}
+                    onChange={(val) => setConsolidacionAsistencia(val || "dia")}
                     allowDeselect={false}
                     size="xs"
                   />

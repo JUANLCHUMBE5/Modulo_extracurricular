@@ -330,9 +330,9 @@ export default function AuxiliarResult({
           <h2 className="student-name">¡Hola, {estudiante.nombres}! 📅</h2>
 
           <div className="kiosk-alert-explanation">
-            <p><strong>Hoy no le toca este taller.</strong></p>
+            <p><strong>{estudiante.mensajeAcceso || "Hoy no le toca este taller."}</strong></p>
             <p className="sub-msg">
-              El alumno está matriculado en este taller, pero las clases corresponden a otros días de la semana según el horario establecido.
+              {estudiante.accion || "El alumno está matriculado en este taller, pero las clases corresponden a otros días de la semana según el horario establecido."}
             </p>
           </div>
 
@@ -383,6 +383,40 @@ export default function AuxiliarResult({
             <p><strong>El alumno tiene pagos pendientes o en proceso de verificación.</strong></p>
             <p className="sub-msg">
               Para poder ingresar al taller, el apoderado debe acercarse a Caja para regularizar o aprobar el pago y permitir el ingreso.
+            </p>
+          </div>
+
+          <div className="kiosk-student-details-box">
+            <div className="detail-item">
+              <span className="label">TALLER</span>
+              <strong className="value">📚 {estudiante.programa}</strong>
+            </div>
+            <div className="detail-item">
+              <span className="label">ESTADO PAGO</span>
+              <strong className="value badge-error">❌ {estudiante.estadoPago}</strong>
+            </div>
+          </div>
+
+          <div className="kiosk-actions-panel">
+            <button type="button" className="kiosk-action-btn secondary" onClick={limpiarPuesto}>
+              Siguiente Estudiante 🔄
+            </button>
+          </div>
+        </div>
+      )}
+
+      {kioskState === "anulado" && (
+        <div className="kiosk-status-card state-pendiente">
+          <div className="kiosk-status-header-icon error-shake">
+            <XCircle size={72} />
+          </div>
+          <span className="kiosk-badge-tag error">REGISTRO ANULADO</span>
+          <h2 className="student-name">¡Hola, {estudiante.nombres}! ⚠️</h2>
+
+          <div className="kiosk-alert-explanation">
+            <p><strong>{estudiante.accion || "Registro anulado en el sistema."}</strong></p>
+            <p className="sub-msg">
+              El pago o matrícula de este estudiante ha sido anulado. Por favor, regularizar en Caja o Asistente.
             </p>
           </div>
 

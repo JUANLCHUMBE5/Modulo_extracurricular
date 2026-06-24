@@ -156,6 +156,66 @@
   box-shadow: 0 0 0 3px rgba(21, 155, 138, 0.12);
 }
 
+/* Search results dropdown */
+.caja-search-results {
+  margin-top: 10px;
+  border: 1px solid #d1e5df;
+  border-radius: 10px;
+  background: #ffffff;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.08);
+}
+
+.caja-search-results-title {
+  padding: 10px 14px 8px;
+  color: #475467;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid #e8f0ed;
+  background: #f8fbfa;
+}
+
+.caja-search-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-bottom: 1px solid #f0f5f3;
+  color: #101828;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.caja-search-result-item:last-child {
+  border-bottom: none;
+}
+
+.caja-search-result-item:hover {
+  background: #effaf7;
+}
+
+.caja-search-result-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: #101828;
+}
+
+.caja-search-result-dni {
+  font-size: 12px;
+  font-weight: 700;
+  color: #667085;
+  background: #f2f4f7;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
 .caja-course-picker {
   background: #fbfefd;
 }

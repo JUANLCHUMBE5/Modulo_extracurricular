@@ -127,7 +127,8 @@ CREATE TABLE "inscripciones" (
   "estadoCaja" TEXT,
   "origenRegistro" TEXT,
   "fechaRegistro" TEXT,
-  CONSTRAINT fk_programa FOREIGN KEY ("programaId") REFERENCES "programas" ("id") ON DELETE CASCADE
+  CONSTRAINT fk_programa FOREIGN KEY ("programaId") REFERENCES "programas" ("id") ON DELETE CASCADE,
+  CONSTRAINT fk_inscripcion_estudiante FOREIGN KEY ("dniEstudiante") REFERENCES "estudiantes" ("dni") ON DELETE CASCADE
 );
 
 -- ==========================================
@@ -152,7 +153,8 @@ CREATE TABLE "pagos" (
   "origenRegistro" TEXT,
   "nro_recibo" TEXT,
   CONSTRAINT fk_inscripcion FOREIGN KEY ("inscripcionId") REFERENCES "inscripciones" ("id") ON DELETE SET NULL,
-  CONSTRAINT fk_programa FOREIGN KEY ("programaId") REFERENCES "programas" ("id") ON DELETE SET NULL
+  CONSTRAINT fk_programa FOREIGN KEY ("programaId") REFERENCES "programas" ("id") ON DELETE SET NULL,
+  CONSTRAINT fk_pago_estudiante FOREIGN KEY ("dniEstudiante") REFERENCES "estudiantes" ("dni") ON DELETE CASCADE
 );
 
 -- ==========================================
@@ -175,7 +177,8 @@ CREATE TABLE "asistencias" (
   "fechaRegistro" TEXT,
   CONSTRAINT fk_inscripcion FOREIGN KEY ("inscripcionId") REFERENCES "inscripciones" ("id") ON DELETE SET NULL,
   CONSTRAINT fk_pago FOREIGN KEY ("pagoId") REFERENCES "pagos" ("id") ON DELETE SET NULL,
-  CONSTRAINT fk_programa FOREIGN KEY ("programaId") REFERENCES "programas" ("id") ON DELETE CASCADE
+  CONSTRAINT fk_programa FOREIGN KEY ("programaId") REFERENCES "programas" ("id") ON DELETE CASCADE,
+  CONSTRAINT fk_asistencia_estudiante FOREIGN KEY ("dniEstudiante") REFERENCES "estudiantes" ("dni") ON DELETE CASCADE
 );
 
 -- ==========================================
@@ -187,6 +190,8 @@ CREATE TABLE "invitados_programa" (
   "nombres" TEXT,
   "grado" TEXT,
   "seccion" TEXT,
+  "seleccion" TEXT,
+  "nivelCambridge" TEXT,
   CONSTRAINT fk_programa FOREIGN KEY ("programaId") REFERENCES "programas" ("id") ON DELETE CASCADE,
   PRIMARY KEY ("programaId", "dni")
 );

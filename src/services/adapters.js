@@ -78,6 +78,7 @@ export function adaptarPrograma(apiPrograma) {
     modalidadesCambridge: apiPrograma.modalidades_cambridge || apiPrograma.modalidadesCambridge || [],
     costoCiclo: apiPrograma.costo_ciclo !== undefined ? String(apiPrograma.costo_ciclo) : (apiPrograma.costoCiclo !== undefined ? String(apiPrograma.costoCiclo) : (apiPrograma.costo !== undefined ? String(apiPrograma.costo) : (apiPrograma.monto !== undefined ? String(apiPrograma.monto) : ""))),
     montoPrimerPago: apiPrograma.monto_primer_pago !== undefined ? String(apiPrograma.monto_primer_pago) : (apiPrograma.montoPrimerPago !== undefined ? String(apiPrograma.montoPrimerPago) : ""),
+    dias: apiPrograma.dias || [],
   };
 }
 

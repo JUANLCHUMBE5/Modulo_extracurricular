@@ -254,6 +254,7 @@ router.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), 
       modalidadesCambridge: req.body.modalidades_cambridge || [],
       costoCiclo: req.body.costo_ciclo || "",
       montoPrimerPago: req.body.monto_primer_pago || "",
+      dias: req.body.dias || [],
       estado: "Habilitado"
     };
 
@@ -316,6 +317,7 @@ router.post("/api/v1/extracurricular/programas/documento", requireRole(["secreta
       detalleAlmuerzo: req.body.detalle_almuerzo || "",
       concesionarios: req.body.concesionarios || "",
       creadoDesdeDocumento: true,
+      dias: req.body.dias || [],
       estado: "Deshabilitado"
     };
 
@@ -409,6 +411,7 @@ router.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
       modalidadesCambridge: req.body.modalidades_cambridge ?? db.programas[idx].modalidadesCambridge ?? [],
       costoCiclo: req.body.costo_ciclo ?? db.programas[idx].costoCiclo ?? "",
       montoPrimerPago: req.body.monto_primer_pago ?? db.programas[idx].montoPrimerPago ?? "",
+      dias: req.body.dias ?? db.programas[idx].dias ?? [],
       estado: nuevoEstado
     };
 
@@ -1089,4 +1092,597 @@ router.post("/api/v1/extracurricular/asistencia", requireRole(["auxiliar"]), asy
   }
 });
 
+
+// --- ENDPOINTS PARA MÓDULO AUXILIAR ---
+
+function esDiaCorrecto(horarioStr) {
+  if (!horarioStr) return true;
+  const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+  const hoyEsp = diasSemana[new Date().getDay()];
+  const normalizar = (txt) => String(txt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const horarioNorm = normalizar(horarioStr);
+  const diasEncontrados = diasSemana.filter(dia => horarioNorm.includes(dia));
+  if (diasEncontrados.length === 0) return true;
+  return horarioNorm.includes(hoyEsp);
+}
+
+function limpiarCodigo(valor) {
+  return String(valor || "").trim().toUpperCase();
+}
+
+function normalizarTexto(valor) {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function mismoCodigo(a, b) {
+  const valorA = limpiarCodigo(a);
+  const valorB = limpiarCodigo(b);
+  return Boolean(valorA && valorB && valorA === valorB);
+}
+
+function normalizarIdentificadores(ids = {}) {
+  const dniVal = ids.dni || ids.dniEstudiante || ids.estudianteDni;
+  const cleanDniVal = dniVal ? String(dniVal).replace(/\D/g, "").slice(0, 8) : "";
+  return {
+    dni: cleanDniVal,
+    codigoEstudiante: limpiarCodigo(ids.codigoEstudiante || ids.codigoAlumno),
+    inscripcionId: limpiarCodigo(ids.inscripcionId || ids.idInscripcion),
+    pagoId: limpiarCodigo(ids.pagoId || ids.idPago),
+    programaId: limpiarCodigo(ids.programaId || ids.idPrograma),
+    codigoOriginal: String(ids.codigoOriginal || ids.codigo || "").trim(),
+  };
+}
+
+function obtenerMinutosRestantesIngresoReciente(asistenciasList, studentDni, studentCode, programId, nowMs = Date.now()) {
+  if (!Array.isArray(asistenciasList)) return 0;
+  const cleanDni = studentDni ? String(studentDni).replace(/\D/g, "") : "";
+  const cleanCode = studentCode ? String(studentCode).trim() : "";
+  let maxRestante = 0;
+  asistenciasList.forEach(ast => {
+    const astDni = ast.dniEstudiante ? String(ast.dniEstudiante).replace(/\D/g, "") : "";
+    const astCode = ast.codigoEstudiante ? String(ast.codigoEstudiante).trim() : "";
+    const coincideEstudiante = (cleanDni && astDni === cleanDni) || (cleanCode && astCode === cleanCode);
+    if (!coincideEstudiante) return;
+    const coincidePrograma = ast.programaId === programId;
+    if (!coincidePrograma) return;
+    const fechaAst = new Date(ast.fechaRegistro);
+    if (isNaN(fechaAst.getTime())) return;
+    const diffMs = nowMs - fechaAst.getTime();
+    const limiteMs = 15 * 60 * 1000;
+    if (diffMs >= 0 && diffMs < limiteMs) {
+      const mins = Math.ceil((limiteMs - diffMs) / 60000);
+      if (mins > maxRestante) maxRestante = mins;
+    }
+  });
+  return maxRestante;
+}
+
+function normalizarEstadoPago(valor) {
+  const texto = normalizarTexto(valor);
+  if (["completado", "pagado", "validado", "pago validado"].some((estado) => texto.includes(estado))) return "pagado";
+  if (["cancelado", "anulado", "rechazado"].some((estado) => texto.includes(estado))) return "anulado";
+  return "pendiente";
+}
+
+function resolverEstadoPago(inscripcion, pago) {
+  const estadoPago = normalizarEstadoPago(pago?.estado);
+  const estadoInscripcion = normalizarEstadoPago(inscripcion?.estadoPago);
+  if (estadoPago === "pagado" || estadoInscripcion === "pagado") return "pagado";
+  if (estadoPago === "anulado" || estadoInscripcion === "anulado") return "anulado";
+  return "pendiente";
+}
+
+function ordenarPorFecha(items, campoPreferido = "fechaRegistro") {
+  return [...items].sort((a, b) => {
+    const fechaA = new Date(a?.[campoPreferido] || a?.fechaPago || a?.fecha || a?.createdAt || 0).getTime();
+    const fechaB = new Date(b?.[campoPreferido] || b?.fechaPago || b?.fecha || b?.createdAt || 0).getTime();
+    return fechaB - fechaA;
+  });
+}
+
+function buscarInscripcion(db, ids) {
+  const inscripciones = (db.inscripciones || []).filter((item) => normalizarTexto(item.estadoInscripcion) !== "anulada");
+  const pagos = db.pagos || [];
+  if (ids.inscripcionId) {
+    const directa = inscripciones.find((item) => mismoCodigo(item.id, ids.inscripcionId));
+    if (directa) return directa;
+  }
+  if (ids.pagoId) {
+    const pago = pagos.find((item) => mismoCodigo(item.id, ids.pagoId));
+    if (pago?.inscripcionId) {
+      const directa = inscripciones.find((item) => mismoCodigo(item.id, pago.inscripcionId));
+      if (directa) return directa;
+    }
+  }
+  const candidatas = inscripciones.filter((item) => coincideInscripcion(item, ids));
+  if (candidatas.length === 0) return null;
+
+  if (ids.programaId) {
+    const porPrograma = candidatas.filter((item) => mismoCodigo(item.programaId, ids.programaId));
+    if (porPrograma.length) return ordenarPorFecha(porPrograma)[0] || null;
+  }
+
+  // Priorizar las inscripciones de hoy
+  const candidatasHoy = candidatas.filter(item => esDiaCorrecto(item.horario));
+  if (candidatasHoy.length > 0) {
+    const paid = candidatasHoy.filter(ins => {
+      const p = encontrarPagoInscripcion(db, ins, ids);
+      const estNorm = resolverEstadoPago(ins, p);
+      return estNorm === "pagado";
+    });
+    if (paid.length > 0) return ordenarPorFecha(paid)[0];
+
+    const processing = candidatasHoy.filter(ins => {
+      const p = encontrarPagoInscripcion(db, ins, ids);
+      return p && (p.estado === "Por Verificar" || p.estado === "Por verificar" || p.estado === "Pago en proceso");
+    });
+    if (processing.length > 0) return ordenarPorFecha(processing)[0];
+
+    return ordenarPorFecha(candidatasHoy)[0];
+  }
+
+  // Si no hay de hoy, retornar la mejor de cualquier otro día (para mostrar advertencia de Día Incorrecto)
+  const paid = candidatas.filter(ins => {
+    const p = encontrarPagoInscripcion(db, ins, ids);
+    const estNorm = resolverEstadoPago(ins, p);
+    return estNorm === "pagado";
+  });
+  if (paid.length > 0) return ordenarPorFecha(paid)[0];
+
+  const processing = candidatas.filter(ins => {
+    const p = encontrarPagoInscripcion(db, ins, ids);
+    return p && (p.estado === "Por Verificar" || p.estado === "Por verificar" || p.estado === "Pago en proceso");
+  });
+  if (processing.length > 0) return ordenarPorFecha(processing)[0];
+
+  return ordenarPorFecha(candidatas)[0] || null;
+}
+
+function coincideInscripcion(inscripcion, ids) {
+  if (!inscripcion) return false;
+  const insDni = inscripcion.dniEstudiante ? String(inscripcion.dniEstudiante).replace(/\D/g, "").slice(0, 8) : "";
+  if (ids.dni && insDni === ids.dni) return true;
+  if (ids.codigoEstudiante && mismoCodigo(inscripcion.codigoEstudiante, ids.codigoEstudiante)) return true;
+  if (ids.codigoOriginal && mismoCodigo(inscripcion.id, ids.codigoOriginal)) return true;
+  if (ids.codigoOriginal && mismoCodigo(inscripcion.codigoEstudiante, ids.codigoOriginal)) return true;
+  return false;
+}
+
+function buscarEstudiante(db, ids, inscripcion) {
+  let estudiantes = [];
+  if (Array.isArray(db.estudiantes)) estudiantes = db.estudiantes;
+  else if (db.estudiantes && typeof db.estudiantes === "object") estudiantes = Object.values(db.estudiantes);
+  const insDni = inscripcion?.dniEstudiante ? String(inscripcion.dniEstudiante).replace(/\D/g, "").slice(0, 8) : "";
+  const dni = ids.dni || insDni;
+  const codigo = ids.codigoEstudiante || inscripcion?.codigoEstudiante || "";
+  return estudiantes.find((estudiante) => {
+    const estDni = estudiante.dni ? String(estudiante.dni).replace(/\D/g, "").slice(0, 8) : "";
+    return estDni === dni;
+  }) || estudiantes.find((estudiante) => codigo && mismoCodigo(estudiante.codigoEstudiante, codigo)) || null;
+}
+
+function encontrarPagoInscripcion(db, inscripcion, ids = {}) {
+  const pagos = db.pagos || [];
+  if (ids.pagoId) {
+    const pagoDirecto = pagos.find((pago) => mismoCodigo(pago.id, ids.pagoId));
+    if (pagoDirecto) return pagoDirecto;
+  }
+  if (inscripcion?.pagoId) {
+    const pagoPorId = pagos.find((pago) => mismoCodigo(pago.id, inscripcion.pagoId));
+    if (pagoPorId) return pagoPorId;
+  }
+  const pagoPorInscripcion = pagos.find((pago) =>
+    pago.inscripcionId && inscripcion?.id && mismoCodigo(pago.inscripcionId, inscripcion.id)
+  );
+  if (pagoPorInscripcion) return pagoPorInscripcion;
+  const coincidencias = pagos.filter((pago) => {
+    const pagoDni = pago.dniEstudiante || pago.estudianteDni;
+    const cleanPagoDni = pagoDni ? String(pagoDni).replace(/\D/g, "").slice(0, 8) : "";
+    const cleanInsDni = inscripcion?.dniEstudiante ? String(inscripcion.dniEstudiante).replace(/\D/g, "").slice(0, 8) : "";
+    const mismoDni = cleanPagoDni === cleanInsDni;
+    const mismoPrograma = mismoCodigo(pago.programaId, inscripcion?.programaId)
+      || normalizarTexto(pago.programa || pago.programaNombre) === normalizarTexto(inscripcion?.programa);
+    return mismoDni && mismoPrograma;
+  });
+  return ordenarPorFecha(coincidencias, "fechaPago")[0] || null;
+}
+
+function crearRespuestaInscripcion({
+  inscripcion,
+  estudiante,
+  pago,
+  estadoAcceso,
+  estadoPago,
+  accesoPermitido,
+  mensajeAcceso,
+  accion,
+  color,
+}) {
+  return {
+    dni: inscripcion.dniEstudiante || estudiante?.dni || pago?.dniEstudiante || pago?.estudianteDni || "",
+    codigoEstudiante: inscripcion.codigoEstudiante || estudiante?.codigoEstudiante || "",
+    nombres: inscripcion.nombresEstudiante || estudiante?.nombres || pago?.nombresEstudiante || pago?.estudianteNombre || "Estudiante",
+    grado: inscripcion.gradoEstudiante || estudiante?.grado || "",
+    seccion: inscripcion.seccionEstudiante || estudiante?.seccion || "",
+    programa: inscripcion.programa || pago?.programa || pago?.programaNombre || "Sin programa",
+    programaId: inscripcion.programaId || pago?.programaId || "",
+    horario: inscripcion.horario || "Horario no registrado",
+    inscripcionId: inscripcion.id || "",
+    estadoInscripcion: inscripcion.estadoInscripcion || "",
+    estadoPago,
+    estadoAcceso,
+    accesoPermitido,
+    mensajeAcceso,
+    accion,
+    color,
+    pagoId: pago?.id || inscripcion.pagoId || "",
+    fechaPago: pago?.fechaPago || pago?.fecha || inscripcion.fechaPago || "",
+    monto: Number(pago?.monto ?? inscripcion.costo ?? 0),
+  };
+}
+
+function crearRespuestaNoRegistrado(ids, estudiante) {
+  return {
+    dni: ids.dni || estudiante?.dni || "",
+    codigoEstudiante: ids.codigoEstudiante || estudiante?.codigoEstudiante || "",
+    nombres: estudiante?.nombres || ids.codigoOriginal || "Codigo no registrado",
+    grado: estudiante?.grado || "",
+    seccion: estudiante?.seccion || "",
+    programa: "Sin inscripcion activa",
+    programaId: "",
+    horario: "No registrado",
+    inscripcionId: "",
+    estadoInscripcion: "No registrado",
+    estadoPago: "No registrado",
+    estadoAcceso: "no_registrado",
+    accesoPermitido: false,
+    mensajeAcceso: "No registrado",
+    accion: "No esta registrado en un programa activo. Verificar en Asistente antes de permitir el ingreso.",
+    color: "rojo",
+    pagoId: "",
+    fechaPago: "",
+    monto: 0,
+  };
+}
+
+function resolverValidacion(db, identificadores = {}) {
+  const ids = normalizarIdentificadores(identificadores);
+  const inscripcion = buscarInscripcion(db, ids);
+  const estudiante = buscarEstudiante(db, ids, inscripcion);
+  if (!inscripcion) {
+    const studentDni = ids.dni || (estudiante?.dni ? String(estudiante.dni).replace(/\D/g, "").slice(0, 8) : "");
+    let programaPreInscrito = null;
+    if (studentDni) {
+      for (const [progId, listaInvitados] of Object.entries(db.invitadosPorPrograma || {})) {
+        const esInvitado = (listaInvitados || []).some(inv => {
+          const invDni = String(inv?.dni || "").replace(/\D/g, "").slice(0, 8);
+          const targetDniStr = String(studentDni || "").replace(/\D/g, "").slice(0, 8);
+          return invDni === targetDniStr && invDni !== "";
+        });
+        if (esInvitado) {
+          const prog = (db.programas || []).find(p => p.id === progId);
+          if (prog) {
+            programaPreInscrito = prog;
+            break;
+          }
+        }
+      }
+    }
+    if (programaPreInscrito) {
+      return {
+        dni: studentDni || ids.codigoOriginal || "",
+        codigoEstudiante: ids.codigoEstudiante || estudiante?.codigoEstudiante || "",
+        nombres: estudiante?.nombres || ids.codigoOriginal || "Estudiante",
+        grado: estudiante?.grado || "",
+        seccion: estudiante?.seccion || "",
+        programa: programaPreInscrito.nombre,
+        programaId: programaPreInscrito.id,
+        horario: programaPreInscrito.horario || "No registrado",
+        inscripcionId: "",
+        estadoInscripcion: "Pre-inscrito",
+        estadoPago: "Pendiente",
+        estadoAcceso: "pre_inscrito",
+        accesoPermitido: false,
+        mensajeAcceso: "No inscrito",
+        accion: `No está inscrito. Acercarse a Caja o Asistente para proceder con la matrícula en ${programaPreInscrito.nombre}.`,
+        color: "rojo",
+        pagoId: "",
+        fechaPago: "",
+        monto: Number(programaPreInscrito.costo || 0),
+      };
+    }
+    return crearRespuestaNoRegistrado(ids, estudiante);
+  }
+  const pago = encontrarPagoInscripcion(db, inscripcion, ids);
+  const estadoNormalizado = resolverEstadoPago(inscripcion, pago);
+  if (estadoNormalizado === "pagado") {
+    // 1. Validar rango de fechas (vigencia del taller)
+    const tzOffset = new Date().getTimezoneOffset() * 60000;
+    const hoyStr = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
+
+    if (inscripcion.fechaInicio && hoyStr < inscripcion.fechaInicio) {
+      const fechaFmt = inscripcion.fechaInicio.split("-").reverse().join("/");
+      return crearRespuestaInscripcion({
+        inscripcion,
+        estudiante,
+        pago,
+        estadoAcceso: "dia-incorrecto",
+        estadoPago: "Pagado",
+        accesoPermitido: false,
+        mensajeAcceso: "Taller no iniciado",
+        accion: `El taller aún no ha iniciado. La fecha de inicio es el ${fechaFmt}.`,
+        color: "rojo",
+      });
+    }
+
+    if (inscripcion.fechaFin && hoyStr > inscripcion.fechaFin) {
+      const fechaFmt = inscripcion.fechaFin.split("-").reverse().join("/");
+      return crearRespuestaInscripcion({
+        inscripcion,
+        estudiante,
+        pago,
+        estadoAcceso: "dia-incorrecto",
+        estadoPago: "Pagado",
+        accesoPermitido: false,
+        mensajeAcceso: "Taller finalizado",
+        accion: `El taller ya ha finalizado (finalizó el ${fechaFmt}).`,
+        color: "rojo",
+      });
+    }
+
+    // 2. Validar día de la semana
+    if (!esDiaCorrecto(inscripcion.horario)) {
+      return crearRespuestaInscripcion({
+        inscripcion,
+        estudiante,
+        pago,
+        estadoAcceso: "dia-incorrecto",
+        estadoPago: "Pagado",
+        accesoPermitido: false,
+        mensajeAcceso: "Hoy no le toca este taller",
+        accion: "El alumno está matriculado en este taller, pero las clases corresponden a otros días de la semana.",
+        color: "rojo",
+      });
+    }
+
+    const minsRestantes = obtenerMinutosRestantesIngresoReciente(
+      db.asistencias || [],
+      ids.dni || estudiante?.dni,
+      ids.codigoEstudiante || estudiante?.codigoEstudiante,
+      inscripcion.programaId
+    );
+    if (minsRestantes > 0) {
+      return crearRespuestaInscripcion({
+        inscripcion,
+        estudiante,
+        pago,
+        estadoAcceso: "ya_registrado",
+        estadoPago: "Pagado",
+        accesoPermitido: false,
+        value: "Ya registrado",
+        mensajeAcceso: "Ya registrado",
+        accion: `Este estudiante ya registró su ingreso hace poco. Podrá registrarse nuevamente en ${minsRestantes} minuto(s).`,
+        color: "rojo",
+      });
+    }
+    return crearRespuestaInscripcion({
+      inscripcion,
+      estudiante,
+      pago,
+      estadoAcceso: "pagado",
+      estadoPago: "Pagado",
+      accesoPermitido: true,
+      mensajeAcceso: "Pago validado",
+      accion: "Ingreso permitido.",
+      color: "verde",
+    });
+  }
+  if (estadoNormalizado === "anulado") {
+    return crearRespuestaInscripcion({
+      inscripcion,
+      estudiante,
+      pago,
+      estadoAcceso: "anulado",
+      estadoPago: "Anulado",
+      accesoPermitido: false,
+      mensajeAcceso: "Pago anulado",
+      accion: "Registro anulado. Verificar en Asistente o Cajera antes de permitir el ingreso.",
+      color: "rojo",
+    });
+  }
+  const esProceso = pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar" || pago.estado === "Pago en proceso");
+  return crearRespuestaInscripcion({
+    inscripcion,
+    estudiante,
+    pago,
+    estadoAcceso: "pendiente",
+    estadoPago: esProceso ? "Pago en proceso" : "Pendiente",
+    accesoPermitido: false,
+    mensajeAcceso: esProceso ? "Pago en proceso" : "Pago pendiente",
+    accion: esProceso
+      ? "Tiene un pago en proceso de verificación. Debe acercarse a Caja para su aprobación."
+      : "Falta pagar. Debe acercarse a Caja para regularizar el pago.",
+    color: "rojo",
+  });
+}
+
+function resolverValidacionPorNombre(db, nombreQuery, programaId = "") {
+  const queryNormalizada = normalizarTexto(nombreQuery);
+  if (queryNormalizada.length < 3) {
+    throw new Error("El nombre de busqueda debe tener al menos 3 caracteres.");
+  }
+  const inscripciones = (db.inscripciones || []).filter((item) => normalizarTexto(item.estadoInscripcion) !== "anulada");
+  let matchesInscripcion = inscripciones.filter(ins =>
+    normalizarTexto(ins.nombresEstudiante).includes(queryNormalizada)
+  );
+  if (programaId) {
+    matchesInscripcion = matchesInscripcion.filter(ins => mismoCodigo(ins.programaId, programaId));
+  }
+  const resultadosInscripciones = matchesInscripcion.map(ins => {
+    const ids = normalizarIdentificadores({
+      dni: ins.dniEstudiante,
+      codigoEstudiante: ins.codigoEstudiante,
+      inscripcionId: ins.id,
+      programaId: ins.programaId
+    });
+    try {
+      return resolverValidacion(db, ids);
+    } catch {
+      return {
+        dni: ins.dniEstudiante,
+        codigoEstudiante: ins.codigoEstudiante,
+        nombres: ins.nombresEstudiante,
+        grado: ins.gradoEstudiante || "",
+        seccion: ins.seccionEstudiante || "",
+        programa: ins.programa || "",
+        horario: ins.horario || "",
+        estadoAcceso: "no_registrado",
+        accesoPermitido: false,
+        inscripcionId: ins.id
+      };
+    }
+  });
+  let resultadosEstudiantes = [];
+  if (!programaId) {
+    let estudiantes = [];
+    if (Array.isArray(db.estudiantes)) estudiantes = db.estudiantes;
+    else if (db.estudiantes && typeof db.estudiantes === "object") estudiantes = Object.values(db.estudiantes);
+    const dniConInscripcion = new Set(matchesInscripcion.map(ins => {
+      return ins.dniEstudiante ? String(ins.dniEstudiante).replace(/\D/g, "").slice(0, 8) : "";
+    }));
+    const matchesEstudiante = estudiantes.filter(est => {
+      const nomCompleto = `${est.nombres || ""} ${est.apellidos || ""}`;
+      const estDni = est.dni ? String(est.dni).replace(/\D/g, "").slice(0, 8) : "";
+      return normalizarTexto(nomCompleto).includes(queryNormalizada) && !dniConInscripcion.has(estDni);
+    });
+    resultadosEstudiantes = matchesEstudiante.map(est => {
+      const ids = normalizarIdentificadores({
+        dni: est.dni,
+        codigoEstudiante: est.codigoEstudiante
+      });
+      return resolverValidacion(db, ids);
+    });
+  }
+  const todosResultados = [...resultadosInscripciones, ...resultadosEstudiantes];
+  if (todosResultados.length === 0) {
+    throw new Error(`No se encontro ningun estudiante que coincida con "${nombreQuery}".`);
+  }
+  if (todosResultados.length === 1) {
+    return todosResultados[0];
+  }
+  return { isMultiple: true, matches: todosResultados };
+}
+
+function extraerDesdeJson(texto) {
+  try {
+    const json = JSON.parse(texto);
+    if (!json || typeof json !== "object") return null;
+    return idsDesdeObjeto(json);
+  } catch {
+    return null;
+  }
+}
+
+function extraerDesdeUrl(texto) {
+  try {
+    const url = new URL(texto);
+    const params = Object.fromEntries(url.searchParams.entries());
+    const segmentos = url.pathname.split("/").filter(Boolean).join(" ");
+    return idsDesdeObjeto({ ...params, codigo: `${segmentos} ${url.hash || ""}` });
+  } catch {
+    return null;
+  }
+}
+
+function idsDesdeObjeto(obj = {}) {
+  const codigo = obj.codigo || obj.code || obj.qr || obj.token || "";
+  const textoExtendido = [
+    codigo,
+    obj.id,
+    obj.path,
+    obj.payload,
+    obj.inscripcion,
+    obj.registro,
+  ].filter(Boolean).join(" ");
+  return {
+    dni: obj.dni || obj.dniEstudiante || obj.estudianteDni || textoExtendido.match(/\b\d{8}\b/)?.[0] || "",
+    codigoEstudiante: obj.codigoEstudiante || obj.codigoAlumno || textoExtendido.match(/\b(?:EST|EXT)-[A-Z0-9-]+\b/i)?.[0] || "",
+    inscripcionId: obj.inscripcionId || obj.idInscripcion || obj.registroId || textoExtendido.match(/\bINS-[A-Z0-9-]+\b/i)?.[0] || "",
+    pagoId: obj.pagoId || obj.idPago || textoExtendido.match(/\bPAG-[A-Z0-9-]+\b/i)?.[0] || "",
+    programaId: obj.programaId || obj.idPrograma || "",
+  };
+}
+
+function extraerIdentificadoresCodigo(codigo) {
+  const texto = String(codigo || "").trim();
+  const ids = { codigoOriginal: texto };
+  if (!texto) return ids;
+  const desdeJson = extraerDesdeJson(texto);
+  if (desdeJson) return normalizarIdentificadores({ ...ids, ...desdeJson });
+  const desdeUrl = extraerDesdeUrl(texto);
+  if (desdeUrl) return normalizarIdentificadores({ ...ids, ...desdeUrl });
+  const dni = texto.match(/\b\d{8}\b/)?.[0] || "";
+  const inscripcionId = texto.match(/\bINS-[A-Z0-9-]+\b/i)?.[0] || "";
+  const pagoId = texto.match(/\bPAG-[A-Z0-9-]+\b/i)?.[0] || "";
+  const codigoEstudiante = texto.match(/\b(?:EST|EXT)-[A-Z0-9-]+\b/i)?.[0] || "";
+  return normalizarIdentificadores({
+    ...ids,
+    dni,
+    inscripcionId,
+    pagoId,
+    codigoEstudiante,
+  });
+}
+
+router.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar", "coordinacion"]), async (req, res) => {
+  try {
+    const { busqueda, programa_id } = req.query;
+    const db = await getDb();
+    const query = String(busqueda || "").trim();
+    if (!query) {
+      return res.status(400).json({ success: false, message: "Ingrese un DNI o nombre para buscar." });
+    }
+    
+    let result;
+    if (/^\d+$/.test(query)) {
+      const dniLimpio = String(query).replace(/\D/g, "").slice(0, 8);
+      if (dniLimpio.length !== 8) {
+        return res.status(400).json({ success: false, message: "El DNI debe contener exactamente 8 numeros." });
+      }
+      result = resolverValidacion(db, { dni: dniLimpio, codigoOriginal: dniLimpio, programaId: programa_id });
+    } else {
+      result = resolverValidacionPorNombre(db, query, programa_id);
+    }
+    
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
+router.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar", "coordinacion"]), async (req, res) => {
+  try {
+    const { codigo } = req.query;
+    const db = await getDb();
+    const codigoLimpio = String(codigo || "").trim();
+    if (!codigoLimpio) {
+      return res.status(400).json({ success: false, message: "Escanee o ingrese un codigo valido." });
+    }
+    
+    const ids = extraerIdentificadoresCodigo(codigoLimpio);
+    const result = resolverValidacion(db, ids);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    res.status(400).json({ success: false, message: error.message });
+  }
+});
+
 export default router;
+

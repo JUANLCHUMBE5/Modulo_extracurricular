@@ -5,7 +5,7 @@ import {
   IconSearch as Search,
 } from "@tabler/icons-react";
 import { formatearFechaPeru } from "../../../services/dateService";
-import { formatearSoles, limpiarDni } from "../utils/cajaFormatters";
+import { formatearSoles } from "../utils/cajaFormatters";
 
 export default function CajaFields({
   buscando,
@@ -20,6 +20,8 @@ export default function CajaFields({
   correlativos,
   inscripcionesCaja = [],
   onSeleccionarInscripcionCaja,
+  resultadosBusqueda = [],
+  onSeleccionarEstudiante,
 }) {
   const pagoHabilitado = modoEdicion || Boolean(formulario.inscripcionId);
   const mostrarSelectorTallerCaja = !pagoHabilitado && !modoEdicion && inscripcionesCaja.length > 0;
@@ -69,16 +71,30 @@ export default function CajaFields({
           </div>
           <form className="caja-search-form" onSubmit={onBuscar}>
             <input
-              inputMode="numeric"
-              maxLength={8}
-              onChange={(event) => setDni(limpiarDni(event.currentTarget.value))}
-              placeholder="DNI del estudiante"
+              onChange={(event) => setDni(event.currentTarget.value)}
+              placeholder="DNI o nombres del estudiante"
               value={dni}
             />
             <Button leftSection={<Search size={16} />} loading={buscando} type="submit">
               Buscar
             </Button>
           </form>
+          {resultadosBusqueda.length > 0 ? (
+            <div className="caja-search-results">
+              <div className="caja-search-results-title">Seleccione un estudiante:</div>
+              {resultadosBusqueda.map((est) => (
+                <button
+                  key={est.dni}
+                  type="button"
+                  className="caja-search-result-item"
+                  onClick={() => onSeleccionarEstudiante?.(est)}
+                >
+                  <span className="caja-search-result-name">{est.nombres}</span>
+                  <span className="caja-search-result-dni">DNI: {est.dni}</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
           {mensaje ? (
             <div className={`mt-3 rounded-lg border px-3 py-2 text-[13px] font-extrabold ${
               mensajeEsInfo

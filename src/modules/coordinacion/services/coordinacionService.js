@@ -263,6 +263,7 @@ export async function crearPrograma(datos) {
       plantilla_base64: datos.plantillaBase64 || "",
       plantilla_variables: datos.plantillaVariables || [],
       plantilla_validada: Boolean(datos.plantillaValidada),
+      dias: datos.dias || [],
     };
     const res = await apiClient.post("/api/v1/extracurricular/programas", payload);
     if (!res.success) throw new Error(res.message || "Error al crear programa");
@@ -314,6 +315,7 @@ export async function crearProgramaDesdeDocumento(datos) {
       edad_minima: datos.edadMinima || "",
       edad_maxima: datos.edadMaxima || "",
       grupo_etario: datos.grupoEtario || "",
+      dias: datos.dias || [],
     };
     const res = await apiClient.post("/api/v1/extracurricular/programas/documento", payload);
     if (!res.success) throw new Error(res.message || "Error al crear programa desde documento");
@@ -374,6 +376,7 @@ export async function editarPrograma(id, datos) {
       plantilla_base64: datos.plantillaBase64 || "",
       plantilla_variables: datos.plantillaVariables || [],
       plantilla_validada: Boolean(datos.plantillaValidada),
+      dias: datos.dias || [],
     };
     const res = await apiClient.put(`/api/v1/extracurricular/programas/${id}`, payload);
     if (!res.success) throw new Error(res.message || "Error al editar programa");

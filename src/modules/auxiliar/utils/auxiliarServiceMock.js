@@ -98,8 +98,8 @@ function resolverValidacionPorNombre(nombreQuery, programaId = "") {
     throw new Error("El nombre de busqueda debe tener al menos 3 caracteres.");
   }
 
-  // 1. Buscar en inscripciones activas (filtradas por día)
-  const inscripciones = obtenerInscripcionesActivas().filter((ins) => esDiaCorrecto(ins.horario));
+  // 1. Buscar en inscripciones activas
+  const inscripciones = obtenerInscripcionesActivas();
 
   let matchesInscripcion = inscripciones.filter(ins =>
     normalizarTexto(ins.nombresEstudiante).includes(queryNormalizada)
@@ -220,8 +220,56 @@ function resolverValidacion(identificadores = {}) {
 
   const pago = encontrarPagoInscripcion(inscripcion, ids);
   const estadoNormalizado = resolverEstadoPago(inscripcion, pago);
-
   if (estadoNormalizado === "pagado") {
+    // 1. Validar rango de fechas (vigencia del taller)
+    const tzOffset = new Date().getTimezoneOffset() * 60000;
+    const hoyStr = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
+
+    if (inscripcion.fechaInicio && hoyStr < inscripcion.fechaInicio) {
+      const fechaFmt = inscripcion.fechaInicio.split("-").reverse().join("/");
+      return crearRespuestaInscripcion({
+        inscripcion,
+        estudiante,
+        pago,
+        estadoAcceso: "dia-incorrecto",
+        estadoPago: "Pagado",
+        accesoPermitido: false,
+        mensajeAcceso: "Taller no iniciado",
+        accion: `El taller aún no ha iniciado. La fecha de inicio es el ${fechaFmt}.`,
+        color: "rojo",
+      });
+    }
+
+    if (inscripcion.fechaFin && hoyStr > inscripcion.fechaFin) {
+      const fechaFmt = inscripcion.fechaFin.split("-").reverse().join("/");
+      return crearRespuestaInscripcion({
+        inscripcion,
+        estudiante,
+        pago,
+        estadoAcceso: "dia-incorrecto",
+        estadoPago: "Pagado",
+        accesoPermitido: false,
+        mensajeAcceso: "Taller finalizado",
+        accion: `El taller ya ha finalizado (finalizó el ${fechaFmt}).`,
+        color: "rojo",
+      });
+    }
+
+    // 2. Validar día de la semana
+    if (!esDiaCorrecto(inscripcion.horario)) {
+      return crearRespuestaInscripcion({
+        inscripcion,
+        estudiante,
+        pago,
+        estadoAcceso: "dia-incorrecto",
+        estadoPago: "Pagado",
+        accesoPermitido: false,
+        mensajeAcceso: "Hoy no le toca este taller",
+        accion: "El alumno está matriculado en este taller, pero las clases corresponden a otros días de la semana.",
+        color: "rojo",
+      });
+    }
+
     const minsRestantes = obtenerMinutosRestantesIngresoReciente(
       apiDb.asistencias || [],
       ids.dni || estudiante?.dni,
@@ -262,9 +310,10 @@ function resolverValidacion(identificadores = {}) {
       inscripcion,
       estudiante,
       pago,
-      estadoAcceso: "no_registrado",
+      estadoAcceso: "anulado",
       estadoPago: "Anulado",
       accesoPermitido: false,
+      value: "Registro anulado",
       mensajeAcceso: "Pago anulado",
       accion: "Registro anulado. Verificar en Asistente o Cajera antes de permitir el ingreso.",
       color: "rojo",
@@ -346,7 +395,7 @@ function crearRespuestaNoRegistrado(ids, estudiante) {
 }
 
 function buscarInscripcion(ids) {
-  const inscripciones = obtenerInscripcionesActivas().filter((ins) => esDiaCorrecto(ins.horario));
+  const inscripciones = obtenerInscripcionesActivas();
   const pagos = obtenerPagos();
 
   if (ids.inscripcionId) {
@@ -363,31 +412,47 @@ function buscarInscripcion(ids) {
   }
 
   const candidatas = inscripciones.filter((item) => coincideInscripcion(item, ids));
+  if (candidatas.length === 0) return null;
+
   if (ids.programaId) {
     const porPrograma = candidatas.filter((item) => mismoCodigo(item.programaId, ids.programaId));
     if (porPrograma.length) return ordenarPorFecha(porPrograma)[0] || null;
   }
 
-  if (candidatas.length > 0) {
-    // Priorizar inscripciones pagadas
-    const paid = candidatas.filter(ins => {
+  // Priorizar las inscripciones de hoy
+  const candidatasHoy = candidatas.filter(item => esDiaCorrecto(item.horario));
+  if (candidatasHoy.length > 0) {
+    const paid = candidatasHoy.filter(ins => {
       const p = encontrarPagoInscripcion(ins, ids);
       const estNorm = resolverEstadoPago(ins, p);
       return estNorm === "pagado";
     });
     if (paid.length > 0) return ordenarPorFecha(paid)[0];
 
-    // Luego en proceso / Por verificar
-    const processing = candidatas.filter(ins => {
+    const processing = candidatasHoy.filter(ins => {
       const p = encontrarPagoInscripcion(ins, ids);
       return p && (p.estado === "Por Verificar" || p.estado === "Por verificar" || p.estado === "Pago en proceso");
     });
     if (processing.length > 0) return ordenarPorFecha(processing)[0];
 
-    return ordenarPorFecha(candidatas)[0] || null;
+    return ordenarPorFecha(candidatasHoy)[0];
   }
 
-  return null;
+  // Si no hay de hoy, retornar la mejor de cualquier otro día (para mostrar advertencia de Día Incorrecto)
+  const paid = candidatas.filter(ins => {
+    const p = encontrarPagoInscripcion(ins, ids);
+    const estNorm = resolverEstadoPago(ins, p);
+    return estNorm === "pagado";
+  });
+  if (paid.length > 0) return ordenarPorFecha(paid)[0];
+
+  const processing = candidatas.filter(ins => {
+    const p = encontrarPagoInscripcion(ins, ids);
+    return p && (p.estado === "Por Verificar" || p.estado === "Por verificar" || p.estado === "Pago en proceso");
+  });
+  if (processing.length > 0) return ordenarPorFecha(processing)[0];
+
+  return ordenarPorFecha(candidatas)[0] || null;
 }
 
 function coincideInscripcion(inscripcion, ids) {

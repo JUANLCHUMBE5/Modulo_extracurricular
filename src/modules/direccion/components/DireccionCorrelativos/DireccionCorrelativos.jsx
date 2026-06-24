@@ -80,7 +80,7 @@ export default function DireccionCorrelativos({
         <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "600px" }}>
           {/* Recibo Físico */}
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>Recibo Físico</span>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>N° de Recibo de Ingreso</span>
             <div style={{ display: "flex", gap: "16px" }}>
               <TextInput
                 label="Inicio (Valor Inicial)"
@@ -128,7 +128,7 @@ export default function DireccionCorrelativos({
 
           {/* Egreso */}
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>Comprobante de Egreso</span>
+            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>N° de Recibo de Egreso</span>
             <div style={{ display: "flex", gap: "16px" }}>
               <TextInput
                 label="Inicio (Valor Inicial)"
