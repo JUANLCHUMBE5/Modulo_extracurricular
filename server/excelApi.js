@@ -2,6 +2,10 @@ import cors from "cors";
 import "./loadEnv.js";
 import express from "express";
 import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { generarPreviewCargaExcel } from "./excelPreviewService.js";
 import {
   MAX_FILE_SIZE,
@@ -189,6 +193,18 @@ app.use("/", programaRouter);
 app.use("/", inscripcionRouter);
 app.use("/", pagoRouter);
 app.use("/api/v1/extracurricular", direccionRouter);
+
+// Servir archivos estáticos del frontend de React en producción
+const DIST_PATH = path.join(__dirname, "../dist");
+app.use(express.static(DIST_PATH));
+
+// Redirigir cualquier otra ruta GET no-API al index.html de React (compatible con Express v5)
+app.use((req, res, next) => {
+  if (req.method === "GET" && !req.path.startsWith("/api")) {
+    return res.sendFile(path.join(DIST_PATH, "index.html"));
+  }
+  next();
+});
 
 // --- MULTER & GLOBAL ERROR HANDLING ---
 app.use((error, _req, res, _next) => {
