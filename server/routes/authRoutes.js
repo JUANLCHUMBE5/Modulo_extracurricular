@@ -94,7 +94,7 @@ router.post("/api/v1/auth/login", async (req, res) => {
     const userToFind = aliases[cleanUser] || cleanUser;
     const userObj = (db.usuarios || []).find(u => String(u.usuario || "").trim().toLowerCase() === userToFind);
 
-    if (userObj && userObj.estado !== "Inactivo") {
+    if (userObj && userObj.estado === "Activo") {
       const contrasenaGuardada = userObj.contrasena;
       if (!contrasenaGuardada) {
         await registrarAuditoria(username, "desconocido", "LOGIN_FALLIDO", { ip: req.ip, motivo: "Usuario sin contraseña" });

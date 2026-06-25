@@ -21,8 +21,8 @@
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 20px 14px;
+  gap: 8px;
+  padding: 12px 10px;
   border-right: 1px solid #dce7e4;
   background: #ffffff;
   overflow: hidden;
@@ -47,7 +47,7 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding-bottom: 8px;
+  padding-bottom: 4px;
 }
 
 .sidebar-collapsed .adm-sidebar-brand-row {
@@ -77,8 +77,8 @@
   background: transparent !important;
   border: none !important;
   color: #176c60 !important;
-  width: 40px !important;
-  height: 40px !important;
+  width: 34px !important;
+  height: 34px !important;
   padding: 0 !important;
   border-radius: 50% !important;
   display: flex !important;
@@ -108,7 +108,7 @@
   grid-column: 2;
   width: min(1180px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 16px 0 32px;
+  padding: 10px 0 20px;
 }
 
 .adm-brand {
@@ -126,7 +126,7 @@
 }
 
 .adm-module-label {
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   color: #176c60;
   font-size: 12px;
   font-weight: 900;
@@ -136,24 +136,24 @@
 
 .adm-nav {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .adm-nav-item,
 .adm-sidebar-footer .adm-logout-btn {
   width: 100%;
-  min-height: 42px;
+  min-height: 36px;
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   border: 1px solid #d6e2df;
   border-radius: 8px;
-  padding: 0 12px;
+  padding: 0 10px;
   color: #172331;
   background: #ffffff;
   font: inherit;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 700;
   text-align: left;
   cursor: pointer;
@@ -190,11 +190,11 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  padding: 12px 0 18px;
+  padding: 8px 0 12px;
 }
 
 .adm-topbar-sub {
-  margin: 0 0 6px;
+  margin: 0 0 2px;
   color: #04735f;
   font-size: 12px;
   font-weight: 700;
@@ -205,7 +205,7 @@
 .adm-topbar h1 {
   margin: 0;
   color: #111827;
-  font-size: 28px;
+  font-size: 22px;
   line-height: 1.1;
   letter-spacing: 0;
 }
@@ -228,7 +228,7 @@
 
 .adm-new-btn,
 .adm-logout-btn {
-  height: 40px;
+  height: 34px;
   border-radius: 8px;
   padding: 0 16px;
   display: inline-flex;
@@ -261,7 +261,7 @@
 
 .adm-sidebar-footer .adm-logout-btn {
   width: 100%;
-  min-height: 42px;
+  min-height: 36px;
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
   justify-content: stretch;
@@ -334,7 +334,7 @@
 }
 
 .adm-card-header {
-  padding: 14px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid #e3ece9;
   display: flex;
   align-items: center;
@@ -356,8 +356,8 @@
 }
 
 .adm-refresh-btn {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border: 1px solid #d8e0ea;
   border-radius: 8px;
   background: #f8fafc;
@@ -370,7 +370,7 @@
 .adm-refresh-btn:hover { background: #eef4ff; color: #1d4ed8; }
 
 .adm-filters {
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid #e3ece9;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto;
@@ -380,7 +380,8 @@
 }
 
 .adm-search-box {
-  min-height: 40px;
+  height: 34px;
+  min-height: 34px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -437,7 +438,7 @@
 
 .adm-select-wrap select {
   width: 100%;
-  height: 40px;
+  height: 34px;
   appearance: none;
   border: 1px solid #d8e0ea;
   border-radius: 8px;
@@ -472,7 +473,7 @@
 }
 
 .adm-table thead th {
-  padding: 11px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid #e3ece9;
   background: #f8fafc;
   color: #64748b;
@@ -484,7 +485,7 @@
 }
 
 .adm-table tbody td {
-  padding: 12px 16px;
+  padding: 6px 12px;
   border-bottom: 1px solid #edf2f7;
 }
 
@@ -496,15 +497,15 @@
   align-items: center;
   gap: 12px;
 }.adm-avatar {
-  width: 38px;
-  height: 38px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: #f1f5f9;
   color: #475569;
   border: none;
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 700;
   flex: 0 0 auto;
 }
@@ -527,10 +528,10 @@
   display: inline-flex;
   align-items: center;
   gap: 0;
-  min-height: 24px;
-  padding: 2px 10px;
+  min-height: 20px;
+  padding: 1px 8px;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   white-space: nowrap;
   border: none;
@@ -560,8 +561,8 @@
 }
 
 .adm-btn-icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 8px;
   border: none;
   background: transparent;
@@ -764,7 +765,7 @@
 
 /* --- FILTROS DE LOGS --- */
 .adm-filters-logs {
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid #e3ece9;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto;
@@ -799,7 +800,7 @@
 }
 
 .adm-date-input {
-  height: 40px;
+  height: 34px;
   padding: 0 10px;
   border: 1px solid #d8e0ea;
   border-radius: 8px;

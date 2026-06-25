@@ -13,6 +13,7 @@ export function startSyncEventsClient({ getToken } = {}) {
   let debounceId = 0;
   let pendingEvent = null;
   let stopped = false;
+  let source = null;
 
   const dispatchUpdate = (eventPayload) => {
     window.dispatchEvent(new CustomEvent("api-db-updated", {
@@ -44,22 +45,41 @@ export function startSyncEventsClient({ getToken } = {}) {
     debounceId = window.setTimeout(flush, SYNC_DEBOUNCE_MS);
   };
 
-  const handleVisibility = () => {
-    if (document.visibilityState === "visible" && pendingEvent) {
-      flush();
+  const connect = () => {
+    if (stopped || source) return;
+    const url = `${API_BASE_URL}/api/v1/sync/events/stream?token=${encodeURIComponent(token)}`;
+    source = new EventSource(url);
+    source.addEventListener("sync", (message) => {
+      try {
+        schedule(JSON.parse(message.data));
+      } catch {
+        schedule({ entidades: ["global"], createdAt: new Date().toISOString() });
+      }
+    });
+  };
+
+  const disconnect = () => {
+    if (source) {
+      source.close();
+      source = null;
     }
   };
 
-  const url = `${API_BASE_URL}/api/v1/sync/events/stream?token=${encodeURIComponent(token)}`;
-  const source = new EventSource(url);
-
-  source.addEventListener("sync", (message) => {
-    try {
-      schedule(JSON.parse(message.data));
-    } catch {
-      schedule({ entidades: ["global"], createdAt: new Date().toISOString() });
+  const handleVisibility = () => {
+    if (document.visibilityState === "visible") {
+      connect();
+      if (pendingEvent) {
+        flush();
+      }
+    } else {
+      disconnect();
     }
-  });
+  };
+
+  // Connect initially if visible
+  if (document.visibilityState === "visible") {
+    connect();
+  }
 
   document.addEventListener("visibilitychange", handleVisibility);
 
@@ -67,6 +87,6 @@ export function startSyncEventsClient({ getToken } = {}) {
     stopped = true;
     window.clearTimeout(debounceId);
     document.removeEventListener("visibilitychange", handleVisibility);
-    source.close();
+    disconnect();
   };
 }

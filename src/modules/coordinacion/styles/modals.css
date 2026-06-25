@@ -94,14 +94,14 @@
 .coord-program-form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-  padding: 10px 14px;
+  gap: 6px;
+  padding: 6px 10px;
   overflow-y: auto;
 }
 
 .coord-program-form-main {
   display: grid;
-  gap: 8px;
+  gap: 5px;
 }
 
 .coord-modal-verano .coord-modal-icon,
@@ -166,7 +166,7 @@
 .coord-form-section {
   border: 1px solid var(--coord-line);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background: #ffffff;
 }
 
@@ -176,7 +176,7 @@
 }
 
 .coord-template-section {
-  padding: 10px 12px;
+  padding: 8px 10px;
 }
 
 .coord-template-workspace {
@@ -466,7 +466,7 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .coord-section-heading > svg {
@@ -496,7 +496,7 @@
 .coord-section-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 12px;
+  gap: 5px 12px;
 }
 
 .coord-payment-grid,
@@ -652,7 +652,7 @@
 
 .coord-schedule-builder {
   display: grid;
-  gap: 12px;
+  gap: 6px;
 }
 
 .coord-schedule-mode-grid {
@@ -702,7 +702,7 @@
 
 .coord-block-form-panel {
   display: grid;
-  gap: 12px;
+  gap: 6px;
 }
 
 .coord-block-validity-row {
@@ -721,7 +721,7 @@
 .coord-compact-schedule-row {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
+  gap: 6px;
 }
 
 .coord-program-window-row {
@@ -1251,5 +1251,43 @@
 .coord-form-tab-btn.is-active {
   color: #006b5b;
   border-bottom-color: #006b5b;
+}
+
+/* Compact textareas for program creation and edit forms */
+.coord-program-form textarea {
+  padding: 5px 8px !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  border: 1px solid #cbd5df !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+}
+
+.coord-program-form textarea:focus {
+  border-color: var(--coord-blue) !important;
+  box-shadow: 0 0 0 3px rgba(55, 96, 143, 0.12) !important;
+}
+
+/* Black text for schedule groups inside coordination forms */
+.coord-group-schedule,
+.coord-group-schedule-compact {
+  color: #000000 !important;
+  border-color: #cbd5df !important;
+}
+
+.coord-group-schedule-badge,
+.coord-group-schedule strong,
+.coord-group-schedule-title strong {
+  color: #000000 !important;
+}
+
+.coord-group-schedule-cell span {
+  color: #000000 !important;
+  opacity: 0.9 !important;
+}
+
+.coord-group-schedule-cell p {
+  color: #000000 !important;
+  font-weight: 700 !important;
 }
 

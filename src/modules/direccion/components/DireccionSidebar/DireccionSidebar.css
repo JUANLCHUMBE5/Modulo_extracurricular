@@ -103,7 +103,7 @@
   border: none !important;
   border-radius: 10px !important; /* Bordes suaves redondeados */
   background: transparent !important;
-  color: #e2e8f0 !important; /* Texto blanco grisáceo para buen contraste */
+  color: #ffffff !important; /* Texto blanco puro */
   font-size: 14px !important;
   font-weight: 600 !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -115,8 +115,8 @@
 
 .dir-nav button svg,
 .dir-logout svg {
-  color: #cbd5e1 !important; /* Iconos blanco grisáceos */
-  stroke: #cbd5e1 !important;
+  color: #ffffff !important; /* Iconos blanco puro */
+  stroke: #ffffff !important;
   width: 20px !important;
   height: 20px !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -124,7 +124,7 @@
 
 .dir-nav button span,
 .dir-logout span {
-  color: #e2e8f0 !important; /* Texto blanco grisáceo inactivo */
+  color: #ffffff !important; /* Texto blanco puro inactivo */
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 

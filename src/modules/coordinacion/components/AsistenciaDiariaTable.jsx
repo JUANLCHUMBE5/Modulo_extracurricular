@@ -14,6 +14,8 @@ function AsistenciaDiariaTable({
   filasGrupoActivoFiltradas,
   matriculadosFiltrados,
   handleExportPdfIndividual,
+  programas = [],
+  tallerId = "",
 }) {
   return (
     <div className="coord-table-wrap">
@@ -24,6 +26,8 @@ function AsistenciaDiariaTable({
             <th>DNI</th>
             <th>Código</th>
             <th>Estudiante</th>
+            {tallerId === "TODOS_TALLERES" && <th>Taller</th>}
+            <th>Grado</th>
             <th>Pago</th>
             <th>Acceso</th>
             <th>{grupoActivo ? "Observación" : "Observación / Firma"}</th>
@@ -39,19 +43,39 @@ function AsistenciaDiariaTable({
                 const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
                 const toneAcceso = String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "warning" : "error";
 
-                const studentObj = {
-                  dni: obtenerDniAsistencia(asist),
-                  nombres: obtenerNombreAsistencia(asist),
-                  codigoEstudiante: asist.codigoEstudiante || "",
-                  telefono: asist.telefono || "",
-                };
+                const dniAsist = obtenerDniAsistencia(asist);
+                const matchedAlumno = dniAsist ? matriculadosFiltrados.find(m => String(m.dni || "").trim() === String(dniAsist).trim()) : null;
+                const gValue = matchedAlumno ? (matchedAlumno.grado || matchedAlumno.gradoEstudiante) : "";
+                const tIdValue = matchedAlumno ? matchedAlumno.tallerId : asist.tallerId;
+
+                const parts = String(gValue || "").split(":");
+                let labelGrado = gValue;
+                if (parts.length === 2) {
+                  const nivel = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+                  labelGrado = `${parts[1]}° ${nivel}`;
+                } else {
+                  const match = String(gValue).match(/(\d+)\s+(\w+)/);
+                  if (match) {
+                    const nivel = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+                    labelGrado = `${match[1]}° ${nivel}`;
+                  }
+                }
+
+                const tallerObj = tIdValue ? programas.find(p => p.id === tIdValue) : null;
+                const labelTaller = tallerObj ? (tallerObj.nombre.split(" - ")[1] || tallerObj.nombre) : "";
+                const displaySub = [
+                  tallerId === "TODOS_TALLERES" && labelTaller ? labelTaller : "",
+                  labelGrado ? labelGrado : ""
+                ].filter(Boolean).join(" - ");
 
                 return (
                   <tr key={`${asist.id || obtenerDniAsistencia(asist) || obtenerNombreAsistencia(asist)}-${index}`}>
                     {grupoActivo && <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asist))}</td>}
                     <td>{obtenerDniAsistencia(asist) || "Sin DNI"}</td>
                     <td>{asist.codigoEstudiante || "—"}</td>
-                    <td><span>{obtenerNombreAsistencia(asist) || "—"}</span></td>
+                    <td><span style={{ fontWeight: 500 }}>{obtenerNombreAsistencia(asist) || "—"}</span></td>
+                    {tallerId === "TODOS_TALLERES" && <td>{labelTaller || "—"}</td>}
+                    <td>{labelGrado || "—"}</td>
                     <td>
                       <span style={badgeStyle(String(asist.estadoPago).toLowerCase() === "pagado", "warning")}>
                         {asist.estadoPago || "Pendiente"}
@@ -68,7 +92,14 @@ function AsistenciaDiariaTable({
                         variant="subtle"
                         color="teal"
                         size="xs"
-                        onClick={() => handleExportPdfIndividual(studentObj)}
+                        onClick={() => handleExportPdfIndividual({
+                          dni: obtenerDniAsistencia(asist),
+                          nombres: obtenerNombreAsistencia(asist),
+                          codigoEstudiante: asist.codigoEstudiante || "",
+                          telefono: asist.telefono || "",
+                          tallerId: tIdValue,
+                          grado: gValue,
+                        })}
                         title="Descargar Reporte Individual"
                       >
                         <FileDown size={16} />
@@ -79,7 +110,7 @@ function AsistenciaDiariaTable({
               })
             ) : (
               <tr>
-                <td colSpan={grupoActivo ? 8 : 7} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
+                <td colSpan={tallerId === "TODOS_TALLERES" ? 10 : 9} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
                   No se encontraron estudiantes para la búsqueda.
                 </td>
               </tr>
@@ -90,11 +121,36 @@ function AsistenciaDiariaTable({
                 const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(alumno.estadoPago).toLowerCase());
                 const textoAcceso = esAccesoPermitido ? "Permitido" : (String(alumno.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
 
+                const gValue = alumno.grado || alumno.gradoEstudiante || "";
+                const tIdValue = alumno.tallerId;
+
+                const parts = String(gValue || "").split(":");
+                let labelGrado = gValue;
+                if (parts.length === 2) {
+                  const nivel = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+                  labelGrado = `${parts[1]}° ${nivel}`;
+                } else {
+                  const match = String(gValue).match(/(\d+)\s+(\w+)/);
+                  if (match) {
+                    const nivel = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+                    labelGrado = `${match[1]}° ${nivel}`;
+                  }
+                }
+
+                const tallerObj = tIdValue ? programas.find(p => p.id === tIdValue) : null;
+                const labelTaller = tallerObj ? (tallerObj.nombre.split(" - ")[1] || tallerObj.nombre) : "";
+                const displaySub = [
+                  tallerId === "TODOS_TALLERES" && labelTaller ? labelTaller : "",
+                  labelGrado ? labelGrado : ""
+                ].filter(Boolean).join(" - ");
+
                 return (
                   <tr key={`${alumno.dni || alumno.id || index}-${index}`}>
                     <td>{alumno.dni || alumno.dniEstudiante || "Sin DNI"}</td>
                     <td>{alumno.codigoEstudiante || "—"}</td>
-                    <td><span>{alumno.nombres || alumno.nombresEstudiante || "—"}</span></td>
+                    <td><span style={{ fontWeight: 500 }}>{alumno.nombres || alumno.nombresEstudiante || "—"}</span></td>
+                    {tallerId === "TODOS_TALLERES" && <td>{labelTaller || "—"}</td>}
+                    <td>{labelGrado || "—"}</td>
                     <td>
                       <span style={badgeStyle(String(alumno.estadoPago).toLowerCase() === "pagado", "warning")}>
                         {alumno.estadoPago || "Pendiente"}
@@ -122,7 +178,7 @@ function AsistenciaDiariaTable({
               })
             ) : (
               <tr>
-                <td colSpan={7} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
+                <td colSpan={tallerId === "TODOS_TALLERES" ? 9 : 8} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
                   No se encontraron estudiantes matriculados para la búsqueda.
                 </td>
               </tr>

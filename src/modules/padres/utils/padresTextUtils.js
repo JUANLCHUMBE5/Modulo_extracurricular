@@ -35,7 +35,8 @@ export function prepararComunicadoPadres(programa, estudiante) {
     programa?.fechaInicio,
     new Date(),
     programa?.duracionAvisoDias,
-    programa?.horaLimiteAviso
+    programa?.horaLimiteAviso,
+    programa
   );
   const indicaciones = obtenerIndicacionesProgramaPadres(programa, { esCambridge, esClubTareas });
   if (ventana.fechaLimite) {
@@ -211,7 +212,8 @@ function crearComunicadoCambridgePadres(programa, estudiante, titulo) {
     programa?.fechaInicio,
     new Date(),
     programa?.duracionAvisoDias,
-    programa?.horaLimiteAviso
+    programa?.horaLimiteAviso,
+    programa
   );
   const limiteTexto = ventana.fechaLimite
     ? `Habilitado para inscripción en línea hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
@@ -257,7 +259,8 @@ function crearComunicadoBasicoPadres(programa, estudiante, titulo) {
     programa?.fechaInicio,
     new Date(),
     programa?.duracionAvisoDias,
-    programa?.horaLimiteAviso
+    programa?.horaLimiteAviso,
+    programa
   );
   const limiteTexto = ventana.fechaLimite
     ? `Habilitado para confirmación en línea hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
@@ -295,7 +298,8 @@ function crearComunicadoClubTareasPadres(programa, estudiante, titulo, area) {
     programa?.fechaInicio,
     new Date(),
     programa?.duracionAvisoDias,
-    programa?.horaLimiteAviso
+    programa?.horaLimiteAviso,
+    programa
   );
   const limiteTexto = ventana.fechaLimite
     ? `Habilitado en línea hasta el ${ventana.fechaLimite} a las ${ventana.horaLimite}.`
@@ -600,7 +604,8 @@ function crearDatosComunicadoPadres(programa, estudiante, titulo) {
     programa?.fechaInicio,
     new Date(),
     programa?.duracionAvisoDias,
-    programa?.horaLimiteAviso
+    programa?.horaLimiteAviso,
+    programa
   );
   const costo = Number(programa?.costo || 0) > 0 ? `S/ ${Number(programa.costo).toFixed(2)}` : "Por confirmar";
   const grado = programa?.grado || programa?.gradoEstudiante || estudiante?.grado || "";

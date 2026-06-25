@@ -3,22 +3,31 @@ export function parsearHorario(horarioStr) {
 
   let cleaned = String(horarioStr).trim();
   // Limpiar almuerzo y clase
-  cleaned = cleaned.replace(/almuerzo\s+\d{2}:\d{2}-\d{2}:\d{2},?\s*/gi, "");
+  cleaned = cleaned.replace(/almuerzo\s+\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\s*-\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?,?\s*/gi, "");
   cleaned = cleaned.replace(/clase\s+/gi, "");
 
-  const parts = cleaned.split(":");
-  if (parts.length >= 2) {
-    const nivel = parts[0].trim();
-    const rest = parts.slice(1).join(":").trim();
+  // Buscar el rango de horas (soporta AM/PM y formatos de 1 o 2 dígitos de hora)
+  const hourRegex = /(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\s*-\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/i;
+  const match = cleaned.match(hourRegex);
 
-    const hourRegex = /(\d{2}:\d{2}\s*-\s*\d{2}:\d{2})/g;
-    const hours = rest.match(hourRegex);
-    if (hours && hours.length > 0) {
-      const hora = hours[0];
-      const dias = rest.replace(hora, "").trim().replace(/,$/, "").trim();
-      return { nivel, dias, hora };
-    }
-    return { nivel, dias: rest, hora: "" };
+  let hora = "";
+  if (match) {
+    hora = match[1];
+    // Quitar la hora de cleaned
+    cleaned = cleaned.replace(hora, "").trim();
   }
-  return { nivel: cleaned, dias: "", hora: "" };
+
+  // Quitar comas sobrantes al final de lo que queda
+  cleaned = cleaned.replace(/,$/, "").trim();
+
+  // Si queda un separador de nivel/grado (dos puntos)
+  if (cleaned.includes(":")) {
+    const parts = cleaned.split(":");
+    const nivel = parts[0].trim();
+    const dias = parts.slice(1).join(":").trim();
+    return { nivel, dias, hora };
+  }
+
+  // Si no hay dos puntos, todo lo restante se considera nivel o texto principal (ej. "Jueves")
+  return { nivel: cleaned, dias: "", hora };
 }

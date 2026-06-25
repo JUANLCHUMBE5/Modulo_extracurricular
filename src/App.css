@@ -276,3 +276,158 @@ textarea:focus-visible {
     margin-left: var(--admin-sidebar-width) !important;
   }
 }
+
+/* Unified Collapsible Switcher Card */
+.module-switcher-group {
+  display: flex !important;
+  flex-direction: column !important;
+  width: calc(100% + 32px) !important; /* Stretch past the 16px sidebar padding */
+  margin: 16px -16px 0 -16px !important; /* Move to the absolute left/right edges */
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.module-switcher-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  padding: 12px 32px !important; /* Indent header text by 32px to align with buttons */
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  color: #ffffff !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease, color 0.2s ease !important;
+  margin: 0 !important;
+  outline: none !important;
+}
+
+.module-switcher-header:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: #ffffff !important;
+}
+
+.module-switcher-header:focus,
+.module-switcher-header:focus-visible,
+.module-switcher-header:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.module-switcher-header-title {
+  flex: 1 !important;
+  text-align: left !important;
+}
+
+.module-switcher-header-icon {
+  display: flex !important;
+  align-items: center !important;
+  margin-right: 16px !important; /* Position icon slightly in from the right edge */
+  color: #ffffff !important;
+  transition: transform 0.2s ease, color 0.2s ease !important;
+}
+
+.module-switcher-header:hover .module-switcher-header-icon {
+  color: #ffffff !important;
+}
+
+.module-switcher-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  padding: 6px 16px 8px 16px !important; /* Re-apply 16px horizontal padding to align child pills */
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(0, 0, 0, 0.1) !important;
+  animation: slideDown 0.2s ease-out forwards;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Switched Items Styles inside App.css for guaranteed rendering */
+.module-switcher-content .coord-nav-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 10px 16px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease-in-out !important;
+  min-height: auto !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  margin: 0 !important;
+}
+
+.module-switcher-content .coord-nav-item:focus,
+.module-switcher-content .coord-nav-item:focus-visible,
+.module-switcher-content .coord-nav-item:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Inactive Item Hover */
+.module-switcher-content .coord-nav-item:not(.coord-nav-item-active):hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.module-switcher-content .coord-nav-item:not(.coord-nav-item-active) svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.module-switcher-content .coord-nav-item:not(.coord-nav-item-active):hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Active Item: White background, black text */
+.module-switcher-content .coord-nav-item-active {
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+}
+
+.module-switcher-content .coord-nav-item-active svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+}
+
+.module-switcher-content .coord-nav-item-active span {
+  color: #000000 !important;
+}
+
+.module-switcher-content .coord-nav-arrow {
+  display: none !important;
+}
+
+
+

@@ -1,51 +1,19 @@
-import { supabase } from '../server/supabaseClient.js';
-import { getDb } from '../server/localDb.js';
+import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 async function main() {
-  console.log("=== INSPECTING CURRENT CAMBRIDGE GUESTS ===");
+  const { data: progs, error: err1 } = await supabase.from('programas').select('*');
+  console.log("=== PROGRAMAS IN SUPABASE ===");
+  if (err1) console.error(err1.message);
+  else console.log(JSON.stringify(progs, null, 2));
 
-  const db = await getDb();
-  const programs = db.programas || [];
-  
-  // Find Cambridge programs
-  const cambridgePrograms = programs.filter(p => {
-    const text = String(p.nombre || p.programa || p.categoria || "").toLowerCase();
-    return text.includes("cambridge") || text.includes("cambrigde") || text.includes("ingles");
-  });
-
-  console.log(`\nFound ${cambridgePrograms.length} Cambridge program(s):`);
-  cambridgePrograms.forEach(p => console.log(`- [${p.id}] ${p.nombre} (${p.categoria || 'Sin categoria'})`));
-
-  if (cambridgePrograms.length === 0) {
-    console.log("No Cambridge programs found.");
-    return;
-  }
-
-  for (const prog of cambridgePrograms) {
-    console.log(`\nGuests for ${prog.nombre} (ID: ${prog.id}):`);
-    const { data: guests, error } = await supabase
-      .from('invitados_programa')
-      .select('*')
-      .eq('programaId', prog.id);
-
-    if (error) {
-      console.error(`❌ Error fetching guests for ${prog.id}:`, error.message);
-      continue;
-    }
-
-    if (guests && guests.length > 0) {
-      console.table(guests.map(g => ({
-        DNI: g.dni,
-        Nombres: g.nombres,
-        Grado: g.grado,
-        Sección: g.seccion || 'Sin sección',
-        Selección: g.seleccion || 'NO ASIGNADA',
-        NivelCambridge: g.nivelCambridge || 'NO ASIGNADO'
-      })));
-    } else {
-      console.log("No guests registered for this program.");
-    }
-  }
+  const { data: guests, error: err2 } = await supabase.from('invitados_programa').select('*');
+  console.log("\n=== INVITADOS IN SUPABASE ===");
+  if (err2) console.error(err2.message);
+  else console.log(JSON.stringify(guests, null, 2));
 }
 
-main();
+main().catch(console.error);

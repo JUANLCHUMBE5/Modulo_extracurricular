@@ -29,6 +29,7 @@ import {
   obtenerFechaAsistencia,
   obtenerNombreAsistencia,
   formatearHoraAsistencia,
+  limpiarHorarioSinAlmuerzo,
 } from "../utils/asistenciasFormatters";
 import {
   exportExcelDaily,
@@ -89,6 +90,56 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
     return nivel1 === nivel2;
   }
 
+  const parseDiasSemana = (texto = "") => {
+    const norm = String(texto || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    
+    const diasEncontrados = [];
+    if (norm.includes("lunes")) diasEncontrados.push(1);
+    if (norm.includes("martes")) diasEncontrados.push(2);
+    if (norm.includes("miercoles")) diasEncontrados.push(3);
+    if (norm.includes("jueves")) diasEncontrados.push(4);
+    if (norm.includes("viernes")) diasEncontrados.push(5);
+    if (norm.includes("sabado")) diasEncontrados.push(6);
+    if (norm.includes("domingo")) diasEncontrados.push(0);
+    return diasEncontrados;
+  };
+
+  const generarFechasProgramadas = (prog, inicioStr, finStr) => {
+    if (!inicioStr || !finStr) return [];
+    
+    let textoDias = "";
+    if (Array.isArray(prog?.horariosPorGrupo) && prog.horariosPorGrupo.length > 0) {
+      textoDias = prog.horariosPorGrupo.map(g => g.dia).join(", ");
+    } else {
+      textoDias = prog?.horario || "";
+    }
+    
+    const diasSemana = parseDiasSemana(textoDias);
+    if (diasSemana.length === 0) return [];
+    
+    const start = new Date(inicioStr + "T00:00:00");
+    const end = new Date(finStr + "T00:00:00");
+    
+    const dates = [];
+    let current = new Date(start);
+    let safety = 0;
+    while (current <= end && safety < 366) {
+      safety++;
+      const dayOfWeek = current.getDay();
+      if (diasSemana.includes(dayOfWeek)) {
+        const year = current.getFullYear();
+        const month = String(current.getMonth() + 1).padStart(2, "0");
+        const day = String(current.getDate()).padStart(2, "0");
+        dates.push(`${year}-${month}-${day}`);
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return dates;
+  };
+
   // Fetch asistencias and matriculados whenever selected tallerId changes
   useEffect(() => {
     if (!tallerId) {
@@ -104,14 +155,41 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
       setCargando(true);
       setMensaje("");
       try {
-        const [asistResult, matricResult] = await Promise.all([
-          listarAsistenciasPrograma(tallerId),
-          listarMatriculados(tallerId)
-        ]);
-        setAsistencias(asistResult || []);
-        setMatriculados(matricResult || []);
-        setFechaSeleccionada(""); // Reset date selection
-        setGradoSeleccionado(""); // Reset grade selection
+        if (tallerId === "TODOS_TALLERES") {
+          const activePrograms = programas.filter((p) => p.estado !== "Archivado");
+          const allPromises = activePrograms.map((prog) =>
+            Promise.all([
+              listarAsistenciasPrograma(prog.id),
+              listarMatriculados(prog.id)
+            ])
+          );
+          const results = await Promise.all(allPromises);
+
+          let combinedAsistencias = [];
+          let combinedMatriculados = [];
+
+          results.forEach(([asistResult, matricResult], idx) => {
+            const progId = activePrograms[idx].id;
+            const taggedAsist = (asistResult || []).map((a) => ({ ...a, tallerId: progId }));
+            const taggedMatric = (matricResult || []).map((m) => ({ ...m, tallerId: progId }));
+            combinedAsistencias.push(...taggedAsist);
+            combinedMatriculados.push(...taggedMatric);
+          });
+
+          setAsistencias(combinedAsistencias);
+          setMatriculados(combinedMatriculados);
+          setFechaSeleccionada("");
+          setGradoSeleccionado("TODOS");
+        } else {
+          const [asistResult, matricResult] = await Promise.all([
+            listarAsistenciasPrograma(tallerId),
+            listarMatriculados(tallerId)
+          ]);
+          setAsistencias(asistResult || []);
+          setMatriculados(matricResult || []);
+          setFechaSeleccionada(""); // Reset date selection
+          setGradoSeleccionado("TODOS"); // Default to TODOS
+        }
       } catch (err) {
         setAsistencias([]);
         setMatriculados([]);
@@ -123,7 +201,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
     };
 
     cargarDatosTaller();
-  }, [tallerId, listarAsistenciasPrograma, listarMatriculados]);
+  }, [tallerId, listarAsistenciasPrograma, listarMatriculados, programas]);
 
   const programmeSeleccionado = useMemo(() => {
     return programas.find((p) => p.id === tallerId);
@@ -140,26 +218,52 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   // Chronological dates list for the monthly matrix
   const fechasColumnas = useMemo(() => {
     const agrupado = agruparAsistenciasPorFecha(asistencias);
-    return Object.keys(agrupado)
-      .sort((a, b) => a.localeCompare(b))
-      .map((clave) => {
-        const [year, month, day] = clave.split("-");
-        return {
-          clave,
-          labelDDMM: `${day}/${month}`,
-          titulo: agrupado[clave].titulo,
-        };
+    const fechasDeAsistencias = Object.keys(agrupado);
+    
+    let fechasProgramadas = [];
+    if (tallerId && tallerId !== "TODOS_TALLERES" && programaSeleccionado) {
+      fechasProgramadas = generarFechasProgramadas(
+        programaSeleccionado,
+        programaSeleccionado.fechaInicio,
+        programaSeleccionado.fechaFin
+      );
+    } else if (tallerId === "TODOS_TALLERES") {
+      const activePrograms = programas.filter((p) => p.estado !== "Archivado");
+      const setFechasAll = new Set();
+      activePrograms.forEach((p) => {
+        const fechasProg = generarFechasProgramadas(p, p.fechaInicio, p.fechaFin);
+        fechasProg.forEach(f => setFechasAll.add(f));
       });
-  }, [asistencias]);
+      fechasProgramadas = Array.from(setFechasAll);
+    }
 
-  // Attendance lookup map helper
+    const unionFechas = Array.from(new Set([...fechasDeAsistencias, ...fechasProgramadas])).sort();
+
+    return unionFechas.map((clave) => {
+      const [year, month, day] = clave.split("-");
+      const dateObj = new Date(clave + "T00:00:00");
+      const diasNombres = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+      const diaSemanaNombre = diasNombres[dateObj.getDay()];
+      
+      const infoGrupo = agrupado[clave];
+      return {
+        clave,
+        labelDDMM: `${diaSemanaNombre} ${day}/${month}`,
+        titulo: infoGrupo ? infoGrupo.titulo : `${diaSemanaNombre} ${day}/${month}`,
+      };
+    });
+  }, [asistencias, tallerId, programaSeleccionado, programas]);
+
+  // Attendance lookup map helper (stores entry time for monthly matrix)
   const checkMap = useMemo(() => {
-    const map = new Set();
+    const map = new Map();
     asistencias.forEach((asist) => {
-      const dateKey = claveFechaAsistencia(obtenerFechaAsistencia(asist));
+      const fechaRaw = obtenerFechaAsistencia(asist);
+      const dateKey = claveFechaAsistencia(fechaRaw);
       const dni = String(obtenerDniAsistencia(asist) || "").trim();
       if (dni && dateKey) {
-        map.add(`${dni}:${dateKey}`);
+        const hora = formatearHoraAsistencia(fechaRaw);
+        map.set(`${dni}:${dateKey}`, hora);
       }
     });
     return map;
@@ -200,7 +304,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
 
   // Format grades for select dropdown
   const selectGradosData = useMemo(() => {
-    return gradosHabilitados.map((g) => {
+    const list = gradosHabilitados.map((g) => {
       const parts = String(g || "").split(":");
       let label = g;
       if (parts.length === 2) {
@@ -218,19 +322,70 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
         label: label,
       };
     });
+    if (list.length > 0) {
+      list.unshift({ value: "TODOS", label: "Todos los grados" });
+    }
+    return list;
   }, [gradosHabilitados]);
 
   // Resolve schedule for selected grade
   const horarioDeGrado = useMemo(() => {
-    if (!programaSeleccionado || !gradoSeleccionado) return "";
-    return resolverHorarioPorGrado(programaSeleccionado, gradoSeleccionado) || programaSeleccionado.horario || "";
+    if (!programaSeleccionado) return "";
+    
+    let result = "";
+    
+    // Try to resolve specific schedule for the selected grade first
+    if (gradoSeleccionado && gradoSeleccionado !== "TODOS") {
+      const resuelto = resolverHorarioPorGrado(programaSeleccionado, gradoSeleccionado);
+      if (resuelto) result = resuelto;
+    }
+    
+    // Fallback to general schedule
+    if (!result && programaSeleccionado.horario) {
+      result = programaSeleccionado.horario;
+    }
+    
+    // Fallback to group schedules summary if general schedule is empty
+    if (!result && Array.isArray(programaSeleccionado.horariosPorGrupo) && programaSeleccionado.horariosPorGrupo.length > 0) {
+      const items = programaSeleccionado.horariosPorGrupo.map((g) => {
+        const dia = g.dia || "";
+        const horas = (g.horaInicio && g.horaFin) ? ` ${g.horaInicio}-${g.horaFin}` : "";
+        return `${dia}${horas}`;
+      }).filter(Boolean);
+      
+      const uniqueItems = Array.from(new Set(items));
+      if (uniqueItems.length > 0) {
+        result = uniqueItems.join(" | ");
+      }
+    }
+    
+    return limpiarHorarioSinAlmuerzo(result);
   }, [programaSeleccionado, gradoSeleccionado]);
 
   // Resolve teacher for selected grade
   const docenteDeGrado = useMemo(() => {
     if (!programaSeleccionado) return "";
-    if (!gradoSeleccionado) return programaSeleccionado.responsable || "No asignado";
-    return resolverDocentePorGrado(programaSeleccionado, gradoSeleccionado) || programaSeleccionado.responsable || "No asignado";
+    
+    if (gradoSeleccionado && gradoSeleccionado !== "TODOS") {
+      const resuelto = resolverDocentePorGrado(programaSeleccionado, gradoSeleccionado);
+      if (resuelto && resuelto !== "No definido") return resuelto;
+    }
+    
+    if (programaSeleccionado.responsable) {
+      return programaSeleccionado.responsable;
+    }
+    
+    if (Array.isArray(programaSeleccionado.horariosPorGrupo) && programaSeleccionado.horariosPorGrupo.length > 0) {
+      const docentes = programaSeleccionado.horariosPorGrupo
+        .map((g) => g.responsable || g.tutora || "")
+        .filter(Boolean);
+      const uniqueDocentes = Array.from(new Set(docentes));
+      if (uniqueDocentes.length > 0) {
+        return uniqueDocentes.join(", ");
+      }
+    }
+    
+    return "No asignado";
   }, [programaSeleccionado, gradoSeleccionado]);
 
   // Label for selected grade
@@ -243,12 +398,12 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   const matriculadosFiltrados = useMemo(() => {
     let list = matriculadosOrdenados;
 
-    if (gradoSeleccionado) {
+    if (gradoSeleccionado && gradoSeleccionado !== "TODOS") {
       list = list.filter((alumno) => {
         const gAlumno = alumno.grado || alumno.gradoEstudiante || "";
         return compararGrados(gAlumno, gradoSeleccionado);
       });
-    } else if (gradosHabilitados.length > 0) {
+    } else if (gradosHabilitados.length > 0 && !gradoSeleccionado) {
       return [];
     }
 
@@ -274,14 +429,14 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
 
     let list = grupoActivo.filas;
 
-    if (gradoSeleccionado) {
+    if (gradoSeleccionado && gradoSeleccionado !== "TODOS") {
       list = list.filter((asist) => {
         const dniAsist = String(asist.dni || obtenerDniAsistencia(asist) || "").trim();
         const matriculado = matriculados.find((m) => String(m.dni || "").trim() === dniAsist);
         const gAlumno = matriculado ? (matriculado.grado || matriculado.gradoEstudiante || "") : "";
         return compararGrados(gAlumno, gradoSeleccionado);
       });
-    } else if (gradosHabilitados.length > 0) {
+    } else if (gradosHabilitados.length > 0 && !gradoSeleccionado) {
       return [];
     }
 
@@ -322,13 +477,20 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   // Excel Export Handler (Daily View)
   const handleExportExcelDaily = async () => {
     try {
+      const progSel = tallerId === "TODOS_TALLERES" ? {
+        id: "TODOS_TALLERES",
+        nombre: "Todos los talleres",
+        responsable: "Varios Docentes",
+        horario: "Varios Horarios",
+      } : {
+        ...programaSeleccionado,
+        nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
+        horario: limpiarHorarioSinAlmuerzo(horarioDeGrado || programaSeleccionado.horario),
+        responsable: docenteDeGrado || programaSeleccionado.responsable,
+      };
+
       await exportExcelDaily({
-        programaSeleccionado: {
-          ...programaSeleccionado,
-          nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
-          horario: horarioDeGrado || programaSeleccionado.horario,
-          responsable: docenteDeGrado || programaSeleccionado.responsable,
-        },
+        programaSeleccionado: progSel,
         grupoActivo: grupoActivo ? {
           ...grupoActivo,
           filas: filasGrupoActivoFiltradas,
@@ -336,6 +498,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
         matriculadosOrdenados: matriculadosFiltrados,
         hasMatriculados: matriculadosFiltrados.length > 0,
         asistencias,
+        programas,
       });
     } catch (err) {
       setMensaje(err.message || "No se pudo exportar a Excel.");
@@ -346,13 +509,20 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   // PDF Export Handler (Daily View)
   const handleExportPdfDaily = () => {
     try {
+      const progSel = tallerId === "TODOS_TALLERES" ? {
+        id: "TODOS_TALLERES",
+        nombre: "Todos los talleres",
+        responsable: "Varios Docentes",
+        horario: "Varios Horarios",
+      } : {
+        ...programaSeleccionado,
+        nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
+        horario: limpiarHorarioSinAlmuerzo(horarioDeGrado || programaSeleccionado.horario),
+        responsable: docenteDeGrado || programaSeleccionado.responsable,
+      };
+
       exportPdfDaily({
-        programaSeleccionado: {
-          ...programaSeleccionado,
-          nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
-          horario: horarioDeGrado || programaSeleccionado.horario,
-          responsable: docenteDeGrado || programaSeleccionado.responsable,
-        },
+        programaSeleccionado: progSel,
         grupoActivo: grupoActivo ? {
           ...grupoActivo,
           filas: filasGrupoActivoFiltradas,
@@ -361,6 +531,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
         matriculados: matriculadosFiltrados,
         hasMatriculados: matriculadosFiltrados.length > 0,
         asistencias,
+        programas,
       });
     } catch (err) {
       setMensaje(err.message || "No se pudo exportar a PDF.");
@@ -371,17 +542,25 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   // Excel Export Handler (Monthly Matrix View)
   const handleExportExcelMonthly = async () => {
     try {
+      const progSel = tallerId === "TODOS_TALLERES" ? {
+        id: "TODOS_TALLERES",
+        nombre: "Todos los talleres",
+        responsable: "Varios Docentes",
+        horario: "Varios Horarios",
+      } : {
+        ...programaSeleccionado,
+        nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
+        horario: limpiarHorarioSinAlmuerzo(horarioDeGrado || programaSeleccionado.horario),
+        responsable: docenteDeGrado || programaSeleccionado.responsable,
+      };
+
       await exportExcelMonthly({
-        programaSeleccionado: {
-          ...programaSeleccionado,
-          nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
-          horario: horarioDeGrado || programaSeleccionado.horario,
-          responsable: docenteDeGrado || programaSeleccionado.responsable,
-        },
+        programaSeleccionado: progSel,
         matriculados: matriculadosFiltrados,
         matriculadosOrdenados: matriculadosFiltrados,
         fechasColumnas,
         checkMap,
+        programas,
       });
     } catch (err) {
       setMensaje(err.message || "No se pudo exportar consolidado a Excel.");
@@ -392,17 +571,25 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   // PDF Export Handler (Monthly Matrix View - Landscape)
   const handleExportPdfMonthly = () => {
     try {
+      const progSel = tallerId === "TODOS_TALLERES" ? {
+        id: "TODOS_TALLERES",
+        nombre: "Todos los talleres",
+        responsable: "Varios Docentes",
+        horario: "Varios Horarios",
+      } : {
+        ...programaSeleccionado,
+        nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
+        horario: limpiarHorarioSinAlmuerzo(horarioDeGrado || programaSeleccionado.horario),
+        responsable: docenteDeGrado || programaSeleccionado.responsable,
+      };
+
       exportPdfMonthly({
-        programaSeleccionado: {
-          ...programaSeleccionado,
-          nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
-          horario: horarioDeGrado || programaSeleccionado.horario,
-          responsable: docenteDeGrado || programaSeleccionado.responsable,
-        },
+        programaSeleccionado: progSel,
         matriculados: matriculadosFiltrados,
         matriculadosOrdenados: matriculadosFiltrados,
         fechasColumnas,
         checkMap,
+        programas,
       });
     } catch (err) {
       setMensaje(err.message || "No se pudo exportar consolidado a PDF.");
@@ -413,13 +600,25 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   // PDF Export Handler (Individual Attendance Report)
   const handleExportPdfIndividual = (alumno) => {
     try {
+      const rawProgSel = tallerId === "TODOS_TALLERES" ? (programas.find((p) => p.id === alumno.tallerId) || {
+        id: alumno.tallerId,
+        nombre: "Taller Detallado",
+        responsable: "No asignado",
+        horario: "Por definir",
+      }) : {
+        ...programaSeleccionado,
+        nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
+        horario: horarioDeGrado || programaSeleccionado.horario,
+        responsable: docenteDeGrado || programaSeleccionado.responsable,
+      };
+
+      const progSel = {
+        ...rawProgSel,
+        horario: limpiarHorarioSinAlmuerzo(rawProgSel.horario),
+      };
+
       exportPdfIndividual({
-        programaSeleccionado: {
-          ...programaSeleccionado,
-          nombre: gradoLabel ? `${programaSeleccionado.nombre} - ${gradoLabel}` : programaSeleccionado.nombre,
-          horario: horarioDeGrado || programaSeleccionado.horario,
-          responsable: docenteDeGrado || programaSeleccionado.responsable,
-        },
+        programaSeleccionado: progSel,
         alumno,
         fechasColumnas,
         checkMap,
@@ -431,18 +630,22 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
   };
 
   const selectProgramasData = useMemo(() => {
-    return programas
+    const list = programas
       .filter((p) => p.estado !== "Archivado")
       .map((prog) => ({
         value: prog.id,
         label: `${prog.id} - ${prog.nombre}`,
       }));
+    if (list.length > 0) {
+      list.unshift({ value: "TODOS_TALLERES", label: "Todos los talleres" });
+    }
+    return list;
   }, [programas]);
 
   const selectFechasData = useMemo(() => {
     return gruposFecha.map((grupo) => {
       let filasFiltradas = grupo.filas;
-      if (gradoSeleccionado) {
+      if (gradoSeleccionado && gradoSeleccionado !== "TODOS") {
         filasFiltradas = filasFiltradas.filter((asist) => {
           const dniAsist = String(asist.dni || obtenerDniAsistencia(asist) || "").trim();
           const matriculado = matriculados.find((m) => String(m.dni || "").trim() === dniAsist);
@@ -513,7 +716,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                     }
                     placeholder="Elija un grado..."
                     value={gradoSeleccionado}
-                    onChange={(value) => setGradoSeleccionado(value || "")}
+                    onChange={(value) => setGradoSeleccionado(value || "TODOS")}
                     data={selectGradosData}
                     size="sm"
                     searchable
@@ -618,7 +821,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
           )}
 
           {/* Schedule Info Card */}
-          {tallerId && gradoSeleccionado && !cargando && (
+          {tallerId && tallerId !== "TODOS_TALLERES" && gradoSeleccionado && !cargando && (
             <div style={{
               display: "flex",
               flexDirection: "column",
@@ -781,6 +984,8 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                   filasGrupoActivoFiltradas={filasGrupoActivoFiltradas}
                   matriculadosFiltrados={matriculadosFiltrados}
                   handleExportPdfIndividual={handleExportPdfIndividual}
+                  programas={programas}
+                  tallerId={tallerId}
                 />
               </div>
             ) : null
@@ -793,6 +998,8 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
               matriculadosFiltrados={matriculadosFiltrados}
               checkMap={checkMap}
               handleExportPdfIndividual={handleExportPdfIndividual}
+              programas={programas}
+              tallerId={tallerId}
             />
           )}
         </article>

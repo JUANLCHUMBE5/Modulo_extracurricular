@@ -18,6 +18,7 @@ let mutationQueue = Promise.resolve();
 let cachedDb = null;
 let cachedDbMtimeMs = 0;
 let lastFetchedTime = 0;
+let activeReadPromise = null;
 const MAX_SYNC_EVENTS = 100;
 const CACHE_TTL_MS = Number(process.env.SUPABASE_CACHE_TTL_MS || 300000); // 5 minutos por defecto para caché en memoria de Supabase
 
@@ -25,7 +26,7 @@ const CACHE_TTL_MS = Number(process.env.SUPABASE_CACHE_TTL_MS || 300000); // 5 m
 // MIGRACIÓN A SUPABASE INTERCEPTOR LOGIC
 // ==========================================
 
-const COLUMNAS_USUARIOS = ["id", "nombre", "usuario", "rol", "estado", "contrasena"];
+const COLUMNAS_USUARIOS = ["id", "nombre", "usuario", "rol", "estado", "contrasena", "permisos"];
 const COLUMNAS_ESTUDIANTES = ["dni", "codigoEstudiante", "nombres", "grado", "seccion", "nivel", "sexo", "fechaNacimiento", "tipoAlumno", "estadoMatricula", "apoderado", "telefonoApoderado", "correoApoderado", "estadoInscripcion", "estadoCaja"];
 const COLUMNAS_PROGRAMAS = ["id", "nombre", "categoria", "fechaInicio", "fechaFin", "costo", "cupos", "cuposOcupados", "gradosAplicables", "periodo", "modalidadCobro", "horario", "grupo"];
 const COLUMNAS_PROGRAMAS_CONFIG = ["programaId", "duracionAvisoDias", "horaLimiteAviso", "edadMinima", "edadMaxima", "grupoEtario", "requisitos", "comunicado", "comunicadoCompleto", "detalleCosto", "creadoDesdeDocumento", "duracionTaller", "invitacionMasiva", "alcanceInvitacionMasiva", "tipoComunicado", "motivoJustificacion", "duracion", "docente", "responsable", "estado"];
@@ -204,6 +205,11 @@ async function readFromSupabase() {
       "horaInicio",
       "horaFin",
       "horaLimiteAviso",
+      "usarFechaLimiteInscripcion",
+      "fechaAperturaInscripcion",
+      "horaAperturaInscripcion",
+      "fechaLimiteInscripcion",
+      "horaLimiteInscripcion",
       "anuncioImagen",
       "anuncioImagenNombre",
       "talleresDeportivos",
@@ -437,6 +443,11 @@ async function writeToSupabase(db, currentDb) {
     "horaInicio",
     "horaFin",
     "horaLimiteAviso",
+    "usarFechaLimiteInscripcion",
+    "fechaAperturaInscripcion",
+    "horaAperturaInscripcion",
+    "fechaLimiteInscripcion",
+    "horaLimiteInscripcion",
     "anuncioImagen",
     "anuncioImagenNombre",
     "talleresDeportivos",
@@ -574,7 +585,12 @@ async function writeToSupabase(db, currentDb) {
         requiereIndumentaria: normalizarBoolean(p.requiereIndumentaria),
         incluyeAlmuerzo: normalizarBoolean(p.incluyeAlmuerzo),
         cicloI: normalizarBoolean(p.cicloI),
-        cicloII: normalizarBoolean(p.cicloII)
+        cicloII: normalizarBoolean(p.cicloII),
+        usarFechaLimiteInscripcion: normalizarBoolean(p.usarFechaLimiteInscripcion),
+        fechaAperturaInscripcion: normalizarFecha(p.fechaAperturaInscripcion),
+        horaAperturaInscripcion: p.horaAperturaInscripcion || "",
+        fechaLimiteInscripcion: normalizarFecha(p.fechaLimiteInscripcion),
+        horaLimiteInscripcion: p.horaLimiteInscripcion || ""
       };
 
       const meta = {};
@@ -974,10 +990,21 @@ export async function getDb() {
     if (cachedDb && (Date.now() - lastFetchedTime < CACHE_TTL_MS)) {
       return clone(cachedDb);
     }
-    const db = await readFromSupabase();
-    cachedDb = db;
-    lastFetchedTime = Date.now();
-    return clone(cachedDb);
+    if (!activeReadPromise) {
+      activeReadPromise = readFromSupabase()
+        .then((db) => {
+          cachedDb = db;
+          lastFetchedTime = Date.now();
+          activeReadPromise = null;
+          return db;
+        })
+        .catch((err) => {
+          activeReadPromise = null;
+          throw err;
+        });
+    }
+    const db = await activeReadPromise;
+    return clone(db);
   }
 
   return readLocalDb();
@@ -992,7 +1019,7 @@ export async function saveDb(data) {
   const isSupabase = process.env.VITE_DATA_MODE === "supabase" || process.env.DATA_MODE === "supabase";
   try {
     if (isSupabase) {
-      currentDb = cachedDb || await readFromSupabase();
+      currentDb = cachedDb || await getDb();
     } else {
       currentDb = await readLocalDb();
     }
@@ -1052,7 +1079,7 @@ export async function updateDb(mutator) {
   if (process.env.VITE_DATA_MODE === "supabase" || process.env.DATA_MODE === "supabase") {
     return queueDbMutation(async () => {
       const current = mergeWithDefaults(
-        (cachedDb && (Date.now() - lastFetchedTime < CACHE_TTL_MS)) ? clone(cachedDb) : await readFromSupabase(),
+        await getDb(),
         clone(initialData)
       );
       const updated = await mutator(current);

@@ -5,6 +5,8 @@ import {
   IconSearch as Search,
   IconMenu2 as Menu,
   IconUserCheck as UserCheck,
+  IconChevronRight as ChevronRight,
+  IconChevronDown as ChevronDown,
 } from "@tabler/icons-react";
 import {
   buscarEstudiantePorDni,
@@ -61,6 +63,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       return newVal;
     });
   };
+  const [menuAbierto, setMenuAbierto] = useState(true);
   const [dni, setDni] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [estudiante, setEstudiante] = useState(null);
@@ -827,36 +830,79 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
             </div>
           )}
         </div>
-        {sidebarExpanded && <p className="secretaria-module-label">Módulo Asistente</p>}
-
-        <nav className="secretaria-nav" aria-label="Menu del modulo asistente">
-          <button
-            className={`secretaria-nav-item ${!mostrarVistaDelegada && vistaActiva === "inscripcion" ? "secretaria-nav-item-active" : ""}`}
-            type="button"
-            onClick={() => {
-              onClearDelegatedModule?.();
-              setVistaActiva("inscripcion");
-              limpiarBusquedaEstudiante();
-            }}
-            title="Inscripción presencial"
-          >
-            <Search size={18} />
-            {sidebarExpanded && <span>Inscripción presencial</span>}
-          </button>
-          <button
-            className={`secretaria-nav-item ${!mostrarVistaDelegada && vistaActiva === "asistencias" ? "secretaria-nav-item-active" : ""}`}
-            type="button"
-            onClick={() => {
-              onClearDelegatedModule?.();
-              setVistaActiva("asistencias");
-              limpiarBusquedaEstudiante();
-            }}
-            title="Ver Asistencias"
-          >
-            <UserCheck size={18} />
-            {sidebarExpanded && <span>Ver Asistencias</span>}
-          </button>
-        </nav>
+        {sidebarExpanded ? (
+          <div className="module-switcher-group sec-sidebar-menu-card">
+            <button
+              onClick={() => setMenuAbierto(!menuAbierto)}
+              className="module-switcher-header"
+              type="button"
+            >
+              <span className="module-switcher-header-title">Módulo Asistente</span>
+              <span className="module-switcher-header-icon">
+                {menuAbierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </span>
+            </button>
+            {menuAbierto && (
+              <nav className="module-switcher-content coord-nav">
+                <button
+                  className={`coord-nav-item ${!mostrarVistaDelegada && vistaActiva === "inscripcion" ? "coord-nav-item-active" : ""}`}
+                  type="button"
+                  onClick={() => {
+                    onClearDelegatedModule?.();
+                    setVistaActiva("inscripcion");
+                    limpiarBusquedaEstudiante();
+                  }}
+                  title="Inscripción presencial"
+                >
+                  <Search size={18} />
+                  <span>Inscripción presencial</span>
+                  <ChevronRight className="coord-nav-arrow" size={16} />
+                </button>
+                <button
+                  className={`coord-nav-item ${!mostrarVistaDelegada && vistaActiva === "asistencias" ? "coord-nav-item-active" : ""}`}
+                  type="button"
+                  onClick={() => {
+                    onClearDelegatedModule?.();
+                    setVistaActiva("asistencias");
+                    limpiarBusquedaEstudiante();
+                  }}
+                  title="Ver Asistencias"
+                >
+                  <UserCheck size={18} />
+                  <span>Ver Asistencias</span>
+                  <ChevronRight className="coord-nav-arrow" size={16} />
+                </button>
+              </nav>
+            )}
+          </div>
+        ) : (
+          <nav className="secretaria-nav" aria-label="Menu del modulo asistente">
+            <button
+              className={`secretaria-nav-item ${!mostrarVistaDelegada && vistaActiva === "inscripcion" ? "secretaria-nav-item-active" : ""}`}
+              type="button"
+              onClick={() => {
+                onClearDelegatedModule?.();
+                setVistaActiva("inscripcion");
+                limpiarBusquedaEstudiante();
+              }}
+              title="Inscripción presencial"
+            >
+              <Search size={18} />
+            </button>
+            <button
+              className={`secretaria-nav-item ${!mostrarVistaDelegada && vistaActiva === "asistencias" ? "secretaria-nav-item-active" : ""}`}
+              type="button"
+              onClick={() => {
+                onClearDelegatedModule?.();
+                setVistaActiva("asistencias");
+                limpiarBusquedaEstudiante();
+              }}
+              title="Ver Asistencias"
+            >
+              <UserCheck size={18} />
+            </button>
+          </nav>
+        )}
 
         {moduleSwitcher && sidebarExpanded ? (
           <div className="pt-3">

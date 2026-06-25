@@ -117,6 +117,9 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
       buttonText = "Continuar al pago";
       buttonAction = () => setPasoActivo(3);
     }
+  } else if (programa?.ventanaInscripcion?.noIniciada === true) {
+    buttonText = "Próximamente";
+    buttonDisabled = true;
   } else if (programa?.ventanaInscripcion?.permitida === false) {
     buttonText = "Registro por Cajera";
     buttonDisabled = true;
@@ -159,6 +162,22 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
     }
   }
 
+  if (!inscripcion) {
+    if (programa?.ventanaInscripcion?.noIniciada === true) {
+      noteText = programa.ventanaInscripcion.mensaje || "La inscripción iniciará próximamente.";
+      noteIconColor = "#ca8a04"; // yellow
+      noteBg = "#fefce8";
+      noteTextColor = "#a16207";
+      noteBorderColor = "#fef08a";
+    } else if (programa?.ventanaInscripcion?.permitida === false) {
+      noteText = "El plazo de inscripción regular cerró. Derive al apoderado a Cajera para evaluar el registro.";
+      noteIconColor = "#dc2626"; // red
+      noteBg = "#fef2f2";
+      noteTextColor = "#991b1b";
+      noteBorderColor = "#fca5a5";
+    }
+  }
+  
   const datosHorario = dividirHorarioPadres(programa.horario);
 
   return (
@@ -557,22 +576,25 @@ function CatalogoProgramas({
             const pagoValidado = estadoPago === "pagado";
             const pagoEnRevision = estadoPago === "verificando";
             const pagoPendienteCaja = estadoPago === "pendiente_caja";
-            const cerrado = !prog.registrado && prog.ventanaInscripcion?.permitida === false;
+            const noIniciado = !prog.registrado && prog.ventanaInscripcion?.noIniciada === true;
+            const cerrado = !prog.registrado && prog.ventanaInscripcion?.permitida === false && !noIniciado;
             const puedeContinuarPago = prog.registrado && !pagoValidado && !pagoEnRevision && !pagoPendienteCaja;
-            const botonDeshabilitado = registrando || sinCupos || cerrado || (prog.registrado && !puedeContinuarPago);
+            const botonDeshabilitado = registrando || sinCupos || cerrado || noIniciado || (prog.registrado && !puedeContinuarPago);
             const textoAccion = sinCupos
               ? "Sin cupos"
-              : cerrado
-                ? "Cerrado"
-                : pagoValidado
-                  ? "Pago exitoso"
-                  : pagoEnRevision
-                    ? "Pago en proceso"
-                    : pagoPendienteCaja
-                      ? "Reserva pendiente"
-                      : puedeContinuarPago
-                        ? "Continuar al pago"
-                        : "Inscribir";
+              : noIniciado
+                ? "Próximamente"
+                : cerrado
+                  ? "Cerrado"
+                  : pagoValidado
+                    ? "Pago exitoso"
+                    : pagoEnRevision
+                      ? "Pago en proceso"
+                      : pagoPendienteCaja
+                        ? "Reserva pendiente"
+                        : puedeContinuarPago
+                          ? "Continuar al pago"
+                          : "Inscribir";
             return (
               <article className="padres-flow-course-card" key={prog.id}>
 

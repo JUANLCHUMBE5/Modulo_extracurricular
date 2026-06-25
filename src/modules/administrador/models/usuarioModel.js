@@ -60,30 +60,45 @@ export const PERMISSION_GROUPS = [
     id: "coordinacion",
     label: "Coordinación Académica",
     permissions: [
-      { id: "programas.crear", label: "Crear programas" },
-      { id: "programas.editar", label: "Editar programas" },
-      { id: "grupos.crear", label: "Crear grupos" },
-      { id: "grupos.editar", label: "Editar grupos" },
-      { id: "alumnos.historial.ver", label: "Ver historial de alumnos" },
+      { id: "coordinacion.programas", label: "Gestion de Programas" },
+      { id: "coordinacion.carga", label: "Carga Excel" },
+      { id: "coordinacion.documentos", label: "Plantillas / Documentos" },
+      { id: "coordinacion.asistencia", label: "Asistencia y Control" },
+      { id: "coordinacion.historial", label: "Historial / Archivo" },
     ],
   },
   {
     id: "direccion",
     label: "Dirección y reportes",
     permissions: [
-      { id: "presupuesto.ver", label: "Ver presupuesto" },
-      { id: "direccion.resumen.ver", label: "Ver resumen de direccion" },
-      { id: "reportes.ver", label: "Ver reportes" },
-      { id: "reportes.exportar", label: "Exportar reportes" },
+      { id: "direccion.resumen", label: "Resumen general" },
+      { id: "direccion.reportes", label: "Reportes" },
+      { id: "direccion.descuentos", label: "Descuentos y Becas" },
+      { id: "direccion.correlativos", label: "Correlativos" },
     ],
   },
   {
     id: "caja",
     label: "Cajera",
     permissions: [
-      { id: "pagos.ver", label: "Ver pagos" },
-      { id: "pagos.registrar", label: "Registrar pagos" },
-      { id: "pagos.editar", label: "Editar pagos" },
+      { id: "caja.cobro", label: "Registrar Cobro" },
+      { id: "caja.control", label: "Control y Exportacion" },
+      { id: "caja.correlativo", label: "Anulación de Correlativo" },
+    ],
+  },
+  {
+    id: "secretaria",
+    label: "Asistente (Secretaría)",
+    permissions: [
+      { id: "secretaria.inscripcion", label: "Inscripción presencial" },
+      { id: "secretaria.asistencias", label: "Ver Asistencias" },
+    ],
+  },
+  {
+    id: "auxiliar",
+    label: "Auxiliar",
+    permissions: [
+      { id: "auxiliar.asistencia", label: "Registrar asistencias (QR/DNI)" },
     ],
   },
 ];
@@ -96,27 +111,30 @@ export const SUPER_ADMIN_USERNAME = "admin";
 
 export const REQUIRED_PERMISSIONS_BY_ROLE = {
   Administrador: ALL_PERMISSIONS,
-  Secretaria: [],
+  Secretaria: [
+    "secretaria.inscripcion",
+    "secretaria.asistencias",
+  ],
   Caja: [
-    "pagos.ver",
-    "pagos.registrar",
-    "pagos.editar",
+    "caja.cobro",
+    "caja.control",
+    "caja.correlativo",
   ],
   Coordinacion: [
-    "programas.crear",
-    "programas.editar",
-    "grupos.crear",
-    "grupos.editar",
-    "alumnos.historial.ver",
+    "coordinacion.programas",
+    "coordinacion.carga",
+    "coordinacion.documentos",
+    "coordinacion.asistencia",
+    "coordinacion.historial",
   ],
   Auxiliar: [
-    "alumnos.historial.ver",
+    "auxiliar.asistencia",
   ],
   Direccion: [
-    "presupuesto.ver",
-    "direccion.resumen.ver",
-    "reportes.ver",
-    "reportes.exportar",
+    "direccion.resumen",
+    "direccion.reportes",
+    "direccion.descuentos",
+    "direccion.correlativos",
   ],
 };
 
@@ -124,12 +142,9 @@ export const DEFAULT_PERMISSIONS_BY_ROLE = {
   ...REQUIRED_PERMISSIONS_BY_ROLE,
   Coordinacion: [
     ...REQUIRED_PERMISSIONS_BY_ROLE.Coordinacion,
-    "presupuesto.ver",
-    "reportes.ver",
   ],
   Caja: [
     ...REQUIRED_PERMISSIONS_BY_ROLE.Caja,
-    "reportes.ver",
   ],
 };
 

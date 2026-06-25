@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   IconChartBar as ChartBar,
   IconLogout as LogOut,
@@ -6,6 +6,8 @@ import {
   IconMenu2 as Menu,
   IconReceiptOff as ReceiptOff,
   IconFileMinus as FileMinus,
+  IconChevronRight as ChevronRight,
+  IconChevronDown as ChevronDown,
 } from "@tabler/icons-react";
 import { LOGO_COLEGIO_SRC } from "../../constants/cajaConstants";
 import "./CajaSidebar.css";
@@ -20,6 +22,8 @@ export default function CajaSidebar({
   onLogout,
   delegatedContent,
 }) {
+  const [menuAbierto, setMenuAbierto] = useState(true);
+
   return (
     <aside className={`caja-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`}>
       <div className="caja-sidebar-brand-row">
@@ -37,42 +41,101 @@ export default function CajaSidebar({
           </div>
         )}
       </div>
-      {sidebarExpanded && <p className="caja-module-label">Módulo Cajera</p>}
-      <nav className="caja-nav" aria-label="Modulo de cajera">
-        <button
-          className={!delegatedContent && vista === "pagos" ? "is-active" : ""}
-          onClick={() => {
-            onClearDelegatedModule?.();
-            setVista("pagos");
-          }}
-          type="button"
-          title="Registrar Cobro"
-        >
-          <Receipt size={17} /> {sidebarExpanded && <span>Registrar Cobro</span>}
-        </button>
-        <button
-          className={!delegatedContent && vista === "reportes" ? "is-active" : ""}
-          onClick={() => {
-            onClearDelegatedModule?.();
-            setVista("reportes");
-          }}
-          type="button"
-          title="Control y Exportacion"
-        >
-          <ChartBar size={17} /> {sidebarExpanded && <span>Control y Exportacion</span>}
-        </button>
-        <button
-          className={!delegatedContent && vista === "cancelar_correlativo" ? "is-active" : ""}
-          onClick={() => {
-            onClearDelegatedModule?.();
-            setVista("cancelar_correlativo");
-          }}
-          type="button"
-          title="Anulación de Correlativo"
-        >
-          <ReceiptOff size={17} /> {sidebarExpanded && <span>Anulación de Correlativo</span>}
-        </button>
-      </nav>
+
+      {sidebarExpanded ? (
+        <div className="module-switcher-group caja-sidebar-menu-card">
+          <button
+            onClick={() => setMenuAbierto(!menuAbierto)}
+            className="module-switcher-header"
+            type="button"
+          >
+            <span className="module-switcher-header-title">Módulo Cajera</span>
+            <span className="module-switcher-header-icon">
+              {menuAbierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            </span>
+          </button>
+          {menuAbierto && (
+            <nav className="module-switcher-content coord-nav">
+              <button
+                className={`coord-nav-item ${!delegatedContent && vista === "pagos" ? "coord-nav-item-active" : ""}`}
+                onClick={() => {
+                  onClearDelegatedModule?.();
+                  setVista("pagos");
+                }}
+                type="button"
+                title="Registrar Cobro"
+              >
+                <Receipt size={17} />
+                <span>Registrar Cobro</span>
+                <ChevronRight className="coord-nav-arrow" size={16} />
+              </button>
+              <button
+                className={`coord-nav-item ${!delegatedContent && vista === "reportes" ? "coord-nav-item-active" : ""}`}
+                onClick={() => {
+                  onClearDelegatedModule?.();
+                  setVista("reportes");
+                }}
+                type="button"
+                title="Control y Exportacion"
+              >
+                <ChartBar size={17} />
+                <span>Control y Exportacion</span>
+                <ChevronRight className="coord-nav-arrow" size={16} />
+              </button>
+              <button
+                className={`coord-nav-item ${!delegatedContent && vista === "cancelar_correlativo" ? "coord-nav-item-active" : ""}`}
+                onClick={() => {
+                  onClearDelegatedModule?.();
+                  setVista("cancelar_correlativo");
+                }}
+                type="button"
+                title="Anulación de Correlativo"
+              >
+                <ReceiptOff size={17} />
+                <span>Anulación de Correlativo</span>
+                <ChevronRight className="coord-nav-arrow" size={16} />
+              </button>
+            </nav>
+          )}
+        </div>
+      ) : (
+        <nav className="caja-nav" aria-label="Modulo de cajera">
+          <button
+            className={!delegatedContent && vista === "pagos" ? "is-active" : ""}
+            onClick={() => {
+              onClearDelegatedModule?.();
+              setVista("pagos");
+            }}
+            type="button"
+            title="Registrar Cobro"
+          >
+            <Receipt size={17} />
+          </button>
+          <button
+            className={!delegatedContent && vista === "reportes" ? "is-active" : ""}
+            onClick={() => {
+              onClearDelegatedModule?.();
+              setVista("reportes");
+            }}
+            type="button"
+            title="Control y Exportacion"
+          >
+            <ChartBar size={17} />
+          </button>
+          <button
+            className={!delegatedContent && vista === "cancelar_correlativo" ? "is-active" : ""}
+            onClick={() => {
+              onClearDelegatedModule?.();
+              setVista("cancelar_correlativo");
+            }}
+            type="button"
+            title="Anulación de Correlativo"
+          >
+            <ReceiptOff size={17} />
+          </button>
+        </nav>
+      )}
+
       {moduleSwitcher && sidebarExpanded ? (
         <div className="pt-3">
           {moduleSwitcher}

@@ -4,6 +4,7 @@ import {
   listarProgramasMock,
   obtenerProgramaMock,
 } from "../../coordinacion/utils/coordinacionServiceMock";
+import { debeArchivarPorFecha } from "../../coordinacion/services/coordinacionServiceUtils";
 import {
   calcularDuracionTexto,
   fechaActualInput,
@@ -560,12 +561,10 @@ function finalizarProgramasVencidos() {
 
   let cambio = false;
   apiDb.programas.forEach((programa) => {
-    if (programa.estado === "Finalizado") return;
-    const fechaFin = normalizarFecha(programa.fechaFin);
-    if (!fechaFin || fechaFin >= hoy) return;
-
-    programa.estado = "Finalizado";
+    if (!debeArchivarPorFecha(programa, hoy)) return;
     programa.finalizadoAutomaticamenteEn = programa.finalizadoAutomaticamenteEn || fechaActualIso();
+    programa.archivadoAutomaticamenteEn = programa.archivadoAutomaticamenteEn || fechaActualIso();
+    programa.estado = "Archivado";
     cambio = true;
   });
 
@@ -578,7 +577,7 @@ function finalizarProgramasVencidos() {
 function validarVentanaInscripcionRegular(programa, payload = {}) {
   if (payload.registroCaja) return;
 
-  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso);
+  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso, programa);
   if (ventana.permitida) return;
 
   throw new Error("El aviso de inscripcion regular cerro. Derive al padre a Cajera para evaluar y registrar la matricula.");

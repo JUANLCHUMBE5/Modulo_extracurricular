@@ -12,6 +12,7 @@ import {
   agregarGradoProgramaDesdeAlumno,
   claveAlumno,
   conCuposDisponibles,
+  debeArchivarPorFecha,
   debeFinalizarPorFecha,
   detectarProgramaPorCurso,
   limpiarTexto,
@@ -803,9 +804,10 @@ function finalizarProgramasVencidos() {
 
   let cambio = false;
   apiDb.programas.forEach((programa) => {
-    if (!debeFinalizarPorFecha(programa, hoy)) return;
-    programa.estado = "Finalizado";
+    if (!debeArchivarPorFecha(programa, hoy)) return;
     programa.finalizadoAutomaticamenteEn = programa.finalizadoAutomaticamenteEn || fechaActualIso();
+    programa.archivadoAutomaticamenteEn = programa.archivadoAutomaticamenteEn || fechaActualIso();
+    programa.estado = "Archivado";
     cambio = true;
   });
 

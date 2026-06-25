@@ -143,13 +143,29 @@ export default function Administrador({ onLogout }) {
           : Array.from(new Set([...(form.permisos || []), ...getRequiredPermissionsByRole(form.rol)])),
         estado: form.estado,
       };
+      if (datos.rol === "Administrador" && form.usuario.trim().toLowerCase() !== "admin") {
+        const confirmarAdmin = window.confirm(
+          "⚠️ ADVERTENCIA DE SEGURIDAD:\n\nEstá a punto de otorgar el rol de 'Administrador' a este usuario. Esto le dará control TOTAL sobre el sistema, incluyendo la creación, modificación y eliminación de otros usuarios.\n\n¿Está absolutamente seguro de que desea proceder?"
+        );
+        if (!confirmarAdmin) {
+          setModal(m => ({ ...m, guardando: false }));
+          return false;
+        }
+      }
       if (form.contrasena.trim()) datos.contrasena = form.contrasena.trim();
       modal.editar ? await editarUsuarioController(form.id, datos) : await crearUsuarioController(datos);
       notify(`Usuario ${modal.editar ? "actualizado" : "creado"} correctamente.`, "success");
       await cargarDatos();
-      setModal(m => ({ ...m, show: false }));
-    } catch (err) { notify(err.message); }
-    setModal(m => ({ ...m, guardando: false }));
+      if (modal.editar) {
+        setModal(m => ({ ...m, show: false }));
+      }
+      setModal(m => ({ ...m, guardando: false }));
+      return true;
+    } catch (err) {
+      notify(err.message);
+      setModal(m => ({ ...m, guardando: false }));
+      return false;
+    }
   };
 
   const alternarEstado = async (u) => {
@@ -282,7 +298,7 @@ export default function Administrador({ onLogout }) {
                 <div>
                   <p className="adm-topbar-sub">Panel de control</p>
                   <h1>Administración de usuarios</h1>
-                  <p style={{ margin: "6px 0 0", color: "#64748b", fontSize: "13px", fontWeight: 500 }}>
+                  <p style={{ margin: "2px 0 0", color: "#64748b", fontSize: "13px", fontWeight: 500 }}>
                     {usuarios.length} usuarios registrados ({totalActivos} activos) · {totalRoles} roles únicos
                   </p>
                 </div>
@@ -336,7 +352,6 @@ export default function Administrador({ onLogout }) {
                     <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}>
                       <option value="todos">Todos los estados</option>
                       <option value="Activo">Activo</option>
-                      <option value="Regular">Regular</option>
                       <option value="Inactivo">Inactivo</option>
                     </select>
                     <ChevronDown size={14} className="adm-select-arrow" />

@@ -174,11 +174,11 @@ export default function useCoordinacion({
 
   const cargaPeriodo = "escolar";
 
-  const puedeCrearProgramas = tienePermisoAsignado(user, "programas.crear");
-  const puedeEditarProgramas = tienePermisoAsignado(user, "programas.editar");
-  const puedeCrearGrupos = tienePermisoAsignado(user, "grupos.crear");
-  const puedeEditarGrupos = tienePermisoAsignado(user, "grupos.editar");
-  const puedeVerAlumnos = tienePermisoAsignado(user, "alumnos.historial.ver");
+  const puedeCrearProgramas = tienePermisoAsignado(user, "coordinacion.programas") || tienePermisoAsignado(user, "coordinacion.documentos");
+  const puedeEditarProgramas = tienePermisoAsignado(user, "coordinacion.programas");
+  const puedeCrearGrupos = tienePermisoAsignado(user, "coordinacion.carga");
+  const puedeEditarGrupos = tienePermisoAsignado(user, "coordinacion.carga");
+  const puedeVerAlumnos = tienePermisoAsignado(user, "coordinacion.asistencia") || tienePermisoAsignado(user, "coordinacion.historial");
   const puedeCargarAlumnos = puedeCrearGrupos || puedeEditarGrupos;
   const puedeGestionarGruposFormulario = modoEditar ? puedeEditarGrupos : puedeCrearGrupos;
   const tieneAccionesPrograma = puedeEditarProgramas || puedeVerAlumnos;
@@ -316,7 +316,7 @@ export default function useCoordinacion({
       detalleCosto: prog.detalleCosto || "",
       detalleAlmuerzo: prog.detalleAlmuerzo || "",
       concesionarios: prog.concesionarios || "",
-      requiereUniforme: false,
+      requiereUniforme: Boolean(prog.requiereUniforme),
       requiereIndumentaria: Boolean(prog.requiereIndumentaria),
       invitacionMasiva: Boolean(prog.invitacionMasiva),
       alcanceInvitacionMasiva: prog.alcanceInvitacionMasiva || "colegio",
@@ -324,6 +324,11 @@ export default function useCoordinacion({
       anuncioImagenNombre: prog.anuncioImagenNombre || "",
       anuncioImagenTamano: prog.anuncioImagenTamano || 0,
       anuncioImagenComprimida: Boolean(prog.anuncioImagenComprimida),
+      usarFechaLimiteInscripcion: Boolean(prog.usarFechaLimiteInscripcion),
+      fechaAperturaInscripcion: prog.fechaAperturaInscripcion || "",
+      horaAperturaInscripcion: prog.horaAperturaInscripcion || "",
+      fechaLimiteInscripcion: prog.fechaLimiteInscripcion || "",
+      horaLimiteInscripcion: prog.horaLimiteInscripcion || "",
       id: prog.id,
       tipoComunicado: prog.tipoComunicado || "Otro genérico",
       tipoDocumento: prog.tipoDocumento || "Comunicado",
@@ -336,6 +341,7 @@ export default function useCoordinacion({
       horarioRecepcionAlmuerzo: prog.horarioRecepcionAlmuerzo || "",
       nivelCambridge: prog.nivelCambridge || "",
       modalidadesCambridge: prog.modalidadesCambridge || [],
+      costoCiclo: prog.costoCiclo || "",
       montoPrimerPago: prog.montoPrimerPago || "",
     };
   }
@@ -840,7 +846,7 @@ export default function useCoordinacion({
     setProgramaAFinalizar(null);
     try {
       await cambiarEstadoPrograma(prog.id, "Finalizado");
-      mostrarMsg("Programa finalizado correctamente.", "success");
+      mostrarMsg(`Programa "${prog.nombre}" finalizado. La inscripción se ha cerrado. Puede clonarlo para un nuevo ciclo.`, "success");
       await cargarDatos();
     } catch (err) {
       mostrarMsg(err.message || "No se pudo finalizar el programa.");
@@ -879,8 +885,28 @@ export default function useCoordinacion({
   function clonarPrograma(prog) {
     if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas.");
     const numSugerido = sugerirNumeroDocumento(prog.tipoDocumento || "Comunicado", programas);
+    const datos = datosProgramaAFormulario(prog);
+
+    // Deep-clean talleres deportivos: reset occupied slots and assign fresh IDs
+    if (Array.isArray(datos.talleresDeportivos)) {
+      datos.talleresDeportivos = datos.talleresDeportivos.map((t, idx) => ({
+        ...t,
+        id: `taller-clon-${Date.now()}-${idx}-${Math.random().toString(16).slice(2, 6)}`,
+        cuposOcupados: 0,
+      }));
+    }
+
+    // Deep-clean horarios por grupo: assign fresh IDs and reset any occupied count
+    if (Array.isArray(datos.horariosPorGrupo)) {
+      datos.horariosPorGrupo = datos.horariosPorGrupo.map((g, idx) => ({
+        ...g,
+        id: `grupo-clon-${Date.now()}-${idx}-${Math.random().toString(16).slice(2, 6)}`,
+        cuposOcupados: 0,
+      }));
+    }
+
     setForm({
-      ...datosProgramaAFormulario(prog),
+      ...datos,
       id: "",
       fechaInicio: fechaActualInput(),
       fechaFin: fechaActualInput(),
@@ -1656,30 +1682,30 @@ const vistasNav = [
     id: "programas",
     label: "Gestion de Programas",
     icon: null,
-    permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"],
+    permissions: ["coordinacion.programas"],
   },
   {
     id: "carga",
     label: "Carga Excel",
     icon: null,
-    permissions: ["grupos.crear", "grupos.editar"],
+    permissions: ["coordinacion.carga"],
   },
   {
     id: "documentos",
     label: "Plantillas / Documentos",
     icon: null,
-    permissions: ["programas.crear", "programas.editar"],
+    permissions: ["coordinacion.documentos"],
   },
   {
     id: "asistencias",
     label: "Asistencia y Control",
     icon: null,
-    permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"],
+    permissions: ["coordinacion.asistencia"],
   },
   {
     id: "historial",
     label: "Historial / Archivo",
     icon: null,
-    permissions: ["programas.crear", "programas.editar", "alumnos.historial.ver"],
+    permissions: ["coordinacion.historial"],
   },
 ];

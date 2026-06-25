@@ -34,9 +34,31 @@ export function validarDatosPrograma(datos) {
     }
   }
   if (!String(datos.horario || "").trim()) throw new Error("El horario del programa es obligatorio.");
-  const duracionAviso = Number(datos.duracionAvisoDias);
-  if (!Number.isInteger(duracionAviso) || duracionAviso < 1 || duracionAviso > 7) {
-    throw new Error("El aviso de inscripcion debe durar entre 1 y 7 dias.");
+  if (datos.usarFechaLimiteInscripcion) {
+    if (!datos.fechaLimiteInscripcion || !/^\d{4}-\d{2}-\d{2}$/.test(datos.fechaLimiteInscripcion)) {
+      throw new Error("La fecha límite de inscripción es obligatoria y debe ser una fecha válida (AAAA-MM-DD).");
+    }
+    if (!datos.horaLimiteInscripcion || !/^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/.test(datos.horaLimiteInscripcion)) {
+      throw new Error("La hora límite de inscripción es obligatoria y debe tener el formato HH:MM (24 horas).");
+    }
+    if (datos.fechaAperturaInscripcion) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(datos.fechaAperturaInscripcion)) {
+        throw new Error("La fecha de apertura de inscripción debe ser una fecha válida (AAAA-MM-DD).");
+      }
+      if (datos.horaAperturaInscripcion && !/^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/.test(datos.horaAperturaInscripcion)) {
+        throw new Error("La hora de apertura de inscripción debe tener el formato HH:MM (24 horas).");
+      }
+      const datetimeApertura = new Date(`${datos.fechaAperturaInscripcion}T${datos.horaAperturaInscripcion || "00:00"}:00`);
+      const datetimeLimite = new Date(`${datos.fechaLimiteInscripcion}T${datos.horaLimiteInscripcion || "23:59"}:00`);
+      if (datetimeApertura >= datetimeLimite) {
+        throw new Error("La fecha y hora de apertura de inscripción debe ser anterior a la fecha y hora límite.");
+      }
+    }
+  } else {
+    const duracionAviso = Number(datos.duracionAvisoDias);
+    if (!Number.isInteger(duracionAviso) || duracionAviso < 1 || duracionAviso > 7) {
+      throw new Error("El aviso de inscripcion debe durar entre 1 y 7 dias.");
+    }
   }
   if (datos.horaLimiteAviso && !/^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/.test(datos.horaLimiteAviso)) {
     throw new Error("La hora límite de aviso debe tener el formato HH:MM (24 horas).");
@@ -55,6 +77,11 @@ export function validarDatosPrograma(datos) {
 
 export function debeFinalizarPorFecha(programa, hoy) {
   if (programa.estado === "Finalizado") return false;
+  return programaVencido(programa, hoy);
+}
+
+export function debeArchivarPorFecha(programa, hoy) {
+  if (programa.estado === "Archivado") return false;
   return programaVencido(programa, hoy);
 }
 

@@ -11,6 +11,11 @@ export const formInicial = {
   comunicado: "", comunicadoCompleto: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
   requiereUniforme: false, requiereIndumentaria: false, invitacionMasiva: false, alcanceInvitacionMasiva: "colegio",
   anuncioImagen: "", anuncioImagenNombre: "", anuncioImagenTamano: 0, anuncioImagenComprimida: false,
+  usarFechaLimiteInscripcion: false,
+  fechaAperturaInscripcion: "",
+  horaAperturaInscripcion: "",
+  fechaLimiteInscripcion: "",
+  horaLimiteInscripcion: "",
 
   // Nuevos campos condicionales por tipo de circular
   tipoComunicado: "Otro genérico",

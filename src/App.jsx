@@ -9,8 +9,13 @@ import {
   IconBook as BookOpen,
   IconChartBar as ChartBar,
   IconChevronRight as ChevronRight,
+  IconChevronDown as ChevronDown,
   IconFileText as FileText,
   IconUpload as Upload,
+  IconUserCheck as UserCheck,
+  IconArchive as Archive,
+  IconReceipt as Receipt,
+  IconReceiptOff as ReceiptOff,
 } from "@tabler/icons-react";
 
 const Administrador = React.lazy(() => import("./modules/administrador/Administrador"));
@@ -35,20 +40,29 @@ const APP_TITLE = "Módulo Extracurricular";
 
 const moduleAccessRules = {
   direccion: [
-    "direccion.resumen.ver",
-    "reportes.ver",
-    "reportes.exportar",
+    "direccion.resumen",
+    "direccion.reportes",
+    "direccion.descuentos",
+    "direccion.correlativos",
   ],
   coordinacion: [
-    "programas.crear",
-    "programas.editar",
-    "grupos.crear",
-    "grupos.editar",
+    "coordinacion.programas",
+    "coordinacion.carga",
+    "coordinacion.documentos",
+    "coordinacion.asistencia",
+    "coordinacion.historial",
   ],
   caja: [
-    "pagos.ver",
-    "pagos.registrar",
-    "pagos.editar",
+    "caja.cobro",
+    "caja.control",
+    "caja.correlativo",
+  ],
+  secretaria: [
+    "secretaria.inscripcion",
+    "secretaria.asistencias",
+  ],
+  auxiliar: [
+    "auxiliar.asistencia",
   ],
 };
 
@@ -57,16 +71,20 @@ const moduleShortcutGroups = [
     id: "coordinacion",
     title: "Módulo Coordinación Académica",
     items: [
-      { id: "coordinacion-programas", label: "Gestion de Programas", module: "coordinacion", view: "programas", permissions: ["programas.crear", "programas.editar"], icon: BookOpen },
-      { id: "coordinacion-carga", label: "Cargar Invitados", module: "coordinacion", view: "carga", permissions: ["grupos.crear", "grupos.editar"], icon: Upload },
-      { id: "coordinacion-documentos", label: "Plantillas y Documentos", module: "coordinacion", view: "documentos", permissions: ["programas.crear", "programas.editar"], icon: FileText },
+      { id: "coordinacion-programas", label: "Gestion de Programas", module: "coordinacion", view: "programas", permissions: ["coordinacion.programas"], icon: BookOpen },
+      { id: "coordinacion-carga", label: "Cargar Invitados", module: "coordinacion", view: "carga", permissions: ["coordinacion.carga"], icon: Upload },
+      { id: "coordinacion-documentos", label: "Plantillas y Documentos", module: "coordinacion", view: "documentos", permissions: ["coordinacion.documentos"], icon: FileText },
+      { id: "coordinacion-asistencia", label: "Asistencia y Control", module: "coordinacion", view: "asistencias", permissions: ["coordinacion.asistencia"], icon: UserCheck },
+      { id: "coordinacion-historial", label: "Historial / Archivo", module: "coordinacion", view: "historial", permissions: ["coordinacion.historial"], icon: Archive },
     ],
   },
   {
     id: "caja",
     title: "Módulo Cajera",
     items: [
-      { id: "caja-pagos", label: "Pagos", module: "caja", view: "pagos", permissions: ["pagos.ver", "pagos.registrar", "pagos.editar"], icon: ChartBar },
+      { id: "caja-pagos", label: "Registrar Cobro", module: "caja", view: "pagos", permissions: ["caja.cobro"], icon: Receipt },
+      { id: "caja-reportes", label: "Control y Exportacion", module: "caja", view: "reportes", permissions: ["caja.control"], icon: ChartBar },
+      { id: "caja-correlativo", label: "Anulación de Correlativo", module: "caja", view: "cancelar_correlativo", permissions: ["caja.correlativo"], icon: ReceiptOff },
     ],
   },
 ];
@@ -187,34 +205,78 @@ function ModuleSwitcher({ activeShortcutId, availableModules, currentRole, onSel
 
   if (groups.length === 0) return null;
 
+  // Track which groups are expanded.
+  // By default, if a group contains the currently active view, it should be expanded.
+  const [expanded, setExpanded] = useState(() => {
+    const initial = {};
+    groups.forEach((group) => {
+      const hasActive = group.items.some((item) => item.id === activeShortcutId);
+      initial[group.id] = hasActive;
+    });
+    return initial;
+  });
+
+  // Auto-expand group if a nested item is activated
+  useEffect(() => {
+    groups.forEach((group) => {
+      const hasActive = group.items.some((item) => item.id === activeShortcutId);
+      if (hasActive) {
+        setExpanded((prev) => {
+          if (prev[group.id]) return prev;
+          return { ...prev, [group.id]: true };
+        });
+      }
+    });
+  }, [activeShortcutId]);
+
+  const toggleGroup = (groupId) => {
+    setExpanded((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }));
+  };
+
   return (
     <div className="grid gap-2">
-      {groups.map((group) => (
-        <section className="grid gap-2" key={group.id}>
-          <h3 className="coord-module-label !m-0 !text-center !text-[#176c60]">
-            {group.title}
-          </h3>
-          <div className="coord-nav">
-            {group.items.map((item) => {
-              const Icon = item.icon;
-              const active = activeShortcutId === item.id;
-              return (
-                <button
-                  className={`coord-nav-item ${active ? "coord-nav-item-active" : ""}`}
-                  key={item.id}
-                  onClick={() => onSelectShortcut(item)}
-                  title={item.label}
-                  type="button"
-                >
-                  <Icon size={18} />
-                  <span>{item.label}</span>
-                  <ChevronRight className="coord-nav-arrow" size={16} />
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ))}
+      {groups.map((group) => {
+        const isGroupOpen = !!expanded[group.id];
+        return (
+          <section className="module-switcher-group" key={group.id}>
+            <button
+              onClick={() => toggleGroup(group.id)}
+              className="module-switcher-header"
+              type="button"
+            >
+              <span className="module-switcher-header-title">{group.title}</span>
+              <span className="module-switcher-header-icon">
+                {isGroupOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </span>
+            </button>
+
+            {isGroupOpen && (
+              <div className="module-switcher-content coord-nav">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = activeShortcutId === item.id;
+                  return (
+                    <button
+                      className={`coord-nav-item ${active ? "coord-nav-item-active" : ""}`}
+                      key={item.id}
+                      onClick={() => onSelectShortcut(item)}
+                      title={item.label}
+                      type="button"
+                    >
+                      <Icon size={18} />
+                      <span>{item.label}</span>
+                      <ChevronRight className="coord-nav-arrow" size={16} />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }

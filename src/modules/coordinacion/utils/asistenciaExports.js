@@ -1,4 +1,3 @@
-
 import { apiDb } from "../../../services/dbApi";
 import {
   calcularEdad,
@@ -10,7 +9,35 @@ import {
   obtenerEstadoAccesoAsistencia,
   obtenerFechaAsistencia,
   obtenerNombreAsistencia,
+  limpiarHorarioSinAlmuerzo,
 } from "./asistenciasFormatters";
+import { resolverHorarioPorGrado, resolverDocentePorGrado } from "../../secretaria/services/secretariaServiceUtils";
+
+// Helper functions for grade labels and Excel sheet naming
+function formatGradoLabel(g) {
+  if (!g) return "Sin Grado";
+  const parts = String(g || "").split(":");
+  if (parts.length === 2) {
+    const nivel = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+    return `${parts[1]}° ${nivel}`;
+  }
+  const match = String(g).match(/(\d+)\s+(\w+)/);
+  if (match) {
+    const nivel = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+    return `${match[1]}° ${nivel}`;
+  }
+  return g;
+}
+
+function obtenerNombreHojaSeguro(name) {
+  let clean = String(name || "Hoja")
+    .replace(/[\\/?*\[\]:]/g, "")
+    .trim();
+  if (clean.length > 31) {
+    clean = clean.substring(0, 31);
+  }
+  return clean || "Hoja";
+}
 
 // Excel Export Handler (Daily View)
 export async function exportExcelDaily({
@@ -19,6 +46,7 @@ export async function exportExcelDaily({
   matriculadosOrdenados,
   hasMatriculados,
   asistencias,
+  programas = [],
 }) {
   const ExcelJS = (await import("exceljs")).default;
   if (!programaSeleccionado || (!grupoActivo && asistencias.length > 0)) return;
@@ -28,85 +56,380 @@ export async function exportExcelDaily({
   workbook.creator = "Colegio San Rafael";
   workbook.created = new Date();
 
-  const worksheet = workbook.addWorksheet("Asistencia");
+  const isAllWorkshops = programaSeleccionado.id === "TODOS_TALLERES";
 
-  // Columns
-  worksheet.columns = [
-    { header: "N°", key: "nro", width: 6 },
-    { header: "Hora", key: "hora", width: 12 },
-    { header: "DNI", key: "dni", width: 15 },
-    { header: "Código", key: "codigo", width: 15 },
-    { header: "Estudiante", key: "nombres", width: 35 },
-    { header: "Pago", key: "pago", width: 15 },
-    { header: "Acceso", key: "acceso", width: 15 },
-    { header: "Observación", key: "observacion", width: 30 },
-  ];
+  if (isAllWorkshops) {
+    // Group matriculados by workshop (tallerId)
+    const alumnosPorTaller = {};
+    matriculadosOrdenados.forEach((alumno) => {
+      const tId = alumno.tallerId || "Sin Taller";
+      if (!alumnosPorTaller[tId]) {
+        alumnosPorTaller[tId] = [];
+      }
+      alumnosPorTaller[tId].push(alumno);
+    });
 
-  // Rows
-  let rows;
-  if (grupoActivo) {
-    rows = grupoActivo.filas.map((asist, idx) => {
-      const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asist);
-      const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
-      const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
+    // Group daily attendance rows by workshop (tallerId)
+    const filasPorTaller = {};
+    if (grupoActivo) {
+      grupoActivo.filas.forEach((asist) => {
+        const tId = asist.tallerId || "Sin Taller";
+        if (!filasPorTaller[tId]) {
+          filasPorTaller[tId] = [];
+        }
+        filasPorTaller[tId].push(asist);
+      });
+    }
 
-      return {
-        nro: idx + 1,
-        hora: formatearHoraAsistencia(obtenerFechaAsistencia(asist)),
-        dni: obtenerDniAsistencia(asist) || "Sin DNI",
-        codigo: asist.codigoEstudiante || "—",
-        nombres: obtenerNombreAsistencia(asist) || "—",
-        pago: asist.estadoPago || "Pendiente",
-        acceso: textoAcceso,
-        observacion: asist.observacion || "—",
+    // Get union of all workshops
+    const setTalleres = new Set([
+      ...Object.keys(alumnosPorTaller),
+      ...Object.keys(filasPorTaller),
+    ]);
+    let talleresPresentes = Array.from(setTalleres).sort();
+
+    if (talleresPresentes.length === 0) {
+      talleresPresentes.push("Sin Taller");
+    }
+
+    // Write a sheet for each workshop
+    talleresPresentes.forEach((tId) => {
+      const actualTaller = programas.find((p) => p.id === tId) || {
+        nombre: "Taller " + tId,
+        responsable: "No asignado",
+        horario: "Por definir"
       };
+
+      const labelTaller = actualTaller.nombre;
+      const sheetName = obtenerNombreHojaSeguro(labelTaller);
+      const worksheet = workbook.addWorksheet(sheetName);
+
+      worksheet.columns = [
+        { key: "nro", width: 6 },
+        { key: "hora", width: 12 },
+        { key: "dni", width: 15 },
+        { key: "codigo", width: 15 },
+        { key: "nombres", width: 35 },
+        { key: "grado", width: 18 }, // Extra column when all workshops
+        { key: "pago", width: 15 },
+        { key: "acceso", width: 15 },
+        { key: "observacion", width: 30 },
+      ];
+
+      // Header Metadata
+      worksheet.mergeCells("A1:I1");
+      worksheet.getCell("A1").value = "COLEGIO SAN RAFAEL - REPORTE DE ASISTENCIA DIARIA";
+      worksheet.getCell("A1").font = { name: "Calibri", size: 13, bold: true, color: { argb: "FF176C60" } };
+      worksheet.getCell("A1").alignment = { vertical: "middle", horizontal: "left" };
+
+      worksheet.getCell("A2").value = "Taller:";
+      worksheet.getCell("A2").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B2").value = labelTaller || "—";
+      worksheet.getCell("B2").font = { size: 10, bold: true };
+
+      worksheet.getCell("A3").value = "Docente:";
+      worksheet.getCell("A3").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B3").value = actualTaller.responsable || "No asignado";
+      worksheet.getCell("B3").font = { size: 10 };
+
+      worksheet.getCell("A4").value = "Horario:";
+      worksheet.getCell("A4").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B4").value = limpiarHorarioSinAlmuerzo(actualTaller.horario) || "Por definir";
+      worksheet.getCell("B4").font = { size: 10 };
+
+      worksheet.getCell("D2").value = "Fecha:";
+      worksheet.getCell("D2").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("E2").value = grupoActivo ? grupoActivo.titulo : "PLANTILLA";
+      worksheet.getCell("E2").font = { size: 10 };
+
+      worksheet.getCell("D3").value = "Grado:";
+      worksheet.getCell("D3").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("E3").value = "Todos los grados";
+      worksheet.getCell("E3").font = { size: 10, bold: true };
+
+      worksheet.getRow(1).height = 25;
+      worksheet.getRow(2).height = 18;
+      worksheet.getRow(3).height = 18;
+      worksheet.getRow(4).height = 18;
+      worksheet.getRow(5).height = 10; // Spacing
+
+      // Write table header at Row 6
+      const headerRow = worksheet.getRow(6);
+      headerRow.values = [
+        "N°",
+        "Hora",
+        "DNI",
+        "Código",
+        "Estudiante",
+        "Grado",
+        "Pago",
+        "Acceso",
+        grupoActivo ? "Observación" : "FIRMA / NOTAS"
+      ];
+      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF176C60" },
+      };
+      headerRow.alignment = { vertical: "middle", horizontal: "center" };
+      headerRow.height = 25;
+
+      const dataRows = [];
+      const targetAlumnos = alumnosPorTaller[tId] || [];
+      const targetFilas = filasPorTaller[tId] || [];
+
+      if (grupoActivo) {
+        targetFilas.forEach((asist, idx) => {
+          const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asist);
+          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
+          const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
+
+          const matchingAlumno = targetAlumnos.find((m) => String(m.dni || m.dniEstudiante || "").trim() === String(obtenerDniAsistencia(asist) || "").trim());
+          const gLabel = matchingAlumno ? formatGradoLabel(matchingAlumno.grado || matchingAlumno.gradoEstudiante) : "—";
+
+          dataRows.push({
+            nro: idx + 1,
+            hora: formatearHoraAsistencia(obtenerFechaAsistencia(asist)),
+            dni: obtenerDniAsistencia(asist) || "Sin DNI",
+            codigo: asist.codigoEstudiante || "—",
+            nombres: obtenerNombreAsistencia(asist) || "—",
+            grado: gLabel,
+            pago: asist.estadoPago || "Pendiente",
+            acceso: textoAcceso,
+            observacion: asist.observacion || "—",
+          });
+        });
+      } else {
+        // Template mode
+        targetAlumnos.forEach((alumno, idx) => {
+          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(alumno.estadoPago).toLowerCase());
+          const textoAcceso = esAccesoPermitido ? "Permitido" : (String(alumno.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
+
+          dataRows.push({
+            nro: idx + 1,
+            hora: "—",
+            dni: alumno.dni || alumno.dniEstudiante || "Sin DNI",
+            codigo: alumno.codigoEstudiante || "—",
+            nombres: alumno.nombres || alumno.nombresEstudiante || "—",
+            grado: formatGradoLabel(alumno.grado || alumno.gradoEstudiante),
+            pago: alumno.estadoPago || "Pendiente",
+            acceso: textoAcceso,
+            observacion: "",
+          });
+        });
+      }
+
+      worksheet.addRows(dataRows);
+
+      // Styling table cells
+      worksheet.eachRow((row, rowNum) => {
+        if (rowNum > 6) {
+          row.height = 20;
+        }
+        if (rowNum >= 6) {
+          row.eachCell((cell) => {
+            cell.border = {
+              top: { style: "thin", color: { argb: "FFE2E8F0" } },
+              left: { style: "thin", color: { argb: "FFE2E8F0" } },
+              bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+              right: { style: "thin", color: { argb: "FFE2E8F0" } },
+            };
+            if (rowNum > 6) {
+              cell.alignment = { vertical: "middle" };
+            }
+          });
+        }
+      });
     });
   } else {
-    // Template mode
-    rows = matriculadosOrdenados.map((alumno, idx) => {
-      const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(alumno.estadoPago).toLowerCase());
-      const textoAcceso = esAccesoPermitido ? "Permitido" : (String(alumno.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
+    // Create a map of matriculados by DNI
+    const alumnoPorDni = {};
+    matriculadosOrdenados.forEach((m) => {
+      const dni = String(m.dni || m.dniEstudiante || "").trim();
+      if (dni) {
+        alumnoPorDni[dni] = m;
+      }
+    });
 
-      return {
-        nro: idx + 1,
-        hora: "—",
-        dni: alumno.dni || alumno.dniEstudiante || "Sin DNI",
-        codigo: alumno.codigoEstudiante || "—",
-        nombres: alumno.nombres || alumno.nombresEstudiante || "—",
-        pago: alumno.estadoPago || "Pendiente",
-        acceso: textoAcceso,
-        observacion: "", // Blank for physical writing/signature
+    // Group matriculados by grade
+    const alumnosPorGrado = {};
+    matriculadosOrdenados.forEach((alumno) => {
+      const g = alumno.grado || alumno.gradoEstudiante || "Sin Grado";
+      if (!alumnosPorGrado[g]) {
+        alumnosPorGrado[g] = [];
+      }
+      alumnosPorGrado[g].push(alumno);
+    });
+
+    // Group daily attendance rows by grade
+    const filasPorGrado = {};
+    if (grupoActivo) {
+      grupoActivo.filas.forEach((asist) => {
+        const dniAsist = String(obtenerDniAsistencia(asist) || "").trim();
+        const alumno = alumnoPorDni[dniAsist];
+        const gAsist = alumno ? (alumno.grado || alumno.gradoEstudiante || "Sin Grado") : "Sin Grado";
+        if (!filasPorGrado[gAsist]) {
+          filasPorGrado[gAsist] = [];
+        }
+        filasPorGrado[gAsist].push(asist);
+      });
+    }
+
+    // Get union of all grades
+    const setGrados = new Set([
+      ...Object.keys(alumnosPorGrado),
+      ...Object.keys(filasPorGrado),
+    ]);
+    let gradosPresentes = Array.from(setGrados).sort();
+
+    if (gradosPresentes.length === 0) {
+      gradosPresentes.push("Sin Grado");
+    }
+
+    // Write a sheet for each grade
+    gradosPresentes.forEach((g) => {
+      const labelGrado = formatGradoLabel(g);
+      const sheetName = obtenerNombreHojaSeguro(labelGrado);
+      const worksheet = workbook.addWorksheet(sheetName);
+
+      worksheet.columns = [
+        { key: "nro", width: 6 },
+        { key: "hora", width: 12 },
+        { key: "dni", width: 15 },
+        { key: "codigo", width: 15 },
+        { key: "nombres", width: 35 },
+        { key: "grado", width: 18 }, // Include Grado column in single taller as well
+        { key: "pago", width: 15 },
+        { key: "acceso", width: 15 },
+        { key: "observacion", width: 30 },
+      ];
+
+      // Header Metadata
+      worksheet.mergeCells("A1:I1");
+      worksheet.getCell("A1").value = "COLEGIO SAN RAFAEL - REPORTE DE ASISTENCIA DIARIA";
+      worksheet.getCell("A1").font = { name: "Calibri", size: 13, bold: true, color: { argb: "FF176C60" } };
+      worksheet.getCell("A1").alignment = { vertical: "middle", horizontal: "left" };
+
+      worksheet.getCell("A2").value = "Taller:";
+      worksheet.getCell("A2").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B2").value = (programaSeleccionado.nombre || "").split(" - Todos")[0] || "—";
+      worksheet.getCell("B2").font = { size: 10, bold: true };
+
+      worksheet.getCell("A3").value = "Docente:";
+      worksheet.getCell("A3").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B3").value = resolverDocentePorGrado(programaSeleccionado, g) || programaSeleccionado.responsable || "No asignado";
+      worksheet.getCell("B3").font = { size: 10 };
+
+      worksheet.getCell("A4").value = "Horario:";
+      worksheet.getCell("A4").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B4").value = limpiarHorarioSinAlmuerzo(resolverHorarioPorGrado(programaSeleccionado, g) || programaSeleccionado.horario) || "Por definir";
+      worksheet.getCell("B4").font = { size: 10 };
+
+      worksheet.getCell("D2").value = "Fecha:";
+      worksheet.getCell("D2").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("E2").value = grupoActivo ? grupoActivo.titulo : "PLANTILLA";
+      worksheet.getCell("E2").font = { size: 10 };
+
+      worksheet.getCell("D3").value = "Grado:";
+      worksheet.getCell("D3").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("E3").value = labelGrado;
+      worksheet.getCell("E3").font = { size: 10, bold: true };
+
+      worksheet.getRow(1).height = 25;
+      worksheet.getRow(2).height = 18;
+      worksheet.getRow(3).height = 18;
+      worksheet.getRow(4).height = 18;
+      worksheet.getRow(5).height = 10; // Spacing
+
+      // Write table header at Row 6
+      const headerRow = worksheet.getRow(6);
+      headerRow.values = [
+        "N°",
+        "Hora",
+        "DNI",
+        "Código",
+        "Estudiante",
+        "Grado",
+        "Pago",
+        "Acceso",
+        grupoActivo ? "Observación" : "FIRMA / NOTAS"
+      ];
+      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF176C60" },
       };
+      headerRow.alignment = { vertical: "middle", horizontal: "center" };
+      headerRow.height = 25;
+
+      // Table rows
+      const dataRows = [];
+      const targetAlumnos = alumnosPorGrado[g] || [];
+      const targetFilas = filasPorGrado[g] || [];
+
+      if (grupoActivo) {
+        targetFilas.forEach((asist, idx) => {
+          const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asist);
+          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
+          const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
+
+          dataRows.push({
+            nro: idx + 1,
+            hora: formatearHoraAsistencia(obtenerFechaAsistencia(asist)),
+            dni: obtenerDniAsistencia(asist) || "Sin DNI",
+            codigo: asist.codigoEstudiante || "—",
+            nombres: obtenerNombreAsistencia(asist) || "—",
+            grado: labelGrado,
+            pago: asist.estadoPago || "Pendiente",
+            acceso: textoAcceso,
+            observacion: asist.observacion || "—",
+          });
+        });
+      } else {
+        // Template mode
+        targetAlumnos.forEach((alumno, idx) => {
+          const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(alumno.estadoPago).toLowerCase());
+          const textoAcceso = esAccesoPermitido ? "Permitido" : (String(alumno.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
+
+          dataRows.push({
+            nro: idx + 1,
+            hora: "—",
+            dni: alumno.dni || alumno.dniEstudiante || "Sin DNI",
+            codigo: alumno.codigoEstudiante || "—",
+            nombres: alumno.nombres || alumno.nombresEstudiante || "—",
+            grado: labelGrado,
+            pago: alumno.estadoPago || "Pendiente",
+            acceso: textoAcceso,
+            observacion: "",
+          });
+        });
+      }
+
+      worksheet.addRows(dataRows);
+
+      // Styling table cells
+      worksheet.eachRow((row, rowNum) => {
+        if (rowNum > 6) {
+          row.height = 20;
+        }
+        if (rowNum >= 6) {
+          row.eachCell((cell) => {
+            cell.border = {
+              top: { style: "thin", color: { argb: "FFE2E8F0" } },
+              left: { style: "thin", color: { argb: "FFE2E8F0" } },
+              bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+              right: { style: "thin", color: { argb: "FFE2E8F0" } },
+            };
+            if (rowNum > 6) {
+              cell.alignment = { vertical: "middle" };
+            }
+          });
+        }
+      });
     });
   }
-
-  worksheet.addRows(rows);
-
-  // Header styling
-  const headerRow = worksheet.getRow(1);
-  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FF176C60" },
-  };
-  headerRow.alignment = { vertical: "middle", horizontal: "center" };
-  headerRow.height = 25;
-
-  worksheet.eachRow((row, rowNum) => {
-    if (rowNum > 1) {
-      row.height = 20;
-    }
-    row.eachCell((cell) => {
-      cell.border = {
-        top: { style: "thin", color: { argb: "FFE2E8F0" } },
-        left: { style: "thin", color: { argb: "FFE2E8F0" } },
-        bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
-        right: { style: "thin", color: { argb: "FFE2E8F0" } },
-      };
-      cell.alignment = { vertical: "middle" };
-    });
-  });
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
@@ -116,7 +439,8 @@ export async function exportExcelDaily({
   const link = document.createElement("a");
   link.href = url;
   const dateSuffix = grupoActivo ? grupoActivo.clave : "PLANTILLA";
-  link.download = `Asistencia_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}_${dateSuffix}.xlsx`;
+  const cleanName = (programaSeleccionado.nombre || "").split(" - Todos")[0];
+  link.download = `Asistencia_${normalizarNombreArchivoPdf(cleanName)}_${dateSuffix}.xlsx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -131,6 +455,7 @@ export async function exportPdfDaily({
   matriculados,
   hasMatriculados,
   asistencias,
+  programas = [],
 }) {
   const { jsPDF } = await import("jspdf");
   if (!programaSeleccionado || (!grupoActivo && asistencias.length > 0)) return;
@@ -160,14 +485,15 @@ export async function exportPdfDaily({
   y += 10;
 
   // Box details (Calculated dynamically)
+  const cleanName = (programaSeleccionado.nombre || "").split(" - Todos")[0];
   const colLeftItemsDaily = [
-    ["Taller", programaSeleccionado.nombre || "Sin nombre"],
+    ["Taller", cleanName || "Sin nombre"],
     ["Código", programaSeleccionado.id || "Sin código"],
   ];
 
   const colRightItemsDaily = [
     ["Docente", programaSeleccionado.responsable || "No asignado"],
-    ["Horario", programaSeleccionado.horario || "Por definir"],
+    ["Horario", limpiarHorarioSinAlmuerzo(programaSeleccionado.horario) || "Por definir"],
   ];
 
   let cardContentHeightDaily = 10; // padding top/bottom
@@ -230,21 +556,34 @@ export async function exportPdfDaily({
 
   y += cardContentHeightDaily + 6;
 
-  // Grid header
-  doc.setFillColor(234, 246, 242);
-  doc.setDrawColor(216, 229, 226);
-  doc.roundedRect(margen, y, anchoPagina - margen * 2, 8, 2, 2, "FD");
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(23, 108, 96);
-  doc.text("#", margen + 2, y + 5.3);
-  doc.text("HORA", margen + 8, y + 5.3);
-  doc.text("DNI", margen + 22, y + 5.3);
-  doc.text("ESTUDIANTE", margen + 45, y + 5.3);
-  doc.text("PAGO", margen + 115, y + 5.3);
-  doc.text("ACCESO", margen + 140, y + 5.3);
-  doc.text(isTemplate ? "FIRMA / NOTAS" : "OBSERVACIÓN", margen + 165, y + 5.3);
+  const dibujarCabeceraTabla = (yy) => {
+    // Grid header
+    doc.setFillColor(234, 246, 242);
+    doc.setDrawColor(216, 229, 226);
+    doc.roundedRect(margen, yy, anchoPagina - margen * 2, 8, 2, 2, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(23, 108, 96);
+    doc.text("#", margen + 2, yy + 5.3);
+    doc.text("HORA", margen + 8, yy + 5.3);
+    doc.text("DNI", margen + 22, yy + 5.3);
+    doc.text("ESTUDIANTE", margen + 45, yy + 5.3);
+    doc.text("PAGO", margen + 115, yy + 5.3);
+    doc.text("ACCESO", margen + 140, yy + 5.3);
+    doc.text(isTemplate ? "FIRMA / NOTAS" : "OBSERVACIÓN", margen + 165, yy + 5.3);
+  };
+
+  dibujarCabeceraTabla(y);
   y += 12;
+
+  // DNI-to-Student Map for fast grade resolution
+  const alumnoPorDni = {};
+  matriculados.forEach((m) => {
+    const dni = String(m.dni || m.dniEstudiante || "").trim();
+    if (dni) {
+      alumnoPorDni[dni] = m;
+    }
+  });
 
   const itemsToExport = grupoActivo ? grupoActivo.filas : matriculadosOrdenados;
 
@@ -252,23 +591,12 @@ export async function exportPdfDaily({
     if (y > altoPagina - 18) {
       doc.addPage();
       y = 16;
-      doc.setFillColor(234, 246, 242);
-      doc.setDrawColor(216, 229, 226);
-      doc.roundedRect(margen, y, anchoPagina - margen * 2, 8, 2, 2, "FD");
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.setTextColor(23, 108, 96);
-      doc.text("#", margen + 2, y + 5.3);
-      doc.text("HORA", margen + 8, y + 5.3);
-      doc.text("DNI", margen + 22, y + 5.3);
-      doc.text("ESTUDIANTE", margen + 45, y + 5.3);
-      doc.text("PAGO", margen + 115, y + 5.3);
-      doc.text("ACCESO", margen + 140, y + 5.3);
-      doc.text(isTemplate ? "FIRMA / NOTAS" : "OBSERVACIÓN", margen + 165, y + 5.3);
+      dibujarCabeceraTabla(y);
       y += 12;
     }
 
     let hora, dni, nombre, pago, acceso, obs;
+    let gLabel = "";
 
     if (grupoActivo) {
       hora = formatearHoraAsistencia(obtenerFechaAsistencia(item));
@@ -279,6 +607,18 @@ export async function exportPdfDaily({
       const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
       acceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
       obs = item.observacion || "—";
+
+      const matchedAlumno = alumnoPorDni[dni];
+      if (matchedAlumno) {
+        const gradeStr = formatGradoLabel(matchedAlumno.grado || matchedAlumno.gradoEstudiante);
+        if (programaSeleccionado.id === "TODOS_TALLERES") {
+          const tallerNameObj = programas.find((p) => p.id === matchedAlumno.tallerId);
+          const tallerShortName = tallerNameObj ? (tallerNameObj.nombre.split(" - ")[1] || tallerNameObj.nombre) : matchedAlumno.tallerId || "";
+          gLabel = `${tallerShortName} - ${gradeStr}`;
+        } else {
+          gLabel = gradeStr;
+        }
+      }
     } else {
       hora = "—";
       dni = item.dni || item.dniEstudiante || "Sin DNI";
@@ -287,6 +627,15 @@ export async function exportPdfDaily({
       const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(item.estadoPago).toLowerCase());
       acceso = esAccesoPermitido ? "Permitido" : (String(item.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
       obs = "_________________";
+      
+      const gradeStr = formatGradoLabel(item.grado || item.gradoEstudiante);
+      if (programaSeleccionado.id === "TODOS_TALLERES") {
+        const tallerNameObj = programas.find((p) => p.id === item.tallerId);
+        const tallerShortName = tallerNameObj ? (tallerNameObj.nombre.split(" - ")[1] || tallerNameObj.nombre) : item.tallerId || "";
+        gLabel = `${tallerShortName} - ${gradeStr}`;
+      } else {
+        gLabel = gradeStr;
+      }
     }
 
     doc.setDrawColor(237, 242, 245);
@@ -298,12 +647,29 @@ export async function exportPdfDaily({
     doc.text(String(idx + 1), margen + 2, y + 3);
     doc.text(hora, margen + 8, y + 3);
     doc.text(dni, margen + 22, y + 3);
-    doc.text(doc.splitTextToSize(nombre, 65), margen + 45, y + 3);
+
+    const nameLines = doc.splitTextToSize(nombre, 65);
+    doc.text(nameLines, margen + 45, y + 3);
+
+    if (gLabel) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139); // Slate-500
+      const gradeY = y + 3 + (nameLines.length * 4.2);
+      doc.text(gLabel, margen + 45, gradeY);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(24, 33, 47);
+    }
+
     doc.text(pago, margen + 115, y + 3);
     doc.text(acceso, margen + 140, y + 3);
     doc.text(doc.splitTextToSize(obs, 25), margen + 165, y + 3);
 
-    const altoFila = Math.max(8, doc.splitTextToSize(nombre, 65).length * 4.2 + 4);
+    const nameLinesCount = nameLines.length;
+    const altoFila = gLabel
+      ? Math.max(11, nameLinesCount * 4.2 + 7.5)
+      : Math.max(8, nameLinesCount * 4.2 + 4);
     y += altoFila;
   });
 
@@ -315,7 +681,7 @@ export async function exportPdfDaily({
     : `Total de alumnos registrados hoy: ${grupoActivo.filas.length}`;
   doc.text(countLabel, margen, altoPagina - 10);
   const fileSuffix = isTemplate ? "plantilla" : grupoActivo.clave;
-  doc.save(`asistencia_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}_${fileSuffix}.pdf`);
+  doc.save(`asistencia_${normalizarNombreArchivoPdf(cleanName)}_${fileSuffix}.pdf`);
 }
 
 // Excel Export Handler (Monthly Matrix View)
@@ -325,6 +691,7 @@ export async function exportExcelMonthly({
   matriculadosOrdenados,
   fechasColumnas,
   checkMap,
+  programas = [],
 }) {
   const ExcelJS = (await import("exceljs")).default;
   if (!programaSeleccionado || !matriculados.length) return;
@@ -333,76 +700,301 @@ export async function exportExcelMonthly({
   workbook.creator = "Colegio San Rafael";
   workbook.created = new Date();
 
-  const worksheet = workbook.addWorksheet("Registro Mensual");
+  const isAllWorkshops = programaSeleccionado.id === "TODOS_TALLERES";
 
-  // Setup static columns
-  const cols = [
-    { header: "N°", key: "nro", width: 6 },
-    { header: "DNI", key: "dni", width: 15 },
-    { header: "Apellidos y Nombres", key: "nombres", width: 35 },
-    { header: "N° Teléfono", key: "telefono", width: 18 },
-  ];
+  if (isAllWorkshops) {
+    // Group matriculados by workshop (tallerId)
+    const alumnosPorTaller = {};
+    matriculadosOrdenados.forEach((alumno) => {
+      const tId = alumno.tallerId || "Sin Taller";
+      if (!alumnosPorTaller[tId]) {
+        alumnosPorTaller[tId] = [];
+      }
+      alumnosPorTaller[tId].push(alumno);
+    });
 
-  // Add dynamic or template date columns
-  if (fechasColumnas.length > 0) {
-    fechasColumnas.forEach((fechaCol) => {
-      cols.push({ header: fechaCol.labelDDMM, key: fechaCol.clave, width: 10 });
+    let talleresPresentes = Object.keys(alumnosPorTaller).sort();
+    if (talleresPresentes.length === 0) {
+      talleresPresentes.push("Sin Taller");
+    }
+
+    // Create a sheet for each workshop
+    talleresPresentes.forEach((tId) => {
+      const actualTaller = programas.find((p) => p.id === tId) || {
+        nombre: "Taller " + tId,
+        responsable: "No asignado",
+        horario: "Por definir"
+      };
+
+      const labelTaller = actualTaller.nombre;
+      const sheetName = obtenerNombreHojaSeguro(labelTaller);
+      const worksheet = workbook.addWorksheet(sheetName);
+
+      const cols = [
+        { key: "nro", width: 6 },
+        { key: "nombres", width: 35 },
+        { key: "grado", width: 18 },
+        { key: "telefono", width: 18 },
+      ];
+
+      if (fechasColumnas.length > 0) {
+        fechasColumnas.forEach((fechaCol) => {
+          cols.push({ key: fechaCol.clave, width: 10 });
+        });
+      } else {
+        for (let i = 1; i <= 5; i++) {
+          cols.push({ key: `clase_${i}`, width: 12 });
+        }
+      }
+
+      worksheet.columns = cols;
+
+      // Header Metadata
+      worksheet.mergeCells("A1:L1");
+      worksheet.getCell("A1").value = "COLEGIO SAN RAFAEL - REPORTE DE ASISTENCIA MENSUAL";
+      worksheet.getCell("A1").font = { name: "Calibri", size: 13, bold: true, color: { argb: "FF176C60" } };
+      worksheet.getCell("A1").alignment = { vertical: "middle", horizontal: "left" };
+
+      worksheet.getCell("A2").value = "Taller:";
+      worksheet.getCell("A2").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B2").value = labelTaller || "—";
+      worksheet.getCell("B2").font = { size: 10, bold: true };
+
+      worksheet.getCell("A3").value = "Docente:";
+      worksheet.getCell("A3").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B3").value = actualTaller.responsable || "No asignado";
+      worksheet.getCell("B3").font = { size: 10 };
+
+      worksheet.getCell("A4").value = "Horario:";
+      worksheet.getCell("A4").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B4").value = limpiarHorarioSinAlmuerzo(actualTaller.horario) || "Por definir";
+      worksheet.getCell("B4").font = { size: 10 };
+
+      worksheet.getCell("D2").value = "Reporte:";
+      worksheet.getCell("D2").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("E2").value = "CONSOLIDADO MENSUAL (MATRIZ)";
+      worksheet.getCell("E2").font = { size: 10 };
+
+      worksheet.getCell("D3").value = "Grado:";
+      worksheet.getCell("D3").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("E3").value = "Todos los grados";
+      worksheet.getCell("E3").font = { size: 10, bold: true };
+
+      worksheet.getRow(1).height = 25;
+      worksheet.getRow(2).height = 18;
+      worksheet.getRow(3).height = 18;
+      worksheet.getRow(4).height = 18;
+      worksheet.getRow(5).height = 10;
+
+      // Header row
+      const headerRow = worksheet.getRow(6);
+      const headers = ["N°", "Apellidos y Nombres", "Grado", "N° Teléfono"];
+      if (fechasColumnas.length > 0) {
+        fechasColumnas.forEach((fechaCol) => {
+          headers.push(fechaCol.labelDDMM);
+        });
+      } else {
+        for (let i = 1; i <= 5; i++) {
+          headers.push(`Clase ${i}`);
+        }
+      }
+      headerRow.values = headers;
+      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF176C60" },
+      };
+      headerRow.alignment = { vertical: "middle", horizontal: "center" };
+      headerRow.height = 25;
+
+      const targetAlumnos = alumnosPorTaller[tId] || [];
+      const rows = targetAlumnos.map((alumno, idx) => {
+        const rowData = {
+          nro: idx + 1,
+          nombres: alumno.nombres || alumno.nombresEstudiante || "—",
+          grado: formatGradoLabel(alumno.grado || alumno.gradoEstudiante),
+          telefono: alumno.telefono || alumno.telefonoApoderado || "—",
+        };
+        if (fechasColumnas.length > 0) {
+          fechasColumnas.forEach((fechaCol) => {
+            const hora = checkMap.get(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`);
+            rowData[fechaCol.clave] = hora ? `✓ ${hora}` : "—";
+          });
+        } else {
+          for (let i = 1; i <= 5; i++) {
+            rowData[`clase_${i}`] = "—";
+          }
+        }
+        return rowData;
+      });
+
+      worksheet.addRows(rows);
+
+      // Style table cells
+      worksheet.eachRow((row, rowNum) => {
+        if (rowNum > 6) {
+          row.height = 20;
+        }
+        if (rowNum >= 6) {
+          row.eachCell((cell, colNum) => {
+            cell.border = {
+              top: { style: "thin", color: { argb: "FFE2E8F0" } },
+              left: { style: "thin", color: { argb: "FFE2E8F0" } },
+              bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+              right: { style: "thin", color: { argb: "FFE2E8F0" } },
+            };
+            if (rowNum > 6) {
+              cell.alignment = { vertical: "middle", horizontal: colNum > 5 ? "center" : "left" };
+            }
+          });
+        }
+      });
     });
   } else {
-    for (let i = 1; i <= 5; i++) {
-      cols.push({ header: `Clase ${i}`, key: `clase_${i}`, width: 12 });
-    }
-  }
-
-  worksheet.columns = cols;
-
-  // Add student data rows
-  const rows = matriculadosOrdenados.map((alumno, idx) => {
-    const rowData = {
-      nro: idx + 1,
-      dni: alumno.dni || alumno.dniEstudiante || "—",
-      nombres: alumno.nombres || alumno.nombresEstudiante || "—",
-      telefono: alumno.telefono || alumno.telefonoApoderado || "—",
-    };
-    if (fechasColumnas.length > 0) {
-      fechasColumnas.forEach((fechaCol) => {
-        rowData[fechaCol.clave] = checkMap.has(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`) ? "✓" : "—";
-      });
-    } else {
-      for (let i = 1; i <= 5; i++) {
-        rowData[`clase_${i}`] = "—";
+    // Group matriculados by grade
+    const alumnosPorGrado = {};
+    matriculadosOrdenados.forEach((alumno) => {
+      const g = alumno.grado || alumno.gradoEstudiante || "Sin Grado";
+      if (!alumnosPorGrado[g]) {
+        alumnosPorGrado[g] = [];
       }
-    }
-    return rowData;
-  });
-
-  worksheet.addRows(rows);
-
-  // Styles
-  const headerRow = worksheet.getRow(1);
-  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FF176C60" },
-  };
-  headerRow.alignment = { vertical: "middle", horizontal: "center" };
-  headerRow.height = 25;
-
-  worksheet.eachRow((row, rowNum) => {
-    if (rowNum > 1) {
-      row.height = 20;
-    }
-    row.eachCell((cell, colNum) => {
-      cell.border = {
-        top: { style: "thin", color: { argb: "FFE2E8F0" } },
-        left: { style: "thin", color: { argb: "FFE2E8F0" } },
-        bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
-        right: { style: "thin", color: { argb: "FFE2E8F0" } },
-      };
-      cell.alignment = { vertical: "middle", horizontal: colNum > 4 ? "center" : "left" };
+      alumnosPorGrado[g].push(alumno);
     });
-  });
+
+    let gradosPresentes = Object.keys(alumnosPorGrado).sort();
+    if (gradosPresentes.length === 0) {
+      gradosPresentes.push("Sin Grado");
+    }
+
+    // Create a sheet for each grade
+    gradosPresentes.forEach((g) => {
+      const labelGrado = formatGradoLabel(g);
+      const sheetName = obtenerNombreHojaSeguro(labelGrado);
+      const worksheet = workbook.addWorksheet(sheetName);
+
+      const cols = [
+        { key: "nro", width: 6 },
+        { key: "nombres", width: 35 },
+        { key: "grado", width: 18 },
+        { key: "telefono", width: 18 },
+      ];
+
+      if (fechasColumnas.length > 0) {
+        fechasColumnas.forEach((fechaCol) => {
+          cols.push({ key: fechaCol.clave, width: 10 });
+        });
+      } else {
+        for (let i = 1; i <= 5; i++) {
+          cols.push({ key: `clase_${i}`, width: 12 });
+        }
+      }
+
+      worksheet.columns = cols;
+
+      // Header Metadata
+      worksheet.mergeCells("A1:L1");
+      worksheet.getCell("A1").value = "COLEGIO SAN RAFAEL - REPORTE DE ASISTENCIA MENSUAL";
+      worksheet.getCell("A1").font = { name: "Calibri", size: 13, bold: true, color: { argb: "FF176C60" } };
+      worksheet.getCell("A1").alignment = { vertical: "middle", horizontal: "left" };
+
+      worksheet.getCell("A2").value = "Taller:";
+      worksheet.getCell("A2").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B2").value = (programaSeleccionado.nombre || "").split(" - Todos")[0] || "—";
+      worksheet.getCell("B2").font = { size: 10, bold: true };
+
+      worksheet.getCell("A3").value = "Docente:";
+      worksheet.getCell("A3").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B3").value = resolverDocentePorGrado(programaSeleccionado, g) || programaSeleccionado.responsable || "No asignado";
+      worksheet.getCell("B3").font = { size: 10 };
+
+      worksheet.getCell("A4").value = "Horario:";
+      worksheet.getCell("A4").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("B4").value = limpiarHorarioSinAlmuerzo(resolverHorarioPorGrado(programaSeleccionado, g) || programaSeleccionado.horario) || "Por definir";
+      worksheet.getCell("B4").font = { size: 10 };
+
+      worksheet.getCell("D2").value = "Reporte:";
+      worksheet.getCell("D2").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("E2").value = "CONSOLIDADO MENSUAL (MATRIZ)";
+      worksheet.getCell("E2").font = { size: 10 };
+
+      worksheet.getCell("D3").value = "Grado:";
+      worksheet.getCell("D3").font = { bold: true, size: 10, color: { argb: "FF475569" } };
+      worksheet.getCell("E3").value = labelGrado;
+      worksheet.getCell("E3").font = { size: 10, bold: true };
+
+      worksheet.getRow(1).height = 25;
+      worksheet.getRow(2).height = 18;
+      worksheet.getRow(3).height = 18;
+      worksheet.getRow(4).height = 18;
+      worksheet.getRow(5).height = 10;
+
+      // Header row
+      const headerRow = worksheet.getRow(6);
+      const headers = ["N°", "Apellidos y Nombres", "Grado", "N° Teléfono"];
+      if (fechasColumnas.length > 0) {
+        fechasColumnas.forEach((fechaCol) => {
+          headers.push(fechaCol.labelDDMM);
+        });
+      } else {
+        for (let i = 1; i <= 5; i++) {
+          headers.push(`Clase ${i}`);
+        }
+      }
+      headerRow.values = headers;
+      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 11 };
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF176C60" },
+      };
+      headerRow.alignment = { vertical: "middle", horizontal: "center" };
+      headerRow.height = 25;
+
+      const targetAlumnos = alumnosPorGrado[g] || [];
+      const rows = targetAlumnos.map((alumno, idx) => {
+        const rowData = {
+          nro: idx + 1,
+          nombres: alumno.nombres || alumno.nombresEstudiante || "—",
+          grado: labelGrado,
+          telefono: alumno.telefono || alumno.telefonoApoderado || "—",
+        };
+        if (fechasColumnas.length > 0) {
+          fechasColumnas.forEach((fechaCol) => {
+            const hora = checkMap.get(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`);
+            rowData[fechaCol.clave] = hora ? `✓ ${hora}` : "—";
+          });
+        } else {
+          for (let i = 1; i <= 5; i++) {
+            rowData[`clase_${i}`] = "—";
+          }
+        }
+        return rowData;
+      });
+
+      worksheet.addRows(rows);
+
+      // Style table cells
+      worksheet.eachRow((row, rowNum) => {
+        if (rowNum > 6) {
+          row.height = 20;
+        }
+        if (rowNum >= 6) {
+          row.eachCell((cell, colNum) => {
+            cell.border = {
+              top: { style: "thin", color: { argb: "FFE2E8F0" } },
+              left: { style: "thin", color: { argb: "FFE2E8F0" } },
+              bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+              right: { style: "thin", color: { argb: "FFE2E8F0" } },
+            };
+            if (rowNum > 6) {
+              cell.alignment = { vertical: "middle", horizontal: colNum > 4 ? "center" : "left" };
+            }
+          });
+        }
+      });
+    });
+  }
 
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer], {
@@ -412,7 +1004,8 @@ export async function exportExcelMonthly({
   const link = document.createElement("a");
   link.href = url;
   const fileSuffix = fechasColumnas.length > 0 ? "" : "_Plantilla";
-  link.download = `Consolidado_Asistencias_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}${fileSuffix}.xlsx`;
+  const cleanName = (programaSeleccionado.nombre || "").split(" - Todos")[0];
+  link.download = `Consolidado_Asistencias_${normalizarNombreArchivoPdf(cleanName)}${fileSuffix}.xlsx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -426,6 +1019,7 @@ export async function exportPdfMonthly({
   matriculadosOrdenados,
   fechasColumnas,
   checkMap,
+  programas = [],
 }) {
   const { jsPDF } = await import("jspdf");
   if (!programaSeleccionado || !matriculados.length) return;
@@ -461,12 +1055,13 @@ export async function exportPdfMonthly({
   doc.text("DOCENTE:", margen + 105, y);
   doc.text("HORARIO:", margen + 205, y);
 
+  const cleanName = (programaSeleccionado.nombre || "").split(" - Todos")[0];
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(24, 33, 47);
-  doc.text(programaSeleccionado.nombre || "—", margen + 20, y);
+  doc.text(cleanName || "—", margen + 20, y);
   doc.text(programaSeleccionado.responsable || "—", margen + 122, y);
-  doc.text(programaSeleccionado.horario || "—", margen + 222, y);
+  doc.text(limpiarHorarioSinAlmuerzo(programaSeleccionado.horario) || "—", margen + 222, y);
 
   y += 15;
 
@@ -533,6 +1128,14 @@ export async function exportPdfMonthly({
 
     const dni = alumno.dni || alumno.dniEstudiante || "—";
     const telefono = alumno.telefono || alumno.telefonoApoderado || "—";
+    
+    const gradeStr = formatGradoLabel(alumno.grado || alumno.gradoEstudiante);
+    let gLabel = gradeStr;
+    if (programaSeleccionado.id === "TODOS_TALLERES") {
+      const tallerNameObj = programas.find((p) => p.id === alumno.tallerId);
+      const tallerShortName = tallerNameObj ? (tallerNameObj.nombre.split(" - ")[1] || tallerNameObj.nombre) : alumno.tallerId || "";
+      gLabel = `${tallerShortName} - ${gradeStr}`;
+    }
 
     doc.setDrawColor(237, 242, 245);
     doc.line(margen, y - 2, anchoPagina - margen, y - 2);
@@ -546,16 +1149,37 @@ export async function exportPdfMonthly({
     cx += colWidths.nro;
     doc.text(dni, cx, y + 3);
     cx += colWidths.dni;
-    doc.text(doc.splitTextToSize(alumno.nombres || alumno.nombresEstudiante || "", 75), cx, y + 3);
+
+    const nameLines = doc.splitTextToSize(alumno.nombres || alumno.nombresEstudiante || "", 75);
+    doc.text(nameLines, cx, y + 3);
+
+    if (gLabel) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      const gradeY = y + 3 + (nameLines.length * 4.2);
+      doc.text(gLabel, cx, gradeY);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(24, 33, 47);
+    }
+
     cx += colWidths.nombres;
     doc.text(telefono, cx, y + 3);
     cx += colWidths.telefono;
 
     if (fechasColumnas.length > 0) {
       fechasColumnas.forEach((fechaCol) => {
-        const asistio = checkMap.has(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`);
-        if (asistio) {
+        const mapKey = `${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`;
+        const hora = checkMap.get(mapKey);
+        if (hora) {
           dibujarCheck(doc, cx + 2, y + 1);
+          doc.setFont("helvetica", "normal");
+          doc.setFontSize(5.5);
+          doc.setTextColor(100, 116, 139);
+          doc.text(hora, cx + 1, y + 5.5);
+          doc.setFontSize(8.5);
+          doc.setTextColor(24, 33, 47);
         } else {
           doc.text("—", cx + 3, y + 3);
         }
@@ -568,7 +1192,10 @@ export async function exportPdfMonthly({
       }
     }
 
-    const altoFila = Math.max(8, doc.splitTextToSize(alumno.nombres || alumno.nombresEstudiante || "", 75).length * 4.2 + 4);
+    const nameLinesCount = nameLines.length;
+    const altoFila = gLabel
+      ? Math.max(11, nameLinesCount * 4.2 + 7.5)
+      : Math.max(8, nameLinesCount * 4.2 + 4);
     y += altoFila;
   });
 
@@ -577,7 +1204,7 @@ export async function exportPdfMonthly({
   doc.setTextColor(82, 97, 115);
   doc.text(`Matriculados: ${matriculados.length} alumnos`, margen, altoPagina - 10);
   const fileSuffix = fechasColumnas.length > 0 ? "" : "_plantilla";
-  doc.save(`consolidado_asistencias_${normalizarNombreArchivoPdf(programaSeleccionado.nombre)}${fileSuffix}.pdf`);
+  doc.save(`consolidado_asistencias_${normalizarNombreArchivoPdf(cleanName)}${fileSuffix}.pdf`);
 }
 
 // PDF Export Handler (Individual Attendance Report)
@@ -609,15 +1236,16 @@ export async function exportPdfIndividual({
   y += 10;
 
   // Box details (Calculated dynamically)
+  const cleanName = (programaSeleccionado.nombre || "").split(" - Todos")[0];
   const colLeftItems = [
-    ["Taller", programaSeleccionado.nombre || "Sin nombre"],
+    ["Taller", cleanName || "Sin nombre"],
     ["Alumno", alumno.nombres || alumno.nombresEstudiante || "—"],
     ["DNI / Código", `${alumno.dni || alumno.dniEstudiante || "—"} / ${alumno.codigoEstudiante || "—"}`],
   ];
 
   const colRightItems = [
     ["Docente", programaSeleccionado.responsable || "No asignado"],
-    ["Horario", programaSeleccionado.horario || "Por definir"],
+    ["Horario", limpiarHorarioSinAlmuerzo(programaSeleccionado.horario) || "Por definir"],
     ["Contacto", alumno.telefono || alumno.telefonoApoderado || "—"],
   ];
 
@@ -713,7 +1341,8 @@ export async function exportPdfIndividual({
         y += 12;
       }
 
-      const asistio = checkMap.has(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`);
+      const hora = checkMap.get(`${(alumno.dni || alumno.dniEstudiante)}:${fechaCol.clave}`);
+      const asistio = hora !== undefined;
       totalClases++;
       if (asistio) totalAsistencias++;
 
@@ -728,7 +1357,7 @@ export async function exportPdfIndividual({
       doc.setFont("helvetica", "bold");
       if (asistio) {
         doc.setTextColor(18, 184, 134); // Green
-        doc.text("ASISTIÓ (✓)", margen + 90, y + 3);
+        doc.text(`ASISTIÓ (✓) ${hora}`, margen + 90, y + 3);
       } else {
         doc.setTextColor(239, 68, 68); // Red
         doc.text("FALTÓ (—)", margen + 90, y + 3);

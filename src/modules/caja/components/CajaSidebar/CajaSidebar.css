@@ -107,7 +107,7 @@
   border: none !important;
   border-radius: 10px !important; /* Smooth rounded corners */
   background: transparent !important;
-  color: #e2e8f0 !important; /* Soft white-gray text */
+  color: #ffffff !important; /* White text */
   font-size: 14px !important;
   font-weight: 600 !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -118,8 +118,8 @@
 
 .caja-nav button svg,
 .caja-logout svg {
-  color: #cbd5e1 !important; /* Light gray icons */
-  stroke: #cbd5e1 !important;
+  color: #ffffff !important; /* White icons */
+  stroke: #ffffff !important;
   width: 20px !important;
   height: 20px !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
@@ -127,7 +127,7 @@
 
 .caja-nav button span,
 .caja-logout span {
-  color: #e2e8f0 !important;
+  color: #ffffff !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 

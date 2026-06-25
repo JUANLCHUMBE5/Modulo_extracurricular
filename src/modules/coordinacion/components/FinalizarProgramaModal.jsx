@@ -73,9 +73,10 @@ export default function FinalizarProgramaModal({
               Advertencia importante
             </strong>
             <ul style={{ margin: 0, paddingLeft: "16px", fontSize: "13px", color: "#6b5930", display: "grid", gap: "4px", lineHeight: "1.4" }}>
-              <li>Se cerrará el programa de forma definitiva en el historial.</li>
-              <li>Asistente ya no podrá registrar nuevas inscripciones.</li>
-              <li>Si desea abrir este taller nuevamente en el futuro, tendrá que crear un nuevo programa.</li>
+              <li>Se cerrará la inscripción: Secretaría y el módulo de Padres ya no podrán registrar nuevos alumnos.</li>
+              <li>El programa permanecerá visible en la lista activa para consultar datos, reportes y clonarlo para un nuevo ciclo.</li>
+              <li>Si desea reabrir la matrícula, puede modificar las fechas o el campo «Aviso (días)» desde la edición del programa.</li>
+              <li>Para moverlo al historial definitivamente, use la opción «Archivar» después de finalizar.</li>
             </ul>
           </div>
 

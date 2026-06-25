@@ -125,7 +125,7 @@ export async function registrarInscripcionPadresMock(dni, datos, programaId = ""
     throw new Error("Este programa requiere invitacion de Coordinación Académica.");
   }
 
-  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso);
+  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso, programa);
   if (!ventana.permitida) throw new Error("El aviso de inscripcion web cerro. Acerquese a Cajera para evaluar el registro.");
   if (Number(programa.cuposOcupados || 0) >= Number(programa.cupos || 0)) {
     throw new Error("El programa no tiene cupos disponibles.");
@@ -357,7 +357,7 @@ export async function obtenerProgramasCoordinacionMock() {
     const cuposOcupados = Number(programa.cuposOcupados || 0);
     const cuposDisponibles = Math.max(0, cupos - cuposOcupados);
     const duracionAvisoDias = normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7);
-    const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias, programa.horaLimiteAviso);
+    const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias, programa.horaLimiteAviso, programa);
     const esCambridge = esProgramaCambridgePadres(programa);
     const requiereGradoCompatible = !esCambridge && !programa.invitacionMasiva && (
       tieneHorariosPorGrupo(programa) ||
@@ -457,7 +457,7 @@ function obtenerInvitaciones(dni, estudiante = null) {
         duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
         duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
         horaLimiteAviso: programa.horaLimiteAviso || "23:59",
-        ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso),
+        ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso, programa),
       });
     }
 
@@ -504,7 +504,7 @@ function obtenerInvitaciones(dni, estudiante = null) {
           grado: gradoEstudiante,
           duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
           horaLimiteAviso: programmeHoraLimiteAviso(programa),
-          ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programmeHoraLimiteAviso(programa)),
+          ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programmeHoraLimiteAviso(programa), programa),
         });
       });
   });

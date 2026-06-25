@@ -35,7 +35,7 @@ export async function obtenerResumenPadre(dni) {
       return {
         ...prog,
         duracionAvisoDias,
-        ventanaInscripcion: obtenerVentanaInscripcion(prog.fechaInicio, new Date(), duracionAvisoDias, prog.horaLimiteAviso),
+        ventanaInscripcion: obtenerVentanaInscripcion(prog.fechaInicio, new Date(), duracionAvisoDias, prog.horaLimiteAviso, prog),
       };
     });
     const inscripciones = (data.inscripciones || []).map(adaptarInscripcion);
@@ -137,7 +137,7 @@ export async function obtenerProgramasCoordinacion() {
       const cuposOcupados = Number(programa.cuposOcupados || 0);
       const cuposDisponibles = Math.max(0, cupos - cuposOcupados);
       const duracionAvisoDias = normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7);
-      const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias, programa.horaLimiteAviso);
+      const ventanaInscripcion = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), duracionAvisoDias, programa.horaLimiteAviso, programa);
       const requiereGradoCompatible = !programa.invitacionMasiva && (
         Array.isArray(programa.horariosPorGrupo) && programa.horariosPorGrupo.length > 0 ||
         (Array.isArray(programa.gradosAplicables) && programa.gradosAplicables.length > 0)

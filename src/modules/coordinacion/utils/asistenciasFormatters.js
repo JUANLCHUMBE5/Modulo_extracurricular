@@ -41,10 +41,15 @@ export function formatearHoraAsistencia(valor) {
   if (!valor) return "-";
   const fecha = new Date(valor);
   if (Number.isNaN(fecha.getTime())) return "-";
-  return fecha.toLocaleTimeString("es-PE", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  
+  let hours = fecha.getHours();
+  const minutes = String(fecha.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "pm" : "am";
+  
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  
+  return `${hours}.${minutes} ${ampm}`;
 }
 
 export function claveFechaAsistencia(valor) {
@@ -93,4 +98,13 @@ export function calcularEdad(fechaNac) {
     edad--;
   }
   return `${edad} años`;
+}
+
+export function limpiarHorarioSinAlmuerzo(horarioStr = "") {
+  if (!horarioStr) return "";
+  return String(horarioStr)
+    .replace(/almuerzo\s+\d{2}:\d{2}\s*-\s*\d{2}:\d{2},?\s*(clase\s*)?/i, "")
+    .replace(/\bclase\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }

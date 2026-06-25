@@ -15,6 +15,8 @@ function AsistenciaMensualTable({
   matriculadosFiltrados,
   checkMap,
   handleExportPdfIndividual,
+  programas = [],
+  tallerId = "",
 }) {
   return (
     <div style={{ marginTop: "8px" }}>
@@ -44,8 +46,9 @@ function AsistenciaMensualTable({
               <thead>
                 <tr>
                   <th style={{ width: "50px", textAlign: "center" }}>N°</th>
-                  <th style={{ width: "100px" }}>DNI</th>
                   <th style={{ minWidth: "220px" }}>Apellidos y Nombres</th>
+                  {tallerId === "TODOS_TALLERES" && <th style={{ minWidth: "150px" }}>Taller</th>}
+                  <th style={{ width: "120px" }}>Grado</th>
                   <th style={{ minWidth: "120px" }}>Teléfono</th>
                   {fechasColumnas.length > 0 ? (
                     fechasColumnas.map((fechaCol) => (
@@ -85,15 +88,41 @@ function AsistenciaMensualTable({
               <tbody>
                 {matriculadosFiltrados.length > 0 ? (
                   matriculadosFiltrados.map((alumno, index) => {
+                    const gValue = alumno.grado || alumno.gradoEstudiante || "";
+                    const tIdValue = alumno.tallerId;
+
+                    const parts = String(gValue || "").split(":");
+                    let labelGrado = gValue;
+                    if (parts.length === 2) {
+                      const nivel = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+                      labelGrado = `${parts[1]}° ${nivel}`;
+                    } else {
+                      const match = String(gValue).match(/(\d+)\s+(\w+)/);
+                      if (match) {
+                        const nivel = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+                        labelGrado = `${match[1]}° ${nivel}`;
+                      }
+                    }
+
+                    const tallerObj = tIdValue ? programas.find(p => p.id === tIdValue) : null;
+                    const labelTaller = tallerObj ? (tallerObj.nombre.split(" - ")[1] || tallerObj.nombre) : "";
+                    const displaySub = [
+                      tallerId === "TODOS_TALLERES" && labelTaller ? labelTaller : "",
+                      labelGrado ? labelGrado : ""
+                    ].filter(Boolean).join(" - ");
+
                     return (
                       <tr key={alumno.dni || index}>
                         <td style={{ textAlign: "center" }}>{index + 1}</td>
-                        <td>{alumno.dni || alumno.dniEstudiante || "—"}</td>
-                        <td><span>{alumno.nombres || alumno.nombresEstudiante || "—"}</span></td>
+                        <td><span style={{ fontWeight: 500 }}>{alumno.nombres || alumno.nombresEstudiante || "—"}</span></td>
+                        {tallerId === "TODOS_TALLERES" && <td>{labelTaller || "—"}</td>}
+                        <td>{labelGrado || "—"}</td>
                         <td>{alumno.telefono || alumno.telefonoApoderado || "—"}</td>
                         {fechasColumnas.length > 0 ? (
                           fechasColumnas.map((fechaCol) => {
-                            const asistio = checkMap.has(`${String(alumno.dni || alumno.dniEstudiante || "").trim()}:${fechaCol.clave}`);
+                            const mapKey = `${String(alumno.dni || alumno.dniEstudiante || "").trim()}:${fechaCol.clave}`;
+                            const hora = checkMap.get(mapKey);
+                            const asistio = hora !== undefined;
                             return (
                               <td
                                 key={fechaCol.clave}
@@ -101,10 +130,17 @@ function AsistenciaMensualTable({
                                   textAlign: "center",
                                   fontWeight: "bold",
                                   color: asistio ? "#12b886" : "#ced4da",
-                                  fontSize: "16px",
+                                  fontSize: asistio ? "14px" : "16px",
+                                  padding: "4px 2px",
+                                  lineHeight: "1.2",
                                 }}
                               >
-                                {asistio ? "✓" : "—"}
+                                {asistio ? (
+                                  <>
+                                    <div>✓</div>
+                                    <div style={{ fontSize: "9px", fontWeight: 500, color: "#64748b" }}>{hora}</div>
+                                  </>
+                                ) : "—"}
                               </td>
                             );
                           })
@@ -137,7 +173,7 @@ function AsistenciaMensualTable({
                   })
                 ) : (
                   <tr>
-                    <td colSpan={5 + (fechasColumnas.length > 0 ? fechasColumnas.length : 5)} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
+                    <td colSpan={(tallerId === "TODOS_TALLERES" ? 6 : 5) + (fechasColumnas.length > 0 ? fechasColumnas.length : 5)} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
                       No se encontraron estudiantes para la búsqueda.
                     </td>
                   </tr>

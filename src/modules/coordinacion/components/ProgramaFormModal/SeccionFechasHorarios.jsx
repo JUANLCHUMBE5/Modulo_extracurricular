@@ -163,37 +163,102 @@ function SeccionFechasHorarios({
             </div>
           </div>
 
-          <div className="coord-field coord-taller-col-4">
-            <label>Aviso abierto (días) *</label>
-            <input
-              type="number"
-              min="1"
-              max="7"
-              value={form.duracionAvisoDias}
-              onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
-              placeholder="Máx 7 días"
-            />
+          <div className="coord-taller-col-12" style={{ margin: "4px 0" }}>
+            <label className="coord-check-label" style={{ cursor: "pointer", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
+              <input
+                type="checkbox"
+                checked={!!form.usarFechaLimiteInscripcion}
+                onChange={e => actualizarForm("usarFechaLimiteInscripcion", e.target.checked)}
+                style={{ width: "16px", height: "16px", minWidth: "16px", minHeight: "16px", margin: 0, padding: 0, cursor: "pointer" }}
+              />
+              <span>¿Usar fecha y hora límite de inscripción personalizada?</span>
+            </label>
           </div>
 
-          <div className="coord-field coord-taller-col-4">
-            <label>Hora límite de aviso *</label>
-            <input
-              type="time"
-              value={form.horaLimiteAviso || "23:59"}
-              onChange={e => actualizarForm("horaLimiteAviso", e.target.value)}
-            />
-          </div>
+          {!form.usarFechaLimiteInscripcion ? (
+            <>
+              <div className="coord-field coord-taller-col-4">
+                <label>Aviso abierto (días) *</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="7"
+                  value={form.duracionAvisoDias}
+                  onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
+                  placeholder="Máx 7 días"
+                />
+              </div>
 
-          <div className="coord-field coord-taller-col-4">
-            <label>Cupos *</label>
-            <input
-              type="number"
-              min="1"
-              value={form.cupos}
-              onChange={e => actualizarForm("cupos", e.target.value)}
-              placeholder="Ej: 50"
-            />
-          </div>
+              <div className="coord-field coord-taller-col-4">
+                <label>Hora límite de aviso *</label>
+                <input
+                  type="time"
+                  value={form.horaLimiteAviso || "23:59"}
+                  onChange={e => actualizarForm("horaLimiteAviso", e.target.value)}
+                />
+              </div>
+
+              <div className="coord-field coord-taller-col-4">
+                <label>Cupos *</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.cupos}
+                  onChange={e => actualizarForm("cupos", e.target.value)}
+                  placeholder="Ej: 50"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="coord-field coord-taller-col-3">
+                <label>Inicio inscripción (Opcional)</label>
+                <input
+                  type="date"
+                  value={form.fechaAperturaInscripcion || ""}
+                  onChange={e => actualizarForm("fechaAperturaInscripcion", e.target.value)}
+                />
+              </div>
+
+              <div className="coord-field coord-taller-col-2">
+                <label>Hora apertura</label>
+                <input
+                  type="time"
+                  value={form.horaAperturaInscripcion || ""}
+                  onChange={e => actualizarForm("horaAperturaInscripcion", e.target.value)}
+                />
+              </div>
+
+              <div className="coord-field coord-taller-col-3">
+                <label>Fecha límite *</label>
+                <input
+                  type="date"
+                  value={form.fechaLimiteInscripcion || ""}
+                  onChange={e => actualizarForm("fechaLimiteInscripcion", e.target.value)}
+                />
+              </div>
+
+              <div className="coord-field coord-taller-col-2">
+                <label>Hora límite *</label>
+                <input
+                  type="time"
+                  value={form.horaLimiteInscripcion || "23:59"}
+                  onChange={e => actualizarForm("horaLimiteInscripcion", e.target.value)}
+                />
+              </div>
+
+              <div className="coord-field coord-taller-col-2">
+                <label>Cupos *</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.cupos}
+                  onChange={e => actualizarForm("cupos", e.target.value)}
+                  placeholder="Ej: 50"
+                />
+              </div>
+            </>
+          )}
 
           <div className="coord-field coord-taller-col-12">
             <label>Grados habilitados *</label>
@@ -228,17 +293,29 @@ function SeccionFechasHorarios({
               {duracionTallerFormulario || "Seleccione fechas"}
             </div>
           </div>
-          <div className="coord-field">
-            <label>Aviso (días) *</label>
-            <input
-              type="number"
-              min="1"
-              max="7"
-              value={form.duracionAvisoDias}
-              onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
-              placeholder="Máx 7 días"
-            />
-          </div>
+          {!form.usarFechaLimiteInscripcion && (
+            <>
+              <div className="coord-field">
+                <label>Aviso (días) *</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="7"
+                  value={form.duracionAvisoDias}
+                  onChange={e => actualizarForm("duracionAvisoDias", e.target.value)}
+                  placeholder="Máx 7 días"
+                />
+              </div>
+              <div className="coord-field">
+                <label>Hora límite aviso *</label>
+                <input
+                  type="time"
+                  value={form.horaLimiteAviso || "23:59"}
+                  onChange={e => actualizarForm("horaLimiteAviso", e.target.value)}
+                />
+              </div>
+            </>
+          )}
 
           {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && !puedeGestionarGruposFormulario && !usaTalleresPorEdad && (
             <div className="coord-field">
@@ -284,6 +361,55 @@ function SeccionFechasHorarios({
             </div>
           )}
         </div>
+
+        <div style={{ gridColumn: "1 / -1", margin: "4px 0" }}>
+          <label className="coord-check-label" style={{ cursor: "pointer", fontWeight: "700", display: "flex", alignItems: "center", gap: "8px" }}>
+            <input
+              type="checkbox"
+              checked={!!form.usarFechaLimiteInscripcion}
+              onChange={e => actualizarForm("usarFechaLimiteInscripcion", e.target.checked)}
+              style={{ width: "16px", height: "16px", minWidth: "16px", minHeight: "16px", margin: 0, padding: 0, cursor: "pointer" }}
+            />
+            <span>¿Usar fecha y hora límite de inscripción personalizada?</span>
+          </label>
+        </div>
+
+        {form.usarFechaLimiteInscripcion && (
+          <div className="coord-time-fields-grid" style={{ gridColumn: "1 / -1", marginTop: "4px" }}>
+            <div className="coord-field">
+              <label>Inicio inscripción (Opcional)</label>
+              <input
+                type="date"
+                value={form.fechaAperturaInscripcion || ""}
+                onChange={e => actualizarForm("fechaAperturaInscripcion", e.target.value)}
+              />
+            </div>
+            <div className="coord-field">
+              <label>Hora de apertura</label>
+              <input
+                type="time"
+                value={form.horaAperturaInscripcion || ""}
+                onChange={e => actualizarForm("horaAperturaInscripcion", e.target.value)}
+              />
+            </div>
+            <div className="coord-field">
+              <label>Fecha límite *</label>
+              <input
+                type="date"
+                value={form.fechaLimiteInscripcion || ""}
+                onChange={e => actualizarForm("fechaLimiteInscripcion", e.target.value)}
+              />
+            </div>
+            <div className="coord-field">
+              <label>Hora límite *</label>
+              <input
+                type="time"
+                value={form.horaLimiteInscripcion || "23:59"}
+                onChange={e => actualizarForm("horaLimiteInscripcion", e.target.value)}
+              />
+            </div>
+          </div>
+        )}
 
         {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" ? (
           <>

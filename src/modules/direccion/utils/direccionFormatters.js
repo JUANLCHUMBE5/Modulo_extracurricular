@@ -1,4 +1,4 @@
-const permisosExportar = ["reportes.exportar"];
+const permisosExportar = ["direccion.reportes"];
 
 export function puedeExportar(user) {
   if (user?.role === "administrador") return true;
