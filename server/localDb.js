@@ -337,8 +337,9 @@ async function readFromSupabase() {
     }
 
     // Fallback: si no se encontró en la tabla configuracion, buscar en categorias (por compatibilidad)
-    if (!correlativosObj.recibo) {
-      const configRow = categoriasArray.find(c => String(c).startsWith("CONFIG_CORRELATIVOS:"));
+    if (!correlativosObj.reciboActual && !correlativosObj.recibo) {
+      const configRows = categoriasArray.filter(c => String(c).startsWith("CONFIG_CORRELATIVOS:"));
+      const configRow = configRows[configRows.length - 1];
       if (configRow) {
         try {
           correlativosObj = JSON.parse(configRow.slice("CONFIG_CORRELATIVOS:".length));
@@ -363,6 +364,7 @@ async function readFromSupabase() {
       inscripciones: (resInscripciones.data || []).map(ins => {
         ins.estadoInscripcion = ins.estadoPago || "Pendiente de pago";
         ins.apoderado = estudiantesObj[ins.dniEstudiante]?.apoderado || "";
+        ins.telefono = estudiantesObj[ins.dniEstudiante]?.telefonoApoderado || "";
         ins.derivadoCaja = ins.derivadoCaja ?? false;
         ins.estadoCaja = ins.estadoCaja || "";
 
@@ -911,15 +913,11 @@ async function writeToSupabase(db, currentDb) {
         }
         
         try {
-          const oldConfigRow = (oldDb.categorias || []).find(c => String(c).startsWith("CONFIG_CORRELATIVOS:"));
           const newConfigString = "CONFIG_CORRELATIVOS:" + JSON.stringify(newCorr);
-          if (oldConfigRow) {
-            await supabase.from("categorias").update({ categoria: newConfigString }).eq("categoria", oldConfigRow);
-          } else {
-            await supabase.from("categorias").insert({ categoria: newConfigString });
-          }
+          await supabase.from("categorias").delete().like("categoria", "CONFIG_CORRELATIVOS:%");
+          await supabase.from("categorias").insert({ categoria: newConfigString });
         } catch (catConfigErr) {
-          console.warn(`⚠️ Warning: Error actualizando correlativos en tabla categorias:`, catConfigErr);
+          console.warn("⚠️ Warning: Error actualizando correlativos en tabla categorias:", catConfigErr);
         }
       }
     }

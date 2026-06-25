@@ -55,7 +55,7 @@ export default function ReporteTabla({
               <Table.Th>Estudiante</Table.Th>
               <Table.Th>Programa</Table.Th>
               <Table.Th>Monto</Table.Th>
-              <Table.Th>Pago</Table.Th>
+              <Table.Th className="caja-col-pago">Pago</Table.Th>
               <Table.Th>N° de comprobante</Table.Th>
               <Table.Th>Cod. operacion</Table.Th>
               <Table.Th>Telefono</Table.Th>
@@ -74,7 +74,10 @@ export default function ReporteTabla({
               let badgeColor = "yellow";
               let badgeText = "Pendiente";
 
-              if (fila.estadoPago === "pagado") {
+              if (fila.formaPago === "Egreso") {
+                badgeColor = "red";
+                badgeText = "Egreso";
+              } else if (fila.estadoPago === "pagado") {
                 badgeColor = "green";
                 badgeText = "Pagado";
               } else if (esPagoWebVerificar) {
@@ -98,8 +101,8 @@ export default function ReporteTabla({
                   </Table.Td>
                   <Table.Td>{fila.programa || "Sin programa"}</Table.Td>
                   <Table.Td className="caja-amount">{formatearSoles(fila.monto)}</Table.Td>
-                  <Table.Td>
-                    <Badge color={badgeColor} variant="light">
+                  <Table.Td className="caja-col-pago">
+                    <Badge color={badgeColor} variant="light" className="caja-badge-status">
                       {badgeText}
                     </Badge>
                   </Table.Td>

@@ -14,15 +14,26 @@ import {
 
 const accesos = [
   { texto: "Ver programa", icon: BookOpen },
-  { texto: "Monto a pagar", icon: CreditCard },
-  { texto: "Como pagar correctamente", icon: CreditCard },
   { texto: "Ver horario", icon: CalendarDays },
-  { texto: "Estado del pago", icon: CheckCircle2 },
+  { texto: "¿Cómo pagar?", icon: CreditCard },
+  { texto: "¿Qué hago ahora?", icon: HelpCircle },
   { texto: "Descargar ficha", icon: FileText },
-  { texto: "Que debo hacer ahora", icon: HelpCircle },
+  { texto: "Mis datos", icon: CheckCircle2 },
+  { texto: "Soporte y contacto", icon: MessageCircle },
 ];
 
-function AsistentePadres({ abierto, setAbierto, mensajes, consulta, setConsulta, preguntar }) {
+function AsistentePadres({
+  abierto,
+  setAbierto,
+  mensajes,
+  consulta,
+  setConsulta,
+  preguntar,
+  programasAsociados = [],
+  programaChatId = "",
+  onSeleccionarProgramaChat = () => {},
+  programa = null
+}) {
   const bodyRef = useRef(null);
 
   useEffect(() => {
@@ -56,6 +67,27 @@ function AsistentePadres({ abierto, setAbierto, mensajes, consulta, setConsulta,
           <X size={18} />
         </button>
       </header>
+
+      {programasAsociados.length > 1 && (
+        <div className="padres-chat-selector">
+          <span>Consultar sobre:</span>
+          <div className="padres-chat-selector-buttons">
+            {programasAsociados.map((prog) => {
+              const activo = (programaChatId || (programa?.programaId || programa?.id)) === prog.id;
+              return (
+                <button
+                  key={prog.id}
+                  type="button"
+                  className={`padres-chat-selector-btn ${activo ? "is-active" : ""}`}
+                  onClick={() => onSeleccionarProgramaChat(prog.id)}
+                >
+                  {prog.nombre}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="padres-assistant-body" ref={bodyRef}>
         {mensajes.map((mensaje, index) => (

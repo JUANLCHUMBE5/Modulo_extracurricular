@@ -179,15 +179,8 @@ router.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, 
     const periodo = body.periodo || "escolar";
     let assignedNroRecibo = "";
     const corr = normalizarCorrelativos(db);
-    const formaPagoStr = String(forma_pago).toLowerCase().trim();
-    const esVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoStr);
-    if (esVirtual) {
-      assignedNroRecibo = corr.reciboVirtualActual || "V-1001";
-      corr.reciboVirtualActual = incrementarCorrelativo(assignedNroRecibo);
-    } else {
-      assignedNroRecibo = corr.reciboActual || "REC-0501";
-      corr.reciboActual = incrementarCorrelativo(assignedNroRecibo);
-    }
+    assignedNroRecibo = corr.reciboActual || "REC-0501";
+    corr.reciboActual = incrementarCorrelativo(assignedNroRecibo);
 
     const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
     const inscrip = (db.inscripciones || []).find(item => item.id === inscripcion_id);
@@ -280,11 +273,16 @@ router.get("/api/v1/extracurricular/caja/resumen", requireRole(["caja"]), async 
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
 
-    const pagos = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && ["completado", "validado"].includes(p.estado));
-    const totalCobrado = pagos.reduce((sum, p) => sum + Number(p.monto || 0), 0);
+    const pagosCompletados = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && ["completado", "validado"].includes(p.estado));
+    const pagosIngresos = pagosCompletados.filter(p => p.formaPago !== "Egreso");
+    const pagosEgresos = pagosCompletados.filter(p => p.formaPago === "Egreso");
+
+    const totalIngreso = pagosIngresos.reduce((sum, p) => sum + Number(p.monto || 0), 0);
+    const totalEgreso = pagosEgresos.reduce((sum, p) => sum + Number(p.monto || 0), 0);
+    const totalCobrado = totalIngreso - totalEgreso; // Net balance
 
     const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
-    const paidInscripIds = new Set(pagos.map(p => p.inscripcionId));
+    const paidInscripIds = new Set(pagosIngresos.map(p => p.inscripcionId));
     const pendingInscrip = enrollments.filter(e => !paidInscripIds.has(e.id));
     const totalPendiente = pendingInscrip.reduce((sum, e) => sum + Number(e.costo || 0), 0);
 
@@ -292,10 +290,59 @@ router.get("/api/v1/extracurricular/caja/resumen", requireRole(["caja"]), async 
       success: true,
       data: {
         totalCobrado,
+        totalIngreso,
+        totalEgreso,
         totalPendiente,
-        transacciones: pagos.length
+        transacciones: pagosIngresos.length
       }
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Caja: Register new expense/egreso
+router.post("/api/v1/extracurricular/caja/egresos", requireRole(["caja"]), async (req, res) => {
+  try {
+    const db = await getDb();
+    const body = req.body;
+
+    const corr = normalizarCorrelativos(db);
+    if (corr.egresoActive === false) {
+      return res.status(400).json({ success: false, message: "La serie de recibo de egreso está inactiva en el sistema." });
+    }
+
+    const assignedNroRecibo = corr.egresoActual || "EGR-0201";
+    corr.egresoActual = incrementarCorrelativo(assignedNroRecibo);
+
+    const nuevoEgreso = {
+      id: `PAG-EGR-${String(Date.now()).slice(-6)}`,
+      inscripcionId: null,
+      dniEstudiante: body.dni || "",
+      nombresEstudiante: body.beneficiario || "Egreso de Caja",
+      programa: "",
+      programaId: "",
+      monto: Number(body.monto || 0),
+      formaPago: "Egreso",
+      nroRecibo: assignedNroRecibo,
+      periodo: body.periodo || db.configuracion_actual?.periodo || "escolar",
+      fecha: body.fecha || new Date().toISOString(),
+      fechaPago: body.fecha || new Date().toISOString(),
+      estado: "completado",
+      origenRegistro: "Caja",
+      observaciones: body.concepto || "Egreso registrado"
+    };
+
+    db.pagos.push(nuevoEgreso);
+    await saveDb(db);
+
+    await registrarAuditoria(req.user?.username || "Cajera", req.user?.role || "caja", "EGRESO_REGISTRAR", {
+      pagoId: nuevoEgreso.id,
+      monto: nuevoEgreso.monto,
+      beneficiario: nuevoEgreso.nombresEstudiante
+    });
+
+    res.json({ success: true, data: nuevoEgreso });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -415,9 +462,9 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
 
     if (!db.pagos[idx].nroRecibo) {
       const corr = normalizarCorrelativos(db);
-      const assigned = corr.reciboVirtualActual || "V-1001";
+      const assigned = corr.reciboActual || "REC-0501";
       db.pagos[idx].nroRecibo = assigned;
-      corr.reciboVirtualActual = incrementarCorrelativo(assigned);
+      corr.reciboActual = incrementarCorrelativo(assigned);
     }
 
     db.pagos[idx].estado = "validado";
@@ -431,6 +478,8 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
       inscrip.estadoInscripcion = "Pago exitoso";
       inscrip.fechaPago = db.pagos[idx].validadoEn;
       inscrip.pagoObservacionCaja = observaciones || "";
+      // Al aprobar un pago web, marcar como derivadoCaja para que figure como ingreso en el reporte de Caja
+      inscrip.derivadoCaja = true;
     }
 
     if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
@@ -581,6 +630,39 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
 
     if (tipoReporte === "pagos_registrados" || tipoReporte === "pagos_realizados") {
       reportList = payments.map(p => {
+        if (p.formaPago === "Egreso") {
+          return {
+            id: p.id,
+            pagoId: p.id,
+            inscripcionId: "",
+            dniEstudiante: p.dniEstudiante || "",
+            estudiante: p.nombresEstudiante || "Egreso de Caja",
+            programaId: "",
+            programa: "Egreso / Gasto",
+            periodo: period,
+            monto: p.monto,
+            estadoPago: "pagado",
+            estadoInscripcion: "",
+            formaPago: "Egreso",
+            numeroOperacion: p.numeroOperacion || "",
+            telefonoOperacion: "",
+            origen: "Cajera",
+            fuente: "pago",
+            fecha: p.fechaPago || p.fecha || "",
+            fechaRegistro: p.fecha || "",
+            fechaPago: p.fechaPago || "",
+            apoderado: "",
+            telefono: "",
+            nroRecibo: p.nroRecibo || p.nro_recibo || "",
+            grado: "",
+            seccion: "",
+            descuentoAprobado: false,
+            descuentoTipo: "",
+            descuentoMonto: 0,
+            descuentoJustificacion: "",
+            observaciones: p.observaciones || ""
+          };
+        }
         const prog = db.programas.find(progItem => progItem.id === p.programaId || normalizarTextoApi(progItem.nombre) === normalizarTextoApi(p.programa));
         const student = db.estudiantes?.[p.dniEstudiante];
         const e = (db.inscripciones || []).find(item => item.id === p.inscripcionId || (item.dniEstudiante === p.dniEstudiante && item.programaId === p.programaId));

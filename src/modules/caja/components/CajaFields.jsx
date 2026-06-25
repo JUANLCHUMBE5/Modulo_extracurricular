@@ -44,9 +44,7 @@ export default function CajaFields({
   const esPorVerificar = labelEstado === "Por Verificar";
   const formaPagoNormalizada = String(formulario.formaPago || "").toLowerCase().trim();
   const esPagoVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoNormalizada);
-  const comprobanteVistaPrevia = formulario.nroRecibo || (esPagoVirtual
-    ? (correlativos?.reciboVirtualActual || correlativos?.reciboVirtualSiguiente || correlativos?.reciboVirtual || "")
-    : (correlativos?.reciboActual || correlativos?.reciboSiguiente || correlativos?.recibo || siguienteRecibo || ""));
+  const comprobanteVistaPrevia = formulario.nroRecibo || (correlativos?.reciboActual || correlativos?.recibo || "");
 
   const datosLectura = [
     ["DNI", formulario.estudianteDni || "Sin DNI"],

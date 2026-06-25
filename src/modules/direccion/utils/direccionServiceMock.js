@@ -55,6 +55,7 @@ function crearFilaInscripcion(item) {
     grado: item.gradoEstudiante || item.grado || "",
     seccion: item.seccionEstudiante || item.seccion || "",
     programa: item.programa || "",
+    programaId: item.programaId || item.programa_id || "",
     estadoInscripcion: item.estadoInscripcion || "",
     estadoPago: normalizarEstadoPago(item.estadoPago),
     costo: Number(item.costo || 0),
@@ -109,8 +110,17 @@ export async function obtenerPanelDireccionMock(filtros = {}) {
   const anio = filtros.anio || "todos";
 
   let programas = filtrarPorPeriodo(apiDb.programas || [], periodo);
+  const estudiantes = apiDb.estudiantes || {};
   let inscripciones = filtrarPorPeriodo(apiDb.inscripciones || [], periodo)
-    .filter((item) => item.estadoInscripcion !== "Anulada");
+    .filter((item) => item.estadoInscripcion !== "Anulada")
+    .map((ins) => {
+      const student = estudiantes[ins.dniEstudiante] || {};
+      return {
+        ...ins,
+        apoderado: ins.apoderado || student.apoderado || "",
+        telefono: ins.telefono || student.telefonoApoderado || student.telefono || "",
+      };
+    });
   let pagos = filtrarPorPeriodo(apiDb.pagos || [], periodo);
 
   if (anio !== "todos") {
@@ -483,36 +493,41 @@ export async function obtenerCorrelativosMock() {
   const c = apiDb.correlativos || {};
   if (c.reciboInicio === undefined) c.reciboInicio = c.recibo || "REC-0500";
   if (c.reciboActual === undefined) c.reciboActual = c.recibo || "REC-0500";
+  if (c.reciboActive === undefined) c.reciboActive = true;
   if (c.reciboVirtualInicio === undefined) c.reciboVirtualInicio = c.reciboVirtual || "V-1000";
   if (c.reciboVirtualActual === undefined) c.reciboVirtualActual = c.reciboVirtual || "V-1000";
+  if (c.reciboVirtualActive === undefined) c.reciboVirtualActive = true;
   if (c.egresoInicio === undefined) c.egresoInicio = c.egreso || "EGR-0200";
   if (c.egresoActual === undefined) c.egresoActual = c.egreso || "EGR-0200";
+  if (c.egresoActive === undefined) c.egresoActive = true;
   return c;
 }
 
 export async function guardarCorrelativosMock(correlativos) {
   await syncApiDb();
   const actuales = await obtenerCorrelativosMock();
-  const resolverValorInicial = (nuevoValor, valorAnterior) => {
-    const limpio = String(nuevoValor || "").trim();
-    return limpio || valorAnterior || "";
-  };
-  const resolverValorActual = (nuevoInicio, inicioAnterior, actualAnterior) => {
-    if (!actualAnterior || actualAnterior === inicioAnterior) return nuevoInicio;
-    return actualAnterior;
+  const resolverValor = (nuevoValor, valorAnterior) => {
+    if (nuevoValor === undefined) return valorAnterior || "";
+    return String(nuevoValor).trim();
   };
 
-  const reciboInicio = resolverValorInicial(correlativos.reciboInicio, actuales.reciboInicio);
-  const reciboVirtualInicio = resolverValorInicial(correlativos.reciboVirtualInicio, actuales.reciboVirtualInicio);
-  const egresoInicio = resolverValorInicial(correlativos.egresoInicio, actuales.egresoInicio);
+  const reciboInicio = resolverValor(correlativos.reciboInicio, actuales.reciboInicio);
+  const reciboActual = resolverValor(correlativos.reciboActual, actuales.reciboActual);
+  const reciboVirtualInicio = resolverValor(correlativos.reciboVirtualInicio, actuales.reciboVirtualInicio);
+  const reciboVirtualActual = resolverValor(correlativos.reciboVirtualActual, actuales.reciboVirtualActual);
+  const egresoInicio = resolverValor(correlativos.egresoInicio, actuales.egresoInicio);
+  const egresoActual = resolverValor(correlativos.egresoActual, actuales.egresoActual);
 
   apiDb.correlativos = {
     reciboInicio,
-    reciboActual: resolverValorActual(reciboInicio, actuales.reciboInicio, actuales.reciboActual),
+    reciboActual,
+    reciboActive: correlativos.reciboActive !== false,
     reciboVirtualInicio,
-    reciboVirtualActual: resolverValorActual(reciboVirtualInicio, actuales.reciboVirtualInicio, actuales.reciboVirtualActual),
+    reciboVirtualActual,
+    reciboVirtualActive: correlativos.reciboVirtualActive !== false,
     egresoInicio,
-    egresoActual: resolverValorActual(egresoInicio, actuales.egresoInicio, actuales.egresoActual)
+    egresoActual,
+    egresoActive: correlativos.egresoActive !== false
   };
   await saveApiDb();
   window.dispatchEvent(new Event("mock-db-updated"));

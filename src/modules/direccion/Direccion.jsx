@@ -181,10 +181,10 @@ export default function Direccion({ onLogout, user }) {
     }
   }, [vista]);
 
-  const handleGuardarCorrelativos = async () => {
+  const handleGuardarCorrelativos = async (formToSave = correlativosForm) => {
     setGuardandoCorrelativos(true);
     try {
-      await guardarCorrelativos(correlativosForm);
+      await guardarCorrelativos(formToSave);
       toast.success("Éxito", { description: "Los correlativos se han guardado correctamente." });
       return true;
     } catch (err) {
@@ -218,7 +218,7 @@ export default function Direccion({ onLogout, user }) {
       defaultCols = ["id", "dni", "estudiante", "programa", "beca", "descuento", "anulado", "estadoFinanciero", "montoPagado", "montoAnulado", "medio", "fecha", "nroRecibo", "observaciones"];
     } else if (reporteSeleccionado === "direccion_alumnos_pagos") {
       tipo = "direccion_alumnos_pagos";
-      defaultCols = ["index", "estudiante", "grado", "seccion", "fechaPago", "nroRecibo", "beca", "descuento", "anulado", "estadoFinanciero", "montoPagado", "montoAnulado", "observaciones"];
+      defaultCols = ["index", "estudiante", "grado", "seccion", "programa", "fechaPago", "nroRecibo", "beca", "descuento", "anulado", "estadoFinanciero", "montoPagado", "montoAnulado", "observaciones"];
     } else if (reporteSeleccionado === "direccion_alumnos_asistencias") {
       tipo = "direccion_alumnos_asistencias";
       defaultCols = ["index", "estudiante", "grado", "seccion", "programa"];

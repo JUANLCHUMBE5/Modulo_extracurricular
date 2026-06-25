@@ -5,6 +5,7 @@ import {
   IconReceipt2 as Receipt,
   IconMenu2 as Menu,
   IconReceiptOff as ReceiptOff,
+  IconFileMinus as FileMinus,
 } from "@tabler/icons-react";
 import { LOGO_COLEGIO_SRC } from "../../constants/cajaConstants";
 import "./CajaSidebar.css";
@@ -67,9 +68,9 @@ export default function CajaSidebar({
             setVista("cancelar_correlativo");
           }}
           type="button"
-          title="Cancelar Correlativo"
+          title="Anulación de Correlativo"
         >
-          <ReceiptOff size={17} /> {sidebarExpanded && <span>Cancelar Correlativo</span>}
+          <ReceiptOff size={17} /> {sidebarExpanded && <span>Anulación de Correlativo</span>}
         </button>
       </nav>
       {moduleSwitcher && sidebarExpanded ? (

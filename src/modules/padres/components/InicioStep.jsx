@@ -38,9 +38,6 @@ function InfoTile({ icon: Icon, label, value, children }) {
 }
 
 function obtenerEstadoPagoPadres(inscripcion = {}) {
-  if (inscripcion?.derivadoCaja || inscripcion?.estadoCaja === "reservado_caja") {
-    return "pendiente_caja";
-  }
   const registro = inscripcion || {};
   const texto = String(`${registro.estadoPago || ""} ${registro.estadoInscripcion || ""}`)
     .normalize("NFD")
@@ -48,6 +45,11 @@ function obtenerEstadoPagoPadres(inscripcion = {}) {
     .toLowerCase();
 
   if (["completado", "pagado", "validado", "pago validado", "exitoso"].some((item) => texto.includes(item))) return "pagado";
+  
+  if (inscripcion?.derivadoCaja || inscripcion?.estadoCaja === "reservado_caja") {
+    return "pendiente_caja";
+  }
+  
   if (["verificando", "verificacion", "por verificar", "revision", "proceso", "pendiente_validacion"].some((item) => texto.includes(item))) return "verificando";
   return "pendiente";
 }

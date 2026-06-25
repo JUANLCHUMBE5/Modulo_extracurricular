@@ -305,14 +305,20 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
 
   // 2. Filtrar por Taller
   if (filtros.programa && filtros.programa !== "todos") {
+    const progObj = findProgram(filtros.programa);
+    const progNombreFiltrado = progObj ? String(progObj.nombre).toLowerCase().trim() : "";
+    const progIdFiltrado = progObj ? String(progObj.id).toLowerCase().trim() : String(filtros.programa).toLowerCase().trim();
+
     filteredData = filteredData.filter((item) => {
       if (tipoDatos === "programas") {
-        return String(item.id).toLowerCase() === String(filtros.programa).toLowerCase() ||
-               String(item.nombre).toLowerCase().trim() === String(filtros.programa).toLowerCase().trim();
+        return String(item.id).toLowerCase() === progIdFiltrado ||
+               String(item.nombre).toLowerCase().trim() === progNombreFiltrado;
       }
       if (tipoDatos === "inscripciones" || tipoDatos === "pagos" || tipoDatos === "direccion_alumnos_pagos" || tipoDatos === "direccion_alumnos_asistencias") {
-        return String(item.programaId || item.programa).toLowerCase() === String(filtros.programa).toLowerCase() ||
-               String(item.programa).toLowerCase().trim() === String(filtros.programa).toLowerCase().trim();
+        const itemProgId = String(item.programaId || "").toLowerCase().trim();
+        const itemProgNombre = String(item.programa || "").toLowerCase().trim();
+        return (itemProgId && itemProgId === progIdFiltrado) ||
+               (itemProgNombre && (itemProgNombre === progNombreFiltrado || itemProgNombre === progIdFiltrado));
       }
       return true;
     });

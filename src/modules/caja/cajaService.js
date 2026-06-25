@@ -16,6 +16,7 @@ import {
   anularPagoMock,
   cancelarCorrelativoCajaMock,
   buscarEstudiantesCajaQueryMock,
+  registrarEgresoMock,
 } from "./utils/cajaServiceMock";
 
 export async function listarPagos(periodo = "escolar", filtros = {}) {
@@ -246,4 +247,13 @@ export async function buscarEstudiantesCajaQuery(query) {
     return res.data;
   }
   return buscarEstudiantesCajaQueryMock(query);
+}
+
+export async function registrarEgresoCaja(datosEgreso) {
+  if (isApiMode()) {
+    const res = await apiClient.post("/api/v1/extracurricular/caja/egresos", datosEgreso);
+    if (!res.success) throw new Error(res.message || "Error al registrar egreso");
+    return res.data;
+  }
+  return registrarEgresoMock(datosEgreso);
 }

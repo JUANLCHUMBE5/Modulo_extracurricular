@@ -19,19 +19,33 @@ export function responderAsistenteLocal(
   const estadoInscripcion = obtenerEstadoInscripcionAsistente({ programa, inscripcion });
   const estadoPago = inscripcion?.estadoPago || "Pendiente de pago";
   const costo = formatearSoles(programa.costo);
-  const horario = repararTexto(programa.horario) || "horario por confirmar";
+  const rawHorario = repararTexto(programa.horario) || "horario por confirmar";
+  const horario = rawHorario.toLowerCase().includes("almuerzo") && rawHorario.toLowerCase().includes("clase")
+    ? rawHorario
+        .replace(/almuerzo\s*/i, "\n    🍱 Almuerzo: ")
+        .replace(/(?:,\s*)?clase\s*/i, "\n    🏫 Clase: ")
+    : rawHorario;
   const ultimoPago = obtenerPagoRelacionado(pagos, inscripcion);
   const paso = siguientePaso || obtenerSiguientePaso({ programa, inscripcion });
 
   switch (intencion) {
     case "saludo":
-      return `Hola. Puedo ayudarte con el programa de ${nombreEstudiante}, horario, pago, ficha, estado o el siguiente paso.`;
+      return `¡Hola! Soy Rafael, el asistente del portal. 🙋‍♂️\n\n` +
+             `Puedo ayudarte a responder dudas sobre:\n` +
+             `🏫 El taller asignado para ${nombreEstudiante}\n` +
+             `📅 Su horario y días de clase\n` +
+             `💰 El costo, pagos y validación bancaria\n` +
+             `📄 Descarga de la ficha de inscripción\n` +
+             `👉 Cuál es el siguiente paso a realizar`;
     case "estado":
       return responderEstadoAsistente({ estadoInscripcion, estadoPago, ultimoPago, paso });
     case "pago":
       return responderPagoAsistente({ nombrePrograma, costo, estadoPago, inscripcion, ultimoPago });
     case "horario":
-      return `El horario registrado para ${nombrePrograma} es: ${horario}. Si aparece "por confirmar", Coordinación Académica aun debe completar ese dato.`;
+      return `📅 Horario de Clase:\n\n` +
+             `🏫 Taller: ${nombrePrograma}\n` +
+             `📅 Horario: ${horario}\n\n` +
+             `*Nota: Si aparece "por confirmar", Coordinación Académica asignará las clases en las próximas horas.*`;
     case "ficha":
       return responderFichaAsistente({ inscripcion, estadoPago });
     case "comprobante":
@@ -39,13 +53,43 @@ export function responderAsistenteLocal(
     case "siguiente":
       return responderGuiaAsistente({ paso, contextoFlujo, programa, inscripcion, estadoPago, ultimoPago, form });
     case "programa":
-      return `${nombreEstudiante} tiene disponible ${nombrePrograma}. Tipo: ${tipoReforzamiento}. Horario: ${horario}. Costo: ${costo}.`;
+      const explicacionMotivo = (programa.motivoJustificacion || programa.comunicado || "ha sido asignado por Coordinación Académica para el reforzamiento y desarrollo escolar del estudiante").trim();
+      let motivoTexto = explicacionMotivo;
+      const lowerMotivo = motivoTexto.toLowerCase();
+      if (!lowerMotivo.includes("invita") && !lowerMotivo.includes("porque")) {
+        motivoTexto = `Le invitamos porque ${motivoTexto.charAt(0).toLowerCase() + motivoTexto.slice(1)}`;
+      }
+      return `📢 Taller Disponible:\n` +
+             `¡Le invitamos al taller **${nombrePrograma}**!\n\n` +
+             `📝 **Motivo:** ${motivoTexto}\n\n` +
+             `👤 Estudiante: ${nombreEstudiante}\n` +
+             `🏷️ Tipo: ${tipoReforzamiento}\n` +
+             `📅 Horario: ${horario}\n` +
+             `💰 Costo: ${costo}`;
     case "apoderado":
       return responderApoderadoAsistente({ form, estudiante, inscripcion });
     case "contacto":
-      return "Si necesita una correccion que no puede hacer desde el portal, comuniquese con Asistente o Cajera segun el caso: Asistente para datos/inscripcion y Cajera para pagos.";
+      return `📞 Canales de Soporte y Contacto:\n\n` +
+             `Para atención presencial en el colegio, visítenos de lunes a viernes de 8:00 AM a 4:30 PM. También puede comunicarse por los siguientes medios:\n\n` +
+             `📝 Datos de Alumno o Inscripción:\n` +
+             `   • Encargado: Asistente (Secretaría)\n` +
+             `   • Oficina: Pabellón A - Primer Piso\n` +
+             `   • Teléfono: (01) 613-8300 (Anexo 101)\n` +
+             `   • Correo: secretaria@colegiosanrafael.edu.pe\n\n` +
+             `💵 Validación de Depósitos y Yape:\n` +
+             `   • Encargado: Cajera (Caja)\n` +
+             `   • Oficina: Ventanilla principal de Caja\n` +
+             `   • WhatsApp: +51 987 654 321\n` +
+             `   • Teléfono: (01) 613-8300 (Anexo 102)\n` +
+             `   • Correo: caja@colegiosanrafael.edu.pe\n\n` +
+             `🏫 Programas Académicos o Horarios:\n` +
+             `   • Encargado: Coordinación Académica\n` +
+             `   • Oficina: Pabellón B - Segundo Piso\n` +
+             `   • Teléfono: (01) 613-8300 (Anexo 103)\n` +
+             `   • Correo: coordinacion@colegiosanrafael.edu.pe`;
     default:
-      return `Puedo ayudarte con programa, horario, pago, ficha, estado o el siguiente paso. Ahora: ${responderGuiaAsistente({ paso, contextoFlujo, programa, inscripcion, estadoPago, ultimoPago, form })}`;
+      return `Puedo ayudarte con programa, horario, pago, ficha, estado o el siguiente paso.\n\n` +
+             `👉 Actualmente: ${responderGuiaAsistente({ paso, contextoFlujo, programa, inscripcion, estadoPago, ultimoPago, form })}`;
   }
 }
 
@@ -60,14 +104,14 @@ function detectarIntencionAsistente(texto) {
   const grupos = [
     { id: "saludo", palabras: ["hola", "buenas", "buen dia", "buenas tardes", "buenas noches"] },
     { id: "comprobante", palabras: ["voucher", "comprobante", "constancia", "boleta", "recibo", "operacion", "subir", "adjuntar", "yape", "qr"] },
-    { id: "pago", palabras: ["monto", "pagar", "pago", "costo", "precio", "cuanto", "debo", "deuda", "cancelar", "validar", "correctamente", "como pago"] },
+    { id: "pago", palabras: ["monto", "pagar", "pago", "costo", "precio", "cuanto", "debo", "deuda", "cancelar", "validar", "correctamente", "como pagar"] },
     { id: "horario", palabras: ["horario", "hora", "dia", "dias", "clase", "cuando", "inicio", "empieza", "termina"] },
     { id: "ficha", palabras: ["ficha", "descargar", "documento", "comunicado", "pdf", "archivo", "imprimir"] },
     { id: "estado", palabras: ["estado", "situacion", "proceso", "pendiente", "inscrito", "matriculado", "validado", "aprobado", "rechazado"] },
-    { id: "siguiente", palabras: ["hacer", "siguiente", "ahora", "ayuda", "paso", "continuar", "falta", "terminar"] },
+    { id: "siguiente", palabras: ["hacer", "siguiente", "ahora", "ayuda", "paso", "continuar", "falta", "terminar", "hago"] },
     { id: "programa", palabras: ["programa", "taller", "curso", "asignado", "disponible", "nombre"] },
-    { id: "apoderado", palabras: ["apoderado", "telefono", "correo", "datos", "contacto", "celular", "email"] },
-    { id: "contacto", palabras: ["secretaria", "caja", "coordinacion", "colegio", "llamar", "atencion"] },
+    { id: "apoderado", palabras: ["apoderado", "telefono", "correo", "datos", "celular", "email"] },
+    { id: "contacto", palabras: ["secretaria", "caja", "coordinacion", "colegio", "llamar", "atencion", "soporte", "contacto", "canales"] },
   ];
 
   let mejor = { id: "general", puntos: 0 };
@@ -80,9 +124,12 @@ function detectarIntencionAsistente(texto) {
 
 function responderEstadoAsistente({ estadoInscripcion, estadoPago, ultimoPago, paso }) {
   const detallePago = ultimoPago
-    ? ` Ultimo pago registrado: ${ultimoPago.estado || ultimoPago.estadoPago || "en revision"} por ${formatearSoles(ultimoPago.monto || ultimoPago.importe)}.`
+    ? `\n💰 Último pago registrado: ${ultimoPago.estado || ultimoPago.estadoPago || "en revisión"} por ${formatearSoles(ultimoPago.monto || ultimoPago.importe)}.`
     : "";
-  return `Estado actual: ${estadoInscripcion}. Pago: ${estadoPago}.${detallePago} Siguiente paso: ${paso.detalle}`;
+  return `📊 Estado Actual de la Matrícula:\n\n` +
+         `📝 Inscripción: ${estadoInscripcion}\n` +
+         `💳 Estado de Pago: ${estadoPago}${detallePago}\n\n` +
+         `👉 Siguiente Acción: ${paso.detalle}`;
 }
 
 function responderGuiaAsistente({ paso, contextoFlujo = {}, programa, inscripcion, estadoPago, ultimoPago, form = {} }) {
@@ -93,36 +140,36 @@ function responderGuiaAsistente({ paso, contextoFlujo = {}, programa, inscripcio
   const nombrePrograma = repararTexto(programa?.programa || programa?.nombre || "el programa");
 
   if (!programa) {
-    return "Todavia no hay un programa seleccionado. Revise la pantalla de Inicio y elija un programa disponible cuando aparezca.";
+    return "Todavía no hay un programa seleccionado. Revise la pantalla de Inicio y elija un programa disponible cuando aparezca.";
   }
 
   if (pasoActivo === 0) {
     if (inscripcion && !esPagoRegistrado(estadoPago)) {
-      return `Ya hay una inscripcion para ${nombrePrograma}. Toque "Continuar al pago" para revisar el monto y registrar el comprobante.`;
+      return `Ya hay una inscripción para ${nombrePrograma}. Toque "Continuar al pago" para revisar el monto y registrar el comprobante.`;
     }
-    return `En Inicio, revise el programa ${nombrePrograma}. Si desea avanzar, toque el boton principal para iniciar o continuar el registro.`;
+    return `En Inicio, revise el programa ${nombrePrograma}. Si desea avanzar, toque el botón principal para iniciar o continuar el registro.`;
   }
 
   if (pasoActivo === 1) {
     if (!comunicadoAceptado) {
-      return "Esta en Comunicado. Primero toque \"Ver comunicado\", lea hasta el final, marque la aceptacion y luego presione \"Continuar a datos\".";
+      return "Está en Comunicado. Primero toque \"Ver comunicado\", lea hasta el final, marque la aceptación y luego presione \"Continuar a datos\".";
     }
-    return "El comunicado ya esta aceptado. Ahora toque el boton \"Continuar a datos\" que esta en esta misma pantalla para pasar al formulario del apoderado.";
+    return "El comunicado ya está aceptado. Ahora toque el botón \"Continuar a datos\" que está en esta misma pantalla para pasar al formulario del apoderado.";
   }
 
   if (pasoActivo === 2) {
-    if (!String(form.apoderado || "").trim()) return "Esta en Datos. Complete el nombre del apoderado antes de continuar.";
-    if (!/^\d{9}$/.test(String(form.telefono || "").trim())) return "Esta en Datos. Revise el telefono del apoderado: debe tener 9 digitos.";
-    if (!form.acepta) return "Esta en Datos. Marque la casilla \"Confirmo que los datos son correctos\" para habilitar el avance.";
-    return "Los datos ya estan listos. Presione el boton principal para guardar y continuar al pago.";
+    if (!String(form.apoderado || "").trim()) return "Está en Datos. Complete el nombre del apoderado antes de continuar.";
+    if (!/^\d{9}$/.test(String(form.telefono || "").trim())) return "Está en Datos. Revise el teléfono del apoderado: debe tener 9 dígitos.";
+    if (!form.acepta) return "Está en Datos. Marque la casilla \"Confirmo que los datos son correctos\" para habilitar el avance.";
+    return "Los datos ya están listos. Presione el botón principal para guardar y continuar al pago.";
   }
 
   if (pasoActivo === 3) {
-    if (requiereCaja) return "Esta en Pago, pero este caso debe revisarse en Cajera. Acerquese a Cajera para que validen o registren la matricula.";
-    if (!inscripcion) return "Esta en Pago, pero falta que la inscripcion quede registrada. Vuelva a Datos, confirme la informacion y continue al pago.";
-    if (ultimoPago && !esPagoRegistrado(ultimoPago.estado || ultimoPago.estadoPago || estadoPago)) return "El comprobante ya fue enviado. Ahora solo queda esperar la validacion de Cajera; no necesita volver a subirlo.";
+    if (requiereCaja) return "Está en Pago, pero este caso debe revisarse en Cajera. Acérquese a Cajera para que validen o registren la matrícula.";
+    if (!inscripcion) return "Está en Pago, pero falta que la inscripción quede registrada. Vuelva a Datos, confirme la información y continúe al pago.";
+    if (ultimoPago && !esPagoRegistrado(ultimoPago.estado || ultimoPago.estadoPago || estadoPago)) return "El comprobante ya fue enviado. Ahora solo queda esperar la validación de Caja; no necesita volver a subirlo.";
     if (esPagoRegistrado(estadoPago)) return "El pago ya figura validado. Revise el horario y descargue o conserve la ficha del programa.";
-    return "Esta en Pago. Pague por Yape con el QR, escriba el numero de operacion, suba la captura y presione \"Guardar pago\".";
+    return "Está en Pago. Pague por Yape con el QR, escriba el número de operación, suba la captura y presione \"Guardar pago\".";
   }
 
   return paso.detalle;
@@ -130,31 +177,65 @@ function responderGuiaAsistente({ paso, contextoFlujo = {}, programa, inscripcio
 
 function responderPagoAsistente({ nombrePrograma, costo, estadoPago, inscripcion, ultimoPago }) {
   if (!inscripcion) {
-    return `${nombrePrograma} tiene un costo de ${costo}. Para pagar correctamente: 1. Revise y acepte el comunicado. 2. Confirme los datos del apoderado. 3. Registre la inscripcion. 4. Luego use el QR de Yape, guarde la captura y anote el numero de operacion.`;
+    return `💰 Costo e Instrucciones - ${nombrePrograma}:\n\n` +
+           `💵 Costo total: ${costo}\n\n` +
+           `Pasos para matricularse:\n` +
+           `1️⃣ Lea y acepte el comunicado oficial.\n` +
+           `2️⃣ Confirme los datos del apoderado.\n` +
+           `3️⃣ Registre la pre-inscripción.\n` +
+           `4️⃣ Suba su voucher de Yape o transferencia bancaria.`;
   }
   if (ultimoPago) {
-    return `El monto del programa es ${costo}. Tengo un pago registrado por ${formatearSoles(ultimoPago.monto || ultimoPago.importe)} con estado ${ultimoPago.estado || ultimoPago.estadoPago || estadoPago}.`;
+    return `💰 Estado del Pago - ${nombrePrograma}:\n\n` +
+           `💵 Costo del taller: ${costo}\n` +
+           `💸 Pago enviado: ${formatearSoles(ultimoPago.monto || ultimoPago.importe)}\n` +
+           `📊 Estado actual: ${ultimoPago.estado || ultimoPago.estadoPago || estadoPago}`;
   }
-  return `Para pagar correctamente ${nombrePrograma}: 1. Verifique que el monto sea ${costo}. 2. Pague por Yape usando el QR mostrado. 3. Copie el numero de operacion. 4. Suba una captura clara del pago. 5. Presione "Guardar pago". Cajera revisara la operacion y el estado quedara como ${estadoPago} hasta ser validado.`;
+  return `💰 Instrucciones de Pago - ${nombrePrograma}:\n\n` +
+         `💵 Monto a pagar: ${costo}\n\n` +
+         `Para completar el proceso:\n` +
+         `1️⃣ Realice la transferencia usando el código QR de Yape.\n` +
+         `2️⃣ Copie el número de operación bancaria.\n` +
+         `3️⃣ Suba la captura del comprobante en la sección "Pago".\n` +
+         `4️⃣ Presione el botón "Guardar pago".\n\n` +
+         `*Caja revisará la transacción en las próximas horas.*`;
 }
 
 function responderFichaAsistente({ inscripcion, estadoPago }) {
-  if (!inscripcion) return "La ficha se habilita despues de registrar la inscripcion. Primero revise el comunicado, confirme datos del apoderado y solicite el registro.";
-  if (!esPagoRegistrado(estadoPago)) return "La inscripcion ya existe, pero el pago aun no figura como validado. La ficha final se completa cuando Cajera o Asistente confirme el proceso.";
-  return "La ficha del programa debe estar disponible cuando Asistente genere el documento. Si no la ve, revise el estado o consulte con Asistente.";
+  if (!inscripcion) {
+    return `📄 Ficha de Inscripción:\n\n` +
+           `La ficha estará disponible para su descarga después de registrar la pre-inscripción en la pestaña "Datos".`;
+  }
+  if (!esPagoRegistrado(estadoPago)) {
+    return `📄 Ficha de Inscripción:\n\n` +
+           `Su pre-inscripción ya está registrada, pero falta que Caja valide su comprobante de pago. La ficha final con código QR se habilitará tan pronto como el pago sea validado.`;
+  }
+  return `📄 Ficha de Inscripción:\n\n` +
+         `¡Su inscripción está validada! Ya puede descargar la ficha firmada con su código de acceso.`;
 }
 
 function responderComprobanteAsistente({ inscripcion, ultimoPago }) {
-  if (!inscripcion) return "Primero debe registrar la inscripcion. Luego podra enviar el comprobante de pago para revision.";
-  if (ultimoPago) return `Ya existe un pago/comprobante registrado con estado ${ultimoPago.estado || ultimoPago.estadoPago || "en revision"}. Espere la validacion de Cajera.`;
-  return "Si ya realizo el pago, registre el comprobante desde la seccion de pago. Cajera lo validara y el estado cambiara cuando sea revisado.";
+  if (!inscripcion) {
+    return `📲 Registro de Comprobante:\n\n` +
+           `Primero debe registrar sus datos y solicitar la pre-inscripción. Tras esto, el sistema le habilitará el paso 4 para adjuntar el voucher.`;
+  }
+  if (ultimoPago) {
+    return `📲 Registro de Comprobante:\n\n` +
+           `Ya registramos un comprobante con estado "${ultimoPago.estado || ultimoPago.estadoPago || "en revisión"}". No es necesario volver a subirlo a menos que sea solicitado por Caja.`;
+  }
+  return `📲 Registro de Comprobante:\n\n` +
+         `Si ya realizó el depósito o transferencia, ingrese al paso 4 ("Pago"), digite el número de operación, adjunte la foto de la captura de pantalla y guarde el registro para que Caja lo concilie.`;
 }
 
 function responderApoderadoAsistente({ form, estudiante, inscripcion }) {
   const apoderado = form.apoderado || inscripcion?.apoderado || estudiante?.apoderado || "sin registrar";
   const telefono = form.telefono || inscripcion?.telefono || estudiante?.telefonoApoderado || "sin registrar";
   const correo = form.correo || inscripcion?.correo || estudiante?.correoApoderado || "sin registrar";
-  return `Datos actuales del apoderado: ${apoderado}. Telefono: ${telefono}. Correo: ${correo}. Puede corregirlos en el formulario antes de continuar.`;
+  return `📞 Datos de Contacto del Apoderado:\n\n` +
+         `👤 Apoderado: ${apoderado}\n` +
+         `📱 Teléfono: ${telefono}\n` +
+         `✉️ Correo: ${correo}\n\n` +
+         `*Si desea corregir algún dato, puede editarlo en la pestaña "Datos" antes de proceder con el registro.*`;
 }
 
 function obtenerPagoRelacionado(pagos = [], inscripcion = null) {

@@ -130,6 +130,9 @@ export default function Padres({ user, onLogout }) {
     solicitarInscripcionPadres,
     guardarDatos,
     reservarCupoCaja,
+    programasAsociados,
+    programaChatId,
+    setProgramaChatId,
   } = usePadres(user);
 
   const programaActual = programaAdicional || programa;
@@ -735,6 +738,10 @@ export default function Padres({ user, onLogout }) {
         consulta={consulta}
         setConsulta={setConsulta}
         preguntar={(texto) => preguntar(texto, contextoAsistente)}
+        programasAsociados={programasAsociados}
+        programaChatId={programaChatId}
+        onSeleccionarProgramaChat={setProgramaChatId}
+        programa={programa}
       />
     </div>
   );

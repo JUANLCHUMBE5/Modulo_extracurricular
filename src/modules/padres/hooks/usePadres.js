@@ -183,11 +183,57 @@ function usePadres(user) {
     }
   }, [inscripcion, pagos, pagoConfirmado]);
 
-  const tipoReforzamiento = useMemo(() => obtenerTipoReforzamiento(programa), [programa]);
+  const [programaChatId, setProgramaChatId] = useState("");
+
+  const programasAsociados = useMemo(() => {
+    const asociados = [];
+    const ids = new Set();
+
+    inscripciones.forEach((ins) => {
+      const pId = ins.programaId || ins.id;
+      if (pId && !ids.has(pId)) {
+        ids.add(pId);
+        asociados.push({
+          id: pId,
+          nombre: ins.programa || ins.nombre || "Taller",
+          programaOriginal: ins
+        });
+      }
+    });
+
+    const invitaciones = Array.isArray(resumen?.invitaciones) ? resumen.invitaciones : [];
+    invitaciones.forEach((inv) => {
+      const pId = inv.programaId || inv.id;
+      if (pId && !ids.has(pId)) {
+        ids.add(pId);
+        asociados.push({
+          id: pId,
+          nombre: inv.nombre || inv.programa || "Taller",
+          programaOriginal: inv
+        });
+      }
+    });
+
+    return asociados;
+  }, [inscripciones, resumen?.invitaciones]);
+
+  useEffect(() => {
+    if (programa && !programaChatId) {
+      setProgramaChatId(programa.programaId || programa.id || "");
+    }
+  }, [programa, programaChatId]);
+
+  const programaChat = useMemo(() => {
+    if (!programaChatId) return programa;
+    const encontrado = programasAsociados.find((p) => p.id === programaChatId);
+    return encontrado ? encontrado.programaOriginal : programa;
+  }, [programaChatId, programasAsociados, programa]);
+
+  const tipoReforzamiento = useMemo(() => obtenerTipoReforzamiento(programaChat), [programaChat]);
   const nombreCorto = obtenerNombreCorto(estudiante?.nombres);
   const iniciales = obtenerIniciales(estudiante?.nombres);
   const bannerEstudiante = obtenerBannerEstudiante(estudiante);
-  const siguientePaso = obtenerSiguientePaso({ programa, inscripcion });
+  const siguientePaso = obtenerSiguientePaso({ programa: programaChat, inscripcion });
   const programasYaRegistrados = useMemo(
     () => new Set(inscripciones.map((item) => item.programaId).filter(Boolean)),
     [inscripciones]
@@ -338,15 +384,27 @@ function usePadres(user) {
   function preguntar(texto, contextoExtra = {}) {
     const pregunta = String(texto || consulta).trim();
     if (!pregunta) return;
+
+    const currentProg = programaChat || programa;
+    const activeInscripcion = currentProg 
+      ? inscripciones.find(ins => ins.programaId === (currentProg.programaId || currentProg.id))
+      : null;
+
+    const currentInscripcion = activeInscripcion || inscripcion;
+
     const respuesta = responderAsistenteLocal(pregunta, {
       estudiante,
-      programa: contextoExtra.programaActual || programa,
-      inscripcion: contextoExtra.inscripcionActual || inscripcion,
+      programa: currentProg,
+      inscripcion: currentInscripcion,
       pagos,
-      siguientePaso,
-      tipoReforzamiento,
+      siguientePaso: obtenerSiguientePaso({ programa: currentProg, inscripcion: currentInscripcion }),
+      tipoReforzamiento: obtenerTipoReforzamiento(currentProg),
       form,
-      contextoFlujo: contextoExtra,
+      contextoFlujo: {
+        ...contextoExtra,
+        programaActual: currentProg,
+        inscripcionActual: currentInscripcion
+      },
     });
     setMensajes((actual) => [
       ...actual,
@@ -463,6 +521,9 @@ function usePadres(user) {
     solicitarInscripcionPadres,
     guardarDatos,
     reservarCupoCaja,
+    programasAsociados,
+    programaChatId,
+    setProgramaChatId,
   };
 }
 

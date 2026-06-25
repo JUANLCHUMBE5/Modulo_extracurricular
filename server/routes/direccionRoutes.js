@@ -103,7 +103,9 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
       return texto.length > 20 ? `${texto.slice(0, 19)}...` : texto;
     };
 
+    const estudiantes = db.estudiantes || {};
     const crearFilaInscripcion = (item) => {
+      const student = estudiantes[item.dniEstudiante] || {};
       return {
         id: item.id || "",
         dni: item.dniEstudiante || "",
@@ -111,14 +113,14 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
         grado: item.gradoEstudiante || item.grado || "",
         seccion: item.seccion || "",
         programa: item.programa || "",
-        programaId: item.programaId || "",
+        programaId: item.programaId || item.programa_id || "",
         estadoInscripcion: item.estadoInscripcion || "",
         estadoPago: normalizarEstadoPago(item.estadoPago),
         costo: Number(item.costo || 0),
         origen: item.origenRegistro || "",
         fechaRegistro: item.fechaRegistro || "",
-        apoderado: item.apoderado || "",
-        telefono: item.telefono || "",
+        apoderado: item.apoderado || student.apoderado || "",
+        telefono: item.telefono || student.telefonoApoderado || student.telefono || "",
         costoOriginal: item.costoOriginal !== undefined ? Number(item.costoOriginal) : Number(item.costo || 0),
         descuentoAprobado: item.descuentoAprobado || false,
         descuentoTipo: item.descuentoTipo || "",
@@ -595,20 +597,26 @@ router.get("/direccion/correlativos", requireRole(["direccion", "caja"]), async 
     // Migración o inicialización
     if (c.reciboInicio === undefined) c.reciboInicio = c.recibo || "REC-0500";
     if (c.reciboActual === undefined) c.reciboActual = c.recibo || "REC-0500";
+    if (c.reciboActive === undefined) c.reciboActive = true;
     if (c.reciboVirtualInicio === undefined) c.reciboVirtualInicio = c.reciboVirtual || "V-1000";
     if (c.reciboVirtualActual === undefined) c.reciboVirtualActual = c.reciboVirtual || "V-1000";
+    if (c.reciboVirtualActive === undefined) c.reciboVirtualActive = true;
     if (c.egresoInicio === undefined) c.egresoInicio = c.egreso || "EGR-0200";
     if (c.egresoActual === undefined) c.egresoActual = c.egreso || "EGR-0200";
+    if (c.egresoActive === undefined) c.egresoActive = true;
 
     res.json({
       success: true,
       data: {
         reciboInicio: c.reciboInicio,
         reciboActual: c.reciboActual,
+        reciboActive: c.reciboActive !== false,
         reciboVirtualInicio: c.reciboVirtualInicio,
         reciboVirtualActual: c.reciboVirtualActual,
+        reciboVirtualActive: c.reciboVirtualActive !== false,
         egresoInicio: c.egresoInicio,
-        egresoActual: c.egresoActual
+        egresoActual: c.egresoActual,
+        egresoActive: c.egresoActive !== false
       }
     });
   } catch (error) {
@@ -630,26 +638,28 @@ router.put("/direccion/correlativos", requireRole(["direccion"]), async (req, re
     if (actuales.egresoInicio === undefined) actuales.egresoInicio = actuales.egreso || "EGR-0200";
     if (actuales.egresoActual === undefined) actuales.egresoActual = actuales.egreso || "EGR-0200";
 
-    const resolverValorInicial = (nuevoValor, valorAnterior) => {
-      const limpio = String(nuevoValor || "").trim();
-      return limpio || valorAnterior || "";
-    };
-    const resolverValorActual = (nuevoInicio, inicioAnterior, actualAnterior) => {
-      if (!actualAnterior || actualAnterior === inicioAnterior) return nuevoInicio;
-      return actualAnterior;
+    const resolverValor = (nuevoValor, valorAnterior) => {
+      if (nuevoValor === undefined) return valorAnterior || "";
+      return String(nuevoValor).trim();
     };
 
-    const reciboInicio = resolverValorInicial(correlativos.reciboInicio, actuales.reciboInicio);
-    const reciboVirtualInicio = resolverValorInicial(correlativos.reciboVirtualInicio, actuales.reciboVirtualInicio);
-    const egresoInicio = resolverValorInicial(correlativos.egresoInicio, actuales.egresoInicio);
+    const reciboInicio = resolverValor(correlativos.reciboInicio, actuales.reciboInicio);
+    const reciboActual = resolverValor(correlativos.reciboActual, actuales.reciboActual);
+    const reciboVirtualInicio = resolverValor(correlativos.reciboVirtualInicio, actuales.reciboVirtualInicio);
+    const reciboVirtualActual = resolverValor(correlativos.reciboVirtualActual, actuales.reciboVirtualActual);
+    const egresoInicio = resolverValor(correlativos.egresoInicio, actuales.egresoInicio);
+    const egresoActual = resolverValor(correlativos.egresoActual, actuales.egresoActual);
 
     db.correlativos = {
       reciboInicio,
-      reciboActual: resolverValorActual(reciboInicio, actuales.reciboInicio, actuales.reciboActual),
+      reciboActual,
+      reciboActive: correlativos.reciboActive !== false,
       reciboVirtualInicio,
-      reciboVirtualActual: resolverValorActual(reciboVirtualInicio, actuales.reciboVirtualInicio, actuales.reciboVirtualActual),
+      reciboVirtualActual,
+      reciboVirtualActive: correlativos.reciboVirtualActive !== false,
       egresoInicio,
-      egresoActual: resolverValorActual(egresoInicio, actuales.egresoInicio, actuales.egresoActual)
+      egresoActual,
+      egresoActive: correlativos.egresoActive !== false
     };
 
     await saveDb(db);

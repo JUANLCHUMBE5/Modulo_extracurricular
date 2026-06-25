@@ -173,10 +173,12 @@ export default function PagoStep({
 
   const esPagado = esPagoAprobado(inscripcion, pagoConfirmado);
   const esReservadoCaja = Boolean(
-    inscripcion?.derivadoCaja ||
-    inscripcion?.estadoCaja === "reservado_caja" ||
-    inscripcion?.estadoInscripcion === "Reserva pendiente" ||
-    reservaConfirmada
+    !esPagado && (
+      inscripcion?.derivadoCaja ||
+      inscripcion?.estadoCaja === "reservado_caja" ||
+      inscripcion?.estadoInscripcion === "Reserva pendiente" ||
+      reservaConfirmada
+    )
   );
 
   const mostrarExito = esPagado || reservaConfirmada || (pagoVerificando && !reintentandoPago);

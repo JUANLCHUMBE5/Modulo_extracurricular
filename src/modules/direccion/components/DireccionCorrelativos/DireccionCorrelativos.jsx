@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, TextInput } from "@mantine/core";
+import { Button, TextInput, Switch } from "@mantine/core";
 import { IconEdit as Edit, IconCheck as Check, IconX as Cancel } from "@tabler/icons-react";
 
 export default function DireccionCorrelativos({
@@ -53,6 +53,26 @@ export default function DireccionCorrelativos({
     setCorrelativosForm(updated);
   };
 
+  const handleActualChange = (type, val) => {
+    const actualKey = `${type}Actual`;
+    const updated = { ...correlativosForm };
+    updated[actualKey] = val;
+    setCorrelativosForm(updated);
+  };
+
+  const handleToggleActive = async (type, checked) => {
+    const activeKey = `${type}Active`;
+    const updated = {
+      ...correlativosForm,
+      [activeKey]: checked
+    };
+    setCorrelativosForm(updated);
+
+    if (!editando) {
+      await handleGuardarCorrelativos(updated);
+    }
+  };
+
   const inputStyles = {
     label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "4px" },
     input: {
@@ -80,14 +100,43 @@ export default function DireccionCorrelativos({
         <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "600px" }}>
           {/* Recibo Físico */}
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>N° de Recibo de Ingreso</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>N° de Recibo de Ingreso</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <Switch
+                  checked={correlativosForm.reciboActive !== false}
+                  disabled={guardandoCorrelativos}
+                  onChange={(event) => handleToggleActive("recibo", event.currentTarget.checked)}
+                  color="teal"
+                  size="md"
+                  styles={{
+                    track: {
+                      cursor: "pointer",
+                      backgroundColor: correlativosForm.reciboActive === false ? "#dc2626" : undefined,
+                      borderColor: correlativosForm.reciboActive === false ? "#dc2626" : undefined
+                    }
+                  }}
+                />
+                <span style={{
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: correlativosForm.reciboActive !== false ? "#0c8569" : "#dc2626",
+                  backgroundColor: correlativosForm.reciboActive !== false ? "#ecfdf5" : "#fef2f2",
+                  padding: "3px 10px",
+                  borderRadius: "12px",
+                  transition: "all 0.2s ease"
+                }}>
+                  {correlativosForm.reciboActive !== false ? "Activo" : "Inactivo"}
+                </span>
+              </div>
+            </div>
             <div style={{ display: "flex", gap: "16px" }}>
               <TextInput
                 label="Inicio (Valor Inicial)"
                 placeholder="Ej. REC-0500"
                 value={correlativosForm.reciboInicio || ""}
                 onChange={(e) => handleInicioChange("recibo", e.target.value)}
-                disabled={!editando}
+                disabled={!editando || correlativosForm.reciboActive === false}
                 styles={inputStyles}
                 style={{ flex: 1 }}
               />
@@ -95,47 +144,55 @@ export default function DireccionCorrelativos({
                 label="Actual (Siguiente a Generar)"
                 placeholder="Ej. REC-0500"
                 value={correlativosForm.reciboActual || ""}
-                disabled={true}
+                onChange={(e) => handleActualChange("recibo", e.target.value)}
+                disabled={!editando || correlativosForm.reciboActive === false}
                 styles={inputStyles}
                 style={{ flex: 1 }}
               />
             </div>
           </div>
 
-          {/* Recibo Virtual */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>Recibo Virtual (Yape, Transferencias, etc.)</span>
-            <div style={{ display: "flex", gap: "16px" }}>
-              <TextInput
-                label="Inicio (Valor Inicial)"
-                placeholder="Ej. V-1000"
-                value={correlativosForm.reciboVirtualInicio || ""}
-                onChange={(e) => handleInicioChange("reciboVirtual", e.target.value)}
-                disabled={!editando}
-                styles={inputStyles}
-                style={{ flex: 1 }}
-              />
-              <TextInput
-                label="Actual (Siguiente a Generar)"
-                placeholder="Ej. V-1000"
-                value={correlativosForm.reciboVirtualActual || ""}
-                disabled={true}
-                styles={inputStyles}
-                style={{ flex: 1 }}
-              />
-            </div>
-          </div>
+
 
           {/* Egreso */}
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>N° de Recibo de Egreso</span>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "14px", fontWeight: 700, color: "#0c8569" }}>N° de Recibo de Egreso</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <Switch
+                  checked={correlativosForm.egresoActive !== false}
+                  disabled={guardandoCorrelativos}
+                  onChange={(event) => handleToggleActive("egreso", event.currentTarget.checked)}
+                  color="teal"
+                  size="md"
+                  styles={{
+                    track: {
+                      cursor: "pointer",
+                      backgroundColor: correlativosForm.egresoActive === false ? "#dc2626" : undefined,
+                      borderColor: correlativosForm.egresoActive === false ? "#dc2626" : undefined
+                    }
+                  }}
+                />
+                <span style={{
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  color: correlativosForm.egresoActive !== false ? "#0c8569" : "#dc2626",
+                  backgroundColor: correlativosForm.egresoActive !== false ? "#ecfdf5" : "#fef2f2",
+                  padding: "3px 10px",
+                  borderRadius: "12px",
+                  transition: "all 0.2s ease"
+                }}>
+                  {correlativosForm.egresoActive !== false ? "Activo" : "Inactivo"}
+                </span>
+              </div>
+            </div>
             <div style={{ display: "flex", gap: "16px" }}>
               <TextInput
                 label="Inicio (Valor Inicial)"
                 placeholder="Ej. EGR-0200"
                 value={correlativosForm.egresoInicio || ""}
                 onChange={(e) => handleInicioChange("egreso", e.target.value)}
-                disabled={!editando}
+                disabled={!editando || correlativosForm.egresoActive === false}
                 styles={inputStyles}
                 style={{ flex: 1 }}
               />
@@ -143,7 +200,8 @@ export default function DireccionCorrelativos({
                 label="Actual (Siguiente a Generar)"
                 placeholder="Ej. EGR-0200"
                 value={correlativosForm.egresoActual || ""}
-                disabled={true}
+                onChange={(e) => handleActualChange("egreso", e.target.value)}
+                disabled={!editando || correlativosForm.egresoActive === false}
                 styles={inputStyles}
                 style={{ flex: 1 }}
               />

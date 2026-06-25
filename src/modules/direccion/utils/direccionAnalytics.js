@@ -221,14 +221,20 @@ export function filtrarRegistrosReporte({
 
   // 2. Filtrar por Programa/Taller
   if (customFiltroPrograma && customFiltroPrograma !== "todos") {
+    const progObj = findProgram(customFiltroPrograma);
+    const progNombreFiltrado = progObj ? String(progObj.nombre).toLowerCase().trim() : "";
+    const progIdFiltrado = progObj ? String(progObj.id).toLowerCase().trim() : String(customFiltroPrograma).toLowerCase().trim();
+
     filtered = filtered.filter((item) => {
       if (customTipo === "programas") {
-        return String(item.id).toLowerCase() === String(customFiltroPrograma).toLowerCase() ||
-               String(item.nombre).toLowerCase().trim() === String(customFiltroPrograma).toLowerCase().trim();
+        return String(item.id).toLowerCase() === progIdFiltrado ||
+               String(item.nombre).toLowerCase().trim() === progNombreFiltrado;
       }
       if (customTipo === "inscripciones" || customTipo === "pagos" || customTipo === "direccion_alumnos_pagos" || customTipo === "direccion_alumnos_asistencias") {
-        return String(item.programaId).toLowerCase() === String(customFiltroPrograma).toLowerCase() ||
-               String(item.programa).toLowerCase().trim() === String(customFiltroPrograma).toLowerCase().trim();
+        const itemProgId = String(item.programaId || "").toLowerCase().trim();
+        const itemProgNombre = String(item.programa || "").toLowerCase().trim();
+        return (itemProgId && itemProgId === progIdFiltrado) ||
+               (itemProgNombre && (itemProgNombre === progNombreFiltrado || itemProgNombre === progIdFiltrado));
       }
       return true;
     });

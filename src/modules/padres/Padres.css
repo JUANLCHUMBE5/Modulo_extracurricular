@@ -580,6 +580,160 @@
   .custom-padres-program-card .custom-program-grid {
     grid-template-columns: 1fr !important;
   }
+  .custom-program-head {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 10px 14px !important;
+  }
+  .head-left-side {
+    width: 100% !important;
+  }
+  .head-right-side {
+    width: 100% !important;
+    justify-content: flex-start !important;
+    flex-wrap: wrap !important;
+  }
 }
+
+
+/* ── Rediseño del Asistente (Consultas Rápidas en una Sola Fila Horizontal) ── */
+.padres-assistant {
+  height: 460px !important;
+  max-height: 75vh !important;
+}
+
+.padres-assistant-body {
+  max-height: none !important;
+  flex-grow: 1 !important;
+}
+
+.padres-chat p {
+  white-space: pre-line !important;
+}
+
+
+
+.padres-assistant-shortcuts {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  padding: 8px 12px !important;
+  border-top: 1px solid #c2ecc0 !important;
+  background: #ffffff !important;
+}
+
+.padres-assistant-shortcuts > span {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  color: #045e02 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  margin-bottom: 2px !important;
+  padding-left: 2px !important;
+}
+
+.padres-assistant-shortcuts > div {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  width: 100% !important;
+  padding: 2px 2px 8px 2px !important;
+  /* Ocultar barra de desplazamiento */
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important;  /* IE and Edge */
+}
+
+.padres-assistant-shortcuts > div::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari y Opera */
+}
+
+.padres-assistant-shortcuts button {
+  flex: 0 0 auto !important; /* Evita que los botones se achiquen o estiren */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 28px !important;
+  height: 28px !important;
+  gap: 6px !important;
+  border: 1px solid #c2ecc0 !important;
+  border-radius: 20px !important; /* Botón ovalado moderno tipo chip */
+  padding: 0 12px !important;
+  color: #045e02 !important;
+  background: #ffffff !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important; /* Evita que el texto salte de línea */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
+  transition: all 150ms ease !important;
+}
+
+.padres-assistant-shortcuts button:hover {
+  border-color: #068003 !important;
+  color: #045e02 !important;
+  background: #f0fdf0 !important;
+  box-shadow: 0 2px 6px rgba(6, 128, 3, 0.15) !important;
+}
+
+/* Selector de talleres dentro del chat */
+.padres-chat-selector {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  padding: 8px 12px !important;
+  background: #f6fdf6 !important;
+  border-bottom: 1px solid #c2ecc0 !important;
+}
+
+.padres-chat-selector > span {
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  color: #045e02 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+.padres-chat-selector-buttons {
+  display: flex !important;
+  gap: 6px !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important;  /* IE and Edge */
+}
+
+.padres-chat-selector-buttons::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari y Opera */
+}
+
+.padres-chat-selector-btn {
+  flex: 0 0 auto !important;
+  padding: 4px 10px !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  border: 1px solid #c2ecc0 !important;
+  background: #ffffff !important;
+  color: #334155 !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  transition: all 150ms ease !important;
+}
+
+.padres-chat-selector-btn:hover {
+  background: #f0faf0 !important;
+  color: #068003 !important;
+  border-color: #068003 !important;
+}
+
+.padres-chat-selector-btn.is-active {
+  background: #068003 !important;
+  color: #ffffff !important;
+  border-color: #068003 !important;
+  box-shadow: 0 2px 4px rgba(6, 128, 3, 0.2) !important;
+}
+
+
 
 

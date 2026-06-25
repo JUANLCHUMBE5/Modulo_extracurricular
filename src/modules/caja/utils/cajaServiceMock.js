@@ -78,16 +78,8 @@ export async function registrarPagoMock(datosPago) {
   if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
 
   if (!apiDb.correlativos) apiDb.correlativos = {};
-  const formaPagoStr = String(datosPago.formaPago || "").toLowerCase().trim();
-  const esVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoStr);
-  const nroRecibo = esVirtual
-    ? (apiDb.correlativos.reciboVirtualActual || apiDb.correlativos.reciboVirtual || "V-0001")
-    : (apiDb.correlativos.reciboActual || apiDb.correlativos.recibo || "REC-0001");
-  if (esVirtual) {
-    apiDb.correlativos.reciboVirtualActual = incrementarCorrelativo(nroRecibo);
-  } else {
-    apiDb.correlativos.reciboActual = incrementarCorrelativo(nroRecibo);
-  }
+  const nroRecibo = apiDb.correlativos.reciboActual || apiDb.correlativos.recibo || "REC-0001";
+  apiDb.correlativos.reciboActual = incrementarCorrelativo(nroRecibo);
 
   const DniEstudiante = datosPago.dniEstudiante || datosPago.estudianteDni || "";
   const nombresEstudiante = datosPago.nombresEstudiante || datosPago.estudianteNombre || "";
@@ -176,23 +168,27 @@ export async function obtenerResumenCajaMock(periodo = "escolar") {
   const pagos = apiDb.pagos.filter((p) => normalizarPeriodo(p.periodo || periodoNormalizado) === periodoNormalizado);
   const inscripciones = obtenerInscripcionesCaja(periodoNormalizado);
 
-  const totalIngreso = pagos
-    .filter((p) => p.estado === "completado")
-    .reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+  const pagosCompletados = pagos.filter((p) => p.estado === "completado" || p.estado === "validado");
+  const pagosIngresos = pagosCompletados.filter((p) => p.formaPago !== "Egreso");
+  const pagosEgresos = pagosCompletados.filter((p) => p.formaPago === "Egreso");
+
+  const totalIngreso = pagosIngresos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+  const totalEgreso = pagosEgresos.reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
 
   const totalPendiente = inscripciones
     .filter((inscripcion) => normalizarEstadoPago(inscripcion.estadoPago) === "pendiente")
     .reduce((sum, inscripcion) => sum + Number(inscripcion.costo || 0), 0);
 
-  const totalCancelado = pagos
-    .filter((p) => p.estado === "cancelado")
-    .reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
+  const totalCancelado = pagos.filter((p) => p.estado === "cancelado").reduce((sum, p) => sum + (Number(p.monto) || 0), 0);
 
   return {
     totalIngreso,
+    totalEgreso,
+    totalIngresoNeto: totalIngreso - totalEgreso,
     totalPendiente,
     totalCancelado,
-    cantidadPagos: pagos.filter((p) => p.estado === "completado").length,
+    cantidadPagos: pagosIngresos.length,
+    cantidadEgresos: pagosEgresos.length,
     cantidadPendientes: inscripciones.filter((inscripcion) => normalizarEstadoPago(inscripcion.estadoPago) === "pendiente").length,
   };
 }
@@ -263,7 +259,7 @@ export async function obtenerEstudiantePorDniMock(dni, periodo = "") {
     programaAsignado: inscripcion.programaId || estudiante.programaAsignado || "",
     programaNombre: inscripcion.programa || estudiante.programaNombre || "",
     programaCosto: inscripcion.costo ?? estudiante.programaCosto,
-    sinInscripcionCaja: sequentialPendientes.length === 0,
+    sinInscripcionCaja: derivadasPendientes.length === 0,
     requiereDerivacionCaja: false,
   };
 }
@@ -352,8 +348,8 @@ export async function validarPagoWebMock(pagoId, observaciones = "") {
     nroRecibo = apiDb.pagos[idx].nroRecibo || "";
     if (!nroRecibo) {
       if (!apiDb.correlativos) apiDb.correlativos = {};
-      nroRecibo = apiDb.correlativos.reciboVirtualActual || apiDb.correlativos.reciboVirtual || "V-0001";
-      apiDb.correlativos.reciboVirtualActual = incrementarCorrelativo(nroRecibo);
+      nroRecibo = apiDb.correlativos.reciboActual || apiDb.correlativos.recibo || "REC-0001";
+      apiDb.correlativos.reciboActual = incrementarCorrelativo(nroRecibo);
     }
   }
 
@@ -597,6 +593,7 @@ async function actualizarEstadoPagoWeb(pagoId, cambios) {
   );
 
   if (inscripcionIndex !== -1) {
+    const esAprobacion = cambios.estado === "completado" || cambios.estadoVerificacion === "validado";
     apiDb.inscripciones[inscripcionIndex] = {
       ...apiDb.inscripciones[inscripcionIndex],
       estadoPago: cambios.estadoPago,
@@ -604,6 +601,8 @@ async function actualizarEstadoPagoWeb(pagoId, cambios) {
       pagoId: pagoActualizado.id,
       fechaPago: cambios.fechaPago || apiDb.inscripciones[inscripcionIndex].fechaPago || "",
       pagoObservacionCaja: cambios.observaciones || "",
+      // Al aprobar un pago web, marcar como derivadoCaja para que figure como ingreso en el reporte de Caja
+      ...(esAprobacion ? { derivadoCaja: true } : {}),
     };
   }
 
@@ -622,6 +621,39 @@ function obtenerInscripcionesCaja(periodoNormalizado) {
 }
 
 function crearFilaPago(pago, programasVigentes = null) {
+  if (pago.formaPago === "Egreso") {
+    return {
+      id: pago.id,
+      pagoId: pago.id,
+      inscripcionId: "",
+      dniEstudiante: pago.dniEstudiante || "",
+      estudiante: pago.nombresEstudiante || "Egreso de Caja",
+      programaId: "",
+      programa: "Egreso / Gasto",
+      periodo: normalizarPeriodo(pago.periodo),
+      monto: Number(pago.monto || 0),
+      estadoPago: "pagado",
+      estadoInscripcion: "",
+      formaPago: "Egreso",
+      numeroOperacion: pago.numeroOperacion || "",
+      telefonoOperacion: "",
+      origen: "Cajera",
+      fuente: "pago",
+      fecha: pago.fechaPago || pago.fecha || "",
+      fechaRegistro: "",
+      fechaPago: pago.fechaPago || pago.fecha || "",
+      apoderado: "",
+      telefono: "",
+      nroRecibo: pago.nroRecibo || pago.nro_recibo || "",
+      grado: "",
+      seccion: "",
+      descuentoAprobado: false,
+      descuentoTipo: "",
+      descuentoMonto: 0,
+      observaciones: pago.observaciones || "",
+    };
+  }
+
   const program = resolverProgramaVigenteCaja(pago, programasVigentes || obtenerProgramasVigentesCaja(normalizarPeriodo(pago.periodo)));
   if (!program) return null;
 
@@ -822,3 +854,38 @@ export async function cancelarCorrelativoCajaMock(tipo, motivo, dniEstudiante = 
   return nuevoPagoAnulado;
 }
 
+export async function registrarEgresoMock(datosEgreso) {
+  await esperar(400);
+  await syncApiDb();
+
+  if (!apiDb.correlativos) apiDb.correlativos = {};
+  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
+
+  const nroRecibo = apiDb.correlativos.egresoActual || apiDb.correlativos.egreso || "EGR-0001";
+  apiDb.correlativos.egresoActual = incrementarCorrelativo(nroRecibo);
+
+  const nuevoEgreso = {
+    id: `PAG-EGR-${String(Date.now()).slice(-6)}`,
+    inscripcionId: null,
+    dniEstudiante: datosEgreso.dni || "",
+    nombresEstudiante: datosEgreso.beneficiario || "Egreso de Caja",
+    programa: "",
+    programaId: "",
+    monto: Number(datosEgreso.monto || 0),
+    formaPago: "Egreso",
+    nroRecibo: nroRecibo,
+    periodo: normalizarPeriodo(datosEgreso.periodo || "escolar"),
+    fecha: datosEgreso.fecha || fechaActualIso(),
+    fechaPago: datosEgreso.fecha || fechaActualIso(),
+    estado: "completado",
+    origenRegistro: "Caja",
+    observaciones: datosEgreso.concepto || "Egreso registrado",
+    createdAt: fechaActualIso()
+  };
+
+  apiDb.pagos.push(nuevoEgreso);
+  await saveApiDb();
+  window.dispatchEvent(new Event("mock-db-updated"));
+
+  return nuevoEgreso;
+}

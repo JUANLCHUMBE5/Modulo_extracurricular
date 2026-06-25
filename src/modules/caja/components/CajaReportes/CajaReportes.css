@@ -179,7 +179,20 @@
 }
 
 .caja-report-table {
-  min-width: 1100px;
+  min-width: 1250px;
+}
+
+.caja-col-pago {
+  min-width: 135px !important;
+  width: 135px !important;
+  text-align: center;
+}
+
+.caja-badge-status,
+.caja-badge-status .mantine-Badge-label {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
 }
 
 .caja-pay-row-button {

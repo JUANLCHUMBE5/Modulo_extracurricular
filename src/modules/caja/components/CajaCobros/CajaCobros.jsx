@@ -29,10 +29,7 @@ export default function CajaCobros({
   resultadosBusqueda = [],
   onSeleccionarEstudiante,
 }) {
-  const esWeb = esRegistroWeb(formulario.origenRegistro || "");
-  const siguienteRecibo = esWeb
-    ? (correlativos.reciboVirtualSiguiente || correlativos.reciboVirtual || "")
-    : (correlativos.reciboSiguiente || correlativos.recibo || "");
+  const siguienteRecibo = correlativos.reciboActual || correlativos.recibo || "";
 
   return (
     <>

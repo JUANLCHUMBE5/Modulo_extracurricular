@@ -215,16 +215,23 @@ export default function Caja({
   }, [reporteCaja, filtrosReporte.grado, filtrosReporte.seccion]);
 
   const reporte = useMemo(() => {
-    const totalVisible = reporteCajaFiltrado.reduce((sum, fila) => sum + Number(fila.monto || 0), 0);
-    const pagados = reporteCajaFiltrado.filter((fila) => fila.estadoPago === "pagado");
+    const pagadosIngresos = reporteCajaFiltrado.filter((fila) => fila.estadoPago === "pagado" && fila.formaPago !== "Egreso");
+    const egresos = reporteCajaFiltrado.filter((fila) => fila.formaPago === "Egreso");
     const pendientes = reporteCajaFiltrado.filter(
-      (fila) => fila.estadoPago === "pendiente" || fila.estadoPago === "verificando" || fila.estadoPago === "observado"
+      (fila) => (fila.estadoPago === "pendiente" || fila.estadoPago === "verificando" || fila.estadoPago === "observado") && fila.formaPago !== "Egreso"
     );
+
+    const totalIngreso = pagadosIngresos.reduce((sum, pago) => sum + Number(pago.monto || 0), 0);
+    const totalEgreso = egresos.reduce((sum, egreso) => sum + Number(egreso.monto || 0), 0);
+    const totalPendiente = pendientes.reduce((sum, pago) => sum + Number(pago.monto || 0), 0);
+
     return {
-      totalVisible,
-      totalPagado: pagados.reduce((sum, pago) => sum + Number(pago.monto || 0), 0),
-      totalPendiente: pendientes.reduce((sum, pago) => sum + Number(pago.monto || 0), 0),
-      cantidadPagada: pagados.length,
+      totalVisible: totalIngreso - totalEgreso,
+      totalPagado: totalIngreso,
+      totalEgreso,
+      totalPendiente,
+      cantidadPagada: pagadosIngresos.length,
+      cantidadEgreso: egresos.length,
       cantidadPendiente: pendientes.length,
     };
   }, [reporteCajaFiltrado]);
