@@ -14,10 +14,10 @@ echo.
 
 call :check_url "%API_URL%"
 if errorlevel 1 (
-  start "API Local - Modulo Extracurricular" /min corepack pnpm run api
+  start "API Local - Modulo Extracurricular" /min cmd /c "cd /d "%~dp0backend" && node server.js"
 )
 
-echo Esperando API local y base server/db.json...
+echo Esperando API local y base backend/db.json...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "for ($i = 0; $i -lt 15; $i++) { try { Invoke-RestMethod -Uri '%API_URL%' -TimeoutSec 2 | Out-Null; exit 0 } catch { Start-Sleep -Seconds 1 } }; exit 1"
 if errorlevel 1 (
   echo.
@@ -36,6 +36,7 @@ if not errorlevel 1 (
 )
 
 start "Abrir Modulo Extracurricular" cmd /c "timeout /t 3 >nul && start %APP_URL%"
+cd /d "%~dp0frontend"
 corepack pnpm run dev --host localhost
 exit /b %errorlevel%
 
