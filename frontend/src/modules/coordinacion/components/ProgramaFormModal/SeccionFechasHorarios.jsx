@@ -139,7 +139,7 @@ function SeccionFechasHorarios({
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(12, 1fr)", gap: "12px 16px" }}>
           <div className="coord-field coord-taller-col-5">
-            <label>Fecha (Inicio / Fin) *</label>
+            <label>Fecha (Inicio / Fin)</label>
             <div className="coord-flex-range">
               <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
               <span className="coord-flex-range-separator">a</span>
@@ -148,7 +148,7 @@ function SeccionFechasHorarios({
           </div>
 
           <div className="coord-field coord-taller-col-4">
-            <label>Horario (Inicio / Fin) *</label>
+            <label>Horario (Inicio / Fin)</label>
             <div className="coord-flex-range">
               <input type="time" value={form.horaInicio} onChange={e => actualizarForm("horaInicio", e.target.value)} />
               <span className="coord-flex-range-separator">a</span>
@@ -178,7 +178,7 @@ function SeccionFechasHorarios({
           {!form.usarFechaLimiteInscripcion ? (
             <>
               <div className="coord-field coord-taller-col-4">
-                <label>Aviso abierto (días) *</label>
+                <label>Aviso abierto (días)</label>
                 <input
                   type="number"
                   min="1"
@@ -190,7 +190,7 @@ function SeccionFechasHorarios({
               </div>
 
               <div className="coord-field coord-taller-col-4">
-                <label>Hora límite de aviso *</label>
+                <label>Hora límite de aviso</label>
                 <input
                   type="time"
                   value={form.horaLimiteAviso || "23:59"}
@@ -199,7 +199,7 @@ function SeccionFechasHorarios({
               </div>
 
               <div className="coord-field coord-taller-col-4">
-                <label>Cupos *</label>
+                <label>Cupos</label>
                 <input
                   type="number"
                   min="1"
@@ -230,7 +230,7 @@ function SeccionFechasHorarios({
               </div>
 
               <div className="coord-field coord-taller-col-3">
-                <label>Fecha límite *</label>
+                <label>Fecha límite</label>
                 <input
                   type="date"
                   value={form.fechaLimiteInscripcion || ""}
@@ -239,7 +239,7 @@ function SeccionFechasHorarios({
               </div>
 
               <div className="coord-field coord-taller-col-2">
-                <label>Hora límite *</label>
+                <label>Hora límite</label>
                 <input
                   type="time"
                   value={form.horaLimiteInscripcion || "23:59"}
@@ -248,7 +248,7 @@ function SeccionFechasHorarios({
               </div>
 
               <div className="coord-field coord-taller-col-2">
-                <label>Cupos *</label>
+                <label>Cupos</label>
                 <input
                   type="number"
                   min="1"
@@ -261,7 +261,7 @@ function SeccionFechasHorarios({
           )}
 
           <div className="coord-field coord-taller-col-12">
-            <label>Grados habilitados *</label>
+            <label>Grados habilitados</label>
             <GradeSelector niveles={nivelesGrados} seleccionados={form.gradosAplicables || []} onToggle={toggleGrado} />
           </div>
         </div>
@@ -280,11 +280,11 @@ function SeccionFechasHorarios({
       <div className="coord-section-grid">
         <div className="coord-time-fields-grid" style={{ gridColumn: "1 / -1" }}>
           <div className="coord-field">
-            <label>Inicio *</label>
+            <label>Inicio</label>
             <input type="date" value={form.fechaInicio} onChange={e => actualizarForm("fechaInicio", e.target.value)} />
           </div>
           <div className="coord-field">
-            <label>Fin *</label>
+            <label>Fin</label>
             <input type="date" value={form.fechaFin} onChange={e => actualizarForm("fechaFin", e.target.value)} />
           </div>
           <div className="coord-field">
@@ -296,7 +296,7 @@ function SeccionFechasHorarios({
           {!form.usarFechaLimiteInscripcion && (
             <>
               <div className="coord-field">
-                <label>Aviso (días) *</label>
+                <label>Aviso (días)</label>
                 <input
                   type="number"
                   min="1"
@@ -307,7 +307,7 @@ function SeccionFechasHorarios({
                 />
               </div>
               <div className="coord-field">
-                <label>Hora límite aviso *</label>
+                <label>Hora límite aviso</label>
                 <input
                   type="time"
                   value={form.horaLimiteAviso || "23:59"}
@@ -319,7 +319,7 @@ function SeccionFechasHorarios({
 
           {form.tipoComunicado && form.tipoComunicado !== "Otro genérico" && !puedeGestionarGruposFormulario && !usaTalleresPorEdad && (
             <div className="coord-field">
-              <label>Cupos *</label>
+              <label>Cupos</label>
               <input
                 type="number"
                 min="1"
@@ -393,7 +393,7 @@ function SeccionFechasHorarios({
               />
             </div>
             <div className="coord-field">
-              <label>Fecha límite *</label>
+              <label>Fecha límite</label>
               <input
                 type="date"
                 value={form.fechaLimiteInscripcion || ""}
@@ -401,7 +401,7 @@ function SeccionFechasHorarios({
               />
             </div>
             <div className="coord-field">
-              <label>Hora límite *</label>
+              <label>Hora límite</label>
               <input
                 type="time"
                 value={form.horaLimiteInscripcion || "23:59"}

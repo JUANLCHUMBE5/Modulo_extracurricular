@@ -15,7 +15,7 @@ function SeccionCambridge({ form, esCambridgeForm, actualizarForm }) {
 
       <div className="coord-section-grid">
         <div className="coord-field">
-          <label>Docente / profesor responsable *</label>
+          <label>Docente / profesor responsable</label>
           <input
             value={form.responsable || ""}
             onChange={(event) => actualizarForm("responsable", event.target.value)}
@@ -24,7 +24,7 @@ function SeccionCambridge({ form, esCambridgeForm, actualizarForm }) {
         </div>
 
         <div className="coord-field">
-          <label>Cupos *</label>
+          <label>Cupos</label>
           <input
             type="number"
             min="1"
@@ -67,7 +67,7 @@ function SeccionCambridge({ form, esCambridgeForm, actualizarForm }) {
         </div>
 
         <div className="coord-field">
-          <label>Horario (Inicio / Fin) *</label>
+          <label>Horario (Inicio / Fin)</label>
           <div className="coord-flex-range">
             <input
               type="time"
@@ -84,7 +84,7 @@ function SeccionCambridge({ form, esCambridgeForm, actualizarForm }) {
         </div>
 
         <div className="coord-field coord-field-full">
-          <label>Días de clase *</label>
+          <label>Días de clase</label>
           <div className="coord-day-list" style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}>
             {diasSemana.map((dia) => {
               const diasSeleccionados = Array.isArray(form.dias) ? form.dias : [];

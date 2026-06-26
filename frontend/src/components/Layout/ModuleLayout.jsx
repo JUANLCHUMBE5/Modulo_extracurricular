@@ -128,7 +128,13 @@ export default function ModuleLayout({ user, onLogout, availableModules }) {
     case "auxiliar":
       return <Auxiliar onLogout={onLogout} />;
     case "direccion":
-      return <Direccion onLogout={onLogout} user={user} />;
+      return (
+        <Direccion
+          moduleSwitcher={moduleSwitcher}
+          onLogout={onLogout}
+          user={user}
+        />
+      );
     default:
       return (
         <div className="module-placeholder">

@@ -15,18 +15,19 @@
 .dir-search-container {
   background: #ffffff !important;
   border: none !important;
-  border-radius: 12px !important;
-  padding: 12px 0 !important;
+  border-radius: 8px !important;
+  padding: 6px 0 !important;
   box-shadow: none !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 0 !important;
 }
 
 /* Botón Buscar Alumno - Verde Claro */
 .dir-search-btn {
-  height: 46px !important;
-  border-radius: 8px !important;
+  height: 28px !important;
+  border-radius: 6px !important;
   font-weight: 700 !important;
-  padding: 0 24px !important;
+  font-size: 12px !important;
+  padding: 0 14px !important;
   background: #e6fcf5 !important;
   color: #0c8569 !important;
   border: 1px solid #c3fae8 !important;
@@ -41,7 +42,7 @@
 
 .dir-search-form {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -49,18 +50,18 @@
 .dir-student-avatar-cell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .dir-student-avatar {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #f1f5f9;
   color: #000000;
   border: 1px solid #cbd5e1;
   font-weight: 700;
-  font-size: 13px;
+  font-size: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -153,20 +154,20 @@
   flex-direction: column !important;
   align-items: center !important;
   justify-content: center !important;
-  padding: 24px 30px !important;
+  padding: 14px 20px !important;
   background: #ffffff !important;
   border: none !important;
-  border-radius: 12px !important;
+  border-radius: 8px !important;
   text-align: center !important;
   color: #000000 !important;
   width: 100% !important;
-  margin: 16px auto !important;
+  margin: 8px auto !important;
   box-shadow: none !important;
 }
 
 .dir-empty-state-icon-container {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
@@ -174,31 +175,31 @@
   align-items: center;
   justify-content: center;
   color: #000000;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   box-shadow: none;
 }
 
 .dir-empty-state-card h3 {
-  margin: 0 0 4px 0;
-  font-size: 18px;
+  margin: 0 0 2px 0;
+  font-size: 14px;
   color: #000000;
   font-weight: 800;
 }
 
 .dir-empty-state-card p {
-  margin: 0 0 16px 0;
-  font-size: 13.5px;
+  margin: 0 0 10px 0;
+  font-size: 12px;
   color: #000000;
-  line-height: 1.5;
+  line-height: 1.4;
   max-width: 420px;
 }
 
 .dir-empty-state-steps {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   text-align: left;
   border-top: 1px solid #f1f5f9;
-  padding-top: 16px;
+  padding-top: 10px;
   width: 100%;
 }
 
@@ -227,22 +228,22 @@
 .dir-modal-student-card {
   background: #f8fafc;
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 8px;
+  padding: 10px;
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
   align-items: center;
   box-shadow: none;
 }
 
 .dir-modal-student-avatar {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   background: #000000;
   color: #ffffff;
-  font-size: 16px;
+  font-size: 12px;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -265,13 +266,13 @@
 }
 
 .dir-modal-student-details .name {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 500;
   color: #000000;
 }
 
 .dir-modal-student-details .sub {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 500;
   color: #000000;
 }

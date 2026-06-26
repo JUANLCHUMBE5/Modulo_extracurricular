@@ -33,7 +33,7 @@ function SeccionDatosGenerales({
       </div>
       <div className={`coord-section-grid coord-general-grid ${esAcademico ? "is-academico" : ""}`}>
         <div className="coord-field coord-program-name-field">
-          <label>{esFormularioVerano ? "Nombre del programa de verano *" : "Nombre del programa *"}</label>
+          <label>{esFormularioVerano ? "Nombre del programa de verano" : "Nombre del programa"}</label>
           <input
             value={form.nombre}
             onChange={e => actualizarNombrePrograma(e.target.value)}
@@ -42,7 +42,7 @@ function SeccionDatosGenerales({
         </div>
 
         <div className="coord-field coord-period-field">
-          <label>Periodo *</label>
+          <label>Periodo</label>
           <select value={normalizarPeriodoVista(form.periodo)} onChange={e => cambiarPeriodoFormulario(e.target.value)}>
             <option value="escolar">Año escolar</option>
             <option value="verano">Ciclo verano</option>
@@ -51,7 +51,7 @@ function SeccionDatosGenerales({
 
         <div className="coord-field coord-category-field">
           <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: "4px" }}>
-            <span style={{ whiteSpace: "nowrap" }}>Categoría *</span>
+            <span style={{ whiteSpace: "nowrap" }}>Categoría</span>
             <button
               type="button"
               className="coord-category-toggle-btn"
@@ -129,7 +129,7 @@ function SeccionDatosGenerales({
 
         {esAcademico && (
           <div className="coord-field coord-tipo-comunicado-field">
-            <label style={{ fontWeight: "700", color: "#1e3a8a" }}>Tipo de comunicado / Circular escolar *</label>
+            <label style={{ fontWeight: "700", color: "#1e3a8a" }}>Tipo de comunicado / Circular escolar</label>
             <select
               value={form.tipoComunicado || "Otro genérico"}
               disabled={esNoAcademico}

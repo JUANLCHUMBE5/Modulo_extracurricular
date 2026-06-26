@@ -108,7 +108,7 @@
   grid-column: 2;
   width: min(1180px, calc(100% - 40px));
   margin: 0 auto;
-  padding: 10px 0 20px;
+  padding: 4px 0 12px;
 }
 
 .adm-brand {
@@ -189,14 +189,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 8px 0 12px;
+  gap: 12px;
+  padding: 4px 0 8px;
 }
 
 .adm-topbar-sub {
-  margin: 0 0 2px;
+  margin: 0;
   color: #04735f;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -205,7 +205,7 @@
 .adm-topbar h1 {
   margin: 0;
   color: #111827;
-  font-size: 22px;
+  font-size: 18px;
   line-height: 1.1;
   letter-spacing: 0;
 }
@@ -228,15 +228,15 @@
 
 .adm-new-btn,
 .adm-logout-btn {
-  height: 34px;
+  height: 28px;
   border-radius: 8px;
-  padding: 0 16px;
+  padding: 0 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 6px;
   border: 1px solid transparent;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
@@ -334,30 +334,30 @@
 }
 
 .adm-card-header {
-  padding: 8px 12px;
+  padding: 4px 10px;
   border-bottom: 1px solid #e3ece9;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
 }
 
 .adm-card-header h2 {
   margin: 0;
   color: #111827;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 800;
 }
 
 .adm-card-header p {
-  margin: 3px 0 0;
+  margin: 1px 0 0;
   color: #64748b;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .adm-refresh-btn {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border: 1px solid #d8e0ea;
   border-radius: 8px;
   background: #f8fafc;
@@ -370,22 +370,22 @@
 .adm-refresh-btn:hover { background: #eef4ff; color: #1d4ed8; }
 
 .adm-filters {
-  padding: 8px 12px;
+  padding: 4px 10px;
   border-bottom: 1px solid #e3ece9;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
   background: #fbfdfc;
 }
 
 .adm-search-box {
-  height: 34px;
-  min-height: 34px;
+  height: 28px;
+  min-height: 28px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 12px;
+  gap: 8px;
+  padding: 0 10px;
   border: 1px solid #d8e0ea;
   border-radius: 8px;
   background: #ffffff;
@@ -403,7 +403,7 @@
   outline: 0;
   background: transparent;
   color: #172033;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .adm-search-box input::placeholder { color: #94a3b8; }
@@ -438,15 +438,15 @@
 
 .adm-select-wrap select {
   width: 100%;
-  height: 34px;
+  height: 28px;
   appearance: none;
   border: 1px solid #d8e0ea;
   border-radius: 8px;
   background: #ffffff;
   color: #334155;
-  padding: 0 38px 0 12px;
+  padding: 0 32px 0 10px;
   font: inherit;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   outline: 0;
   cursor: pointer;
@@ -473,11 +473,11 @@
 }
 
 .adm-table thead th {
-  padding: 8px 12px;
+  padding: 4px 10px;
   border-bottom: 1px solid #e3ece9;
   background: #f8fafc;
   color: #64748b;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -485,7 +485,7 @@
 }
 
 .adm-table tbody td {
-  padding: 6px 12px;
+  padding: 3px 10px;
   border-bottom: 1px solid #edf2f7;
 }
 
@@ -495,17 +495,17 @@
 .adm-user-cell {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }.adm-avatar {
-  width: 32px;
-  height: 32px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: #f1f5f9;
   color: #475569;
   border: none;
-  font-size: 11.5px;
+  font-size: 10px;
   font-weight: 700;
   flex: 0 0 auto;
 }
@@ -513,14 +513,14 @@
 .adm-user-name {
   margin: 0;
   color: #111827;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .adm-user-handle {
-  margin: 2px 0 0;
+  margin: 0px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .adm-rol-badge,
@@ -528,10 +528,10 @@
   display: inline-flex;
   align-items: center;
   gap: 0;
-  min-height: 20px;
-  padding: 1px 8px;
+  min-height: 18px;
+  padding: 1px 6px;
   border-radius: 6px;
-  font-size: 11.5px;
+  font-size: 10.5px;
   font-weight: 600;
   white-space: nowrap;
   border: none;
@@ -561,8 +561,8 @@
 }
 
 .adm-btn-icon {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 8px;
   border: none;
   background: transparent;

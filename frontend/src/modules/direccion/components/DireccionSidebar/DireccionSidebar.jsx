@@ -17,6 +17,7 @@ export default function DireccionSidebar({
   vista,
   setVista,
   onLogout,
+  moduleSwitcher,
 }) {
   const [menuAbierto, setMenuAbierto] = useState(true);
 
@@ -62,7 +63,6 @@ export default function DireccionSidebar({
                 onClick={() => setVista("resumen")}
                 title="Resumen general"
               >
-                <ChartBar size={18} />
                 <span>Resumen general</span>
                 <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
@@ -72,7 +72,6 @@ export default function DireccionSidebar({
                 onClick={() => setVista("reportes")}
                 title="Reportes"
               >
-                <Download size={18} />
                 <span>Reportes</span>
                 <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
@@ -82,7 +81,6 @@ export default function DireccionSidebar({
                 onClick={() => setVista("descuentos")}
                 title="Descuentos y Becas"
               >
-                <RosetteDiscount size={18} />
                 <span>Descuentos y Becas</span>
                 <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
@@ -92,7 +90,6 @@ export default function DireccionSidebar({
                 onClick={() => setVista("correlativos")}
                 title="Correlativos"
               >
-                <Adjustments size={18} />
                 <span>Correlativos</span>
                 <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
@@ -135,6 +132,12 @@ export default function DireccionSidebar({
           </button>
         </nav>
       )}
+
+      {moduleSwitcher && sidebarExpanded ? (
+        <div>
+          {moduleSwitcher}
+        </div>
+      ) : null}
 
       <button className="dir-logout" type="button" onClick={onLogout} title="Cerrar sesion">
         <LogOut size={18} />

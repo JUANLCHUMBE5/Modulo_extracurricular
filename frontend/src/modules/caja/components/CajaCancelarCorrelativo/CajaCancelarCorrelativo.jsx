@@ -432,19 +432,6 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
 
   return (
     <section className="caja-payment-workspace caja-correlativo-workspace" style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
-      {!sidebarExpanded && (
-        <div style={{ marginBottom: "6px" }}>
-          <button
-            className="caja-menu-toggle-btn-header"
-            type="button"
-            onClick={toggleSidebar}
-            aria-label="Mostrar barra lateral"
-            title="Mostrar barra lateral"
-          >
-            <Menu size={22} />
-          </button>
-        </div>
-      )}
 
       {/* TABS DE SELECCIÓN */}
       <div style={{ display: "flex", borderBottom: "2px solid #e2e8f0", paddingBottom: "0px", gap: "24px", marginBottom: "8px" }}>

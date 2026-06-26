@@ -494,7 +494,11 @@ export async function listarAsistenciasProgramaMock(programaId) {
       const programaBase = programa
         || apiDb.programas.find((prog) => String(prog.id) === String(inscripcion?.programaId || item.programaId))
         || null;
-      const gradoEstudiante = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
+      const rawGrado = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
+      const rawNivel = estudiante?.nivel || "";
+      const gradoEstudiante = rawGrado && rawNivel && !String(rawGrado).toLowerCase().includes(String(rawNivel).toLowerCase())
+        ? `${rawGrado} ${rawNivel}`
+        : rawGrado;
       return {
         id: item.id || "",
         inscripcionId: item.inscripcionId || inscripcion?.id || "",

@@ -84,7 +84,6 @@ export default function CoordinacionSidebar({
                     }}
                     title={label}
                   >
-                    <Icon size={18} />
                     <span>{label}</span>
                     <ChevronRight className="coord-nav-arrow" size={16} />
                   </button>
@@ -116,7 +115,7 @@ export default function CoordinacionSidebar({
         </nav>
       )}
       {moduleSwitcher && sidebarAbierta ? (
-        <div className="pt-3">
+        <div>
           {moduleSwitcher}
         </div>
       ) : null}

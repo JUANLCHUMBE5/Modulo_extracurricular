@@ -3,6 +3,13 @@ import {
   IconClipboardList as ClipboardList,
   IconReceipt2 as Receipt,
   IconSearch as Search,
+  IconId as Id,
+  IconUser as User,
+  IconSchool as School,
+  IconBook as Book,
+  IconCoin as Coin,
+  IconInfoCircle as InfoCircle,
+  IconCalendar as Calendar,
 } from "@tabler/icons-react";
 import { formatearFechaPeru } from "../../../services/dateService";
 import { formatearSoles } from "../utils/cajaFormatters";
@@ -47,14 +54,14 @@ export default function CajaFields({
   const comprobanteVistaPrevia = formulario.nroRecibo || (correlativos?.reciboActual || correlativos?.recibo || "");
 
   const datosLectura = [
-    ["DNI", formulario.estudianteDni || "Sin DNI"],
-    ["Estudiante", formulario.estudianteNombre || "Sin estudiante"],
-    ["Tipo de alumno", formulario.tipoAlumno || "No definido"],
-    ["Programa", formulario.programaNombre || "Sin programa"],
-    ["Monto", formatearSoles(formulario.monto)],
-    ["Concepto", formulario.concepto || "Inscripcion"],
-    ["Estado", labelEstado],
-    ["Fecha", formatearFechaPeru(formulario.fechaPago)],
+    { label: "DNI", value: formulario.estudianteDni || "Sin DNI", icon: <Id size={16} />, classKey: "dni" },
+    { label: "Estudiante", value: formulario.estudianteNombre || "Sin estudiante", icon: <User size={16} />, classKey: "estudiante" },
+    { label: "Tipo de alumno", value: formulario.tipoAlumno || "No definido", icon: <School size={16} />, classKey: "tipo" },
+    { label: "Programa", value: formulario.programaNombre || "Sin programa", icon: <Book size={16} />, classKey: "programa" },
+    { label: "Monto", value: formatearSoles(formulario.monto), icon: <Coin size={16} />, classKey: "monto" },
+    { label: "Concepto", value: formulario.concepto || "Inscripcion", icon: <Receipt size={16} />, classKey: "concepto" },
+    { label: "Estado", value: labelEstado, icon: <InfoCircle size={16} />, classKey: "estado" },
+    { label: "Fecha", value: formatearFechaPeru(formulario.fechaPago), icon: <Calendar size={16} />, classKey: "fecha" },
   ];
 
   return (
@@ -202,22 +209,21 @@ export default function CajaFields({
                 )}
               </div>
             )}
-            {datosLectura.map(([etiqueta, valor]) => {
+            {datosLectura.map(({ label, value, icon, classKey }) => {
               const classNames = [];
-              if (etiqueta === "Programa") classNames.push("field-programa");
-              if (etiqueta === "Monto") classNames.push("field-monto");
-              if (etiqueta === "Concepto") classNames.push("field-concepto");
-              if (etiqueta === "Fecha") classNames.push("field-fecha");
-              if (etiqueta === "Estado") {
-                classNames.push("field-estado");
-                if (valor === "Pagado") classNames.push("status-pagado");
-                else if (valor === "Por Verificar") classNames.push("status-verificando");
+              if (classKey) classNames.push(`field-${classKey}`);
+              if (label === "Estado") {
+                if (value === "Pagado") classNames.push("status-pagado");
+                else if (value === "Por Verificar") classNames.push("status-verificando");
                 else classNames.push("status-pendiente");
               }
               return (
-                <div className={`caja-readonly-field ${classNames.join(" ")}`} key={etiqueta}>
-                  <span>{etiqueta}</span>
-                  <strong>{valor}</strong>
+                <div className={`caja-readonly-field ${classNames.join(" ")}`} key={label}>
+                  <div className="caja-field-header">
+                    {icon}
+                    <span>{label}</span>
+                  </div>
+                  <strong>{value}</strong>
                 </div>
               );
             })}

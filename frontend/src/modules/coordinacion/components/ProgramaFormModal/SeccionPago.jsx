@@ -24,7 +24,7 @@ function SeccionPago({
         <div className="coord-field">
           <label>
             {(form.tipoComunicado === "Cambridge" || form.tipoComunicado === "Certificación Cambridge")
-              ? "Costo total del ciclo (S/) *"
+              ? "Costo total del ciclo (S/)"
               : esFormularioVerano
                 ? "Costo de verano (S/)"
                 : "Costo (S/)"}

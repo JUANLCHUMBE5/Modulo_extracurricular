@@ -270,11 +270,23 @@ export async function obtenerOpcionesReporteCajaMock(periodo = "escolar") {
 
   const periodoNormalizado = normalizarPeriodo(periodo);
   const programas = obtenerProgramasVigentesCaja(periodoNormalizado).items
-    .map((programa) => ({
-      value: programa.id,
-      label: programa.nombre || "Sin programa",
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label));
+    .map((programa) => {
+      const esArchivado = normalizarTexto(programa.estado) === "archivado";
+      const idTag = programa.id ? `[${programa.id}] ` : "";
+      return {
+        value: programa.id,
+        label: esArchivado 
+          ? `${idTag}${programa.nombre || "Sin programa"} (Archivado)` 
+          : `${idTag}${programa.nombre || "Sin programa"}`,
+        esArchivado,
+        nombre: programa.nombre || "Sin programa",
+      };
+    })
+    .sort((a, b) => {
+      if (a.esArchivado && !b.esArchivado) return 1;
+      if (!a.esArchivado && b.esArchivado) return -1;
+      return a.nombre.localeCompare(b.nombre);
+    });
 
   const medios = new Set(
     [...(Array.isArray(apiDb.pagos) ? apiDb.pagos : [])]
@@ -531,7 +543,7 @@ function obtenerProgramasVigentesCaja(periodoNormalizado = "escolar") {
 
   [...(Array.isArray(apiDb.programas) ? apiDb.programas : [])]
     .filter((programa) => normalizarPeriodo(programa.periodo || periodoNormalizado) === periodoNormalizado)
-    .filter((programa) => !["eliminado", "archivado"].includes(normalizarTexto(programa.estado)))
+    .filter((programa) => !["eliminado"].includes(normalizarTexto(programa.estado)))
     .forEach((programa) => {
       if (!programa?.id) return;
 

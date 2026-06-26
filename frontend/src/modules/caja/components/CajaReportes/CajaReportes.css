@@ -3,8 +3,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
-  padding: 16px 20px;
+  margin-bottom: 6px;
+  padding: 6px 12px;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
@@ -20,9 +20,9 @@
 }
 
 .caja-report-header h1 {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: #0f172a;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 800;
   line-height: 1.1;
 }
@@ -41,21 +41,21 @@
 
 .caja-report-layout {
   display: grid;
-  gap: 12px;
+  gap: 6px;
 }
 
 /* CARDS DE RESUMEN PREMIUM */
 .caja-report-cards-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  gap: 6px;
   width: 100%;
 }
 
 .caja-report-card {
   border-radius: 8px;
   border: 1px solid #e2e8f0;
-  padding: 6px 12px;
+  padding: 3px 8px;
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -132,8 +132,8 @@
 .caja-report-filters-card {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 4px;
+  padding: 4px 8px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
@@ -143,7 +143,7 @@
 .caja-report-filters-card label {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
   color: #334155 !important;
   font-size: 10px !important;
   font-weight: 800 !important;
@@ -155,14 +155,14 @@
 .caja-report-filters-card select,
 .caja-report-filters-card input {
   width: 100%;
-  height: 30px !important;
-  min-height: 30px !important;
-  padding: 0 8px;
+  height: 23px !important;
+  min-height: 23px !important;
+  padding: 0 6px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   background: #ffffff;
   color: #1e293b !important;
-  font-size: 12px !important;
+  font-size: 11px !important;
   font-weight: 600 !important;
   transition: all 0.2s ease;
 }
@@ -232,7 +232,7 @@
   background: #ffffff;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
   overflow: hidden;
-  margin-top: 4px;
+  margin-top: 0px;
 }
 
 .caja-report-panel .caja-panel-header {
@@ -241,7 +241,7 @@
   justify-content: space-between;
   gap: 10px;
   border-bottom: 1px solid #e2e8f0 !important;
-  padding: 10px 14px !important;
+  padding: 4px 10px !important;
   background: #f8fafc !important;
 }
 
@@ -327,14 +327,14 @@
 }
 
 .caja-report-panel .caja-table th {
-  padding: 6px 8px !important;
-  font-size: 11px !important;
+  padding: 3px 6px !important;
+  font-size: 10.5px !important;
   line-height: 1.15 !important;
 }
 
 .caja-report-panel .caja-table td {
-  padding: 4px 8px !important;
-  font-size: 12px !important;
+  padding: 2.5px 6px !important;
+  font-size: 11px !important;
   line-height: 1.2 !important;
 }
 
@@ -757,5 +757,36 @@
   .caja-details-grid-span-2 {
     grid-column: span 1 !important;
   }
+}
+
+/* Botón Descargar CSV con alto contraste y visibilidad premium */
+.caja-btn-descargar {
+  --button-bg: var(--ui-primary) !important;
+  --button-color: #ffffff !important;
+  --button-hover: var(--ui-primary-dark) !important;
+  background-color: var(--ui-primary) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease-in-out !important;
+}
+
+.caja-btn-descargar,
+.caja-btn-descargar * {
+  color: #ffffff !important;
+}
+
+.caja-btn-descargar:hover {
+  background-color: var(--ui-primary-dark) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(35, 151, 127, 0.25) !important;
+}
+
+.caja-btn-descargar:hover * {
+  color: #ffffff !important;
+}
+
+.caja-btn-descargar:active {
+  transform: translateY(0);
 }
 

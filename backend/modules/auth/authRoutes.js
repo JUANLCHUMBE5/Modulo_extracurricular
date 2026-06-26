@@ -1,12 +1,26 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import rateLimit from "express-rate-limit";
 import { getDb, saveDb, resetDb } from "../../dbLocal.js";
 import { registrarAuditoria, prepararLogsAcceso } from "../../audit.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Limitador de tasa para mitigar ataques de fuerza bruta y scripts automatizados
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 5, // Máximo 5 intentos por IP cada minuto
+  message: {
+    success: false,
+    message: "Demasiados intentos de inicio de sesion. Por favor, intente de nuevo en un minuto."
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 
 // Helper to generate temporary passwords
 function generarContrasenaTemporal() {
@@ -30,7 +44,7 @@ router.get("/api/usuarios", async (_req, res) => {
 });
 
 // Padres Validar (Login for Parents)
-router.post("/api/v1/extracurricular/padres/validar", async (req, res) => {
+router.post("/api/v1/extracurricular/padres/validar", loginLimiter, async (req, res) => {
   try {
     const { dni, fecha_nacimiento } = req.body;
     const db = await getDb();
@@ -78,7 +92,7 @@ router.post("/api/v1/extracurricular/padres/validar", async (req, res) => {
 });
 
 // Auth Login
-router.post("/api/v1/auth/login", async (req, res) => {
+router.post("/api/v1/auth/login", loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
     const db = await getDb();

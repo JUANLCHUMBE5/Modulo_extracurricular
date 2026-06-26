@@ -21,7 +21,7 @@ export function esPagoWebPadresCaja(fila = {}) {
   const tienePago = Boolean(
     fila.pagoId ||
     fila.numeroOperacion ||
-    ["pagado", "verificando", "observado"].includes(fila.estadoPago) ||
+    ["pagado", "verificando", "observado", "anulado"].includes(fila.estadoPago) ||
     formaPago.includes("reserva") ||
     formaPago.includes("web")
   );
@@ -46,20 +46,21 @@ export function esPagoWebPorVerificarCaja(fila = {}) {
 export function obtenerMedioCanalWebCaja(fila = {}) {
   const estado = String(fila.estadoPago || "").toLowerCase();
   const esPagado = ["pagado", "completado", "pago validado", "validado"].includes(estado);
+  const esAnulado = estado === "anulado";
 
   const origen = String(fila.origen || fila.origenRegistro || "").toLowerCase();
   const formaPago = fila.formaPago || "";
 
   if (fila.descuentoAprobado) {
     const tipoLabel = String(fila.descuentoTipo).toLowerCase() === "beca" ? "Beca" : "Dirección / Desc";
-    if (esPagado) {
+    if (esPagado || esAnulado) {
       return `${tipoLabel} (Caja)`;
     }
     return tipoLabel;
   }
 
   if (origen === "caja" || origen === "cajera") {
-    if (!esPagado) return "-";
+    if (!esPagado && !esAnulado) return "-";
     return `${formaPago || "Efectivo"} (Caja)`;
   }
 
@@ -77,7 +78,8 @@ export function obtenerTelefonoPagoWebCaja(fila = {}) {
   if (origen === "caja" || origen === "cajera") {
     const estado = String(fila.estadoPago || "").toLowerCase();
     const esPagado = ["pagado", "completado", "pago validado", "validado"].includes(estado);
-    if (!esPagado) return "-";
+    const esAnulado = estado === "anulado";
+    if (!esPagado && !esAnulado) return "-";
     return fila.telefonoOperacion || "-";
   }
   if (!esPagoWebPadresCaja(fila)) return "-";

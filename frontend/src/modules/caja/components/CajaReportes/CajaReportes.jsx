@@ -29,17 +29,6 @@ export default function CajaReportes({
     <>
       <header className="caja-report-header">
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          {!sidebarExpanded && (
-            <button
-              className="caja-menu-toggle-btn-header"
-              type="button"
-              onClick={toggleSidebar}
-              aria-label="Mostrar barra lateral"
-              title="Mostrar barra lateral"
-            >
-              <Menu size={22} />
-            </button>
-          )}
           <div>
             <span>Control y exportacion</span>
             <h1>Consulta de Transacciones</h1>
@@ -57,7 +46,23 @@ export default function CajaReportes({
             value={periodo}
             size="sm"
           />
-          <Button leftSection={<Download size={15} />} onClick={descargarReporte} size="sm" style={{ height: "34px" }}>
+          <Button
+            className="caja-btn-descargar"
+            leftSection={<Download size={15} color="#ffffff" />}
+            onClick={descargarReporte}
+            size="sm"
+            style={{
+              height: "34px",
+              backgroundColor: "#23977f",
+              color: "#ffffff",
+            }}
+            styles={{
+              label: {
+                color: "#ffffff",
+                fontWeight: 700,
+              }
+            }}
+          >
             Descargar CSV
           </Button>
         </div>

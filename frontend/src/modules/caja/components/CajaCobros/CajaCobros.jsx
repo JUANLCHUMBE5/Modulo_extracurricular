@@ -33,19 +33,6 @@ export default function CajaCobros({
 
   return (
     <>
-      {!sidebarExpanded && (
-        <div style={{ marginBottom: "6px" }}>
-          <button
-            className="caja-menu-toggle-btn-header"
-            type="button"
-            onClick={toggleSidebar}
-            aria-label="Mostrar barra lateral"
-            title="Mostrar barra lateral"
-          >
-            <Menu size={22} />
-          </button>
-        </div>
-      )}
       <section className="caja-payment-workspace">
         {pagoConfirmado ? (
           <div className="caja-payment-approved" role="status">

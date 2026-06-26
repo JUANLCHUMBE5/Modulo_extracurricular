@@ -481,9 +481,9 @@ router.post("/api/v1/extracurricular/inscripciones", requireRole(["secretaria", 
     const codigoRegistro = invitacionRegistro?.codigoEstudiante || studentForRes.codigoEstudiante || "";
     const nombresRegistro = invitacionRegistro?.nombres || `${studentForRes.nombres || ""} ${studentForRes.apellidos || ""}`.trim();
     const gradoInvitacion = invitacionRegistro
-      ? obtenerGradoCompletoApi(invitacionRegistro.grado, invitacionRegistro.nivelEducativo || invitacionRegistro.nivel, studentForRes.grado)
+      ? obtenerGradoCompletoApi(invitacionRegistro.grado, invitacionRegistro.nivelEducativo || invitacionRegistro.nivel || studentForRes.nivel || studentForRes.nivel_nombre || studentForRes.nivelEducativo || "", studentForRes.grado)
       : "";
-    const gradoRegistro = obtenerGradoCompletoApi(grado || gradoInvitacion || studentForRes.grado, studentForRes.nivel || studentForRes.nivelEducativo);
+    const gradoRegistro = obtenerGradoCompletoApi(grado || gradoInvitacion || studentForRes.grado, studentForRes.nivel || studentForRes.nivel_nombre || studentForRes.nivelEducativo || "");
     const seccionRegistro = seccion || "";
     const plantillaPrograma = obtenerPlantillaProgramaApi(db, prog);
 
@@ -790,7 +790,9 @@ router.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres",
       const estadoProg = prog.estado || "Habilitado";
       if (estadoProg !== "Habilitado" || !programaListoParaPortalPadresApi(prog)) continue;
 
-      if (prog.invitacionMasiva && programaDisponibleParaGradoApi(prog, student?.grado)) {
+      const gradoCompleto = obtenerGradoCompletoApi(student?.grado, student?.nivel);
+      const plantilla = obtenerPlantillaProgramaApi(db, prog);
+      if (prog.invitacionMasiva && programaDisponibleParaGradoApi(prog, gradoCompleto)) {
         invitations.push({
           id: `${prog.id}-masiva-${dni}`,
           nombre: prog.nombre,
@@ -807,8 +809,8 @@ router.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres",
           programa: prog.nombre,
           categoria: prog.categoria || "",
           costo: prog.costo,
-          horario: resolverHorarioPorGradoApi(prog, student?.grado) || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario) || "",
-          responsable: resolverDocentePorGradoApi(prog, student?.grado),
+          horario: resolverHorarioPorGradoApi(prog, gradoCompleto) || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario) || "",
+          responsable: resolverDocentePorGradoApi(prog, gradoCompleto),
           modalidad_cobro: prog.modalidadCobro || "",
           requisitos: prog.requisitos || "",
           comunicado: prog.comunicado || "",
@@ -826,12 +828,33 @@ router.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres",
           requiere_uniforme: Boolean(prog.requiereUniforme),
           requiere_indumentaria: Boolean(prog.requiereIndumentaria),
           invitacion_masiva: true,
+          
+          // Campos de plantilla y documento Word
+          plantilla: plantilla.plantilla,
+          plantilla_base64: plantilla.plantillaBase64,
+          plantilla_variables: plantilla.plantillaVariables,
+          plantilla_validada: plantilla.plantillaValidada,
+          creado_desde_documento: Boolean(prog.creadoDesdeDocumento),
+          tipo_comunicado: prog.tipoComunicado || "",
+          tipo_documento: prog.tipoDocumento || "",
+          numero_documento: prog.numeroDocumento || "",
+          area_tematica: prog.areaTematica || "",
+          motivo_justificacion: prog.motivoJustificacion || prog.comunicado || "",
+          nombre_ciclo: prog.nombreCiclo || "",
+          duracion: prog.duracion || prog.duracionTaller || "",
+          tabla_horarios_nivel: prog.tablaHorariosNivel || [],
+          incluye_almuerzo: Boolean(prog.incluyeAlmuerzo),
+          horario_recepcion_almuerzo: prog.horarioRecepcionAlmuerzo || "",
+          modalidades_cambridge: prog.modalidadesCambridge || [],
+          costo_ciclo: prog.costoCiclo || (prog.costo ? String(prog.costo) : ""),
+          monto_primer_pago: prog.montoPrimerPago || "",
+          dias: Array.isArray(prog.dias) ? prog.dias : []
         });
       } else {
         const invitados = db.invitadosPorPrograma[prog.id] || [];
-        const inv = invitados.find(item => item.dni === dni);
+        const inv = invitados.find(item => String(item.dni || "").replace(/\D/g, "") === String(dni || "").replace(/\D/g, ""));
         if (inv) {
-          const gradoCompletoInvitado = obtenerGradoCompletoApi(inv.grado, inv.nivelEducativo || inv.nivel, student?.grado);
+          const gradoCompletoInvitado = obtenerGradoCompletoApi(inv.grado, inv.nivelEducativo || inv.nivel || student?.nivel || student?.nivel_nombre || "", student?.grado);
           invitations.push({
             id: prog.id,
             nombre: prog.nombre,
@@ -867,6 +890,27 @@ router.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres",
             requiere_uniforme: Boolean(prog.requiereUniforme),
             requiere_indumentaria: Boolean(prog.requiereIndumentaria),
             invitacion_masiva: Boolean(prog.invitacionMasiva),
+
+            // Campos de plantilla y documento Word
+            plantilla: plantilla.plantilla,
+            plantilla_base64: plantilla.plantillaBase64,
+            plantilla_variables: plantilla.plantillaVariables,
+            plantilla_validada: plantilla.plantillaValidada,
+            creado_desde_documento: Boolean(prog.creadoDesdeDocumento),
+            tipo_comunicado: prog.tipoComunicado || "",
+            tipo_documento: prog.tipoDocumento || "",
+            numero_documento: prog.numeroDocumento || "",
+            area_tematica: prog.areaTematica || "",
+            motivo_justificacion: prog.motivoJustificacion || prog.comunicado || "",
+            nombre_ciclo: prog.nombreCiclo || "",
+            duracion: prog.duracion || prog.duracionTaller || "",
+            tabla_horarios_nivel: prog.tablaHorariosNivel || [],
+            incluye_almuerzo: Boolean(prog.incluyeAlmuerzo),
+            horario_recepcion_almuerzo: prog.horarioRecepcionAlmuerzo || "",
+            modalidades_cambridge: prog.modalidadesCambridge || [],
+            costo_ciclo: prog.costoCiclo || (prog.costo ? String(prog.costo) : ""),
+            monto_primer_pago: prog.montoPrimerPago || "",
+            dias: Array.isArray(prog.dias) ? prog.dias : []
           });
         }
       }

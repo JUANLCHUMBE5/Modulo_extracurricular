@@ -307,7 +307,10 @@ export default function Caja({
     let pagoAsociado = null;
     if (inscripcion?.pagoId) {
       try {
-        pagoAsociado = await obtenerPagoPorId(inscripcion.pagoId);
+        const pago = await obtenerPagoPorId(inscripcion.pagoId);
+        if (pago && pago.estado !== "anulado") {
+          pagoAsociado = pago;
+        }
       } catch (e) {
         console.error("Error al cargar pago asociado:", e);
       }

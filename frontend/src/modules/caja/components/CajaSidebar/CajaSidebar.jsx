@@ -65,7 +65,6 @@ export default function CajaSidebar({
                 type="button"
                 title="Registrar Cobro"
               >
-                <Receipt size={17} />
                 <span>Registrar Cobro</span>
                 <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
@@ -78,7 +77,6 @@ export default function CajaSidebar({
                 type="button"
                 title="Control y Exportacion"
               >
-                <ChartBar size={17} />
                 <span>Control y Exportacion</span>
                 <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
@@ -91,7 +89,6 @@ export default function CajaSidebar({
                 type="button"
                 title="Anulación de Correlativo"
               >
-                <ReceiptOff size={17} />
                 <span>Anulación de Correlativo</span>
                 <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
@@ -137,7 +134,7 @@ export default function CajaSidebar({
       )}
 
       {moduleSwitcher && sidebarExpanded ? (
-        <div className="pt-3">
+        <div>
           {moduleSwitcher}
         </div>
       ) : null}

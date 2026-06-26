@@ -425,7 +425,6 @@ function TablaAsistencias({ asistencias }) {
             <tr>
               <th>Hora</th>
               <th>DNI</th>
-              <th>Codigo</th>
               <th>Estudiante</th>
               <th>Horario del taller</th>
               <th>Pago</th>
@@ -443,7 +442,6 @@ function TablaAsistencias({ asistencias }) {
                 <tr key={`${asistencia.id || obtenerDniAsistencia(asistencia) || obtenerNombreAsistencia(asistencia)}-${index}`}>
                   <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asistencia))}</td>
                   <td>{obtenerDniAsistencia(asistencia) || "Sin DNI"}</td>
-                  <td>{obtenerCodigoAsistencia(asistencia) || "-"}</td>
                   <td><strong>{obtenerNombreAsistencia(asistencia) || "-"}</strong></td>
                   <td>{obtenerHorarioAsistencia(asistencia) || "-"}</td>
                   <td>

@@ -1759,7 +1759,10 @@ function enriquecerAsistenciaPrograma(db, asistencia = {}, programaId = "") {
   const programa = (db.programas || []).find(item => item.id === (inscripcion?.programaId || asistencia.programaId || programaId))
     || (db.programas || []).find(item => normalizarTextoApi(item.nombre) === normalizarTextoApi(inscripcion?.programa || asistencia.programa))
     || null;
-  const gradoEstudiante = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
+  const gradoEstudiante = inscripcion?.gradoEstudiante
+    || inscripcion?.grado
+    || (estudiante ? obtenerGradoCompletoApi(estudiante.grado, estudiante.nivel) : "")
+    || "";
   const horario = asistencia.horario
     || inscripcion?.horario
     || resolverHorarioPorGradoApi(programa, gradoEstudiante)

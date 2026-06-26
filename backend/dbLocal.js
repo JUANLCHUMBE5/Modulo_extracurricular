@@ -373,6 +373,15 @@ async function readFromSupabase() {
         ins.derivadoCaja = ins.derivadoCaja ?? false;
         ins.estadoCaja = ins.estadoCaja || "";
 
+        // Resolver costo dinámicamente ya que no es una columna de la tabla inscripciones en Supabase
+        const prog = programasList.find(p => p.id === ins.programaId);
+        const baseCosto = ins.costoOriginal !== undefined && ins.costoOriginal !== null
+          ? Number(ins.costoOriginal)
+          : (prog ? Number(prog.costo || 0) : 0);
+        ins.costo = ins.descuentoAprobado
+          ? Math.max(0, baseCosto - Number(ins.descuentoMonto || 0))
+          : baseCosto;
+
         // Determinar origenRegistro de forma inteligente para que el panel de Dirección lo identifique como Web/Padres
         const pagoAsociado = (resPagos.data || []).find(p => p.inscripcionId === ins.id);
         if (pagoAsociado && (String(pagoAsociado.formaPago).toLowerCase() === "yape" || pagoAsociado.capturaPagoBase64)) {

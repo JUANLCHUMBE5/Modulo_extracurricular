@@ -50,7 +50,7 @@ function SeccionComunicadoPadres({
         <div className="coord-section-grid" style={{ marginTop: "8px" }}>
           <div className="coord-field coord-field-full">
             <label style={{ fontSize: "12.5px", fontWeight: "700", color: "#374151" }}>
-              Texto del Comunicado / Descripción *
+              Texto del Comunicado / Descripción
             </label>
             <textarea
               value={form.comunicado || ""}

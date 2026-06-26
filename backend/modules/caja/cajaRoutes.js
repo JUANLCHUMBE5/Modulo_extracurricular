@@ -193,7 +193,19 @@ router.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, 
       programa: programa || (inscrip ? inscrip.programa : ""),
       programaId: (inscrip ? inscrip.programaId : ""),
       periodo: periodo || (inscrip ? inscrip.periodo : "escolar"),
-      monto: Number(monto || (inscrip ? inscrip.costo : 0) || 0),
+      monto: Number(
+        monto ||
+        (inscrip
+          ? (inscrip.costo !== undefined
+              ? inscrip.costo
+              : (inscrip.descuentoAprobado
+                  ? Math.max(0, Number(inscrip.costoOriginal ?? (db.programas.find(p => p.id === inscrip.programaId)?.costo ?? 0)) - Number(inscrip.descuentoMonto || 0))
+                  : Number(inscrip.costoOriginal ?? (db.programas.find(p => p.id === inscrip.programaId)?.costo ?? 0))
+                )
+            )
+          : 0) ||
+        0
+      ),
       formaPago: forma_pago || "Efectivo",
       numeroOperacion: numero_operacion || "",
       telefonoOperacion: telefono_operacion || "",
@@ -380,7 +392,17 @@ router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]
       const pagoAsociado = buscarPagoAsociado(item);
       return esEstadoCerrado(item.estadoPago, item.estadoInscripcion, pagoAsociado?.estado, pagoAsociado?.estadoPago, pagoAsociado?.estadoVerificacion);
     };
-    const derivadas = inscripciones.filter(item => item.derivadoCaja);
+    const enriquecerInscripcion = (item) => {
+      const prog = (db.programas || []).find(p => p.id === item.programaId);
+      return {
+        ...item,
+        programa: item.programa || prog?.nombre || "Sin programa",
+        costo: item.costo ?? prog?.costo ?? 0,
+        costoOriginal: item.costoOriginal ?? prog?.costo ?? 0
+      };
+    };
+
+    const derivadas = inscripciones.filter(item => item.derivadoCaja).map(enriquecerInscripcion);
     const derivadasPendientes = derivadas.filter(item => !isPaid(item));
     const activeInscrip = derivadasPendientes[0] || derivadas[0] || null;
 
@@ -704,7 +726,13 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
         const prog = db.programas.find(progItem => progItem.id === e.programaId);
         const student = db.estudiantes?.[e.dniEstudiante];
 
-        const monto = p ? p.monto : e.costo;
+        const baseCosto = e.costoOriginal !== undefined && e.costoOriginal !== null
+          ? Number(e.costoOriginal)
+          : (prog ? Number(prog.costo || 0) : 0);
+        const finalCosto = e.descuentoAprobado
+          ? Math.max(0, baseCosto - Number(e.descuentoMonto || 0))
+          : baseCosto;
+        const monto = p ? p.monto : finalCosto;
         const statePay = normalizarEstadoPagoReporteCaja(p, e);
 
         return {
@@ -808,7 +836,17 @@ router.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"])
       programaId: inscrip.programaId || "",
       programa: req.body.nombre_programa || inscrip.programa || "",
       periodo: req.body.periodo || inscrip.periodo || "escolar",
-      monto: Number(req.body.monto_pago || inscrip.costo || 0),
+      monto: Number(
+        req.body.monto_pago ||
+        (inscrip.costo !== undefined
+          ? inscrip.costo
+          : (inscrip.descuentoAprobado
+              ? Math.max(0, Number(inscrip.costoOriginal ?? (db.programas.find(p => p.id === inscrip.programaId)?.costo ?? 0)) - Number(inscrip.descuentoMonto || 0))
+              : Number(inscrip.costoOriginal ?? (db.programas.find(p => p.id === inscrip.programaId)?.costo ?? 0))
+            )
+        ) ||
+        0
+      ),
       formaPago: req.body.metodo_pago || "Yape",
       numeroOperacion: req.body.numero_operacion || req.body.referencia || "",
       telefonoOperacion: req.body.telefono_operacion || req.body.telefono || "",

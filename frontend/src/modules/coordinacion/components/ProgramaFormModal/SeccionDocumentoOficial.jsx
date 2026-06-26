@@ -17,7 +17,7 @@ function SeccionDocumentoOficial({ form, actualizarForm, esCambridgeForm = false
       </div>
       <div className="coord-section-grid coord-doc-fields-grid">
         <div className="coord-field">
-          <label>Tipo de documento *</label>
+          <label>Tipo de documento</label>
           <select
             value={tipoDocumentoValor}
             disabled={esCambridgeForm}
@@ -40,7 +40,7 @@ function SeccionDocumentoOficial({ form, actualizarForm, esCambridgeForm = false
           </select>
         </div>
         <div className="coord-field">
-          <label>Número de documento (editable) *</label>
+          <label>Número de documento (editable)</label>
           <input
             value={form.numeroDocumento || ""}
             onChange={e => actualizarForm("numeroDocumento", e.target.value)}
@@ -48,7 +48,7 @@ function SeccionDocumentoOficial({ form, actualizarForm, esCambridgeForm = false
           />
         </div>
         <div className="coord-field">
-          <label>Área temática *</label>
+          <label>Área temática</label>
           <select
             value={areaTematicaValor}
             disabled={esCambridgeForm}
@@ -66,7 +66,7 @@ function SeccionDocumentoOficial({ form, actualizarForm, esCambridgeForm = false
           </select>
         </div>
         <div className="coord-field">
-          <label>Nombre del ciclo *</label>
+          <label>Nombre del ciclo</label>
           <select
             value={form.nombreCiclo || "Ciclo I"}
             onChange={e => actualizarForm("nombreCiclo", e.target.value)}
@@ -76,7 +76,7 @@ function SeccionDocumentoOficial({ form, actualizarForm, esCambridgeForm = false
           </select>
         </div>
         <div className="coord-field coord-field-full">
-          <label>Cuerpo o justificación del comunicado (editable) *</label>
+          <label>Cuerpo o justificación del comunicado (editable)</label>
           <textarea
             value={form.comunicado || ""}
             onChange={e => {

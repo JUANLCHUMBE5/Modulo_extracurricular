@@ -93,7 +93,7 @@ export default function ModuleSwitcher({ activeShortcutId, availableModules, cur
   };
 
   return (
-    <div className="grid gap-2">
+    <div className="grid">
       {groups.map((group) => {
         const isGroupOpen = !!expanded[group.id];
         return (
@@ -122,7 +122,6 @@ export default function ModuleSwitcher({ activeShortcutId, availableModules, cur
                       title={item.label}
                       type="button"
                     >
-                      <Icon size={18} />
                       <span>{item.label}</span>
                       <ChevronRight className="coord-nav-arrow" size={16} />
                     </button>

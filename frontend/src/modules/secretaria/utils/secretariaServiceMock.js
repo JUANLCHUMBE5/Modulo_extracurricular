@@ -457,7 +457,12 @@ function buscarInvitacionEnMemoria(dni, periodo, gradoAlumno = "") {
 
 function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
   const { programa, invitado } = invitacionPeriodo;
-  const gradoInvitado = obtenerGradoCompleto(invitado.grado, invitado.nivelEducativo || invitado.nivel);
+  const student = apiDb.estudiantes[invitado.dni] || {};
+  const gradoInvitado = obtenerGradoCompleto(
+    invitado.grado,
+    invitado.nivelEducativo || invitado.nivel || student.nivel || "",
+    student.grado
+  );
   const horarioResuelto = resolverHorarioPorGrado(programa, gradoInvitado);
   const horarioConfigurado = Boolean(horarioResuelto || !tieneHorariosPorGrupo(programa));
   const cuposDisponibles = calcularCuposDisponibles(programa);
@@ -506,7 +511,11 @@ function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
 
 function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo) {
   const { programa, invitado = {} } = invitacionPeriodo;
-  const gradoInvitacion = obtenerGradoCompleto(invitado.grado, invitado.nivelEducativo || invitado.nivel, estudiante.grado);
+  const gradoInvitacion = obtenerGradoCompleto(
+    invitado.grado,
+    invitado.nivelEducativo || invitado.nivel || estudiante.nivel || "",
+    estudiante.grado
+  );
   const seccionInvitacion = invitado.seccion || estudiante.seccion;
   const nivelInvitacion = invitado.nivelEducativo || estudiante.nivel || "";
   const horarioResuelto = resolverHorarioPorGrado(programa, gradoInvitacion);

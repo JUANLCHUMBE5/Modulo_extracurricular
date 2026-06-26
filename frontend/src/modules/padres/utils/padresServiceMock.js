@@ -116,7 +116,11 @@ export async function registrarInscripcionPadresMock(dni, datos, programaId = ""
   if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
   if (programa.estado !== "Habilitado") throw new Error("El programa no está habilitado.");
   const esCambridge = esProgramaCambridgePadres(programa);
-  const gradoRegistro = invitacion?.grado || estudiante.grado;
+  const gradoRegistro = obtenerGradoCompleto(
+    invitacion?.grado || estudiante.grado,
+    invitacion?.nivelEducativo || invitacion?.nivel || estudiante.nivel || "",
+    estudiante.grado
+  );
   const seccionRegistro = invitacion?.seccion || estudiante.seccion;
   const codigoRegistro = invitacion?.codigoEstudiante || estudiante.codigoEstudiante || "";
   const nombresRegistro = invitacion?.nombres || estudiante.nombres;
@@ -458,6 +462,10 @@ function obtenerInvitaciones(dni, estudiante = null) {
         duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
         horaLimiteAviso: programa.horaLimiteAviso || "23:59",
         ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso, programa),
+        creadoDesdeDocumento: Boolean(programa.creadoDesdeDocumento),
+        plantilla: programa.plantilla || "",
+        plantillaValidada: Boolean(programa.plantillaValidada),
+        plantillaVariables: programa.plantillaVariables || []
       });
     }
 
@@ -467,7 +475,11 @@ function obtenerInvitaciones(dni, estudiante = null) {
       .filter((invitado) => invitado.dni === dni)
       .forEach((invitado) => {
         if (resultado.some((item) => item.programaId === programa.id)) return;
-        const gradoEstudiante = obtenerGradoCompleto(invitado.grado, invitado.nivelEducativo || invitado.nivel, estudiante?.grado);
+        const gradoEstudiante = obtenerGradoCompleto(
+          invitado.grado,
+          invitado.nivelEducativo || invitado.nivel || estudiante?.nivel || "",
+          estudiante?.grado
+        );
         if (!esCambridge && !programaDisponibleParaGrado(programa, gradoEstudiante)) return;
 
         resultado.push({
@@ -505,6 +517,10 @@ function obtenerInvitaciones(dni, estudiante = null) {
           duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
           horaLimiteAviso: programmeHoraLimiteAviso(programa),
           ventanaInscripcion: obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programmeHoraLimiteAviso(programa), programa),
+          creadoDesdeDocumento: Boolean(programa.creadoDesdeDocumento),
+          plantilla: programa.plantilla || "",
+          plantillaValidada: Boolean(programa.plantillaValidada),
+          plantillaVariables: programa.plantillaVariables || []
         });
       });
   });

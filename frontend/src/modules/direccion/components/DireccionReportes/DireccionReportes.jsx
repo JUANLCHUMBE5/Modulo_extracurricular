@@ -58,7 +58,7 @@ export default function DireccionReportes({
       <article className="dir-custom-report-builder">
         <header className="dir-builder-header">
           <div>
-            <span className="dir-tag">Descargas</span>
+
             <h2>Generador de Reportes</h2>
             <p className="dir-builder-subtitle">
               {reporteActual?.label || "Seleccione el reporte que desea preparar"}
@@ -67,11 +67,11 @@ export default function DireccionReportes({
           <div className="dir-builder-header-actions">
             <Button
               color="teal"
-              leftSection={<Download size={18} />}
+              leftSection={<Download size={14} />}
               loading={exportandoCustom}
               disabled={!exportarHabilitado || registrosFiltrados.length === 0 || customColumnas.length === 0}
               onClick={ejecutarDescargaCustom}
-              size="md"
+              size="xs"
               className="dir-download-custom-btn"
             >
               Descargar Excel
@@ -82,7 +82,7 @@ export default function DireccionReportes({
         <div className="dir-builder-content">
           <div className="dir-builder-sidebar">
             <div className="dir-builder-form-group">
-              <label className="dir-builder-label"><Filter size={14} /> Configuracion del reporte</label>
+              <label className="dir-builder-label"><Filter size={12} /> Configuración del reporte</label>
               <div className="dir-builder-filters">
                 <Select
                   label="Tipo de reporte"
@@ -186,26 +186,26 @@ export default function DireccionReportes({
                   customTipo === "pagos" ||
                   customTipo === "direccion_alumnos_pagos" ||
                   customTipo === "direccion_alumnos_asistencias") && (
-                  <Select
-                    label="Rango de Tiempo"
-                    data={[
-                      { value: "todos", label: "Todo el periodo" },
-                      { value: "hoy", label: "Hoy" },
-                      { value: "esta_semana", label: "Esta semana" },
-                      { value: "este_mes", label: "Este mes" },
-                      { value: "mes_anterior", label: "Mes anterior" },
-                      { value: "personalizado", label: "Rango personalizado" },
-                    ]}
-                    value={rangoRapido}
-                    onChange={(val) => cambiarRangoRapido(val || "todos")}
-                    allowDeselect={false}
-                    size="xs"
-                  />
-                )}
+                    <Select
+                      label="Rango de Tiempo"
+                      data={[
+                        { value: "todos", label: "Todo el periodo" },
+                        { value: "hoy", label: "Hoy" },
+                        { value: "esta_semana", label: "Esta semana" },
+                        { value: "este_mes", label: "Este mes" },
+                        { value: "mes_anterior", label: "Mes anterior" },
+                        { value: "personalizado", label: "Rango personalizado" },
+                      ]}
+                      value={rangoRapido}
+                      onChange={(val) => cambiarRangoRapido(val || "todos")}
+                      allowDeselect={false}
+                      size="xs"
+                    />
+                  )}
 
                 {/* Rango de Fechas */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#000000" }}>Fecha Inicio</span>
+                  <span className="dir-builder-input-label">Fecha Inicio</span>
                   <input
                     type="date"
                     value={fechaInicio}
@@ -214,7 +214,7 @@ export default function DireccionReportes({
                   />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: 700, color: "#000000" }}>Fecha Fin</span>
+                  <span className="dir-builder-input-label">Fecha Fin</span>
                   <input
                     type="date"
                     value={fechaFin}
@@ -246,7 +246,7 @@ export default function DireccionReportes({
                   size="xs"
                   styles={{
                     label: { fontSize: "11px", color: "#000000", fontWeight: 700 },
-                    root: { marginTop: "8px" }
+                    root: { marginTop: "0px" }
                   }}
                 />
               </div>
@@ -255,7 +255,7 @@ export default function DireccionReportes({
 
           <div className="dir-builder-columns-selector">
             <div className="dir-columns-header">
-              <label className="dir-builder-label"><Adjustments size={14} /> Columnas a exportar</label>
+              <label className="dir-builder-label"><Adjustments size={12} /> Columnas a exportar</label>
               <Group gap="xs">
                 <Button
                   variant="subtle"
@@ -287,18 +287,18 @@ export default function DireccionReportes({
                 hidePickedOptions
                 maxDropdownHeight={260}
                 nothingFoundMessage="Sin columnas"
-                size="sm"
+                size="xs"
               />
             </div>
           </div>
         </div>
 
         {/* Sección de Vista Previa */}
-        <div className="dir-builder-preview-section" style={{ marginTop: "20px", borderTop: "1px solid #e2e8f0", paddingTop: "14px" }}>
-          <div className="dir-preview-table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        <div className="dir-builder-preview-section" style={{ marginTop: "10px", borderTop: "1px solid #e2e8f0", paddingTop: "10px" }}>
+          <div className="dir-preview-table-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#000000" }}>Vista Previa del Reporte</h3>
-              <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "#000000" }}>
+              <h3 style={{ margin: 0, fontSize: "13px", fontWeight: 800, color: "#000000" }}>Vista Previa del Reporte</h3>
+              <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#000000" }}>
                 Mostrando los primeros 10 de {registrosFiltrados.length} registros filtrados
               </p>
             </div>
@@ -306,7 +306,7 @@ export default function DireccionReportes({
 
           {registrosFiltrados.length > 0 && customColumnas.length > 0 ? (
             <div className="dir-table-wrap dir-preview-table">
-              <Table striped highlightOnHover verticalSpacing="sm">
+              <Table striped highlightOnHover verticalSpacing="xs">
                 <Table.Thead>
                   <Table.Tr>
                     {customColumnas.map((colKey) => {
@@ -352,7 +352,7 @@ export default function DireccionReportes({
               </Table>
             </div>
           ) : (
-            <div className="dir-empty-preview" style={{ minHeight: "120px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div className="dir-empty-preview" style={{ minHeight: "60px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px" }}>
               {customColumnas.length === 0
                 ? "Seleccione al menos una columna para ver la vista previa."
                 : "No hay registros que coincidan con los filtros seleccionados."}

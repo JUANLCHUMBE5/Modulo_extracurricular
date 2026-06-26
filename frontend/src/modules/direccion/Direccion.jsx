@@ -24,7 +24,7 @@ import DireccionReportes from "./components/DireccionReportes/DireccionReportes"
 import DireccionDescuentos from "./components/DireccionDescuentos/DireccionDescuentos";
 import DireccionCorrelativos from "./components/DireccionCorrelativos/DireccionCorrelativos";
 
-export default function Direccion({ onLogout, user }) {
+export default function Direccion({ onLogout, user, moduleSwitcher }) {
   const { subview } = useParams();
   const navigate = useNavigate();
   const vista = subview || "resumen";
@@ -612,6 +612,7 @@ export default function Direccion({ onLogout, user }) {
         vista={vista}
         setVista={setVista}
         onLogout={onLogout}
+        moduleSwitcher={moduleSwitcher}
       />
 
       <section className="dir-main">

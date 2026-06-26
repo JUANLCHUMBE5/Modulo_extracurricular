@@ -12,7 +12,7 @@ function SeccionRequisitosMateriales({ form, actualizarForm }) {
       <div className="coord-section-grid">
         <div className="coord-field coord-field-full">
           <label style={{ fontSize: "12.5px", fontWeight: "700", color: "#374151" }}>
-            Lista de útiles / requisitos (editable) *
+            Lista de útiles / requisitos (editable)
           </label>
           <textarea
             value={form.requisitos || ""}

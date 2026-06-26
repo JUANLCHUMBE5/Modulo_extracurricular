@@ -854,7 +854,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   }}
                   title="Inscripción presencial"
                 >
-                  <Search size={18} />
                   <span>Inscripción presencial</span>
                   <ChevronRight className="coord-nav-arrow" size={16} />
                 </button>
@@ -868,7 +867,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   }}
                   title="Ver Asistencias"
                 >
-                  <UserCheck size={18} />
                   <span>Ver Asistencias</span>
                   <ChevronRight className="coord-nav-arrow" size={16} />
                 </button>
@@ -905,7 +903,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         )}
 
         {moduleSwitcher && sidebarExpanded ? (
-          <div className="pt-3">
+          <div>
             {moduleSwitcher}
           </div>
         ) : null}

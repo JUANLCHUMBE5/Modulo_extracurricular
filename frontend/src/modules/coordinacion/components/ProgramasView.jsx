@@ -128,21 +128,14 @@ function ProgramasView({
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           {toggleSidebarButton}
           <div>
-            <span className="coord-topbar-eyebrow">Gestion academica</span>
+            <span className="coord-topbar-eyebrow">Gestión académica</span>
             <h1>{mostrarSoloArchivados ? "Historial de Programas" : "Programas extracurriculares"}</h1>
           </div>
         </div>
       </header>
       <section className="coord-workspace coord-workspace-single">
         <article className="coord-card coord-search-card">
-          <div className="coord-card-title coord-programs-clean-title">
-            <div className="coord-programs-clean-heading">
-              <span className="coord-title-icon"><BookOpen size={21} /></span>
-              <div>
-                <h2>{mostrarSoloArchivados ? "Historial y Archivo" : "Programas registrados"}</h2>
-                <p>{mostrarSoloArchivados ? "Consulte el historial de talleres pasados o archivados y acceda a sus reportes." : "Consulte, cree o administre programas y talleres."}</p>
-              </div>
-            </div>
+          <div className="coord-card-title coord-programs-clean-title" style={{ justifyContent: "flex-end" }}>
             <div className="coord-stats-badges coord-programs-clean-badges">
               {mostrarSoloArchivados ? (
                 <>
@@ -172,7 +165,6 @@ function ProgramasView({
               )}
             </div>
           </div>
-
           <div className="coord-filtros-card-mantine coord-programs-clean-filters">
             <div className="coord-filtros-row-mantine coord-programs-clean-filter-row">
               {/* Buscador */}

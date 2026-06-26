@@ -10,7 +10,8 @@ import {
   normalizarPeriodoApi,
   normalizarTextoApi,
   resolverHorarioPorGradoApi,
-  resolverDocentePorGradoApi
+  resolverDocentePorGradoApi,
+  obtenerGradoCompletoApi
 } from "../../mappers.js";
 
 const router = express.Router();
@@ -453,7 +454,7 @@ router.post("/direccion/descuentos/aplicar", requireRole(["direccion"]), async (
       if (!invitado) return res.status(404).json({ success: false, message: "Invitación de estudiante no encontrada" });
 
       const student = db.estudiantes?.[dni] || {};
-      const gradoEstudiante = invitado.grado || student.grado || "";
+      const gradoEstudiante = obtenerGradoCompletoApi(invitado.grado || student.grado || "", invitado.nivelEducativo || invitado.nivel || student.nivel || "");
       const horarioResuelto = resolverHorarioPorGradoApi(prog, gradoEstudiante) || prog.horario || "";
       const docenteResuelto = resolverDocentePorGradoApi(prog, gradoEstudiante) || prog.responsable || prog.docente || "No definido";
 

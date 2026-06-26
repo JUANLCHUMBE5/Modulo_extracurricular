@@ -83,7 +83,7 @@ function SeccionAlmuerzo({ form, esMostrarSeccionAlmuerzo, actualizarForm }) {
 
               <div style={{ marginTop: "12px" }}>
                 <label style={{ fontSize: "12.5px", color: "#374151", fontWeight: "700", display: "block", marginBottom: "4px" }}>
-                  Detalle / Indicaciones de almuerzo *
+                  Detalle / Indicaciones de almuerzo
                 </label>
                 <textarea
                   value={form.detalleAlmuerzo || ""}
@@ -104,7 +104,7 @@ function SeccionAlmuerzo({ form, esMostrarSeccionAlmuerzo, actualizarForm }) {
 
               <div style={{ marginTop: "12px" }}>
                 <label style={{ fontSize: "12.5px", color: "#374151", fontWeight: "700", display: "block", marginBottom: "4px" }}>
-                  Concesionarios autorizados *
+                  Concesionarios autorizados
                 </label>
                 <textarea
                   value={form.concesionarios || ""}

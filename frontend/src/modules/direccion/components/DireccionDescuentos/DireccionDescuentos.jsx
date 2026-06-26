@@ -35,10 +35,10 @@ export default function DireccionDescuentos({
   };
 
   return (
-    <section className="dir-descuentos-view" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <article className="dir-search-container" style={{ borderRadius: "12px", overflow: "hidden" }}>
-        <div style={{ marginBottom: "20px" }}>
-          <h2 style={{ margin: 0, color: "#000000", fontSize: "20px", fontWeight: 800 }}>Autorización de Descuentos y Becas</h2>
+    <section className="dir-descuentos-view" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+      <article className="dir-search-container" style={{ borderRadius: "8px", overflow: "hidden" }}>
+        <div style={{ marginBottom: "8px" }}>
+          <h2 style={{ margin: 0, color: "#000000", fontSize: "16px", fontWeight: 800 }}>Autorización de Descuentos y Becas</h2>
         </div>
 
         <form onSubmit={buscarEstudiantesDescuento} className="dir-search-form">
@@ -47,21 +47,21 @@ export default function DireccionDescuentos({
             value={busquedaDescuento}
             onChange={(e) => setBusquedaDescuento(e.target.value)}
             style={{ flex: 1 }}
-            size="md"
-            leftSection={<Search size={18} />}
+            size="xs"
+            leftSection={<Search size={14} />}
             styles={{
               input: {
-                borderRadius: "8px",
+                borderRadius: "6px",
                 borderColor: "#cbd5e1",
-                fontSize: "14px",
-                height: "46px"
+                fontSize: "12px",
+                height: "28px"
               }
             }}
           />
           <Button
             type="submit"
             loading={buscandoDescuento}
-            size="md"
+            size="xs"
             className="dir-search-btn"
           >
             Buscar Alumno
@@ -69,9 +69,9 @@ export default function DireccionDescuentos({
         </form>
 
         {resultadosDescuento.length > 0 ? (
-          <div style={{ marginTop: "20px", borderTop: "1px solid #f1f5f9" }}>
+          <div style={{ marginTop: "10px", borderTop: "1px solid #f1f5f9" }}>
             <div className="dir-table-wrap">
-              <Table striped highlightOnHover verticalSpacing="md">
+              <Table striped highlightOnHover verticalSpacing="xs">
                 <Table.Thead>
                   <Table.Tr style={{ background: "#f8fafc" }}>
                     <Table.Th style={{ width: "32%" }}>Estudiante</Table.Th>
@@ -98,8 +98,8 @@ export default function DireccionDescuentos({
                               {obtenerIniciales(ins.estudiante || ins.nombresEstudiante)}
                             </div>
                             <div className="dir-student-name-container">
-                              <span style={{ fontWeight: 500, color: "#000000" }}>{ins.estudiante || ins.nombresEstudiante}</span>
-                              <span>Pre-inscrito</span>
+                              <span style={{ fontWeight: 500, color: "#000000", fontSize: "12px" }}>{ins.estudiante || ins.nombresEstudiante}</span>
+                              <span style={{ fontSize: "10px" }}>Pre-inscrito</span>
                             </div>
                           </div>
                         </Table.Td>
@@ -182,39 +182,7 @@ export default function DireccionDescuentos({
               </Table>
             </div>
           </div>
-        ) : (
-          <div className="dir-empty-state-card">
-            <div className="dir-empty-state-icon-container" style={{
-              background: busquedaDescuento ? "#fef2f2" : "#f1f5f9",
-              color: busquedaDescuento ? "#ef4444" : "#000000",
-              borderColor: busquedaDescuento ? "#fee2e2" : "#cbd5e1"
-            }}>
-              {busquedaDescuento ? <AlertCircle size={36} /> : <RosetteDiscount size={36} />}
-            </div>
-            <h3>{busquedaDescuento ? "Sin resultados" : "Buscador de Alumnos"}</h3>
-            <p>
-              {busquedaDescuento
-                ? `No se encontraron pre-inscripciones activas que coincidan con "${busquedaDescuento}". Asegúrese de escribir correctamente el DNI o nombres del alumno.`
-                : "Ingrese el DNI o el nombre completo del estudiante en el cuadro de búsqueda para consultar las pre-inscripciones y aplicar becas o descuentos especiales."}
-            </p>
-            {!busquedaDescuento && (
-              <div className="dir-empty-state-steps">
-                <div className="dir-empty-state-step">
-                  <span className="dir-empty-state-step-num">Paso 1</span>
-                  <span className="dir-empty-state-step-text">Buscar estudiante</span>
-                </div>
-                <div className="dir-empty-state-step">
-                  <span className="dir-empty-state-step-num">Paso 2</span>
-                  <span className="dir-empty-state-step-text">Definir beneficio</span>
-                </div>
-                <div className="dir-empty-state-step">
-                  <span className="dir-empty-state-step-num">Paso 3</span>
-                  <span className="dir-empty-state-step-text">Enviar a Caja</span>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+        ) : null}
       </article>
 
       {/* Modal para aplicar beneficio */}
@@ -222,9 +190,9 @@ export default function DireccionDescuentos({
         opened={modalDescuentoAbierto}
         onClose={cerrarModalBeneficio}
         title={
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <RosetteDiscount size={22} color="#000000" />
-            <strong style={{ fontSize: "16px", color: "#000000" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <RosetteDiscount size={16} color="#000000" />
+            <strong style={{ fontSize: "14px", color: "#000000" }}>
               {datosBeneficio.tipo === "beca" ? "Aprobación de Beca Completa" : "Autorización de Descuento Especial"}
             </strong>
           </div>
@@ -235,8 +203,8 @@ export default function DireccionDescuentos({
         styles={{
           header: {
             borderBottom: "1px solid #f1f5f9",
-            paddingBottom: "12px",
-            marginBottom: "16px"
+            paddingBottom: "6px",
+            marginBottom: "10px"
           },
           close: {
             color: "#94a3b8",
@@ -247,7 +215,7 @@ export default function DireccionDescuentos({
           }
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           {inscripcionSeleccionada && (
             <div className="dir-modal-student-card">
               <div className="dir-modal-student-avatar">
@@ -277,9 +245,10 @@ export default function DireccionDescuentos({
             value={datosBeneficio.tipo}
             onChange={(val) => setDatosBeneficio({ ...datosBeneficio, tipo: val || "beca", valor: "" })}
             allowDeselect={false}
+            size="xs"
             styles={{
-              label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "6px" },
-              input: { borderRadius: "8px", borderColor: "#cbd5e1" }
+              label: { fontSize: "11px", fontWeight: 700, color: "#000000", marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.03em" },
+              input: { borderRadius: "6px", borderColor: "#cbd5e1", height: "28px" }
             }}
           />
 
@@ -292,9 +261,10 @@ export default function DireccionDescuentos({
               type="number"
               min="1"
               required
+              size="xs"
               styles={{
-                label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "6px" },
-                input: { borderRadius: "8px", borderColor: "#cbd5e1" }
+                label: { fontSize: "11px", fontWeight: 700, color: "#000000", marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.03em" },
+                input: { borderRadius: "6px", borderColor: "#cbd5e1", height: "28px" }
               }}
             />
           )}
@@ -304,11 +274,12 @@ export default function DireccionDescuentos({
             placeholder="Ej. Convenio institucional, familiar directo de docente, beca socioeconómica..."
             value={datosBeneficio.justificacion}
             onChange={(e) => setDatosBeneficio({ ...datosBeneficio, justificacion: e.target.value })}
-            rows={3}
+            rows={2}
             required
+            size="xs"
             styles={{
-              label: { fontSize: "13px", fontWeight: 500, color: "#000000", marginBottom: "6px" },
-              input: { borderRadius: "8px", borderColor: "#cbd5e1" }
+              label: { fontSize: "11px", fontWeight: 700, color: "#000000", marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.03em" },
+              input: { borderRadius: "6px", borderColor: "#cbd5e1" }
             }}
           />
 
@@ -341,13 +312,15 @@ export default function DireccionDescuentos({
               <Button
                 onClick={guardarBeneficio}
                 loading={buscandoDescuento}
+                size="xs"
                 styles={{
                   root: {
-                    borderRadius: "8px",
+                    borderRadius: "6px",
                     fontWeight: 600,
                     background: "#000000",
                     color: "#ffffff",
-                    padding: "0 16px"
+                    padding: "0 12px",
+                    height: "28px"
                   }
                 }}
               >

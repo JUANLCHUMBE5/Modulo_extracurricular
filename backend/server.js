@@ -54,6 +54,12 @@ app.use((req, res, next) => {
   next();
 });
 
+// Disable API caching to avoid browser HTTP 304 cache issues
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  next();
+});
+
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, dbSource: getDbSource() });
 });
