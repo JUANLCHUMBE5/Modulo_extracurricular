@@ -214,16 +214,10 @@ function normalizarTexto(valor = "") {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function esCategoriaAcademica(programa = {}) {
-  const categoria = normalizarTexto(programa.categoria);
-  return categoria.includes("academ") || categoria.includes("ingles") || categoria.includes("ingl");
-}
-
 function programasDisponibles(programas = []) {
   return programas.filter((programa) =>
     String(programa.periodo || "escolar").toLowerCase().includes("escolar") &&
-    String(programa.estado || "Habilitado") === "Habilitado" &&
-    esCategoriaAcademica(programa)
+    String(programa.estado || "Habilitado") === "Habilitado"
   );
 }
 
@@ -482,7 +476,7 @@ function CargaExcelView({
                   setMensaje("");
                 }}
               >
-                <option value="">Seleccione programa academico</option>
+                <option value="">Seleccione programa o curso</option>
                 {programasCarga.map((programa) => (
                   <option key={programa.id} value={programa.id}>
                     {programa.id} - {programa.nombre}
@@ -543,7 +537,7 @@ function CargaExcelView({
                   value={seleccionExportarId}
                   onChange={(event) => setSeleccionExportarId(event.target.value)}
                 >
-                  <option value="all">Todos los talleres académicos</option>
+                  <option value="all">Todos los talleres</option>
                   {programasCarga.map((programa) => (
                     <option key={programa.id} value={programa.id}>
                       {programa.id} - {programa.nombre}
@@ -588,7 +582,7 @@ function CargaExcelView({
                   setMensaje("");
                 }}
               >
-                <option value="">Seleccione programa academico</option>
+                <option value="">Seleccione programa o curso</option>
                 {programasCarga.map((programa) => (
                   <option key={programa.id} value={programa.id}>
                     {programa.id} - {programa.nombre}

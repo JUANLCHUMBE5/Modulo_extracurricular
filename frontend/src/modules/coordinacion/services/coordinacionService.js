@@ -543,13 +543,12 @@ export async function previsualizarCargaAlumnosMasiva({ periodo, archivos, progr
   return combinarPreviewsCarga({ periodo, previews });
 }
 
-export async function registrarAlumnoIndividualCarga({ periodo, programaId, dni, nombre, grado }) {
+export async function registrarAlumnoIndividualCarga({ periodo, programaId, dni, nombre, grado, forzarGrado = false }) {
   await syncApiDb();
   normalizarPeriodosGuardados();
 
   const programa = (apiDb.programas || []).find((item) => String(item.id) === String(programaId));
   if (!programa) throw new Error("Seleccione un programa o curso.");
-  if (!esCategoriaAcademica(programa)) throw new Error("La carga de alumnos solo permite programas de categoría Académico.");
 
   const dniLimpio = limpiarTexto(dni).replace(/\D/g, "");
   const nombreLimpio = limpiarTexto(nombre);
@@ -559,8 +558,13 @@ export async function registrarAlumnoIndividualCarga({ periodo, programaId, dni,
   if (!/^\d{8}$/.test(dniLimpio)) errores.push("DNI inválido. Debe tener 8 dígitos.");
   if (!textoSeguro(nombreLimpio)) errores.push("Falta nombre.");
   if (!textoSeguro(gradoLimpio)) errores.push("Falta grado.");
-  if (gradoLimpio && !gradoCorrespondeAlPrograma(programa, gradoLimpio)) {
-    errores.push("El alumno no está dentro de su grado correspondiente para este taller.");
+
+  const gradoNoCorresponde = gradoLimpio && !gradoCorrespondeAlPrograma(programa, gradoLimpio);
+  if (gradoNoCorresponde && !forzarGrado) {
+    return {
+      requiereConfirmacion: true,
+      mensaje: `El grado "${gradoLimpio}" no está dentro de los grados configurados para el taller "${programa.nombre}". ¿Está seguro de inscribir al alumno en este taller?`,
+    };
   }
 
   const existente = (apiDb.invitadosPorPrograma?.[programa.id] || []).find((item) =>
@@ -603,6 +607,7 @@ export async function registrarAlumnoIndividualCarga({ periodo, programaId, dni,
 
   return confirmarCargaAlumnos(preview);
 }
+
 
 export async function buscarAlumnoCargaPorDni(dni, periodo = "escolar") {
   const dniLimpio = limpiarTexto(dni).replace(/\D/g, "");

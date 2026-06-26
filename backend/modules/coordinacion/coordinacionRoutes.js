@@ -711,7 +711,8 @@ router.get("/api/v1/extracurricular/programas/:programaId/asistencias", async (r
         const coincideId = item.programaId && String(item.programaId) === String(req.params.programaId);
         const coincideNombre = nomProg && normalizarTextoApi(item.programa) === nomProg;
         return coincideId || coincideNombre;
-      });
+      })
+      .map(item => enriquecerAsistenciaPrograma(db, item, req.params.programaId));
     res.json({ success: true, data: list.map(mapDbAsistenciaToApi) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -799,17 +800,7 @@ router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole
       validosPorArchivo.get(archivoNombre).push(item);
     });
 
-    validos.forEach(item => {
-      if (!item.programaId) return;
-      const programaCarga = db.programas.find(p => p.id === item.programaId);
-      if (!programaCarga) return;
-      const student = db.estudiantes?.[item.dni];
-      const nivelEstudiante = student?.nivel || student?.nivelEducativo || item.nivelEducativo || item.nivel;
-      const gradoCompleto = obtenerGradoCompletoApi(item.grado, nivelEstudiante, student?.grado || item.grado);
-      if (!esProgramaCambridgeApi(programaCarga) && !gradoCorrespondeAlProgramaApi(programaCarga, gradoCompleto)) {
-        throw new Error(`El alumno ${item.alumno || `${item.nombres || ''} ${item.apellidos || ''}`.trim()} no esta dentro de su grado correspondiente para este taller.`);
-      }
-    });
+
 
     validos.forEach(item => {
       if (!item.programaId) return;
@@ -836,9 +827,7 @@ router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole
       const student = db.estudiantes?.[item.dni];
       const nivelEstudiante = student?.nivel || student?.nivelEducativo || item.nivelEducativo || item.nivel;
       const gradoCompleto = obtenerGradoCompletoApi(item.grado, nivelEstudiante, student?.grado || item.grado);
-      if (!esProgramaCambridgeApi(programaCarga) && !gradoCorrespondeAlProgramaApi(programaCarga, gradoCompleto)) {
-        throw new Error("El alumno no esta dentro de su grado correspondiente para este taller.");
-      }
+
       const claveAlumno = claveAlumnoInvitadoApi(item);
       const alumnoYaExiste = Boolean(claveAlumno && existentes.some(existente =>
         claveAlumnoInvitadoApi(existente) === claveAlumno
@@ -1747,6 +1736,50 @@ router.post("/api/coordinacion/cargas/preview", upload.single("archivo"), async 
     });
   }
 });
+
+function buscarInscripcionAsistencia(db, asistencia = {}, programaId = "") {
+  const dni = asistencia.dniEstudiante || asistencia.dni || "";
+  const programaNombre = normalizarTextoApi(asistencia.programa);
+  return (db.inscripciones || []).find(item => asistencia.inscripcionId && item.id === asistencia.inscripcionId)
+    || (db.inscripciones || []).find(item =>
+      dni &&
+      item.dniEstudiante === dni &&
+      (
+        (programaId && item.programaId === programaId) ||
+        (asistencia.programaId && item.programaId === asistencia.programaId) ||
+        (programaNombre && normalizarTextoApi(item.programa) === programaNombre)
+      )
+    )
+    || null;
+}
+
+function enriquecerAsistenciaPrograma(db, asistencia = {}, programaId = "") {
+  const inscripcion = buscarInscripcionAsistencia(db, asistencia, programaId);
+  const estudiante = db.estudiantes?.[asistencia.dniEstudiante || inscripcion?.dniEstudiante] || null;
+  const programa = (db.programas || []).find(item => item.id === (inscripcion?.programaId || asistencia.programaId || programaId))
+    || (db.programas || []).find(item => normalizarTextoApi(item.nombre) === normalizarTextoApi(inscripcion?.programa || asistencia.programa))
+    || null;
+  const gradoEstudiante = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
+  const horario = asistencia.horario
+    || inscripcion?.horario
+    || resolverHorarioPorGradoApi(programa, gradoEstudiante)
+    || (programa && tieneHorariosPorGrupoApi(programa) ? "Horario no configurado para este grado" : programa?.horario)
+    || "";
+
+  return {
+    ...asistencia,
+    inscripcionId: asistencia.inscripcionId || inscripcion?.id || "",
+    dniEstudiante: asistencia.dniEstudiante || inscripcion?.dniEstudiante || estudiante?.dni || "",
+    codigoEstudiante: asistencia.codigoEstudiante || inscripcion?.codigoEstudiante || estudiante?.codigoEstudiante || "",
+    nombresEstudiante: asistencia.nombresEstudiante
+      || inscripcion?.nombresEstudiante
+      || (estudiante ? `${estudiante.nombres || ""} ${estudiante.apellidos || ""}`.trim() : ""),
+    programaId: asistencia.programaId || inscripcion?.programaId || programaId || "",
+    programa: asistencia.programa || inscripcion?.programa || programa?.nombre || "",
+    horario,
+    estadoPago: asistencia.estadoPago || inscripcion?.estadoPago || "Pendiente",
+  };
+}
 
 export default router;
 

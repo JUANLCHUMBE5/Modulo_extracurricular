@@ -35,9 +35,6 @@ export async function generarPreviewCargaExcel({ periodo, archivo, programas, ex
   if (programaId && !programaSeleccionado) {
     lanzar("Seleccione un programa habilitado del periodo actual antes de cargar el Excel.");
   }
-  if (programaSeleccionado && !esCategoriaAcademica(programaSeleccionado)) {
-    lanzar("La carga de alumnos solo permite programas de categoria Academico.");
-  }
 
   const filas = await leerExcelSeguro(archivo);
   const registros = validarRegistros({

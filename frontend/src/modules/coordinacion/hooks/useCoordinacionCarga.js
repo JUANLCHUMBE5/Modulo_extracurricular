@@ -76,9 +76,9 @@ export default function useCoordinacionCarga({
     };
   }, [alumnoIndividual.dni, modoCargaAlumnos, cargaPeriodo]);
 
-  async function guardarAlumnoIndividual() {
+  async function guardarAlumnoIndividual(forzarGrado = false) {
     if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para registrar alumnos.");
-    if (!programaCargaId) return mostrarMsg("Seleccione un programa académico.");
+    if (!programaCargaId) return mostrarMsg("Seleccione un programa o curso.");
     if (!alumnoIndividual.dni || alumnoIndividual.dni.length !== 8) {
       return mostrarMsg("El DNI debe tener exactamente 8 dígitos.");
     }
@@ -97,7 +97,19 @@ export default function useCoordinacionCarga({
         dni: alumnoIndividual.dni,
         nombre: alumnoIndividual.nombre,
         grado: alumnoIndividual.grado,
+        forzarGrado,
       });
+
+      // Si el servicio devuelve requiereConfirmacion, mostrar diálogo
+      if (resultado && resultado.requiereConfirmacion) {
+        setGuardandoIndividual(false);
+        const confirma = window.confirm(resultado.mensaje);
+        if (confirma) {
+          return guardarAlumnoIndividual(true);
+        }
+        return;
+      }
+
       await cargarDatos();
       setAlumnoIndividual({ dni: "", nombre: "", grado: "" });
       setEstadoAlumnoIndividual({ buscando: false, mensaje: "", encontrado: false });
@@ -154,26 +166,30 @@ export default function useCoordinacionCarga({
       );
 
       if (tieneErrorDeGrado) {
-        setPreviewCarga(null);
-        setProgresoCarga(null);
-        mostrarMsg("Verifica bien la lista de invitados, hay un grado que no coincide.");
-      } else {
-        setPreviewCarga(preview);
-        setProgresoCarga({
-          actual: archivosExcel.length,
-          total: archivosExcel.length,
-          porcentaje: 100,
-          archivo: "",
-          node_env: "production",
-          estado: "listo",
-        });
-        if (preview.resumen.validos === 0) {
-          mostrarMsg(
-            "La vista previa no tiene alumnos listos para guardar. Revise la columna Detalle y confirme que curso_programa coincida con un programa habilitado de Año escolar."
-          );
-        } else {
-          mostrarMsg(`Vista previa generada: ${preview.resumen.validos} alumno(s) listos para guardar.`, "success");
+        const confirma = window.confirm("Algunos alumnos no están dentro de los grados configurados para este taller. ¿Desea continuar de todas formas?");
+        if (!confirma) {
+          setPreviewCarga(null);
+          setProgresoCarga(null);
+          mostrarMsg("Carga cancelada por el usuario.");
+          return;
         }
+      }
+
+      setPreviewCarga(preview);
+      setProgresoCarga({
+        actual: archivosExcel.length,
+        total: archivosExcel.length,
+        porcentaje: 100,
+        archivo: "",
+        node_env: "production",
+        estado: "listo",
+      });
+      if (preview.resumen.validos === 0) {
+        mostrarMsg(
+          "La vista previa no tiene alumnos listos para guardar. Revise la columna Detalle y confirme que curso_programa coincida con un programa habilitado de Año escolar."
+        );
+      } else {
+        mostrarMsg(`Vista previa generada: ${preview.resumen.validos} alumno(s) listos para guardar.`, "success");
       }
     } catch (err) {
       mostrarMsg(err.message || "No se pudo leer el archivo Excel.");
@@ -196,7 +212,8 @@ export default function useCoordinacionCarga({
     );
 
     if (tieneErrorDeGrado) {
-      return mostrarMsg("Verifica bien la lista de invitados, hay un grado que no coincide.");
+      const confirma = window.confirm("Algunos alumnos no están dentro de los grados configurados para este taller. ¿Desea continuar de todas formas?");
+      if (!confirma) return mostrarMsg("Carga cancelada por el usuario.");
     }
 
     if (previewCarga.resumen.validos === 0) {
