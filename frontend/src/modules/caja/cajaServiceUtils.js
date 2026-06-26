@@ -45,6 +45,20 @@ export function normalizarFechaReporte(valor) {
   return String(valor || "").slice(0, 10);
 }
 
+function coincideAnioMesReporte(fecha, filtros = {}) {
+  const fechaNormalizada = normalizarFechaReporte(fecha);
+  const filtraAnio = filtros.anio && filtros.anio !== "todos";
+  const filtraMes = filtros.mes && filtros.mes !== "todos";
+
+  if (!filtraAnio && !filtraMes) return true;
+  if (!fechaNormalizada) return false;
+
+  const [anio, mes] = fechaNormalizada.split("-");
+  if (filtraAnio && anio !== String(filtros.anio)) return false;
+  if (filtraMes && mes !== String(filtros.mes).padStart(2, "0")) return false;
+  return true;
+}
+
 export function filtrarReporteCaja(filas, filtros) {
   return filas
     .filter((fila) => {
@@ -52,6 +66,7 @@ export function filtrarReporteCaja(filas, filtros) {
       if (filtros.medioPago && filtros.medioPago !== "todos" && fila.formaPago !== filtros.medioPago) return false;
       if (filtros.desde && normalizarFechaReporte(fila.fecha) < filtros.desde) return false;
       if (filtros.hasta && normalizarFechaReporte(fila.fecha) > filtros.hasta) return false;
+      if (!coincideAnioMesReporte(fila.fecha, filtros)) return false;
       if (filtros.estadoPago && filtros.estadoPago !== "todos" && fila.estadoPago !== filtros.estadoPago) return false;
 
       if (filtros.tipoReporte === "registro_secretaria") return !esRegistroWeb(fila.origen);

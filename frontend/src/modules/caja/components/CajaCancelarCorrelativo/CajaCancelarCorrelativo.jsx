@@ -431,7 +431,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
   const pagoResumen = getPagoSeleccionado();
 
   return (
-    <section className="caja-payment-workspace" style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
+    <section className="caja-payment-workspace caja-correlativo-workspace" style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
       {!sidebarExpanded && (
         <div style={{ marginBottom: "6px" }}>
           <button

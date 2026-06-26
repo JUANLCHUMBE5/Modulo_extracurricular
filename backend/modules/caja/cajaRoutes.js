@@ -711,7 +711,7 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
           id: e.id,
           inscripcionId: e.id,
           dniEstudiante: e.dniEstudiante,
-          estudiante: e.nombresEstudiante,
+          estudiante: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : e.nombresEstudiante || "",
           programaId: prog ? prog.id : e.programaId || "",
           programa: prog ? prog.nombre : e.programa || "",
           periodo: period,

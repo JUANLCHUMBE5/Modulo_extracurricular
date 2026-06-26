@@ -106,6 +106,8 @@ export default function Caja({
     estadoPago: "todos",
     grado: "todos",
     seccion: "todos",
+    mes: "todos",
+    anio: "todos",
   });
 
   // Estados de verificacion de pagos web Yape
@@ -215,9 +217,20 @@ export default function Caja({
     return reporteCaja.filter(fila => {
       if (filtrosReporte.grado && filtrosReporte.grado !== "todos" && fila.grado !== filtrosReporte.grado) return false;
       if (filtrosReporte.seccion && filtrosReporte.seccion !== "todos" && fila.seccion !== filtrosReporte.seccion) return false;
+
+      if (filtrosReporte.anio && filtrosReporte.anio !== "todos") {
+        const fecha = String(fila.fecha || "").slice(0, 10);
+        if (!fecha || fecha.split("-")[0] !== String(filtrosReporte.anio)) return false;
+      }
+
+      if (filtrosReporte.mes && filtrosReporte.mes !== "todos") {
+        const fecha = String(fila.fecha || "").slice(0, 10);
+        if (!fecha || fecha.split("-")[1] !== String(filtrosReporte.mes).padStart(2, "0")) return false;
+      }
+      
       return true;
     });
-  }, [reporteCaja, filtrosReporte.grado, filtrosReporte.seccion]);
+  }, [reporteCaja, filtrosReporte.grado, filtrosReporte.seccion, filtrosReporte.anio, filtrosReporte.mes]);
 
   const reporte = useMemo(() => {
     const pagadosIngresos = reporteCajaFiltrado.filter((fila) => fila.estadoPago === "pagado" && fila.formaPago !== "Egreso");
@@ -272,6 +285,8 @@ export default function Caja({
           programa: filtrosReporte.programa,
           medioPago: filtrosReporte.medioPago,
           estadoPago: filtrosReporte.estadoPago,
+          mes: filtrosReporte.mes,
+          anio: filtrosReporte.anio,
         }),
       ]);
       setOpcionesReporte(opciones);
@@ -784,10 +799,23 @@ export default function Caja({
         programa: filtrosReporte.programa,
         medioPago: filtrosReporte.medioPago,
         estadoPago: filtrosReporte.estadoPago,
+        mes: filtrosReporte.mes,
+        anio: filtrosReporte.anio,
       });
       const datosFiltrados = datos.filter(fila => {
         if (filtrosReporte.grado && filtrosReporte.grado !== "todos" && fila.grado !== filtrosReporte.grado) return false;
         if (filtrosReporte.seccion && filtrosReporte.seccion !== "todos" && fila.seccion !== filtrosReporte.seccion) return false;
+
+        if (filtrosReporte.anio && filtrosReporte.anio !== "todos") {
+          const fecha = String(fila.fecha || "").slice(0, 10);
+          if (!fecha || fecha.split("-")[0] !== String(filtrosReporte.anio)) return false;
+        }
+
+        if (filtrosReporte.mes && filtrosReporte.mes !== "todos") {
+          const fecha = String(fila.fecha || "").slice(0, 10);
+          if (!fecha || fecha.split("-")[1] !== String(filtrosReporte.mes).padStart(2, "0")) return false;
+        }
+        
         return true;
       });
       const csv = generarCSVReporteCaja(datosFiltrados);

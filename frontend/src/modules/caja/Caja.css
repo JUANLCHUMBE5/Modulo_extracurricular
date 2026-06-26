@@ -309,3 +309,91 @@
   }
 }
 
+/* Anulacion / egresos: vista compacta */
+.caja-correlativo-workspace {
+  gap: 10px !important;
+}
+
+.caja-correlativo-workspace > div[style*="border-bottom"] {
+  gap: 14px !important;
+  margin-bottom: 2px !important;
+}
+
+.caja-correlativo-workspace > div[style*="border-bottom"] button {
+  gap: 6px !important;
+  padding: 5px 2px 8px !important;
+  font-size: 14px !important;
+}
+
+.caja-correlativo-workspace h2 {
+  font-size: 17px !important;
+  line-height: 1.15 !important;
+}
+
+.caja-correlativo-workspace svg {
+  flex-shrink: 0;
+}
+
+.caja-correlativo-workspace .mantine-Paper-root {
+  padding: 10px 12px !important;
+  border-radius: 8px !important;
+}
+
+.caja-correlativo-workspace .mantine-Text-root {
+  line-height: 1.25 !important;
+}
+
+.caja-correlativo-workspace .mantine-InputWrapper-label {
+  margin-bottom: 3px !important;
+  font-size: 11px !important;
+  line-height: 1.15 !important;
+}
+
+.caja-correlativo-workspace .mantine-TextInput-input,
+.caja-correlativo-workspace .mantine-Select-input {
+  height: 32px !important;
+  min-height: 32px !important;
+  font-size: 12px !important;
+}
+
+.caja-correlativo-workspace .mantine-Textarea-input {
+  min-height: 72px !important;
+  padding-top: 7px !important;
+  padding-bottom: 7px !important;
+  font-size: 12px !important;
+}
+
+.caja-correlativo-workspace .mantine-Button-root {
+  min-height: 32px !important;
+  height: 32px !important;
+  padding: 0 12px !important;
+  font-size: 12px !important;
+}
+
+.caja-correlativo-workspace form,
+.caja-correlativo-workspace .caja-search-form-responsive {
+  gap: 8px !important;
+}
+
+.caja-correlativo-workspace div[style*="flex-direction: column"] {
+  gap: 8px !important;
+}
+
+.caja-correlativo-workspace div[style*="padding: 12px 16px"],
+.caja-correlativo-workspace div[style*="padding: 16px"] {
+  padding: 8px 10px !important;
+}
+
+.caja-correlativo-workspace div[style*="max-height: 150px"] {
+  max-height: 120px !important;
+}
+
+.caja-correlativo-workspace button[style*="padding: 10px 12px"],
+.caja-correlativo-workspace button[style*="padding: 8px 12px"] {
+  padding: 7px 10px !important;
+}
+
+.caja-correlativo-workspace strong[style*="font-size: 18px"] {
+  font-size: 15px !important;
+}
+

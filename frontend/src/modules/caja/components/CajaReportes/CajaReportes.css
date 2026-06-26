@@ -420,14 +420,14 @@
 
 .caja-history-modal-body {
   background-color: #f8fafc;
-  padding: 20px !important;
+  padding: 10px !important;
   min-height: calc(100vh - 64px);
 }
 
 .caja-history-panel {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 8px;
 }
 
 /* 1. Summary Banner */
@@ -442,15 +442,24 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
+.caja-history-summary-banner-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 6px;
+}
+
 .caja-summary-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
 }
 
 .caja-summary-avatar {
-  width: 48px;
-  height: 48px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: #ffffff;
@@ -458,7 +467,7 @@
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 20px;
+  font-size: 14px;
   box-shadow: 0 4px 6px -1px rgba(14, 165, 233, 0.15), 0 2px 4px -1px rgba(14, 165, 233, 0.1);
   text-transform: uppercase;
 }
@@ -466,7 +475,7 @@
 .caja-summary-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0px;
 }
 
 .caja-summary-label {
@@ -508,8 +517,8 @@
 .caja-history-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 18px;
+  border-radius: 8px;
+  padding: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
 }
@@ -523,9 +532,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding-bottom: 12px;
+  padding-bottom: 4px;
   border-bottom: 1px solid #f1f5f9;
-  margin-bottom: 14px;
+  margin-bottom: 6px;
 }
 
 .caja-history-card-header span {
@@ -543,7 +552,7 @@
 .caja-history-card-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
 }
 
 /* 3. Fields inside cards */
@@ -551,7 +560,7 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 6px 0;
+  padding: 2.5px 0;
   border-bottom: 1px dashed #f1f5f9;
   font-size: 13px;
   gap: 12px;
@@ -580,6 +589,7 @@
   font-weight: 750;
   color: #0f172a;
 }
+
 
 /* 4. Notes / Observations */
 .caja-history-note {
@@ -625,11 +635,11 @@
 .caja-history-list-section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 18px;
+  border-radius: 8px;
+  padding: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
@@ -638,7 +648,7 @@
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 10px;
+  padding-bottom: 6px;
 }
 
 .caja-history-list-title {
@@ -684,7 +694,7 @@
 }
 
 .caja-history-table th {
-  padding: 10px 12px !important;
+  padding: 8px 10px !important;
   color: #475569 !important;
   font-size: 11px !important;
   font-weight: 750 !important;
@@ -696,7 +706,7 @@
 }
 
 .caja-history-table td {
-  padding: 10px 12px !important;
+  padding: 8px 10px !important;
   color: #334155 !important;
   font-size: 12.5px !important;
   font-weight: 600 !important;
@@ -726,9 +736,26 @@
   border: 1px dashed #e2e8f0;
 }
 
+.caja-details-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 20px;
+}
+
+.caja-details-grid-span-2 {
+  grid-column: span 2;
+}
+
 @media (max-width: 768px) {
   .caja-history-cards {
     grid-template-columns: 1fr;
+  }
+  .caja-details-grid {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .caja-details-grid-span-2 {
+    grid-column: span 1 !important;
   }
 }
 

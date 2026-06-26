@@ -369,6 +369,7 @@ async function readFromSupabase() {
         ins.estadoInscripcion = ins.estadoPago || "Pendiente de pago";
         ins.apoderado = estudiantesObj[ins.dniEstudiante]?.apoderado || "";
         ins.telefono = estudiantesObj[ins.dniEstudiante]?.telefonoApoderado || "";
+        ins.nombresEstudiante = estudiantesObj[ins.dniEstudiante]?.nombres || "";
         ins.derivadoCaja = ins.derivadoCaja ?? false;
         ins.estadoCaja = ins.estadoCaja || "";
 
@@ -385,6 +386,7 @@ async function readFromSupabase() {
         pag.nroOperacion = pag.numeroOperacion || "";
         pag.fechaRegistro = pag.fechaPago || "";
         pag.nroRecibo = pag.nroRecibo || pag.nro_recibo || "";
+        pag.nombresEstudiante = estudiantesObj[pag.dniEstudiante]?.nombres || "";
         return pag;
       }),
       asistencias: resAsistencias.data || [],

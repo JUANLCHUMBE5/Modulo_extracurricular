@@ -55,68 +55,62 @@ export default function HistorialAlumnoModal({
     >
       {registro ? (
         <div className="caja-history-panel">
-          {/* Summary Banner */}
-          <div className="caja-history-summary-banner">
-            <div className="caja-summary-left">
-              <div className="caja-summary-avatar">
-                {(registro.estudiante || "S").trim().charAt(0).toUpperCase()}
-              </div>
-              <div className="caja-summary-info">
-                <span className="caja-summary-label">Estudiante</span>
-                <h3 className="caja-summary-name">{registro.estudiante || "Sin nombre"}</h3>
-                <span className="caja-summary-sub">DNI: {registro.dniEstudiante || "Sin DNI"}</span>
+          {/* Card 1: Datos del Alumno */}
+          <div className="caja-history-card">
+            <div className="caja-history-summary-banner-inner">
+              <div className="caja-summary-left">
+                <div className="caja-summary-avatar">
+                  {(registro.estudiante || "S").trim().charAt(0).toUpperCase()}
+                </div>
+                <div className="caja-summary-info">
+                  <span className="caja-summary-label">Estudiante</span>
+                  <h3 className="caja-summary-name">{registro.estudiante || "Sin nombre"}</h3>
+                  <span className="caja-summary-sub">DNI: {registro.dniEstudiante || "Sin DNI"}</span>
+                </div>
               </div>
             </div>
-            <div className="caja-summary-right">
-              <Badge color={estadoActual.color} variant="light" size="lg" className="caja-status-badge">
-                {estadoActual.texto}
-              </Badge>
-            </div>
-          </div>
-
-          {/* Cards for Details */}
-          <div className="caja-history-cards">
-            {/* Card 1: Alumno */}
-            <div className="caja-history-card">
-              <div className="caja-history-card-header">
-                <IconUser size={16} className="caja-card-icon" />
-                <span>Datos del Alumno</span>
-              </div>
-              <div className="caja-history-card-body">
-                <CampoDetalle label="Grado / sección" value={[registro.grado, registro.seccion].filter(Boolean).join(" ")} />
-                <CampoDetalle label="Apoderado" value={registro.apoderado || "-"} />
+            <div className="caja-history-card-body caja-details-grid">
+              <CampoDetalle label="Grado / sección" value={[registro.grado, registro.seccion].filter(Boolean).join(" ")} />
+              <CampoDetalle label="Apoderado" value={registro.apoderado || "-"} />
+              <div className="caja-details-grid-span-2">
                 <CampoDetalle label="Teléfono de contacto" value={obtenerTelefonoPagoWebCaja(registro)} />
               </div>
             </div>
-
-            {/* Card 2: Pago */}
-            <div className="caja-history-card">
-              <div className="caja-history-card-header">
-                <IconReceipt size={16} className="caja-card-icon" />
-                <span>Detalles del Pago</span>
-              </div>
-              <div className="caja-history-card-body">
-                <CampoDetalle label="Programa" value={registro.programa || "Sin programa"} strong />
-                <CampoDetalle label="Periodo" value={registro.periodo || "-"} />
-                <CampoDetalle label="Monto pagado" value={formatearSoles(registro.monto)} strong />
-                <CampoDetalle label="Fecha de registro" value={formatearFechaPeru(registro.fecha || registro.fechaRegistro)} />
-                <CampoDetalle label="N° de comprobante" value={registro.nroRecibo || "-"} />
-                <CampoDetalle label="Cod. operación" value={registro.numeroOperacion || "-"} />
-                <CampoDetalle label="Medio de pago" value={obtenerMedioCanalWebCaja(registro)} />
-              </div>
-            </div>
           </div>
 
-          {/* Observaciones */}
-          {(registro.observaciones || registro.descuentoJustificacion) ? (
-            <div className="caja-history-note">
-              <IconInfoCircle size={18} className="caja-history-note-icon" />
-              <div className="caja-history-note-content">
-                <span>Observación / Justificación</span>
-                <p>{registro.observaciones || registro.descuentoJustificacion}</p>
-              </div>
+          {/* Card 2: Taller Actual / Detalles del Pago */}
+          <div className="caja-history-card">
+            <div className="caja-history-card-header">
+              <IconReceipt size={16} className="caja-card-icon" />
+              <span>Taller Actual y Detalles del Pago</span>
             </div>
-          ) : null}
+            <div className="caja-history-card-body caja-details-grid">
+              <div className="caja-details-grid-span-2">
+                <CampoDetalle label="Programa" value={registro.programa || "Sin programa"} strong />
+              </div>
+              <CampoDetalle label="Periodo" value={registro.periodo || "-"} />
+              <CampoDetalle label="N° de comprobante" value={registro.nroRecibo || "-"} />
+              
+              <CampoDetalle label="Monto pagado" value={formatearSoles(registro.monto)} strong />
+              <CampoDetalle label="Cod. operación" value={registro.numeroOperacion || "-"} />
+              
+              <CampoDetalle label="Fecha de registro" value={formatearFechaPeru(registro.fecha || registro.fechaRegistro)} />
+              <CampoDetalle label="Medio de pago" value={obtenerMedioCanalWebCaja(registro)} />
+
+              {/* Observaciones */}
+              {(registro.observaciones || registro.descuentoJustificacion) ? (
+                <div className="caja-details-grid-span-2" style={{ marginTop: '4px' }}>
+                  <div className="caja-history-note">
+                    <IconInfoCircle size={18} className="caja-history-note-icon" />
+                    <div className="caja-history-note-content">
+                      <span>Observación / Justificación</span>
+                      <p>{registro.observaciones || registro.descuentoJustificacion}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
 
           {/* Payments History List */}
           <div className="caja-history-list-section">
