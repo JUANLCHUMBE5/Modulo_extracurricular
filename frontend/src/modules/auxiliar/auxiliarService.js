@@ -80,6 +80,12 @@ export async function registrarAsistencia(data, observacion = "") {
       inscripcion_id: data.inscripcionId || "",
       pago_id: data.pagoId || "",
       dni_estudiante: data.dni || data.dniEstudiante || "",
+      codigo_estudiante: data.codigoEstudiante || "",
+      nombres_estudiante: data.nombres || data.nombresEstudiante || data.estudianteNombre || "",
+      programa_id: data.programaId || "",
+      programa: data.programa || "",
+      horario: data.horario || "",
+      estado_pago: data.estadoPago || "",
       estado_acceso: data.estadoAcceso || "presente",
       observacion: observacion || "",
       origen: "Auxiliar"

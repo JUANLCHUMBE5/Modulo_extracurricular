@@ -488,22 +488,48 @@ export async function listarAsistenciasProgramaMock(programaId) {
       return coincideId || coincideNombre;
     })
     .sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0))
-    .map((item) => ({
-      id: item.id || "",
-      inscripcionId: item.inscripcionId || "",
-      pagoId: item.pagoId || "",
-      dni: item.dniEstudiante || "",
-      codigoEstudiante: item.codigoEstudiante || "",
-      nombres: item.nombresEstudiante || "",
-      programaId: item.programaId || programaId,
-      programa: item.programa || programa?.nombre || "",
-      horario: item.horario || "",
-      estadoPago: item.estadoPago || "",
-      estadoAcceso: item.estadoAcceso || "",
-      observacion: item.observacion || "",
-      origen: item.origen || "Auxiliar",
-      fechaRegistro: item.fechaRegistro || "",
-    }));
+    .map((item) => {
+      const inscripcion = buscarInscripcionAsistenciaMock(item, programaId);
+      const estudiante = apiDb.estudiantes?.[item.dniEstudiante || inscripcion?.dniEstudiante] || null;
+      const programaBase = programa
+        || apiDb.programas.find((prog) => String(prog.id) === String(inscripcion?.programaId || item.programaId))
+        || null;
+      const gradoEstudiante = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
+      return {
+        id: item.id || "",
+        inscripcionId: item.inscripcionId || inscripcion?.id || "",
+        pagoId: item.pagoId || "",
+        dni: item.dniEstudiante || inscripcion?.dniEstudiante || estudiante?.dni || "",
+        codigoEstudiante: item.codigoEstudiante || inscripcion?.codigoEstudiante || estudiante?.codigoEstudiante || "",
+        nombres: item.nombresEstudiante
+          || inscripcion?.nombresEstudiante
+          || (estudiante ? `${estudiante.nombres || ""} ${estudiante.apellidos || ""}`.trim() : ""),
+        programaId: item.programaId || inscripcion?.programaId || programaId,
+        programa: item.programa || inscripcion?.programa || programaBase?.nombre || "",
+        horario: item.horario || inscripcion?.horario || resolverHorarioPorGrado(programaBase, gradoEstudiante) || programaBase?.horario || "",
+        estadoPago: item.estadoPago || inscripcion?.estadoPago || "Pendiente",
+        estadoAcceso: item.estadoAcceso || "",
+        observacion: item.observacion || "",
+        origen: item.origen || "Auxiliar",
+        fechaRegistro: item.fechaRegistro || "",
+      };
+    });
+}
+
+function buscarInscripcionAsistenciaMock(asistencia = {}, programaId = "") {
+  const dni = asistencia.dniEstudiante || asistencia.dni || "";
+  const nombrePrograma = normalizarTextoSimple(asistencia.programa);
+  return (apiDb.inscripciones || []).find((item) => asistencia.inscripcionId && item.id === asistencia.inscripcionId)
+    || (apiDb.inscripciones || []).find((item) =>
+      dni &&
+      item.dniEstudiante === dni &&
+      (
+        (programaId && String(item.programaId) === String(programaId)) ||
+        (asistencia.programaId && String(item.programaId) === String(asistencia.programaId)) ||
+        (nombrePrograma && normalizarTextoSimple(item.programa) === nombrePrograma)
+      )
+    )
+    || null;
 }
 
 export async function buscarInvitacionPorDniPeriodoMock(dni, periodo) {

@@ -250,7 +250,15 @@ function obtenerDniAsistencia(asistencia = {}) {
 }
 
 function obtenerNombreAsistencia(asistencia = {}) {
-  return asistencia.nombres || asistencia.nombresEstudiante || asistencia.estudianteNombre || asistencia.alumno || "";
+  return asistencia.nombres || asistencia.nombresEstudiante || asistencia.nombres_estudiante || asistencia.estudianteNombre || asistencia.alumno || "";
+}
+
+function obtenerCodigoAsistencia(asistencia = {}) {
+  return asistencia.codigoEstudiante || asistencia.codigo_estudiante || asistencia.codigoAlumno || "";
+}
+
+function obtenerHorarioAsistencia(asistencia = {}) {
+  return asistencia.horario || asistencia.horarioTaller || asistencia.programaHorario || "";
 }
 
 function obtenerEstadoAccesoAsistencia(asistencia = {}) {
@@ -435,9 +443,9 @@ function TablaAsistencias({ asistencias }) {
                 <tr key={`${asistencia.id || obtenerDniAsistencia(asistencia) || obtenerNombreAsistencia(asistencia)}-${index}`}>
                   <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asistencia))}</td>
                   <td>{obtenerDniAsistencia(asistencia) || "Sin DNI"}</td>
-                  <td>{asistencia.codigoEstudiante || "-"}</td>
+                  <td>{obtenerCodigoAsistencia(asistencia) || "-"}</td>
                   <td><strong>{obtenerNombreAsistencia(asistencia) || "-"}</strong></td>
-                  <td>{asistencia.horario || "-"}</td>
+                  <td>{obtenerHorarioAsistencia(asistencia) || "-"}</td>
                   <td>
                     <span style={badgeStyle(String(asistencia.estadoPago).toLowerCase() === "pagado", "warning")}>
                       {asistencia.estadoPago || "Pendiente"}
