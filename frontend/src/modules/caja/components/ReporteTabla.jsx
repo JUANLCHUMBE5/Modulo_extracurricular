@@ -49,7 +49,7 @@ export default function ReporteTabla({
               <Table.Th>N° de comprobante</Table.Th>
               <Table.Th>Cod. operacion</Table.Th>
               <Table.Th>Telefono</Table.Th>
-              <Table.Th>Medio / canal</Table.Th>
+              <Table.Th>Medio de pago</Table.Th>
               <Table.Th>Fecha</Table.Th>
               <Table.Th className="caja-col-pago">Estado</Table.Th>
             </Table.Tr>

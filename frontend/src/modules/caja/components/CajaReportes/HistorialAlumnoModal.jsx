@@ -102,7 +102,7 @@ export default function HistorialAlumnoModal({
                 <CampoDetalle label="Fecha de registro" value={formatearFechaPeru(registro.fecha || registro.fechaRegistro)} />
                 <CampoDetalle label="N° de comprobante" value={registro.nroRecibo || "-"} />
                 <CampoDetalle label="Cod. operación" value={registro.numeroOperacion || "-"} />
-                <CampoDetalle label="Medio / canal" value={obtenerMedioCanalWebCaja(registro)} />
+                <CampoDetalle label="Medio de pago" value={obtenerMedioCanalWebCaja(registro)} />
               </div>
             </div>
           </div>

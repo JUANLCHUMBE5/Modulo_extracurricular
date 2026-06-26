@@ -53,21 +53,23 @@ export function obtenerMedioCanalWebCaja(fila = {}) {
   if (fila.descuentoAprobado) {
     const tipoLabel = String(fila.descuentoTipo).toLowerCase() === "beca" ? "Beca" : "Dirección / Desc";
     if (esPagado) {
-      return `${tipoLabel} / Caja`;
+      return `${tipoLabel} (Caja)`;
     }
     return tipoLabel;
   }
 
   if (origen === "caja" || origen === "cajera") {
     if (!esPagado) return "-";
-    return `${formaPago || "Efectivo"} / Caja`;
+    return `${formaPago || "Efectivo"} (Caja)`;
   }
 
   if (!esPagoWebPadresCaja(fila)) return "-";
-  if (String(formaPago).toLowerCase().includes("web")) {
-    return formaPago || "Reserva / Web";
+  
+  const cleanForma = (formaPago || "").trim();
+  if (cleanForma.toLowerCase().includes("web")) {
+    return cleanForma;
   }
-  return `${formaPago || "Yape"} / Web`;
+  return `${cleanForma || "Yape"} (Web)`;
 }
 
 export function obtenerTelefonoPagoWebCaja(fila = {}) {
