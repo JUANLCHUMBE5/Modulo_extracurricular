@@ -16,6 +16,10 @@ express == 5.2.1
 express-rate-limit == 8.5.2
 jsonwebtoken == 9.0.3
 multer == 2.1.1
+nodemailer == 9.0.1
+jspdf == 4.2.1
+docxtemplater == 3.69.0
+pizzip == 3.2.0
 
 ## Dependencias del Frontend (React + Vite)
 react == 18.3.1
