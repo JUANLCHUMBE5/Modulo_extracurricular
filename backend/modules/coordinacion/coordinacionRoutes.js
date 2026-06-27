@@ -1223,25 +1223,35 @@ function ordenarPorFecha(items, campoPreferido = "fechaRegistro") {
   });
 }
 
+
 // Resuelve el horario asignado a una matrícula buscando dinámicamente según el grado del estudiante o datos del programa.
 function obtenerHorarioDeInscripcion(db, inscripcion, estudiante) {
+  // 1. Busca el programa asociado a la inscripción en la base de datos
   const prog = (db.programas || []).find(p => p.id === inscripcion?.programaId);
+  
+  // 2. Si el programa tiene horarios definidos por grupos, calcula el horario dinámicamente según el grado del estudiante
   if (prog && tieneHorariosPorGrupoApi(prog)) {
     const gradoEst = inscripcion?.gradoEstudiante 
       || inscripcion?.grado 
       || (estudiante ? obtenerGradoCompletoApi(estudiante.grado, estudiante.nivel) : "");
     const horarioDinamico = resolverHorarioPorGradoApi(prog, gradoEst);
-    if (horarioDinamico) return horarioDinamico;
+    if (horarioDinamico) return horarioDinamico; // Si lo encuentra, lo retorna de inmediato
   }
   
+  // 3. Si la inscripción ya tiene un horario registrado que no sea un mensaje de error o aviso, lo retorna directamente
   if (inscripcion?.horario && !inscripcion.horario.includes("no configurado") && !inscripcion.horario.includes("No registrado")) {
     return inscripcion.horario;
   }
   
+  // 4. Fallback: Si no hay programa configurado, retorna cadena vacía
   if (!prog) return "";
+  
+  // 5. Calcula el grado completo del alumno (ej. "4 Primaria") para resolver el horario del grupo correspondiente
   const gradoEst = inscripcion?.gradoEstudiante 
     || inscripcion?.grado 
     || (estudiante ? obtenerGradoCompletoApi(estudiante.grado, estudiante.nivel) : "");
+    
+  // 6. Retorna el horario resuelto por grado, o en su defecto el horario general del programa, o "Horario no configurado"
   return resolverHorarioPorGradoApi(prog, gradoEst)
     || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario)
     || "";
@@ -1250,6 +1260,7 @@ function obtenerHorarioDeInscripcion(db, inscripcion, estudiante) {
 // Retorna el nombre del programa si es válido (diferente de vacío o "sin programa").
 function nombreProgramaValido(valor) {
   const texto = String(valor || "").trim();
+  // Retorna el texto solo si no es vacío y no corresponde al string "sin programa"
   return texto && normalizarTexto(texto) !== "sin programa" ? texto : "";
 }
 
@@ -1257,6 +1268,7 @@ function nombreProgramaValido(valor) {
 function buscarProgramaPorNombre(db, nombre) {
   const nombreNormalizado = normalizarTexto(nombreProgramaValido(nombre));
   if (!nombreNormalizado) return null;
+  // Busca coincidencias de nombre comparándolas en minúsculas y sin acentos
   return (db.programas || []).find((programa) =>
     normalizarTexto(programa.nombre || programa.programa || programa.nombre_programa) === nombreNormalizado
   ) || null;
@@ -1265,6 +1277,8 @@ function buscarProgramaPorNombre(db, nombre) {
 // Resuelve la información del programa/taller asociado a una matrícula, pago o estudiante.
 function resolverProgramaAsociado(db, inscripcion = {}, estudiante = null, pago = null, horario = "") {
   const programas = db.programas || [];
+  
+  // 1. Intenta resolver el programa buscando por su ID único en la matrícula o en el registro de pago
   const porId = programas.find((programa) =>
     mismoCodigo(programa.id, inscripcion.programaId) ||
     mismoCodigo(programa.id, pago?.programaId) ||
@@ -1273,6 +1287,7 @@ function resolverProgramaAsociado(db, inscripcion = {}, estudiante = null, pago 
   );
   if (porId) return porId;
 
+  // 2. Si no encuentra por ID, intenta buscar por el nombre registrado en la matrícula o pago
   const porNombre = buscarProgramaPorNombre(db, inscripcion.programa) ||
     buscarProgramaPorNombre(db, inscripcion.programaNombre) ||
     buscarProgramaPorNombre(db, pago?.programa) ||
@@ -1514,12 +1529,19 @@ function crearRespuestaNoRegistrado(ids, estudiante) {
 
 // Motor principal de validación de acceso. Evalúa estado de pago, vigencia de fechas y correspondencia del día del taller.
 function resolverValidacion(db, identificadores = {}) {
+  // 1. Normaliza los identificadores de búsqueda (DNI, código de estudiante, etc.)
   const ids = normalizarIdentificadores(identificadores);
+  
+  // 2. Busca la inscripción y el estudiante asociados en la base de datos
   const inscripcion = buscarInscripcion(db, ids);
   const estudiante = buscarEstudiante(db, ids, inscripcion);
+  
+  // 3. Caso: No existe una inscripción activa para el estudiante
   if (!inscripcion) {
     const studentDni = ids.dni || (estudiante?.dni ? String(estudiante.dni).replace(/\D/g, "").slice(0, 8) : "");
     let programaPreInscrito = null;
+    
+    // 3.1. Revisa si el alumno está registrado en la lista de invitados/pre-inscritos de algún taller cerrado
     if (studentDni) {
       for (const [progId, listaInvitados] of Object.entries(db.invitadosPorPrograma || {})) {
         const esInvitado = (listaInvitados || []).some(inv => {
@@ -1536,6 +1558,8 @@ function resolverValidacion(db, identificadores = {}) {
         }
       }
     }
+    
+    // 3.2. Si está pre-inscrito (invitado), retorna un estado especial de matrícula pendiente
     if (programaPreInscrito) {
       return {
         dni: studentDni || ids.codigoOriginal || "",
@@ -1559,11 +1583,17 @@ function resolverValidacion(db, identificadores = {}) {
         monto: Number(programaPreInscrito.costo || 0),
       };
     }
+    
+    // 3.3. Si no está registrado en ningún taller, retorna una respuesta de "No registrado"
     return crearRespuestaNoRegistrado(ids, estudiante);
   }
+  
+  // 4. Obtiene el pago relacionado a la matrícula, calcula el estado normalizado del pago y el horario
   const pago = encontrarPagoInscripcion(db, inscripcion, ids);
   const estadoNormalizado = resolverEstadoPago(inscripcion, pago);
   const horario = obtenerHorarioDeInscripcion(db, inscripcion, estudiante);
+  
+  // 5. Resuelve la información del programa/taller asociado para complementar la respuesta
   const dbProg = resolverProgramaAsociado(db, inscripcion, estudiante, pago, horario);
   const programaNombre = nombreProgramaValido(dbProg?.nombre) ||
     nombreProgramaValido(inscripcion.programa) ||
@@ -1572,11 +1602,12 @@ function resolverValidacion(db, identificadores = {}) {
     "Sin programa";
   const programaId = dbProg?.id || inscripcion.programaId || pago?.programaId || "";
 
+  // 6. Caso: El pago está aprobado ("pagado")
   if (estadoNormalizado === "pagado") {
-    // 1. Validar rango de fechas (vigencia del taller)
     const tzOffset = new Date().getTimezoneOffset() * 60000;
     const hoyStr = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
 
+    // 6.1. Valida si el taller aún no ha iniciado
     if (inscripcion.fechaInicio && hoyStr < inscripcion.fechaInicio) {
       const fechaFmt = inscripcion.fechaInicio.split("-").reverse().join("/");
       return crearRespuestaInscripcion({
@@ -1595,6 +1626,7 @@ function resolverValidacion(db, identificadores = {}) {
       });
     }
 
+    // 6.2. Valida si el taller ya ha culminado
     if (inscripcion.fechaFin && hoyStr > inscripcion.fechaFin) {
       const fechaFmt = inscripcion.fechaFin.split("-").reverse().join("/");
       return crearRespuestaInscripcion({
@@ -1613,7 +1645,7 @@ function resolverValidacion(db, identificadores = {}) {
       });
     }
 
-    // 2. Validar día de la semana
+    // 6.3. Valida si hoy corresponde con los días dictados en el horario del alumno
     if (!esDiaCorrecto(horario)) {
       return crearRespuestaInscripcion({
         inscripcion,
@@ -1631,6 +1663,7 @@ function resolverValidacion(db, identificadores = {}) {
       });
     }
 
+    // 6.4. Revisa que no exista un registro de asistencia duplicado de hace poco
     const minsRestantes = obtenerMinutosRestantesIngresoReciente(
       db.asistencias || [],
       ids.dni || estudiante?.dni,
@@ -1654,6 +1687,8 @@ function resolverValidacion(db, identificadores = {}) {
         programaId,
       });
     }
+    
+    // 6.5. Si pasa todas las validaciones de taller, día, hora y duplicados, aprueba el ingreso
     return crearRespuestaInscripcion({
       inscripcion,
       estudiante,
@@ -1669,6 +1704,8 @@ function resolverValidacion(db, identificadores = {}) {
       programaId,
     });
   }
+  
+  // 7. Caso: El pago está anulado/cancelado por la administración
   if (estadoNormalizado === "anulado") {
     return crearRespuestaInscripcion({
       inscripcion,
@@ -1685,6 +1722,8 @@ function resolverValidacion(db, identificadores = {}) {
       programaId,
     });
   }
+  
+  // 8. Caso: El pago está pendiente o en proceso de revisión de comprobante
   const esProceso = pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar" || pago.estado === "Pago en proceso");
   return crearRespuestaInscripcion({
     inscripcion,
