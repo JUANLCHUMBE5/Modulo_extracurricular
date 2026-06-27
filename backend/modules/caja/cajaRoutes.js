@@ -553,13 +553,12 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
       const receiptNo = db.pagos[idx].nroRecibo || "";
 
       const adjuntos = [];
-      const progConfig = (db.programas_configuraciones || []).find(c => c.programaId === inscrip.programaId);
-      const textoPlantilla = progConfig?.comunicadoCompleto || progConfig?.comunicado || "";
+      const programaObj = db.programas?.find(p => p.id === inscrip.programaId) || {};
+      const textoPlantilla = programaObj.comunicadoCompleto || programaObj.comunicado || "";
 
       if (textoPlantilla) {
         try {
           const estudianteObj = db.estudiantes?.[inscrip.dniEstudiante] || {};
-          const programaObj = db.programas?.find(p => p.id === inscrip.programaId) || {};
           const textoResuelto = resolverPlantillaTexto(textoPlantilla, estudianteObj, inscrip, programaObj);
           const pdfBuffer = generarComunicadoPdf(textoResuelto, progName);
           
