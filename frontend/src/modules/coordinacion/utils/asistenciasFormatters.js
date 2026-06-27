@@ -103,7 +103,7 @@ export function calcularEdad(fechaNac) {
 export function limpiarHorarioSinAlmuerzo(horarioStr = "") {
   if (!horarioStr) return "";
   return String(horarioStr)
-    .replace(/almuerzo\s+\d{2}:\d{2}\s*-\s*\d{2}:\d{2},?\s*(clase\s*)?/i, "")
+    .replace(/almuerzo\s+[^,]+,\s*(clase\s*)?/i, "")
     .replace(/\bclase\b/gi, "")
     .replace(/\s+/g, " ")
     .trim();

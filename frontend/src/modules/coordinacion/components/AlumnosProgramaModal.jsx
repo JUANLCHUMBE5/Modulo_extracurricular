@@ -5,6 +5,7 @@ import {
   IconX as X,
 } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
+import { limpiarHorarioSinAlmuerzo } from "../utils/asistenciasFormatters";
 
 const tabStyle = (activo) => ({
   background: "none",
@@ -135,7 +136,11 @@ function AlumnosProgramaModal({
               esCambridge={String(programa?.nombre || "").toLowerCase().includes("cambridge")}
             />
           ) : subVistaAlumnos === "asistencias" ? (
-            <TablaAsistencias asistencias={asistencias} />
+            <TablaAsistencias
+              asistencias={asistencias}
+              matriculados={matriculados}
+              invitados={invitados}
+            />
           ) : (
             <TablaMatriculados alumnos={matriculados} />
           )}
@@ -304,7 +309,9 @@ function obtenerCodigoAsistencia(asistencia = {}) {
 }
 
 function obtenerHorarioAsistencia(asistencia = {}) {
-  return asistencia.horario || asistencia.horarioTaller || asistencia.programaHorario || "";
+  const raw = asistencia.horario || asistencia.horarioTaller || asistencia.programaHorario || "";
+  const sinAlmuerzo = limpiarHorarioSinAlmuerzo(raw);
+  return sinAlmuerzo.replace(/^[^:]+:\s*/, "");
 }
 
 function obtenerEstadoAccesoAsistencia(asistencia = {}) {
@@ -347,7 +354,7 @@ function agruparAsistenciasPorFecha(asistencias) {
   }, {});
 }
 
-function TablaAsistencias({ asistencias }) {
+function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
   const [fechaSeleccionada, setFechaSeleccionada] = useState("");
 
   const grupos = useMemo(
@@ -472,6 +479,8 @@ function TablaAsistencias({ asistencias }) {
               <th>Hora</th>
               <th>DNI</th>
               <th>Estudiante</th>
+              <th>Grado</th>
+              <th>Nivel</th>
               <th>Horario del taller</th>
               <th>Pago</th>
               <th>Acceso</th>
@@ -480,18 +489,26 @@ function TablaAsistencias({ asistencias }) {
           </thead>
           <tbody>
             {(grupoActivo?.filas || []).map((asistencia, index) => {
+              const dni = obtenerDniAsistencia(asistencia);
+              const alumnoMatriculado = matriculados.find(m => m.dni === dni || m.dniEstudiante === dni);
+              const alumnoInvitado = invitados.find(i => i.dni === dni);
+              const alumnoRef = alumnoMatriculado || alumnoInvitado || {};
+              const { grado, nivel } = descomponerGradoYNivel(alumnoRef);
+
               const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asistencia);
               const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
               const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
               const toneAcceso = String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "warning" : "error";
               return (
-                <tr key={`${asistencia.id || obtenerDniAsistencia(asistencia) || obtenerNombreAsistencia(asistencia)}-${index}`}>
+                <tr key={`${asistencia.id || dni || obtenerNombreAsistencia(asistencia)}-${index}`}>
                   <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asistencia))}</td>
-                  <td>{obtenerDniAsistencia(asistencia) || "Sin DNI"}</td>
+                  <td>{dni || "Sin DNI"}</td>
                   <td><strong>{obtenerNombreAsistencia(asistencia) || "-"}</strong></td>
+                  <td>{grado}</td>
+                  <td>{nivel}</td>
                   <td>{obtenerHorarioAsistencia(asistencia) || "-"}</td>
                   <td>
-                    <span style={badgeStyle(String(asistencia.estadoPago).toLowerCase() === "pagado", "warning")}>
+                    <span style={obtenerEstiloPago(asistencia.estadoPago)}>
                       {asistencia.estadoPago || "Pendiente"}
                     </span>
                   </td>
