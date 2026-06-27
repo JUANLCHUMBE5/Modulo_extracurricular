@@ -563,41 +563,43 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
           // 1. Generar Word con las variables resueltas
           const wordBuffer = generarWordResuelto(plantillaBase64, estudianteObj, inscrip, programaObj);
           
-          // 2. Convertir el Word resuelto a PDF usando el convertidor de LibreOffice/MS Word del backend
-          const pdfBuffer = await convertirWordAPdf(wordBuffer);
-          
+          // Adjuntar el Word resuelto (con las variables reemplazadas)
           adjuntos.push({
-            filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
-            content: pdfBuffer
+            filename: `Ficha_Matricula_${inscrip.id}.docx`,
+            content: wordBuffer
           });
-        } catch (errorWordPdf) {
-          console.error("[WORD TO PDF ERROR] No se pudo convertir el Word resuelto a PDF, intentando generar PDF desde texto plano:", errorWordPdf.message);
           
-          // Fallback 1: Generar PDF desde el texto plano de la plantilla
-          const programaObj = db.programas?.find(p => p.id === inscrip.programaId) || {};
-          const textoPlantilla = programaObj.comunicadoCompleto || programaObj.comunicado || "";
-          if (textoPlantilla) {
-            try {
-              const estudianteObj = db.estudiantes?.[inscrip.dniEstudiante] || {};
-              const textoResuelto = resolverPlantillaTexto(textoPlantilla, estudianteObj, inscrip, programaObj);
-              const pdfBuffer = generarComunicadoPdf(textoResuelto, progName);
-              adjuntos.push({
-                filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
-                content: pdfBuffer
-              });
-            } catch (errorTextPdf) {
-              console.error("[TEXT TO PDF ERROR] Fallo al generar PDF desde texto plano, usando Word original:", errorTextPdf.message);
-              adjuntos.push({
-                filename: `Ficha_Matricula_${inscrip.id}.docx`,
-                content: Buffer.from(inscrip.plantillaBase64, "base64")
-              });
-            }
-          } else {
+          try {
+            // 2. Intentar convertir el Word resuelto a PDF
+            const pdfBuffer = await convertirWordAPdf(wordBuffer);
             adjuntos.push({
-              filename: `Ficha_Matricula_${inscrip.id}.docx`,
-              content: Buffer.from(inscrip.plantillaBase64, "base64")
+              filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
+              content: pdfBuffer
             });
+          } catch (errorWordPdf) {
+            console.error("[WORD TO PDF ERROR] No se pudo convertir el Word resuelto a PDF, intentando generar PDF desde texto plano:", errorWordPdf.message);
+            
+            // Fallback: Generar PDF desde el texto plano de la plantilla si la conversión falla
+            const textoPlantilla = programaObj.comunicadoCompleto || programaObj.comunicado || "";
+            if (textoPlantilla) {
+              try {
+                const textoResuelto = resolverPlantillaTexto(textoPlantilla, estudianteObj, inscrip, programaObj);
+                const pdfBuffer = generarComunicadoPdf(textoResuelto, progName);
+                adjuntos.push({
+                  filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
+                  content: pdfBuffer
+                });
+              } catch (errorTextPdf) {
+                console.error("[TEXT TO PDF ERROR] Fallo al generar PDF desde texto plano:", errorTextPdf.message);
+              }
+            }
           }
+        } catch (errorWord) {
+          console.error("[WORD GENERATION ERROR] Error al generar el Word resuelto, enviando Word original:", errorWord.message);
+          adjuntos.push({
+            filename: `Ficha_Matricula_${inscrip.id}.docx`,
+            content: Buffer.from(plantillaBase64, "base64")
+          });
         }
       }
 
