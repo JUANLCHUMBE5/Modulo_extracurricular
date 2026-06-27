@@ -217,7 +217,10 @@ export function resolverPlantillaTexto(texto, estudiante, inscrip, prog) {
     N1: `${(estudiante && estudiante.grado) || ""} ${(estudiante && estudiante.seccion) || ""}`.trim() || "Grado",
     N2: "",
     N3: "",
-    N4: ""
+    N4: "",
+    GR_SEC: `${(estudiante && estudiante.grado) || inscrip.grado || ""} ${(estudiante && estudiante.seccion) || inscrip.seccion || ""}`.trim(),
+    APOD: (estudiante && estudiante.apoderado) || inscrip.apoderado || "",
+    CEL: (estudiante && estudiante.telefonoApoderado) || inscrip.telefono || ""
   };
 
   let resultado = texto;
