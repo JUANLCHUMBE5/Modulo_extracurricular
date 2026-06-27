@@ -990,15 +990,20 @@ async function writeToSupabase(db, currentDb) {
 // FUNCIONES EXPORTADAS (INTERCEPTADAS)
 // ==========================================
 
+// Retorna la base de datos completa. Controla la lógica de desarrollo local (JSON) y la de caché con Supabase.
 export async function getDb() {
+  // 1. Si la API oficial está habilitada, delega la lectura
   if (isOfficialApiEnabled()) {
     return getOfficialDb();
   }
 
+  // 2. Si el modo de datos es Supabase, maneja la caché en memoria para no saturar con consultas recurrentes
   if (process.env.VITE_DATA_MODE === "supabase" || process.env.DATA_MODE === "supabase") {
+    // 2.1. Retorna la copia en caché si está vigente y no ha superado el tiempo de vida (TTL)
     if (cachedDb && (Date.now() - lastFetchedTime < CACHE_TTL_MS)) {
       return clone(cachedDb);
     }
+    // 2.2. Si no hay una lectura activa en curso, lanza una nueva consulta en paralelo hacia Supabase
     if (!activeReadPromise) {
       activeReadPromise = readFromSupabase()
         .then((db) => {
@@ -1016,10 +1021,13 @@ export async function getDb() {
     return clone(db);
   }
 
+  // 3. Si es local, lee de forma síncrona en memoria o del archivo db.json
   return readLocalDb();
 }
 
+// Guarda la base de datos completa persistiendo los cambios según el modo de datos activo.
 export async function saveDb(data) {
+  // 1. Si la API oficial está habilitada, delega la persistencia
   if (isOfficialApiEnabled()) {
     return saveOfficialDb(data);
   }

@@ -60,11 +60,14 @@ app.use((req, res, next) => {
   next();
 });
 
+// Endpoint de estado y diagnóstico del servidor. Retorna la procedencia de los datos (local/supabase).
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, dbSource: getDbSource() });
 });
 
 // --- CORE DATABASE ENDPOINTS (require local DB access) ---
+
+// Obtiene la base de datos completa. Sanitiza los usuarios ocultando las contraseñas bcrypt.
 app.get("/api/db", requireLocalDbAccess, async (_req, res) => {
   try {
     const db = await getDb();
@@ -79,6 +82,7 @@ app.get("/api/db", requireLocalDbAccess, async (_req, res) => {
   }
 });
 
+// Guarda cambios manuales sobre la base de datos JSON local.
 app.put("/api/db", requireLocalDbAccess, async (req, res) => {
   try {
     const db = await saveDb(req.body);
@@ -89,6 +93,7 @@ app.put("/api/db", requireLocalDbAccess, async (req, res) => {
   }
 });
 
+// Restablece la base de datos local a su estado semilla inicial predeterminado.
 app.post("/api/db/reset", requireLocalDbAccess, async (_req, res) => {
   try {
     res.json(await resetDb());
@@ -98,6 +103,7 @@ app.post("/api/db/reset", requireLocalDbAccess, async (_req, res) => {
   }
 });
 
+// Endpoint público para obtener la base de datos.
 app.get("/api/modulo", async (_req, res) => {
   try {
     res.json(await getDb());
@@ -108,14 +114,14 @@ app.get("/api/modulo", async (_req, res) => {
 
 // --- MOUNT ROUTERS ---
 
-// 1. Authentication and Admin (Includes login and parent validation)
+// 1. Montaje de enrutadores de autenticación y sincronización SSE
 app.use("/", authRouter);
 app.use("/", syncRouter);
 
-// 2. Require Authentication for Extracurricular endpoints
+// 2. Interceptor de seguridad global: los endpoints de negocio /v1 requieren token JWT firmado
 app.use("/api/v1/extracurricular", requireAuth);
 
-// 3. Mount Domain Sub-Routers
+// 3. Montaje de sub-enrutadores por dominios/roles funcionales
 app.use("/", coordinacionRouter);
 app.use("/", inscripcionRouter);
 app.use("/", cajaRouter);
@@ -126,7 +132,7 @@ app.use("/api/v1/extracurricular", direccionRouter);
 const DIST_PATH = path.join(__dirname, "../frontend/dist");
 app.use(express.static(DIST_PATH));
 
-// Redirigir cualquier otra ruta GET no-API al index.html de React (compatible con Express v5)
+// Redirigir cualquier otra ruta GET no-API al index.html de React (para soportar enrutamiento del lado del cliente)
 app.use((req, res, next) => {
   if (req.method === "GET" && !req.path.startsWith("/api")) {
     return res.sendFile(path.join(DIST_PATH, "index.html"));
@@ -135,6 +141,7 @@ app.use((req, res, next) => {
 });
 
 // --- MULTER & GLOBAL ERROR HANDLING ---
+// Middleware centralizado de control de errores. Maneja límites de peso de subidas en Multer y excepciones generales.
 app.use((error, _req, res, _next) => {
   if (error instanceof multer.MulterError) {
     const mensajes = {
@@ -147,6 +154,7 @@ app.use((error, _req, res, _next) => {
   return res.status(500).json({ message: error.message || "No se pudo procesar la solicitud." });
 });
 
+// Inicialización de la escucha en el puerto e IP correspondientes
 app.listen(PORT, API_HOST, () => {
   console.log(`Excel API listening on http://${API_HOST}:${PORT}`);
 });
