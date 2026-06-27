@@ -1,0 +1,255 @@
+# Módulo Extracurricular - Modelos y Esquema de Base de Datos (Supabase)
+
+Dado que la base de datos está implementada sobre Supabase (PostgreSQL) de manera administrada, no se utilizan archivos de ORM directo en el código backend. A continuación se documenta el esquema de tablas, campos y relaciones que componen el modelo de datos del sistema.
+
+---
+
+### 1. Tabla: usuarios
+Almacena las credenciales y perfiles de los usuarios administrativos y operativos del sistema.
+- `id` (Text, Primary Key): Identificador único del usuario.
+- `nombre` (Text): Nombre completo de la persona.
+- `usuario` (Text, Unique): Nombre de usuario para iniciar sesión.
+- `contrasena` (Text): Contraseña encriptada mediante bcrypt.
+- `rol` (Text): Rol del usuario en el sistema (ej. Administrador, Secretaria, Caja, Coordinacion, Auxiliar, Direccion).
+- `estado` (Text): Estado del usuario (Activo / Inactivo).
+- `permisos` (Array de Text): Permisos especiales configurados.
+
+---
+
+### 2. Tabla: estudiantes
+Almacena el padrón de alumnos regulares matriculados en la institución.
+- `dni` (Text, Primary Key): DNI del estudiante (usado como identificador principal).
+- `codigoEstudiante` (Text): Código oficial del alumno.
+- `nombres` (Text): Nombres y apellidos completos.
+- `grado` (Text): Grado escolar (ej. "1", "2", "3", "4", "5", "6").
+- `nivel` (Text): Nivel educativo (ej. "Inicial", "Primaria", "Secundaria").
+- `seccion` (Text): Sección académica asignada.
+- `sexo` (Text): Género ("M" / "F").
+- `fechaNacimiento` (Date): Fecha de nacimiento.
+- `tipoAlumno` (Text): Tipo de alumno (ej. "Alumno interno").
+- `estadoMatricula` (Text): Estado de matrícula regular ("Activo").
+- `apoderado` (Text): Nombre completo del apoderado.
+- `telefonoApoderado` (Text): Teléfono de contacto.
+- `correoApoderado` (Text): Correo del apoderado.
+- `estadoInscripcion` (Text): Indicador general de inscripción.
+- `estadoCaja` (Text): Estado financiero general.
+
+---
+
+### 3. Tabla: estudiantes_externos
+Almacena a los estudiantes de verano o invitados ajenos a la institución que participan en los talleres.
+- Mismo esquema de columnas que la tabla `estudiantes`.
+
+---
+
+### 4. Tabla: programas
+Registra los talleres o cursos extracurriculares ofertados en el ciclo.
+- `id` (Text, Primary Key): Código identificador único (ej. "PROG-001").
+- `nombre` (Text): Nombre del programa o taller.
+- `categoria` (Text): Categoría del taller (ej. "Deportes", "Académico", "Cambridge").
+- `fechaInicio` (Date): Fecha de inicio de clases.
+- `fechaFin` (Date): Fecha de finalización.
+- `costo` (Numeric): Costo base de la matrícula del taller.
+- `cupos` (Integer): Cantidad máxima de vacantes.
+- `cuposOcupados` (Integer): Cantidad de vacantes reservadas/pagadas.
+- `gradosAplicables` (Array de Text): Grados para los cuales está habilitado el taller.
+- `periodo` (Text): Periodo lectivo (ej. "2026-II").
+- `modalidadCobro` (Text): Modalidad de cobro establecida.
+- `horario` (Text): Horario general (si no es segmentado por grados).
+- `grupo` (Text): Descripción del grupo o docente asignado.
+
+---
+
+### 5. Tabla: programas_configuraciones (Relación 1:1 con programas)
+Parámetros adicionales de configuración de avisos, requisitos y justificaciones del taller.
+- `programaId` (Text, Primary Key, Foreign Key -> programas.id).
+- `duracionAvisoDias` (Integer): Cantidad de días de aviso para pagos atrasados.
+- `horaLimiteAviso` (Text): Hora límite para las notificaciones.
+- `edadMinima` (Integer): Edad mínima permitida.
+- `edadMaxima` (Integer): Edad máxima permitida.
+- `grupoEtario` (Text): Descripción del rango de edad.
+- `requisitos` (Text): Requisitos previos requeridos.
+- `comunicado` (Text): Resumen del comunicado informativo.
+- `comunicadoCompleto` (Text): Texto completo del comunicado informativo.
+- `detalleCosto` (Text): Glosa informativa del costo.
+- `creadoDesdeDocumento` (Boolean): Si fue generado vía importación.
+- `duracionTaller` (Text): Duración en semanas/meses.
+- `invitacionMasiva` (Boolean): Si está habilitada la invitación masiva.
+- `alcanceInvitacionMasiva` (Text): Alcance de la invitación.
+- `tipoComunicado` (Text): Categoría del comunicado.
+- `motivoJustificacion` (Text): Descripción de justificación del taller.
+- `docente` (Text): Nombre del docente del taller.
+- `responsable` (Text): Nombre del coordinador responsable.
+- `estado` (Text): Estado de la configuración.
+
+---
+
+### 6. Tabla: programas_horarios (Relación 1:1 con programas)
+Estructura detallada de horarios segmentados por grupos y grados específicos.
+- `programaId` (Text, Primary Key, Foreign Key -> programas.id).
+- `horaInicio` (Text): Hora general de inicio.
+- `horaFin` (Text): Hora general de fin.
+- `horariosPorGrupo` (JSONB): Array de grupos de horario configurados. Cada grupo contiene:
+  - `id` (Text)
+  - `dia` (Text)
+  - `grados` (Array de Text)
+  - `almuerzoInicio` (Text)
+  - `almuerzoFin` (Text)
+  - `horaInicio` (Text)
+  - `horaFin` (Text)
+  - `aula` (Text)
+  - `docente` (Text)
+- `tablaHorariosNivel` (JSONB): Estructura detallada de horarios por nivel escolar.
+
+---
+
+### 7. Tabla: programas_servicios (Relación 1:1 con programas)
+Servicios opcionales agregados del taller (uniformes, alimentación, certificaciones, ciclos especiales).
+- `programaId` (Text, Primary Key, Foreign Key -> programas.id).
+- `requiereUniforme` (Boolean): Si requiere uniforme obligatorio.
+- `requiereIndumentaria` (Boolean): Si requiere implementos deportivos.
+- `incluyeAlmuerzo` (Boolean): Si incluye o requiere servicio de almuerzo.
+- `horarioRecepcionAlmuerzo` (Text): Rango de horario de almuerzo.
+- `concesionarios` (Array de Text): Concesionarios de comida asociados.
+- `detalleAlmuerzo` (Text): Descripción del servicio de almuerzo.
+- `nivelCambridge` (Text): Nivel de certificación Cambridge asociado (si aplica).
+- `modalidadesCambridge` (Array de Text): Modalidades de examen Cambridge.
+- `costoCiclo` (Numeric): Costo por ciclos de taller.
+- `montoPrimerPago` (Numeric): Pago inicial sugerido.
+- `cicloI` (JSONB): Estructura del Ciclo I.
+- `cicloII` (JSONB): Estructura del Ciclo II.
+- `nombreCiclo` (Text): Etiqueta del ciclo actual.
+
+---
+
+### 8. Tabla: programas_documentos (Relación 1:1 con programas)
+Configuración de plantillas para la generación de constancias y fichas de inscripción en PDF/Word.
+- `programaId` (Text, Primary Key, Foreign Key -> programas.id).
+- `plantilla` (Text): Estructura base de la plantilla.
+- `plantillaBase64` (Text): Archivo de plantilla codificado en Base64.
+- `plantillaVariables` (JSONB): Lista de variables dinámicas a inyectar (ej. [nombres], [grado]).
+- `plantillaValidada` (Boolean): Si la plantilla está validada.
+- `tipoDocumento` (Text): Tipo de documento (ej. "Ficha Inscripción").
+- `numeroDocumento` (Text): Número o código interno de plantilla.
+- `areaTematica` (Text): Categoría del documento.
+
+---
+
+### 9. Tabla: programas_anuncios (Relación 1:1 con programas)
+Recursos publicitarios e imágenes utilizadas en el Portal de Padres de Familia para la difusión del taller.
+- `programaId` (Text, Primary Key, Foreign Key -> programas.id).
+- `anuncioImagen` (Text): URL o imagen Base64 del anuncio publicitario.
+- `anuncioImagenNombre` (Text): Nombre del archivo de imagen.
+- `anuncioImagenTamano` (Integer): Tamaño en bytes.
+- `anuncioImagenComprimida` (Boolean): Estado de compresión.
+
+---
+
+### 10. Tabla: inscripciones
+Registra las intenciones de matrícula y reservas de los estudiantes en los diferentes talleres.
+- `id` (Text, Primary Key): Código único de inscripción (ej. "INS-001").
+- `dniEstudiante` (Text, Foreign Key -> estudiantes.dni): DNI del alumno inscrito.
+- `programaId` (Text, Foreign Key -> programas.id): ID del taller.
+- `estadoPago` (Text): Estado de la inscripción (ej. "Pendiente de pago", "Verificando pago", "validado", "pago validado").
+- `pagoId` (Text): ID del pago asociado.
+- `costoOriginal` (Numeric): Costo base del programa al momento de inscribirse.
+- `descuentoAprobado` (Boolean): Si posee un descuento autorizado.
+- `descuentoTipo` (Text): Tipo de descuento aplicado (ej. "Beca", "Convenio", "Medio").
+- `descuentoValor` (Numeric): Porcentaje o monto del descuento.
+- `descuentoMonto` (Numeric): Valor monetario del descuento aplicado.
+- `descuentoJustificacion` (Text): Sustento por el cual se aplica el descuento.
+- `descuentoAprobadoPor` (Text): Usuario administrativo que autorizó el descuento.
+- `descuentoFechaAprobacion` (Timestamp): Fecha en que se aprobó el descuento.
+- `derivadoCaja` (Boolean): Si la matrícula ya fue pre-derivada a la cajera.
+- `estadoCaja` (Text): Estado interno de procesamiento en caja.
+- `origenRegistro` (Text): Origen de la matrícula (ej. "Portal padres", "Presencial").
+- `fechaRegistro` (Timestamp): Fecha y hora en que se creó la inscripción.
+
+---
+
+### 11. Tabla: pagos
+Controla las transacciones monetarias y validaciones de caja asociadas a las inscripciones.
+- `id` (Text, Primary Key): Código único de pago (ej. "PAG-001").
+- `inscripcionId` (Text, Foreign Key -> inscripciones.id): Inscripción a la cual amortiza este pago.
+- `dniEstudiante` (Text): DNI del alumno.
+- `programaId` (Text): ID del taller.
+- `monto` (Numeric): Importe monetario pagado.
+- `formaPago` (Text): Método de pago (ej. "Transferencia", "Efectivo", "Depósito").
+- `numeroOperacion` (Text): Número de operación o correlativo bancario.
+- `telefonoOperacion` (Text): Teléfono del cual se realizó la transferencia (ej. para billeteras digitales).
+- `capturaPagoNombre` (Text): Nombre del comprobante cargado.
+- `capturaPagoBase64` (Text): Comprobante de pago codificado en Base64.
+- `estado` (Text): Estado del pago (ej. "Pendiente", "validado", "rechazado").
+- `fechaPago` (Timestamp): Fecha de registro de la transacción.
+- `origenRegistro` (Text): Canal por el que se registró el pago.
+- `nro_recibo` (Text): Correlativo oficial de recibo emitido por caja.
+
+---
+
+### 12. Tabla: asistencias
+Bitácora de accesos diarios y control de ingreso de los alumnos registrados en puerta por los auxiliares.
+- `id` (Text, Primary Key): Código correlativo de asistencia (ej. "AST-001").
+- `inscripcionId` (Text, Foreign Key -> inscripciones.id).
+- `pagoId` (Text, Foreign Key -> pagos.id).
+- `dniEstudiante` (Text, Foreign Key -> estudiantes.dni).
+- `programaId` (Text, Foreign Key -> programas.id).
+- `estadoAcceso` (Text): Si el ingreso fue permitido u denegado (ej. "pagado", "Permitido", "Rechazado").
+- `observacion` (Text): Justificación en caso de ingreso excepcional.
+- `origen` (Text): Dispositivo/rol que registró el ingreso ("Auxiliar").
+- `fechaRegistro` (Timestamp): Fecha y hora exacta del marcado en la puerta.
+
+---
+
+### 13. Tabla: invitados_programa
+Almacena el listado de alumnos invitados pre-inscritos para invitaciones directas cargados masivamente desde plantillas Excel.
+- `programaId` (Text, Foreign Key -> programas.id).
+- `dni` (Text).
+- `nombres` (Text).
+- `grado` (Text).
+- `seccion` (Text).
+- `seleccion` (Text): Tipo de selección académica asignada (ej. A, B, C).
+- `nivelCambridge` (Text): Nivel Cambridge asignado.
+
+---
+
+### 14. Tabla: historial_cargas
+Control de auditoría e historial de las importaciones masivas de padrones ejecutadas por la coordinación.
+- `id` (Text, Primary Key).
+- `fecha` (Timestamp): Fecha del procesamiento.
+- `periodo` (Text): Periodo escolar.
+- `archivoNombre` (Text): Nombre del archivo Excel cargado.
+- `archivos` (JSONB): Rutas de almacenamiento asociadas.
+- `usuario` (Text): Usuario que realizó la carga.
+- `resumen` (JSONB): Estadísticas de la carga (Nro. de registros exitosos, omitidos, fallidos).
+- `registros` (JSONB): Datos crudos importados.
+
+---
+
+### 15. Tabla: audit_logs
+Registro detallado de acciones críticas ejecutadas en el sistema para control administrativo.
+- `id` (Text, Primary Key).
+- `fecha` (Timestamp): Momento de la acción.
+- `usuario` (Text): Nombre del usuario ejecutor.
+- `rol` (Text): Rol del usuario.
+- `accion` (Text): Tipo de acción realizada (ej. "LOGIN", "MATRICULA_APROBAR", "ASISTENCIA_REGISTRAR").
+- `detalles` (JSONB): JSON detallado con los datos alterados/registrados.
+
+---
+
+### 16. Tabla: categorias
+Categorías generales que clasifican los talleres en el catálogo interactivo.
+- `id` (Text, Primary Key).
+- `nombre` (Text): Nombre descriptivo de la categoría.
+- `color` (Text): Código hexadecimal de color.
+- `icono` (Text): Icono asignado.
+
+---
+
+### 17. Tabla: configuracion
+Almacena la parametrización institucional global del colegio.
+- `id` (Text, Primary Key).
+- `nombreInstitucion` (Text): Nombre del colegio.
+- `periodoActivo` (Text): Periodo lectivo vigente.
+- `logoUrl` (Text): URL del logotipo.
+- `direccion` (Text): Dirección física.
+- `telefono` (Text): Teléfono de la central.
