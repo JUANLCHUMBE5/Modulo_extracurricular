@@ -1223,6 +1223,7 @@ function ordenarPorFecha(items, campoPreferido = "fechaRegistro") {
   });
 }
 
+// Resuelve el horario asignado a una matrícula buscando dinámicamente según el grado del estudiante o datos del programa.
 function obtenerHorarioDeInscripcion(db, inscripcion, estudiante) {
   const prog = (db.programas || []).find(p => p.id === inscripcion?.programaId);
   if (prog && tieneHorariosPorGrupoApi(prog)) {
@@ -1246,11 +1247,13 @@ function obtenerHorarioDeInscripcion(db, inscripcion, estudiante) {
     || "";
 }
 
+// Retorna el nombre del programa si es válido (diferente de vacío o "sin programa").
 function nombreProgramaValido(valor) {
   const texto = String(valor || "").trim();
   return texto && normalizarTexto(texto) !== "sin programa" ? texto : "";
 }
 
+// Busca un programa/taller en la base de datos comparando su nombre de forma normalizada.
 function buscarProgramaPorNombre(db, nombre) {
   const nombreNormalizado = normalizarTexto(nombreProgramaValido(nombre));
   if (!nombreNormalizado) return null;
@@ -1259,6 +1262,7 @@ function buscarProgramaPorNombre(db, nombre) {
   ) || null;
 }
 
+// Resuelve la información del programa/taller asociado a una matrícula, pago o estudiante.
 function resolverProgramaAsociado(db, inscripcion = {}, estudiante = null, pago = null, horario = "") {
   const programas = db.programas || [];
   const porId = programas.find((programa) =>
@@ -1274,6 +1278,7 @@ function resolverProgramaAsociado(db, inscripcion = {}, estudiante = null, pago 
     buscarProgramaPorNombre(db, pago?.programa) ||
     buscarProgramaPorNombre(db, pago?.programaNombre);
   if (porNombre) return porNombre;
+
 
   const dni = String(inscripcion.dniEstudiante || pago?.dniEstudiante || pago?.estudianteDni || estudiante?.dni || "")
     .replace(/\D/g, "")
@@ -1507,6 +1512,7 @@ function crearRespuestaNoRegistrado(ids, estudiante) {
   };
 }
 
+// Motor principal de validación de acceso. Evalúa estado de pago, vigencia de fechas y correspondencia del día del taller.
 function resolverValidacion(db, identificadores = {}) {
   const ids = normalizarIdentificadores(identificadores);
   const inscripcion = buscarInscripcion(db, ids);

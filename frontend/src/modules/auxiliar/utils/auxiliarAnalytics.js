@@ -1,3 +1,4 @@
+// Compara la hora actual con el inicio de clase para saber si el alumno llega antes del margen permitido de 10 minutos.
 export function verificarLlegadaTemprano(horarioStr) {
   if (!horarioStr) return { esTemprano: false, esTarde: false, horaInicio: "", horaFin: "" };
 
@@ -87,6 +88,7 @@ export function verificarLlegadaTemprano(horarioStr) {
   };
 }
 
+// Verifica si hoy corresponde al día programado para el taller del alumno.
 export function esDiaCorrecto(horarioStr) {
   if (!horarioStr) return false;
 
