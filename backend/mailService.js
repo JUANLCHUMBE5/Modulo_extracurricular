@@ -363,14 +363,42 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
   };
 
   const zip = new PizZip(Buffer.from(plantillaBase64, "base64"));
-  const doc = new Docxtemplater(zip, {
-    paragraphLoop: true,
-    linebreaks: true,
-    nullGetter: () => ""
+  const archivosXml = Object.keys(zip.files).filter((name) =>
+    /^word\/(document|header|footer)\d*\.xml$/i.test(name)
+  );
+
+  const escaparXml = (valor) => {
+    return String(valor ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  };
+
+  const escaparRegExp = (valor) => {
+    return String(valor).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  };
+
+  archivosXml.forEach((name) => {
+    const file = zip.file(name);
+    if (!file) return;
+    let xml = file.asText();
+    
+    for (const [variable, valor] of Object.entries(datos)) {
+      const seguro = escaparXml(valor);
+      const patrones = [
+        new RegExp(`\\{\\{\\s*${escaparRegExp(variable)}\\s*\\}\\}`, "gi"),
+        new RegExp(`\\{\\s*${escaparRegExp(variable)}\\s*\\}`, "gi"),
+        new RegExp(`\\[\\[\\s*${escaparRegExp(variable)}\\s*\\]\\]`, "gi"),
+        new RegExp(`\\$\\{\\s*${escaparRegExp(variable)}\\s*\\}`, "gi"),
+        new RegExp(`&lt;&lt;\\s*${escaparRegExp(variable)}\\s*&gt;&gt;`, "gi"),
+      ];
+      xml = patrones.reduce((texto, patron) => texto.replace(patron, seguro), xml);
+    }
+    
+    zip.file(name, xml);
   });
-  
-  doc.render(datos);
-  return doc.getZip().generate({ type: "nodebuffer" });
+
+  return zip.generate({ type: "nodebuffer" });
 }
 
 
