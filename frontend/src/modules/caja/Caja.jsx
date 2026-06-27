@@ -421,7 +421,7 @@ export default function Caja({
       : encontrado.inscripcionCaja
         ? [encontrado.inscripcionCaja]
         : [];
-    const pendientesCaja = listaCaja.filter((item) => item?.derivadoCaja && !pagoEstaCerrado(item));
+    const pendientesCaja = listaCaja.filter((item) => !pagoEstaCerrado(item));
 
     if (!pendientesCaja.length) {
       setEstudiante(null);
@@ -914,7 +914,10 @@ export default function Caja({
                   secciones: seccionesDisponibles,
                 }}
                 actualizarFiltroReporte={actualizarFiltroReporte}
+                aprobarPagoWebDirecto={aprobarPagoWebDirecto}
                 abrirHistorialAlumno={abrirHistorialAlumno}
+                abrirObservarModal={abrirObservarModal}
+                abrirRechazarModal={abrirRechazarModal}
                 cerrarHistorialAlumno={cerrarHistorialAlumno}
               />
             ) : vista === "cancelar_correlativo" ? (

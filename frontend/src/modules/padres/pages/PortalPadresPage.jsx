@@ -620,20 +620,22 @@ export default function Padres({ user, onLogout }) {
                 })()}
                 </div>
 
-                <div className="padres-comunicado-section is-family">
-                  <div className="padres-comunicado-section-title">
-                    <span className="padres-comunicado-section-icon"><ClipboardCheck size={17} /></span>
-                    <div>
-                      <strong>Indicaciones para la familia</strong>
-                      <span>Lo necesario antes de confirmar.</span>
+                {(comunicadoPadres.indicaciones || []).length ? (
+                  <div className="padres-comunicado-section is-family">
+                    <div className="padres-comunicado-section-title">
+                      <span className="padres-comunicado-section-icon"><ClipboardCheck size={17} /></span>
+                      <div>
+                        <strong>Indicaciones para la familia</strong>
+                        <span>Lo necesario antes de confirmar.</span>
+                      </div>
                     </div>
+                    <ul className="padres-info-list">
+                      {(comunicadoPadres.indicaciones || []).map((indicacion) => (
+                        <li key={indicacion}>{indicacion}</li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="padres-info-list">
-                    {(comunicadoPadres.indicaciones || []).map((indicacion) => (
-                      <li key={indicacion}>{indicacion}</li>
-                    ))}
-                  </ul>
-                </div>
+                ) : null}
 
                 {(comunicadoPadres.detalleFormato || []).map((seccion) => {
                   const { Icono, clase, ayuda } = obtenerMetaSeccionComunicado(seccion.titulo);

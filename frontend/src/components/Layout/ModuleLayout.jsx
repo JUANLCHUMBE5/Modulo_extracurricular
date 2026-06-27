@@ -63,6 +63,23 @@ export default function ModuleLayout({ user, onLogout, availableModules }) {
           />
         );
         break;
+      case "direccion":
+        delegatedContent = (
+          <Direccion
+            embedded
+            initialView={delegatedView}
+            onLogout={onLogout}
+            user={user}
+          />
+        );
+        break;
+      case "auxiliar":
+        delegatedContent = (
+          <Auxiliar
+            onLogout={onLogout}
+          />
+        );
+        break;
       default:
         break;
     }

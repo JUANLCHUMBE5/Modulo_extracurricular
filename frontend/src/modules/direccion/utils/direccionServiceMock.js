@@ -108,6 +108,48 @@ export async function obtenerPanelDireccionMock(filtros = {}) {
 
   const periodo = normalizarPeriodo(filtros.periodo || "todos");
   const anio = filtros.anio || "todos";
+  const fechaInicio = filtros.fechaInicio || "";
+  const fechaFin = filtros.fechaFin || "";
+  const programaFiltro = filtros.programa || "todos";
+
+  const normalizarFechaFiltro = (valor) => {
+    const texto = String(valor || "").trim();
+    if (!texto) return "";
+    const iso = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+    const local = texto.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+    if (local) return `${local[3]}-${local[2]}-${local[1]}`;
+    const fecha = new Date(texto);
+    if (!Number.isNaN(fecha.getTime())) return fecha.toISOString().slice(0, 10);
+    return texto.slice(0, 10);
+  };
+  const obtenerPrimerValor = (item, claves) => claves.map((clave) => item?.[clave]).find(Boolean) || "";
+  const fechaInicioFiltro = normalizarFechaFiltro(fechaInicio);
+  const fechaFinFiltro = normalizarFechaFiltro(fechaFin);
+  const fechaEnRango = (valor) => {
+    const fecha = normalizarFechaFiltro(valor);
+    if (!fecha) return false;
+    if (fechaInicioFiltro && fecha < fechaInicioFiltro) return false;
+    if (fechaFinFiltro && fecha > fechaFinFiltro) return false;
+    return true;
+  };
+  const rangoProgramaCruza = (item) => {
+    if (!fechaInicioFiltro && !fechaFinFiltro) return true;
+    const inicio = normalizarFechaFiltro(obtenerPrimerValor(item, ["fechaInicio", "fecha_inicio"]));
+    const fin = normalizarFechaFiltro(obtenerPrimerValor(item, ["fechaFin", "fecha_fin", "fechaInicio", "fecha_inicio"]));
+    if (!inicio && !fin) return false;
+    const desdeItem = inicio || fin;
+    const hastaItem = fin || inicio;
+    if (fechaInicioFiltro && hastaItem < fechaInicioFiltro) return false;
+    if (fechaFinFiltro && desdeItem > fechaFinFiltro) return false;
+    return true;
+  };
+  const coincideProgramaFiltro = (item = {}) => {
+    if (!programaFiltro || programaFiltro === "todos") return true;
+    const filtro = normalizarTexto(programaFiltro);
+    return String(item.programaId || item.programa_id || item.id || "") === String(programaFiltro) ||
+      normalizarTexto(item.programa || item.programaNombre || item.nombrePrograma || item.nombre_programa || item.nombre) === filtro;
+  };
 
   let programas = filtrarPorPeriodo(apiDb.programas || [], periodo);
   const estudiantes = apiDb.estudiantes || {};
@@ -132,6 +174,27 @@ export async function obtenerPanelDireccionMock(filtros = {}) {
     const programaIdsInYear = new Set(programas.map(p => p.id));
     inscripciones = inscripciones.filter(ins => programaIdsInYear.has(ins.programaId));
     pagos = pagos.filter(p => programaIdsInYear.has(p.programaId));
+  }
+
+  const opcionesProgramas = programas.map((p) => ({
+    value: p.id || p.nombre,
+    label: p.nombre || "Programa sin nombre",
+  }));
+
+  if (programaFiltro && programaFiltro !== "todos") {
+    programas = programas.filter(coincideProgramaFiltro);
+    inscripciones = inscripciones.filter(coincideProgramaFiltro);
+    pagos = pagos.filter(coincideProgramaFiltro);
+  }
+
+  if (fechaInicio || fechaFin) {
+    programas = programas.filter(rangoProgramaCruza);
+    inscripciones = inscripciones.filter((item) =>
+      fechaEnRango(obtenerPrimerValor(item, ["fechaRegistro", "fechaInscripcion", "fecha", "creadoEn", "creado_en"]))
+    );
+    pagos = pagos.filter((item) =>
+      fechaEnRango(obtenerPrimerValor(item, ["fechaPago", "fecha_pago", "fecha", "creadoEn", "creado_en"]))
+    );
   }
 
   const filasProgramas = programas.map((programa) => {
@@ -175,12 +238,23 @@ export async function obtenerPanelDireccionMock(filtros = {}) {
   const totalRecaudado = pagos
     .filter((item) => normalizarEstadoPago(item.estado) === "Pagado")
     .reduce((sum, item) => sum + Number(item.monto || 0), 0);
+  const totalAnulado = pagos
+    .filter((item) => normalizarEstadoPago(item.estado) === "Anulado")
+    .reduce((sum, item) => sum + Number(item.monto || 0), 0);
   const totalProyectado = inscripciones.reduce((sum, item) => sum + Number(item.costo || 0), 0);
   const pendientesPago = inscripciones.filter((item) => normalizarEstadoPago(item.estadoPago) !== "Pagado");
   const familias = new Set(inscripciones.map((item) => item.telefono || item.apoderado || item.dniEstudiante).filter(Boolean));
 
   // --- Procesamiento de Asistencia ---
-  const asistencias = apiDb.asistencias || [];
+  let asistencias = apiDb.asistencias || [];
+  if (programaFiltro && programaFiltro !== "todos") {
+    asistencias = asistencias.filter(coincideProgramaFiltro);
+  }
+  if (fechaInicio || fechaFin) {
+    asistencias = asistencias.filter((item) =>
+      fechaEnRango(obtenerPrimerValor(item, ["fechaRegistro", "fecha_registro", "fecha", "creadoEn", "creado_en"]))
+    );
+  }
 
   const obtenerFechaPeru = (fechaStr) => {
     if (!fechaStr) return "";
@@ -258,6 +332,7 @@ export async function obtenerPanelDireccionMock(filtros = {}) {
       inscripciones: inscripciones.length,
       familias: familias.size,
       totalRecaudado,
+      totalAnulado,
       totalProyectado,
       totalPendiente: pendientesPago.reduce((sum, item) => sum + Number(item.costo || 0), 0),
       cupos: filasProgramas.reduce((sum, item) => sum + Number(item.cupos || 0), 0),
@@ -290,7 +365,8 @@ export async function obtenerPanelDireccionMock(filtros = {}) {
     )).sort((a, b) => b.localeCompare(a)),
     categorias: Array.from(new Set(
       (apiDb.programas || []).map(p => p.categoria).filter(Boolean)
-    ))
+    )),
+    opcionesProgramas,
   };
 }
 

@@ -1,4 +1,4 @@
-import { Badge, Table, Loader } from "@mantine/core";
+﻿import { Badge, Table, Loader } from "@mantine/core";
 import { BarChart, DonutChart } from "@mantine/charts";
 import {
   IconWallet as Wallet,
@@ -30,10 +30,10 @@ export default function DireccionDashboard({
     const texto = String(valor || "Sin nombre").trim();
     return texto.length > 20 ? `${texto.slice(0, 19)}...` : texto;
   };
-
   return (
     <>
-      {/* ── SELECCIÓN DE MÓDULOS DEL DASHBOARD (TABS DE DISEÑO PREMIUM) ── */}
+
+      {/* SELECCION DE MODULOS DEL DASHBOARD */}
       <div className="dir-module-tabs-row" role="tablist">
         <button
           type="button"
@@ -88,7 +88,7 @@ export default function DireccionDashboard({
         </button>
       </div>
 
-      {/* ── SECCIÓN SEGMENTADA POR PESTAÑA ACTIVA ── */}
+      {/* SECCION SEGMENTADA POR PESTANA ACTIVA */}
       {dashboardTab === "caja" && (
         <>
           <section className="dir-stats" aria-label="Indicadores principales financiero">
@@ -101,9 +101,9 @@ export default function DireccionDashboard({
             />
             <StatCard
               icon={Wallet}
-              label="Monto Pendiente"
-              value={formatearSoles(resumen.totalPendiente)}
-              detail="Cuentas pendientes por regularizar"
+              label="Monto Anulado"
+              value={formatearSoles(resumen.totalAnulado || 0)}
+              detail="Recibos anulados en el periodo"
               tone="orange"
             />
             <StatCard

@@ -68,7 +68,41 @@ export async function listarPagosMock(periodo = "escolar", filtros = {}) {
     pagos = pagos.filter((p) => coincideProgramaFiltroCaja(p, filtros.programa, programasVigentes));
   }
 
-  return pagos.sort((a, b) => new Date(b.fecha || b.fechaPago || 0) - new Date(a.fecha || a.fechaPago || 0));
+  return pagos
+    .map((pago) => enriquecerPagoConProgramaCaja(pago, programasVigentes))
+    .sort((a, b) => new Date(b.fecha || b.fechaPago || 0) - new Date(a.fecha || a.fechaPago || 0));
+}
+
+function enriquecerPagoConProgramaCaja(pago = {}, programasVigentes = null) {
+  const inscripcion = (apiDb.inscripciones || []).find((item) =>
+    (pago.inscripcionId && item.id === pago.inscripcionId) ||
+    (
+      item.dniEstudiante === (pago.dniEstudiante || pago.estudianteDni) &&
+      (
+        (pago.programaId && item.programaId === pago.programaId) ||
+        normalizarTexto(item.programa) === normalizarTexto(pago.programa || pago.programaNombre)
+      )
+    )
+  );
+  const programa = resolverProgramaVigenteCaja(
+    {
+      programaId: pago.programaId || inscripcion?.programaId,
+      programa: pago.programa || pago.programaNombre || inscripcion?.programa,
+      periodo: pago.periodo,
+    },
+    programasVigentes
+  );
+
+  return {
+    ...pago,
+    programaId: pago.programaId || inscripcion?.programaId || programa?.id || "",
+    programa: pago.programa || pago.programaNombre || inscripcion?.programa || programa?.nombre || "",
+    programaNombre: pago.programaNombre || pago.programa || inscripcion?.programa || programa?.nombre || "",
+    programaFechaInicio: programa?.fechaInicio || inscripcion?.fechaInicio || "",
+    programaFechaFin: programa?.fechaFin || inscripcion?.fechaFin || "",
+    estadoPrograma: programa?.estado || "",
+    nombresEstudiante: pago.nombresEstudiante || inscripcion?.nombresEstudiante || "",
+  };
 }
 
 export async function registrarPagoMock(datosPago) {
@@ -456,6 +490,7 @@ export async function generarReporteCajaMock(filtros = {}) {
       descuentoAprobado: inscripcion.descuentoAprobado || false,
       descuentoTipo: inscripcion.descuentoTipo || "",
       descuentoMonto: inscripcion.descuentoMonto || 0,
+      costoOriginal: inscripcion.costoOriginal ?? programa.costo ?? 0,
       descuentoJustificacion: inscripcion.descuentoJustificacion || "",
       observaciones: pago ? (pago.observaciones || pago.observacion || pago.pagoObservacionCaja || "") : (inscripcion.pagoObservacionCaja || ""),
     };
@@ -705,6 +740,7 @@ function crearFilaPago(pago, programasVigentes = null) {
     descuentoAprobado: inscripcion ? (inscripcion.descuentoAprobado || false) : false,
     descuentoTipo: inscripcion ? (inscripcion.descuentoTipo || "") : "",
     descuentoMonto: inscripcion ? (inscripcion.descuentoMonto || 0) : 0,
+    costoOriginal: inscripcion ? (inscripcion.costoOriginal ?? program.costo ?? 0) : (program.costo ?? 0),
     descuentoJustificacion: inscripcion ? (inscripcion.descuentoJustificacion || "") : "",
     observaciones: pago.observaciones || pago.observacion || (inscripcion ? inscripcion.pagoObservacionCaja : "") || "",
   };

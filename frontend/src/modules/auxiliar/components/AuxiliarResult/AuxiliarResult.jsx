@@ -212,6 +212,17 @@ export default function AuxiliarResult({
           <div className="kiosk-status-right">
             <p className="kiosk-status-message-highlight" style={{ color: "#d97706" }}>
               Espere por favor, ingreso permitido a las {verificarLlegadaTemprano(estudiante.horario).horaInicio}.
+              {(() => {
+                const info = verificarLlegadaTemprano(estudiante.horario);
+                if (info.minutosFaltantes > 0) {
+                  return (
+                    <span style={{ display: "block", marginTop: "8px", fontSize: "0.95rem", fontWeight: "normal" }}>
+                      Faltan aproximadamente <strong>{info.minutosFaltantes} minutos</strong> para habilitar el ingreso.
+                    </span>
+                  );
+                }
+                return null;
+              })()}
             </p>
 
             <div className="kiosk-student-details-box">

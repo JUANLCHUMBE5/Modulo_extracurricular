@@ -18,17 +18,20 @@ export function prepararComunicadoPadres(programa, estudiante) {
     programa?.comunicado || textoCompletoWord,
     { area, programa: titulo, alumno, datos: datosComunicado }
   );
+  const comunicadoYaIncluyeDetalle = Boolean(textoCompletoWord && textoIncluyeSeccionesDePrograma(textoCompletoWord));
+  const textoMensajeWord = comunicadoYaIncluyeDetalle ? extraerMensajePrincipalWord(textoCompletoWord) : textoCompletoWord;
+  const detalleWord = comunicadoYaIncluyeDetalle ? obtenerDetalleFormatoDesdeWord(textoCompletoWord) : [];
   const parrafosFallback = esCambridge
     ? crearComunicadoCambridgePadres(programa, estudiante, titulo)
     : esClubTareas
       ? crearComunicadoClubTareasPadres(programa, estudiante, titulo, area)
       : crearComunicadoBasicoPadres(programa, estudiante, titulo);
-  const parrafosOriginales = textoCompletoWord
-    ? textoCompletoWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
+  const parrafosOriginales = textoMensajeWord
+    ? textoMensajeWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
     : parrafosFallback;
   const parrafos = dividirParrafosPorCampos(parrafosOriginales);
   const parrafosResumenBaseOriginales = textoResumenWord
-    ? textoResumenWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean)
+    ? (comunicadoYaIncluyeDetalle ? parrafosOriginales : textoResumenWord.split(/\n{2,}/).map((item) => item.trim()).filter(Boolean))
     : parrafosFallback;
   const parrafosResumenBase = dividirParrafosPorCampos(parrafosResumenBaseOriginales);
   const ventana = obtenerVentanaInscripcion(
@@ -38,13 +41,15 @@ export function prepararComunicadoPadres(programa, estudiante) {
     programa?.horaLimiteAviso,
     programa
   );
-  const indicaciones = obtenerIndicacionesProgramaPadres(programa, { esCambridge, esClubTareas });
-  if (ventana.fechaLimite) {
+  const indicaciones = comunicadoYaIncluyeDetalle
+    ? []
+    : obtenerIndicacionesProgramaPadres(programa, { esCambridge, esClubTareas });
+  if (!comunicadoYaIncluyeDetalle && ventana.fechaLimite) {
     indicaciones.unshift(
       `Confirmar la inscripción en línea a más tardar el ${ventana.fechaLimite} a las ${ventana.horaLimite} (cierre de inscripciones regulares).`
     );
   }
-  const detalleFormato = obtenerDetalleFormatoPadres(programa);
+  const detalleFormato = comunicadoYaIncluyeDetalle ? detalleWord : obtenerDetalleFormatoPadres(programa);
   const resumenParrafos = resumirComunicadoPadres(parrafosResumenBase, programa, detalleFormato);
   const datosCambridge = esCambridge ? obtenerDatosCambridgePadres(programa, estudiante) : null;
 
@@ -60,7 +65,7 @@ export function prepararComunicadoPadres(programa, estudiante) {
     tieneAlmuerzoFormato: detalleFormato.some((seccion) =>
       ["almuerzo", "concesionarios"].includes(normalizarTextoPadres(seccion.titulo))
     ),
-    ocultarAlmuerzo: !programa?.detalleAlmuerzo && !programa?.concesionarios,
+    ocultarAlmuerzo: comunicadoYaIncluyeDetalle || (!programa?.detalleAlmuerzo && !programa?.concesionarios),
   };
 }
 
@@ -451,6 +456,135 @@ function obtenerDetalleFormatoPadres(programa) {
   return compactarSeccionesDetalle(secciones).filter((seccion) => seccion.items.length);
 }
 
+function obtenerDetalleFormatoDesdeWord(texto) {
+  const limpio = limpiarCierreFormularioWord(texto);
+  const secciones = [
+    extraerBloquePorMarcadoresWord(limpio, "Requisitos", ["requisitos"], ["costo"]),
+    extraerBloquePorMarcadoresWord(limpio, "Costo", ["costo"], ["el almuerzo", "almuerzo"]),
+    extraerAlmuerzoWord(limpio),
+  ].filter(Boolean);
+
+  return compactarSeccionesDetalle(secciones).filter((seccion) => seccion.items.length);
+}
+
+function extraerBloquePorMarcadoresWord(texto, titulo, inicios, finales = []) {
+  const lineas = limpiarTextoFormato(texto).split("\n").map((linea) => linea.trim()).filter(Boolean);
+  const inicio = lineas.findIndex((linea) => {
+    const normal = normalizarTextoPadres(linea).replace(/[:.]+$/g, "");
+    return inicios.some((item) => normal.startsWith(normalizarTextoPadres(item)));
+  });
+  if (inicio === -1) return null;
+
+  const items = [];
+  for (const linea of lineas.slice(inicio)) {
+    const normal = normalizarTextoPadres(linea).replace(/[:.]+$/g, "");
+    const esInicio = inicios.some((item) => normal.startsWith(normalizarTextoPadres(item)));
+    const esFinal = !esInicio && finales.some((item) => normal.startsWith(normalizarTextoPadres(item)));
+    if (esFinal) break;
+
+    const textoItem = limpiarIndicacion(linea.replace(new RegExp(`^\\s*${titulo}\\s*:?\\s*`, "i"), ""));
+    if (!textoItem) continue;
+    if (esTituloSeccionWord(textoItem)) continue;
+    if (esInicio && normalizarTextoPadres(textoItem) === normalizarTextoPadres(titulo)) continue;
+    items.push(textoItem);
+  }
+
+  return { titulo, items: quitarDuplicadosTexto(items) };
+}
+
+function extraerAlmuerzoWord(texto) {
+  const lineas = limpiarTextoFormato(texto).split("\n").map((linea) => linea.trim()).filter(Boolean);
+  const inicio = lineas.findIndex((linea) => normalizarTextoPadres(linea).includes("contamos con un area"));
+  if (inicio === -1) {
+    return extraerBloquePorMarcadoresWord(texto, "Almuerzo", ["el almuerzo", "almuerzo"], ["atentamente", "entregar este formato", "acepto", "datos del alumno"]);
+  }
+
+  const items = [];
+  for (const linea of lineas.slice(inicio)) {
+    const normal = normalizarTextoPadres(linea).replace(/[:.]+$/g, "");
+    if (/^(atentamente|entregar este formato|acepto|datos del alumno|datos del apoderado)\b/.test(normal)) break;
+    if (/^(clases|nivel|dia|almuerzo|el almuerzo|costo|requisitos|pago unico|de)$/i.test(normal)) continue;
+    if (/^\d+\s*(primaria|secundaria|inicial)\b/.test(normal)) continue;
+    if (/^(primaria|secundaria|inicial)\s+\d+\b/.test(normal)) continue;
+    if (normal.includes("clase") && normal.includes("almuerzo") && /\d{1,2}:\d{2}/.test(linea)) continue;
+
+    const item = limpiarIndicacion(
+      linea
+        .replace(/\b\d{10,}\b/g, "")
+        .replace(/\s+/g, " ")
+    );
+    if (item) items.push(item);
+  }
+
+  return { titulo: "Almuerzo", items: quitarDuplicadosTexto(items) };
+}
+
+function esTituloSeccionWord(texto) {
+  const normal = normalizarTextoPadres(texto).replace(/[:.]+$/g, "");
+  return /^(club de tareas|duracion|duración|requisitos|costo|el almuerzo|almuerzo|acepto|datos del alumno|datos del apoderado)$/.test(normal);
+}
+
+function extraerMensajePrincipalWord(texto) {
+  const limpio = limpiarCierreFormularioWord(texto);
+  const lineas = limpiarTextoFormato(limpio).split("\n").map((linea) => linea.trim()).filter(Boolean);
+  const inicio = lineas.findIndex((linea) => esLineaMensajeColegio(linea));
+  const desdeMensaje = inicio === -1 ? lineas.filter((linea) => !esCabeceraWord(linea)) : lineas.slice(inicio);
+  if (desdeMensaje[0]) {
+    desdeMensaje[0] = desdeMensaje[0].replace(/^.*?\b(Reciba|Nos dirigimos|En este sentido)\b/i, "$1").trim();
+  }
+  const corte = desdeMensaje.findIndex((linea, index) => {
+    if (index === 0 && esLineaMensajeColegio(linea)) return false;
+    const normal = normalizarTextoPadres(linea).replace(/[:.]+$/g, "");
+    return /^(club de tareas|ciclo|duracion|duración|a continuacion|requisitos|costo|el almuerzo|almuerzo)\b/.test(normal);
+  });
+  const principales = (corte === -1 ? desdeMensaje : desdeMensaje.slice(0, corte))
+    .filter((linea) => !esCabeceraWord(linea));
+  return unirLineasCortadasWord(principales).join("\n\n");
+}
+
+function esLineaMensajeColegio(linea) {
+  const normal = normalizarTextoPadres(linea);
+  return /\b(reciba|nos dirigimos|en este sentido)\b/.test(normal);
+}
+
+function esCabeceraWord(linea) {
+  const normal = normalizarTextoPadres(linea).replace(/[:.]+$/g, "");
+  return (
+    normal.includes("ano de la esperanza") ||
+    /^comunicado\s+cmsr\b/.test(normal) ||
+    /^comunicado$/.test(normal) ||
+    /^carabayllo$/.test(normal)
+  );
+}
+
+function unirLineasCortadasWord(lineas) {
+  const resultado = [];
+
+  lineas.forEach((linea) => {
+    const actual = String(linea || "").trim();
+    if (!actual) return;
+
+    const previo = resultado[resultado.length - 1] || "";
+    if (previo && debeUnirseLineaWord(previo, actual)) {
+      resultado[resultado.length - 1] = `${previo} ${actual}`.replace(/\s+/g, " ").trim();
+      return;
+    }
+
+    resultado.push(actual);
+  });
+
+  return resultado;
+}
+
+function debeUnirseLineaWord(previo, actual) {
+  const anterior = String(previo || "").trim();
+  const siguiente = String(actual || "").trim();
+  if (!anterior || !siguiente) return false;
+  if (/[.!?;:]$/.test(anterior)) return false;
+  if (/^(nos dirigimos|en este sentido|reciba)\b/i.test(siguiente)) return false;
+  return /^[a-zÃ¡Ã©Ã­Ã³ÃºÃ±]/i.test(siguiente);
+}
+
 function seccionarTextoFormato(texto, tituloBase) {
   const lineas = limpiarTextoFormato(texto).split("\n").map((linea) => linea.trim()).filter(Boolean);
   if (!lineas.length) return [];
@@ -678,7 +812,7 @@ function reemplazarVariablesComunicado(texto, datos = {}) {
 }
 
 function limpiarComunicadoWord(texto, datos) {
-  return repararTexto(reemplazarVariablesComunicado(texto, datos.datos || {}))
+  const limpio = repararTexto(reemplazarVariablesComunicado(texto, datos.datos || {}))
     .replace(/\{\{\s*TITULO\s*\}\}/gi, datos.programa)
     .replace(/\{\{\s*FECHA\s*\}\}/gi, "")
     .replace(/\{\{\s*AREA\s*\}\}/gi, datos.area)
@@ -688,7 +822,38 @@ function limpiarComunicadoWord(texto, datos) {
     .replace(/\baula\s*,/gi, `aula ${datos.programa},`)
     .replace(/\baula\s+la cual/gi, `aula ${datos.programa}, la cual`)
     .replace(/\d{10,}\s*:\s*Del\s+al\s*\./gi, "")
+    .replace(/\b\d{10,}\b/g, "")
+    .replace(/\s+(DURACI[OÃ“]N|REQUISITOS|COSTO|EL ALMUERZO|ACEPTO|DATOS DEL ALUMNO|DATOS DEL APODERADO)\s*:?/gi, "\n$1:")
     .replace(/\s+([,.])/g, "$1")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  return limpiarCierreFormularioWord(limpio);
+}
+
+function textoIncluyeSeccionesDePrograma(texto) {
+  const normal = normalizarTextoPadres(texto);
+  const marcadores = [
+    /\brequisitos?\b/,
+    /\bcosto\b/,
+    /\bpago unico\b/,
+    /\bel almuerzo\b/,
+    /\bentregar este formato\b/,
+    /\bdatos del alumno\b/,
+    /\bacepto\b/,
+  ];
+  return marcadores.filter((patron) => patron.test(normal)).length >= 2;
+}
+
+function limpiarCierreFormularioWord(texto) {
+  return String(texto || "")
+    .replace(/\bAtentamente[\s\S]*$/i, "")
+    .replace(/\bENTREGAR ESTE FORMATO[\s\S]*$/i, "")
+    .replace(/\bACEPTO\s*:[\s\S]*$/i, "")
+    .replace(/\bDATOS DEL ALUMNO\s*:[\s\S]*$/i, "")
+    .replace(/\bDATOS DEL APODERADO\s*:[\s\S]*$/i, "")
+    .replace(/\b0-\d{6,}\b/g, "")
     .replace(/[ \t]{2,}/g, " ")
     .replace(/\n{3,}/g, "\n\n")
     .trim();

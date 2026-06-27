@@ -34,7 +34,7 @@ export const tiposReporte = [
   { value: "registro_secretaria", label: "Inscritos por Asistente" },
   { value: "registro_web", label: "Inscritos por Padres / Web" },
   { value: "pagos_pendientes", label: "Solo pendientes de pago" },
-  { value: "pagos_realizados", label: "Solo pagos realizados / validados" },
+  { value: "pagos_realizados", label: "Solo pagos cobrados / validados" },
   { value: "becas_descuentos", label: "Becas / Descuentos" },
 ];
 

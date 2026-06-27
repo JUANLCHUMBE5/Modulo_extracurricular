@@ -187,15 +187,54 @@ router.post("/api/v1/auth/login", loginLimiter, async (req, res) => {
 // Auth Get Current User
 router.get("/api/v1/auth/me", requireAuth, async (req, res) => {
   try {
+    if (req.user.role === "padres") {
+      return res.json({
+        success: true,
+        data: {
+          user: {
+            username: req.user.username,
+            role: req.user.role,
+            name: req.user.name,
+            permissions: req.user.permissions || [],
+            permisos: req.user.permissions || []
+          }
+        }
+      });
+    }
+
+    const db = await getDb();
+    const userObj = (db.usuarios || []).find(
+      u => String(u.usuario || "").trim().toLowerCase() === String(req.user.username || "").trim().toLowerCase()
+    );
+
+    if (!userObj || userObj.estado !== "Activo") {
+      return res.status(401).json({ success: false, message: "Usuario inactivo o no autorizado." });
+    }
+
+    const rolesMap = {
+      Administrador: "administrador",
+      Secretaria: "secretaria",
+      Asistente: "secretaria",
+      Caja: "caja",
+      Cajera: "caja",
+      Coordinacion: "coordinacion",
+      "Coordinación Académica": "coordinacion",
+      "Coordinacion Academica": "coordinacion",
+      Auxiliar: "auxiliar",
+      Direccion: "direccion",
+      Dirección: "direccion"
+    };
+    const role = rolesMap[userObj.rol] || String(userObj.rol || "").toLowerCase();
+
     res.json({
       success: true,
       data: {
         user: {
-          username: req.user.username,
-          role: req.user.role,
-          name: req.user.name,
-          permissions: req.user.permissions || [],
-          permisos: req.user.permissions || []
+          username: userObj.usuario,
+          role,
+          name: userObj.nombre,
+          permissions: userObj.permisos || [],
+          permisos: userObj.permisos || []
         }
       }
     });

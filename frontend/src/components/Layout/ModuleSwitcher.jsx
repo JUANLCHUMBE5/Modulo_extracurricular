@@ -9,6 +9,9 @@ import {
   IconReceipt as Receipt,
   IconReceiptOff as ReceiptOff,
   IconChartBar as ChartBar,
+  IconRosetteDiscount as RosetteDiscount,
+  IconAdjustments as Adjustments,
+  IconQrcode as QrCode,
 } from "@tabler/icons-react";
 
 export const moduleShortcutGroups = [
@@ -30,6 +33,23 @@ export const moduleShortcutGroups = [
       { id: "caja-pagos", label: "Registrar Cobro", module: "caja", view: "pagos", permissions: ["caja.cobro"], icon: Receipt },
       { id: "caja-reportes", label: "Control y Exportacion", module: "caja", view: "reportes", permissions: ["caja.control"], icon: ChartBar },
       { id: "caja-correlativo", label: "Anulación de Correlativo", module: "caja", view: "cancelar_correlativo", permissions: ["caja.correlativo"], icon: ReceiptOff },
+    ],
+  },
+  {
+    id: "direccion",
+    title: "Módulo Dirección",
+    items: [
+      { id: "direccion-resumen", label: "Resumen General", module: "direccion", view: "resumen", permissions: ["direccion.resumen"], icon: ChartBar },
+      { id: "direccion-reportes", label: "Reportes", module: "direccion", view: "reportes", permissions: ["direccion.reportes"], icon: FileText },
+      { id: "direccion-descuentos", label: "Descuentos y Becas", module: "direccion", view: "descuentos", permissions: ["direccion.descuentos"], icon: RosetteDiscount },
+      { id: "direccion-correlativos", label: "Correlativos", module: "direccion", view: "correlativos", permissions: ["direccion.correlativos"], icon: Adjustments },
+    ],
+  },
+  {
+    id: "auxiliar",
+    title: "Módulo Auxiliar",
+    items: [
+      { id: "auxiliar-asistencia", label: "Registrar Asistencia", module: "auxiliar", view: "asistencia", permissions: ["auxiliar.asistencia"], icon: QrCode },
     ],
   },
 ];
@@ -97,10 +117,10 @@ export default function ModuleSwitcher({ activeShortcutId, availableModules, cur
       {groups.map((group) => {
         const isGroupOpen = !!expanded[group.id];
         return (
-          <section className="module-switcher-group" key={group.id}>
+          <section className={`module-switcher-group ${isGroupOpen ? "is-open" : ""}`} key={group.id}>
             <button
               onClick={() => toggleGroup(group.id)}
-              className="module-switcher-header"
+              className={`module-switcher-header ${isGroupOpen ? "module-switcher-header-open" : ""}`}
               type="button"
             >
               <span className="module-switcher-header-title">{group.title}</span>

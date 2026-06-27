@@ -32,11 +32,13 @@ export function verificarLlegadaTemprano(horarioStr) {
       const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
       const diferenciaMinutos = inicioMinutos - ahoraMinutos;
 
+      const minutosFaltantes = diferenciaMinutos - 10;
       return {
         esTemprano: diferenciaMinutos > 10,
         esTarde: false,
         horaInicio: horaInicioFmt,
-        horaFin: ""
+        horaFin: "",
+        minutosFaltantes: minutosFaltantes > 0 ? minutosFaltantes : 0
       };
     }
   }
@@ -75,16 +77,18 @@ export function verificarLlegadaTemprano(horarioStr) {
   const horaInicioFmt = `${match[1]}:${match[2]}${match[3] ? ' ' + match[3] : ''}`.trim();
   const horaFinFmt = `${match[4]}:${match[5]}${match[6] ? ' ' + match[6] : ''}`.trim();
 
+  const minutosFaltantes = diferenciaMinutos - 10;
   return {
     esTemprano: diferenciaMinutos > 10,
     esTarde: ahoraMinutos > finMinutos,
     horaInicio: horaInicioFmt,
-    horaFin: horaFinFmt
+    horaFin: horaFinFmt,
+    minutosFaltantes: minutosFaltantes > 0 ? minutosFaltantes : 0
   };
 }
 
 export function esDiaCorrecto(horarioStr) {
-  if (!horarioStr) return true;
+  if (!horarioStr) return false;
 
   const diasSemana = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
   const hoyEsp = diasSemana[new Date().getDay()];
@@ -97,7 +101,7 @@ export function esDiaCorrecto(horarioStr) {
   const horarioNorm = normalizar(horarioStr);
   const diasEncontrados = diasSemana.filter(dia => horarioNorm.includes(dia));
 
-  if (diasEncontrados.length === 0) return true;
+  if (diasEncontrados.length === 0) return false;
 
   return horarioNorm.includes(hoyEsp);
 }

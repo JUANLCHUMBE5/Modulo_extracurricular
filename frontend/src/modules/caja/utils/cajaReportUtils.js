@@ -86,6 +86,40 @@ export function obtenerTelefonoPagoWebCaja(fila = {}) {
   return fila.telefonoOperacion || fila.telefono || "-";
 }
 
+function numeroValido(valor) {
+  const numero = Number(valor);
+  return Number.isFinite(numero) ? numero : 0;
+}
+
+function formatearMontoCsv(valor) {
+  const numero = numeroValido(valor);
+  return numero > 0 ? `S/ ${numero.toFixed(2)}` : "-";
+}
+
+function obtenerMontoDescuentoReporte(fila = {}) {
+  const descuentoDirecto = numeroValido(
+    fila.descuentoMonto ??
+      fila.descuento_monto ??
+      fila.montoDescuento ??
+      fila.monto_descuento ??
+      fila.descuentoValor ??
+      fila.descuento_valor
+  );
+  if (descuentoDirecto > 0) return descuentoDirecto;
+
+  const costoOriginal = numeroValido(
+    fila.costoOriginal ??
+      fila.costo_original ??
+      fila.costoBase ??
+      fila.costo_base ??
+      fila.costo ??
+      fila.precio
+  );
+  const montoPagado = numeroValido(fila.montoPagado ?? fila.monto_pago ?? fila.monto);
+  const descuentoCalculado = costoOriginal - montoPagado;
+  return descuentoCalculado > 0 ? descuentoCalculado : 0;
+}
+
 export function generarCSVReporteCaja(datos) {
   const encabezados = [
     "NRO",
@@ -108,6 +142,7 @@ export function generarCSVReporteCaja(datos) {
     const descuentoTipo = String(fila.descuentoTipo || "").trim();
     const descuentoEsBeca = fila.descuentoAprobado && descuentoTipo.toLowerCase() === "beca";
     const descuentoNoBeca = fila.descuentoAprobado && !descuentoEsBeca;
+    const montoDescuento = obtenerMontoDescuentoReporte(fila);
     const monto = `S/ ${Number(fila.monto || 0).toFixed(2)}`;
 
     return [
@@ -119,7 +154,7 @@ export function generarCSVReporteCaja(datos) {
       formatearFechaPeru(fila.fecha || fila.fechaPago || fila.fechaRegistro),
       fila.nroRecibo || fila.nro_recibo || "-",
       descuentoEsBeca ? "SI" : "-",
-      descuentoNoBeca ? String(descuentoTipo || "DESCUENTO").toUpperCase() : "-",
+      descuentoNoBeca ? formatearMontoCsv(montoDescuento) : "-",
       estadoNormalizado === "anulado" ? "SI" : "-",
       fila.estadoPago ? String(fila.estadoPago).toUpperCase() : "-",
       estadoNormalizado === "anulado" ? "-" : monto,

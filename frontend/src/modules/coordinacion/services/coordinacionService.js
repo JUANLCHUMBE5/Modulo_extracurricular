@@ -14,7 +14,8 @@ import { apiDb, saveApiDb, syncApiDb, dispatchApiDbUpdated } from "../../../serv
 import {
   validarArchivoExcelFrontend,
   limpiarTexto,
-  textoSeguro
+  textoSeguro,
+  normalizarPeriodo
 } from "./coordinacionServiceUtils";
 import {
   listarCategoriasMock,

@@ -154,7 +154,33 @@ router.get("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, r
     if (estudianteDni) {
       filtered = filtered.filter(p => p.dniEstudiante === estudianteDni || p.estudianteDni === estudianteDni);
     }
-    res.json({ success: true, data: filtered.map(mapDbPaymentToApi) });
+    const enriched = filtered.map(p => {
+      const inscripcion = (db.inscripciones || []).find(item =>
+        (p.inscripcionId && item.id === p.inscripcionId) ||
+        (
+          item.dniEstudiante === (p.dniEstudiante || p.estudianteDni) &&
+          (
+            (p.programaId && item.programaId === p.programaId) ||
+            normalizarTextoApi(item.programa) === normalizarTextoApi(p.programa || p.programaNombre)
+          )
+        )
+      );
+      const programa = (db.programas || []).find(item =>
+        item.id === (p.programaId || inscripcion?.programaId) ||
+        normalizarTextoApi(item.nombre) === normalizarTextoApi(p.programa || p.programaNombre || inscripcion?.programa)
+      );
+
+      return {
+        ...p,
+        programaId: p.programaId || inscripcion?.programaId || programa?.id || "",
+        programa: p.programa || p.programaNombre || inscripcion?.programa || programa?.nombre || "",
+        programaFechaInicio: programa?.fechaInicio || inscripcion?.fechaInicio || "",
+        programaFechaFin: programa?.fechaFin || inscripcion?.fechaFin || "",
+        estadoPrograma: programa?.estado || "",
+        nombresEstudiante: p.nombresEstudiante || inscripcion?.nombresEstudiante || "",
+      };
+    });
+    res.json({ success: true, data: enriched.map(mapDbPaymentToApi) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -404,7 +430,12 @@ router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]
 
     const derivadas = inscripciones.filter(item => item.derivadoCaja).map(enriquecerInscripcion);
     const derivadasPendientes = derivadas.filter(item => !isPaid(item));
-    const activeInscrip = derivadasPendientes[0] || derivadas[0] || null;
+    // Also include non-derivadas that are pending payment so Caja can charge them
+    const noDerivadas = inscripciones.filter(item => !item.derivadoCaja).map(enriquecerInscripcion);
+    const noDerivadaspendientes = noDerivadas.filter(item => !isPaid(item));
+    // Combine: derivadas first, then non-derivadas pending
+    const todasPendientes = [...derivadasPendientes, ...noDerivadaspendientes];
+    const activeInscrip = todasPendientes[0] || derivadas[0] || null;
 
     if (activeInscrip) {
       res.json({
@@ -421,8 +452,8 @@ router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]
           programaCosto: activeInscrip.costo,
           periodo: activeInscrip.periodo,
           inscripcionCaja: activeInscrip,
-          inscripcionesCaja: derivadasPendientes,
-          sinInscripcionCaja: derivadasPendientes.length === 0,
+          inscripcionesCaja: todasPendientes,
+          sinInscripcionCaja: todasPendientes.length === 0,
           requiereDerivacionCaja: false
         }
       });
@@ -716,13 +747,20 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
           descuentoAprobado: e ? (e.descuentoAprobado || false) : false,
           descuentoTipo: e ? (e.descuentoTipo || "") : "",
           descuentoMonto: e ? (e.descuentoMonto || 0) : 0,
+          costoOriginal: e ? (e.costoOriginal ?? prog?.costo ?? 0) : (prog?.costo ?? 0),
           descuentoJustificacion: e ? (e.descuentoJustificacion || "") : "",
           observaciones: p.observaciones || p.observacion || p.pagoObservacionCaja || ""
         };
       });
     } else {
       reportList = enrollments.map(e => {
-        const p = payments.find(pay => pagoPerteneceAInscripcionReporte(pay, e));
+        let p = e.pagoId ? payments.find(pay => pay.id === e.pagoId) : null;
+        if (!p) {
+          p = payments.find(pay => pagoPerteneceAInscripcionReporte(pay, e) && pay.estado !== "anulado");
+        }
+        if (!p) {
+          p = payments.find(pay => pagoPerteneceAInscripcionReporte(pay, e));
+        }
         const prog = db.programas.find(progItem => progItem.id === e.programaId);
         const student = db.estudiantes?.[e.dniEstudiante];
 
@@ -764,6 +802,7 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
           descuentoAprobado: e.descuentoAprobado || false,
           descuentoTipo: e.descuentoTipo || "",
           descuentoMonto: e.descuentoMonto || 0,
+          costoOriginal: e.costoOriginal ?? (prog ? prog.costo : 0),
           descuentoJustificacion: e.descuentoJustificacion || "",
           observaciones: p ? (p.observaciones || p.observacion || p.pagoObservacionCaja || "") : (e.pagoObservacionCaja || "")
         };
@@ -783,6 +822,7 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
       if (tipoReporte === "registro_secretaria" && isWeb) return false;
       if (tipoReporte === "registro_web" && !isWeb) return false;
       if ((tipoReporte === "por_cobrar" || tipoReporte === "pagos_pendientes") && row.estadoPago !== "pendiente") return false;
+      if (tipoReporte === "pagos_realizados" && row.estadoPago !== "pagado") return false;
       if (tipoReporte === "becas_descuentos") {
         const esBecaODescuento = row.descuentoAprobado || ["beca", "descuento"].includes(String(row.formaPago).toLowerCase());
         if (!esBecaODescuento) return false;

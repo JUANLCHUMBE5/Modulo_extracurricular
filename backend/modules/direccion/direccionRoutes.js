@@ -67,7 +67,7 @@ function calcularSiguienteRecibo(startValue, existingNros) {
 // --- REPORTE CONSOLIDADO ---
 router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => {
   try {
-    const { periodo, anio } = req.query;
+    const { periodo, anio, fechaInicio, fechaFin, programa } = req.query;
     const db = await getDb();
 
     const period = (periodo === "todos" || !periodo) ? "todos" : normalizarPeriodoApi(periodo);
@@ -102,6 +102,45 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
     const abreviar = (valor) => {
       const texto = String(valor || "Sin nombre").trim();
       return texto.length > 20 ? `${texto.slice(0, 19)}...` : texto;
+    };
+
+    const normalizarFechaFiltro = (valor) => {
+      const texto = String(valor || "").trim();
+      if (!texto) return "";
+      const iso = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+      const local = texto.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+      if (local) return `${local[3]}-${local[2]}-${local[1]}`;
+      const fecha = new Date(texto);
+      if (!Number.isNaN(fecha.getTime())) return fecha.toISOString().slice(0, 10);
+      return texto.slice(0, 10);
+    };
+    const obtenerPrimerValor = (item, claves) => claves.map((clave) => item?.[clave]).find(Boolean) || "";
+    const fechaInicioFiltro = normalizarFechaFiltro(fechaInicio);
+    const fechaFinFiltro = normalizarFechaFiltro(fechaFin);
+    const fechaEnRango = (valor) => {
+      const fecha = normalizarFechaFiltro(valor);
+      if (!fecha) return false;
+      if (fechaInicioFiltro && fecha < fechaInicioFiltro) return false;
+      if (fechaFinFiltro && fecha > fechaFinFiltro) return false;
+      return true;
+    };
+    const rangoProgramaCruza = (item) => {
+      if (!fechaInicioFiltro && !fechaFinFiltro) return true;
+      const inicio = normalizarFechaFiltro(obtenerPrimerValor(item, ["fechaInicio", "fecha_inicio"]));
+      const fin = normalizarFechaFiltro(obtenerPrimerValor(item, ["fechaFin", "fecha_fin", "fechaInicio", "fecha_inicio"]));
+      if (!inicio && !fin) return false;
+      const desdeItem = inicio || fin;
+      const hastaItem = fin || inicio;
+      if (fechaInicioFiltro && hastaItem < fechaInicioFiltro) return false;
+      if (fechaFinFiltro && desdeItem > fechaFinFiltro) return false;
+      return true;
+    };
+    const coincideProgramaFiltro = (item = {}) => {
+      if (!programa || programa === "todos") return true;
+      const filtro = normalizarTextoApi(programa);
+      return String(item.programaId || item.programa_id || item.id || "") === String(programa) ||
+        normalizarTextoApi(item.programa || item.programaNombre || item.nombrePrograma || item.nombre_programa || item.nombre) === filtro;
     };
 
     const estudiantes = db.estudiantes || {};
@@ -174,6 +213,27 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
       pagos = pagos.filter(p => programaIdsInYear.has(p.programaId));
     }
 
+    const opcionesProgramas = programas.map((p) => ({
+      value: p.id || p.nombre,
+      label: p.nombre || "Programa sin nombre",
+    }));
+
+    if (programa && programa !== "todos") {
+      programas = programas.filter(coincideProgramaFiltro);
+      inscripciones = inscripciones.filter(coincideProgramaFiltro);
+      pagos = pagos.filter(coincideProgramaFiltro);
+    }
+
+    if (fechaInicio || fechaFin) {
+      programas = programas.filter(rangoProgramaCruza);
+      inscripciones = inscripciones.filter((item) =>
+        fechaEnRango(obtenerPrimerValor(item, ["fechaRegistro", "fechaInscripcion", "fecha", "creadoEn", "creado_en"]))
+      );
+      pagos = pagos.filter((item) =>
+        fechaEnRango(obtenerPrimerValor(item, ["fechaPago", "fecha_pago", "fecha", "creadoEn", "creado_en"]))
+      );
+    }
+
     const filasProgramas = programas.map((programa) => {
       const inscripcionesPrograma = inscripciones.filter((item) =>
         item.programaId === programa.id || normalizarTextoApi(item.programa) === normalizarTextoApi(programa.nombre)
@@ -215,12 +275,23 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
     const totalRecaudado = pagos
       .filter((item) => normalizarEstadoPago(item.estado) === "Pagado")
       .reduce((sum, item) => sum + Number(item.monto || 0), 0);
+    const totalAnulado = pagos
+      .filter((item) => normalizarEstadoPago(item.estado) === "Anulado")
+      .reduce((sum, item) => sum + Number(item.monto || 0), 0);
     const totalProyectado = inscripciones.reduce((sum, item) => sum + Number(item.costo || 0), 0);
     const pendientesPago = inscripciones.filter((item) => normalizarEstadoPago(item.estadoPago) !== "Pagado");
     const familias = new Set(inscripciones.map((item) => item.telefono || item.apoderado || item.dniEstudiante).filter(Boolean));
 
     // --- Procesamiento de Asistencia ---
-    const asistencias = db.asistencias || [];
+    let asistencias = db.asistencias || [];
+    if (programa && programa !== "todos") {
+      asistencias = asistencias.filter(coincideProgramaFiltro);
+    }
+    if (fechaInicio || fechaFin) {
+      asistencias = asistencias.filter((item) =>
+        fechaEnRango(obtenerPrimerValor(item, ["fechaRegistro", "fecha_registro", "fecha", "creadoEn", "creado_en"]))
+      );
+    }
 
     const obtenerFechaPeru = (fechaStr) => {
       if (!fechaStr) return "";
@@ -308,6 +379,7 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
           inscripciones: inscripciones.length,
           familias: familias.size,
           totalRecaudado,
+          totalAnulado,
           totalProyectado,
           totalPendiente: pendientesPago.reduce((sum, item) => sum + Number(item.costo || 0), 0),
           cupos: filasProgramas.reduce((sum, item) => sum + Number(item.cupos || 0), 0),
@@ -341,7 +413,8 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
         )).sort((a, b) => b.localeCompare(a)),
         categorias: Array.from(new Set(
           (db.programas || []).map(p => p.categoria).filter(Boolean)
-        ))
+        )),
+        opcionesProgramas,
       },
     });
   } catch (error) {

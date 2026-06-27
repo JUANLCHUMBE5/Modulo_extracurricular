@@ -182,6 +182,22 @@ const PanelPermisos = ({ form, setForm }) => {
     });
   };
 
+  const seleccionarTodos = () => {
+    if (permisosBloqueados) return;
+    setForm((actual) => ({
+      ...actual,
+      permisos: [...ALL_PERMISSIONS],
+    }));
+  };
+
+  const desmarcarTodos = () => {
+    if (permisosBloqueados) return;
+    setForm((actual) => ({
+      ...actual,
+      permisos: getRequiredPermissionsByRole(actual.rol),
+    }));
+  };
+
   return (
     <section className="overflow-hidden rounded-lg border border-[#d8e5e1] bg-[#fbfdfc]">
       <div className="flex flex-col gap-2 border-b border-[#e3ece9] py-2 px-3 sm:flex-row sm:items-center sm:justify-between">
@@ -191,9 +207,34 @@ const PanelPermisos = ({ form, setForm }) => {
             El rol principal queda protegido; puede agregar funciones de otras areas.
           </p>
         </div>
-        <span className="inline-flex min-h-[20px] shrink-0 items-center rounded-full border border-[#b9e4d9] bg-[#e8f7ef] px-2 text-[10.5px] font-black text-[#075e50]">
-          {permisosSeleccionados.size} activos
-        </span>
+        <div className="flex items-center gap-1.5">
+          {!permisosBloqueados && (
+            <>
+              <button
+                type="button"
+                onClick={seleccionarTodos}
+                className="inline-flex h-[19px] items-center rounded bg-slate-100/80 px-1.5 text-[9.5px] font-bold text-slate-600 hover:bg-[#e8f7ef] hover:text-[#075e50] transition-colors cursor-pointer border-0 select-none"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                Activar Todos
+              </button>
+              <button
+                type="button"
+                onClick={desmarcarTodos}
+                className="inline-flex h-[19px] items-center rounded bg-slate-100/80 px-1.5 text-[9.5px] font-bold text-slate-600 hover:bg-[#fdf2f2] hover:text-[#991b1b] transition-colors cursor-pointer border-0 select-none"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                Restablecer
+              </button>
+            </>
+          )}
+          <span
+            className="inline-flex h-[19px] items-center rounded bg-[#e8f7ef] px-1.5 text-[9.5px] font-black text-[#075e50] border border-[#ccebe3] select-none ml-0.5"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
+            {permisosSeleccionados.size} ACTIVOS
+          </span>
+        </div>
       </div>
 
       <div className="grid">

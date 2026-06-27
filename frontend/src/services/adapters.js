@@ -282,6 +282,9 @@ export function adaptarPago(apiPago) {
     programaId: apiPago.programa_id || apiPago.programaId || "",
     programa: apiPago.nombre_programa || apiPago.programa || apiPago.programaNombre || "",
     programaNombre: apiPago.nombre_programa || apiPago.programa || apiPago.programaNombre || "",
+    programaFechaInicio: apiPago.programa_fecha_inicio || apiPago.programaFechaInicio || apiPago.fecha_inicio || apiPago.fechaInicio || "",
+    programaFechaFin: apiPago.programa_fecha_fin || apiPago.programaFechaFin || apiPago.fecha_fin || apiPago.fechaFin || "",
+    estadoPrograma: apiPago.estado_programa || apiPago.estadoPrograma || "",
     periodo: apiPago.periodo || "escolar",
     fecha: apiPago.fecha || apiPago.fechaPago || apiPago.creado_en || "",
     fechaRegistro: apiPago.fechaRegistro || apiPago.fecha_registro || apiPago.creado_en || "",
@@ -300,6 +303,7 @@ export function adaptarPago(apiPago) {
     descuentoAprobado: Boolean(apiPago.descuento_aprobado || apiPago.descuentoAprobado),
     descuentoTipo: apiPago.descuento_tipo || apiPago.descuentoTipo || "",
     descuentoMonto: apiPago.descuento_monto !== undefined ? Number(apiPago.descuento_monto) : Number(apiPago.descuentoMonto || 0),
+    costoOriginal: apiPago.costo_original !== undefined ? Number(apiPago.costo_original) : (apiPago.costoOriginal !== undefined ? Number(apiPago.costoOriginal) : undefined),
     descuentoJustificacion: apiPago.descuento_justificacion || apiPago.descuentoJustificacion || ""
   };
 }

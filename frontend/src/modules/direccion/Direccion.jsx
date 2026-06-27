@@ -24,13 +24,23 @@ import DireccionReportes from "./components/DireccionReportes/DireccionReportes"
 import DireccionDescuentos from "./components/DireccionDescuentos/DireccionDescuentos";
 import DireccionCorrelativos from "./components/DireccionCorrelativos/DireccionCorrelativos";
 
-export default function Direccion({ onLogout, user, moduleSwitcher }) {
-  const { subview } = useParams();
+export default function Direccion({
+  embedded = false,
+  initialView = "resumen",
+  moduleSwitcher,
+  onLogout,
+  user,
+}) {
+  const { module, subview } = useParams();
   const navigate = useNavigate();
-  const vista = subview || "resumen";
+  const vista = embedded ? (initialView || "resumen") : (subview || "resumen");
 
   const setVista = (newView) => {
-    navigate(`/direccion/${newView}`);
+    if (embedded) {
+      navigate(`/${module}/delegated/direccion/${newView}`);
+    } else {
+      navigate(`/direccion/${newView}`);
+    }
   };
 
   // State of the sidebar (expanded/collapsed)
@@ -244,7 +254,10 @@ export default function Direccion({ onLogout, user, moduleSwitcher }) {
     if (!silencioso) setCargando(true);
     setError("");
     try {
-      const datos = await obtenerPanelDireccion({ periodo, anio });
+      const datos = await obtenerPanelDireccion({
+        periodo,
+        anio,
+      });
       setPanel(datos);
     } catch (err) {
       setError(err.message || "No se pudo cargar el modulo de Direccion.");
@@ -605,18 +618,20 @@ export default function Direccion({ onLogout, user, moduleSwitcher }) {
   };
 
   return (
-    <main className={`dir-page ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
-      <DireccionSidebar
-        sidebarExpanded={sidebarExpanded}
-        toggleSidebar={toggleSidebar}
-        vista={vista}
-        setVista={setVista}
-        onLogout={onLogout}
-        moduleSwitcher={moduleSwitcher}
-      />
+    <main className={embedded ? "dir-page dir-page-embedded" : `dir-page ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
+      {!embedded ? (
+        <DireccionSidebar
+          sidebarExpanded={sidebarExpanded}
+          toggleSidebar={toggleSidebar}
+          vista={vista}
+          setVista={setVista}
+          onLogout={onLogout}
+          moduleSwitcher={moduleSwitcher}
+        />
+      ) : null}
 
-      <section className="dir-main">
-        {!sidebarExpanded && (
+      <section className={embedded ? "dir-main dir-main-embedded" : "dir-main"}>
+        {!sidebarExpanded && !embedded && (
           <header className="dir-header">
             <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
               <button

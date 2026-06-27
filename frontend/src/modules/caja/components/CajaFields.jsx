@@ -1,4 +1,4 @@
-import { Button } from "@mantine/core";
+import { Button, Select } from "@mantine/core";
 import {
   IconClipboardList as ClipboardList,
   IconReceipt2 as Receipt,
@@ -52,6 +52,19 @@ export default function CajaFields({
   const formaPagoNormalizada = String(formulario.formaPago || "").toLowerCase().trim();
   const esPagoVirtual = ["yape", "plin", "transferencia", "tarjeta"].includes(formaPagoNormalizada);
   const comprobanteVistaPrevia = formulario.nroRecibo || (correlativos?.reciboActual || correlativos?.recibo || "");
+  const opcionesFormaPago = [
+    ...(formulario.descuentoAprobado
+      ? [
+          { value: "Beca", label: "Beca" },
+          { value: "Descuento", label: "Descuento" },
+        ]
+      : []),
+    { value: "Efectivo", label: "Efectivo" },
+    { value: "Yape", label: "Yape" },
+    { value: "Plin", label: "Plin" },
+    { value: "Transferencia", label: "Transferencia" },
+    { value: "Tarjeta", label: "Tarjeta" },
+  ];
 
   const datosLectura = [
     { label: "DNI", value: formulario.estudianteDni || "Sin DNI", icon: <Id size={16} />, classKey: "dni" },
@@ -69,7 +82,6 @@ export default function CajaFields({
       {!modoEdicion ? (
         <section className="caja-form-block">
           <div className="caja-form-title">
-            <Search size={18} />
             <div>
               <h3>Buscar estudiante</h3>
             </div>
@@ -115,7 +127,6 @@ export default function CajaFields({
       {mostrarSelectorTallerCaja ? (
         <section className="caja-form-block caja-course-picker">
           <div className="caja-form-title">
-            <ClipboardList size={18} />
             <div>
               <h3>Talleres derivados a Caja</h3>
             </div>
@@ -148,7 +159,6 @@ export default function CajaFields({
       {pagoHabilitado ? (
         <section className="caja-form-block">
           <div className="caja-form-title">
-            <Receipt size={18} />
             <div>
               <h3>Datos del pago</h3>
               <p>Informacion cargada desde la inscripcion.</p>
@@ -220,35 +230,24 @@ export default function CajaFields({
               return (
                 <div className={`caja-readonly-field ${classNames.join(" ")}`} key={label}>
                   <div className="caja-field-header">
-                    {icon}
                     <span>{label}</span>
                   </div>
                   <strong>{value}</strong>
                 </div>
               );
             })}
-            <label className="caja-payment-method field-payment-method">
-              Forma de pago
-              <select
-                value={formulario.formaPago}
-                onChange={(event) => actualizar("formaPago", event.currentTarget.value)}
-                disabled={esPorVerificar}
-              >
-                {formulario.descuentoAprobado && (
-                  <>
-                    <option value="Beca">Beca</option>
-                    <option value="Descuento">Descuento</option>
-                  </>
-                )}
-                <option value="Efectivo">Efectivo</option>
-                <option value="Yape">Yape</option>
-                <option value="Plin">Plin</option>
-                <option value="Transferencia">Transferencia</option>
-                <option value="Tarjeta">Tarjeta</option>
-              </select>
-            </label>
+            <Select
+              allowDeselect={false}
+              className="caja-payment-method field-payment-method caja-payment-select"
+              comboboxProps={{ withinPortal: false }}
+              data={opcionesFormaPago}
+              disabled={esPorVerificar}
+              label="Forma de pago"
+              onChange={(value) => actualizar("formaPago", value || "Efectivo")}
+              value={formulario.formaPago}
+            />
             <label className="caja-payment-method field-receipt">
-              N° de comprobante
+              <span>N° de comprobante</span>
               <input
                 type="text"
                 placeholder="Pendiente de configurar"

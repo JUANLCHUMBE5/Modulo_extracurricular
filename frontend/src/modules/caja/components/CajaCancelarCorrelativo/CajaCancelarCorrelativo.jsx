@@ -6,11 +6,11 @@ import {
   IconMenu2 as Menu,
   IconSearch as Search,
   IconLoader2 as Loader,
-  IconCoins as Coins
+  IconCoins as Coins,
+  IconCheck as Check
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import {
-  cancelarCorrelativoCaja,
   buscarEstudiantesCajaQuery,
   listarPagos,
   anularPago,
@@ -226,19 +226,24 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
     cargarCorrelativos();
   }, []);
 
-  const getComprobanteActual = (tipoComp) => {
-    if (!correlativos) return "";
-    if (tipoComp === "recibo") return correlativos.reciboActual || "";
-    if (tipoComp === "reciboVirtual") return correlativos.reciboVirtualActual || "";
-    if (tipoComp === "egreso") return correlativos.egresoActual || "";
-    return "";
+  const obtenerFechaHoy = () => {
+    const fecha = new Date();
+    const yyyy = fecha.getFullYear();
+    const mm = String(fecha.getMonth() + 1).padStart(2, "0");
+    const dd = String(fecha.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
   };
 
-  const detectarTipoComprobante = (codigo) => {
-    const cod = String(codigo || "").toLowerCase().trim();
-    if (cod.startsWith("v-")) return "reciboVirtual";
-    if (cod.startsWith("egr-")) return "egreso";
-    return "recibo";
+  const esTallerVigenteParaAnulacion = (pago = {}) => {
+    const estadoPrograma = String(pago.estadoPrograma || pago.estado_programa || "").toLowerCase();
+    if (["finalizado", "archivado", "deshabilitado", "inactivo"].some((estado) => estadoPrograma.includes(estado))) {
+      return false;
+    }
+
+    const fechaFin = String(pago.programaFechaFin || pago.programa_fecha_fin || pago.fechaFin || "").slice(0, 10);
+    if (fechaFin && fechaFin < obtenerFechaHoy()) return false;
+
+    return true;
   };
 
   const esPagoAnulable = (pago = {}) => {
@@ -246,7 +251,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
     const tieneRecibo = Boolean(pago.nroRecibo || pago.nro_recibo);
     const estaPagado = ["validado", "completado", "pagado", "aprobado"].some((item) => estado.includes(item));
     const estaAnulado = ["anulado", "cancelado"].some((item) => estado.includes(item));
-    return tieneRecibo && estaPagado && !estaAnulado;
+    return tieneRecibo && estaPagado && !estaAnulado && esTallerVigenteParaAnulacion(pago);
   };
 
   const getPagoSeleccionado = () => {
@@ -259,7 +264,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
   const getComprobanteFinal = () => {
     const pago = getPagoSeleccionado();
     if (pago) return pago.nroRecibo || pago.nro_recibo || "S/N";
-    return busqueda.trim();
+    return "";
   };
 
   // Cargar pagos del estudiante cuando es seleccionado
@@ -298,7 +303,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
     e?.preventDefault();
     const query = String(busqueda || "").trim();
     if (!query) {
-      toast.error("Búsqueda vacía", { description: "Ingrese el DNI o nombres para buscar." });
+      toast.error("Búsqueda vacía", { description: "Ingrese el DNI, nombre o apellido del estudiante." });
       return;
     }
     if (query.length < 3) {
@@ -316,36 +321,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
       } else if (res && res.length > 1) {
         setResultados(res);
       } else {
-        const queryNormalizada = query.toLowerCase();
-        const pagosPeriodo = await listarPagos(periodo || "escolar");
-        const pagosCoincidentes = (pagosPeriodo || []).filter((pago) => {
-          if (!esPagoAnulable(pago)) return false;
-          const campos = [
-            pago.nroRecibo,
-            pago.nro_recibo,
-            pago.dniEstudiante,
-            pago.estudianteDni,
-            pago.nombresEstudiante,
-            pago.estudianteNombre,
-          ];
-          return campos.some((campo) => String(campo || "").trim().toLowerCase().includes(queryNormalizada));
-        });
-
-        if (pagosCoincidentes.length > 0) {
-          const pagoPorRecibo = pagosCoincidentes[0];
-          const estudiante = {
-            dni: pagoPorRecibo.dniEstudiante || pagoPorRecibo.estudianteDni || "",
-            nombres: pagoPorRecibo.nombresEstudiante || pagoPorRecibo.estudianteNombre || "Estudiante sin nombre",
-          };
-          setEstudianteSeleccionado(estudiante);
-          pagoPreseleccionadoRef.current = pagoPorRecibo.id;
-          setPagosEstudiante(pagosCoincidentes);
-          setPagoSeleccionadoId(pagoPorRecibo.id);
-          setResultados([]);
-          toast.success("Pago encontrado", { description: `${pagoPorRecibo.nroRecibo || pagoPorRecibo.nro_recibo} - ${estudiante.nombres}` });
-        } else {
-          toast.error("No encontrado", { description: "No se encontró ningún pago realizado con ese DNI, nombre o recibo." });
-        }
+        toast.error("No encontrado", { description: "No se encontro ningun estudiante con ese DNI, nombre o apellido." });
       }
     } catch (err) {
       toast.error("Error al buscar", { description: err.message || "Intente nuevamente." });
@@ -372,50 +348,34 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
     }
 
     const comprobanteFinal = getComprobanteFinal();
+    if (!estudianteSeleccionado) {
+      toast.error("Seleccione estudiante", { description: "Primero busque y seleccione un estudiante." });
+      return;
+    }
     if (!comprobanteFinal) {
-      toast.error("Falta comprobante", { description: "No se determinó ningún comprobante a anular." });
+      toast.error("Seleccione recibo", { description: "Seleccione uno de los recibos disponibles para anular." });
       return;
     }
 
     setCargando(true);
     try {
-      if (!estudianteSeleccionado) {
-        // Cancelación manual directa
-        const tipoComp = detectarTipoComprobante(comprobanteFinal);
-        await cancelarCorrelativoCaja(
-          tipoComp,
-          motivo,
-          "",
-          "",
-          comprobanteFinal
-        );
-
-        toast.success("Correlativo anulado", {
-          description: `El comprobante ${comprobanteFinal} fue marcado como ANULADO en el sistema.`,
-        });
-
-        setMotivo("");
-        setBusqueda("");
-      } else {
-        // Cancelación de pago de estudiante
-        if (!pagoSeleccionadoId) {
-          toast.error("Seleccione pago", { description: "El estudiante no tiene pagos seleccionables." });
-          setCargando(false);
-          return;
-        }
-
-        await anularPago(pagoSeleccionadoId, motivo);
-
-        toast.success("Pago anulado", {
-          description: `El recibo ${comprobanteFinal} de ${estudianteSeleccionado.nombres} fue anulado correctamente.`,
-        });
-
-        setMotivo("");
-        setEstudianteSeleccionado(null);
-        setPagosEstudiante([]);
-        setPagoSeleccionadoId(null);
-        setBusqueda("");
+      if (!pagoSeleccionadoId) {
+        toast.error("Seleccione pago", { description: "El estudiante no tiene pagos seleccionables." });
+        setCargando(false);
+        return;
       }
+
+      await anularPago(pagoSeleccionadoId, motivo);
+
+      toast.success("Pago anulado", {
+        description: `El recibo ${comprobanteFinal} de ${estudianteSeleccionado.nombres} fue anulado correctamente.`,
+      });
+
+      setMotivo("");
+      setEstudianteSeleccionado(null);
+      setPagosEstudiante([]);
+      setPagoSeleccionadoId(null);
+      setBusqueda("");
 
       await cargarCorrelativos();
       if (onCorrelativoCancelado) {
@@ -427,8 +387,6 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
       setCargando(false);
     }
   };
-
-  const pagoResumen = getPagoSeleccionado();
 
   return (
     <section className="caja-payment-workspace caja-correlativo-workspace" style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
@@ -506,8 +464,8 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                 <form className="caja-search-form-responsive" onSubmit={handleBuscarEstudiante} style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
                   <TextInput
-                    label="Buscar por Estudiante (DNI o Nombre)"
-                    placeholder="Ej. 12345678 o Pérez García (o código de recibo manual)"
+                    label="Buscar por Estudiante (DNI, Nombre o Apellido)"
+                    placeholder="Ej. 12345678 o Perez Garcia"
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.currentTarget.value)}
                     styles={{
@@ -589,63 +547,58 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
                 ) : pagosEstudiante.length === 0 ? (
                   <Paper withBorder p="sm" style={{ background: "#f8fafc", borderColor: "#e2e8f0" }}>
                     <Text size="sm" color="dimmed" style={{ textAlign: "center" }}>
-                      El estudiante no tiene pagos activos en el periodo actual.
+                      El estudiante no tiene recibos anulables en talleres vigentes del periodo actual.
                     </Text>
                   </Paper>
                 ) : (
-                  <Select
-                    label="Seleccione el recibo / taller a anular"
-                    placeholder="Seleccione un pago"
-                    data={pagosEstudiante.map((p) => ({
-                      value: p.id,
-                      label: `${p.programa || "Pago sin programa"} - Recibo: ${p.nroRecibo || p.nro_recibo || "S/N"} - S/ ${Number(p.monto || 0).toFixed(2)}`
-                    }))}
-                    value={pagoSeleccionadoId}
-                    onChange={setPagoSeleccionadoId}
-                    required
-                    styles={{
-                      label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
-                      input: { borderRadius: "8px", height: "38px" }
-                    }}
-                  />
+                  <div className="caja-anulacion-selector">
+                    <div className="caja-anulacion-selector-head">
+                      <div>
+                        <Text size="sm" fw={800} color="#111827">Recibos disponibles para anular</Text>
+                        <Text size="xs" color="#64748b">Seleccione el comprobante correcto antes de confirmar.</Text>
+                      </div>
+                      <span className="caja-anulacion-count">
+                        {pagosEstudiante.length} {pagosEstudiante.length === 1 ? "opción" : "opciones"}
+                      </span>
+                    </div>
+
+                    <div className="caja-anulacion-options">
+                      {pagosEstudiante.map((pago) => {
+                        const seleccionado = pago.id === pagoSeleccionadoId;
+                        const recibo = pago.nroRecibo || pago.nro_recibo || "S/N";
+                        const programa = pago.programa || pago.programaNombre || "Taller no identificado";
+                        const fecha = String(pago.fechaPago || pago.fecha || pago.fechaRegistro || "").slice(0, 10) || "-";
+                        const medio = pago.formaPago || pago.medioPago || pago.metodo || "-";
+
+                        return (
+                          <button
+                            key={pago.id}
+                            type="button"
+                            className={`caja-anulacion-option${seleccionado ? " is-selected" : ""}`}
+                            onClick={() => setPagoSeleccionadoId(pago.id)}
+                          >
+                            <span className="caja-anulacion-option-check" aria-hidden="true">
+                              {seleccionado ? <Check size={14} stroke={3} /> : null}
+                            </span>
+                            <span className="caja-anulacion-option-body">
+                              <span className="caja-anulacion-option-top">
+                                <span className="caja-anulacion-receipt">Recibo {recibo}</span>
+                                <strong>S/ {Number(pago.monto || 0).toFixed(2)}</strong>
+                              </span>
+                              <span className="caja-anulacion-program">{programa}</span>
+                              <span className="caja-anulacion-meta">
+                                <span>Fecha: {fecha}</span>
+                                <span>Medio: {medio}</span>
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
               </div>
             )}
-
-            {/* VISTA RESUMEN DEL COMPROBANTE A ANULAR */}
-            <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", padding: "12px 16px", borderRadius: "8px" }}>
-              <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>
-                Comprobante a anular:
-              </span>
-              <strong style={{ fontSize: "18px", color: getComprobanteFinal() ? "#b45309" : "#94a3b8", fontFamily: "monospace" }}>
-                {getComprobanteFinal() || "Sin comprobante seleccionado"}
-              </strong>
-              {pagoResumen ? (
-                <div style={{ marginTop: "10px", paddingTop: "10px", borderTop: "1px solid #e2e8f0", display: "grid", gap: "6px" }}>
-                  <div>
-                    <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>
-                      Taller asignado:
-                    </span>
-                    <strong style={{ fontSize: "14px", color: "#111827" }}>
-                      {pagoResumen.programa || pagoResumen.programaNombre || "Taller sin nombre"}
-                    </strong>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>
-                      Monto pagado:
-                    </span>
-                    <strong style={{ fontSize: "14px", color: "#0c8569" }}>
-                      S/ {Number(pagoResumen.monto || 0).toFixed(2)}
-                    </strong>
-                  </div>
-                </div>
-              ) : null}
-              {!estudianteSeleccionado && getComprobanteFinal() ? (
-                <Text size="xs" color="dimmed" style={{ marginTop: "4px" }}>
-                  (Tipo detectado: {detectarTipoComprobante(getComprobanteFinal()) === "reciboVirtual" ? "Recibo Virtual" : (detectarTipoComprobante(getComprobanteFinal()) === "egreso" ? "Recibo de Egreso" : "Recibo de Ingreso (Físico)")})
-                </Text>
-              ) : null}
-            </div>
 
             {/* MOTIVO DE CANCELACIÓN (SIEMPRE OBLIGATORIO) */}
             <Textarea
@@ -827,7 +780,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
                       <div>
                         <Text size="xs" color="dimmed" fw={700}>N° Recibo de Egreso:</Text>
                         <Group gap="xs" style={{ marginTop: "2px" }}>
-                          <strong style={{ fontSize: "14px", color: correlativos?.egresoActive === false ? "#ef4444" : "#0c8569", fontFamily: "monospace" }}>
+                          <strong style={{ fontSize: "14px", color: correlativos?.egresoActive === false ? "#ef4444" : "#0c8569", fontFamily: "var(--font-body)" }}>
                             {correlativos?.egresoActive === false ? "Serie Inactiva" : (correlativos?.egresoActual || "EGR-0001")}
                           </strong>
                           <span style={{

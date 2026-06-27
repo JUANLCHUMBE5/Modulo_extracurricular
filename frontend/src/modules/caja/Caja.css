@@ -17,8 +17,12 @@
 .caja-page button,
 .caja-page input,
 .caja-page select,
-.caja-page textarea {
-  font-family: var(--font-body);
+.caja-page textarea,
+.caja-payment-method *,
+.caja-payment-method input,
+.caja-payment-method select,
+.caja-search-form input {
+  font-family: var(--font-body) !important;
 }
 
 .caja-main {
@@ -157,6 +161,111 @@
 .caja-payment-approved span {
   color: #000000 !important;
   font-weight: 500 !important;
+}
+
+/* Registrar pago: una sola voz tipografica para campos, labels y botones */
+.caja-payment-workspace,
+.caja-payment-workspace *,
+.caja-payment-workspace input,
+.caja-payment-workspace select,
+.caja-payment-workspace option,
+.caja-payment-workspace button,
+.caja-payment-workspace .mantine-Button-root,
+.caja-payment-workspace .mantine-Button-label {
+  font-family: var(--font-body) !important;
+  letter-spacing: 0 !important;
+}
+
+.caja-payment-workspace .caja-readonly-field span,
+.caja-payment-workspace .caja-payment-method > span {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  text-transform: none !important;
+}
+
+.caja-payment-workspace .caja-readonly-field strong,
+.caja-payment-workspace .caja-search-form input,
+.caja-payment-workspace .caja-payment-method select,
+.caja-payment-workspace .caja-payment-method input,
+.caja-payment-workspace .mantine-Button-label {
+  font-weight: 600 !important;
+}
+
+/* Caja: un solo estilo de letra para cobros, reportes y anulaciones */
+.caja-page,
+.caja-page *,
+.caja-page button,
+.caja-page input,
+.caja-page select,
+.caja-page textarea,
+.caja-page table,
+.caja-page th,
+.caja-page td,
+.caja-page .mantine-Button-root,
+.caja-page .mantine-Button-label,
+.caja-page .mantine-InputWrapper-label,
+.caja-page .mantine-TextInput-input,
+.caja-page .mantine-Select-input,
+.caja-page .mantine-Textarea-input,
+.caja-page .mantine-Text-root,
+.caja-page .mantine-Badge-label {
+  font-family: var(--font-body) !important;
+  letter-spacing: 0 !important;
+}
+
+.caja-page .caja-form-title h3,
+.caja-page .caja-report-header h1,
+.caja-page .caja-panel-header h2,
+.caja-page .caja-correlativo-workspace h2 {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  text-transform: none !important;
+}
+
+.caja-page label,
+.caja-page .caja-readonly-field span,
+.caja-page .caja-payment-method > span,
+.caja-page .caja-report-header span,
+.caja-page .caja-report-card-label,
+.caja-page .caja-report-filters-card label,
+.caja-page .caja-filter-label,
+.caja-page .caja-table th,
+.caja-page .caja-history-table th,
+.caja-page .mantine-InputWrapper-label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  text-transform: none !important;
+}
+
+.caja-page p,
+.caja-page span,
+.caja-page small,
+.caja-page td,
+.caja-page input,
+.caja-page select,
+.caja-page textarea,
+.caja-page .mantine-Text-root,
+.caja-page .caja-report-card-subtext,
+.caja-page .caja-row-muted,
+.caja-page .caja-operation-code,
+.caja-page .caja-phone-channel {
+  font-weight: 500 !important;
+  text-transform: none !important;
+}
+
+.caja-page strong,
+.caja-page b,
+.caja-page .caja-readonly-field strong,
+.caja-page .caja-report-card-value,
+.caja-page .caja-student-cell strong,
+.caja-page .caja-amount,
+.caja-page .mantine-Button-label,
+.caja-page .mantine-Badge-label {
+  font-weight: 600 !important;
+  text-transform: none !important;
 }
 
 /* Peso 600 para Valores Destacados y Nombres en Tablas */
@@ -395,5 +504,193 @@
 
 .caja-correlativo-workspace strong[style*="font-size: 18px"] {
   font-size: 15px !important;
+}
+
+/* Caja final: anulación/correlativos usa la misma letra que registrar pago */
+.caja-correlativo-workspace,
+.caja-correlativo-workspace *,
+.caja-correlativo-workspace button,
+.caja-correlativo-workspace input,
+.caja-correlativo-workspace select,
+.caja-correlativo-workspace textarea,
+.caja-correlativo-workspace .mantine-Button-root,
+.caja-correlativo-workspace .mantine-Button-label,
+.caja-correlativo-workspace .mantine-InputWrapper-label,
+.caja-correlativo-workspace .mantine-TextInput-input,
+.caja-correlativo-workspace .mantine-Select-input,
+.caja-correlativo-workspace .mantine-Textarea-input,
+.caja-correlativo-workspace .mantine-Text-root {
+  font-family: var(--font-body) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.caja-correlativo-workspace h2 {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+}
+
+.caja-correlativo-workspace .mantine-InputWrapper-label,
+.caja-correlativo-workspace label,
+.caja-correlativo-workspace span[style*="font-size: 12px"] {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+}
+
+.caja-correlativo-workspace .mantine-TextInput-input,
+.caja-correlativo-workspace .mantine-Select-input,
+.caja-correlativo-workspace .mantine-Textarea-input,
+.caja-correlativo-workspace input,
+.caja-correlativo-workspace select,
+.caja-correlativo-workspace textarea {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.35 !important;
+}
+
+.caja-correlativo-workspace .mantine-Button-root,
+.caja-correlativo-workspace .mantine-Button-label,
+.caja-correlativo-workspace button {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+
+.caja-correlativo-workspace .mantine-Text-root,
+.caja-correlativo-workspace p,
+.caja-correlativo-workspace small {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.caja-correlativo-workspace strong,
+.caja-correlativo-workspace b {
+  font-weight: 600 !important;
+}
+
+.caja-anulacion-selector {
+  display: grid;
+  gap: 8px;
+}
+
+.caja-anulacion-selector-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  background: #fff7ed;
+}
+
+.caja-anulacion-count {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #9a3412;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+}
+
+.caja-anulacion-options {
+  display: grid;
+  gap: 8px;
+}
+
+.caja-anulacion-option {
+  width: 100%;
+  display: grid !important;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px 12px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.caja-anulacion-option:hover {
+  border-color: #f59e0b !important;
+  background: #fffbeb;
+}
+
+.caja-anulacion-option.is-selected {
+  border-color: #0c8569 !important;
+  background: #ecfdf5;
+  box-shadow: 0 0 0 2px rgba(12, 133, 105, 0.12);
+}
+
+.caja-anulacion-option-check {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0c8569;
+}
+
+.caja-anulacion-option.is-selected .caja-anulacion-option-check {
+  border-color: #0c8569;
+  background: #d1fae5;
+}
+
+.caja-anulacion-option-body {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.caja-anulacion-option-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.caja-anulacion-receipt {
+  color: #b45309;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
+.caja-anulacion-option-top strong {
+  color: #0c8569;
+  font-size: 15px !important;
+  white-space: nowrap;
+}
+
+.caja-anulacion-program {
+  color: #111827;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.caja-anulacion-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: #64748b;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+@media (max-width: 640px) {
+  .caja-anulacion-selector-head,
+  .caja-anulacion-option-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 

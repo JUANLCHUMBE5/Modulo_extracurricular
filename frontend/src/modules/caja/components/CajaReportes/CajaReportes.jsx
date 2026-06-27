@@ -22,7 +22,10 @@ export default function CajaReportes({
   historialAlumnoAbierto,
   opcionesReporte,
   actualizarFiltroReporte,
+  aprobarPagoWebDirecto,
   abrirHistorialAlumno,
+  abrirObservarModal,
+  abrirRechazarModal,
   cerrarHistorialAlumno,
 }) {
   return (
@@ -85,7 +88,13 @@ export default function CajaReportes({
               <p>{reporteCaja.length} registros encontrados</p>
             </div>
           </div>
-          <ReporteTabla filas={reporteCaja} onVerHistorialAlumno={abrirHistorialAlumno} />
+          <ReporteTabla
+            aprobarPagoWebDirecto={aprobarPagoWebDirecto}
+            abrirObservarModal={abrirObservarModal}
+            abrirRechazarModal={abrirRechazarModal}
+            filas={reporteCaja}
+            onVerHistorialAlumno={abrirHistorialAlumno}
+          />
         </section>
       </section>
 

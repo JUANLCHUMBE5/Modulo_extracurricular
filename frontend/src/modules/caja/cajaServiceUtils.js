@@ -71,6 +71,7 @@ export function filtrarReporteCaja(filas, filtros) {
 
       if (filtros.tipoReporte === "registro_secretaria") return !esRegistroWeb(fila.origen);
       if (filtros.tipoReporte === "por_cobrar" || filtros.tipoReporte === "pagos_pendientes") return fila.estadoPago === "pendiente";
+      if (filtros.tipoReporte === "pagos_realizados") return fila.estadoPago === "pagado";
       if (filtros.tipoReporte === "inscripciones") return fila.fuente === "inscripcion";
       if (filtros.tipoReporte === "registro_web") return esRegistroWeb(fila.origen);
       if (filtros.tipoReporte === "becas_descuentos") {

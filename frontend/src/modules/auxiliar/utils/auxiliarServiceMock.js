@@ -347,14 +347,18 @@ function crearRespuestaInscripcion({
   accion,
   color,
 }) {
+  const dbProg = resolverProgramaAsociado(inscripcion, estudiante, pago, inscripcion.horario);
+  const programaInscripcion = String(inscripcion.programa || "").trim();
+  const programaPago = String(pago?.programa || pago?.programaNombre || "").trim();
+  const programaValido = (valor) => valor && valor.toLowerCase() !== "sin programa";
   return {
     dni: inscripcion.dniEstudiante || estudiante?.dni || pago?.dniEstudiante || pago?.estudianteDni || "",
     codigoEstudiante: inscripcion.codigoEstudiante || estudiante?.codigoEstudiante || "",
     nombres: inscripcion.nombresEstudiante || estudiante?.nombres || pago?.nombresEstudiante || pago?.estudianteNombre || "Estudiante",
     grado: inscripcion.gradoEstudiante || estudiante?.grado || "",
     seccion: inscripcion.seccionEstudiante || estudiante?.seccion || "",
-    programa: inscripcion.programa || pago?.programa || pago?.programaNombre || "Sin programa",
-    programaId: inscripcion.programaId || pago?.programaId || "",
+    programa: dbProg?.nombre || (programaValido(programaInscripcion) ? programaInscripcion : "") || (programaValido(programaPago) ? programaPago : "") || "Sin programa",
+    programaId: dbProg?.id || inscripcion.programaId || pago?.programaId || "",
     horario: inscripcion.horario || "Horario no registrado",
     inscripcionId: inscripcion.id || "",
     estadoInscripcion: inscripcion.estadoInscripcion || "",
@@ -462,6 +466,93 @@ function coincideInscripcion(inscripcion, ids) {
   if (ids.codigoOriginal && mismoCodigo(inscripcion.id, ids.codigoOriginal)) return true;
   if (ids.codigoOriginal && mismoCodigo(inscripcion.codigoEstudiante, ids.codigoOriginal)) return true;
   return false;
+}
+
+function nombreProgramaValido(valor) {
+  const texto = String(valor || "").trim();
+  return texto && normalizarTexto(texto) !== "sin programa" ? texto : "";
+}
+
+function buscarProgramaPorNombre(nombre) {
+  const nombreNormalizado = normalizarTexto(nombreProgramaValido(nombre));
+  if (!nombreNormalizado) return null;
+  return (apiDb.programas || []).find((programa) =>
+    normalizarTexto(programa.nombre || programa.programa || programa.nombre_programa) === nombreNormalizado
+  ) || null;
+}
+
+function resolverHorarioPorGradoMock(programa, gradoAlumno = "") {
+  const grupos = programa?.horariosPorGrupo || [];
+  if (!Array.isArray(grupos) || grupos.length === 0) return "";
+  const gradoTexto = normalizarTexto(gradoAlumno);
+  const numero = String(gradoAlumno || "").match(/\d+/)?.[0] || "";
+  const grupo = grupos.find((item) => {
+    const grados = Array.isArray(item.grados) ? item.grados : [];
+    return grados.some((grado) => {
+      const gradoNorm = normalizarTexto(grado);
+      return numero && gradoNorm.includes(numero) && (!gradoTexto.includes("primaria") || gradoNorm.includes("primaria"));
+    });
+  });
+  if (!grupo) return "";
+  const horaInicio = grupo.horaInicio || "";
+  const horaFin = grupo.horaFin || "";
+  return `${gradoAlumno ? `${gradoAlumno}: ` : ""}${grupo.dia || ""} almuerzo ${grupo.almuerzoInicio || "14:20"}-${grupo.almuerzoFin || "15:10"}, clase ${horaInicio}-${horaFin}`;
+}
+
+function resolverProgramaAsociado(inscripcion = {}, estudiante = null, pago = null, horario = "") {
+  const programas = apiDb.programas || [];
+  const porId = programas.find((programa) =>
+    mismoCodigo(programa.id, inscripcion.programaId) ||
+    mismoCodigo(programa.id, pago?.programaId) ||
+    mismoCodigo(programa.programaId, inscripcion.programaId) ||
+    mismoCodigo(programa.programaId, pago?.programaId)
+  );
+  if (porId) return porId;
+
+  const porNombre = buscarProgramaPorNombre(inscripcion.programa) ||
+    buscarProgramaPorNombre(inscripcion.programaNombre) ||
+    buscarProgramaPorNombre(pago?.programa) ||
+    buscarProgramaPorNombre(pago?.programaNombre);
+  if (porNombre) return porNombre;
+
+  const dni = limpiarDni(inscripcion.dniEstudiante || pago?.dniEstudiante || pago?.estudianteDni || estudiante?.dni);
+  const inscripcionesDni = obtenerInscripcionesActivas()
+    .filter((item) => dni && limpiarDni(item.dniEstudiante) === dni)
+    .map((item) => {
+      const itemPago = encontrarPagoInscripcion(item, { dni });
+      const itemPrograma = programas.find((programa) =>
+        mismoCodigo(programa.id, item.programaId) ||
+        normalizarTexto(programa.nombre) === normalizarTexto(nombreProgramaValido(item.programa))
+      );
+      return { item, itemPago, itemPrograma };
+    })
+    .filter((item) => item.itemPrograma);
+
+  const pagada = inscripcionesDni.find(({ item, itemPago }) => resolverEstadoPago(item, itemPago) === "pagado");
+  if (pagada?.itemPrograma) return pagada.itemPrograma;
+  if (inscripcionesDni[0]?.itemPrograma) return inscripcionesDni[0].itemPrograma;
+
+  const pagoDni = ordenarPorFecha(obtenerPagos().filter((item) => {
+    const itemDni = limpiarDni(item.dniEstudiante || item.estudianteDni);
+    return dni && itemDni === dni && !["cancelado", "anulado", "rechazado"].includes(normalizarTexto(item.estado));
+  }), "fechaPago").find((item) => item.programaId || nombreProgramaValido(item.programa || item.programaNombre));
+  const programaPago = pagoDni
+    ? programas.find((programa) => mismoCodigo(programa.id, pagoDni.programaId)) || buscarProgramaPorNombre(pagoDni.programa || pagoDni.programaNombre)
+    : null;
+  if (programaPago) return programaPago;
+
+  const horarioNormalizado = normalizarTexto(horario || inscripcion.horario);
+  if (horarioNormalizado) {
+    const gradoEstudiante = inscripcion.gradoEstudiante || inscripcion.grado || `${estudiante?.nivel || ""} ${estudiante?.grado || ""}`.trim();
+    const porHorario = programas.find((programa) => {
+      const horarioPrograma = resolverHorarioPorGradoMock(programa, gradoEstudiante) || programa.horario || "";
+      const horarioProgNormalizado = normalizarTexto(horarioPrograma);
+      return horarioProgNormalizado && (horarioProgNormalizado === horarioNormalizado || horarioNormalizado.includes(horarioProgNormalizado) || horarioProgNormalizado.includes(horarioNormalizado));
+    });
+    if (porHorario) return porHorario;
+  }
+
+  return null;
 }
 
 function buscarEstudiante(ids, inscripcion) {

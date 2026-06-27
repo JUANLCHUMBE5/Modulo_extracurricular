@@ -1,8 +1,8 @@
 /* ==========================================================================
-   DASHBOARD / RESUMEN GENERAL - MÓDULO DIRECCIÓN (COLEGIO SAN RAFAEL)
+   DASHBOARD / RESUMEN GENERAL - MODULO DIRECCION (COLEGIO SAN RAFAEL)
    ========================================================================== */
 
-/* Tarjetas de Métricas (Stat Cards) */
+/* Tarjetas de metricas (Stat Cards) */
 .dir-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -118,7 +118,7 @@
   line-height: 1.25;
 }
 
-/* Tabs de Módulos (Diseño Burbuja Horizontal) */
+/* Tabs de modulos (Diseno Burbuja Horizontal) */
 .dir-module-tabs-row {
   display: flex;
   gap: 8px;
@@ -177,7 +177,7 @@
   font-weight: 600 !important;
 }
 
-/* Paneles de Gráficos y Grillas */
+/* Paneles de graficos y grillas */
 .dir-charts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

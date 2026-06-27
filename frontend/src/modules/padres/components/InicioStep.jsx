@@ -305,6 +305,91 @@ function ProgramaPrincipal({ programa, inscripcion, setPasoActivo, onInscribirPr
   );
 }
 
+function formatearInicioTaller(fechaStr) {
+  if (!fechaStr) return "Por definir";
+  const partes = String(fechaStr).split("-");
+  if (partes.length !== 3) return fechaStr;
+
+  const yyyy = parseInt(partes[0], 10);
+  const mm = parseInt(partes[1], 10) - 1;
+  const dd = parseInt(partes[2], 10);
+  const fecha = new Date(yyyy, mm, dd);
+
+  if (Number.isNaN(fecha.getTime())) return fechaStr;
+
+  const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const diaNombre = diasSemana[fecha.getDay()];
+
+  const diaStr = String(dd).padStart(2, "0");
+  const mesStr = String(mm + 1).padStart(2, "0");
+  
+  return `${diaNombre}, ${diaStr}/${mesStr}/${yyyy}`;
+}
+
+function calcularPrimerDiaClase(fechaInicioStr, horarioStr) {
+  if (!fechaInicioStr) return "Por definir";
+
+  const texto = repararTexto(String(horarioStr || "")).trim();
+  const completo = dividirHorarioPadres(texto);
+  const simple = !completo ? texto.match(/^(.+?)\s+clase\s+(.+?)(?:\s+almuerzo\s+(.+))?$/i) : null;
+  const diaNombreRaw = completo?.dia || simple?.[1]?.trim() || "";
+
+  if (!diaNombreRaw) {
+    return formatearInicioTaller(fechaInicioStr);
+  }
+
+  const diaLower = diaNombreRaw.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  const diasMap = {
+    domingo: 0,
+    lunes: 1,
+    martes: 2,
+    miercoles: 3,
+    miércoles: 3,
+    jueves: 4,
+    viernes: 5,
+    sabado: 6,
+    sábado: 6
+  };
+
+  const targetDayOfWeek = diasMap[diaLower];
+  if (targetDayOfWeek === undefined) {
+    return formatearInicioTaller(fechaInicioStr);
+  }
+
+  const partes = String(fechaInicioStr).split("-");
+  if (partes.length !== 3) return fechaInicioStr;
+
+  const yyyy = parseInt(partes[0], 10);
+  const mm = parseInt(partes[1], 10) - 1;
+  const dd = parseInt(partes[2], 10);
+  const fecha = new Date(yyyy, mm, dd);
+
+  if (Number.isNaN(fecha.getTime())) return fechaInicioStr;
+
+  const currentDayOfWeek = fecha.getDay();
+  let diff = targetDayOfWeek - currentDayOfWeek;
+  if (diff < 0) {
+    diff += 7;
+  }
+
+  if (diff > 0) {
+    fecha.setDate(fecha.getDate() + diff);
+  }
+
+  const ddNueva = fecha.getDate();
+  const mmNueva = fecha.getMonth();
+  const yyyyNueva = fecha.getFullYear();
+
+  const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const diaNombre = diasSemana[fecha.getDay()];
+
+  const diaStr = String(ddNueva).padStart(2, "0");
+  const mesStr = String(mmNueva + 1).padStart(2, "0");
+
+  return `${diaNombre}, ${diaStr}/${mesStr}/${yyyyNueva}`;
+}
+
 function HorarioCompactoPadres({ horario, talleresDeportivos }) {
   const texto = repararTexto(String(horario || "")).trim();
 
@@ -315,6 +400,30 @@ function HorarioCompactoPadres({ horario, talleresDeportivos }) {
           <CalendarDays size={14} />
           <span>Horario por confirmar</span>
         </div>
+      </div>
+    );
+  }
+
+  // 1. Intentar dividir el horario en formato estándar clase/almuerzo primero
+  const completo = dividirHorarioPadres(texto);
+  const simple = !completo ? texto.match(/^(.+?)\s+clase\s+(.+?)(?:\s+almuerzo\s+(.+))?$/i) : null;
+
+  const dia = completo?.dia || simple?.[1]?.trim();
+  const clase = completo?.clase || simple?.[2]?.trim();
+  const almuerzo = completo?.almuerzo || simple?.[3]?.trim();
+
+  if (dia || clase) {
+    return (
+      <div className="padres-flow-course-schedule is-simple">
+        <div className="padres-schedule-item">
+          <CalendarDays size={14} />
+          <span>{[dia, convertirHorasAMPM(clase)].filter(Boolean).join(": ")}</span>
+        </div>
+        {almuerzo ? (
+          <div className="padres-schedule-item" style={{ fontSize: "12px", color: "#64748b", paddingLeft: "22px", marginTop: "2px" }}>
+            <span>Almuerzo: {convertirHorasAMPM(almuerzo)}</span>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -356,36 +465,12 @@ function HorarioCompactoPadres({ horario, talleresDeportivos }) {
     );
   }
 
-  const completo = dividirHorarioPadres(texto);
-  const simple = !completo ? texto.match(/^(.+?)\s+clase\s+(.+?)(?:\s+almuerzo\s+(.+))?$/i) : null;
-
-  const dia = completo?.dia || simple?.[1]?.trim();
-  const clase = completo?.clase || simple?.[2]?.trim();
-  const almuerzo = completo?.almuerzo || simple?.[3]?.trim();
-
-  if (!dia && !clase) {
-    return (
-      <div className="padres-flow-course-schedule is-simple">
-        <div className="padres-schedule-item">
-          <CalendarDays size={14} />
-          <span>{convertirHorasAMPM(texto)}</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="padres-flow-course-schedule is-simple">
       <div className="padres-schedule-item">
         <CalendarDays size={14} />
-        <span>{[dia, convertirHorasAMPM(clase)].filter(Boolean).join(" ")}</span>
+        <span>{convertirHorasAMPM(texto)}</span>
       </div>
-      {almuerzo ? (
-        <div className="padres-schedule-item">
-          <CalendarDays size={14} />
-          <span>Almuerzo: {convertirHorasAMPM(almuerzo)}</span>
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -612,14 +697,14 @@ function CatalogoProgramas({
 
                 <div className="padres-flow-course-details-grid">
                   <div className="padres-course-detail-item">
-                    <span className="detail-label">Cupos</span>
-                    <strong className="detail-value">{prog.cuposDisponibles} / {prog.cupos}</strong>
+                    <span className="detail-label">Inicio</span>
+                    <strong className="detail-value">{calcularPrimerDiaClase(prog.fechaInicio, prog.horario)}</strong>
                   </div>
                   <div className="padres-course-detail-item">
                     <span className="detail-label">Límite Aviso</span>
                     <strong className="detail-value">
                       {prog.ventanaInscripcion?.fechaLimite ? (
-                        `${prog.ventanaInscripcion.fechaLimite}${prog.ventanaInscripcion.horaLimite ? ` a las ${prog.ventanaInscripcion.horaLimite}` : ""}`
+                        prog.ventanaInscripcion.fechaLimite
                       ) : (
                         `${prog.duracionAvisoDias || 7} días`
                       )}

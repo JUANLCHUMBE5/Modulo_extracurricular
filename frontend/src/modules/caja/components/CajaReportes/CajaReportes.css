@@ -190,6 +190,16 @@
   text-align: center;
 }
 
+.caja-col-actions {
+  min-width: 96px !important;
+  width: 96px !important;
+  text-align: center !important;
+}
+
+.caja-col-actions .mantine-Group-root {
+  justify-content: center !important;
+}
+
 .caja-badge-status,
 .caja-badge-status .mantine-Badge-label {
   overflow: visible !important;
@@ -212,9 +222,9 @@
   display: inline-block;
   min-width: 72px;
   color: #0f172a;
-  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-body);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.02em;
 }
 
@@ -722,7 +732,7 @@
 }
 
 .caja-amount {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-body);
 }
 
 .caja-history-empty {
@@ -788,5 +798,68 @@
 
 .caja-btn-descargar:active {
   transform: translateY(0);
+}
+
+/* Caja final: control y exportacion comparte la misma letra del modulo */
+.caja-report-header,
+.caja-report-header *,
+.caja-report-layout,
+.caja-report-layout *,
+.caja-report-panel,
+.caja-report-panel *,
+.caja-report-filters-card,
+.caja-report-filters-card *,
+.caja-history-modal-body,
+.caja-history-modal-body *,
+.caja-btn-descargar,
+.caja-btn-descargar * {
+  font-family: var(--font-body) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.caja-report-header h1,
+.caja-report-panel .caja-panel-header h2,
+.caja-history-list-title,
+.caja-summary-name {
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+}
+
+.caja-report-header span,
+.caja-report-card-label,
+.caja-report-filters-card label,
+.caja-report-panel .caja-table th,
+.caja-history-table th,
+.caja-summary-label,
+.caja-history-field span,
+.caja-history-note-content span {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+}
+
+.caja-report-filters-card input,
+.caja-report-filters-card select,
+.caja-report-panel .caja-table td,
+.caja-history-table td,
+.caja-report-panel .caja-panel-header p,
+.caja-report-card-subtext,
+.caja-row-muted,
+.caja-operation-code,
+.caja-phone-channel {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.35 !important;
+}
+
+.caja-report-card-value,
+.caja-student-cell strong,
+.caja-amount,
+.caja-badge-status .mantine-Badge-label,
+.caja-btn-descargar .mantine-Button-label,
+.caja-history-field strong {
+  font-weight: 600 !important;
 }
 

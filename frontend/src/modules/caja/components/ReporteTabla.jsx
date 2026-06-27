@@ -1,10 +1,13 @@
 import { useState } from "react";
-import { ActionIcon, Badge, Table, Tooltip } from "@mantine/core";
+import { ActionIcon, Badge, Group, Table, Tooltip } from "@mantine/core";
 import {
   IconChartBar as ChartBar,
+  IconCheck,
   IconChevronLeft,
   IconChevronRight,
+  IconAlertTriangle,
   IconEye,
+  IconX,
 } from "@tabler/icons-react";
 import { formatearFechaPeru } from "../../../services/dateService";
 import { formatearSoles } from "../utils/cajaFormatters";
@@ -16,6 +19,9 @@ import {
 } from "../utils/cajaReportUtils";
 const FILAS_POR_PAGINA = 10;
 export default function ReporteTabla({
+  aprobarPagoWebDirecto,
+  abrirObservarModal,
+  abrirRechazarModal,
   filas,
   onVerHistorialAlumno,
 }) {
@@ -52,6 +58,7 @@ export default function ReporteTabla({
               <Table.Th>Medio de pago</Table.Th>
               <Table.Th>Fecha</Table.Th>
               <Table.Th className="caja-col-pago">Estado</Table.Th>
+              <Table.Th className="caja-col-actions">Acciones</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -129,6 +136,47 @@ export default function ReporteTabla({
                     <Badge color={badgeColor} variant="light" className="caja-badge-status">
                       {badgeText}
                     </Badge>
+                  </Table.Td>
+                  <Table.Td className="caja-col-actions">
+                    {esPagoWebVerificar ? (
+                      <Group gap={4} justify="flex-end" wrap="nowrap">
+                        <Tooltip label="Aprobar pago">
+                          <ActionIcon
+                            aria-label="Aprobar pago"
+                            color="green"
+                            onClick={() => aprobarPagoWebDirecto?.(fila)}
+                            size="sm"
+                            variant="light"
+                          >
+                            <IconCheck size={14} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Observar pago">
+                          <ActionIcon
+                            aria-label="Observar pago"
+                            color="orange"
+                            onClick={() => abrirObservarModal?.(fila)}
+                            size="sm"
+                            variant="light"
+                          >
+                            <IconAlertTriangle size={14} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Tooltip label="Rechazar pago">
+                          <ActionIcon
+                            aria-label="Rechazar pago"
+                            color="red"
+                            onClick={() => abrirRechazarModal?.(fila)}
+                            size="sm"
+                            variant="light"
+                          >
+                            <IconX size={14} />
+                          </ActionIcon>
+                        </Tooltip>
+                      </Group>
+                    ) : (
+                      <span className="caja-row-muted">-</span>
+                    )}
                   </Table.Td>
                 </Table.Tr>
               );

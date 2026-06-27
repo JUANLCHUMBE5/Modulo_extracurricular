@@ -145,6 +145,42 @@ function AlumnosProgramaModal({
   );
 }
 
+function descomponerGradoYNivel(alumno) {
+  const textoGrado = String(alumno.grado || "").trim();
+  const nivelExistente = alumno.nivel || alumno.nivel_nombre || alumno.nivelEducativo || "";
+
+  if (!textoGrado) {
+    return {
+      grado: "—",
+      nivel: nivelExistente ? (nivelExistente.charAt(0).toUpperCase() + nivelExistente.slice(1).toLowerCase()) : "—"
+    };
+  }
+
+  const lower = textoGrado.toLowerCase();
+  let nivel = "";
+  let grado = textoGrado;
+
+  if (lower.includes("inicial")) {
+    nivel = "Inicial";
+    grado = textoGrado.replace(/inicial/i, "").trim();
+  } else if (lower.includes("primaria")) {
+    nivel = "Primaria";
+    grado = textoGrado.replace(/primaria/i, "").trim();
+  } else if (lower.includes("secundaria")) {
+    nivel = "Secundaria";
+    grado = textoGrado.replace(/secundaria/i, "").trim();
+  }
+
+  if (!nivel && nivelExistente) {
+    nivel = nivelExistente.charAt(0).toUpperCase() + nivelExistente.slice(1).toLowerCase();
+  }
+
+  return {
+    grado: grado || "—",
+    nivel: nivel || "—"
+  };
+}
+
 function TablaPreinscritos({ alumnos, esCambridge }) {
   if (!alumnos.length) {
     return <p className="coord-process-note">No hay invitados registrados para este programa.</p>;
@@ -160,21 +196,26 @@ function TablaPreinscritos({ alumnos, esCambridge }) {
             <th>Código</th>
             <th>Estudiante</th>
             <th>Grado</th>
+            <th>Nivel</th>
             {mostrarCambridge ? <th>Ingreso Cambridge</th> : null}
             {mostrarCambridge ? <th>Nivel Cambridge</th> : null}
           </tr>
         </thead>
         <tbody>
-          {alumnos.map((alumno, index) => (
-            <tr key={`${alumno.dni || alumno.codigoEstudiante || alumno.nombres}-${index}`}>
-              <td>{alumno.dni || "Sin DNI"}</td>
-              <td>{alumno.codigoEstudiante || "—"}</td>
-              <td>{alumno.nombres}</td>
-              <td>{alumno.grado}</td>
-              {mostrarCambridge ? <td>{describirSeleccionCambridge(alumno.seleccion)}</td> : null}
-              {mostrarCambridge ? <td>{alumno.nivelCambridge || "Pendiente"}</td> : null}
-            </tr>
-          ))}
+          {alumnos.map((alumno, index) => {
+            const { grado, nivel } = descomponerGradoYNivel(alumno);
+            return (
+              <tr key={`${alumno.dni || alumno.codigoEstudiante || alumno.nombres}-${index}`}>
+                <td>{alumno.dni || "Sin DNI"}</td>
+                <td>{alumno.codigoEstudiante || "—"}</td>
+                <td>{alumno.nombres}</td>
+                <td>{grado}</td>
+                <td>{nivel}</td>
+                {mostrarCambridge ? <td>{describirSeleccionCambridge(alumno.seleccion)}</td> : null}
+                {mostrarCambridge ? <td>{alumno.nivelCambridge || "Pendiente"}</td> : null}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -195,6 +236,7 @@ function TablaMatriculados({ alumnos }) {
             <th>Código</th>
             <th>Estudiante</th>
             <th>Grado</th>
+            <th>Nivel</th>
             <th>Estado Inscripción</th>
             <th>Estado Pago</th>
             <th>Canal</th>
@@ -202,26 +244,30 @@ function TablaMatriculados({ alumnos }) {
           </tr>
         </thead>
         <tbody>
-          {alumnos.map((alumno, index) => (
-            <tr key={`${alumno.dni || alumno.codigoEstudiante || alumno.nombres}-${index}`}>
-              <td>{alumno.dni || "Sin DNI"}</td>
-              <td>{alumno.codigoEstudiante || "—"}</td>
-              <td><strong>{alumno.nombres}</strong></td>
-              <td>{alumno.grado}</td>
-              <td>
-                <span style={obtenerEstiloInscripcion(alumno.estadoInscripcion)}>
-                  {alumno.estadoInscripcion}
-                </span>
-              </td>
-              <td>
-                <span style={obtenerEstiloPago(alumno.estadoPago)}>
-                  {alumno.estadoPago}
-                </span>
-              </td>
-              <td><span style={{ fontSize: "11px", fontWeight: 600, color: "#475467" }}>{alumno.origenRegistro}</span></td>
-              <td><span style={{ fontSize: "11px", color: "#667085" }}>{alumno.fechaRegistro ? alumno.fechaRegistro.split("T")[0] : "—"}</span></td>
-            </tr>
-          ))}
+          {alumnos.map((alumno, index) => {
+            const { grado, nivel } = descomponerGradoYNivel(alumno);
+            return (
+              <tr key={`${alumno.dni || alumno.codigoEstudiante || alumno.nombres}-${index}`}>
+                <td>{alumno.dni || "Sin DNI"}</td>
+                <td>{alumno.codigoEstudiante || "—"}</td>
+                <td><strong>{alumno.nombres}</strong></td>
+                <td>{grado}</td>
+                <td>{nivel}</td>
+                <td>
+                  <span style={obtenerEstiloInscripcion(alumno.estadoInscripcion)}>
+                    {alumno.estadoInscripcion}
+                  </span>
+                </td>
+                <td>
+                  <span style={obtenerEstiloPago(alumno.estadoPago)}>
+                    {alumno.estadoPago}
+                  </span>
+                </td>
+                <td><span style={{ fontSize: "11px", fontWeight: 600, color: "#475467" }}>{alumno.origenRegistro}</span></td>
+                <td><span style={{ fontSize: "11px", color: "#667085" }}>{alumno.fechaRegistro ? alumno.fechaRegistro.split("T")[0] : "—"}</span></td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
