@@ -320,18 +320,179 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
   const end = inscrip.fechaFin || prog.fechaFin || "";
   const durStr = inscrip.duracion || prog.duracion || "8 semanas";
 
-  // Formatear fechas en letras españolas
-  const formatearFecha = (fechaStr) => {
-    if (!fechaStr) return "";
-    const f = new Date(fechaStr);
-    if (isNaN(f.getTime())) return fechaStr.split("T")[0];
-    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    return `${f.getDate()} de ${meses[f.getMonth()]} del ${f.getFullYear()}`;
+  // Helpers de fechas
+  const normalizarFecha = (valor) => {
+    if (!valor) return null;
+    if (valor instanceof Date) return isNaN(valor.getTime()) ? null : valor;
+    const texto = String(valor).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+      const f = new Date(texto + "T00:00:00");
+      if (!isNaN(f.getTime())) return f;
+    }
+    const dmyMatch = texto.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (dmyMatch) {
+      const dia = parseInt(dmyMatch[1], 10);
+      const mes = parseInt(dmyMatch[2], 10) - 1;
+      const anio = parseInt(dmyMatch[3], 10);
+      const f = new Date(anio, mes, dia);
+      if (!isNaN(f.getTime())) return f;
+    }
+    const f = new Date(texto);
+    return !isNaN(f.getTime()) ? f : null;
   };
 
-  const fechaHoy = formatearFecha(new Date());
+  const formatearFechaLetras = (fecha, { incluirAnio = true, usarDeAnio = true } = {}) => {
+    if (!fecha) return "";
+    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    const base = `${fecha.getDate()} de ${meses[fecha.getMonth()]}`;
+    if (!incluirAnio) return base;
+    return `${base}${usarDeAnio ? " de" : ""} ${fecha.getFullYear()}`;
+  };
 
-  // Horarios
+  const formatearFechaInicioRango = (inicio, fin) => {
+    const fInicio = normalizarFecha(inicio);
+    const fFin = normalizarFecha(fin);
+    if (!fInicio) return "";
+    const mismoAnio = fFin && fInicio.getFullYear() === fFin.getFullYear();
+    return formatearFechaLetras(fInicio, { incluirAnio: !mismoAnio });
+  };
+
+  const formatearFechaFinRango = (inicio, fin) => {
+    const fInicio = normalizarFecha(inicio);
+    const fFin = normalizarFecha(fin);
+    if (!fFin) return "";
+    const mismoAnio = fInicio && fInicio.getFullYear() === fFin.getFullYear();
+    return formatearFechaLetras(fFin, { incluirAnio: true, usarDeAnio: mismoAnio });
+  };
+
+  const formatearRangoFechasLetras = (inicio, fin) => {
+    const fInicio = normalizarFecha(inicio);
+    const fFin = normalizarFecha(fin);
+    if (!fInicio && !fFin) return "";
+    if (!fInicio) return formatearFechaLetras(fFin, { incluirAnio: true });
+    if (!fFin) return formatearFechaLetras(fInicio, { incluirAnio: true });
+    return `del ${formatearFechaInicioRango(inicio, fin)} al ${formatearFechaFinRango(inicio, fin)}`;
+  };
+
+  const fechaHoy = formatearFechaLetras(new Date());
+
+  // Horarios y grupos (idéntico al frontend)
+  const grupos = Array.isArray(prog.horariosPorGrupo) ? prog.horariosPorGrupo : [];
+  const gradoAlumno = inscrip.gradoEstudiante || inscrip.grado || estudiante.grado || "";
+  const seccionAlumno = inscrip.seccionEstudiante || inscrip.seccion || estudiante.seccion || "";
+  const gradoSeccion = `${gradoAlumno} ${seccionAlumno}`.trim();
+
+  const coincideGrado = (valorGrupo, gradoA) => {
+    const cleanG = (val) => String(val || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(":", " ");
+    const grupo = cleanG(valorGrupo);
+    const alumno = cleanG(gradoA);
+    const numG = grupo.match(/\d+/)?.[0];
+    const numA = alumno.match(/\d+/)?.[0];
+    if (!numG || !numA) return false;
+    if (numG !== numA) return false;
+    const nivelG = ["inicial", "primaria", "secundaria"].find(n => grupo.includes(n));
+    const nivelA = ["inicial", "primaria", "secundaria"].find(n => alumno.includes(n));
+    return !nivelG || !nivelA || nivelG === nivelA;
+  };
+
+  const grupo = grupos.find(item => (item.grados || []).some(g => coincideGrado(g, gradoAlumno)));
+  const gradoDelTurno = grupo?.grados?.find(g => coincideGrado(g, gradoAlumno)) || gradoAlumno;
+  
+  const formatearGrado = (valor) => {
+    const texto = String(valor || "").replace(/^(Inicial|Primaria|Secundaria):/i, "").trim();
+    if (!texto) return "";
+    const numero = texto.match(/\d+/)?.[0];
+    if (String(valor).toLowerCase().includes("inicial") && numero) return `INICIAL ${numero} AÑOS`;
+    if (!numero) return texto.toUpperCase();
+    return `${numero}°GRADO`;
+  };
+
+  const nivelesTurno = gradoDelTurno ? [formatearGrado(gradoDelTurno)] : [];
+
+  const formatRangoHora = (hInicio, hFin) => {
+    if (!hInicio || !hFin) return "";
+    const fmt = (val) => {
+      const match = String(val).match(/^(\d{1,2}):(\d{2})/);
+      if (!match) return val;
+      const h = Number(match[1]);
+      const m = match[2];
+      const h12 = h > 12 ? h - 12 : h || 12;
+      return `${h12}:${m}`;
+    };
+    return `${fmt(hInicio)} a ${fmt(hFin)}`;
+  };
+
+  const extraerDiasHorario = (horario) => {
+    const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+    const texto = String(horario || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return dias.filter(d => texto.includes(d.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""))).join(", ");
+  };
+
+  const extraerAlmuerzoHorario = (horario) => {
+    const match = String(horario || "").match(/almuerzo\s+([^,·/]+)/i);
+    const valor = match?.[1]?.trim() || "";
+    const horas = [...valor.matchAll(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/gi)]
+      .map(m => {
+        const hr = Number(m[1]);
+        const min = m[2] || "00";
+        const hr12 = hr > 12 ? hr - 12 : hr || 12;
+        return `${hr12}:${min}`;
+      });
+    if (horas.length >= 2) return `${horas[0]} a ${horas[1]}`;
+    return valor.replace(/\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)\b/gi, "").trim();
+  };
+
+  const extraerHorasHorario = (horario) => {
+    const clean = String(horario || "").replace(/almuerzo.*$/i, "").trim();
+    const horas = [...clean.matchAll(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/gi)]
+      .map(m => {
+        const hr = Number(m[1]);
+        const min = m[2] || "00";
+        const hr12 = hr > 12 ? hr - 12 : hr || 12;
+        return `${hr12}:${min}`;
+      });
+    if (horas.length >= 2) return `${horas[0]} a ${horas[1]}`;
+    return clean.replace(/\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)\b/gi, "").trim();
+  };
+
+  // Asignar dia, almuerzo, clase
+  let diaDoc = "";
+  let almuerzoDoc = "";
+  let claseDoc = "";
+
+  if (grupo) {
+    diaDoc = grupo.dia || "";
+    almuerzoDoc = formatRangoHora(grupo.almuerzoInicio, grupo.almuerzoFin);
+    claseDoc = formatRangoHora(grupo.horaInicio, grupo.horaFin);
+  } else {
+    const rawH = inscrip.horario || prog.horario || "";
+    diaDoc = rawH.match(/Lunes|Martes|Miércoles|Miercoles|Jueves|Viernes|Sábado|Sabado|Domingo/i)?.[0] || "";
+    almuerzoDoc = extraerAlmuerzoHorario(rawH) || "No aplica";
+    claseDoc = extraerHorasHorario(rawH);
+  }
+
+  // Filas para la tabla
+  const gruposFiltrados = grupos.filter(item => 
+    (item.grados || []).some(g => coincideGrado(g, gradoAlumno))
+  );
+  const gruposAMostrar = gruposFiltrados.length > 0 ? gruposFiltrados : grupos;
+
+  const filas = gruposAMostrar.map(g => ({
+    nivel: (g.grados || []).map(formatearGrado).filter(Boolean).join(", "),
+    dia: g.dia || "",
+    almuerzo: formatRangoHora(g.almuerzoInicio, g.almuerzoFin),
+    clase: formatRangoHora(g.horaInicio, g.horaFin)
+  })).filter(f => f.nivel || f.dia || f.almuerzo || f.clase);
+
+  const n1 = filas[0]?.nivel || formatearGrado(gradoAlumno) || "";
+  const n2 = filas[1]?.nivel || "";
+  const n3 = filas[2]?.nivel || "";
+  const n4 = filas[3]?.nivel || "";
+
+  const diaVal = diaDoc || filas[0]?.dia || "";
+  const almVal = almuerzoDoc || filas[0]?.almuerzo || "";
+  const claseVal = claseDoc || filas[0]?.clase || "";
+
   const rawHorario = inscrip.horario || prog.horario || "";
   const cleanHorario = rawHorario.replace(/almuerzo.*$/i, "").trim();
 
@@ -342,21 +503,23 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
     PROG: programName,
     PROGRAMA: programName,
     CICLO: prog.periodo || inscrip.periodo || "Año Escolar",
-    INI: start ? start.split("T")[0] : "",
-    FIN: end ? end.split("T")[0] : "",
+    INI: formatearFechaInicioRango(start, end),
+    FIN: formatearFechaFinRango(start, end),
+    RANGO: formatearRangoFechasLetras(start, end),
+    VIGENCIA: formatearRangoFechasLetras(start, end),
     DUR: durStr,
     COSTO: costoNum,
     ALUMNO: studentName,
     GRADO: `${(estudiante && estudiante.grado) || inscrip.grado || ""} ${(estudiante && estudiante.seccion) || inscrip.seccion || ""}`.trim(),
     HORARIO: cleanHorario || rawHorario,
     HOR_ALM: prog.horarioRecepcionAlmuerzo || "",
-    DIA: rawHorario.match(/Lunes|Martes|Miércoles|Miercoles|Jueves|Viernes|Sábado|Sabado|Domingo/i)?.[0] || "Sábado",
-    CLASE: cleanHorario.replace(/^[^\d]*/, ""),
-    ALM: rawHorario.match(/almuerzo\s+([^,·/]+)/i)?.[1] || "No aplica",
-    N1: `${(estudiante && estudiante.grado) || ""} ${(estudiante && estudiante.seccion) || ""}`.trim() || "Grado",
-    N2: "",
-    N3: "",
-    N4: "",
+    DIA: diaVal,
+    CLASE: claseVal,
+    ALM: almVal,
+    N1: n1,
+    N2: n2,
+    N3: n3,
+    N4: n4,
     GR_SEC: `${(estudiante && estudiante.grado) || inscrip.grado || ""} ${(estudiante && estudiante.seccion) || inscrip.seccion || ""}`.trim(),
     APOD: (estudiante && estudiante.apoderado) || inscrip.apoderado || "",
     CEL: (estudiante && estudiante.telefonoApoderado) || inscrip.telefono || ""
