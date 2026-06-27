@@ -14,8 +14,3 @@ yape.png
 plim.png
 *.tmp
 
-# Temporary scripts and database backups
-/temporary_scripts/
-/backend/scratch/
-/scratch/
-
