@@ -34,6 +34,9 @@ importers:
       jsonwebtoken:
         specifier: ^9.0.3
         version: 9.0.3
+      jspdf:
+        specifier: ^4.2.1
+        version: 4.2.1
       multer:
         specifier: ^2.1.1
         version: 2.2.0

@@ -3,7 +3,7 @@ import multer from "multer";
 import { getDb, saveDb } from "../../dbLocal.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { registrarAuditoria } from "../../audit.js";
-import { enviarCorreoGenerico, generarCorreoConfirmacionPago } from "../../mailService.js";
+import { enviarCorreoGenerico, generarCorreoConfirmacionPago, resolverPlantillaTexto, generarComunicadoPdf } from "../../mailService.js";
 import { MAX_FILE_SIZE } from "../../fileService.js";
 import {
   mapDbPaymentToApi,
@@ -553,7 +553,27 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
       const receiptNo = db.pagos[idx].nroRecibo || "";
 
       const adjuntos = [];
-      if (inscrip.plantillaBase64) {
+      if (inscrip.plantilla) {
+        try {
+          const estudianteObj = db.estudiantes?.[inscrip.dniEstudiante] || {};
+          const programaObj = db.programas?.find(p => p.id === inscrip.programaId) || {};
+          const textoResuelto = resolverPlantillaTexto(inscrip.plantilla, estudianteObj, inscrip, programaObj);
+          const pdfBuffer = generarComunicadoPdf(textoResuelto, progName);
+          
+          adjuntos.push({
+            filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
+            content: pdfBuffer
+          });
+        } catch (errorPdf) {
+          console.error("[PDF GENERATION ERROR] Fallo al generar PDF resuelto, usando Word original:", errorPdf.message);
+          if (inscrip.plantillaBase64) {
+            adjuntos.push({
+              filename: `Ficha_Matricula_${inscrip.id}.docx`,
+              content: Buffer.from(inscrip.plantillaBase64, "base64")
+            });
+          }
+        }
+      } else if (inscrip.plantillaBase64) {
         adjuntos.push({
           filename: `Ficha_Matricula_${inscrip.id}.docx`,
           content: Buffer.from(inscrip.plantillaBase64, "base64")

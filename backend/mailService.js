@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import { jsPDF } from "jspdf";
 
 // 1. Crear el transporter una sola vez a nivel de módulo
 // Si no están configuradas las variables, se crea en modo "mock" para imprimir en consola.
@@ -163,3 +164,140 @@ export function generarCorreoInvitacion(estudianteNombre, programaNombre, fechaI
   `;
   return { asunto, html };
 }
+
+/**
+ * Resuelve las variables {{VARIABLE}} en el texto plano de la plantilla
+ */
+export function resolverPlantillaTexto(texto, estudiante, inscrip, prog) {
+  if (!texto) return "";
+
+  const costoNum = Number(inscrip.costoOriginal || inscrip.costo || prog.costo || 0).toFixed(2);
+  const studentName = ((estudiante && estudiante.nombres) || inscrip.nombresEstudiante || "").trim();
+  const programName = (prog.nombre || inscrip.programa || "").trim();
+  const areaName = inscrip.areaTematica || prog.areaTematica || "Coordinación Académica de Actividades Extracurriculares";
+  const start = inscrip.fechaInicio || prog.fechaInicio || "";
+  const end = inscrip.fechaFin || prog.fechaFin || "";
+  const durStr = inscrip.duracion || prog.duracion || "8 semanas";
+
+  // Formatear fechas en letras españolas
+  const formatearFecha = (fechaStr) => {
+    if (!fechaStr) return "";
+    const f = new Date(fechaStr);
+    if (isNaN(f.getTime())) return fechaStr.split("T")[0];
+    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    return `${f.getDate()} de ${meses[f.getMonth()]} del ${f.getFullYear()}`;
+  };
+
+  const fechaHoy = formatearFecha(new Date());
+
+  // Horarios
+  const rawHorario = inscrip.horario || prog.horario || "";
+  // Limpiar horario sin almuerzo
+  const cleanHorario = rawHorario.replace(/almuerzo.*$/i, "").trim();
+
+  const datos = {
+    FECHA: fechaHoy,
+    TITULO: `${inscrip.tipoDocumento || "Comunicado"} ${programName}`.toUpperCase(),
+    AREA: areaName,
+    PROG: programName,
+    PROGRAMA: programName,
+    CICLO: prog.periodo || inscrip.periodo || "Año Escolar",
+    INI: start ? start.split("T")[0] : "",
+    FIN: end ? end.split("T")[0] : "",
+    DUR: durStr,
+    COSTO: costoNum,
+    ALUMNO: studentName,
+    GRADO: `${(estudiante && estudiante.grado) || inscrip.grado || ""} ${(estudiante && estudiante.seccion) || inscrip.seccion || ""}`.trim(),
+    HORARIO: cleanHorario || rawHorario,
+    HOR_ALM: prog.horarioRecepcionAlmuerzo || "",
+    // Horarios específicos para la tabla
+    DIA: rawHorario.match(/Lunes|Martes|Miércoles|Miercoles|Jueves|Viernes|Sábado|Sabado|Domingo/i)?.[0] || "Sábado",
+    CLASE: cleanHorario.replace(/^[^\d]*/, ""), // extrae la hora
+    ALM: rawHorario.match(/almuerzo\s+([^,·/]+)/i)?.[1] || "No aplica",
+    N1: `${(estudiante && estudiante.grado) || ""} ${(estudiante && estudiante.seccion) || ""}`.trim() || "Grado",
+    N2: "",
+    N3: "",
+    N4: ""
+  };
+
+  let resultado = texto;
+  for (const key in datos) {
+    const valor = datos[key] || "";
+    const regex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g");
+    resultado = resultado.replace(regex, valor);
+  }
+  return resultado;
+}
+
+/**
+ * Genera el PDF a partir del texto resuelto del comunicado
+ */
+export function generarComunicadoPdf(textoResuelto, programaNombre) {
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 20;
+  const contentW = pageW - (margin * 2);
+  let y = 25;
+
+  // Franja verde superior
+  doc.setFillColor(0, 107, 91); // Verde oscuro institucional
+  doc.rect(0, 0, pageW, 12, "F");
+
+  // Título de cabecera
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(0, 107, 91);
+  doc.text("FICHA INFORMATIVA Y CONSTANCIA", margin, y);
+  y += 8;
+
+  // Separador
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin, y, pageW - margin, y);
+  y += 10;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(30, 41, 59); // Slate-800
+
+  // Separar por saltos de línea
+  const lineasTextoRaw = textoResuelto.split("\n");
+
+  lineasTextoRaw.forEach(parrafo => {
+    const pTexto = parrafo.trim();
+    if (!pTexto) {
+      y += 5; // Salto de línea vacío
+      return;
+    }
+
+    const lineas = doc.splitTextToSize(pTexto, contentW);
+    
+    // Verificar salto de página
+    if (y + (lineas.length * 6) > pageH - margin) {
+      doc.addPage();
+      y = 25;
+      
+      // Dibujar cabecera en nueva página
+      doc.setFillColor(0, 107, 91);
+      doc.rect(0, 0, pageW, 12, "F");
+    }
+
+    lineas.forEach(linea => {
+      // Si la línea parece ser un título o sección resaltada, ponerla en negrita
+      if (linea.startsWith("COMUNICADO:") || linea.startsWith("COSTO:") || linea.startsWith("EL ALMUERZO:") || linea.startsWith("REQUISITOS:")) {
+        doc.setFont("helvetica", "bold");
+      } else {
+        doc.setFont("helvetica", "normal");
+      }
+      doc.text(linea, margin, y);
+      y += 6;
+    });
+
+    y += 2;
+  });
+
+  // Salida en formato binario compatible con nodemailer
+  const pdfString = doc.output();
+  return Buffer.from(pdfString, "binary");
+}
+
