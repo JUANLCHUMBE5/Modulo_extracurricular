@@ -3,8 +3,8 @@ import multer from "multer";
 import { getDb, saveDb } from "../../dbLocal.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { registrarAuditoria } from "../../audit.js";
-import { enviarCorreoGenerico, generarCorreoConfirmacionPago, resolverPlantillaTexto, generarComunicadoPdf } from "../../mailService.js";
-import { MAX_FILE_SIZE } from "../../fileService.js";
+import { enviarCorreoGenerico, generarCorreoConfirmacionPago, resolverPlantillaTexto, generarComunicadoPdf, generarWordResuelto } from "../../mailService.js";
+import { MAX_FILE_SIZE, convertirWordAPdf } from "../../fileService.js";
 import {
   mapDbPaymentToApi,
   mapDbEnrollmentToApi,
@@ -553,33 +553,50 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
       const receiptNo = db.pagos[idx].nroRecibo || "";
 
       const adjuntos = [];
-      const programaObj = db.programas?.find(p => p.id === inscrip.programaId) || {};
-      const textoPlantilla = programaObj.comunicadoCompleto || programaObj.comunicado || "";
-
-      if (textoPlantilla) {
+      if (inscrip.plantillaBase64) {
         try {
           const estudianteObj = db.estudiantes?.[inscrip.dniEstudiante] || {};
-          const textoResuelto = resolverPlantillaTexto(textoPlantilla, estudianteObj, inscrip, programaObj);
-          const pdfBuffer = generarComunicadoPdf(textoResuelto, progName);
+          const programaObj = db.programas?.find(p => p.id === inscrip.programaId) || {};
+          
+          // 1. Generar Word con las variables resueltas
+          const wordBuffer = generarWordResuelto(inscrip.plantillaBase64, estudianteObj, inscrip, programaObj);
+          
+          // 2. Convertir el Word resuelto a PDF usando el convertidor de LibreOffice/MS Word del backend
+          const pdfBuffer = await convertirWordAPdf(wordBuffer);
           
           adjuntos.push({
             filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
             content: pdfBuffer
           });
-        } catch (errorPdf) {
-          console.error("[PDF GENERATION ERROR] Fallo al generar PDF resuelto, usando Word original:", errorPdf.message);
-          if (inscrip.plantillaBase64) {
+        } catch (errorWordPdf) {
+          console.error("[WORD TO PDF ERROR] No se pudo convertir el Word resuelto a PDF, intentando generar PDF desde texto plano:", errorWordPdf.message);
+          
+          // Fallback 1: Generar PDF desde el texto plano de la plantilla
+          const programaObj = db.programas?.find(p => p.id === inscrip.programaId) || {};
+          const textoPlantilla = programaObj.comunicadoCompleto || programaObj.comunicado || "";
+          if (textoPlantilla) {
+            try {
+              const estudianteObj = db.estudiantes?.[inscrip.dniEstudiante] || {};
+              const textoResuelto = resolverPlantillaTexto(textoPlantilla, estudianteObj, inscrip, programaObj);
+              const pdfBuffer = generarComunicadoPdf(textoResuelto, progName);
+              adjuntos.push({
+                filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
+                content: pdfBuffer
+              });
+            } catch (errorTextPdf) {
+              console.error("[TEXT TO PDF ERROR] Fallo al generar PDF desde texto plano, usando Word original:", errorTextPdf.message);
+              adjuntos.push({
+                filename: `Ficha_Matricula_${inscrip.id}.docx`,
+                content: Buffer.from(inscrip.plantillaBase64, "base64")
+              });
+            }
+          } else {
             adjuntos.push({
               filename: `Ficha_Matricula_${inscrip.id}.docx`,
               content: Buffer.from(inscrip.plantillaBase64, "base64")
             });
           }
         }
-      } else if (inscrip.plantillaBase64) {
-        adjuntos.push({
-          filename: `Ficha_Matricula_${inscrip.id}.docx`,
-          content: Buffer.from(inscrip.plantillaBase64, "base64")
-        });
       }
 
       const { asunto, html } = generarCorreoConfirmacionPago(studentName, progName, amount, receiptNo);

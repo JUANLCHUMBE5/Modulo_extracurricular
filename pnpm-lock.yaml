@@ -19,6 +19,9 @@ importers:
       cors:
         specifier: ^2.8.6
         version: 2.8.6
+      docxtemplater:
+        specifier: ^3.69.0
+        version: 3.69.0
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -43,6 +46,9 @@ importers:
       nodemailer:
         specifier: ^9.0.1
         version: 9.0.1
+      pizzip:
+        specifier: ^3.2.0
+        version: 3.2.0
 
   frontend:
     dependencies:

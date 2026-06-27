@@ -1,5 +1,7 @@
 import nodemailer from "nodemailer";
 import { jsPDF } from "jspdf";
+import PizZip from "pizzip";
+import Docxtemplater from "docxtemplater";
 
 // 1. Crear el transporter una sola vez a nivel de módulo
 // Si no están configuradas las variables, se crea en modo "mock" para imprimir en consola.
@@ -303,4 +305,72 @@ export function generarComunicadoPdf(textoResuelto, programaNombre) {
   const pdfString = doc.output();
   return Buffer.from(pdfString, "binary");
 }
+
+/**
+ * Carga la plantilla de Word, resuelve sus marcadores {{VARIABLE}} y retorna el buffer
+ */
+export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) {
+  if (!plantillaBase64) return null;
+
+  const costoNum = Number(inscrip.costoOriginal || inscrip.costo || prog.costo || 0).toFixed(2);
+  const studentName = ((estudiante && estudiante.nombres) || inscrip.nombresEstudiante || "").trim();
+  const programName = (prog.nombre || inscrip.programa || "").trim();
+  const areaName = inscrip.areaTematica || prog.areaTematica || "Coordinación Académica de Actividades Extracurriculares";
+  const start = inscrip.fechaInicio || prog.fechaInicio || "";
+  const end = inscrip.fechaFin || prog.fechaFin || "";
+  const durStr = inscrip.duracion || prog.duracion || "8 semanas";
+
+  // Formatear fechas en letras españolas
+  const formatearFecha = (fechaStr) => {
+    if (!fechaStr) return "";
+    const f = new Date(fechaStr);
+    if (isNaN(f.getTime())) return fechaStr.split("T")[0];
+    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    return `${f.getDate()} de ${meses[f.getMonth()]} del ${f.getFullYear()}`;
+  };
+
+  const fechaHoy = formatearFecha(new Date());
+
+  // Horarios
+  const rawHorario = inscrip.horario || prog.horario || "";
+  const cleanHorario = rawHorario.replace(/almuerzo.*$/i, "").trim();
+
+  const datos = {
+    FECHA: fechaHoy,
+    TITULO: `${inscrip.tipoDocumento || "Comunicado"} ${programName}`.toUpperCase(),
+    AREA: areaName,
+    PROG: programName,
+    PROGRAMA: programName,
+    CICLO: prog.periodo || inscrip.periodo || "Año Escolar",
+    INI: start ? start.split("T")[0] : "",
+    FIN: end ? end.split("T")[0] : "",
+    DUR: durStr,
+    COSTO: costoNum,
+    ALUMNO: studentName,
+    GRADO: `${(estudiante && estudiante.grado) || inscrip.grado || ""} ${(estudiante && estudiante.seccion) || inscrip.seccion || ""}`.trim(),
+    HORARIO: cleanHorario || rawHorario,
+    HOR_ALM: prog.horarioRecepcionAlmuerzo || "",
+    DIA: rawHorario.match(/Lunes|Martes|Miércoles|Miercoles|Jueves|Viernes|Sábado|Sabado|Domingo/i)?.[0] || "Sábado",
+    CLASE: cleanHorario.replace(/^[^\d]*/, ""),
+    ALM: rawHorario.match(/almuerzo\s+([^,·/]+)/i)?.[1] || "No aplica",
+    N1: `${(estudiante && estudiante.grado) || ""} ${(estudiante && estudiante.seccion) || ""}`.trim() || "Grado",
+    N2: "",
+    N3: "",
+    N4: "",
+    GR_SEC: `${(estudiante && estudiante.grado) || inscrip.grado || ""} ${(estudiante && estudiante.seccion) || inscrip.seccion || ""}`.trim(),
+    APOD: (estudiante && estudiante.apoderado) || inscrip.apoderado || "",
+    CEL: (estudiante && estudiante.telefonoApoderado) || inscrip.telefono || ""
+  };
+
+  const zip = new PizZip(Buffer.from(plantillaBase64, "base64"));
+  const doc = new Docxtemplater(zip, {
+    paragraphLoop: true,
+    linebreaks: true,
+    nullGetter: () => ""
+  });
+  
+  doc.render(datos);
+  return doc.getZip().generate({ type: "nodebuffer" });
+}
+
 
