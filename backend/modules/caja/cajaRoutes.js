@@ -553,13 +553,15 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
       const receiptNo = db.pagos[idx].nroRecibo || "";
 
       const adjuntos = [];
-      if (inscrip.plantillaBase64) {
+      const programaObj = db.programas?.find(p => p.id === inscrip.programaId) || {};
+      const plantillaBase64 = programaObj.plantillaBase64 || inscrip.plantillaBase64;
+
+      if (plantillaBase64) {
         try {
           const estudianteObj = db.estudiantes?.[inscrip.dniEstudiante] || {};
-          const programaObj = db.programas?.find(p => p.id === inscrip.programaId) || {};
           
           // 1. Generar Word con las variables resueltas
-          const wordBuffer = generarWordResuelto(inscrip.plantillaBase64, estudianteObj, inscrip, programaObj);
+          const wordBuffer = generarWordResuelto(plantillaBase64, estudianteObj, inscrip, programaObj);
           
           // 2. Convertir el Word resuelto a PDF usando el convertidor de LibreOffice/MS Word del backend
           const pdfBuffer = await convertirWordAPdf(wordBuffer);
