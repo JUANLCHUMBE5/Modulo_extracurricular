@@ -4,6 +4,7 @@ import multer from "multer";
 import { getDb, saveDb } from "../../dbLocal.js";
 import { requireRole } from "../../middleware/auth.js";
 import { registrarAuditoria } from "../../audit.js";
+import { enviarCorreoGenerico, generarCorreoInvitacion } from "../../mailService.js";
 import { limpiarDni, MAX_FILE_SIZE, normalizarPeriodo, parseJsonArray, parseJsonObject } from "../../fileService.js";
 import { generarPreviewCargaExcel } from "../../excelService.js";
 import {
@@ -764,6 +765,39 @@ router.post("/api/v1/extracurricular/programas/:programaId/invitados", requireRo
       }))
     ];
     await saveDb(db);
+
+    // Enviar invitaciones por correo de forma asíncrona en segundo plano
+    if (nuevos.length > 0) {
+      nuevos.forEach(item => {
+        const email = item.correo || item.correoApoderado || item.email || "";
+        if (email && email.trim()) {
+          const studentName = item.nombres || "";
+          const progName = prog?.nombre || "";
+          const startClase = prog?.fechaInicio || "";
+          const cost = prog?.costo || "";
+
+          const { asunto, html } = generarCorreoInvitacion(studentName, progName, startClase, cost);
+          
+          const adjuntos = [];
+          // Si el programa tiene cargado un folleto base64 en la tabla de documentos, lo adjuntamos
+          const docProg = (db.programas_documentos || []).find(d => d.programaId === programaId);
+          if (docProg && docProg.plantillaBase64) {
+            adjuntos.push({
+              filename: `Ficha_Invitacion_${programaId}.docx`,
+              content: Buffer.from(docProg.plantillaBase64, "base64")
+            });
+          }
+
+          enviarCorreoGenerico({
+            para: email,
+            asunto,
+            html,
+            adjuntos
+          }).catch(err => console.error(`[MAIL EXCEPTION] No se pudo enviar invitación a ${studentName}:`, err.message));
+        }
+      });
+    }
+
     await registrarAuditoria(req.user?.username || "Coordinación Académica", req.user?.role || "coordinacion", "INVITACION_MASIVA", {
       programaId,
       programaNombre: prog?.nombre || "",

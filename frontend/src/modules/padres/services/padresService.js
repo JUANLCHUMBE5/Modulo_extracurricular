@@ -79,7 +79,7 @@ export async function registrarInscripcionPadres(dni, datos, programaId = "", ho
       estudiante_id: dni,
       programa_id: programaId,
       horario: horarioPersonalizado,
-      origen_inscripcion: "Portal padres",
+      origen_inscripcion: datos.enviarPdfCorreo ? "Portal padres | enviar_correo" : "Portal padres",
       apoderado: datos.apoderado,
       telefono_apoderado: datos.telefono,
       correo_apoderado: datos.correo,

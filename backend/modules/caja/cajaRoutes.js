@@ -3,6 +3,7 @@ import multer from "multer";
 import { getDb, saveDb } from "../../dbLocal.js";
 import { requireAuth, requireRole } from "../../middleware/auth.js";
 import { registrarAuditoria } from "../../audit.js";
+import { enviarCorreoGenerico, generarCorreoConfirmacionPago } from "../../mailService.js";
 import { MAX_FILE_SIZE } from "../../fileService.js";
 import {
   mapDbPaymentToApi,
@@ -540,6 +541,33 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
     }
 
     await saveDb(db);
+
+    // Enviar correo de confirmación asíncronamente en segundo plano
+    const deseaCorreo = inscrip && (inscrip.enviarPdfCorreo || String(inscrip.origenRegistro || "").includes("enviar_correo"));
+    const apoderadoEmail = inscrip && (db.estudiantes?.[inscrip.dniEstudiante]?.correoApoderado || inscrip.correo || "");
+
+    if (deseaCorreo && apoderadoEmail) {
+      const studentName = inscrip.nombresEstudiante || (db.estudiantes?.[inscrip.dniEstudiante] ? `${db.estudiantes[inscrip.dniEstudiante].nombres} ${db.estudiantes[inscrip.dniEstudiante].apellidos || ""}`.trim() : "");
+      const progName = inscrip.programa || "";
+      const amount = db.pagos[idx].monto || "";
+      const receiptNo = db.pagos[idx].nroRecibo || "";
+
+      const adjuntos = [];
+      if (inscrip.plantillaBase64) {
+        adjuntos.push({
+          filename: `Ficha_Matricula_${inscrip.id}.docx`,
+          content: Buffer.from(inscrip.plantillaBase64, "base64")
+        });
+      }
+
+      const { asunto, html } = generarCorreoConfirmacionPago(studentName, progName, amount, receiptNo);
+      enviarCorreoGenerico({
+        para: apoderadoEmail,
+        asunto,
+        html,
+        adjuntos
+      }).catch(err => console.error("[MAIL EXCEPTION] No se pudo enviar el correo de confirmación de pago:", err.message));
+    }
 
     await registrarAuditoria(req.user?.username || "Cajera", req.user?.role || "caja", "PAGO_VALIDAR", {
       pagoId,
