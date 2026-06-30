@@ -21,7 +21,43 @@ const COLUMNAS_CARGA_EXCEL = new Set([
   "seleccion",
 ]);
 
-export async function generarPreviewCargaExcel({ periodo, archivo, programas, existentes, estudiantes, programaId }) {
+export interface PreviewCargaParams {
+  periodo: string;
+  archivo: any;
+  programas: any[];
+  existentes: Record<string, any[]>;
+  estudiantes: Record<string, any>;
+  programaId?: string | null;
+}
+
+export interface PreviewCargaResult {
+  id: string;
+  periodo: "verano" | "escolar";
+  archivoNombre: string;
+  registros: any[];
+  resumen: {
+    total: number;
+    validos: number;
+    errores: number;
+    duplicados: number;
+  };
+}
+
+/**
+ * Genera una previsualización estructurada a partir del procesamiento y validación de un archivo Excel de alumnos.
+ * Cruza la información del Excel con los programas académicos del periodo y los alumnos existentes.
+ * 
+ * @param params Parámetros que contienen el periodo, archivo binario, programas, alumnos existentes e ID de programa opcional.
+ * @returns Objeto de previsualización que contiene el resumen de registros válidos, duplicados y con errores.
+ */
+export async function generarPreviewCargaExcel({
+  periodo,
+  archivo,
+  programas,
+  existentes,
+  estudiantes,
+  programaId
+}: PreviewCargaParams): Promise<PreviewCargaResult> {
   const periodoNormalizado = normalizarPeriodo(periodo);
   validarArchivoExcel(archivo);
 
@@ -59,7 +95,13 @@ export async function generarPreviewCargaExcel({ periodo, archivo, programas, ex
   };
 }
 
-export function validarArchivoExcel(archivo) {
+/**
+ * Valida la integridad básica de un archivo cargado antes de procesarlo.
+ * Verifica la existencia, la extensión (.xlsx o .xls), tamaño máximo de 5MB y firma mágica de archivo .xlsx.
+ * 
+ * @param archivo Archivo cargado a validar.
+ */
+export function validarArchivoExcel(archivo: any): void {
   if (!archivo) lanzar("Seleccione un archivo Excel.");
 
   const nombre = String(archivo.originalname || "");
@@ -75,7 +117,14 @@ export function validarArchivoExcel(archivo) {
   }
 }
 
-async function leerExcelSeguro(archivo) {
+/**
+ * Lee de forma segura un buffer de archivo Excel usando ExcelJS,
+ * localizando dinámicamente los encabezados y extrayendo los datos en formato de objetos planos.
+ * 
+ * @param archivo Archivo con el buffer de datos Excel.
+ * @returns Array de objetos que representan las filas legibles del Excel.
+ */
+async function leerExcelSeguro(archivo: any): Promise<any[]> {
   const workbook = new ExcelJS.Workbook();
   try {
     await workbook.xlsx.load(archivo.buffer, {
@@ -92,10 +141,10 @@ async function leerExcelSeguro(archivo) {
   const encabezadosCarga = encabezados.filter((item) => COLUMNAS_CARGA_EXCEL.has(item.nombre));
   validarColumnasObligatorias(encabezadosCarga);
 
-  const filas = [];
+  const filas: any[] = [];
   hoja.eachRow((row, rowNumber) => {
     if (rowNumber <= filaEncabezado) return;
-    const fila = {};
+    const fila: Record<string, string> = {};
     encabezadosCarga.forEach(({ nombre, columna }) => {
       fila[nombre] = limpiarTexto(row.getCell(columna).text);
     });
@@ -105,9 +154,21 @@ async function leerExcelSeguro(archivo) {
   return filas;
 }
 
-function obtenerEncabezados(hoja) {
+interface EncabezadoInfo {
+  nombre: string;
+  columna: number;
+}
+
+/**
+ * Escanea dinámicamente las primeras 10 filas de una hoja de cálculo
+ * para identificar los nombres oficiales de columnas válidos del sistema.
+ * 
+ * @param hoja Hoja de cálculo de ExcelJS.
+ * @returns Estructura con la fila de encabezado y la lista de columnas encontradas con su número correlativo.
+ */
+function obtenerEncabezados(hoja: ExcelJS.Worksheet): { encabezados: EncabezadoInfo[]; filaEncabezado: number } {
   for (let fila = 1; fila <= Math.min(10, hoja.rowCount); fila += 1) {
-    const encabezados = [];
+    const encabezados: EncabezadoInfo[] = [];
     hoja.getRow(fila).eachCell((cell, columna) => {
       const nombre = normalizarEncabezado(cell.text);
       if (nombre) encabezados.push({ nombre, columna });
@@ -122,13 +183,20 @@ function obtenerEncabezados(hoja) {
   lanzar("No se encontro la fila de encabezados del Excel.");
 }
 
-function validarColumnasObligatorias(encabezados) {
+/**
+ * Valida que los encabezados disponibles contengan las columnas obligatorias
+ * según la variante del formato del archivo Excel (Estándar, Cambridge, Masivo, Docente).
+ * 
+ * @param encabezados Lista de encabezados leídos.
+ */
+function validarColumnasObligatorias(encabezados: EncabezadoInfo[]): void {
   const disponibles = new Set(encabezados.map((item) => item.nombre));
   const formatoEstandar = esFormatoEstandar(disponibles);
   const formatoNombreCompleto = esFormatoNombreCompleto(disponibles);
   const formatoDocenteTalleres = esFormatoDocenteTalleres(disponibles);
   const formatoCambridgeLista = esFormatoCambridgeLista(disponibles);
   const formatoCargaMasiva = esFormatoCargaMasiva(disponibles);
+  
   const obligatorias = formatoCargaMasiva
     ? [
         disponibles.has("dni_o_codigo") ? "dni_o_codigo" : (disponibles.has("dni") ? "dni" : "codigo_estudiante"),
@@ -147,11 +215,15 @@ function validarColumnasObligatorias(encabezados) {
       : formatoNombreCompleto
         ? ["nombres", "grado", "curso_programa"]
       : ["dni", "nombres", "apellidos", "grado", "curso_programa"];
+      
   const faltantes = obligatorias.filter((columna) => !disponibles.has(columna));
   if (faltantes.length) lanzar(`Faltan columnas obligatorias: ${faltantes.join(", ")}.`);
 }
 
-function esFormatoEstandar(disponibles) {
+/**
+ * Comprueba si la lista de columnas tiene el formato estándar (DNI, Alumno, Grado, Programa, Nivel).
+ */
+function esFormatoEstandar(disponibles: Set<string>): boolean {
   return disponibles.has("dni") &&
     disponibles.has("alumno") &&
     disponibles.has("nivel_educativo") &&
@@ -159,40 +231,77 @@ function esFormatoEstandar(disponibles) {
     disponibles.has("curso_programa");
 }
 
-function esFormatoCargaGeneral(disponibles) {
+/**
+ * Comprueba si la lista de columnas contiene campos mínimos de programa y alumno para una carga general.
+ */
+function esFormatoCargaGeneral(disponibles: Set<string>): boolean {
   return disponibles.has("curso_programa") &&
     (disponibles.has("dni") || disponibles.has("id") || disponibles.has("alumno") || disponibles.has("nombres"));
 }
 
-function esFormatoDocenteTalleres(disponibles) {
+/**
+ * Comprueba si la lista de columnas corresponde al formato de docentes de talleres.
+ */
+function esFormatoDocenteTalleres(disponibles: Set<string>): boolean {
   return disponibles.has("alumno") &&
     disponibles.has("nivel_educativo") &&
     disponibles.has("grado") &&
     disponibles.has("curso_programa");
 }
 
-function esFormatoNombreCompleto(disponibles) {
+/**
+ * Comprueba si el Excel contiene la estructura de nombres de estudiantes (sin apellidos explícitos).
+ */
+function esFormatoNombreCompleto(disponibles: Set<string>): boolean {
   return disponibles.has("nombres") &&
     disponibles.has("grado") &&
     disponibles.has("curso_programa") &&
     !disponibles.has("apellidos");
 }
 
-function esFormatoCargaCambridge(disponibles) {
+/**
+ * Comprueba si el Excel es una plantilla de selección simple de Cambridge.
+ */
+function esFormatoCargaCambridge(disponibles: Set<string>): boolean {
   return disponibles.has("dni") &&
     disponibles.has("alumno") &&
     disponibles.has("seleccion");
 }
 
-function esFormatoCambridgeLista(disponibles) {
+/**
+ * Comprueba si corresponde al listado general de pre-selección de niveles Cambridge.
+ */
+function esFormatoCambridgeLista(disponibles: Set<string>): boolean {
   return disponibles.has("dni") &&
     disponibles.has("curso_programa") &&
     disponibles.has("seleccion") &&
     (disponibles.has("alumno") || disponibles.has("nombres"));
 }
 
-function validarRegistros({ filas, programasPeriodo, programaSeleccionado, existentes, estudiantes }) {
-  const clavesArchivo = new Set();
+interface ValidarRegistrosParams {
+  filas: any[];
+  programasPeriodo: any[];
+  programaSeleccionado: any;
+  existentes: Record<string, any[]>;
+  estudiantes: Record<string, any>;
+}
+
+/**
+ * Realiza la validación a nivel de negocio y lógica de negocio para cada fila extraída del Excel.
+ * Detecta duplicados, valida existencia del programa, comprueba correspondencia de grados
+ * y evalúa conflictos de identidad (ej: DNI que pertenece a otro alumno).
+ * 
+ * @param params Objeto con filas, programas del periodo, base de estudiantes e inscripciones existentes.
+ * @returns Array de filas procesadas con su respectiva lista de errores y estado final ("Valido", "Duplicado" o "Error").
+ */
+function validarRegistros({
+  filas,
+  programasPeriodo,
+  programaSeleccionado,
+  existentes,
+  estudiantes
+}: ValidarRegistrosParams): any[] {
+  const clavesArchivo = new Set<string>();
   const indiceEstudiantes = crearIndiceEstudiantes(estudiantes);
 
   return filas.map((fila, index) => {
@@ -226,7 +335,14 @@ function validarRegistros({ filas, programasPeriodo, programaSeleccionado, exist
   });
 }
 
-function normalizarFila(fila) {
+/**
+ * Normaliza las celdas de una fila cruda de Excel estructurando los campos de DNI, código de estudiante,
+ * nombre del taller, nivel Cambridge y nombres/apellidos limpios.
+ * 
+ * @param fila Fila del Excel leída.
+ * @returns Fila normalizada.
+ */
+function normalizarFila(fila: any): any {
   const alumno = separarAlumnoCompleto(fila.alumno);
   const nivelCambridge = limpiarTexto(fila.nivel_cambridge);
   const nombres = limpiarTexto(fila.nombres) || alumno.nombres;
@@ -266,7 +382,16 @@ function normalizarFila(fila) {
   };
 }
 
-function validarFilaCarga(fila, programaDetectado, opciones = {}) {
+/**
+ * Valida la consistencia de datos de una fila particular (formatos de DNI, existencia del programa
+ * y si el grado del alumno está en el rango permitido del programa).
+ * 
+ * @param fila Objeto de la fila normalizada.
+ * @param programaDetectado Objeto del programa/taller asignado.
+ * @param opciones Indicador si el taller fue pre-seleccionado estáticamente.
+ * @returns Array con la lista de mensajes de error de validación (vacío si es válido).
+ */
+function validarFilaCarga(fila: any, programaDetectado: any, opciones: any = {}): string[] {
   const errores = [...(fila.erroresDatos || [])];
   const esCambridge = programaDetectado && esProgramaCambridge(programaDetectado);
   if (!fila.dni) {
@@ -300,21 +425,35 @@ function validarFilaCarga(fila, programaDetectado, opciones = {}) {
   return errores;
 }
 
-function detectarProgramaPorCurso(curso, programas) {
+/**
+ * Busca e identifica un programa/taller en la base de datos a partir del nombre del curso extraído del Excel.
+ * 
+ * @param curso Nombre del curso.
+ * @param programas Lista de programas del periodo actual.
+ */
+function detectarProgramaPorCurso(curso: string, programas: any[]): any {
   if (!curso) return null;
   const directo = programas.find((programa) => coincideCurso(curso, programa.nombre));
   if (directo) return directo;
   return /\bcambridge\b/.test(normalizarComparacion(curso)) ? detectarProgramaCambridge(programas) : null;
 }
 
-function detectarProgramaCambridge(programas) {
+/**
+ * Localiza el programa oficial Cambridge en la lista de programas del periodo actual.
+ * 
+ * @param programas Lista de programas disponibles.
+ */
+function detectarProgramaCambridge(programas: any[]): any {
   const candidatos = programas.filter((programa) => esProgramaCambridge(programa));
   if (candidatos.length === 1) return candidatos[0];
   if (!candidatos.length && programas.length === 1) return programas[0];
   return candidatos.find((programa) => String(programa.estado || "Habilitado") === "Habilitado") || null;
 }
 
-function esProgramaCambridge(programa) {
+/**
+ * Determina si un taller es de tipo Cambridge evaluando coincidencias léxicas.
+ */
+function esProgramaCambridge(programa: any): boolean {
   const texto = normalizarComparacion([
     programa.nombre,
     programa.programa,
@@ -331,12 +470,15 @@ function esProgramaCambridge(programa) {
     /\bingles?s?\b/.test(texto) ||
     /\bcertificacion\b/.test(texto) ||
     /\bpreparacion\b/.test(texto) ||
-    (programa.plantillaVariables || []).some((variable) =>
+    (programa.plantillaVariables || []).some((variable: string) =>
       ["anio_cert", "nivel_cambridge", "chk_a", "chk_b", "chk_c"].includes(variable)
     );
 }
 
-function coincideCurso(curso, programa) {
+/**
+ * Evalúa mediante comparación aproximada de palabras si el nombre de curso del Excel equivale a un programa.
+ */
+function coincideCurso(curso: string, programa: string): boolean {
   const a = normalizarComparacion(curso);
   const b = normalizarComparacion(programa);
   if (a === b) return true;
@@ -352,17 +494,32 @@ function coincideCurso(curso, programa) {
   return coberturaCurso >= 0.85 && coberturaPrograma >= 0.6;
 }
 
-function esFormatoCargaMasiva(disponibles) {
+/**
+ * Valida si las columnas de encabezados corresponden al formato de carga masiva de invitados.
+ */
+function esFormatoCargaMasiva(disponibles: Set<string>): boolean {
   return (disponibles.has("dni") || disponibles.has("codigo_estudiante") || disponibles.has("dni_o_codigo")) &&
     disponibles.has("grado") &&
     (disponibles.has("alumno") || disponibles.has("nombres")) &&
     disponibles.has("nivel_educativo");
 }
 
-function crearIndiceEstudiantes(estudiantes = {}) {
-  const porDni = new Map();
-  const porCodigo = new Map();
-  const porNombre = new Map();
+interface IndiceEstudiantes {
+  porDni: Map<string, any>;
+  porCodigo: Map<string, any>;
+  porNombre: Map<string, any[]>;
+}
+
+/**
+ * Construye índices de búsqueda rápidos en memoria (Map) de los alumnos de la institución,
+ * ordenándolos por DNI, Código de Alumno y Nombre Completo.
+ * 
+ * @param estudiantes Diccionario maestro de estudiantes.
+ */
+function crearIndiceEstudiantes(estudiantes: Record<string, any> = {}): IndiceEstudiantes {
+  const porDni = new Map<string, any>();
+  const porCodigo = new Map<string, any>();
+  const porNombre = new Map<string, any[]>();
 
   Object.values(estudiantes || {}).forEach((estudiante) => {
     if (!estudiante) return;
@@ -381,7 +538,15 @@ function crearIndiceEstudiantes(estudiantes = {}) {
   return { porDni, porCodigo, porNombre };
 }
 
-function resolverEstudianteBase(fila, indice) {
+/**
+ * Resuelve y cruza una fila del Excel con la base de estudiantes oficial para completar información omitida
+ * (como recuperar el DNI si el Excel solo aportó el código de estudiante o corregir errores ortográficos).
+ * 
+ * @param fila Registro normalizado del Excel.
+ * @param indice Índices de búsqueda construidos en memoria.
+ * @returns Registro actualizado con los datos oficiales vinculados.
+ */
+function resolverEstudianteBase(fila: any, indice: IndiceEstudiantes): any {
   const porDni = indice.porDni.get(fila.dni);
   const porCodigo = indice.porCodigo.get(normalizarComparacion(fila.codigoEstudiante));
   const coincidenciasNombre = indice.porNombre.get(normalizarComparacion(fila.alumno)) || [];
@@ -432,7 +597,13 @@ function resolverEstudianteBase(fila, indice) {
   };
 }
 
-function claveAlumno(alumno) {
+/**
+ * Genera una clave única en base a los datos del alumno (dni, código o nombres/grado)
+ * para detectar registros duplicados a nivel de archivos.
+ * 
+ * @param alumno Estudiante del Excel.
+ */
+function claveAlumno(alumno: any): string {
   const dni = String(alumno.dni || "").replace(/\D/g, "");
   if (dni) return `dni:${dni}`;
   if (alumno.codigoEstudiante) return `codigo:${normalizarComparacion(alumno.codigoEstudiante)}`;
@@ -440,11 +611,17 @@ function claveAlumno(alumno) {
   return nombre ? `nombre:${nombre}:${normalizarComparacion(alumno.grado)}` : "";
 }
 
-function limpiarTexto(valor) {
+/**
+ * Limpia espacios y caracteres especiales HTML peligrosos de una cadena.
+ */
+function limpiarTexto(valor: any): string {
   return String(valor ?? "").trim().replace(/[<>]/g, "");
 }
 
-function separarAlumnoCompleto(valor) {
+/**
+ * Separa un nombre completo en nombres de pila y apellidos aproximados.
+ */
+function separarAlumnoCompleto(valor: any): { nombres: string; apellidos: string } {
   const partes = limpiarTexto(valor).split(/\s+/).filter(Boolean);
   if (!partes.length) return { nombres: "", apellidos: "" };
   if (partes.length === 1) return { nombres: partes[0], apellidos: "" };
@@ -454,25 +631,29 @@ function separarAlumnoCompleto(valor) {
   };
 }
 
-function textoSeguro(valor) {
+/**
+ * Verifica si un texto no está vacío y es seguro.
+ */
+function textoSeguro(valor: any): boolean {
   return limpiarTexto(valor).length > 0;
 }
 
-function normalizarPeriodo(valor) {
+/**
+ * Determina si la cadena especifica un periodo escolar ordinario o de verano.
+ */
+function normalizarPeriodo(valor: any): "verano" | "escolar" {
   return String(valor || "").toLowerCase().includes("verano") ? "verano" : "escolar";
 }
 
-function esCategoriaAcademica(programa = {}) {
-  const norm = normalizarComparacion(programa.categoria);
-  return norm.includes("academ") || norm.includes("vacaciones utiles");
-}
-
-function normalizarEncabezado(valor) {
+/**
+ * Normaliza y limpia un string de encabezado del Excel mapeando aliases de columnas conocidas a sus nombres estandarizados en base de datos.
+ */
+function normalizarEncabezado(valor: any): string {
   const encabezado = normalizarComparacion(valor)
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/_+/g, "_")
     .replace(/^_+|_+$/g, "");
-  const alias = {
+  const alias: Record<string, string> = {
     apellido: "apellidos",
     apellidos_y_nombres: "alumno",
     nombre_y_apellido: "alumno",
@@ -506,7 +687,10 @@ function normalizarEncabezado(valor) {
   return alias[encabezado] || encabezado;
 }
 
-function normalizarComparacion(valor) {
+/**
+ * Convierte un texto a minúsculas, remueve acentos y recorta espacios de los extremos.
+ */
+function normalizarComparacion(valor: any): string {
   return String(valor || "")
     .trim()
     .toLowerCase()
@@ -514,7 +698,10 @@ function normalizarComparacion(valor) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function tokensCurso(valor) {
+/**
+ * Divide el nombre de un taller en palabras (tokens) claves filtrando artículos y preposiciones.
+ */
+function tokensCurso(valor: string): string[] {
   const ignorar = new Set(["curso", "programa", "taller", "de", "del", "la", "el", "y", "para"]);
   return normalizarComparacion(valor)
     .replace(/[^a-z0-9\s]/g, " ")
@@ -522,13 +709,19 @@ function tokensCurso(valor) {
     .filter((token) => token.length > 2 && !ignorar.has(token));
 }
 
-function renombrarArchivo(nombre) {
+/**
+ * Renombra el nombre del archivo subido agregando un sufijo timestamp temporal seguro de procesamiento.
+ */
+function renombrarArchivo(nombre: string): string {
   const extension = /\.xls$/i.test(nombre) ? "xls" : "xlsx";
   return `carga-${Date.now()}.${extension}`;
 }
 
-function lanzar(publicMessage) {
-  const error = new Error(publicMessage);
+/**
+ * Dispara una excepción controlada con un mensaje descriptivo para el usuario.
+ */
+function lanzar(publicMessage: string): never {
+  const error = new Error(publicMessage) as any;
   error.publicMessage = publicMessage;
   throw error;
 }

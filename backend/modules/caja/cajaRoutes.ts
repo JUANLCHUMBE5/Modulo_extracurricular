@@ -1,9 +1,15 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import multer from "multer";
 import { getDb, saveDb } from "../../dbLocal.js";
-import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { requireAuth, requireRole, AuthenticatedRequest } from "../../middleware/auth.js";
 import { registrarAuditoria } from "../../audit.js";
-import { enviarCorreoGenerico, generarCorreoConfirmacionPago, resolverPlantillaTexto, generarComunicadoPdf, generarWordResuelto } from "../../mailService.js";
+import {
+  enviarCorreoGenerico,
+  generarCorreoConfirmacionPago,
+  resolverPlantillaTexto,
+  generarComunicadoPdf,
+  generarWordResuelto
+} from "../../mailService.js";
 import { MAX_FILE_SIZE, convertirWordAPdf } from "../../fileService.js";
 import {
   mapDbPaymentToApi,
@@ -19,8 +25,10 @@ const upload = multer({
   limits: { fileSize: MAX_FILE_SIZE, files: 1, fieldSize: 5 * 1024 * 1024 },
 });
 
-// Helper functions for payments and reports
-function incrementarCorrelativo(valor) {
+/**
+ * Incrementa el número correlativo al final de una cadena.
+ */
+function incrementarCorrelativo(valor: string): string {
   if (!valor) return "";
   const match = String(valor).match(/^(.*?)(\d+)$/);
   if (!match) return valor;
@@ -31,7 +39,10 @@ function incrementarCorrelativo(valor) {
   return prefix + paddedNum;
 }
 
-function calcularSiguienteRecibo(startValue, existingNros) {
+/**
+ * Calcula el siguiente correlativo buscando el valor máximo con el mismo prefijo.
+ */
+function calcularSiguienteRecibo(startValue: string, existingNros: string[]): string {
   if (!startValue) return "";
   const match = String(startValue).match(/^(.*?)(\d+)$/);
   if (!match) return startValue;
@@ -68,22 +79,24 @@ function calcularSiguienteRecibo(startValue, existingNros) {
   return prefix + String(nextVal).padStart(padLength, "0");
 }
 
-function normalizarCorrelativos(db) {
+/**
+ * Normaliza e inicializa los contadores correlativos en la base de datos si no existen.
+ */
+function normalizarCorrelativos(db: any): any {
   if (!db.correlativos) {
     db.correlativos = {};
   }
   const c = db.correlativos;
   
-  // Legacy migration
   if (c.recibo !== undefined && c.reciboInicio === undefined) {
     c.reciboInicio = c.recibo;
-    const existingNros = (db.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
+    const existingNros = (db.pagos || []).map((p: any) => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
     c.reciboActual = calcularSiguienteRecibo(c.recibo, existingNros);
     delete c.recibo;
   }
   if (c.reciboVirtual !== undefined && c.reciboVirtualInicio === undefined) {
     c.reciboVirtualInicio = c.reciboVirtual;
-    const existingNros = (db.pagos || []).map(p => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
+    const existingNros = (db.pagos || []).map((p: any) => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
     c.reciboVirtualActual = calcularSiguienteRecibo(c.reciboVirtual, existingNros);
     delete c.reciboVirtual;
   }
@@ -93,7 +106,6 @@ function normalizarCorrelativos(db) {
     delete c.egreso;
   }
 
-  // Ensure fields are defined with defaults
   if (c.reciboInicio === undefined) c.reciboInicio = "REC-0500";
   if (c.reciboActual === undefined) c.reciboActual = "REC-0501";
   if (c.reciboVirtualInicio === undefined) c.reciboVirtualInicio = "V-1000";
@@ -104,7 +116,10 @@ function normalizarCorrelativos(db) {
   return c;
 }
 
-function normalizarEstadoPagoReporteCaja(pago = null, inscripcion = null) {
+/**
+ * Normaliza el estado de pago del reporte contable basándose en el estado del pago y de la matrícula.
+ */
+function normalizarEstadoPagoReporteCaja(pago: any = null, inscripcion: any = null): string {
   if (pago) {
     const estadoPago = normalizarTextoApi(pago.estado);
     if (["completado", "pagado", "validado"].includes(estadoPago)) return "pagado";
@@ -127,7 +142,10 @@ function normalizarEstadoPagoReporteCaja(pago = null, inscripcion = null) {
   return "pendiente";
 }
 
-function pagoPerteneceAInscripcionReporte(pay = {}, item = {}) {
+/**
+ * Determina si una transacción de pago corresponde a una matrícula.
+ */
+function pagoPerteneceAInscripcionReporte(pay: any = {}, item: any = {}): boolean {
   if (pay.inscripcionId && item.id) return pay.inscripcionId === item.id;
   if (pay.inscripcionId && item.inscripcionId) return pay.inscripcionId === item.inscripcionId;
   if (pay.dniEstudiante !== item.dniEstudiante) return false;
@@ -135,20 +153,46 @@ function pagoPerteneceAInscripcionReporte(pay = {}, item = {}) {
   return normalizarTextoApi(pay.programa) === normalizarTextoApi(item.programa);
 }
 
-// Legacy payments listing
-router.get("/api/pagos", async (_req, res) => {
+/**
+ * GET /api/pagos
+ * Legacy: Retorna la lista completa de pagos registrados.
+ */
+router.get("/api/pagos", async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
-    res.json(db.pagos || []);
+    const list = db.pagos || [];
+    
+    const page = req.query.page ? Number(req.query.page) : null;
+    const limit = req.query.limit ? Number(req.query.limit) : 20;
+    
+    if (page !== null && !isNaN(page)) {
+      const startIndex = (page - 1) * limit;
+      const paginated = list.slice(startIndex, startIndex + limit);
+      res.json({
+        success: true,
+        data: paginated,
+        pagination: {
+          total: list.length,
+          page,
+          limit,
+          totalPages: Math.ceil(list.length / limit)
+        }
+      });
+    } else {
+      res.json(list);
+    }
   } catch {
     res.status(500).json({ message: "No se pudieron listar los pagos." });
   }
 });
 
-// Caja: List payments by period
-router.get("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/pagos
+ * Caja: Obtiene la lista de pagos para un periodo específico, opcionalmente filtrada por DNI del estudiante.
+ */
+router.get("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { periodo, estudianteDni } = req.query;
+    const { periodo, estudianteDni } = req.query as any;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
     let filtered = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
@@ -181,14 +225,36 @@ router.get("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, r
         nombresEstudiante: p.nombresEstudiante || inscripcion?.nombresEstudiante || "",
       };
     });
-    res.json({ success: true, data: enriched.map(mapDbPaymentToApi) });
-  } catch (error) {
+
+    const page = req.query.page ? Number(req.query.page) : null;
+    const limit = req.query.limit ? Number(req.query.limit) : 20;
+
+    if (page !== null && !isNaN(page)) {
+      const startIndex = (page - 1) * limit;
+      const paginated = enriched.slice(startIndex, startIndex + limit);
+      res.json({
+        success: true,
+        data: paginated.map(mapDbPaymentToApi),
+        pagination: {
+          total: enriched.length,
+          page,
+          limit,
+          totalPages: Math.ceil(enriched.length / limit)
+        }
+      });
+    } else {
+      res.json({ success: true, data: enriched.map(mapDbPaymentToApi) });
+    }
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja: Register new payment
-router.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/pagos
+ * Caja: Registra un pago presencial directo en Caja, asignando correlativo físico e inmediatamente validándolo.
+ */
+router.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const body = req.body;
@@ -257,7 +323,7 @@ router.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, 
     }
 
     if (db.estudiantes?.[dni_estudiante]) {
-      db.estudiantes[dni_estudiante].estadoInscripcion = "confirmada";
+      (db.estudiantes[dni_estudiante] as any).estadoInscripcion = "confirmada";
     }
 
     await saveDb(db);
@@ -269,18 +335,24 @@ router.post("/api/v1/extracurricular/pagos", requireRole(["caja"]), async (req, 
     });
 
     res.json({ success: true, data: mapDbPaymentToApi(nuevoPago) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja/Padres: Edit payment
-router.put("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/pagos/:pagoId
+ * Caja/Padres: Permite editar o corregir la forma de pago, monto o número de recibo de una transacción contable.
+ */
+router.put("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const { pagoId } = req.params;
     const db = await getDb();
     const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
-    if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Pago no encontrado." });
+      return;
+    }
 
     const updated = {
       ...db.pagos[idx],
@@ -300,15 +372,18 @@ router.put("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres
 
     await saveDb(db);
     res.json({ success: true, data: mapDbPaymentToApi(updated) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja: General financial summary
-router.get("/api/v1/extracurricular/caja/resumen", requireRole(["caja"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/caja/resumen
+ * Caja: Obtiene el resumen financiero consolidado del periodo (Ingresos brutos, egresos, saldo neto y total pendiente).
+ */
+router.get("/api/v1/extracurricular/caja/resumen", requireRole(["caja"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { periodo } = req.query;
+    const { periodo } = req.query as any;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
 
@@ -318,7 +393,7 @@ router.get("/api/v1/extracurricular/caja/resumen", requireRole(["caja"]), async 
 
     const totalIngreso = pagosIngresos.reduce((sum, p) => sum + Number(p.monto || 0), 0);
     const totalEgreso = pagosEgresos.reduce((sum, p) => sum + Number(p.monto || 0), 0);
-    const totalCobrado = totalIngreso - totalEgreso; // Net balance
+    const totalCobrado = totalIngreso - totalEgreso;
 
     const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
     const paidInscripIds = new Set(pagosIngresos.map(p => p.inscripcionId));
@@ -335,20 +410,24 @@ router.get("/api/v1/extracurricular/caja/resumen", requireRole(["caja"]), async 
         transacciones: pagosIngresos.length
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja: Register new expense/egreso
-router.post("/api/v1/extracurricular/caja/egresos", requireRole(["caja"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/caja/egresos
+ * Caja: Registra una salida contable/gasto directo de la Caja y le asigna número correlativo de egreso.
+ */
+router.post("/api/v1/extracurricular/caja/egresos", requireRole(["caja"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const body = req.body;
 
     const corr = normalizarCorrelativos(db);
     if (corr.egresoActive === false) {
-      return res.status(400).json({ success: false, message: "La serie de recibo de egreso está inactiva en el sistema." });
+      res.status(400).json({ success: false, message: "La serie de recibo de egreso está inactiva en el sistema." });
+      return;
     }
 
     const assignedNroRecibo = corr.egresoActual || "EGR-0201";
@@ -363,8 +442,10 @@ router.post("/api/v1/extracurricular/caja/egresos", requireRole(["caja"]), async
       programaId: "",
       monto: Number(body.monto || 0),
       formaPago: "Egreso",
+      numeroOperacion: "",
+      telefonoOperacion: "",
       nroRecibo: assignedNroRecibo,
-      periodo: body.periodo || db.configuracion_actual?.periodo || "escolar",
+      periodo: body.periodo || (db as any).configuracion_actual?.periodo || "escolar",
       fecha: body.fecha || new Date().toISOString(),
       fechaPago: body.fecha || new Date().toISOString(),
       estado: "completado",
@@ -372,7 +453,7 @@ router.post("/api/v1/extracurricular/caja/egresos", requireRole(["caja"]), async
       observaciones: body.concepto || "Egreso registrado"
     };
 
-    db.pagos.push(nuevoEgreso);
+    db.pagos.push(nuevoEgreso as any);
     await saveDb(db);
 
     await registrarAuditoria(req.user?.username || "Cajera", req.user?.role || "caja", "EGRESO_REGISTRAR", {
@@ -382,30 +463,36 @@ router.post("/api/v1/extracurricular/caja/egresos", requireRole(["caja"]), async
     });
 
     res.json({ success: true, data: nuevoEgreso });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja: Retrieve active student inscription for payment processing
-router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/caja/estudiantes/:dni
+ * Caja: Obtiene los datos del estudiante y todas sus matrículas pendientes de cobro en Caja.
+ */
+router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dni } = req.params;
-    const { periodo } = req.query;
+    const { dni } = req.params as any;
+    const { periodo } = req.query as any;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
 
-    const student = db.estudiantes?.[dni];
-    if (!student) return res.json({ success: true, data: null });
+    const student = db.estudiantes?.[dni] as any;
+    if (!student) {
+      res.json({ success: true, data: null });
+      return;
+    }
 
     const inscripciones = (db.inscripciones || []).filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
     const pagosEstudiante = (db.pagos || []).filter(pago => pago.dniEstudiante === dni || pago.estudianteDni === dni);
     const estadosCerrados = ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"];
-    const esEstadoCerrado = (...valores) => {
+    const esEstadoCerrado = (...valores: any[]) => {
       const texto = valores.map(valor => normalizarTextoApi(valor)).join(" ");
       return estadosCerrados.some(est => texto.includes(est));
     };
-    const buscarPagoAsociado = (item) => pagosEstudiante.find(pago =>
+    const buscarPagoAsociado = (item: any) => pagosEstudiante.find(pago =>
       (item.id && pago.inscripcionId === item.id) ||
       (
         (pago.dniEstudiante || pago.estudianteDni) === item.dniEstudiante &&
@@ -415,11 +502,11 @@ router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]
         )
       )
     );
-    const isPaid = (item) => {
+    const isPaid = (item: any) => {
       const pagoAsociado = buscarPagoAsociado(item);
       return esEstadoCerrado(item.estadoPago, item.estadoInscripcion, pagoAsociado?.estado, pagoAsociado?.estadoPago, pagoAsociado?.estadoVerificacion);
     };
-    const enriquecerInscripcion = (item) => {
+    const enriquecerInscripcion = (item: any) => {
       const prog = (db.programas || []).find(p => p.id === item.programaId);
       return {
         ...item,
@@ -431,10 +518,8 @@ router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]
 
     const derivadas = inscripciones.filter(item => item.derivadoCaja).map(enriquecerInscripcion);
     const derivadasPendientes = derivadas.filter(item => !isPaid(item));
-    // Also include non-derivadas that are pending payment so Caja can charge them
     const noDerivadas = inscripciones.filter(item => !item.derivadoCaja).map(enriquecerInscripcion);
     const noDerivadaspendientes = noDerivadas.filter(item => !isPaid(item));
-    // Combine: derivadas first, then non-derivadas pending
     const todasPendientes = [...derivadasPendientes, ...noDerivadaspendientes];
     const activeInscrip = todasPendientes[0] || derivadas[0] || null;
 
@@ -474,45 +559,54 @@ router.get("/api/v1/extracurricular/caja/estudiantes/:dni", requireRole(["caja"]
       });
     }
 
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja: Web payments queue (Yape/Transfers pending validation)
-router.get("/api/v1/extracurricular/caja/bandeja-pagos-web", requireRole(["caja"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/caja/bandeja-pagos-web
+ * Caja: Obtiene la cola de comprobantes reportados vía web/padres pendientes de verificación contable.
+ */
+router.get("/api/v1/extracurricular/caja/bandeja-pagos-web", requireRole(["caja"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { periodo } = req.query;
+    const { periodo } = req.query as any;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
 
     const list = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period && (p.estado === "Por Verificar" || p.estado === "pendiente"));
 
     const dataList = list.map(p => {
-      const student = db.estudiantes?.[p.dniEstudiante];
+      const student = p.dniEstudiante ? (db.estudiantes?.[p.dniEstudiante] as any) : null;
       return {
         ...mapDbPaymentToApi(p),
         estudiante: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : p.nombresEstudiante || "",
-        dniEstudiante: p.dniEstudiante,
-        programa: p.programa
+        dniEstudiante: p.dniEstudiante || "",
+        programa: p.programa || ""
       };
     });
 
     res.json({ success: true, data: dataList });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja: Validate / Approve web payment
-router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/pagos/:pagoId/validar
+ * Caja: Valida contablemente una transferencia o Yape reportado. Asigna número de recibo virtual y envía correo de confirmación con la Ficha de Matrícula (Word y PDF).
+ */
+router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { pagoId } = req.params;
     const { observaciones } = req.body;
     const db = await getDb();
 
     const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
-    if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Pago no encontrado." });
+      return;
+    }
 
     if (!db.pagos[idx].nroRecibo) {
       const corr = normalizarCorrelativos(db);
@@ -532,69 +626,66 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
       inscrip.estadoInscripcion = "Pago exitoso";
       inscrip.fechaPago = db.pagos[idx].validadoEn;
       inscrip.pagoObservacionCaja = observaciones || "";
-      // Al aprobar un pago web, marcar como derivadoCaja para que figure como ingreso en el reporte de Caja
       inscrip.derivadoCaja = true;
     }
 
     if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
-      db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "Pago exitoso";
+      (db.estudiantes[inscrip.dniEstudiante] as any).estadoInscripcion = "Pago exitoso";
     }
 
     await saveDb(db);
 
-    // Enviar correo de confirmación asíncronamente en segundo plano
     const deseaCorreo = inscrip && (inscrip.enviarPdfCorreo || String(inscrip.origenRegistro || "").includes("enviar_correo"));
     const apoderadoEmail = inscrip && (db.estudiantes?.[inscrip.dniEstudiante]?.correoApoderado || inscrip.correo || "");
 
     if (deseaCorreo && apoderadoEmail) {
-      const studentName = inscrip.nombresEstudiante || (db.estudiantes?.[inscrip.dniEstudiante] ? `${db.estudiantes[inscrip.dniEstudiante].nombres} ${db.estudiantes[inscrip.dniEstudiante].apellidos || ""}`.trim() : "");
+      const studentName = inscrip.nombresEstudiante || (db.estudiantes?.[inscrip.dniEstudiante] ? `${(db.estudiantes[inscrip.dniEstudiante] as any).nombres} ${(db.estudiantes[inscrip.dniEstudiante] as any).apellidos || ""}`.trim() : "");
       const progName = inscrip.programa || "";
       const amount = db.pagos[idx].monto || "";
       const receiptNo = db.pagos[idx].nroRecibo || "";
 
-      const adjuntos = [];
-      const programaObj = db.programas?.find(p => p.id === inscrip.programaId) || {};
+      const adjuntos: any[] = [];
+      const programaObj = (db.programas?.find((p: any) => p.id === inscrip.programaId) || {}) as any;
       const plantillaBase64 = programaObj.plantillaBase64 || inscrip.plantillaBase64;
 
       if (plantillaBase64) {
         try {
           const estudianteObj = db.estudiantes?.[inscrip.dniEstudiante] || {};
-          
-          // 1. Generar Word con las variables resueltas
           const wordBuffer = generarWordResuelto(plantillaBase64, estudianteObj, inscrip, programaObj);
           
-          // Adjuntar el Word resuelto (con las variables reemplazadas)
-          adjuntos.push({
-            filename: `Ficha_Matricula_${inscrip.id}.docx`,
-            content: wordBuffer
-          });
-          
-          try {
-            // 2. Intentar convertir el Word resuelto a PDF
-            const pdfBuffer = await convertirWordAPdf(wordBuffer);
+          if (wordBuffer) {
             adjuntos.push({
-              filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
-              content: pdfBuffer
+              filename: `Ficha_Matricula_${inscrip.id}.docx`,
+              content: wordBuffer
             });
-          } catch (errorWordPdf) {
-            console.error("[WORD TO PDF ERROR] No se pudo convertir el Word resuelto a PDF, intentando generar PDF desde texto plano:", errorWordPdf.message);
             
-            // Fallback: Generar PDF desde el texto plano de la plantilla si la conversión falla
-            const textoPlantilla = programaObj.comunicadoCompleto || programaObj.comunicado || "";
-            if (textoPlantilla) {
-              try {
-                const textoResuelto = resolverPlantillaTexto(textoPlantilla, estudianteObj, inscrip, programaObj);
-                const pdfBuffer = generarComunicadoPdf(textoResuelto, progName);
+            try {
+              const pdfBuffer = await convertirWordAPdf(wordBuffer);
+              if (pdfBuffer) {
                 adjuntos.push({
                   filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
                   content: pdfBuffer
                 });
-              } catch (errorTextPdf) {
-                console.error("[TEXT TO PDF ERROR] Fallo al generar PDF desde texto plano:", errorTextPdf.message);
+              }
+            } catch (errorWordPdf: any) {
+              console.error("[WORD TO PDF ERROR] No se pudo convertir el Word resuelto a PDF, intentando generar PDF desde texto plano:", errorWordPdf.message);
+              
+              const textoPlantilla = programaObj.comunicadoCompleto || programaObj.comunicado || "";
+              if (textoPlantilla) {
+                try {
+                  const textoResuelto = resolverPlantillaTexto(textoPlantilla, estudianteObj, inscrip, programaObj);
+                  const pdfBuffer = generarComunicadoPdf(textoResuelto, progName);
+                  adjuntos.push({
+                    filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
+                    content: pdfBuffer
+                  });
+                } catch (errorTextPdf: any) {
+                  console.error("[TEXT TO PDF ERROR] Fallo al generar PDF desde texto plano:", errorTextPdf.message);
+                }
               }
             }
           }
-        } catch (errorWord) {
+        } catch (errorWord: any) {
           console.error("[WORD GENERATION ERROR] Error al generar el Word resuelto, enviando Word original:", errorWord.message);
           adjuntos.push({
             filename: `Ficha_Matricula_${inscrip.id}.docx`,
@@ -618,20 +709,26 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/validar", requireRole(["caja"]
     });
 
     res.json({ success: true, data: mapDbPaymentToApi(db.pagos[idx]) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja: Observe web payment
-router.put("/api/v1/extracurricular/pagos/:pagoId/observar", requireRole(["caja"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/pagos/:pagoId/observar
+ * Caja: Registra que un pago está observado (por ejemplo, captura borrosa o número de operación incorrecto) para subsanar.
+ */
+router.put("/api/v1/extracurricular/pagos/:pagoId/observar", requireRole(["caja"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { pagoId } = req.params;
     const { observaciones } = req.body;
     const db = await getDb();
 
     const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
-    if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Pago no encontrado." });
+      return;
+    }
 
     db.pagos[idx].estado = "observado";
     db.pagos[idx].observaciones = observaciones || "";
@@ -646,7 +743,7 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/observar", requireRole(["caja"
     }
 
     if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
-      db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "observada";
+      (db.estudiantes[inscrip.dniEstudiante] as any).estadoInscripcion = "observada";
     }
 
     await saveDb(db);
@@ -657,20 +754,26 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/observar", requireRole(["caja"
     });
 
     res.json({ success: true, data: mapDbPaymentToApi(db.pagos[idx]) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja: Reject payment
-router.put("/api/v1/extracurricular/pagos/:pagoId/rechazar", requireRole(["caja"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/pagos/:pagoId/rechazar
+ * Caja: Rechaza definitivamente un pago inválido.
+ */
+router.put("/api/v1/extracurricular/pagos/:pagoId/rechazar", requireRole(["caja"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { pagoId } = req.params;
     const { observaciones } = req.body;
     const db = await getDb();
 
     const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
-    if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Pago no encontrado." });
+      return;
+    }
 
     db.pagos[idx].estado = "anulado";
     db.pagos[idx].observaciones = observaciones || "Pago rechazado por Cajera.";
@@ -685,7 +788,7 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/rechazar", requireRole(["caja"
     }
 
     if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
-      db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "pendiente_pago";
+      (db.estudiantes[inscrip.dniEstudiante] as any).estadoInscripcion = "pendiente_pago";
     }
 
     await saveDb(db);
@@ -696,20 +799,26 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/rechazar", requireRole(["caja"
     });
 
     res.json({ success: true, data: mapDbPaymentToApi(db.pagos[idx]) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja/Direccion: Annul payment with justification/reason
-router.put("/api/v1/extracurricular/pagos/:pagoId/anular", requireRole(["caja", "direccion"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/pagos/:pagoId/anular
+ * Caja/Dirección: Permite anular una transacción e ingresa una justificación contable.
+ */
+router.put("/api/v1/extracurricular/pagos/:pagoId/anular", requireRole(["caja", "direccion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { pagoId } = req.params;
     const { observaciones } = req.body;
     const db = await getDb();
 
     const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
-    if (idx === -1) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Pago no encontrado." });
+      return;
+    }
 
     db.pagos[idx].estado = "anulado";
     db.pagos[idx].observaciones = observaciones || "Pago anulado por Cajera.";
@@ -724,7 +833,7 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/anular", requireRole(["caja", 
     }
 
     if (inscrip && db.estudiantes?.[inscrip.dniEstudiante]) {
-      db.estudiantes[inscrip.dniEstudiante].estadoInscripcion = "pendiente_pago";
+      (db.estudiantes[inscrip.dniEstudiante] as any).estadoInscripcion = "pendiente_pago";
     }
 
     await saveDb(db);
@@ -735,22 +844,25 @@ router.put("/api/v1/extracurricular/pagos/:pagoId/anular", requireRole(["caja", 
     });
 
     res.json({ success: true, data: mapDbPaymentToApi(db.pagos[idx]) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja/Direccion: Consolidated payment and enrollment report
-router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/caja/reporte
+ * Caja/Dirección: Retorna un listado filtrado para exportar a Excel, consolidando los pagos y los detalles de las matrículas asociadas.
+ */
+router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direccion"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { periodo, tipoReporte, desde, hasta, programa, medioPago, estadoPago } = req.query;
+    const { periodo, tipoReporte, desde, hasta, programa, medioPago, estadoPago } = req.query as any;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
 
     const payments = (db.pagos || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
     const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
 
-    let reportList = [];
+    let reportList: any[] = [];
 
     if (tipoReporte === "pagos_registrados" || tipoReporte === "pagos_realizados") {
       reportList = payments.map(p => {
@@ -787,9 +899,9 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
             observaciones: p.observaciones || ""
           };
         }
-        const prog = db.programas.find(progItem => progItem.id === p.programaId || normalizarTextoApi(progItem.nombre) === normalizarTextoApi(p.programa));
-        const student = db.estudiantes?.[p.dniEstudiante];
-        const e = (db.inscripciones || []).find(item => item.id === p.inscripcionId || (item.dniEstudiante === p.dniEstudiante && item.programaId === p.programaId));
+        const prog = db.programas.find((progItem: any) => progItem.id === p.programaId || normalizarTextoApi(progItem.nombre) === normalizarTextoApi(p.programa));
+        const student = p.dniEstudiante ? (db.estudiantes?.[p.dniEstudiante] as any) : null;
+        const e = (db.inscripciones || []).find(item => item.id === p.inscripcionId || (p.dniEstudiante && item.dniEstudiante === p.dniEstudiante && item.programaId === p.programaId));
         return {
           id: p.id,
           pagoId: p.id,
@@ -832,8 +944,8 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
         if (!p) {
           p = payments.find(pay => pagoPerteneceAInscripcionReporte(pay, e));
         }
-        const prog = db.programas.find(progItem => progItem.id === e.programaId);
-        const student = db.estudiantes?.[e.dniEstudiante];
+        const prog = db.programas.find((progItem: any) => progItem.id === e.programaId);
+        const student = db.estudiantes?.[e.dniEstudiante] as any;
 
         const baseCosto = e.costoOriginal !== undefined && e.costoOriginal !== null
           ? Number(e.costoOriginal)
@@ -903,26 +1015,35 @@ router.get("/api/v1/extracurricular/caja/reporte", requireRole(["caja", "direcci
     });
 
     res.json({ success: true, data: finalReport });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja/Padres: Get payment details by ID
-router.get("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/pagos/:pagoId
+ * Caja/Padres: Obtiene los detalles de un pago específico por su ID.
+ */
+router.get("/api/v1/extracurricular/pagos/:pagoId", requireRole(["caja", "padres"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const { pagoId } = req.params;
     const db = await getDb();
     const p = (db.pagos || []).find(pay => pay.id === pagoId);
-    if (!p) return res.status(404).json({ success: false, message: "Pago no encontrado." });
+    if (!p) {
+      res.status(404).json({ success: false, message: "Pago no encontrado." });
+      return;
+    }
     res.json({ success: true, data: mapDbPaymentToApi(p) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Padres: Upload payment slip
-router.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), upload.single("archivo"), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/pagos/comprobante
+ * Padres: Sube una captura/comprobante de pago (Yape/Transferencia) desde su portal. Registra el pago en estado verificando.
+ */
+router.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"]), upload.single("archivo"), async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     let base64Image = "";
@@ -935,7 +1056,8 @@ router.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"])
 
     const inscrip = (db.inscripciones || []).find(item => item.id === req.body.inscripcion_id);
     if (!inscrip) {
-      return res.status(404).json({ success: false, message: "No se encontro la inscripcion para registrar el pago." });
+      res.status(404).json({ success: false, message: "No se encontro la inscripcion para registrar el pago." });
+      return;
     }
 
     const pagoId = `PAG-${String(Date.now()).slice(-6)}`;
@@ -989,26 +1111,35 @@ router.post("/api/v1/extracurricular/pagos/comprobante", requireRole(["padres"])
     });
 
     res.json({ success: true, data: mapDbPaymentToApi(nuevoPago) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja: Search students by DNI or Name
-router.get("/api/v1/extracurricular/caja/estudiantes/buscar/query", requireRole(["caja"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/caja/estudiantes/buscar/query
+ * Caja: Buscador interactivo de estudiantes por nombres, apellidos o DNI en Caja.
+ */
+router.get("/api/v1/extracurricular/caja/estudiantes/buscar/query", requireRole(["caja"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { q } = req.query;
-    if (!q) return res.json({ success: true, data: [] });
+    const { q } = req.query as any;
+    if (!q) {
+      res.json({ success: true, data: [] });
+      return;
+    }
 
     const db = await getDb();
     const query = normalizarTextoApi(q);
 
-    if (query.length < 3) return res.json({ success: true, data: [] });
+    if (query.length < 3) {
+      res.json({ success: true, data: [] });
+      return;
+    }
 
-    const results = [];
-    const seenDnis = new Set();
+    const results: any[] = [];
+    const seenDnis = new Set<string>();
 
-    Object.values(db.estudiantes || {}).forEach(student => {
+    Object.values(db.estudiantes || {}).forEach((student: any) => {
       const searchKey = normalizarTextoApi(`${student.nombres} ${student.dni}`);
       if (searchKey.includes(query)) {
         seenDnis.add(student.dni);
@@ -1020,17 +1151,22 @@ router.get("/api/v1/extracurricular/caja/estudiantes/buscar/query", requireRole(
     });
 
     res.json({ success: true, data: results });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Caja: Cancel and skip a correlativo (Receipt or Egreso)
-router.post("/api/v1/extracurricular/caja/correlativos/cancelar", requireRole(["caja"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/caja/correlativos/cancelar
+ * Caja: Permite anular/cancelar un número correlativo específico (recibo físico, virtual o egreso)
+ * de forma manual, registrando un pago ficticio de costo cero para dejar constancia y auditoría del motivo.
+ */
+router.post("/api/v1/extracurricular/caja/correlativos/cancelar", requireRole(["caja"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { tipo, motivo, dniEstudiante, nombresEstudiante, nroRecibo } = req.body;
     if (!tipo || !motivo) {
-      return res.status(400).json({ success: false, message: "Tipo y motivo son obligatorios." });
+      res.status(400).json({ success: false, message: "Tipo y motivo son obligatorios." });
+      return;
     }
 
     const db = await getDb();
@@ -1057,15 +1193,16 @@ router.post("/api/v1/extracurricular/caja/correlativos/cancelar", requireRole(["
         val = corr.egresoActual;
         corr.egresoActual = incrementarCorrelativo(val);
       } else {
-        return res.status(400).json({ success: false, message: "Tipo de correlativo no válido." });
+        res.status(400).json({ success: false, message: "Tipo de correlativo no válido." });
+        return;
       }
     }
 
     if (!val) {
-      return res.status(400).json({ success: false, message: "No se encontró un correlativo actual para este tipo." });
+      res.status(400).json({ success: false, message: "No se encontró un correlativo actual para este tipo." });
+      return;
     }
 
-    // Registrar en pagos para dejar constancia/auditoría del recibo anulado
     const nuevoPagoAnulado = {
       id: `PAG-CANC-${String(Date.now()).slice(-6)}`,
       inscripcionId: null,
@@ -1076,6 +1213,8 @@ router.post("/api/v1/extracurricular/caja/correlativos/cancelar", requireRole(["
       periodo: "escolar",
       monto: 0,
       formaPago: tipo === "reciboVirtual" ? "Yape" : "Efectivo",
+      numeroOperacion: "",
+      telefonoOperacion: "",
       nroRecibo: val,
       estado: "anulado",
       fecha: new Date().toISOString(),
@@ -1087,7 +1226,7 @@ router.post("/api/v1/extracurricular/caja/correlativos/cancelar", requireRole(["
     };
 
     db.pagos = db.pagos || [];
-    db.pagos.push(nuevoPagoAnulado);
+    db.pagos.push(nuevoPagoAnulado as any);
 
     await saveDb(db);
 
@@ -1107,7 +1246,7 @@ router.post("/api/v1/extracurricular/caja/correlativos/cancelar", requireRole(["
         siguienteComprobante: tipo === "recibo" ? corr.reciboActual : (tipo === "reciboVirtual" ? corr.reciboVirtualActual : corr.egresoActual)
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });

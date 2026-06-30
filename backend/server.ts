@@ -1,6 +1,6 @@
 import cors from "cors";
 import "./env.js";
-import express from "express";
+import express, { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -8,22 +8,29 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import { getDb, getDbSource, resetDb, saveDb } from "./dbLocal.js";
-import { requireAuth, requireLocalDbAccess } from "./middleware/auth.js";
+import { requireAuth, requireLocalDbAccess, AuthenticatedRequest } from "./middleware/auth.js";
 
-// Import modular routes
+// Import modular routes (importados con extensión .js ya que se compilarán en JS)
+// @ts-ignore
 import authRouter from "./modules/auth/authRoutes.js";
+// @ts-ignore
 import coordinacionRouter from "./modules/coordinacion/coordinacionRoutes.js";
+// @ts-ignore
 import inscripcionRouter from "./modules/inscripcion/inscripcionRoutes.js";
+// @ts-ignore
 import cajaRouter from "./modules/caja/cajaRoutes.js";
+// @ts-ignore
 import direccionRouter from "./modules/direccion/direccionRoutes.js";
+// @ts-ignore
 import syncRouter from "./modules/sync/syncRoutes.js";
+// @ts-ignore
 import secretariaRouter from "./modules/secretaria/secretariaRoutes.js";
 
 const app = express();
 const PORT = Number(process.env.PORT || process.env.EXCEL_API_PORT || 5175);
 const API_HOST = process.env.API_HOST || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
 
-const allowedOrigins = new Set(
+const allowedOrigins = new Set<string>(
   [
     process.env.FRONTEND_URL,
     process.env.PUBLIC_FRONTEND_URL,
@@ -33,8 +40,13 @@ const allowedOrigins = new Set(
     .filter(Boolean)
 );
 
+/**
+ * Configuración de CORS dinámica.
+ * Permite conexiones desde localhost/127.0.0.1 para desarrollo local
+ * y restringe accesos externos en base a la lista blanca de orígenes configurada.
+ */
 app.use(cors({
-  origin(origin, callback) {
+  origin(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     const cleanOrigin = String(origin || "").replace(/\/$/, "");
     if (!origin || /^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(cleanOrigin) || allowedOrigins.has(cleanOrigin)) {
       callback(null, true);
@@ -43,10 +55,14 @@ app.use(cors({
     callback(new Error("Origen no permitido por CORS."));
   },
 }));
+
 app.use(express.json({ limit: "30mb" }));
 
-// Custom request logger for debugging timeouts
-app.use((req, res, next) => {
+/**
+ * Middleware de registro (logging) de solicitudes entrantes para diagnóstico
+ * y seguimiento de tiempos de respuesta del servidor.
+ */
+app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   res.on("finish", () => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} - ${res.statusCode} (${Date.now() - start}ms)`);
@@ -54,21 +70,30 @@ app.use((req, res, next) => {
   next();
 });
 
-// Disable API caching to avoid browser HTTP 304 cache issues
-app.use((req, res, next) => {
+/**
+ * Middleware para deshabilitar la caché HTTP en los navegadores (Cache-Control: no-store).
+ * Evita problemas de datos desactualizados (errores HTTP 304) al consultar la base de datos local.
+ */
+app.use((_req: Request, res: Response, next: NextFunction) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
   next();
 });
 
-// Endpoint de estado y diagnóstico del servidor. Retorna la procedencia de los datos (local/supabase).
-app.get("/api/health", (_req, res) => {
+/**
+ * Endpoint de estado y diagnóstico del servidor.
+ * Retorna si el backend está activo y de dónde provienen sus datos.
+ */
+app.get("/api/health", (_req: Request, res: Response) => {
   res.json({ ok: true, dbSource: getDbSource() });
 });
 
-// --- CORE DATABASE ENDPOINTS (require local DB access) ---
+// --- CORE DATABASE ENDPOINTS (requieren acceso de base de datos local) ---
 
-// Obtiene la base de datos completa. Sanitiza los usuarios ocultando las contraseñas bcrypt.
-app.get("/api/db", requireLocalDbAccess, async (_req, res) => {
+/**
+ * Endpoint para obtener el volcado de la base de datos local completa.
+ * Sanitiza los datos de los usuarios ocultando las contraseñas bcrypt para seguridad.
+ */
+app.get("/api/db", requireLocalDbAccess, async (_req: Request, res: Response) => {
   try {
     const db = await getDb();
     const sanitizedDb = {
@@ -82,8 +107,10 @@ app.get("/api/db", requireLocalDbAccess, async (_req, res) => {
   }
 });
 
-// Guarda cambios manuales sobre la base de datos JSON local.
-app.put("/api/db", requireLocalDbAccess, async (req, res) => {
+/**
+ * Endpoint para guardar cambios manuales o estructurales directamente en la base de datos JSON local.
+ */
+app.put("/api/db", requireLocalDbAccess, async (req: Request, res: Response) => {
   try {
     const db = await saveDb(req.body);
     res.json(db);
@@ -93,8 +120,10 @@ app.put("/api/db", requireLocalDbAccess, async (req, res) => {
   }
 });
 
-// Restablece la base de datos local a su estado semilla inicial predeterminado.
-app.post("/api/db/reset", requireLocalDbAccess, async (_req, res) => {
+/**
+ * Endpoint de emergencia para restablecer todos los archivos JSON locales a su estado inicial de semilla (default).
+ */
+app.post("/api/db/reset", requireLocalDbAccess, async (_req: Request, res: Response) => {
   try {
     res.json(await resetDb());
   } catch (error) {
@@ -103,8 +132,10 @@ app.post("/api/db/reset", requireLocalDbAccess, async (_req, res) => {
   }
 });
 
-// Endpoint público para obtener la base de datos.
-app.get("/api/modulo", async (_req, res) => {
+/**
+ * Endpoint público y de solo lectura de la base de datos para consumo directo en portales.
+ */
+app.get("/api/modulo", async (_req: Request, res: Response) => {
   try {
     res.json(await getDb());
   } catch {
@@ -133,25 +164,30 @@ const DIST_PATH = path.join(__dirname, "../frontend/dist");
 app.use(express.static(DIST_PATH));
 
 // Redirigir cualquier otra ruta GET no-API al index.html de React (para soportar enrutamiento del lado del cliente)
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.method === "GET" && !req.path.startsWith("/api")) {
-    return res.sendFile(path.join(DIST_PATH, "index.html"));
+    res.sendFile(path.join(DIST_PATH, "index.html"));
+    return;
   }
   next();
 });
 
 // --- MULTER & GLOBAL ERROR HANDLING ---
-// Middleware centralizado de control de errores. Maneja límites de peso de subidas en Multer y excepciones generales.
-app.use((error, _req, res, _next) => {
+/**
+ * Middleware centralizado de control de errores de Express.
+ * Maneja excepciones del subidor Multer (excesos de peso de archivos) y errores generales HTTP 500.
+ */
+app.use((error: any, _req: Request, res: Response, _next: NextFunction) => {
   if (error instanceof multer.MulterError) {
-    const mensajes = {
+    const mensajes: Record<string, string> = {
       LIMIT_FILE_SIZE: "El archivo Excel no debe superar 5 MB.",
       LIMIT_FIELD_VALUE: "La informacion enviada para validar el Excel es demasiado pesada. Actualice la pagina e intente nuevamente.",
       LIMIT_UNEXPECTED_FILE: "Solo se puede procesar un archivo Excel por validacion.",
     };
-    return res.status(400).json({ message: mensajes[error.code] || "El archivo no cumple las condiciones permitidas." });
+    res.status(400).json({ message: mensajes[error.code] || "El archivo no cumple las condiciones permitidas." });
+    return;
   }
-  return res.status(500).json({ message: error.message || "No se pudo procesar la solicitud." });
+  res.status(500).json({ message: error.message || "No se pudo procesar la solicitud." });
 });
 
 // Inicialización de la escucha en el puerto e IP correspondientes

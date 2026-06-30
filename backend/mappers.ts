@@ -1,5 +1,10 @@
-export function normalizeProgramStateToFrontend(state) {
-  const map = {
+/**
+ * Normaliza el estado de un programa de la base de datos a un término descriptivo para el Frontend.
+ * @param state Estado actual del programa en base de datos ("borrador", "publicado", etc.)
+ * @returns Estado mapeado para el cliente ("Habilitado" o "Deshabilitado")
+ */
+export function normalizeProgramStateToFrontend(state: string): string {
+  const map: Record<string, string> = {
     borrador: "Deshabilitado",
     publicado: "Habilitado",
     cerrado: "Deshabilitado",
@@ -10,8 +15,13 @@ export function normalizeProgramStateToFrontend(state) {
   return map[state] || state || "Habilitado";
 }
 
-export function normalizeEnrollmentStateToFrontend(state) {
-  const map = {
+/**
+ * Normaliza el estado de una matrícula (inscripción) de la base de datos a un término para el Frontend.
+ * @param state Estado de la matrícula en la base de datos ("preinscrita", "confirmada", etc.)
+ * @returns Estado formateado para el cliente ("Pendiente de pago", "Pago validado", etc.)
+ */
+export function normalizeEnrollmentStateToFrontend(state: string): string {
+  const map: Record<string, string> = {
     preinscrita: "Pendiente de pago",
     pendiente_pago: "Pendiente de pago",
     pendiente_validacion: "Por Verificar",
@@ -27,27 +37,40 @@ export function normalizeEnrollmentStateToFrontend(state) {
   return map[state] || state || "Pendiente de pago";
 }
 
-export function normalizePaymentStateToFrontend(state) {
-  const map = {
+/**
+ * Normaliza el estado de una transacción de pago de la base de datos a un término para el Frontend.
+ * @param state Estado del pago en la base de datos ("pendiente", "validado", etc.)
+ * @returns Estado mapeado para el cliente ("Por Verificar", "completado", "observado", etc.)
+ */
+export function normalizePaymentStateToFrontend(state: string): string {
+  const map: Record<string, string> = {
     pendiente: "Por Verificar",
     validado: "completado",
     observado: "observado",
     rechazado: "observado",
     anulado: "anulado",
     "Por Verificar": "Por Verificar",
-    "completado": "completado",
-    "observado": "observado",
-    "anulado": "anulado"
+    "completado": "completado"
   };
   return map[state] || state || "Por Verificar";
 }
 
-export function normalizeAttendanceStateToFrontend(state) {
+/**
+ * Normaliza el estado de la asistencia de un alumno.
+ * @param state Estado de la asistencia en base de datos.
+ * @returns El mismo estado, por defecto "presente".
+ */
+export function normalizeAttendanceStateToFrontend(state: string): string {
   return state || "presente";
 }
 
-export function normalizeProgramStateToBackend(state) {
-  const map = {
+/**
+ * Traduce el estado de un programa desde el Frontend hacia el valor que requiere la Base de Datos.
+ * @param state Estado proveniente del cliente ("Habilitado", "Deshabilitado")
+ * @returns Estado para almacenar en la base de datos ("publicado", "borrador", etc.)
+ */
+export function normalizeProgramStateToBackend(state: string): string {
+  const map: Record<string, string> = {
     Habilitado: "publicado",
     Deshabilitado: "borrador",
     publicado: "publicado",
@@ -58,8 +81,13 @@ export function normalizeProgramStateToBackend(state) {
   return map[state] || state || "publicado";
 }
 
-export function normalizeEnrollmentStateToBackend(state) {
-  const map = {
+/**
+ * Traduce el estado de una inscripción desde el Frontend hacia el término que requiere la Base de Datos.
+ * @param state Estado de la inscripción en el frontend ("Pendiente de pago", "Por Verificar", etc.)
+ * @returns Estado correspondiente para la base de datos ("pendiente_pago", "pendiente_validacion", etc.)
+ */
+export function normalizeEnrollmentStateToBackend(state: string): string {
+  const map: Record<string, string> = {
     "Pendiente de pago": "pendiente_pago",
     "Por Verificar": "pendiente_validacion",
     "Pago validado": "confirmada",
@@ -74,27 +102,39 @@ export function normalizeEnrollmentStateToBackend(state) {
   return map[state] || state || "pendiente_pago";
 }
 
-export function normalizePaymentStateToBackend(state) {
-  const map = {
+/**
+ * Traduce el estado de un pago desde el Frontend hacia el término correspondiente en la Base de Datos.
+ * @param state Estado del pago en el frontend ("Por Verificar", "completado", etc.)
+ * @returns Estado correspondiente para la base de datos ("pendiente", "validado", etc.)
+ */
+export function normalizePaymentStateToBackend(state: string): string {
+  const map: Record<string, string> = {
     "Por Verificar": "pendiente",
     "completado": "validado",
     "observado": "observado",
     "anulado": "anulado",
     pendiente: "pendiente",
-    validado: "validado",
-    observado: "observado",
-    anulado: "anulado"
+    validado: "validado"
   };
   return map[state] || state || "pendiente";
 }
 
-// Log de Auditoría
-
-export function normalizarPeriodoApi(valor) {
+/**
+ * Normaliza el nombre de un periodo escolar para determinar si es periodo de verano u ordinario.
+ * @param valor Nombre o texto del periodo
+ * @returns "verano" o "escolar"
+ */
+export function normalizarPeriodoApi(valor: any): "verano" | "escolar" {
   return String(valor || "").toLowerCase().includes("verano") ? "verano" : "escolar";
 }
 
-export function normalizarTextoApi(valor) {
+/**
+ * Limpia y estandariza un texto eliminando espacios extras, convirtiéndolo a minúsculas y removiendo tildes/diacríticos.
+ * Útil para búsquedas y comparaciones no sensibles a mayúsculas o acentos.
+ * @param valor Cadena de texto a normalizar
+ * @returns Texto limpio, en minúsculas y sin acentos
+ */
+export function normalizarTextoApi(valor: any): string {
   return String(valor || "")
     .trim()
     .toLowerCase()
@@ -102,7 +142,12 @@ export function normalizarTextoApi(valor) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-export function programaListoParaPortalPadresApi(programa = {}) {
+/**
+ * Evalúa si un programa extracurricular tiene la información mínima suficiente para ser listado en el portal de padres.
+ * @param programa Objeto que representa el programa/taller
+ * @returns `true` si cuenta con la información necesaria, `false` en caso contrario
+ */
+export function programaListoParaPortalPadresApi(programa: any = {}): boolean {
   const esBorradorDeDocumento = Boolean(programa.creadoDesdeDocumento || programa.plantilla || programa.plantillaValidada);
   if (!esBorradorDeDocumento) return true;
 
@@ -120,18 +165,35 @@ export function programaListoParaPortalPadresApi(programa = {}) {
   return tieneHorarioReal || tieneVigencia || tieneCupos || tieneCosto;
 }
 
-export function tieneHorariosPorGrupoApi(programa) {
+/**
+ * Comprueba si un programa contiene configuraciones de horarios separadas por grupos/grados académicos.
+ * @param programa Objeto del programa/taller
+ * @returns `true` si tiene horarios desglosados en un array, `false` en caso contrario
+ */
+export function tieneHorariosPorGrupoApi(programa: any): boolean {
   return Array.isArray(programa?.horariosPorGrupo) && programa.horariosPorGrupo.length > 0;
 }
 
-export function descomponerGradoApi(valor) {
+/**
+ * Descompone un string de grado escolar (ej: "3: Primaria" o "inicial 4 años") en su nivel académico y número.
+ * @param valor Texto del grado
+ * @returns Un objeto con `{ nivel, numero }`
+ */
+export function descomponerGradoApi(valor: any): { nivel: string; numero: string } {
   const texto = normalizarTextoApi(valor).replace(":", " ");
   const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
   const numero = texto.match(/\d+/)?.[0] || "";
   return { nivel, numero };
 }
 
-export function obtenerGradoCompletoApi(grado, nivel, respaldoGrado = "") {
+/**
+ * Reconstruye el nombre completo de un grado escolar incluyendo el nivel de respaldo si no está presente en el string.
+ * @param grado Nombre del grado
+ * @param nivel Nivel académico (Primaria, Secundaria, Inicial)
+ * @param respaldoGrado Grado de respaldo si el primero es vacío
+ * @returns String consolidado (ej. "4 Primaria")
+ */
+export function obtenerGradoCompletoApi(grado: any, nivel: any, respaldoGrado: string = ""): string {
   let g = String(grado || "").trim();
   if (!g) return String(respaldoGrado || "").trim();
   const gLower = g.toLowerCase();
@@ -144,14 +206,26 @@ export function obtenerGradoCompletoApi(grado, nivel, respaldoGrado = "") {
   return g;
 }
 
-export function coincideGradoApi(gradoGrupo, gradoAlumnoNormalizado) {
+/**
+ * Compara el grado escolar configurado en un grupo de taller con el grado normalizado de un estudiante para ver si coinciden.
+ * @param gradoGrupo Grado del grupo del taller
+ * @param gradoAlumnoNormalizado Grado del alumno ya descompuesto en `{ nivel, numero }`
+ * @returns `true` si el alumno pertenece al rango del grado del grupo
+ */
+export function coincideGradoApi(gradoGrupo: any, gradoAlumnoNormalizado: { nivel: string; numero: string } | null): boolean {
   const grupo = descomponerGradoApi(gradoGrupo);
   if (!grupo.numero || !gradoAlumnoNormalizado?.numero) return false;
   if (grupo.numero !== gradoAlumnoNormalizado.numero) return false;
   return !grupo.nivel || grupo.nivel === gradoAlumnoNormalizado.nivel;
 }
 
-export function programaDisponibleParaAlcanceMasivoApi(programa, gradoAlumno = "") {
+/**
+ * Evalúa si un programa con alcance masivo está disponible para el grado de un alumno.
+ * @param programa Objeto del programa
+ * @param gradoAlumno Grado escolar del alumno
+ * @returns `true` si el alumno cumple con el alcance de la invitación masiva
+ */
+export function programaDisponibleParaAlcanceMasivoApi(programa: any, gradoAlumno: string = ""): boolean {
   const alcance = normalizarTextoApi(programa?.alcanceInvitacionMasiva || "colegio");
   if (!alcance || alcance === "colegio" || alcance === "todos") return true;
 
@@ -165,13 +239,20 @@ export function programaDisponibleParaAlcanceMasivoApi(programa, gradoAlumno = "
   if (alcance === "grados" || alcance === "seleccionados") {
     const gradosAplicables = Array.isArray(programa?.gradosAplicables) ? programa.gradosAplicables : [];
     if (!gradosAplicables.length || !gradoNormalizado.numero) return false;
-    return gradosAplicables.some((grado) => coincideGradoApi(grado, gradoNormalizado));
+    return gradosAplicables.some((grado: any) => coincideGradoApi(grado, gradoNormalizado));
   }
 
   return true;
 }
 
-export function programaDisponibleParaGradoApi(programa, gradoAlumno = "") {
+/**
+ * Evalúa si un programa en específico está habilitado para el grado escolar de un alumno determinado.
+ * Filtra programas especiales como Cambridge y distribuciones de grupos.
+ * @param programa Objeto del programa
+ * @param gradoAlumno Grado escolar del alumno
+ * @returns `true` si el programa está disponible para el alumno, `false` en caso contrario
+ */
+export function programaDisponibleParaGradoApi(programa: any, gradoAlumno: string = ""): boolean {
   if (esProgramaCambridgeApi(programa)) return false;
   if (programa?.invitacionMasiva) return programaDisponibleParaAlcanceMasivoApi(programa, gradoAlumno);
 
@@ -185,10 +266,15 @@ export function programaDisponibleParaGradoApi(programa, gradoAlumno = "") {
   const gradoNormalizado = descomponerGradoApi(gradoAlumno);
   if (!gradoNormalizado.numero) return false;
 
-  return gradosAplicables.some((grado) => coincideGradoApi(grado, gradoNormalizado));
+  return gradosAplicables.some((grado: any) => coincideGradoApi(grado, gradoNormalizado));
 }
 
-export function esProgramaCambridgeApi(programa = {}) {
+/**
+ * Determina mediante análisis de texto (palabras clave en nombre, categoría, plantilla o variables) si un programa pertenece a la preparación/certificación internacional Cambridge.
+ * @param programa Objeto del programa
+ * @returns `true` si es un programa Cambridge, `false` si es ordinario
+ */
+export function esProgramaCambridgeApi(programa: any = {}): boolean {
   const variables = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
   const texto = normalizarTextoApi([
     programa.nombre,
@@ -208,26 +294,36 @@ export function esProgramaCambridgeApi(programa = {}) {
     texto.includes("ingless") ||
     texto.includes("certificacion") ||
     texto.includes("preparacion") ||
-    variables.some((variable) =>
+    variables.some((variable: any) =>
       ["anio_cert", "nivel_cambridge", "chk_a", "chk_b", "chk_c"].includes(String(variable || "").toLowerCase())
     );
 }
 
-function formatearGradoApi(valor) {
+/**
+ * Formatea un string interno de grado (ej. "Primaria:3") a un formato legible por el usuario (ej. "Primaria 3").
+ * @param valor Grado interno
+ */
+function formatearGradoApi(valor: any): string {
   const [nivel, grado] = String(valor || "").split(":");
   if (!nivel || !grado) return valor;
   return `${nivel} ${grado}`;
 }
 
-export function resolverHorarioPorGradoApi(programa, gradoAlumno = "") {
+/**
+ * Resuelve y formatea el horario exacto, almuerzo y aula que le corresponde a un alumno según su grado en un taller con múltiples grupos.
+ * @param programa Objeto del programa
+ * @param gradoAlumno Grado escolar del alumno
+ * @returns String formateado con el horario correspondiente (ej. "Primaria 3: Lunes almuerzo 2:20 PM-3:10 PM, clase 3:10 PM-4:40 PM · Aula A1")
+ */
+export function resolverHorarioPorGradoApi(programa: any, gradoAlumno: string = ""): string {
   const grupos = programa?.horariosPorGrupo || [];
   if (!Array.isArray(grupos) || grupos.length === 0) return "";
 
   const gradoNormalizado = descomponerGradoApi(gradoAlumno);
   if (!gradoNormalizado.numero) return "";
   let gradoDelTurno = "";
-  const grupo = grupos.find((item) => {
-    gradoDelTurno = (item.grados || []).find((grado) => coincideGradoApi(grado, gradoNormalizado)) || "";
+  const grupo = grupos.find((item: any) => {
+    gradoDelTurno = (item.grados || []).find((grado: any) => coincideGradoApi(grado, gradoNormalizado)) || "";
     return Boolean(gradoDelTurno);
   });
 
@@ -235,7 +331,7 @@ export function resolverHorarioPorGradoApi(programa, gradoAlumno = "") {
   const grados = formatearGradoApi(gradoDelTurno || gradoAlumno);
   const aula = grupo.aula ? ` · Aula ${grupo.aula}` : "";
 
-  const formatTime = (timeStr) => {
+  const formatTime = (timeStr: string) => {
     if (!timeStr) return "";
     const parts = timeStr.trim().split(":");
     if (parts.length < 2) return timeStr;
@@ -256,14 +352,20 @@ export function resolverHorarioPorGradoApi(programa, gradoAlumno = "") {
   return `${grados ? `${grados}: ` : ""}${grupo.dia} almuerzo ${almuerzoInicio}-${almuerzoFin}, clase ${horaInicio}-${horaFin}${aula}`;
 }
 
-export function resolverDocentePorGradoApi(programa, gradoAlumno = "") {
+/**
+ * Resuelve qué docente o responsable está a cargo del grupo correspondiente al grado del alumno.
+ * @param programa Objeto del programa
+ * @param gradoAlumno Grado del estudiante
+ * @returns Nombre del docente asignado
+ */
+export function resolverDocentePorGradoApi(programa: any, gradoAlumno: string = ""): string {
   const grupos = programa?.horariosPorGrupo || [];
   if (!Array.isArray(grupos) || grupos.length === 0) return programa.responsable || programa.docente || "No definido";
 
   const gradoNormalizado = descomponerGradoApi(gradoAlumno);
   if (!gradoNormalizado.numero) return programa.responsable || programa.docente || "No definido";
-  const grupo = grupos.find((item) =>
-    (item.grados || []).some((grado) => coincideGradoApi(grado, gradoNormalizado))
+  const grupo = grupos.find((item: any) =>
+    (item.grados || []).some((grado: any) => coincideGradoApi(grado, gradoNormalizado))
   );
 
   if (grupo && grupo.responsable && grupo.responsable.trim()) {
@@ -272,7 +374,13 @@ export function resolverDocentePorGradoApi(programa, gradoAlumno = "") {
   return programa.responsable || programa.docente || "No definido";
 }
 
-export function obtenerPlantillaProgramaApi(db, programa = {}) {
+/**
+ * Obtiene y unifica la plantilla Word y las variables dinámicas de un programa de la base de datos.
+ * @param db Objeto de la base de datos local
+ * @param programa Objeto del programa
+ * @returns Objeto con `{ plantilla, plantillaBase64, plantillaVariables, plantillaValidada }`
+ */
+export function obtenerPlantillaProgramaApi(db: any, programa: any = {}): any {
   const guardada = db?.plantillasPorPrograma?.[programa?.id] || {};
   const variablesPrograma = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
   const variablesGuardadas = Array.isArray(guardada.plantillaVariables) ? guardada.plantillaVariables : [];
@@ -291,7 +399,14 @@ export function obtenerPlantillaProgramaApi(db, programa = {}) {
   };
 }
 
-export function obtenerCamposProgramaInvitacionApi(db, programa = null, gradoEstudiante = "") {
+/**
+ * Resuelve y recopila todos los detalles informativos de un programa para construir la tarjeta de invitación del alumno.
+ * @param db Instancia de la base de datos
+ * @param programa Objeto del programa/taller
+ * @param gradoEstudiante Grado escolar del estudiante
+ * @returns Objeto estructurado con los detalles informativos y estado del programa
+ */
+export function obtenerCamposProgramaInvitacionApi(db: any, programa: any = null, gradoEstudiante: string = ""): any {
   if (!programa) {
     return {
       programaCosto: "",
@@ -349,45 +464,62 @@ export function obtenerCamposProgramaInvitacionApi(db, programa = null, gradoEst
   };
 }
 
-function normalizarGradoAplicableDesdeAlumnoApi(grado = "") {
+/**
+ * Normaliza un string de grado escolar ingresado libremente por el alumno para convertirlo en el formato oficial de base de datos (ej. "Primaria:4").
+ * @param grado String de entrada
+ */
+function normalizarGradoAplicableDesdeAlumnoApi(grado: string = ""): string {
   const texto = normalizarTextoApi(grado).replace(":", " ");
   const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
   const numero = texto.match(/\d+/)?.[0] || "";
   if (!nivel || !numero) return "";
 
-  const nivelFormateado = {
+  const nivelFormateado: Record<string, string> = {
     inicial: "Inicial",
     primaria: "Primaria",
     secundaria: "Secundaria",
-  }[nivel];
+  };
+
+  const formattedNivel = nivelFormateado[nivel] || nivel;
 
   return nivel === "inicial" && /anos|ano/.test(texto)
-    ? `${nivelFormateado}:${numero} anos`
-    : `${nivelFormateado}:${numero}`;
+    ? `${formattedNivel}:${numero} anos`
+    : `${formattedNivel}:${numero}`;
 }
 
-export function agregarGradoProgramaDesdeAlumnoApi(programa, gradoAlumno) {
+/**
+ * Agrega el grado de un estudiante dentro de la lista de grados permitidos de un programa, previniendo duplicados.
+ * @param programa Objeto del programa
+ * @param gradoAlumno Grado escolar del estudiante
+ */
+export function agregarGradoProgramaDesdeAlumnoApi(programa: any, gradoAlumno: string): void {
   if (!programa) return;
   const gradoAplicable = normalizarGradoAplicableDesdeAlumnoApi(gradoAlumno);
   if (!gradoAplicable) return;
 
   const actuales = Array.isArray(programa.gradosAplicables) ? programa.gradosAplicables : [];
-  const existe = actuales.some((grado) => normalizarTextoApi(grado) === normalizarTextoApi(gradoAplicable));
+  const existe = actuales.some((grado: any) => normalizarTextoApi(grado) === normalizarTextoApi(gradoAplicable));
   if (!existe) {
     programa.gradosAplicables = [...actuales, gradoAplicable];
   }
 }
 
-export function gradoCorrespondeAlProgramaApi(programa = {}, gradoAlumno = "") {
+/**
+ * Valida si el grado del alumno está dentro de la lista de grados aplicables configurados para un programa.
+ * @param programa Objeto del programa
+ * @param gradoAlumno Grado escolar del alumno
+ * @returns `true` si pertenece, `false` en caso contrario
+ */
+export function gradoCorrespondeAlProgramaApi(programa: any = {}, gradoAlumno: string = ""): boolean {
   const gradoNormalizado = descomponerGradoApi(gradoAlumno);
   if (!gradoNormalizado.numero) return false;
 
-  const gradosConfigurados = [];
+  const gradosConfigurados: any[] = [];
   if (Array.isArray(programa.gradosAplicables)) {
     gradosConfigurados.push(...programa.gradosAplicables);
   }
   if (Array.isArray(programa.horariosPorGrupo)) {
-    programa.horariosPorGrupo.forEach((grupo) => {
+    programa.horariosPorGrupo.forEach((grupo: any) => {
       if (Array.isArray(grupo.grados)) gradosConfigurados.push(...grupo.grados);
     });
   }
@@ -396,16 +528,21 @@ export function gradoCorrespondeAlProgramaApi(programa = {}, gradoAlumno = "") {
   return gradosConfigurados.some((grado) => coincideGradoApi(grado, gradoNormalizado));
 }
 
-export function sincronizarGradosProgramaConInvitadosApi(db, programaId) {
-  const programa = (db.programas || []).find(p => p.id === programaId);
+/**
+ * Sincroniza la lista de grados aplicables de un taller en base a los grados de los alumnos que han sido invitados a él.
+ * @param db Instancia de la base de datos
+ * @param programaId ID del taller a sincronizar
+ */
+export function sincronizarGradosProgramaConInvitadosApi(db: any, programaId: string): void {
+  const programa = (db.programas || []).find((p: any) => p.id === programaId);
   if (!programa) return;
   if (esProgramaCambridgeApi(programa)) {
     programa.gradosAplicables = [];
     return;
   }
 
-  const grados = [];
-  (db.invitadosPorPrograma?.[programaId] || []).forEach((invitado) => {
+  const grados: string[] = [];
+  (db.invitadosPorPrograma?.[programaId] || []).forEach((invitado: any) => {
     const gradoAplicable = normalizarGradoAplicableDesdeAlumnoApi(invitado.grado);
     if (!gradoAplicable) return;
     const existe = grados.some((grado) => normalizarTextoApi(grado) === normalizarTextoApi(gradoAplicable));
@@ -417,8 +554,12 @@ export function sincronizarGradosProgramaConInvitadosApi(db, programaId) {
   }
 }
 
-function ordenarGradosAplicablesApi(grados) {
-  const ordenNivel = { inicial: 0, primaria: 1, secundaria: 2 };
+/**
+ * Ordena una lista de grados escolares (ej: ["Primaria:3", "Inicial:5", "Secundaria:1"]) de forma lógica ascendente.
+ * @param grados Array de grados escolares a ordenar
+ */
+function ordenarGradosAplicablesApi(grados: string[]): string[] {
+  const ordenNivel: Record<string, number> = { inicial: 0, primaria: 1, secundaria: 2 };
   return [...grados].sort((a, b) => {
     const gradoA = descomponerGradoAplicableApi(a);
     const gradoB = descomponerGradoAplicableApi(b);
@@ -426,7 +567,7 @@ function ordenarGradosAplicablesApi(grados) {
     return gradoA.numero - gradoB.numero;
   });
 
-  function descomponerGradoAplicableApi(valor) {
+  function descomponerGradoAplicableApi(valor: string) {
     const texto = normalizarTextoApi(valor);
     const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
     const numero = Number(texto.match(/\d+/)?.[0] || 0);
@@ -437,7 +578,12 @@ function ordenarGradosAplicablesApi(grados) {
   }
 }
 
-export function sincronizarPlantillaProgramaApi(db, programa = {}) {
+/**
+ * Sincroniza la información de una plantilla del programa actualizándola en la tabla maestra de plantillas de la base de datos.
+ * @param db Instancia de la base de datos
+ * @param programa Objeto del programa
+ */
+export function sincronizarPlantillaProgramaApi(db: any, programa: any = {}): void {
   if (!programa?.id) return;
   db.plantillasPorPrograma = db.plantillasPorPrograma || {};
   if (!programa.plantilla) {
@@ -453,8 +599,13 @@ export function sincronizarPlantillaProgramaApi(db, programa = {}) {
   }
 }
 
-function obtenerPlantillaInscripcionApi(db, inscripcion = {}) {
-  const programa = (db?.programas || []).find(p => p.id === inscripcion.programaId) || {};
+/**
+ * Obtiene la configuración de la plantilla y variables unificada para una inscripción/matrícula.
+ * @param db Instancia de la base de datos
+ * @param inscripcion Registro de inscripción
+ */
+function obtenerPlantillaInscripcionApi(db: any, inscripcion: any = {}): any {
+  const programa = (db?.programas || []).find((p: any) => p.id === inscripcion.programaId) || {};
   const guardada = db?.plantillasPorPrograma?.[inscripcion.programaId] || {};
   const variablesInscripcion = Array.isArray(inscripcion.plantillaVariables) ? inscripcion.plantillaVariables : [];
   const variablesPrograma = Array.isArray(programa.plantillaVariables) ? programa.plantillaVariables : [];
@@ -472,7 +623,12 @@ function obtenerPlantillaInscripcionApi(db, inscripcion = {}) {
   };
 }
 
-export function mapDbProgramToApi(p, db = null) {
+/**
+ * Mapea un registro de programa del almacenamiento a la estructura limpia esperada por la API del Frontend.
+ * @param p Objeto del programa crudo de la DB
+ * @param db Instancia de la base de datos (opcional para resolver plantillas)
+ */
+export function mapDbProgramToApi(p: any, db: any = null): any {
   if (!p) return null;
   const plantilla = obtenerPlantillaProgramaApi(db, p);
   return {
@@ -541,7 +697,13 @@ export function mapDbProgramToApi(p, db = null) {
   };
 }
 
-export function mapDbEnrollmentToApi(item, db = null) {
+/**
+ * Mapea una inscripción de la base de datos a la estructura detallada requerida por la API del Frontend,
+ * resolviendo información del estudiante, programa, pagos asociados, costos finales y horarios del alumno.
+ * @param item Inscripción cruda de la base de datos
+ * @param db Instancia de la base de datos
+ */
+export function mapDbEnrollmentToApi(item: any, db: any = null): any {
   if (!item) return null;
   const plantilla = obtenerPlantillaInscripcionApi(db, item);
   const programa = plantilla.programa || {};
@@ -598,7 +760,8 @@ export function mapDbEnrollmentToApi(item, db = null) {
     correo_apoderado: item.correo || "",
     estado_pago: (() => {
       const payments = db?.pagos || [];
-      const p = payments.find(pay => pay.inscripcionId === item.id) || payments.find(pay => pay.dniEstudiante === item.dniEstudiante && (pay.programaId === item.programaId || normalizarTextoApi(pay.programa) === normalizarTextoApi(item.programa)));
+      const p = payments.find((pay: any) => pay.inscripcionId === item.id) || 
+                payments.find((pay: any) => pay.dniEstudiante === item.dniEstudiante && (pay.programaId === item.programaId || normalizarTextoApi(pay.programa) === normalizarTextoApi(item.programa)));
       if (p) {
         return normalizePaymentStateToFrontend(p.estado || "pendiente");
       }
@@ -623,7 +786,11 @@ export function mapDbEnrollmentToApi(item, db = null) {
   };
 }
 
-export function mapDbPaymentToApi(item) {
+/**
+ * Mapea un registro de pago a la estructura legible por la API de la interfaz de Caja y Administración.
+ * @param item Objeto del pago en base de datos
+ */
+export function mapDbPaymentToApi(item: any): any {
   if (!item) return null;
   return {
     pago_id: item.id,
@@ -659,7 +826,11 @@ export function mapDbPaymentToApi(item) {
   };
 }
 
-export function mapDbAsistenciaToApi(item) {
+/**
+ * Mapea un registro de asistencia del alumno a la estructura requerida por las llamadas y reportes de la API.
+ * @param item Registro de asistencia de la base de datos
+ */
+export function mapDbAsistenciaToApi(item: any): any {
   if (!item) return null;
   return {
     asistencia_id: item.id,

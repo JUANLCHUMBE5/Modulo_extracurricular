@@ -32,7 +32,7 @@ if not exist "%~dp0node_modules" (
 call :check_url "%API_URL%"
 if errorlevel 1 (
   echo [INFO] Iniciando servidor backend en segundo plano...
-  start "API Local - Modulo Extracurricular" /min cmd /c "cd /d "%~dp0backend" && node server.js"
+  start "API Local - Modulo Extracurricular" /min cmd /c "cd /d "%~dp0backend" && corepack pnpm start"
 )
 
 :: 3. Esperar que el backend este listo

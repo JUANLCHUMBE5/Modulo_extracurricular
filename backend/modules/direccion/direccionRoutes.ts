@@ -1,6 +1,6 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { getDb, saveDb } from "../../dbLocal.js";
-import { requireRole } from "../../middleware/auth.js";
+import { requireRole, AuthenticatedRequest } from "../../middleware/auth.js";
 import { registrarAuditoria } from "../../audit.js";
 import {
   mapDbEnrollmentToApi,
@@ -16,7 +16,10 @@ import {
 
 const router = express.Router();
 
-function incrementarCorrelativo(valor) {
+/**
+ * Incrementa el correlativo numérico al final de una cadena (por ejemplo, "REC-0001" -> "REC-0002").
+ */
+function incrementarCorrelativo(valor: string): string {
   if (!valor) return "";
   const match = String(valor).match(/^(.*?)(\d+)$/);
   if (!match) return valor;
@@ -27,7 +30,10 @@ function incrementarCorrelativo(valor) {
   return prefix + paddedNum;
 }
 
-function calcularSiguienteRecibo(startValue, existingNros) {
+/**
+ * Calcula el siguiente número correlativo disponible buscando el valor máximo existente con el mismo prefijo.
+ */
+function calcularSiguienteRecibo(startValue: string, existingNros: string[]): string {
   if (!startValue) return "";
   const match = String(startValue).match(/^(.*?)(\d+)$/);
   if (!match) return startValue;
@@ -64,29 +70,33 @@ function calcularSiguienteRecibo(startValue, existingNros) {
   return prefix + String(nextVal).padStart(padLength, "0");
 }
 
-// --- REPORTE CONSOLIDADO ---
-router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => {
+/**
+ * GET /api/v1/direccion/reportes/resumen
+ * Endpoint de Dirección que calcula estadísticas e informes consolidados financieros y de asistencia.
+ * Soporta filtros por periodo (escolar/verano), año, rango de fechas y programa.
+ */
+router.get("/reportes/resumen", requireRole(["direccion"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { periodo, anio, fechaInicio, fechaFin, programa } = req.query;
+    const { periodo, anio, fechaInicio, fechaFin, programa } = req.query as any;
     const db = await getDb();
 
     const period = (periodo === "todos" || !periodo) ? "todos" : normalizarPeriodoApi(periodo);
     const year = anio || "todos";
 
-    const filtrarPorPeriodo = (items) => {
+    const filtrarPorPeriodo = (items: any[]) => {
       if (period === "todos") return [...items];
       return [...items].filter((item) => normalizarPeriodoApi(item.periodo || "escolar") === period);
     };
 
-    const normalizarEstadoPago = (estado) => {
+    const normalizarEstadoPago = (estado: any) => {
       const texto = normalizarTextoApi(estado);
       if (texto.includes("pag") || texto === "completado" || texto === "validado") return "Pagado";
       if (texto.includes("anul") || texto === "cancelado") return "Anulado";
       return "Pendiente";
     };
 
-    const contarPor = (items, resolver) => {
-      const conteo = new Map();
+    const contarPor = (items: any[], resolver: (item: any) => any) => {
+      const conteo = new Map<any, number>();
       items.forEach((item) => {
         const key = resolver(item) || "Sin dato";
         conteo.set(key, (conteo.get(key) || 0) + 1);
@@ -99,12 +109,12 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
       }));
     };
 
-    const abreviar = (valor) => {
+    const abreviar = (valor: any) => {
       const texto = String(valor || "Sin nombre").trim();
       return texto.length > 20 ? `${texto.slice(0, 19)}...` : texto;
     };
 
-    const normalizarFechaFiltro = (valor) => {
+    const normalizarFechaFiltro = (valor: any) => {
       const texto = String(valor || "").trim();
       if (!texto) return "";
       const iso = texto.match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -115,17 +125,21 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
       if (!Number.isNaN(fecha.getTime())) return fecha.toISOString().slice(0, 10);
       return texto.slice(0, 10);
     };
-    const obtenerPrimerValor = (item, claves) => claves.map((clave) => item?.[clave]).find(Boolean) || "";
+
+    const obtenerPrimerValor = (item: any, claves: string[]) => claves.map((clave) => item?.[clave]).find(Boolean) || "";
+    
     const fechaInicioFiltro = normalizarFechaFiltro(fechaInicio);
     const fechaFinFiltro = normalizarFechaFiltro(fechaFin);
-    const fechaEnRango = (valor) => {
+    
+    const fechaEnRango = (valor: any) => {
       const fecha = normalizarFechaFiltro(valor);
       if (!fecha) return false;
       if (fechaInicioFiltro && fecha < fechaInicioFiltro) return false;
       if (fechaFinFiltro && fecha > fechaFinFiltro) return false;
       return true;
     };
-    const rangoProgramaCruza = (item) => {
+
+    const rangoProgramaCruza = (item: any) => {
       if (!fechaInicioFiltro && !fechaFinFiltro) return true;
       const inicio = normalizarFechaFiltro(obtenerPrimerValor(item, ["fechaInicio", "fecha_inicio"]));
       const fin = normalizarFechaFiltro(obtenerPrimerValor(item, ["fechaFin", "fecha_fin", "fechaInicio", "fecha_inicio"]));
@@ -136,7 +150,8 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
       if (fechaFinFiltro && desdeItem > fechaFinFiltro) return false;
       return true;
     };
-    const coincideProgramaFiltro = (item = {}) => {
+
+    const coincideProgramaFiltro = (item: any = {}) => {
       if (!programa || programa === "todos") return true;
       const filtro = normalizarTextoApi(programa);
       return String(item.programaId || item.programa_id || item.id || "") === String(programa) ||
@@ -144,7 +159,7 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
     };
 
     const estudiantes = db.estudiantes || {};
-    const crearFilaInscripcion = (item) => {
+    const crearFilaInscripcion = (item: any) => {
       const student = estudiantes[item.dniEstudiante] || {};
       return {
         id: item.id || "",
@@ -160,7 +175,7 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
         origen: item.origenRegistro || "",
         fechaRegistro: item.fechaRegistro || "",
         apoderado: item.apoderado || student.apoderado || "",
-        telefono: item.telefono || student.telefonoApoderado || student.telefono || "",
+        telefono: item.telefono || student.telefonoApoderado || (student as any).telefono || "",
         costoOriginal: item.costoOriginal !== undefined ? Number(item.costoOriginal) : Number(item.costo || 0),
         descuentoAprobado: item.descuentoAprobado || false,
         descuentoTipo: item.descuentoTipo || "",
@@ -169,7 +184,7 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
       };
     };
 
-    const crearFilaPago = (item) => {
+    const crearFilaPago = (item: any) => {
       const inscripcion = (db.inscripciones || []).find((ins) =>
         (item.inscripcionId && ins.id === item.inscripcionId) ||
         (item.dniEstudiante && ins.dniEstudiante === item.dniEstudiante && normalizarTextoApi(ins.programa) === normalizarTextoApi(item.programa))
@@ -234,17 +249,17 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
       );
     }
 
-    const filasProgramas = programas.map((programa) => {
+    const filasProgramas = programas.map((prog) => {
       const inscripcionesPrograma = inscripciones.filter((item) =>
-        item.programaId === programa.id || normalizarTextoApi(item.programa) === normalizarTextoApi(programa.nombre)
+        item.programaId === prog.id || normalizarTextoApi(item.programa) === normalizarTextoApi(prog.nombre)
       );
       const pagosPrograma = pagos.filter((item) =>
-        item.programaId === programa.id || normalizarTextoApi(item.programa || item.programaNombre) === normalizarTextoApi(programa.nombre)
+        item.programaId === prog.id || normalizarTextoApi(item.programa || item.programaNombre) === normalizarTextoApi(prog.nombre)
       );
       const inscritos = inscripcionesPrograma.length;
-      const cupos = Number(programa.cupos || programa.cuposDisponibles || 0);
-      const ocupados = Math.max(Number(programa.cuposOcupados || 0), inscritos);
-      const proyectado = inscripcionesPrograma.reduce((sum, item) => sum + Number(item.costo ?? programa.costo ?? 0), 0);
+      const cupos = Number(prog.cupos || 0);
+      const ocupados = Math.max(Number(prog.cuposOcupados || 0), inscritos);
+      const proyectado = inscripcionesPrograma.reduce((sum, item) => sum + Number(item.costo ?? prog.costo ?? 0), 0);
       const recaudado = pagosPrograma
         .filter((item) => normalizarEstadoPago(item.estado) === "Pagado")
         .reduce((sum, item) => sum + Number(item.monto || 0), 0);
@@ -253,22 +268,22 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
       const porCobrar = Math.max(0, proyectado - recaudado);
 
       return {
-        id: programa.id,
-        nombre: programa.nombre || "Programa sin nombre",
-        periodo: normalizarPeriodoApi(programa.periodo || "escolar"),
-        estado: programa.estado || "Sin estado",
-        categoria: programa.categoria || "Sin categoria",
-        responsable: programa.responsable || programa.docente || programa.tutora || "Sin responsable",
+        id: prog.id,
+        nombre: prog.nombre || "Programa sin nombre",
+        periodo: normalizarPeriodoApi(prog.periodo || "escolar"),
+        estado: prog.estado || "Sin estado",
+        categoria: prog.categoria || "Sin categoria",
+        responsable: prog.responsable || prog.docente || prog.tutora || "Sin responsable",
         cupos,
         ocupados,
         inscritos,
         conBeca,
-        costo: Number(programa.costo || 0),
+        costo: Number(prog.costo || 0),
         proyectado,
         recaudado,
         porCobrar,
         avance: cupos > 0 ? Math.round((ocupados / cupos) * 100) : 0,
-        gradosAplicables: programa.gradosAplicables || [],
+        gradosAplicables: prog.gradosAplicables || [],
       };
     }).sort((a, b) => b.inscritos - a.inscritos);
 
@@ -293,7 +308,7 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
       );
     }
 
-    const obtenerFechaPeru = (fechaStr) => {
+    const obtenerFechaPeru = (fechaStr: any) => {
       if (!fechaStr) return "";
       const str = String(fechaStr);
       if (str.includes("T") || str.length > 10) {
@@ -367,7 +382,7 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
     const programasMapeados = programas.map(mapDbProgramToApi);
 
     const programaIdsSet = new Set(programas.map(p => p.id));
-    const asistenciasFiltradas = asistencias.filter(a => programaIdsSet.has(a.programaId));
+    const asistenciasFiltradas = asistencias.filter(a => programaIdsSet.has(a.programaId || ""));
     const asistenciasMapeadas = asistenciasFiltradas.map(mapDbAsistenciaToApi);
 
     res.json({
@@ -417,37 +432,42 @@ router.get("/reportes/resumen", requireRole(["direccion"]), async (req, res) => 
         opcionesProgramas,
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// --- ENDPOINTS PARA DESCUENTOS Y BECAS ---
-router.get("/direccion/descuentos/buscar", requireRole(["direccion"]), async (req, res) => {
+/**
+ * GET /api/v1/direccion/descuentos/buscar
+ * Busca matrículas reales o invitaciones virtuales que coincidan con la cadena 'q' para proponer becas.
+ */
+router.get("/direccion/descuentos/buscar", requireRole(["direccion"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { q } = req.query;
+    const q = String(req.query.q || "").toLowerCase().trim();
+    if (!q) {
+      res.json({ success: true, data: [] });
+      return;
+    }
     const db = await getDb();
-    const term = String(q || "").toLowerCase().trim();
-    if (!term) return res.json({ success: true, data: [] });
 
     const realEnrollments = (db.inscripciones || []).filter(ins => {
       if (ins.estadoInscripcion === "Anulada" || ins.estadoInscripcion === "anulada") return false;
-      const dniCoincide = String(ins.dni || ins.dniEstudiante || "").includes(term);
-      const nombreCoincide = String(ins.estudiante || ins.nombresEstudiante || "").toLowerCase().includes(term);
+      const dniCoincide = String(ins.dni || ins.dniEstudiante || "").includes(q);
+      const nombreCoincide = String(ins.estudiante || ins.nombresEstudiante || "").toLowerCase().includes(q);
       return dniCoincide || nombreCoincide;
     });
 
     const mappedReal = realEnrollments.map(item => mapDbEnrollmentToApi(item, db));
 
-    const virtualEnrollments = [];
+    const virtualEnrollments: any[] = [];
     const programas = db.programas || [];
     programas.forEach(programa => {
       const invitados = db.invitadosPorPrograma?.[programa.id] || [];
       invitados.forEach(invitado => {
         const dni = String(invitado.dni || "").replace(/\D/g, "");
         const name = String(invitado.nombres || "").toLowerCase();
-        const matchesDni = dni.includes(term);
-        const matchesName = name.includes(term);
+        const matchesDni = dni.includes(q);
+        const matchesName = name.includes(q);
 
         if (matchesDni || matchesName) {
           const existeReal = (db.inscripciones || []).some(ins =>
@@ -479,8 +499,8 @@ router.get("/direccion/descuentos/buscar", requireRole(["direccion"]), async (re
               monto: programa.costo || 0,
               costoOriginal: programa.costo || 0,
               apoderado: student.apoderado || "",
-              telefono_apoderado: student.telefonoApoderado || student.telefono || "",
-              correo_apoderado: student.correoApoderado || student.correo || "",
+              telefono_apoderado: student.telefonoApoderado || (student as any).telefono || "",
+              correo_apoderado: student.correoApoderado || (student as any).correo || "",
               estado_pago: "pendiente",
               pago_id: "",
               derivado_caja: false,
@@ -500,19 +520,30 @@ router.get("/direccion/descuentos/buscar", requireRole(["direccion"]), async (re
         ...virtualEnrollments
       ]
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post("/direccion/descuentos/aplicar", requireRole(["direccion"]), async (req, res) => {
+/**
+ * POST /api/v1/direccion/descuentos/aplicar
+ * Aplica una beca (100% descuento), descuento porcentual o por monto plano.
+ * Si es una invitación virtual ("INV-..."), genera primero la matrícula física en estado pendiente.
+ */
+router.post("/direccion/descuentos/aplicar", requireRole(["direccion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { inscripcionId, tipo, valor, justificacion } = req.body;
-    if (!inscripcionId) return res.status(400).json({ success: false, message: "Falta id de inscripcion" });
-    if (!justificacion?.trim()) return res.status(400).json({ success: false, message: "Falta justificacion" });
+    if (!inscripcionId) {
+      res.status(400).json({ success: false, message: "Falta id de inscripcion" });
+      return;
+    }
+    if (!justificacion?.trim()) {
+      res.status(400).json({ success: false, message: "Falta justificacion" });
+      return;
+    }
 
     const db = await getDb();
-    let ins = null;
+    let ins: any = null;
     let index = -1;
     if (String(inscripcionId).startsWith("INV-")) {
       const parts = String(inscripcionId).split("-");
@@ -520,18 +551,24 @@ router.post("/direccion/descuentos/aplicar", requireRole(["direccion"]), async (
       const progId = parts.slice(1, parts.length - 1).join("-");
 
       const prog = (db.programas || []).find(p => p.id === progId);
-      if (!prog) return res.status(404).json({ success: false, message: "Taller no encontrado para la invitación" });
+      if (!prog) {
+        res.status(404).json({ success: false, message: "Taller no encontrado para la invitación" });
+        return;
+      }
 
       const invitados = db.invitadosPorPrograma?.[progId] || [];
       const invitado = invitados.find(i => i.dni === dni);
-      if (!invitado) return res.status(404).json({ success: false, message: "Invitación de estudiante no encontrada" });
+      if (!invitado) {
+        res.status(404).json({ success: false, message: "Invitación de estudiante no encontrada" });
+        return;
+      }
 
       const student = db.estudiantes?.[dni] || {};
       const gradoEstudiante = obtenerGradoCompletoApi(invitado.grado || student.grado || "", invitado.nivelEducativo || invitado.nivel || student.nivel || "");
       const horarioResuelto = resolverHorarioPorGradoApi(prog, gradoEstudiante) || prog.horario || "";
       const docenteResuelto = resolverDocentePorGradoApi(prog, gradoEstudiante) || prog.responsable || prog.docente || "No definido";
 
-      const newInscripcion = {
+      const newInscripcion: any = {
         id: "INS-" + Date.now(),
         dniEstudiante: dni,
         codigoEstudiante: student.codigoEstudiante || invitado.codigoEstudiante || "",
@@ -544,7 +581,7 @@ router.post("/direccion/descuentos/aplicar", requireRole(["direccion"]), async (
         periodo: prog.periodo || "escolar",
         horario: horarioResuelto,
         docente: docenteResuelto,
-        costo: prog.costo || 0,
+        costo: Number(prog.costo || 0),
         modalidadCobro: prog.modalidadCobro || "Unico",
         fechaInicio: prog.fechaInicio || "",
         fechaFin: prog.fechaFin || "",
@@ -553,9 +590,12 @@ router.post("/direccion/descuentos/aplicar", requireRole(["direccion"]), async (
         derivadoCaja: true,
         fechaRegistro: new Date().toISOString(),
         apoderado: student.apoderado || "",
-        telefono: student.telefonoApoderado || student.telefono || "",
-        correo: student.correoApoderado || student.correo || "",
-        origenRegistro: "Dirección / Descuento"
+        telefono: student.telefonoApoderado || (student as any).telefono || "",
+        correo: student.correoApoderado || (student as any).correo || "",
+        origenRegistro: "Dirección / Descuento",
+        pagoId: null,
+        costoOriginal: Number(prog.costo || 0),
+        descuentoAprobado: false,
       };
 
       db.inscripciones = db.inscripciones || [];
@@ -563,8 +603,11 @@ router.post("/direccion/descuentos/aplicar", requireRole(["direccion"]), async (
       index = db.inscripciones.length - 1;
       ins = db.inscripciones[index];
     } else {
-      index = (db.inscripciones || []).findIndex(ins => ins.id === inscripcionId);
-      if (index === -1) return res.status(404).json({ success: false, message: "Inscripción no encontrada" });
+      index = (db.inscripciones || []).findIndex(item => item.id === inscripcionId);
+      if (index === -1) {
+        res.status(404).json({ success: false, message: "Inscripción no encontrada" });
+        return;
+      }
       ins = db.inscripciones[index];
     }
 
@@ -573,7 +616,8 @@ router.post("/direccion/descuentos/aplicar", requireRole(["direccion"]), async (
     if (pagoAsociado) {
       const estPago = normalizarTextoApi(pagoAsociado.estado);
       if (["completado", "validado", "pagado"].includes(estPago)) {
-        return res.status(400).json({ success: false, message: "No se puede aplicar descuento a una inscripción que ya ha sido pagada." });
+        res.status(400).json({ success: false, message: "No se puede aplicar descuento a una inscripción que ya ha sido pagada." });
+        return;
       }
     }
 
@@ -619,17 +663,24 @@ router.post("/direccion/descuentos/aplicar", requireRole(["direccion"]), async (
       success: true,
       data: mapDbEnrollmentToApi(db.inscripciones[index], db)
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.delete("/direccion/descuentos/remover/:inscripcionId", requireRole(["direccion"]), async (req, res) => {
+/**
+ * DELETE /api/v1/direccion/descuentos/remover/:inscripcionId
+ * Revierte los descuentos aplicados a una matrícula y restablece su costo original.
+ */
+router.delete("/direccion/descuentos/remover/:inscripcionId", requireRole(["direccion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { inscripcionId } = req.params;
+    const { inscripcionId } = req.params as any;
     const db = await getDb();
     const index = (db.inscripciones || []).findIndex(ins => ins.id === inscripcionId);
-    if (index === -1) return res.status(404).json({ success: false, message: "Inscripción no encontrada" });
+    if (index === -1) {
+      res.status(404).json({ success: false, message: "Inscripción no encontrada" });
+      return;
+    }
 
     const ins = db.inscripciones[index];
     const costoOriginal = Number(ins.costoOriginal ?? ins.costo ?? 0);
@@ -637,7 +688,7 @@ router.delete("/direccion/descuentos/remover/:inscripcionId", requireRole(["dire
     db.inscripciones[index] = {
       ...ins,
       costo: costoOriginal,
-      costoOriginal: undefined,
+      costoOriginal: costoOriginal,
       descuentoMonto: undefined,
       descuentoTipo: undefined,
       descuentoValor: undefined,
@@ -657,16 +708,19 @@ router.delete("/direccion/descuentos/remover/:inscripcionId", requireRole(["dire
       success: true,
       data: mapDbEnrollmentToApi(db.inscripciones[index], db)
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// --- CORRELATIVOS ---
-router.get("/direccion/correlativos", requireRole(["direccion", "caja"]), async (req, res) => {
+/**
+ * GET /api/v1/direccion/correlativos
+ * Retorna los rangos iniciales y numeraciones correlativas de recibos físicos, virtuales y egresos de caja.
+ */
+router.get("/direccion/correlativos", requireRole(["direccion", "caja"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
-    const c = db.correlativos || {};
+    const c = (db.correlativos || {}) as any;
     
     // Migración o inicialización
     if (c.reciboInicio === undefined) c.reciboInicio = c.recibo || "REC-0500";
@@ -693,16 +747,20 @@ router.get("/direccion/correlativos", requireRole(["direccion", "caja"]), async 
         egresoActive: c.egresoActive !== false
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.put("/direccion/correlativos", requireRole(["direccion"]), async (req, res) => {
+/**
+ * PUT /api/v1/direccion/correlativos
+ * Modifica o restablece los límites correlativos para los documentos contables emitidos.
+ */
+router.put("/direccion/correlativos", requireRole(["direccion"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const correlativos = req.body;
     const db = await getDb();
-    const actuales = db.correlativos || {};
+    const actuales = (db.correlativos || {}) as any;
     
     // Inicializar valores actuales si no existen
     if (actuales.reciboInicio === undefined) actuales.reciboInicio = actuales.recibo || "REC-0500";
@@ -712,7 +770,7 @@ router.put("/direccion/correlativos", requireRole(["direccion"]), async (req, re
     if (actuales.egresoInicio === undefined) actuales.egresoInicio = actuales.egreso || "EGR-0200";
     if (actuales.egresoActual === undefined) actuales.egresoActual = actuales.egreso || "EGR-0200";
 
-    const resolverValor = (nuevoValor, valorAnterior) => {
+    const resolverValor = (nuevoValor: any, valorAnterior: any) => {
       if (nuevoValor === undefined) return valorAnterior || "";
       return String(nuevoValor).trim();
     };
@@ -738,7 +796,7 @@ router.put("/direccion/correlativos", requireRole(["direccion"]), async (req, re
 
     await saveDb(db);
     res.json({ success: true, message: "Correlativos actualizados correctamente" });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });

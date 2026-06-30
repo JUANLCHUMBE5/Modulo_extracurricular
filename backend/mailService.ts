@@ -1,11 +1,11 @@
 import nodemailer from "nodemailer";
 import { jsPDF } from "jspdf";
+// @ts-ignore
 import PizZip from "pizzip";
-import Docxtemplater from "docxtemplater";
 
 // 1. Crear el transporter una sola vez a nivel de módulo
 // Si no están configuradas las variables, se crea en modo "mock" para imprimir en consola.
-let transporter = null;
+let transporter: nodemailer.Transporter | null = null;
 const isConfigured = Boolean(
   process.env.SMTP_HOST &&
   process.env.SMTP_USER &&
@@ -27,17 +27,36 @@ if (isConfigured) {
       }
     });
     console.log(`[MAIL] Transporter SMTP inicializado con el correo: ${process.env.SMTP_USER}`);
-  } catch (error) {
+  } catch (error: any) {
     console.error("[MAIL ERROR] No se pudo inicializar el transporter SMTP:", error.message);
   }
 } else {
   console.log("[MAIL WARNING] No se detectaron credenciales SMTP válidas en el archivo .env. Los correos se imprimirán en la consola del servidor para desarrollo.");
 }
 
+export interface EnviarCorreoParams {
+  para: string;
+  asunto: string;
+  html: string;
+  adjuntos?: any[];
+}
+
+export interface EnviarCorreoResult {
+  success: boolean;
+  messageId?: string;
+  reason?: string;
+  mock?: boolean;
+}
+
 /**
- * Función genérica de envío (Responsabilidad Única)
+ * Función genérica de envío de correos electrónicos.
+ * Si SMTP está configurado, envía un correo electrónico real usando Nodemailer;
+ * si no, simula el envío imprimiendo los detalles en la consola del servidor.
+ * 
+ * @param params Objeto con destinatario ('para'), 'asunto', contenido 'html' y 'adjuntos' opcionales.
+ * @returns Promesa con el resultado de éxito o motivo de omisión.
  */
-export async function enviarCorreoGenerico({ para, asunto, html, adjuntos = [] }) {
+export async function enviarCorreoGenerico({ para, asunto, html, adjuntos = [] }: EnviarCorreoParams): Promise<EnviarCorreoResult> {
   if (!para || !para.trim()) {
     console.log("[MAIL WARNING] Intento de envío omitido: El destinatario está vacío.");
     return { success: false, reason: "Destinatario vacío" };
@@ -56,7 +75,7 @@ export async function enviarCorreoGenerico({ para, asunto, html, adjuntos = [] }
       });
       console.log(`[MAIL SUCCESS] Correo enviado a ${para} (ID: ${info.messageId})`);
       return { success: true, messageId: info.messageId };
-    } catch (error) {
+    } catch (error: any) {
       console.error(`[MAIL ERROR] Falló el envío de correo a ${para}:`, error.message);
       throw error;
     }
@@ -73,10 +92,26 @@ export async function enviarCorreoGenerico({ para, asunto, html, adjuntos = [] }
   return { success: true, mock: true };
 }
 
+export interface PlantillaCorreoResult {
+  asunto: string;
+  html: string;
+}
+
 /**
- * Función de contenido: Plantilla para Confirmación de Pago
+ * Genera el asunto y cuerpo de correo HTML para la confirmación de una matrícula con pago validado.
+ * 
+ * @param estudianteNombre Nombre completo del estudiante matriculado.
+ * @param programaNombre Nombre del taller o programa extracurricular.
+ * @param costo Costo o precio de la matrícula abonado.
+ * @param nroRecibo Número de recibo de pago asignado.
+ * @returns Objeto con el asunto y el HTML del correo.
  */
-export function generarCorreoConfirmacionPago(estudianteNombre, programaNombre, costo, nroRecibo) {
+export function generarCorreoConfirmacionPago(
+  estudianteNombre: string,
+  programaNombre: string,
+  costo: number | string,
+  nroRecibo?: string
+): PlantillaCorreoResult {
   const asunto = `Confirmación de Matrícula - Recibo ${nroRecibo || 'Pendiente'}`;
   const html = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
@@ -108,7 +143,7 @@ export function generarCorreoConfirmacionPago(estudianteNombre, programaNombre, 
             </tr>
           </table>
         </div>
-
+ 
         <p>Adjunto a este correo encontrará la Ficha de Matrícula correspondiente en formato Word para sus registros institucionales.</p>
         
         <p style="margin-bottom: 0;">Atentamente,<br/><strong>Dirección de Extracurriculares</strong></p>
@@ -122,9 +157,20 @@ export function generarCorreoConfirmacionPago(estudianteNombre, programaNombre, 
 }
 
 /**
- * Función de contenido: Plantilla para Invitación a Taller
+ * Genera el asunto y cuerpo de correo HTML para invitar a un apoderado a inscribir a su hijo en un taller.
+ * 
+ * @param estudianteNombre Nombre completo del estudiante invitado.
+ * @param programaNombre Nombre del taller o programa extracurricular.
+ * @param fechaInicio Fecha estimada de inicio de clases.
+ * @param costo Costo o precio regular del taller.
+ * @returns Objeto con el asunto y el HTML de la invitación.
  */
-export function generarCorreoInvitacion(estudianteNombre, programaNombre, fechaInicio, costo) {
+export function generarCorreoInvitacion(
+  estudianteNombre: string,
+  programaNombre: string,
+  fechaInicio: string,
+  costo: number | string
+): PlantillaCorreoResult {
   const asunto = `Invitación Especial - Taller Extracurricular: ${programaNombre}`;
   const html = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
@@ -152,7 +198,7 @@ export function generarCorreoInvitacion(estudianteNombre, programaNombre, fechaI
             </tr>
           </table>
         </div>
-
+ 
         <p>Para confirmar su inscripción y asegurar la vacante, ingrese al Portal de Matrícula para Padres y suba el comprobante de pago correspondiente.</p>
         
         <p>Adjunto a este correo compartimos el documento descriptivo oficial con los objetivos, horarios detallados y requerimientos del taller.</p>
@@ -168,9 +214,16 @@ export function generarCorreoInvitacion(estudianteNombre, programaNombre, fechaI
 }
 
 /**
- * Resuelve las variables {{VARIABLE}} en el texto plano de la plantilla
+ * Resuelve y reemplaza los marcadores dinámicos {{VARIABLE}} en una plantilla de texto plano,
+ * calculando fechas, horarios formateados, almuerzos y datos del alumno.
+ * 
+ * @param texto Texto de la plantilla que contiene los marcadores.
+ * @param estudiante Ficha del estudiante con su información básica.
+ * @param inscrip Registro de la inscripción del alumno.
+ * @param prog Objeto con la información del taller/programa.
+ * @returns El texto plano completamente resuelto con los datos reales.
  */
-export function resolverPlantillaTexto(texto, estudiante, inscrip, prog) {
+export function resolverPlantillaTexto(texto: string, estudiante: any, inscrip: any, prog: any): string {
   if (!texto) return "";
 
   const costoNum = Number(inscrip.costoOriginal || inscrip.costo || prog.costo || 0).toFixed(2);
@@ -182,7 +235,7 @@ export function resolverPlantillaTexto(texto, estudiante, inscrip, prog) {
   const durStr = inscrip.duracion || prog.duracion || "8 semanas";
 
   // Formatear fechas en letras españolas
-  const formatearFecha = (fechaStr) => {
+  const formatearFecha = (fechaStr: any) => {
     if (!fechaStr) return "";
     const f = new Date(fechaStr);
     if (isNaN(f.getTime())) return fechaStr.split("T")[0];
@@ -197,7 +250,7 @@ export function resolverPlantillaTexto(texto, estudiante, inscrip, prog) {
   // Limpiar horario sin almuerzo
   const cleanHorario = rawHorario.replace(/almuerzo.*$/i, "").trim();
 
-  const datos = {
+  const datos: Record<string, string> = {
     FECHA: fechaHoy,
     TITULO: `${inscrip.tipoDocumento || "Comunicado"} ${programName}`.toUpperCase(),
     AREA: areaName,
@@ -235,9 +288,14 @@ export function resolverPlantillaTexto(texto, estudiante, inscrip, prog) {
 }
 
 /**
- * Genera el PDF a partir del texto resuelto del comunicado
+ * Genera un archivo PDF binario (Buffer) a partir de un texto plano previamente resuelto,
+ * formateándolo con márgenes y una franja superior institucional de color verde.
+ * 
+ * @param textoResuelto Texto ya procesado con las variables reales.
+ * @param programaNombre Nombre del programa para uso informativo.
+ * @returns Buffer del archivo PDF generado compatible con adjuntos SMTP.
  */
-export function generarComunicadoPdf(textoResuelto, programaNombre) {
+export function generarComunicadoPdf(textoResuelto: string, programaNombre?: string): Buffer {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -275,7 +333,7 @@ export function generarComunicadoPdf(textoResuelto, programaNombre) {
       return;
     }
 
-    const lineas = doc.splitTextToSize(pTexto, contentW);
+    const lineas: string[] = doc.splitTextToSize(pTexto, contentW);
     
     // Verificar salto de página
     if (y + (lineas.length * 6) > pageH - margin) {
@@ -307,9 +365,16 @@ export function generarComunicadoPdf(textoResuelto, programaNombre) {
 }
 
 /**
- * Carga la plantilla de Word, resuelve sus marcadores {{VARIABLE}} y retorna el buffer
+ * Carga un documento Word plantilla (comprimido en zip), reemplaza sus marcadores de texto a nivel de XML
+ * con los datos calculados del alumno e inscripción, y genera un nuevo archivo Word.
+ * 
+ * @param plantillaBase64 Código base64 del archivo .docx original.
+ * @param estudiante Objeto del estudiante.
+ * @param inscrip Registro de inscripción.
+ * @param prog Objeto del programa/taller.
+ * @returns Buffer del archivo Word resultante o null si no se aportó plantilla.
  */
-export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) {
+export function generarWordResuelto(plantillaBase64: string, estudiante: any, inscrip: any, prog: any): Buffer | null {
   if (!plantillaBase64) return null;
 
   const costoNum = Number(inscrip.costoOriginal || inscrip.costo || prog.costo || 0).toFixed(2);
@@ -321,7 +386,7 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
   const durStr = inscrip.duracion || prog.duracion || "8 semanas";
 
   // Helpers de fechas
-  const normalizarFecha = (valor) => {
+  const normalizarFecha = (valor: any): Date | null => {
     if (!valor) return null;
     if (valor instanceof Date) return isNaN(valor.getTime()) ? null : valor;
     const texto = String(valor).trim();
@@ -341,7 +406,7 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
     return !isNaN(f.getTime()) ? f : null;
   };
 
-  const formatearFechaLetras = (fecha, { incluirAnio = true, usarDeAnio = true } = {}) => {
+  const formatearFechaLetras = (fecha: Date | null, { incluirAnio = true, usarDeAnio = true } = {}): string => {
     if (!fecha) return "";
     const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
     const base = `${fecha.getDate()} de ${meses[fecha.getMonth()]}`;
@@ -349,7 +414,7 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
     return `${base}${usarDeAnio ? " de" : ""} ${fecha.getFullYear()}`;
   };
 
-  const formatearFechaInicioRango = (inicio, fin) => {
+  const formatearFechaInicioRango = (inicio: any, fin: any): string => {
     const fInicio = normalizarFecha(inicio);
     const fFin = normalizarFecha(fin);
     if (!fInicio) return "";
@@ -357,15 +422,15 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
     return formatearFechaLetras(fInicio, { incluirAnio: !mismoAnio });
   };
 
-  const formatearFechaFinRango = (inicio, fin) => {
+  const formatearFechaFinRango = (inicio: any, fin: any): string => {
     const fInicio = normalizarFecha(inicio);
     const fFin = normalizarFecha(fin);
     if (!fFin) return "";
-    const mismoAnio = fInicio && fInicio.getFullYear() === fFin.getFullYear();
+    const mismoAnio = Boolean(fInicio && fInicio.getFullYear() === fFin.getFullYear());
     return formatearFechaLetras(fFin, { incluirAnio: true, usarDeAnio: mismoAnio });
   };
 
-  const formatearRangoFechasLetras = (inicio, fin) => {
+  const formatearRangoFechasLetras = (inicio: any, fin: any): string => {
     const fInicio = normalizarFecha(inicio);
     const fFin = normalizarFecha(fin);
     if (!fInicio && !fFin) return "";
@@ -382,8 +447,8 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
   const seccionAlumno = inscrip.seccionEstudiante || inscrip.seccion || estudiante.seccion || "";
   const gradoSeccion = `${gradoAlumno} ${seccionAlumno}`.trim();
 
-  const coincideGrado = (valorGrupo, gradoA) => {
-    const cleanG = (val) => String(val || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(":", " ");
+  const coincideGrado = (valorGrupo: any, gradoA: string) => {
+    const cleanG = (val: any) => String(val || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(":", " ");
     const grupo = cleanG(valorGrupo);
     const alumno = cleanG(gradoA);
     const numG = grupo.match(/\d+/)?.[0];
@@ -395,10 +460,10 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
     return !nivelG || !nivelA || nivelG === nivelA;
   };
 
-  const grupo = grupos.find(item => (item.grados || []).some(g => coincideGrado(g, gradoAlumno)));
-  const gradoDelTurno = grupo?.grados?.find(g => coincideGrado(g, gradoAlumno)) || gradoAlumno;
+  const grupo = grupos.find((item: any) => (item.grados || []).some((g: any) => coincideGrado(g, gradoAlumno)));
+  const gradoDelTurno = grupo?.grados?.find((g: any) => coincideGrado(g, gradoAlumno)) || gradoAlumno;
   
-  const formatearGrado = (valor) => {
+  const formatearGrado = (valor: any) => {
     const texto = String(valor || "").replace(/^(Inicial|Primaria|Secundaria):/i, "").trim();
     if (!texto) return "";
     const numero = texto.match(/\d+/)?.[0];
@@ -409,9 +474,9 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
 
   const nivelesTurno = gradoDelTurno ? [formatearGrado(gradoDelTurno)] : [];
 
-  const formatRangoHora = (hInicio, hFin) => {
+  const formatRangoHora = (hInicio: any, hFin: any) => {
     if (!hInicio || !hFin) return "";
-    const fmt = (val) => {
+    const fmt = (val: any) => {
       const match = String(val).match(/^(\d{1,2}):(\d{2})/);
       if (!match) return val;
       const h = Number(match[1]);
@@ -422,13 +487,13 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
     return `${fmt(hInicio)} a ${fmt(hFin)}`;
   };
 
-  const extraerDiasHorario = (horario) => {
+  const extraerDiasHorario = (horario: any) => {
     const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
     const texto = String(horario || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     return dias.filter(d => texto.includes(d.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""))).join(", ");
   };
 
-  const extraerAlmuerzoHorario = (horario) => {
+  const extraerAlmuerzoHorario = (horario: any) => {
     const match = String(horario || "").match(/almuerzo\s+([^,·/]+)/i);
     const valor = match?.[1]?.trim() || "";
     const horas = [...valor.matchAll(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/gi)]
@@ -442,7 +507,7 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
     return valor.replace(/\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)\b/gi, "").trim();
   };
 
-  const extraerHorasHorario = (horario) => {
+  const extraerHorasHorario = (horario: any) => {
     const clean = String(horario || "").replace(/almuerzo.*$/i, "").trim();
     const horas = [...clean.matchAll(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/gi)]
       .map(m => {
@@ -472,17 +537,17 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
   }
 
   // Filas para la tabla
-  const gruposFiltrados = grupos.filter(item => 
-    (item.grados || []).some(g => coincideGrado(g, gradoAlumno))
+  const gruposFiltrados = grupos.filter((item: any) => 
+    (item.grados || []).some((g: any) => coincideGrado(g, gradoAlumno))
   );
   const gruposAMostrar = gruposFiltrados.length > 0 ? gruposFiltrados : grupos;
 
-  const filas = gruposAMostrar.map(g => ({
+  const filas = gruposAMostrar.map((g: any) => ({
     nivel: (g.grados || []).map(formatearGrado).filter(Boolean).join(", "),
     dia: g.dia || "",
     almuerzo: formatRangoHora(g.almuerzoInicio, g.almuerzoFin),
     clase: formatRangoHora(g.horaInicio, g.horaFin)
-  })).filter(f => f.nivel || f.dia || f.almuerzo || f.clase);
+  })).filter((f: any) => f.nivel || f.dia || f.almuerzo || f.clase);
 
   const n1 = filas[0]?.nivel || formatearGrado(gradoAlumno) || "";
   const n2 = filas[1]?.nivel || "";
@@ -496,7 +561,7 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
   const rawHorario = inscrip.horario || prog.horario || "";
   const cleanHorario = rawHorario.replace(/almuerzo.*$/i, "").trim();
 
-  const datos = {
+  const datos: Record<string, string> = {
     FECHA: fechaHoy,
     TITULO: `${inscrip.tipoDocumento || "Comunicado"} ${programName}`.toUpperCase(),
     AREA: areaName,
@@ -530,14 +595,14 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
     /^word\/(document|header|footer)\d*\.xml$/i.test(name)
   );
 
-  const escaparXml = (valor) => {
+  const escaparXml = (valor: any) => {
     return String(valor ?? "")
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;");
   };
 
-  const escaparRegExp = (valor) => {
+  const escaparRegExp = (valor: any) => {
     return String(valor).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   };
 
@@ -563,5 +628,3 @@ export function generarWordResuelto(plantillaBase64, estudiante, inscrip, prog) 
 
   return zip.generate({ type: "nodebuffer" });
 }
-
-

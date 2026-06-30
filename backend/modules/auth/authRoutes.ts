@@ -1,15 +1,16 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
+// @ts-ignore
 import bcrypt from "bcryptjs";
 import rateLimit from "express-rate-limit";
 import { getDb, saveDb, resetDb } from "../../dbLocal.js";
 import { registrarAuditoria, prepararLogsAcceso } from "../../audit.js";
-import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { requireAuth, requireRole, AuthenticatedRequest } from "../../middleware/auth.js";
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 
-// Limitador de tasa para mitigar ataques de fuerza bruta y scripts automatizados
+// Limitador de tasa para mitigar ataques de fuerza bruta y scripts automatizados en rutas de login
 const loginLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
   max: 5, // Máximo 5 intentos por IP cada minuto
@@ -21,9 +22,13 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-
-// Helper to generate temporary passwords
-function generarContrasenaTemporal() {
+/**
+ * Genera una contraseña aleatoria de 8 caracteres alfanuméricos.
+ * Se usa para restablecimientos de contraseña temporales de usuarios operadores.
+ * 
+ * @returns Cadena de 8 caracteres de contraseña.
+ */
+function generarContrasenaTemporal(): string {
   const caracteres = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
   let resultado = "";
   for (let i = 0; i < 8; i++) {
@@ -32,8 +37,11 @@ function generarContrasenaTemporal() {
   return resultado;
 }
 
-// Legacy users list endpoint
-router.get("/api/usuarios", async (_req, res) => {
+/**
+ * GET /api/usuarios
+ * Endpoint heredado (Legacy) para listar usuarios sanitizados (sin contraseñas).
+ */
+router.get("/api/usuarios", async (_req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const sanitizedUsuarios = (db.usuarios || []).map(({ contrasena, ...u }) => u);
@@ -43,8 +51,13 @@ router.get("/api/usuarios", async (_req, res) => {
   }
 });
 
-// Padres Validar (Login for Parents)
-router.post("/api/v1/extracurricular/padres/validar", loginLimiter, async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/padres/validar
+ * Endpoint de inicio de sesión y autenticación para el Portal de Padres de Familia.
+ * Valida el DNI y la Fecha de Nacimiento del estudiante.
+ * Retorna un JWT firmado específico para Padres.
+ */
+router.post("/api/v1/extracurricular/padres/validar", loginLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { dni, fecha_nacimiento } = req.body;
     const db = await getDb();
@@ -86,18 +99,23 @@ router.post("/api/v1/extracurricular/padres/validar", loginLimiter, async (req, 
       await registrarAuditoria(dni || "desconocido", "padres", "PADRES_VALIDAR_FALLIDO", { ip: req.ip });
       res.status(400).json({ success: false, message: "DNI o fecha de nacimiento incorrectos." });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Auth Login
-router.post("/api/v1/auth/login", loginLimiter, async (req, res) => {
+/**
+ * POST /api/v1/auth/login
+ * Endpoint de inicio de sesión y autenticación para Operadores del Sistema (Caja, Secretaría, Dirección, etc.).
+ * Valida usuario y contraseña. Si la contraseña guardada está en texto plano, la encripta automáticamente en bcrypt.
+ * Retorna el JWT firmado con los permisos granulares del usuario.
+ */
+router.post("/api/v1/auth/login", loginLimiter, async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password } = req.body;
     const db = await getDb();
     const cleanUser = String(username || "").trim().toLowerCase();
-    const aliases = {
+    const aliases: Record<string, string> = {
       asistente: "secretaria",
       cajera: "caja",
       secre: "secretaria",
@@ -112,7 +130,8 @@ router.post("/api/v1/auth/login", loginLimiter, async (req, res) => {
       const contrasenaGuardada = userObj.contrasena;
       if (!contrasenaGuardada) {
         await registrarAuditoria(username, "desconocido", "LOGIN_FALLIDO", { ip: req.ip, motivo: "Usuario sin contraseña" });
-        return res.status(401).json({ success: false, message: "Usuario o contraseña incorrectos." });
+        res.status(401).json({ success: false, message: "Usuario o contraseña incorrectos." });
+        return;
       }
       let passwordValido = false;
       let migrarContrasena = false;
@@ -132,7 +151,7 @@ router.post("/api/v1/auth/login", loginLimiter, async (req, res) => {
           await saveDb(db);
         }
 
-        const rolesMap = {
+        const rolesMap: Record<string, string> = {
           Administrador: "administrador",
           Secretaria: "secretaria",
           Asistente: "secretaria",
@@ -179,16 +198,19 @@ router.post("/api/v1/auth/login", loginLimiter, async (req, res) => {
       await registrarAuditoria(username, "desconocido", "LOGIN_FALLIDO", { ip: req.ip, motivo: "Usuario inactivo o no existe" });
       res.status(401).json({ success: false, message: "Usuario o contraseña incorrectos." });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Auth Get Current User
-router.get("/api/v1/auth/me", requireAuth, async (req, res) => {
+/**
+ * GET /api/v1/auth/me
+ * Endpoint protegido para obtener los datos del operador actualmente autenticado en base al JWT.
+ */
+router.get("/api/v1/auth/me", requireAuth, async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     if (req.user.role === "padres") {
-      return res.json({
+      res.json({
         success: true,
         data: {
           user: {
@@ -200,6 +222,7 @@ router.get("/api/v1/auth/me", requireAuth, async (req, res) => {
           }
         }
       });
+      return;
     }
 
     const db = await getDb();
@@ -208,10 +231,11 @@ router.get("/api/v1/auth/me", requireAuth, async (req, res) => {
     );
 
     if (!userObj || userObj.estado !== "Activo") {
-      return res.status(401).json({ success: false, message: "Usuario inactivo o no autorizado." });
+      res.status(401).json({ success: false, message: "Usuario inactivo o no autorizado." });
+      return;
     }
 
-    const rolesMap = {
+    const rolesMap: Record<string, string> = {
       Administrador: "administrador",
       Secretaria: "secretaria",
       Asistente: "secretaria",
@@ -238,52 +262,72 @@ router.get("/api/v1/auth/me", requireAuth, async (req, res) => {
         }
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Administrator Routes
-router.get("/api/v1/administrador/audit-logs", requireAuth, requireRole(["administrador"]), async (req, res) => {
+// --- RUTAS ADMINISTRADORAS (Requieren rol de administrador) ---
+
+/**
+ * GET /api/v1/administrador/audit-logs
+ * Obtiene los registros de auditoría interna formateados para el panel de administración.
+ */
+router.get("/api/v1/administrador/audit-logs", requireAuth, requireRole(["administrador"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     res.json({ success: true, data: prepararLogsAcceso(db.auditLogs || []) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.get("/api/v1/administrador/db/backup", requireAuth, requireRole(["administrador"]), async (req, res) => {
+/**
+ * GET /api/v1/administrador/db/backup
+ * Genera y descarga el volcado de base de datos local completa (Backup JSON).
+ */
+router.get("/api/v1/administrador/db/backup", requireAuth, requireRole(["administrador"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     res.json({ success: true, data: db });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post("/api/v1/administrador/db/reset", requireAuth, requireRole(["administrador"]), async (req, res) => {
+/**
+ * POST /api/v1/administrador/db/reset
+ * Restablece físicamente todas las entidades del servidor a sus valores por defecto de fábrica.
+ */
+router.post("/api/v1/administrador/db/reset", requireAuth, requireRole(["administrador"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await resetDb();
     await registrarAuditoria(req.user.username, req.user.role, "DB_RESET", { ip: req.ip });
     res.json({ success: true, data: db });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Users management (requires admin)
-router.get("/api/v1/usuarios", requireAuth, requireRole(["administrador"]), async (req, res) => {
+/**
+ * GET /api/v1/usuarios
+ * Lista la totalidad de los usuarios del sistema (sanitizando contraseñas) para la pantalla de configuración.
+ */
+router.get("/api/v1/usuarios", requireAuth, requireRole(["administrador"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const sanitizedUsuarios = (db.usuarios || []).map(({ contrasena, ...u }) => u);
     res.json({ success: true, data: sanitizedUsuarios });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post("/api/v1/usuarios", requireAuth, requireRole(["administrador"]), async (req, res) => {
+/**
+ * POST /api/v1/usuarios
+ * Registra un nuevo operador en el sistema (encriptando su contraseña mediante bcrypt).
+ */
+router.post("/api/v1/usuarios", requireAuth, requireRole(["administrador"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const contrasenaPlana = req.body.contrasena || "1234";
@@ -304,16 +348,23 @@ router.post("/api/v1/usuarios", requireAuth, requireRole(["administrador"]), asy
 
     const { contrasena, ...sanitizedNuevo } = nuevo;
     res.json({ success: true, data: sanitizedNuevo });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.put("/api/v1/usuarios/:id", requireAuth, requireRole(["administrador"]), async (req, res) => {
+/**
+ * PUT /api/v1/usuarios/:id
+ * Modifica la información, el rol o el listado de permisos del operador especificado.
+ */
+router.put("/api/v1/usuarios/:id", requireAuth, requireRole(["administrador"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(req.params.id));
-    if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Usuario no encontrado." });
+      return;
+    }
 
     let contrasena = db.usuarios[idx].contrasena;
     if (req.body.contrasena && req.body.contrasena !== contrasena) {
@@ -340,16 +391,23 @@ router.put("/api/v1/usuarios/:id", requireAuth, requireRole(["administrador"]), 
 
     const { contrasena: _, ...sanitizedUpdated } = updated;
     res.json({ success: true, data: sanitizedUpdated });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.put("/api/v1/usuarios/:id/estado", requireAuth, requireRole(["administrador"]), async (req, res) => {
+/**
+ * PUT /api/v1/usuarios/:id/estado
+ * Habilita o deshabilita (Inactivo) la cuenta de un usuario operador.
+ */
+router.put("/api/v1/usuarios/:id/estado", requireAuth, requireRole(["administrador"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(req.params.id));
-    if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Usuario no encontrado." });
+      return;
+    }
 
     db.usuarios[idx].estado = req.body.estado;
     await saveDb(db);
@@ -358,16 +416,23 @@ router.put("/api/v1/usuarios/:id/estado", requireAuth, requireRole(["administrad
 
     const { contrasena, ...sanitizedUser } = db.usuarios[idx];
     res.json({ success: true, data: sanitizedUser });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post("/api/v1/usuarios/:id/resetear-contrasena", requireAuth, requireRole(["administrador"]), async (req, res) => {
+/**
+ * POST /api/v1/usuarios/:id/resetear-contrasena
+ * Restablece la contraseña de un operador al valor por defecto "1234".
+ */
+router.post("/api/v1/usuarios/:id/resetear-contrasena", requireAuth, requireRole(["administrador"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(req.params.id));
-    if (idx === -1) return res.status(404).json({ success: false, message: "Usuario no encontrado." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Usuario no encontrado." });
+      return;
+    }
 
     db.usuarios[idx].contrasena = bcrypt.hashSync("1234", 10);
     await saveDb(db);
@@ -376,12 +441,16 @@ router.post("/api/v1/usuarios/:id/resetear-contrasena", requireAuth, requireRole
 
     const { contrasena, ...sanitizedUser } = db.usuarios[idx];
     res.json({ success: true, data: sanitizedUser });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.delete("/api/v1/usuarios/:id", requireAuth, requireRole(["administrador"]), async (req, res) => {
+/**
+ * DELETE /api/v1/usuarios/:id
+ * Elimina físicamente el operador especificado de la base de datos local.
+ */
+router.delete("/api/v1/usuarios/:id", requireAuth, requireRole(["administrador"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     db.usuarios = (db.usuarios || []).filter(u => String(u.id) !== String(req.params.id));
@@ -390,7 +459,7 @@ router.delete("/api/v1/usuarios/:id", requireAuth, requireRole(["administrador"]
     await registrarAuditoria(req.user.username, req.user.role, "USUARIO_ELIMINAR", { usuarioId: req.params.id });
 
     res.json({ success: true, data: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });

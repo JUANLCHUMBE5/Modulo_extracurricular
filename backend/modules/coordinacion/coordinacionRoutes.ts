@@ -1,8 +1,8 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { randomUUID } from "crypto";
 import multer from "multer";
 import { getDb, saveDb } from "../../dbLocal.js";
-import { requireRole } from "../../middleware/auth.js";
+import { requireRole, AuthenticatedRequest } from "../../middleware/auth.js";
 import { registrarAuditoria } from "../../audit.js";
 import { enviarCorreoGenerico, generarCorreoInvitacion } from "../../mailService.js";
 import { limpiarDni, MAX_FILE_SIZE, normalizarPeriodo, parseJsonArray, parseJsonObject } from "../../fileService.js";
@@ -37,9 +37,12 @@ const INSTITUTIONAL_ASSET_KEYS = [
   "selloInstitucion",
 ];
 
-function normalizarConfiguracionInstitucional(valor = {}) {
-  const origen = valor && typeof valor === "object" ? valor : {};
-  return INSTITUTIONAL_ASSET_KEYS.reduce((acc, key) => {
+/**
+ * Normaliza el objeto de configuración institucional asegurando que tenga todas las claves requeridas.
+ */
+function normalizarConfiguracionInstitucional(valor: any = {}): any {
+  const origen = (valor && typeof valor === "object" ? valor : {}) as any;
+  return INSTITUTIONAL_ASSET_KEYS.reduce((acc: any, key) => {
     const item = origen[key];
     acc[key] = item && typeof item === "object"
       ? {
@@ -53,7 +56,10 @@ function normalizarConfiguracionInstitucional(valor = {}) {
   }, {});
 }
 
-function esProgramaCambridgeApi(programa = {}) {
+/**
+ * Comprueba si un programa contiene palabras clave que lo clasifiquen como programa Cambridge.
+ */
+function esProgramaCambridgeApi(programa: any = {}): boolean {
   const texto = normalizarTextoApi([
     programa.nombre,
     programa.programa,
@@ -72,14 +78,17 @@ function esProgramaCambridgeApi(programa = {}) {
     texto.includes("ingless") ||
     texto.includes("certificacion") ||
     texto.includes("preparacion") ||
-    (programa.plantillaVariables || []).some((variable) =>
+    (programa.plantillaVariables || []).some((variable: string) =>
       ["anio_cert", "nivel_cambridge", "chk_a", "chk_b", "chk_c"].includes(variable)
     );
 }
 
-function claveAlumnoInvitadoApi(alumno = {}) {
-  const dni = limpiarDni(alumno.dni);
-  if (dni) return `dni:${dni}`;
+/**
+ * Genera una clave única para identificar de manera unívoca a un estudiante invitado en base a DNI, Código o Nombre.
+ */
+function claveAlumnoInvitadoApi(alumno: any = {}): string {
+  const DNI = limpiarDni(alumno.dni);
+  if (DNI) return `dni:${DNI}`;
   const codigo = normalizarTextoApi(alumno.codigoEstudiante || alumno.codigo_estudiante);
   if (codigo) return `codigo:${codigo}`;
   const nombre = normalizarTextoApi(
@@ -91,8 +100,11 @@ function claveAlumnoInvitadoApi(alumno = {}) {
   return nombre ? `nombre:${nombre}:${grado}` : "";
 }
 
-// Legacy programs listing
-router.get("/api/programas", async (_req, res) => {
+/**
+ * GET /api/programas
+ * Legacy: Listado completo de programas crudos de la base de datos.
+ */
+router.get("/api/programas", async (_req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     res.json(db.programas || []);
@@ -101,8 +113,11 @@ router.get("/api/programas", async (_req, res) => {
   }
 });
 
-// Legacy categories listing
-router.get("/api/categorias", async (_req, res) => {
+/**
+ * GET /api/categorias
+ * Legacy: Listado de categorías de talleres.
+ */
+router.get("/api/categorias", async (_req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     res.json(db.categorias || []);
@@ -111,17 +126,24 @@ router.get("/api/categorias", async (_req, res) => {
   }
 });
 
-// Categorias CRUD
-router.get("/api/v1/extracurricular/categorias", async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/categorias
+ * Retorna las categorías de talleres registradas.
+ */
+router.get("/api/v1/extracurricular/categorias", async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     res.json({ success: true, data: db.categorias || [] });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post("/api/v1/extracurricular/categorias", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/categorias
+ * Agrega una nueva categoría de taller.
+ */
+router.post("/api/v1/extracurricular/categorias", requireRole(["coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const { nombre } = req.body;
     const db = await getDb();
@@ -130,80 +152,106 @@ router.post("/api/v1/extracurricular/categorias", requireRole(["coordinacion"]),
       await saveDb(db);
     }
     res.json({ success: true, data: nombre });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.delete("/api/v1/extracurricular/categorias/:nombre", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * DELETE /api/v1/extracurricular/categorias/:nombre
+ * Elimina una categoría de taller.
+ */
+router.delete("/api/v1/extracurricular/categorias/:nombre", requireRole(["coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const { nombre } = req.params;
     const db = await getDb();
     db.categorias = (db.categorias || []).filter(c => String(c).toLowerCase() !== String(nombre).toLowerCase());
     await saveDb(db);
     res.json({ success: true, data: nombre });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.get("/api/v1/extracurricular/coordinacion/configuracion-institucional", requireRole(["coordinacion", "direccion"]), async (_req, res) => {
+/**
+ * GET /api/v1/extracurricular/coordinacion/configuracion-institucional
+ * Retorna logotipos y firmas de la institución autorizada.
+ */
+router.get("/api/v1/extracurricular/coordinacion/configuracion-institucional", requireRole(["coordinacion", "direccion"]), async (_req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     res.json({
       success: true,
       data: normalizarConfiguracionInstitucional(db.configuracionInstitucional),
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.put("/api/v1/extracurricular/coordinacion/configuracion-institucional", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/coordinacion/configuracion-institucional
+ * Guarda y actualiza logotipos y firmas de la institución autorizada.
+ */
+router.put("/api/v1/extracurricular/coordinacion/configuracion-institucional", requireRole(["coordinacion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     db.configuracionInstitucional = normalizarConfiguracionInstitucional(req.body || {});
     await saveDb(db);
     await registrarAuditoria(req.user?.username || "Coordinacion Academica", req.user?.role || "coordinacion", "CONFIG_INSTITUCIONAL_GUARDAR", {
-      recursos: INSTITUTIONAL_ASSET_KEYS.filter((key) => db.configuracionInstitucional[key]?.dataUrl),
+      recursos: INSTITUTIONAL_ASSET_KEYS.filter((key) => (db.configuracionInstitucional as any)[key]?.dataUrl),
     });
     res.json({
       success: true,
       data: db.configuracionInstitucional,
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Programas CRUD
-router.get("/api/v1/extracurricular/programas", async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/programas
+ * Retorna todos los talleres/programas mapeados al esquema limpio de Frontend.
+ */
+router.get("/api/v1/extracurricular/programas", async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     res.json({ success: true, data: (db.programas || []).map((programa) => mapDbProgramToApi(programa, db)) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.get("/api/v1/extracurricular/programas/:id", async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/programas/:id
+ * Retorna un taller por su ID de programa.
+ */
+router.get("/api/v1/extracurricular/programas/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const prog = (db.programas || []).find(p => p.id === req.params.id);
-    if (!prog) return res.status(404).json({ success: false, message: "Programa no encontrado." });
+    if (!prog) {
+      res.status(404).json({ success: false, message: "Programa no encontrado." });
+      return;
+    }
     res.json({ success: true, data: mapDbProgramToApi(prog, db) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/programas
+ * Registra un nuevo programa académico y autoincrementa su ID.
+ */
+router.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const id = `PROG-${String(db.nextProgramaId || 1).padStart(3, "0")}`;
     db.nextProgramaId = (db.nextProgramaId || 1) + 1;
 
-    const nuevo = {
+    const nuevo: any = {
       id,
       nombre: req.body.nombre_programa,
       categoria: req.body.categoria,
@@ -282,18 +330,22 @@ router.post("/api/v1/extracurricular/programas", requireRole(["coordinacion"]), 
       cupos: nuevo.cupos
     });
     res.json({ success: true, data: mapDbProgramToApi(nuevo, db) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post("/api/v1/extracurricular/programas/documento", requireRole(["secretaria", "coordinacion"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/programas/documento
+ * Registra un borrador de programa basándose en la pre-configuración de un documento.
+ */
+router.post("/api/v1/extracurricular/programas/documento", requireRole(["secretaria", "coordinacion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const id = `PROG-${String(db.nextProgramaId || 1).padStart(3, "0")}`;
     db.nextProgramaId = (db.nextProgramaId || 1) + 1;
 
-    const nuevo = {
+    const nuevo: any = {
       id,
       nombre: req.body.nombre_programa,
       categoria: req.body.categoria,
@@ -349,16 +401,24 @@ router.post("/api/v1/extracurricular/programas/documento", requireRole(["secreta
       creadoDesdeDocumento: true
     });
     res.json({ success: true, data: mapDbProgramToApi(nuevo, db) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/programas/:id
+ * Modifica la totalidad de los datos de un programa y propaga los cambios (fechas, nombres, costos)
+ * en cascada a inscripciones, pagos y asistencias ligadas para evitar inconsistencias.
+ */
+router.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const idx = (db.programas || []).findIndex(p => p.id === req.params.id);
-    if (idx === -1) return res.status(404).json({ success: false, message: "Programa no encontrado." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Programa no encontrado." });
+      return;
+    }
 
     let nuevoEstado = db.programas[idx].estado;
     if (nuevoEstado === "Finalizado") {
@@ -446,7 +506,7 @@ router.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
 
     // Sync enrollments
     if (Array.isArray(db.inscripciones)) {
-      db.inscripciones = db.inscripciones.map(item => {
+      db.inscripciones = db.inscripciones.map((item: any) => {
         if (item.programaId === req.params.id) {
           const gradoEst = item.gradoEstudiante || item.grado || "";
           return {
@@ -492,8 +552,8 @@ router.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
 
     // Sync payments
     if (Array.isArray(db.pagos)) {
-      db.pagos = db.pagos.map(item => {
-        const isLinkedToInscripcion = item.inscripcionId && (db.inscripciones || []).some(ins => ins.id === item.inscripcionId && ins.programaId === req.params.id);
+      db.pagos = db.pagos.map((item: any) => {
+        const isLinkedToInscripcion = item.inscripcionId && (db.inscripciones || []).some((ins: any) => ins.id === item.inscripcionId && ins.programaId === req.params.id);
         const isLinkedByProgramId = item.programaId === req.params.id;
         const isLinkedByProgramName = oldName && normalizarTextoApi(item.programa) === normalizarTextoApi(oldName);
 
@@ -511,7 +571,7 @@ router.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
 
     // Sync attendances
     if (Array.isArray(db.asistencias)) {
-      db.asistencias = db.asistencias.map(item => {
+      db.asistencias = db.asistencias.map((item: any) => {
         const isLinkedByProgramId = item.programaId === req.params.id;
         const isLinkedByProgramName = oldName && normalizarTextoApi(item.programa) === normalizarTextoApi(oldName);
 
@@ -530,7 +590,7 @@ router.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
 
     // Sync documents
     if (Array.isArray(db.documentosGenerados)) {
-      db.documentosGenerados = db.documentosGenerados.map(item => {
+      db.documentosGenerados = db.documentosGenerados.map((item: any) => {
         const isLinkedByProgramId = item.programaId === req.params.id;
         const isLinkedByProgramName = oldName && normalizarTextoApi(item.programa) === normalizarTextoApi(oldName);
 
@@ -545,8 +605,9 @@ router.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
       });
     }
 
-    if (db.invitadosPorPrograma && db.invitadosPorPrograma[req.params.id]) {
-      db.invitadosPorPrograma[req.params.id] = db.invitadosPorPrograma[req.params.id].map(invitado => ({
+    const idParam = req.params.id as string;
+    if (db.invitadosPorPrograma && db.invitadosPorPrograma[idParam]) {
+      db.invitadosPorPrograma[idParam] = db.invitadosPorPrograma[idParam].map((invitado: any) => ({
         ...invitado,
         periodo: normalizarPeriodoApi(updated.periodo)
       }));
@@ -560,23 +621,31 @@ router.put("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]
       cupos: updated.cupos
     });
     res.json({ success: true, data: mapDbProgramToApi(updated, db) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.put("/api/v1/extracurricular/programas/:id/estado", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/programas/:id/estado
+ * Modifica de forma directa el estado de un programa.
+ */
+router.put("/api/v1/extracurricular/programas/:id/estado", requireRole(["coordinacion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const idx = (db.programas || []).findIndex(p => p.id === req.params.id);
-    if (idx === -1) return res.status(404).json({ success: false, message: "Programa no encontrado." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Programa no encontrado." });
+      return;
+    }
 
     if (db.programas[idx].estado === "Finalizado" && req.body.estado === "Habilitado") {
       const d = new Date();
       const tzOffset = d.getTimezoneOffset() * 60000;
       const hoy = (new Date(d.getTime() - tzOffset)).toISOString().slice(0, 10);
-      if (db.programas[idx].fechaFin < hoy) {
-        return res.status(400).json({ success: false, message: "El programa ya finalizó por fecha de vigencia. Modifique la fecha fin para volver a usarlo." });
+      if (db.programas[idx].fechaFin && db.programas[idx].fechaFin! < hoy) {
+        res.status(400).json({ success: false, message: "El programa ya finalizó por fecha de vigencia. Modifique la fecha fin para volver a usarlo." });
+        return;
       }
     }
 
@@ -590,18 +659,23 @@ router.put("/api/v1/extracurricular/programas/:id/estado", requireRole(["coordin
       estadoNuevo: req.body.estado
     });
     res.json({ success: true, data: mapDbProgramToApi(db.programas[idx], db) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.delete("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * DELETE /api/v1/extracurricular/programas/:id
+ * Cambia el estado de un programa a 'Archivado'. No borra físicamente.
+ */
+router.delete("/api/v1/extracurricular/programas/:id", requireRole(["coordinacion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const progId = req.params.id;
     const progAEliminar = (db.programas || []).find(p => p.id === progId);
     if (!progAEliminar) {
-      return res.status(404).json({ success: false, message: "Programa no encontrado." });
+      res.status(404).json({ success: false, message: "Programa no encontrado." });
+      return;
     }
 
     progAEliminar.estado = "Archivado";
@@ -612,20 +686,23 @@ router.delete("/api/v1/extracurricular/programas/:id", requireRole(["coordinacio
       archivado: true
     });
     res.json({ success: true, data: true });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Invitaciones e Historial de Cargas
-router.get("/api/v1/extracurricular/programas/:programaId/invitados", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/programas/:programaId/invitados
+ * Obtiene el listado de alumnos invitados asignados a este taller, excluyendo a los que ya tengan una matrícula activa.
+ */
+router.get("/api/v1/extracurricular/programas/:programaId/invitados", requireRole(["coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
-    const programaId = req.params.programaId;
+    const programaId = req.params.programaId as string;
     const rawInvitados = db.invitadosPorPrograma?.[programaId] || [];
     
     // Enriquecer invitados con el código de estudiante de la base general si no lo tienen
-    const todosInvitados = rawInvitados.map(inv => ({
+    const todosInvitados = rawInvitados.map((inv: any) => ({
       ...inv,
       codigoEstudiante: inv.codigoEstudiante || db.estudiantes?.[inv.dni]?.codigoEstudiante || ""
     }));
@@ -635,7 +712,8 @@ router.get("/api/v1/extracurricular/programas/:programaId/invitados", requireRol
       .filter((ins) => ins.programaId === programaId && ins.estadoInscripcion !== "Anulada");
 
     if (!inscripcionesActivas.length) {
-      return res.json({ success: true, data: todosInvitados });
+      res.json({ success: true, data: todosInvitados });
+      return;
     }
 
     const dnisMatriculados = new Set(
@@ -672,7 +750,7 @@ router.get("/api/v1/extracurricular/programas/:programaId/invitados", requireRol
 
       if (codigoInvitado) {
         const estudianteBase = Object.values(db.estudiantes || {}).find(
-          (e) => String(e.codigoEstudiante || "").trim().toUpperCase() === codigoInvitado
+          (e: any) => String(e.codigoEstudiante || "").trim().toUpperCase() === codigoInvitado
         );
         if (estudianteBase && estudianteBase.dni) {
           const dniDesdeBase = String(estudianteBase.dni).replace(/\D/g, "");
@@ -686,23 +764,31 @@ router.get("/api/v1/extracurricular/programas/:programaId/invitados", requireRol
     });
 
     res.json({ success: true, data: filtered });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.get("/api/v1/extracurricular/programas/:programaId/matriculados", async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/programas/:programaId/matriculados
+ * Obtiene las inscripciones del programa especificado (filtrando anuladas).
+ */
+router.get("/api/v1/extracurricular/programas/:programaId/matriculados", async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const list = (db.inscripciones || [])
       .filter(item => item.programaId === req.params.programaId && item.estadoInscripcion !== "Anulada");
     res.json({ success: true, data: list.map((item) => mapDbEnrollmentToApi(item, db)) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.get("/api/v1/extracurricular/programas/:programaId/asistencias", async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/programas/:programaId/asistencias
+ * Obtiene y enriquece los logs de asistencia de los estudiantes de un programa específico.
+ */
+router.get("/api/v1/extracurricular/programas/:programaId/asistencias", async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const prog = db.programas.find(p => p.id === req.params.programaId);
@@ -713,14 +799,18 @@ router.get("/api/v1/extracurricular/programas/:programaId/asistencias", async (r
         const coincideNombre = nomProg && normalizarTextoApi(item.programa) === nomProg;
         return coincideId || coincideNombre;
       })
-      .map(item => enriquecerAsistenciaPrograma(db, item, req.params.programaId));
+      .map(item => enriquecerAsistenciaPrograma(db, item, req.params.programaId as string));
     res.json({ success: true, data: list.map(mapDbAsistenciaToApi) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.get("/api/v1/extracurricular/invitaciones/buscar", async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/invitaciones/buscar
+ * Busca si un estudiante tiene asignada alguna invitación vigente a talleres basándose en su DNI.
+ */
+router.get("/api/v1/extracurricular/invitaciones/buscar", async (req: Request, res: Response): Promise<void> => {
   try {
     const { dni, periodo } = req.query;
     const db = await getDb();
@@ -741,25 +831,29 @@ router.get("/api/v1/extracurricular/invitaciones/buscar", async (req, res) => {
       }
     }
     res.json({ success: true, data: result });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post("/api/v1/extracurricular/programas/:programaId/invitados", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/programas/:programaId/invitados
+ * Inyecta manualmente una lista de invitados a un taller y genera los correos SMTP automáticos en segundo plano.
+ */
+router.post("/api/v1/extracurricular/programas/:programaId/invitados", requireRole(["coordinacion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
-    const { programaId } = req.params;
+    const programaId = req.params.programaId as string;
     const { lista } = req.body;
     const db = await getDb();
     const existentes = db.invitadosPorPrograma[programaId] || [];
     const dniExistentes = new Set(existentes.map(item => item.dni));
-    const nuevos = (lista || []).filter(item => !dniExistentes.has(item.dni));
+    const nuevos = (lista || []).filter((item: any) => !dniExistentes.has(item.dni));
     const duplicados = (lista || []).length - nuevos.length;
     const prog = db.programas.find(p => p.id === programaId);
 
     db.invitadosPorPrograma[programaId] = [
       ...existentes,
-      ...nuevos.map(item => ({
+      ...nuevos.map((item: any) => ({
         ...item,
         periodo: item.periodo || normalizarPeriodoApi(prog?.periodo)
       }))
@@ -768,7 +862,7 @@ router.post("/api/v1/extracurricular/programas/:programaId/invitados", requireRo
 
     // Enviar invitaciones por correo de forma asíncrona en segundo plano
     if (nuevos.length > 0) {
-      nuevos.forEach(item => {
+      nuevos.forEach((item: any) => {
         const email = item.correo || item.correoApoderado || item.email || "";
         if (email && email.trim()) {
           const studentName = item.nombres || "";
@@ -778,7 +872,7 @@ router.post("/api/v1/extracurricular/programas/:programaId/invitados", requireRo
 
           const { asunto, html } = generarCorreoInvitacion(studentName, progName, startClase, cost);
           
-          const adjuntos = [];
+          const adjuntos: any[] = [];
           // Si el programa tiene cargado un folleto base64 en la tabla de documentos, lo adjuntamos
           const docProg = (db.programas_documentos || []).find(d => d.programaId === programaId);
           if (docProg && docProg.plantillaBase64) {
@@ -789,7 +883,7 @@ router.post("/api/v1/extracurricular/programas/:programaId/invitados", requireRo
           }
 
           enviarCorreoGenerico({
-            para: email,
+            para: email as string,
             asunto,
             html,
             adjuntos
@@ -805,38 +899,41 @@ router.post("/api/v1/extracurricular/programas/:programaId/invitados", requireRo
       duplicados
     });
     res.json({ success: true, data: { importados: nuevos.length, duplicados } });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/coordinacion/cargas/confirmar
+ * Confirma la previsualización de una carga masiva escribiendo los alumnos en el registro de invitados del programa,
+ * engrana grados académicos dinámicos, y actualiza el historial global de cargas.
+ */
+router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole(["coordinacion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const preview = req.body;
     const db = await getDb();
-    const validos = (preview.registros || []).filter(item => item.estado === "Valido");
-    const registrosPorArchivo = new Map();
-    const validosPorArchivo = new Map();
-    const programasTocados = new Set();
-    const nuevasCargas = [];
+    const validos = (preview.registros || []).filter((item: any) => item.estado === "Valido");
+    const registrosPorArchivo = new Map<string, any[]>();
+    const validosPorArchivo = new Map<string, any>();
+    const programasTocados = new Set<string>();
+    const nuevasCargas: any[] = [];
     const fechaCarga = new Date().toISOString();
     db.invitadosPorPrograma = db.invitadosPorPrograma || {};
 
-    (preview.registros || []).forEach(item => {
+    (preview.registros || []).forEach((item: any) => {
       const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
       if (!registrosPorArchivo.has(archivoNombre)) registrosPorArchivo.set(archivoNombre, []);
-      registrosPorArchivo.get(archivoNombre).push(item);
+      registrosPorArchivo.get(archivoNombre)!.push(item);
     });
 
-    validos.forEach(item => {
+    validos.forEach((item: any) => {
       const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
       if (!validosPorArchivo.has(archivoNombre)) validosPorArchivo.set(archivoNombre, []);
-      validosPorArchivo.get(archivoNombre).push(item);
+      validosPorArchivo.get(archivoNombre)!.push(item);
     });
 
-
-
-    validos.forEach(item => {
+    validos.forEach((item: any) => {
       if (!item.programaId) return;
       const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
       const grupoArchivo = validosPorArchivo.get(archivoNombre) || [];
@@ -856,14 +953,14 @@ router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole
         grupoArchivo.registrosHistorial = [];
       }
       const cargaId = grupoArchivo.cargaId;
-      const existentes = db.invitadosPorPrograma[item.programaId] || [];
+      const existentes = db.invitadosPorPrograma[item.programaId as string] || [];
       const programaCarga = db.programas.find(p => p.id === item.programaId);
       const student = db.estudiantes?.[item.dni];
-      const nivelEstudiante = student?.nivel || student?.nivelEducativo || item.nivelEducativo || item.nivel;
+      const nivelEstudiante = student?.nivel || (student as any)?.nivelEducativo || item.nivelEducativo || item.nivel;
       const gradoCompleto = obtenerGradoCompletoApi(item.grado, nivelEstudiante, student?.grado || item.grado);
 
       const claveAlumno = claveAlumnoInvitadoApi(item);
-      const alumnoYaExiste = Boolean(claveAlumno && existentes.some(existente =>
+      const alumnoYaExiste = Boolean(claveAlumno && existentes.some((existente: any) =>
         claveAlumnoInvitadoApi(existente) === claveAlumno
       ));
       if (alumnoYaExiste) {
@@ -893,10 +990,10 @@ router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole
         archivoNombre,
         estado: item.estadoAlumno || "Invitado"
       };
-      db.invitadosPorPrograma[item.programaId] = [
+      db.invitadosPorPrograma[item.programaId as string] = [
         ...existentes,
         invitado
-      ];
+      ] as any[];
       grupoArchivo.registrosHistorial.push({
         programaId: item.programaId,
         programaNombre: item.programaNombre || "",
@@ -937,8 +1034,8 @@ router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole
         ec.resumen = {
           importados: (ec.resumen?.importados || 0) + importadosArchivo,
           total: (ec.resumen?.total || 0) + registrosArchivo.length,
-          errores: (ec.resumen?.errores || 0) + registrosArchivo.filter(item => item.estado === "Error").length,
-          duplicados: (ec.resumen?.duplicados || 0) + registrosArchivo.filter(item => item.estado === "Duplicado").length
+          errores: (ec.resumen?.errores || 0) + registrosArchivo.filter((item: any) => item.estado === "Error").length,
+          duplicados: (ec.resumen?.duplicados || 0) + registrosArchivo.filter((item: any) => item.estado === "Duplicado").length
         };
       } else {
         if (importadosArchivo === 0) return;
@@ -952,8 +1049,8 @@ router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole
           resumen: {
             importados: importadosArchivo,
             total: registrosArchivo.length,
-            errores: registrosArchivo.filter(item => item.estado === "Error").length,
-            duplicados: registrosArchivo.filter(item => item.estado === "Duplicado").length
+            errores: registrosArchivo.filter((item: any) => item.estado === "Error").length,
+            duplicados: registrosArchivo.filter((item: any) => item.estado === "Duplicado").length
           },
           registros: grupoArchivo.registrosHistorial || []
         });
@@ -988,29 +1085,41 @@ router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireRole
         duplicados: (preview.resumen?.duplicados || 0) + duplicadosConfirmacionTotal
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.get("/api/v1/extracurricular/coordinacion/cargas", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/coordinacion/cargas
+ * Retorna el historial completo de cargas realizadas.
+ */
+router.get("/api/v1/extracurricular/coordinacion/cargas", requireRole(["coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const historial = Array.isArray(db.historialCargas) ? db.historialCargas : [];
     res.json({ success: true, data: historial });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.delete("/api/v1/extracurricular/coordinacion/cargas/:cargaId", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * DELETE /api/v1/extracurricular/coordinacion/cargas/:cargaId
+ * Revierte una carga específica removiendo a todos los invitados inyectados,
+ * verificando previamente que ninguno cuente ya con una matrícula activa.
+ */
+router.delete("/api/v1/extracurricular/coordinacion/cargas/:cargaId", requireRole(["coordinacion"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { cargaId } = req.params;
     const db = await getDb();
     db.historialCargas = Array.isArray(db.historialCargas) ? db.historialCargas : [];
     db.invitadosPorPrograma = db.invitadosPorPrograma || {};
     const carga = db.historialCargas.find(item => item.id === cargaId);
-    if (!carga) return res.status(404).json({ success: false, message: "No se encontro la carga seleccionada." });
+    if (!carga) {
+      res.status(404).json({ success: false, message: "No se encontro la carga seleccionada." });
+      return;
+    }
 
     const registros = Array.isArray(carga.registros) ? carga.registros : [];
     const tieneInscripcion = registros.some(registro =>
@@ -1023,17 +1132,18 @@ router.delete("/api/v1/extracurricular/coordinacion/cargas/:cargaId", requireRol
     );
 
     if (tieneInscripcion) {
-      return res.status(409).json({
+      res.status(409).json({
         success: false,
         message: "No se puede borrar esta carga porque uno o mas alumnos ya tienen inscripcion activa."
       });
+      return;
     }
 
     let eliminados = 0;
     const programasAfectados = new Set(registros.map(registro => registro.programaId).filter(Boolean));
     programasAfectados.forEach(programaId => {
       const actuales = db.invitadosPorPrograma[programaId] || [];
-      const filtrados = actuales.filter(invitado => invitado.cargaId !== cargaId);
+      const filtrados = actuales.filter((invitado: any) => invitado.cargaId !== cargaId);
       eliminados += actuales.length - filtrados.length;
       db.invitadosPorPrograma[programaId] = filtrados;
       sincronizarGradosProgramaConInvitadosApi(db, programaId);
@@ -1047,14 +1157,18 @@ router.delete("/api/v1/extracurricular/coordinacion/cargas/:cargaId", requireRol
       archivos: carga.archivos || []
     });
     res.json({ success: true, data: { cargaId, eliminados } });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.get("/api/v1/extracurricular/programas/:programaId/actividad", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/programas/:programaId/actividad
+ * Retorna estadísticas de actividad en un taller (invitados, matrículas y documentos emitidos).
+ */
+router.get("/api/v1/extracurricular/programas/:programaId/actividad", requireRole(["coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { programaId } = req.params;
+    const programaId = req.params.programaId as string;
     const db = await getDb();
     const alumnos = db.invitadosPorPrograma[programaId]?.length || 0;
     const inscripciones = (db.inscripciones || []).filter(item => item.programaId === programaId).length;
@@ -1068,21 +1182,29 @@ router.get("/api/v1/extracurricular/programas/:programaId/actividad", requireRol
         tieneActividad: (alumnos + inscripciones + documentos) > 0
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.get("/api/v1/extracurricular/coordinacion/cargas/:cargaId/errores", requireRole(["coordinacion"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/coordinacion/cargas/:cargaId/errores
+ * Endpoint de errores de carga (vacío legacy).
+ */
+router.get("/api/v1/extracurricular/coordinacion/cargas/:cargaId/errores", requireRole(["coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   res.json({ success: true, data: [] });
 });
 
-router.get("/api/v1/extracurricular/programas/:programaId/lista-asistencia", requireRole(["auxiliar", "coordinacion"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/programas/:programaId/lista-asistencia
+ * Devuelve el listado de asistencia simulado para el panel auxiliar/coordinación.
+ */
+router.get("/api/v1/extracurricular/programas/:programaId/lista-asistencia", requireRole(["auxiliar", "coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { programaId } = req.params;
+    const programaId = req.params.programaId as string;
     const db = await getDb();
     const invitados = db.invitadosPorPrograma[programaId] || [];
-    const list = invitados.map(estudiante => ({
+    const list = invitados.map((estudiante: any) => ({
       ...estudiante,
       asistencia: Array.from({ length: 5 }, (_, index) => ({
         sesion: index + 1,
@@ -1091,12 +1213,16 @@ router.get("/api/v1/extracurricular/programas/:programaId/lista-asistencia", req
       }))
     }));
     res.json({ success: true, data: list });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-router.post("/api/v1/extracurricular/asistencia", requireRole(["auxiliar"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/asistencia
+ * Registra físicamente un log de asistencia / control de acceso de un alumno a un taller.
+ */
+router.post("/api/v1/extracurricular/asistencia", requireRole(["auxiliar"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { inscripcion_id, pago_id, dni_estudiante, estado_acceso, observacion, origen } = req.body;
     const db = await getDb();
@@ -1133,18 +1259,19 @@ router.post("/api/v1/extracurricular/asistencia", requireRole(["auxiliar"]), asy
       estado: nuevaAsistencia.estadoAcceso
     });
     res.json({ success: true, data: mapDbAsistenciaToApi(nuevaAsistencia) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
+// --- HELPER FUNCTIONS FOR VALIDATION LOGIC ---
 
-// --- ENDPOINTS PARA MÓDULO AUXILIAR ---
-
-function esDiaCorrecto(horarioStr) {
+/**
+ * Valida si el horario del taller contiene clases programadas para el día de la semana actual.
+ */
+function esDiaCorrecto(horarioStr: string): boolean {
   if (!horarioStr) return false;
   
-  // Obtener el día de la semana actual en la zona horaria de Perú (America/Lima)
   let hoyEsp = "lunes";
   try {
     const formatter = new Intl.DateTimeFormat("en-US", {
@@ -1152,7 +1279,7 @@ function esDiaCorrecto(horarioStr) {
       weekday: "long"
     });
     const weekdayEnglish = formatter.format(new Date()).toLowerCase();
-    const mapping = {
+    const mapping: Record<string, string> = {
       sunday: "domingo",
       monday: "lunes",
       tuesday: "martes",
@@ -1167,7 +1294,7 @@ function esDiaCorrecto(horarioStr) {
     hoyEsp = diasSemana[new Date().getDay()] || "lunes";
   }
 
-  const normalizar = (txt) => String(txt || "")
+  const normalizar = (txt: string) => String(txt || "")
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
@@ -1179,11 +1306,11 @@ function esDiaCorrecto(horarioStr) {
   return horarioNorm.includes(hoyEsp);
 }
 
-function limpiarCodigo(valor) {
+function limpiarCodigo(valor: any): string {
   return String(valor || "").trim().toUpperCase();
 }
 
-function normalizarTexto(valor) {
+function normalizarTexto(valor: any): string {
   return String(valor || "")
     .trim()
     .toLowerCase()
@@ -1191,13 +1318,16 @@ function normalizarTexto(valor) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function mismoCodigo(a, b) {
+function mismoCodigo(a: any, b: any): boolean {
   const valorA = limpiarCodigo(a);
   const valorB = limpiarCodigo(b);
   return Boolean(valorA && valorB && valorA === valorB);
 }
 
-function normalizarIdentificadores(ids = {}) {
+/**
+ * Normaliza los identificadores primarios del estudiante y su matrícula.
+ */
+function normalizarIdentificadores(ids: any = {}): Record<string, string> {
   const dniVal = ids.dni || ids.dniEstudiante || ids.estudianteDni;
   const cleanDniVal = dniVal ? String(dniVal).replace(/\D/g, "").slice(0, 8) : "";
   return {
@@ -1210,7 +1340,16 @@ function normalizarIdentificadores(ids = {}) {
   };
 }
 
-function obtenerMinutosRestantesIngresoReciente(asistenciasList, studentDni, studentCode, programId, nowMs = Date.now()) {
+/**
+ * Evalúa si el estudiante ya registró una asistencia válida en los últimos 15 minutos.
+ */
+function obtenerMinutosRestantesIngresoReciente(
+  asistenciasList: any[],
+  studentDni: string,
+  studentCode: string,
+  programId: string,
+  nowMs: number = Date.now()
+): number {
   if (!Array.isArray(asistenciasList)) return 0;
   const cleanDni = studentDni ? String(studentDni).replace(/\D/g, "") : "";
   const cleanCode = studentCode ? String(studentCode).trim() : "";
@@ -1234,14 +1373,14 @@ function obtenerMinutosRestantesIngresoReciente(asistenciasList, studentDni, stu
   return maxRestante;
 }
 
-function normalizarEstadoPago(valor) {
+function normalizarEstadoPago(valor: any): string {
   const texto = normalizarTexto(valor);
   if (["completado", "pagado", "validado", "pago validado"].some((estado) => texto.includes(estado))) return "pagado";
   if (["cancelado", "anulado", "rechazado"].some((estado) => texto.includes(estado))) return "anulado";
   return "pendiente";
 }
 
-function resolverEstadoPago(inscripcion, pago) {
+function resolverEstadoPago(inscripcion: any, pago: any): string {
   const estadoPago = normalizarEstadoPago(pago?.estado);
   const estadoInscripcion = normalizarEstadoPago(inscripcion?.estadoPago);
   if (estadoPago === "pagado" || estadoInscripcion === "pagado") return "pagado";
@@ -1249,7 +1388,7 @@ function resolverEstadoPago(inscripcion, pago) {
   return "pendiente";
 }
 
-function ordenarPorFecha(items, campoPreferido = "fechaRegistro") {
+function ordenarPorFecha(items: any[], campoPreferido: string = "fechaRegistro"): any[] {
   return [...items].sort((a, b) => {
     const fechaA = new Date(a?.[campoPreferido] || a?.fechaPago || a?.fecha || a?.createdAt || 0).getTime();
     const fechaB = new Date(b?.[campoPreferido] || b?.fechaPago || b?.fecha || b?.createdAt || 0).getTime();
@@ -1257,63 +1396,55 @@ function ordenarPorFecha(items, campoPreferido = "fechaRegistro") {
   });
 }
 
-
-// Resuelve el horario asignado a una matrícula buscando dinámicamente según el grado del estudiante o datos del programa.
-function obtenerHorarioDeInscripcion(db, inscripcion, estudiante) {
-  // 1. Busca el programa asociado a la inscripción en la base de datos
-  const prog = (db.programas || []).find(p => p.id === inscripcion?.programaId);
+/**
+ * Resuelve y formatea el horario asignado a una matrícula buscando dinámicamente según el grado del estudiante o datos del programa.
+ */
+function obtenerHorarioDeInscripcion(db: any, inscripcion: any, estudiante: any): string {
+  const prog = (db.programas || []).find((p: any) => p.id === inscripcion?.programaId);
   
-  // 2. Si el programa tiene horarios definidos por grupos, calcula el horario dinámicamente según el grado del estudiante
   if (prog && tieneHorariosPorGrupoApi(prog)) {
     const gradoEst = inscripcion?.gradoEstudiante 
       || inscripcion?.grado 
       || (estudiante ? obtenerGradoCompletoApi(estudiante.grado, estudiante.nivel) : "");
     const horarioDinamico = resolverHorarioPorGradoApi(prog, gradoEst);
-    if (horarioDinamico) return horarioDinamico; // Si lo encuentra, lo retorna de inmediato
+    if (horarioDinamico) return horarioDinamico;
   }
   
-  // 3. Si la inscripción ya tiene un horario registrado que no sea un mensaje de error o aviso, lo retorna directamente
   if (inscripcion?.horario && !inscripcion.horario.includes("no configurado") && !inscripcion.horario.includes("No registrado")) {
     return inscripcion.horario;
   }
   
-  // 4. Fallback: Si no hay programa configurado, retorna cadena vacía
   if (!prog) return "";
   
-  // 5. Calcula el grado completo del alumno (ej. "4 Primaria") para resolver el horario del grupo correspondiente
   const gradoEst = inscripcion?.gradoEstudiante 
     || inscripcion?.grado 
     || (estudiante ? obtenerGradoCompletoApi(estudiante.grado, estudiante.nivel) : "");
     
-  // 6. Retorna el horario resuelto por grado, o en su defecto el horario general del programa, o "Horario no configurado"
   return resolverHorarioPorGradoApi(prog, gradoEst)
     || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario)
     || "";
 }
 
-// Retorna el nombre del programa si es válido (diferente de vacío o "sin programa").
-function nombreProgramaValido(valor) {
+function nombreProgramaValido(valor: any): string {
   const texto = String(valor || "").trim();
-  // Retorna el texto solo si no es vacío y no corresponde al string "sin programa"
   return texto && normalizarTexto(texto) !== "sin programa" ? texto : "";
 }
 
-// Busca un programa/taller en la base de datos comparando su nombre de forma normalizada.
-function buscarProgramaPorNombre(db, nombre) {
+function buscarProgramaPorNombre(db: any, nombre: any): any {
   const nombreNormalizado = normalizarTexto(nombreProgramaValido(nombre));
   if (!nombreNormalizado) return null;
-  // Busca coincidencias de nombre comparándolas en minúsculas y sin acentos
-  return (db.programas || []).find((programa) =>
+  return (db.programas || []).find((programa: any) =>
     normalizarTexto(programa.nombre || programa.programa || programa.nombre_programa) === nombreNormalizado
   ) || null;
 }
 
-// Resuelve la información del programa/taller asociado a una matrícula, pago o estudiante.
-function resolverProgramaAsociado(db, inscripcion = {}, estudiante = null, pago = null, horario = "") {
+/**
+ * Resuelve el programa/taller enlazado a una matrícula o pago.
+ */
+function resolverProgramaAsociado(db: any, inscripcion: any = {}, estudiante: any = null, pago: any = null, horario: string = ""): any {
   const programas = db.programas || [];
   
-  // 1. Intenta resolver el programa buscando por su ID único en la matrícula o en el registro de pago
-  const porId = programas.find((programa) =>
+  const porId = programas.find((programa: any) =>
     mismoCodigo(programa.id, inscripcion.programaId) ||
     mismoCodigo(programa.id, pago?.programaId) ||
     mismoCodigo(programa.programaId, inscripcion.programaId) ||
@@ -1321,49 +1452,47 @@ function resolverProgramaAsociado(db, inscripcion = {}, estudiante = null, pago 
   );
   if (porId) return porId;
 
-  // 2. Si no encuentra por ID, intenta buscar por el nombre registrado en la matrícula o pago
   const porNombre = buscarProgramaPorNombre(db, inscripcion.programa) ||
     buscarProgramaPorNombre(db, inscripcion.programaNombre) ||
     buscarProgramaPorNombre(db, pago?.programa) ||
     buscarProgramaPorNombre(db, pago?.programaNombre);
   if (porNombre) return porNombre;
 
-
   const dni = String(inscripcion.dniEstudiante || pago?.dniEstudiante || pago?.estudianteDni || estudiante?.dni || "")
     .replace(/\D/g, "")
     .slice(0, 8);
   const inscripcionesDni = (db.inscripciones || [])
-    .filter((item) => {
+    .filter((item: any) => {
       const itemDni = String(item.dniEstudiante || "").replace(/\D/g, "").slice(0, 8);
       return dni && itemDni === dni && normalizarTexto(item.estadoInscripcion) !== "anulada";
     })
-    .map((item) => {
+    .map((item: any) => {
       const itemPago = encontrarPagoInscripcion(db, item, { dni });
-      const itemPrograma = programas.find((programa) =>
+      const itemPrograma = programas.find((programa: any) =>
         mismoCodigo(programa.id, item.programaId) ||
         normalizarTexto(programa.nombre) === normalizarTexto(nombreProgramaValido(item.programa))
       );
       return { item, itemPago, itemPrograma };
     })
-    .filter((item) => item.itemPrograma);
+    .filter((item: any) => item.itemPrograma);
 
-  const pagada = inscripcionesDni.find(({ item, itemPago }) => resolverEstadoPago(item, itemPago) === "pagado");
+  const pagada = inscripcionesDni.find(({ item, itemPago }: any) => resolverEstadoPago(item, itemPago) === "pagado");
   if (pagada?.itemPrograma) return pagada.itemPrograma;
   if (inscripcionesDni[0]?.itemPrograma) return inscripcionesDni[0].itemPrograma;
 
-  const pagoDni = ordenarPorFecha((db.pagos || []).filter((item) => {
+  const pagoDni = ordenarPorFecha((db.pagos || []).filter((item: any) => {
     const itemDni = String(item.dniEstudiante || item.estudianteDni || "").replace(/\D/g, "").slice(0, 8);
     return dni && itemDni === dni && !["cancelado", "anulado", "rechazado"].includes(normalizarTexto(item.estado));
-  }), "fechaPago").find((item) => item.programaId || nombreProgramaValido(item.programa || item.programaNombre));
+  }), "fechaPago").find((item: any) => item.programaId || nombreProgramaValido(item.programa || item.programaNombre));
   const programaPago = pagoDni
-    ? programas.find((programa) => mismoCodigo(programa.id, pagoDni.programaId)) || buscarProgramaPorNombre(db, pagoDni.programa || pagoDni.programaNombre)
+    ? programas.find((programa: any) => mismoCodigo(programa.id, pagoDni.programaId)) || buscarProgramaPorNombre(db, pagoDni.programa || pagoDni.programaNombre)
     : null;
   if (programaPago) return programaPago;
 
   const horarioNormalizado = normalizarTexto(horario || inscripcion.horario);
   if (horarioNormalizado) {
     const gradoEstudiante = inscripcion.gradoEstudiante || inscripcion.grado || (estudiante ? obtenerGradoCompletoApi(estudiante.grado, estudiante.nivel) : "");
-    const porHorario = programas.find((programa) => {
+    const porHorario = programas.find((programa: any) => {
       const horarioPrograma = resolverHorarioPorGradoApi(programa, gradoEstudiante) ||
         (tieneHorariosPorGrupoApi(programa) ? "" : programa.horario);
       const horarioProgNormalizado = normalizarTexto(horarioPrograma);
@@ -1375,43 +1504,46 @@ function resolverProgramaAsociado(db, inscripcion = {}, estudiante = null, pago 
   return null;
 }
 
-function buscarInscripcion(db, ids) {
-  const inscripciones = (db.inscripciones || []).filter((item) => normalizarTexto(item.estadoInscripcion) !== "anulada");
+/**
+ * Busca y retorna una inscripción activa vinculando DNI, códigos y transacciones de pago.
+ */
+function buscarInscripcion(db: any, ids: any): any {
+  const inscripciones = (db.inscripciones || []).filter((item: any) => normalizarTexto(item.estadoInscripcion) !== "anulada");
   const pagos = db.pagos || [];
   if (ids.inscripcionId) {
-    const directa = inscripciones.find((item) => mismoCodigo(item.id, ids.inscripcionId));
+    const directa = inscripciones.find((item: any) => mismoCodigo(item.id, ids.inscripcionId));
     if (directa) return directa;
   }
   if (ids.pagoId) {
-    const pago = pagos.find((item) => mismoCodigo(item.id, ids.pagoId));
+    const pago = pagos.find((item: any) => mismoCodigo(item.id, ids.pagoId));
     if (pago?.inscripcionId) {
-      const directa = inscripciones.find((item) => mismoCodigo(item.id, pago.inscripcionId));
+      const directa = inscripciones.find((item: any) => mismoCodigo(item.id, pago.inscripcionId));
       if (directa) return directa;
     }
   }
-  const candidatas = inscripciones.filter((item) => coincideInscripcion(item, ids));
+  const candidatas = inscripciones.filter((item: any) => coincideInscripcion(item, ids));
   if (candidatas.length === 0) return null;
 
   if (ids.programaId) {
-    const porPrograma = candidatas.filter((item) => mismoCodigo(item.programaId, ids.programaId));
+    const porPrograma = candidatas.filter((item: any) => mismoCodigo(item.programaId, ids.programaId));
     if (porPrograma.length) return ordenarPorFecha(porPrograma)[0] || null;
   }
 
   // Priorizar las inscripciones de hoy
-  const candidatasHoy = candidatas.filter(item => {
+  const candidatasHoy = candidatas.filter((item: any) => {
     const estudiante = buscarEstudiante(db, ids, item);
     const horario = obtenerHorarioDeInscripcion(db, item, estudiante);
     return esDiaCorrecto(horario);
   });
   if (candidatasHoy.length > 0) {
-    const paid = candidatasHoy.filter(ins => {
+    const paid = candidatasHoy.filter((ins: any) => {
       const p = encontrarPagoInscripcion(db, ins, ids);
       const estNorm = resolverEstadoPago(ins, p);
       return estNorm === "pagado";
     });
     if (paid.length > 0) return ordenarPorFecha(paid)[0];
 
-    const processing = candidatasHoy.filter(ins => {
+    const processing = candidatasHoy.filter((ins: any) => {
       const p = encontrarPagoInscripcion(db, ins, ids);
       return p && (p.estado === "Por Verificar" || p.estado === "Por verificar" || p.estado === "Pago en proceso");
     });
@@ -1421,14 +1553,14 @@ function buscarInscripcion(db, ids) {
   }
 
   // Si no hay de hoy, retornar la mejor de cualquier otro día (para mostrar advertencia de Día Incorrecto)
-  const paid = candidatas.filter(ins => {
+  const paid = candidatas.filter((ins: any) => {
     const p = encontrarPagoInscripcion(db, ins, ids);
     const estNorm = resolverEstadoPago(ins, p);
     return estNorm === "pagado";
   });
   if (paid.length > 0) return ordenarPorFecha(paid)[0];
 
-  const processing = candidatas.filter(ins => {
+  const processing = candidatas.filter((ins: any) => {
     const p = encontrarPagoInscripcion(db, ins, ids);
     return p && (p.estado === "Por Verificar" || p.estado === "Por verificar" || p.estado === "Pago en proceso");
   });
@@ -1437,7 +1569,7 @@ function buscarInscripcion(db, ids) {
   return ordenarPorFecha(candidatas)[0] || null;
 }
 
-function coincideInscripcion(inscripcion, ids) {
+function coincideInscripcion(inscripcion: any, ids: any): boolean {
   if (!inscripcion) return false;
   const insDni = inscripcion.dniEstudiante ? String(inscripcion.dniEstudiante).replace(/\D/g, "").slice(0, 8) : "";
   if (ids.dni && insDni === ids.dni) return true;
@@ -1447,40 +1579,43 @@ function coincideInscripcion(inscripcion, ids) {
   return false;
 }
 
-function buscarEstudiante(db, ids, inscripcion) {
-  let estudiantes = [];
+function buscarEstudiante(db: any, ids: any, inscripcion: any): any {
+  let estudiantes: any[] = [];
   if (Array.isArray(db.estudiantes)) estudiantes = db.estudiantes;
   else if (db.estudiantes && typeof db.estudiantes === "object") estudiantes = Object.values(db.estudiantes);
   const insDni = inscripcion?.dniEstudiante ? String(inscripcion.dniEstudiante).replace(/\D/g, "").slice(0, 8) : "";
   const dni = ids.dni || insDni;
   const codigo = ids.codigoEstudiante || inscripcion?.codigoEstudiante || "";
-  return estudiantes.find((estudiante) => {
+  return estudiantes.find((estudiante: any) => {
     const estDni = estudiante.dni ? String(estudiante.dni).replace(/\D/g, "").slice(0, 8) : "";
     return estDni === dni;
-  }) || estudiantes.find((estudiante) => codigo && mismoCodigo(estudiante.codigoEstudiante, codigo)) || null;
+  }) || estudiantes.find((estudiante: any) => codigo && mismoCodigo(estudiante.codigoEstudiante, codigo)) || null;
 }
 
-function encontrarPagoInscripcion(db, inscripcion, ids = {}) {
+/**
+ * Busca transacciones de pago vinculadas a una inscripción.
+ */
+function encontrarPagoInscripcion(db: any, inscripcion: any, ids: any = {}): any {
   const pagos = db.pagos || [];
   if (ids.pagoId) {
-    const pagoDirecto = pagos.find((pago) => mismoCodigo(pago.id, ids.pagoId));
+    const pagoDirecto = pagos.find((pago: any) => mismoCodigo(pago.id, ids.pagoId));
     if (pagoDirecto) return pagoDirecto;
   }
   if (inscripcion?.pagoId) {
-    const pagoPorId = pagos.find((pago) => mismoCodigo(pago.id, inscripcion.pagoId));
+    const pagoPorId = pagos.find((pago: any) => mismoCodigo(pago.id, inscripcion.pagoId));
     if (pagoPorId) return pagoPorId;
   }
-  const pagoPorInscripcionValido = pagos.find((pago) =>
+  const pagoPorInscripcionValido = pagos.find((pago: any) =>
     pago.inscripcionId && inscripcion?.id && mismoCodigo(pago.inscripcionId, inscripcion.id) &&
     !["cancelado", "anulado", "rechazado"].includes(String(pago.estado || "").toLowerCase().trim())
   );
   if (pagoPorInscripcionValido) return pagoPorInscripcionValido;
 
-  const pagoPorInscripcion = pagos.find((pago) =>
+  const pagoPorInscripcion = pagos.find((pago: any) =>
     pago.inscripcionId && inscripcion?.id && mismoCodigo(pago.inscripcionId, inscripcion.id)
   );
   if (pagoPorInscripcion) return pagoPorInscripcion;
-  const coincidencias = pagos.filter((pago) => {
+  const coincidencias = pagos.filter((pago: any) => {
     const pagoDni = pago.dniEstudiante || pago.estudianteDni;
     const cleanPagoDni = pagoDni ? String(pagoDni).replace(/\D/g, "").slice(0, 8) : "";
     const cleanInsDni = inscripcion?.dniEstudiante ? String(inscripcion.dniEstudiante).replace(/\D/g, "").slice(0, 8) : "";
@@ -1496,6 +1631,21 @@ function encontrarPagoInscripcion(db, inscripcion, ids = {}) {
   return coincidenciaValida || coincidenciasOrdenadas[0] || null;
 }
 
+interface RespuestaInscripcionParams {
+  inscripcion: any;
+  estudiante: any;
+  pago: any;
+  programa: string;
+  programaId: string;
+  estadoAcceso: string;
+  estadoPago: string;
+  accesoPermitido: boolean;
+  mensajeAcceso: string;
+  accion: string;
+  color: string;
+  horario: string;
+}
+
 function crearRespuestaInscripcion({
   inscripcion,
   estudiante,
@@ -1509,8 +1659,8 @@ function crearRespuestaInscripcion({
   accion,
   color,
   horario,
-}) {
-  const programaValido = (valor) => {
+}: RespuestaInscripcionParams): any {
+  const programaValido = (valor: any) => {
     const texto = String(valor || "").trim();
     return texto && texto.toLowerCase() !== "sin programa" ? texto : "";
   };
@@ -1537,7 +1687,7 @@ function crearRespuestaInscripcion({
   };
 }
 
-function crearRespuestaNoRegistrado(ids, estudiante) {
+function crearRespuestaNoRegistrado(ids: any, estudiante: any): any {
   return {
     dni: ids.dni || estudiante?.dni || "",
     codigoEstudiante: ids.codigoEstudiante || estudiante?.codigoEstudiante || "",
@@ -1561,30 +1711,27 @@ function crearRespuestaNoRegistrado(ids, estudiante) {
   };
 }
 
-// Motor principal de validación de acceso. Evalúa estado de pago, vigencia de fechas y correspondencia del día del taller.
-function resolverValidacion(db, identificadores = {}) {
-  // 1. Normaliza los identificadores de búsqueda (DNI, código de estudiante, etc.)
+/**
+ * Valida los identificadores primarios y resuelve la validación del estado del alumno.
+ */
+function resolverValidacion(db: any, identificadores: any = {}): any {
   const ids = normalizarIdentificadores(identificadores);
-  
-  // 2. Busca la inscripción y el estudiante asociados en la base de datos
   const inscripcion = buscarInscripcion(db, ids);
   const estudiante = buscarEstudiante(db, ids, inscripcion);
   
-  // 3. Caso: No existe una inscripción activa para el estudiante
   if (!inscripcion) {
     const studentDni = ids.dni || (estudiante?.dni ? String(estudiante.dni).replace(/\D/g, "").slice(0, 8) : "");
     let programaPreInscrito = null;
     
-    // 3.1. Revisa si el alumno está registrado en la lista de invitados/pre-inscritos de algún taller cerrado
     if (studentDni) {
-      for (const [progId, listaInvitados] of Object.entries(db.invitadosPorPrograma || {})) {
-        const esInvitado = (listaInvitados || []).some(inv => {
+      for (const [progId, listaInvitados] of Object.entries(db.invitadosPorPrograma || {}) as any) {
+        const esInvitado = (listaInvitados || []).some((inv: any) => {
           const invDni = String(inv?.dni || "").replace(/\D/g, "").slice(0, 8);
           const targetDniStr = String(studentDni || "").replace(/\D/g, "").slice(0, 8);
           return invDni === targetDniStr && invDni !== "";
         });
         if (esInvitado) {
-          const prog = (db.programas || []).find(p => p.id === progId);
+          const prog = (db.programas || []).find((p: any) => p.id === progId);
           if (prog) {
             programaPreInscrito = prog;
             break;
@@ -1593,7 +1740,6 @@ function resolverValidacion(db, identificadores = {}) {
       }
     }
     
-    // 3.2. Si está pre-inscrito (invitado), retorna un estado especial de matrícula pendiente
     if (programaPreInscrito) {
       return {
         dni: studentDni || ids.codigoOriginal || "",
@@ -1618,16 +1764,13 @@ function resolverValidacion(db, identificadores = {}) {
       };
     }
     
-    // 3.3. Si no está registrado en ningún taller, retorna una respuesta de "No registrado"
     return crearRespuestaNoRegistrado(ids, estudiante);
   }
   
-  // 4. Obtiene el pago relacionado a la matrícula, calcula el estado normalizado del pago y el horario
   const pago = encontrarPagoInscripcion(db, inscripcion, ids);
   const estadoNormalizado = resolverEstadoPago(inscripcion, pago);
   const horario = obtenerHorarioDeInscripcion(db, inscripcion, estudiante);
   
-  // 5. Resuelve la información del programa/taller asociado para complementar la respuesta
   const dbProg = resolverProgramaAsociado(db, inscripcion, estudiante, pago, horario);
   const programaNombre = nombreProgramaValido(dbProg?.nombre) ||
     nombreProgramaValido(inscripcion.programa) ||
@@ -1636,12 +1779,10 @@ function resolverValidacion(db, identificadores = {}) {
     "Sin programa";
   const programaId = dbProg?.id || inscripcion.programaId || pago?.programaId || "";
 
-  // 6. Caso: El pago está aprobado ("pagado")
   if (estadoNormalizado === "pagado") {
     const tzOffset = new Date().getTimezoneOffset() * 60000;
     const hoyStr = (new Date(Date.now() - tzOffset)).toISOString().slice(0, 10);
 
-    // 6.1. Valida si el taller aún no ha iniciado
     if (inscripcion.fechaInicio && hoyStr < inscripcion.fechaInicio) {
       const fechaFmt = inscripcion.fechaInicio.split("-").reverse().join("/");
       return crearRespuestaInscripcion({
@@ -1660,7 +1801,6 @@ function resolverValidacion(db, identificadores = {}) {
       });
     }
 
-    // 6.2. Valida si el taller ya ha culminado
     if (inscripcion.fechaFin && hoyStr > inscripcion.fechaFin) {
       const fechaFmt = inscripcion.fechaFin.split("-").reverse().join("/");
       return crearRespuestaInscripcion({
@@ -1679,7 +1819,6 @@ function resolverValidacion(db, identificadores = {}) {
       });
     }
 
-    // 6.3. Valida si hoy corresponde con los días dictados en el horario del alumno
     if (!esDiaCorrecto(horario)) {
       return crearRespuestaInscripcion({
         inscripcion,
@@ -1697,7 +1836,6 @@ function resolverValidacion(db, identificadores = {}) {
       });
     }
 
-    // 6.4. Revisa que no exista un registro de asistencia duplicado de hace poco
     const minsRestantes = obtenerMinutosRestantesIngresoReciente(
       db.asistencias || [],
       ids.dni || estudiante?.dni,
@@ -1712,7 +1850,6 @@ function resolverValidacion(db, identificadores = {}) {
         estadoAcceso: "ya_registrado",
         estadoPago: "Pagado",
         accesoPermitido: false,
-        value: "Ya registrado",
         mensajeAcceso: "Ya registrado",
         accion: `Este estudiante ya registró su ingreso hace poco. Podrá registrarse nuevamente en ${minsRestantes} minuto(s).`,
         color: "rojo",
@@ -1722,7 +1859,6 @@ function resolverValidacion(db, identificadores = {}) {
       });
     }
     
-    // 6.5. Si pasa todas las validaciones de taller, día, hora y duplicados, aprueba el ingreso
     return crearRespuestaInscripcion({
       inscripcion,
       estudiante,
@@ -1739,7 +1875,6 @@ function resolverValidacion(db, identificadores = {}) {
     });
   }
   
-  // 7. Caso: El pago está anulado/cancelado por la administración
   if (estadoNormalizado === "anulado") {
     return crearRespuestaInscripcion({
       inscripcion,
@@ -1757,7 +1892,6 @@ function resolverValidacion(db, identificadores = {}) {
     });
   }
   
-  // 8. Caso: El pago está pendiente o en proceso de revisión de comprobante
   const esProceso = pago && (pago.estado === "Por Verificar" || pago.estado === "Por verificar" || pago.estado === "Pago en proceso");
   return crearRespuestaInscripcion({
     inscripcion,
@@ -1777,19 +1911,22 @@ function resolverValidacion(db, identificadores = {}) {
   });
 }
 
-function resolverValidacionPorNombre(db, nombreQuery, programaId = "") {
+/**
+ * Busca todas las inscripciones y estudiantes que coincidan con la búsqueda por aproximación de nombres.
+ */
+function resolverValidacionPorNombre(db: any, nombreQuery: string, programaId: string = ""): any {
   const queryNormalizada = normalizarTexto(nombreQuery);
   if (queryNormalizada.length < 3) {
     throw new Error("El nombre de busqueda debe tener al menos 3 caracteres.");
   }
-  const inscripciones = (db.inscripciones || []).filter((item) => normalizarTexto(item.estadoInscripcion) !== "anulada");
-  let matchesInscripcion = inscripciones.filter(ins =>
+  const inscripciones = (db.inscripciones || []).filter((item: any) => normalizarTexto(item.estadoInscripcion) !== "anulada");
+  let matchesInscripcion = inscripciones.filter((ins: any) =>
     normalizarTexto(ins.nombresEstudiante).includes(queryNormalizada)
   );
   if (programaId) {
-    matchesInscripcion = matchesInscripcion.filter(ins => mismoCodigo(ins.programaId, programaId));
+    matchesInscripcion = matchesInscripcion.filter((ins: any) => mismoCodigo(ins.programaId, programaId));
   }
-  const resultadosInscripciones = matchesInscripcion.map(ins => {
+  const resultadosInscripciones = matchesInscripcion.map((ins: any) => {
     const ids = normalizarIdentificadores({
       dni: ins.dniEstudiante,
       codigoEstudiante: ins.codigoEstudiante,
@@ -1813,20 +1950,20 @@ function resolverValidacionPorNombre(db, nombreQuery, programaId = "") {
       };
     }
   });
-  let resultadosEstudiantes = [];
+  let resultadosEstudiantes: any[] = [];
   if (!programaId) {
-    let estudiantes = [];
+    let estudiantes: any[] = [];
     if (Array.isArray(db.estudiantes)) estudiantes = db.estudiantes;
     else if (db.estudiantes && typeof db.estudiantes === "object") estudiantes = Object.values(db.estudiantes);
-    const dniConInscripcion = new Set(matchesInscripcion.map(ins => {
+    const dniConInscripcion = new Set(matchesInscripcion.map((ins: any) => {
       return ins.dniEstudiante ? String(ins.dniEstudiante).replace(/\D/g, "").slice(0, 8) : "";
     }));
-    const matchesEstudiante = estudiantes.filter(est => {
+    const matchesEstudiante = estudiantes.filter((est: any) => {
       const nomCompleto = `${est.nombres || ""} ${est.apellidos || ""}`;
       const estDni = est.dni ? String(est.dni).replace(/\D/g, "").slice(0, 8) : "";
       return normalizarTexto(nomCompleto).includes(queryNormalizada) && !dniConInscripcion.has(estDni);
     });
-    resultadosEstudiantes = matchesEstudiante.map(est => {
+    resultadosEstudiantes = matchesEstudiante.map((est: any) => {
       const ids = normalizarIdentificadores({
         dni: est.dni,
         codigoEstudiante: est.codigoEstudiante
@@ -1844,7 +1981,7 @@ function resolverValidacionPorNombre(db, nombreQuery, programaId = "") {
   return { isMultiple: true, matches: todosResultados };
 }
 
-function extraerDesdeJson(texto) {
+function extraerDesdeJson(texto: string): any {
   try {
     const json = JSON.parse(texto);
     if (!json || typeof json !== "object") return null;
@@ -1854,7 +1991,7 @@ function extraerDesdeJson(texto) {
   }
 }
 
-function extraerDesdeUrl(texto) {
+function extraerDesdeUrl(texto: string): any {
   try {
     const url = new URL(texto);
     const params = Object.fromEntries(url.searchParams.entries());
@@ -1865,7 +2002,7 @@ function extraerDesdeUrl(texto) {
   }
 }
 
-function idsDesdeObjeto(obj = {}) {
+function idsDesdeObjeto(obj: any = {}): any {
   const codigo = obj.codigo || obj.code || obj.qr || obj.token || "";
   const textoExtendido = [
     codigo,
@@ -1884,9 +2021,12 @@ function idsDesdeObjeto(obj = {}) {
   };
 }
 
-function extraerIdentificadoresCodigo(codigo) {
+/**
+ * Escanea un texto/QR para extraer DNI, inscripcionId, pagoId o codigoEstudiante.
+ */
+function extraerIdentificadoresCodigo(codigo: any): Record<string, string> {
   const texto = String(codigo || "").trim();
-  const ids = { codigoOriginal: texto };
+  const ids: any = { codigoOriginal: texto };
   if (!texto) return ids;
   const desdeJson = extraerDesdeJson(texto);
   if (desdeJson) return normalizarIdentificadores({ ...ids, ...desdeJson });
@@ -1905,47 +2045,58 @@ function extraerIdentificadoresCodigo(codigo) {
   });
 }
 
-router.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar", "coordinacion"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/auxiliar/validar
+ * Endpoint para validar ingreso por DNI o Nombre (para control de accesos físico).
+ */
+router.get("/api/v1/extracurricular/auxiliar/validar", requireRole(["auxiliar", "coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const { busqueda, programa_id } = req.query;
     const db = await getDb();
     const query = String(busqueda || "").trim();
     if (!query) {
-      return res.status(400).json({ success: false, message: "Ingrese un DNI o nombre para buscar." });
+      res.status(400).json({ success: false, message: "Ingrese un DNI o nombre para buscar." });
+      return;
     }
     
     let result;
     if (/^\d+$/.test(query)) {
       const dniLimpio = String(query).replace(/\D/g, "").slice(0, 8);
       if (dniLimpio.length !== 8) {
-        return res.status(400).json({ success: false, message: "El DNI debe contener exactamente 8 numeros." });
+        res.status(400).json({ success: false, message: "El DNI debe contener exactamente 8 numeros." });
+        return;
       }
       result = resolverValidacion(db, { dni: dniLimpio, codigoOriginal: dniLimpio, programaId: programa_id });
     } else {
-      result = resolverValidacionPorNombre(db, query, programa_id);
+      result = resolverValidacionPorNombre(db, query, programa_id as string);
     }
     
     console.log("=== VALIDAR RESULT ===", JSON.stringify(result, null, 2));
     res.json({ success: true, data: result });
-  } catch (error) {
+  } catch (error: any) {
     console.error("=== VALIDAR ERROR ===", error);
     res.status(400).json({ success: false, message: error.message });
   }
 });
 
-router.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar", "coordinacion"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/auxiliar/validar-qr
+ * Endpoint para validar acceso leyendo un código QR.
+ */
+router.get("/api/v1/extracurricular/auxiliar/validar-qr", requireRole(["auxiliar", "coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const { codigo } = req.query;
     const db = await getDb();
     const codigoLimpio = String(codigo || "").trim();
     if (!codigoLimpio) {
-      return res.status(400).json({ success: false, message: "Escanee o ingrese un codigo valido." });
+      res.status(400).json({ success: false, message: "Escanee o ingrese un codigo valido." });
+      return;
     }
     
     const ids = extraerIdentificadoresCodigo(codigoLimpio);
     const result = resolverValidacion(db, ids);
     res.json({ success: true, data: result });
-  } catch (error) {
+  } catch (error: any) {
     res.status(400).json({ success: false, message: error.message });
   }
 });
@@ -1955,14 +2106,18 @@ const upload = multer({
   limits: { fileSize: MAX_FILE_SIZE, files: 1, fieldSize: 5 * 1024 * 1024 },
 });
 
-router.post("/api/coordinacion/cargas/preview", upload.single("archivo"), async (req, res) => {
+/**
+ * POST /api/coordinacion/cargas/preview
+ * Toma un archivo Excel cargado en la petición, lo valida y retorna una previsualización de la carga de alumnos.
+ */
+router.post("/api/coordinacion/cargas/preview", upload.single("archivo"), async (req: Request, res: Response): Promise<void> => {
   try {
     const periodo = normalizarPeriodo(req.body.periodo);
     const archivo = req.file;
     const db = await getDb();
     const frontendProgramas = parseJsonArray(req.body.programas);
     const dbProgramasMap = new Map((db.programas || []).map(p => [p.id, p]));
-    const programas = frontendProgramas.map(fp => {
+    const programas = frontendProgramas.map((fp: any) => {
       const dbProg = dbProgramasMap.get(fp.id);
       return {
         ...fp,
@@ -1984,18 +2139,18 @@ router.post("/api/coordinacion/cargas/preview", upload.single("archivo"), async 
       programaId,
     });
     res.json(preview);
-  } catch (error) {
+  } catch (error: any) {
     res.status(400).json({
       message: error.publicMessage || "No se pudo validar el archivo Excel.",
     });
   }
 });
 
-function buscarInscripcionAsistencia(db, asistencia = {}, programaId = "") {
+function buscarInscripcionAsistencia(db: any, asistencia: any = {}, programaId: string = ""): any {
   const dni = asistencia.dniEstudiante || asistencia.dni || "";
   const programaNombre = normalizarTextoApi(asistencia.programa);
-  return (db.inscripciones || []).find(item => asistencia.inscripcionId && item.id === asistencia.inscripcionId)
-    || (db.inscripciones || []).find(item =>
+  return (db.inscripciones || []).find((item: any) => asistencia.inscripcionId && item.id === asistencia.inscripcionId)
+    || (db.inscripciones || []).find((item: any) =>
       dni &&
       item.dniEstudiante === dni &&
       (
@@ -2007,11 +2162,11 @@ function buscarInscripcionAsistencia(db, asistencia = {}, programaId = "") {
     || null;
 }
 
-function enriquecerAsistenciaPrograma(db, asistencia = {}, programaId = "") {
+function enriquecerAsistenciaPrograma(db: any, asistencia: any = {}, programaId: string = ""): any {
   const inscripcion = buscarInscripcionAsistencia(db, asistencia, programaId);
   const estudiante = db.estudiantes?.[asistencia.dniEstudiante || inscripcion?.dniEstudiante] || null;
-  const programa = (db.programas || []).find(item => item.id === (inscripcion?.programaId || asistencia.programaId || programaId))
-    || (db.programas || []).find(item => normalizarTextoApi(item.nombre) === normalizarTextoApi(inscripcion?.programa || asistencia.programa))
+  const programa = (db.programas || []).find((item: any) => item.id === (inscripcion?.programaId || asistencia.programaId || programaId))
+    || (db.programas || []).find((item: any) => normalizarTextoApi(item.nombre) === normalizarTextoApi(inscripcion?.programa || asistencia.programa))
     || null;
   const gradoEstudiante = inscripcion?.gradoEstudiante
     || inscripcion?.grado
@@ -2039,4 +2194,3 @@ function enriquecerAsistenciaPrograma(db, asistencia = {}, programaId = "") {
 }
 
 export default router;
-

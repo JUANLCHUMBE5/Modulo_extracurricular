@@ -1,9 +1,9 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import { promises as fs } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { getDb, saveDb } from "../../dbLocal.js";
-import { requireAuth, requireRole } from "../../middleware/auth.js";
+import { requireAuth, requireRole, AuthenticatedRequest } from "../../middleware/auth.js";
 import { registrarAuditoria } from "../../audit.js";
 import { limpiarDni as limpiarDniHelper, normalizarComparacion } from "../../fileService.js";
 import {
@@ -28,12 +28,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const EXTRANJEROS_DB_PATH = path.resolve(__dirname, "../../estudiantes_externos.json");
 
-// Helper to clean DNI
-function limpiarDni(val) {
+/**
+ * Limpia y formatea un DNI (remueve caracteres no numéricos).
+ */
+function limpiarDni(val: any): string {
   return limpiarDniHelper ? limpiarDniHelper(val) : String(val || "").replace(/\D/g, "");
 }
 
-async function readExternalStudents() {
+/**
+ * Lee la base de datos de estudiantes externos/extranjeros.
+ */
+async function readExternalStudents(): Promise<Record<string, any>> {
   try {
     const data = await fs.readFile(EXTRANJEROS_DB_PATH, "utf-8");
     return JSON.parse(data);
@@ -42,7 +47,10 @@ async function readExternalStudents() {
   }
 }
 
-async function saveExternalStudent(student) {
+/**
+ * Guarda o actualiza un estudiante externo en el archivo local.
+ */
+async function saveExternalStudent(student: any): Promise<void> {
   try {
     const current = await readExternalStudents();
     current[student.dni] = {
@@ -55,41 +63,96 @@ async function saveExternalStudent(student) {
   }
 }
 
-// Legacy student list
-router.get("/api/estudiantes", async (_req, res) => {
+/**
+ * GET /api/estudiantes
+ * Legacy: Retorna la base completa de estudiantes.
+ */
+router.get("/api/estudiantes", async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
-    res.json(Object.values(db.estudiantes || {}));
+    const list = Object.values(db.estudiantes || {});
+    
+    const page = req.query.page ? Number(req.query.page) : null;
+    const limit = req.query.limit ? Number(req.query.limit) : 20;
+    
+    if (page !== null && !isNaN(page)) {
+      const startIndex = (page - 1) * limit;
+      const paginated = list.slice(startIndex, startIndex + limit);
+      res.json({
+        success: true,
+        data: paginated,
+        pagination: {
+          total: list.length,
+          page,
+          limit,
+          totalPages: Math.ceil(list.length / limit)
+        }
+      });
+    } else {
+      res.json(list);
+    }
   } catch {
     res.status(500).json({ message: "No se pudieron listar los estudiantes." });
   }
 });
 
-// Legacy student by DNI
-router.get("/api/estudiantes/:dni", async (req, res) => {
+/**
+ * GET /api/estudiantes/:dni
+ * Legacy: Obtiene datos crudos de un estudiante por su DNI.
+ */
+router.get("/api/estudiantes/:dni", async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const dni = limpiarDni(req.params.dni);
     const estudiante = db.estudiantes?.[dni];
-    if (!estudiante) return res.status(404).json({ message: "Estudiante no encontrado." });
-    return res.json(estudiante);
+    if (!estudiante) {
+      res.status(404).json({ message: "Estudiante no encontrado." });
+      return;
+    }
+    res.json(estudiante);
   } catch {
-    return res.status(500).json({ message: "No se pudo consultar el estudiante." });
+    res.status(500).json({ message: "No se pudo consultar el estudiante." });
   }
 });
 
-// Legacy enrollments listing
-router.get("/api/inscripciones", async (_req, res) => {
+/**
+ * GET /api/inscripciones
+ * Legacy: Retorna todas las inscripciones crudas.
+ */
+router.get("/api/inscripciones", async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
-    res.json(db.inscripciones || []);
+    const list = db.inscripciones || [];
+    
+    const page = req.query.page ? Number(req.query.page) : null;
+    const limit = req.query.limit ? Number(req.query.limit) : 20;
+    
+    if (page !== null && !isNaN(page)) {
+      const startIndex = (page - 1) * limit;
+      const paginated = list.slice(startIndex, startIndex + limit);
+      res.json({
+        success: true,
+        data: paginated,
+        pagination: {
+          total: list.length,
+          page,
+          limit,
+          totalPages: Math.ceil(list.length / limit)
+        }
+      });
+    } else {
+      res.json(list);
+    }
   } catch {
     res.status(500).json({ message: "No se pudieron listar las inscripciones." });
   }
 });
 
-// Legacy documents listing
-router.get("/api/documentos", async (_req, res) => {
+/**
+ * GET /api/documentos
+ * Legacy: Retorna el historial de fichas/documentos generados.
+ */
+router.get("/api/documentos", async (_req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     res.json(db.documentosGenerados || []);
@@ -98,13 +161,19 @@ router.get("/api/documentos", async (_req, res) => {
   }
 });
 
-// Legacy parent summary
-router.get("/api/padres/:dni/resumen", async (req, res) => {
+/**
+ * GET /api/padres/:dni/resumen
+ * Legacy: Retorna el consolidado del estudiante para el portal clásico de padres.
+ */
+router.get("/api/padres/:dni/resumen", async (req: Request, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const dni = limpiarDni(req.params.dni);
     const estudiante = db.estudiantes?.[dni];
-    if (!estudiante) return res.status(404).json({ message: "Estudiante no encontrado." });
+    if (!estudiante) {
+      res.status(404).json({ message: "Estudiante no encontrado." });
+      return;
+    }
 
     const inscripciones = (db.inscripciones || []).filter((item) =>
       item.dniEstudiante === dni || item.codigoEstudiante === estudiante.codigoEstudiante
@@ -115,7 +184,7 @@ router.get("/api/padres/:dni/resumen", async (req, res) => {
     const documentos = (db.documentosGenerados || []).filter((item) =>
       item.dniEstudiante === dni || normalizarComparacion(item.alumno) === normalizarComparacion(estudiante.nombres)
     );
-    const invitaciones = [];
+    const invitaciones: any[] = [];
     const programs = db.programas || [];
     for (const prog of programs) {
       const invitados = db.invitadosPorPrograma[prog.id] || [];
@@ -129,21 +198,25 @@ router.get("/api/padres/:dni/resumen", async (req, res) => {
       }
     }
 
-    return res.json({ estudiante, invitaciones, inscripciones, pagos, documentos });
+    res.json({ estudiante, invitaciones, inscripciones, pagos, documentos });
   } catch {
-    return res.status(500).json({ message: "No se pudo consultar el resumen del padre." });
+    res.status(500).json({ message: "No se pudo consultar el resumen del padre." });
   }
 });
 
-// Secretaria: Estudiante por DNI
-router.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["secretaria", "coordinacion"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/secretaria/estudiantes/:dni
+ * Secretaría: Busca un alumno por su DNI. Resuelve si es interno, externo o si está pre-inscrito en la lista de invitados.
+ * Retorna la información completa formateada para el portal de Secretaría.
+ */
+router.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["secretaria", "coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dni } = req.params;
-    const { periodo } = req.query;
+    const { dni } = req.params as any;
+    const { periodo } = req.query as any;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
 
-    let student = db.estudiantes?.[dni];
+    let student = db.estudiantes?.[dni] as any;
     let esExterno = false;
     if (!student) {
       const extStudents = await readExternalStudents();
@@ -152,7 +225,7 @@ router.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["
         esExterno = true;
       }
     }
-    let invitacion = null;
+    let invitacion: any = null;
 
     const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
     for (const prog of programs) {
@@ -257,30 +330,36 @@ router.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireRole(["
     } else {
       res.json({ success: true, data: null });
     }
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Secretaria: Buscar estudiantes por nombre
-router.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretaria", "coordinacion"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/secretaria/estudiantes
+ * Secretaría: Buscar estudiantes por nombres, apellidos o código. Retorna una lista con la información básica.
+ */
+router.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secretaria", "coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { nombre, periodo } = req.query;
+    const { nombre, periodo } = req.query as any;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
     const searchVal = normalizarTextoApi(nombre);
 
-    if (searchVal.length < 3) return res.json({ success: true, data: [] });
+    if (searchVal.length < 3) {
+      res.json({ success: true, data: [] });
+      return;
+    }
 
-    const results = [];
-    const seenDnis = new Set();
+    const results: any[] = [];
+    const seenDnis = new Set<string>();
 
-    Object.values(db.estudiantes || {}).forEach(student => {
+    Object.values(db.estudiantes || {}).forEach((student: any) => {
       const searchKey = normalizarTextoApi(`${student.nombres} ${student.codigoEstudiante || ""}`);
       if (searchKey.includes(searchVal)) {
         seenDnis.add(student.dni);
 
-        let invitacion = null;
+        let invitacion: any = null;
         const programs = (db.programas || []).filter(p => normalizarPeriodoApi(p.periodo) === period);
         for (const prog of programs) {
           const invitados = db.invitadosPorPrograma[prog.id] || [];
@@ -408,35 +487,45 @@ router.get("/api/v1/extracurricular/secretaria/estudiantes", requireRole(["secre
     });
 
     res.json({ success: true, data: results.slice(0, 10) });
-  } catch (error) {
+  } catch (error: any) {
     console.error("STUDENT SEARCH ERROR STACK:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Registrar Inscripcion
-router.post("/api/v1/extracurricular/inscripciones", requireRole(["secretaria", "coordinacion", "padres"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/inscripciones
+ * Crea una nueva matrícula de estudiante (Interno o Externo) a un programa o taller.
+ * Resta cupos disponibles en caso de éxito.
+ */
+router.post("/api/v1/extracurricular/inscripciones", requireRole(["secretaria", "coordinacion", "padres"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const db = await getDb();
     const enrollmentId = `INS-${String(Date.now()).slice(-6)}`;
     const { estudiante_id, programa_id, origen_inscripcion, seccion, grado, apoderado, telefono_apoderado, correo_apoderado, talla_uniforme, talla_polo, talla_short, seleccion, nivel_cambridge } = req.body;
 
     if (req.user.role === "padres" && String(req.user.username) !== String(estudiante_id)) {
-      return res.status(403).json({ success: false, message: "No está autorizado para inscribir a este estudiante." });
+      res.status(403).json({ success: false, message: "No está autorizado para inscribir a este estudiante." });
+      return;
     }
 
     const prog = db.programas.find(p => p.id === programa_id);
-    if (!prog) return res.status(400).json({ success: false, message: "El programa no existe." });
+    if (!prog) {
+      res.status(400).json({ success: false, message: "El programa no existe." });
+      return;
+    }
 
     const progEstado = String(prog.estado || "Habilitado").toLowerCase();
     if (progEstado !== "habilitado" && progEstado !== "publicado") {
-      return res.status(400).json({ success: false, message: "No se puede registrar inscripción en un programa no habilitado." });
+      res.status(400).json({ success: false, message: "No se puede registrar inscripción en un programa no habilitado." });
+      return;
     }
 
     const cuposMax = Number(prog.cupos || 0);
     const cuposOcupados = Number(prog.cuposOcupados || 0);
     if (cuposOcupados >= cuposMax) {
-      return res.status(400).json({ success: false, message: "No hay cupos disponibles para este programa." });
+      res.status(400).json({ success: false, message: "No hay cupos disponibles para este programa." });
+      return;
     }
 
     const esDuplicado = (db.inscripciones || []).some(
@@ -446,7 +535,8 @@ router.post("/api/v1/extracurricular/inscripciones", requireRole(["secretaria", 
       item.estadoInscripcion !== "anulada"
     );
     if (esDuplicado) {
-      return res.status(409).json({ success: false, message: "El estudiante ya cuenta con una inscripción activa en este programa." });
+      res.status(409).json({ success: false, message: "El estudiante ya cuenta con una inscripción activa en este programa." });
+      return;
     }
 
     const invitadosPrograma = db.invitadosPorPrograma?.[programa_id] || [];
@@ -455,11 +545,12 @@ router.post("/api/v1/extracurricular/inscripciones", requireRole(["secretaria", 
     );
     if (req.user.role === "padres" && (esProgramaCambridgeApi(prog) || !prog.invitacionMasiva)) {
       if (!invitacionRegistro) {
-        return res.status(400).json({ success: false, message: "El estudiante no se encuentra en la lista de invitados para este programa." });
+        res.status(400).json({ success: false, message: "El estudiante no se encuentra en la lista de invitados para este programa." });
+        return;
       }
     }
 
-    let student = db.estudiantes?.[estudiante_id];
+    let student = db.estudiantes?.[estudiante_id] as any;
     let esExternoRestaurado = false;
     if (!student) {
       const extStudents = await readExternalStudents();
@@ -538,7 +629,10 @@ router.post("/api/v1/extracurricular/inscripciones", requireRole(["secretaria", 
       horarioRecepcionAlmuerzo: prog.horarioRecepcionAlmuerzo || "",
       modalidadesCambridge: prog.modalidadesCambridge || [],
       costoCiclo: prog.costoCiclo || "",
-      montoPrimerPago: prog.montoPrimerPago || ""
+      montoPrimerPago: prog.montoPrimerPago || "",
+      pagoId: null,
+      costoOriginal: Number(prog.costo || 0),
+      descuentoAprobado: false,
     };
 
     prog.cuposOcupados = (prog.cuposOcupados || 0) + 1;
@@ -570,9 +664,10 @@ router.post("/api/v1/extracurricular/inscripciones", requireRole(["secretaria", 
 
       await saveExternalStudent(nuevoEstudiante);
     } else if (db.estudiantes?.[estudiante_id]) {
-      db.estudiantes[estudiante_id].apoderado = apoderado || db.estudiantes[estudiante_id].apoderado || "";
-      db.estudiantes[estudiante_id].telefonoApoderado = telefono_apoderado || db.estudiantes[estudiante_id].telefonoApoderado || "";
-      db.estudiantes[estudiante_id].estadoInscripcion = "pendiente_pago";
+      const std = db.estudiantes[estudiante_id] as any;
+      std.apoderado = apoderado || std.apoderado || "";
+      std.telefonoApoderado = telefono_apoderado || std.telefonoApoderado || "";
+      std.estadoInscripcion = "pendiente_pago";
 
       const extStudents = await readExternalStudents();
       if (extStudents[estudiante_id] || esExternoRestaurado) {
@@ -592,20 +687,26 @@ router.post("/api/v1/extracurricular/inscripciones", requireRole(["secretaria", 
     });
 
     res.json({ success: true, data: mapDbEnrollmentToApi(newEnrollment, db) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Registrar Documento Ficha/Folleto
-router.post("/api/v1/extracurricular/inscripciones/:id/documento", requireRole(["secretaria", "coordinacion"]), async (req, res) => {
+/**
+ * POST /api/v1/extracurricular/inscripciones/:id/documento
+ * Registra que se ha generado la Ficha de Matrícula oficial para descargar.
+ */
+router.post("/api/v1/extracurricular/inscripciones/:id/documento", requireRole(["secretaria", "coordinacion"]), async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { usuario, tipo_documento, plantilla } = req.body;
     const db = await getDb();
 
     const inscrip = (db.inscripciones || []).find(item => item.id === id);
-    if (!inscrip) return res.status(404).json({ success: false, message: "Inscripción no encontrada." });
+    if (!inscrip) {
+      res.status(404).json({ success: false, message: "Inscripción no encontrada." });
+      return;
+    }
 
     const docId = `DOC-${String(db.nextDocumentoId || 1).padStart(3, "0")}`;
     db.nextDocumentoId = (db.nextDocumentoId || 1) + 1;
@@ -631,20 +732,26 @@ router.post("/api/v1/extracurricular/inscripciones/:id/documento", requireRole([
 
     await saveDb(db);
     res.json({ success: true, data: docObj });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Derivar Inscripcion a Caja
-router.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", requireRole(["secretaria"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja
+ * Secretaría: Deriva una matrícula pendiente a Caja para proceder con el cobro.
+ */
+router.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", requireRole(["secretaria"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { inscripcionId } = req.params;
     const db = await getDb();
     const idx = (db.inscripciones || []).findIndex(item => item.id === inscripcionId);
-    if (idx === -1) return res.status(404).json({ success: false, message: "Inscripción no encontrada." });
+    if (idx === -1) {
+      res.status(404).json({ success: false, message: "Inscripción no encontrada." });
+      return;
+    }
 
-    const updated = {
+    const updated: any = {
       ...db.inscripciones[idx],
       ...req.body,
       derivadoCaja: true,
@@ -655,7 +762,7 @@ router.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", 
 
     db.inscripciones[idx] = updated;
 
-    const student = db.estudiantes?.[updated.dniEstudiante];
+    const student = db.estudiantes?.[updated.dniEstudiante] as any;
     if (student) {
       student.estadoInscripcion = updated.estadoInscripcion;
       student.estadoCaja = updated.estadoCaja;
@@ -670,13 +777,16 @@ router.put("/api/v1/extracurricular/inscripciones/:inscripcionId/derivar-caja", 
       estadoNuevo: updated.estadoInscripcion
     });
     res.json({ success: true, data: mapDbEnrollmentToApi(updated, db) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Reservar en Caja (Padres)
-router.put("/api/v1/extracurricular/inscripciones/:inscripcionId/reservar-caja", requireRole(["padres"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/inscripciones/:inscripcionId/reservar-caja
+ * Padres: Reserva una vacante de matrícula e indica que irá a pagar físicamente a Caja del colegio.
+ */
+router.put("/api/v1/extracurricular/inscripciones/:inscripcionId/reservar-caja", requireRole(["padres"]), async (req: AuthenticatedRequest, res: Response): Promise<void> => {
   try {
     const { inscripcionId } = req.params;
     const dni = String(req.body.dni_estudiante || req.user?.username || "").replace(/\D/g, "");
@@ -687,11 +797,12 @@ router.put("/api/v1/extracurricular/inscripciones/:inscripcionId/reservar-caja",
       item.estadoInscripcion !== "Anulada"
     );
     if (idx === -1) {
-      return res.status(404).json({ success: false, message: "No se encontro la inscripcion para reservar el pago en Caja." });
+      res.status(404).json({ success: false, message: "No se encontro la inscripcion para reservar el pago en Caja." });
+      return;
     }
 
     const estadoAnterior = db.inscripciones[idx].estadoInscripcion;
-    const updated = {
+    const updated: any = {
       ...db.inscripciones[idx],
       derivadoCaja: true,
       estadoCaja: "reservado_caja",
@@ -703,7 +814,7 @@ router.put("/api/v1/extracurricular/inscripciones/:inscripcionId/reservar-caja",
 
     db.inscripciones[idx] = updated;
 
-    const student = db.estudiantes?.[updated.dniEstudiante];
+    const student = db.estudiantes?.[updated.dniEstudiante] as any;
     if (student) {
       student.estadoInscripcion = "Reserva pendiente";
       student.estadoCaja = "reservado_caja";
@@ -719,48 +830,60 @@ router.put("/api/v1/extracurricular/inscripciones/:inscripcionId/reservar-caja",
     });
 
     res.json({ success: true, data: mapDbEnrollmentToApi(updated, db) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Secretaria: Buscar inscripcion activa (para Yape u otros flujos)
-router.get("/api/v1/extracurricular/secretaria/inscripciones/buscar", requireRole(["secretaria"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/secretaria/inscripciones/buscar
+ * Secretaría: Busca la última matrícula pendiente (no pagada) de un alumno por su DNI.
+ */
+router.get("/api/v1/extracurricular/secretaria/inscripciones/buscar", requireRole(["secretaria"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dni, periodo } = req.query;
+    const { dni, periodo } = req.query as any;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
     const list = (db.inscripciones || [])
       .filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
-    const isPaid = (item) => ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(est => String(item.estadoPago || "").toLowerCase().includes(est) || String(item.estadoInscripcion || "").toLowerCase().includes(est));
+    const isPaid = (item: any) => ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(est => String(item.estadoPago || "").toLowerCase().includes(est) || String(item.estadoInscripcion || "").toLowerCase().includes(est));
     const active = list.find(item => !isPaid(item)) || list[0] || null;
     res.json({ success: true, data: active ? mapDbEnrollmentToApi(active, db) : null });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Secretaria: Listar inscripciones de un alumno
-router.get("/api/v1/extracurricular/secretaria/inscripciones", requireRole(["secretaria"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/secretaria/inscripciones
+ * Secretaría: Lista las inscripciones vigentes de un alumno.
+ */
+router.get("/api/v1/extracurricular/secretaria/inscripciones", requireRole(["secretaria"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dni, periodo } = req.query;
+    const { dni, periodo } = req.query as any;
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
     const list = (db.inscripciones || [])
       .filter(item => item.dniEstudiante === dni && normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
     res.json({ success: true, data: list.map((item) => mapDbEnrollmentToApi(item, db)) });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Padres: Obtener resumen completo del estudiante (inscripciones, invitaciones, pagos, documentos)
-router.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "secretaria"]), async (req, res) => {
+/**
+ * GET /api/v1/extracurricular/padres/resumen/:dni
+ * Padres: Obtiene el resumen consolidado de un estudiante (matrículas, invitaciones a talleres autorizados, estado de pagos y folletos).
+ */
+router.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres", "secretaria"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dni } = req.params;
+    const { dni } = req.params as any;
     const db = await getDb();
-    const student = db.estudiantes?.[dni];
-    if (!student) return res.status(404).json({ success: false, message: "Estudiante no encontrado." });
+    const student = db.estudiantes?.[dni] as any;
+    if (!student) {
+      res.status(404).json({ success: false, message: "Estudiante no encontrado." });
+      return;
+    }
 
     const studentData = {
       id: student.dni,
@@ -784,7 +907,7 @@ router.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres",
     const payments = (db.pagos || []).filter(item => item.dniEstudiante === dni || enrollments.some(e => e.id === item.inscripcionId));
     const documents = (db.documentosGenerados || []).filter(item => item.dniEstudiante === dni || item.alumno === student.nombres);
 
-    const invitations = [];
+    const invitations: any[] = [];
     const programs = db.programas || [];
     for (const prog of programs) {
       const estadoProg = prog.estado || "Habilitado";
@@ -890,7 +1013,7 @@ router.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres",
             requiere_uniforme: Boolean(prog.requiereUniforme),
             requiere_indumentaria: Boolean(prog.requiereIndumentaria),
             invitacion_masiva: Boolean(prog.invitacionMasiva),
-
+  
             // Campos de plantilla y documento Word
             plantilla: plantilla.plantilla,
             plantilla_base64: plantilla.plantillaBase64,
@@ -926,19 +1049,26 @@ router.get("/api/v1/extracurricular/padres/resumen/:dni", requireRole(["padres",
         documentos: documents
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// Padres: Editar apoderado
-router.put("/api/v1/extracurricular/padres/:dni/apoderado", requireRole(["padres", "secretaria"]), async (req, res) => {
+/**
+ * PUT /api/v1/extracurricular/padres/:dni/apoderado
+ * Padres/Secretaría: Edita o actualiza el nombre, teléfono y correo electrónico del apoderado
+ * y propaga estos datos de contacto a todas las matrículas vigentes del estudiante.
+ */
+router.put("/api/v1/extracurricular/padres/:dni/apoderado", requireRole(["padres", "secretaria"]), async (req: Request, res: Response): Promise<void> => {
   try {
-    const { dni } = req.params;
+    const { dni } = req.params as any;
     const { apoderado, telefono, telefono_apoderado, correo, correo_apoderado } = req.body;
     const db = await getDb();
-    const student = db.estudiantes?.[dni];
-    if (!student) return res.status(404).json({ success: false, message: "Estudiante no encontrado." });
+    const student = db.estudiantes?.[dni] as any;
+    if (!student) {
+      res.status(404).json({ success: false, message: "Estudiante no encontrado." });
+      return;
+    }
 
     const finalTelefono = telefono || telefono_apoderado || "";
     const finalCorreo = correo || correo_apoderado || "";
@@ -975,11 +1105,9 @@ router.put("/api/v1/extracurricular/padres/:dni/apoderado", requireRole(["padres
         correo_apoderado: student.correoApoderado
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
 });
-
-
 
 export default router;

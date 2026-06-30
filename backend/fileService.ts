@@ -27,7 +27,84 @@ const COLUMNAS_CARGA_EXCEL = new Set([
   "seleccion",
 ]);
 
-export function validarArchivoExcel(archivo) {
+export interface PublicError extends Error {
+  publicMessage?: string;
+}
+
+export interface ExcelRow {
+  filaExcel?: number;
+  alumno?: string;
+  apellidos?: string;
+  codigo_estudiante?: string;
+  curso_programa?: string;
+  dni?: string;
+  dni_o_codigo?: string;
+  grado?: string;
+  nivel_cambridge?: string;
+  nivel_educativo?: string;
+  nombres?: string;
+  observacion?: string;
+  programa?: string;
+  seccion?: string;
+  seleccion?: string;
+  [key: string]: any;
+}
+
+export interface Programa {
+  id: string;
+  nombre: string;
+  programa?: string;
+  categoria?: string;
+  tipoComunicado?: string;
+  tipo_comunicado?: string;
+  plantilla?: string;
+  plantillaVariables?: string[];
+  estado?: string;
+  periodo?: string;
+  horario?: string;
+  costo?: number | string;
+  [key: string]: any;
+}
+
+export interface AlumnoBase {
+  dni?: string;
+  nombres?: string;
+  apellidos?: string;
+  grado?: string;
+  [key: string]: any;
+}
+
+export interface ValidarRegistrosParams {
+  filas: ExcelRow[];
+  programasPeriodo: Programa[];
+  existentes: Record<string, AlumnoBase[]>;
+}
+
+export interface FilaNormalizada {
+  codigoEstudiante: string;
+  dni: string;
+  alumno: string;
+  nombres: string;
+  apellidos: string;
+  nivelEducativo: string;
+  grado: string;
+  seccion: string;
+  seleccion: string;
+  nivelCambridge: string;
+  curso: string;
+  observacion: string;
+  estadoAlumno: string;
+}
+
+export interface ValidatedRecord extends FilaNormalizada {
+  fila: number;
+  programaId: string;
+  programaNombre: string;
+  estado: "Valido" | "Duplicado" | "Error";
+  errores: string[];
+}
+
+export function validarArchivoExcel(archivo: any): void {
   if (!archivo) lanzar("Seleccione un archivo Excel.");
 
   const nombre = String(archivo.originalname || "");
@@ -43,7 +120,7 @@ export function validarArchivoExcel(archivo) {
   }
 }
 
-export function validarArchivoWord(archivo) {
+export function validarArchivoWord(archivo: any): void {
   if (!archivo) lanzar("Seleccione una plantilla Word para convertir.");
 
   const nombre = String(archivo.originalname || "");
@@ -57,7 +134,7 @@ export function validarArchivoWord(archivo) {
   if (!esDocxReal) lanzar("El archivo no parece ser un Word valido.");
 }
 
-export async function convertirWordAPdf(buffer) {
+export async function convertirWordAPdf(buffer: Buffer): Promise<Buffer> {
   const carpeta = await fs.mkdtemp(path.join(os.tmpdir(), "modulo-extracurricular-"));
   const base = randomUUID();
   const entrada = path.join(carpeta, `${base}.docx`);
@@ -75,7 +152,7 @@ export async function convertirWordAPdf(buffer) {
   }
 }
 
-async function convertirConLibreOffice(entrada, carpeta, salida) {
+async function convertirConLibreOffice(entrada: string, carpeta: string, salida: string): Promise<string> {
   const perfilLibreOffice = path.join(carpeta, "libreoffice-profile");
   const perfilUrl = `file:///${perfilLibreOffice.replace(/\\/g, "/")}`;
   const ejecutables = [
@@ -84,7 +161,7 @@ async function convertirConLibreOffice(entrada, carpeta, salida) {
     process.env.LIBREOFFICE_PATH,
     "C:\\Program Files\\LibreOffice\\program\\soffice.exe",
     "C:\\Program Files (x86)\\LibreOffice\\program\\soffice.exe",
-  ].filter(Boolean);
+  ].filter(Boolean) as string[];
 
   for (const ejecutable of ejecutables) {
     try {
@@ -112,7 +189,7 @@ async function convertirConLibreOffice(entrada, carpeta, salida) {
   throw new Error("LibreOffice no disponible.");
 }
 
-async function convertirConMicrosoftWord(entrada, salida) {
+async function convertirConMicrosoftWord(entrada: string, salida: string): Promise<string> {
   const script = path.join(path.dirname(entrada), "convertir-word-pdf.ps1");
   await fs.writeFile(script, `
 $ErrorActionPreference = "Stop"
@@ -146,7 +223,12 @@ try {
   return salida;
 }
 
-export async function leerExcelSeguro(archivo) {
+interface EncabezadoInfo {
+  nombre: string;
+  columna: number;
+}
+
+export async function leerExcelSeguro(archivo: any): Promise<ExcelRow[]> {
   const workbook = new ExcelJS.Workbook();
   try {
     await workbook.xlsx.load(archivo.buffer, {
@@ -163,10 +245,10 @@ export async function leerExcelSeguro(archivo) {
   const encabezadosCarga = encabezados.filter((item) => COLUMNAS_CARGA_EXCEL.has(item.nombre));
   validarColumnasObligatorias(encabezadosCarga);
 
-  const filas = [];
+  const filas: ExcelRow[] = [];
   hoja.eachRow((row, rowNumber) => {
     if (rowNumber <= filaEncabezado) return;
-    const fila = {};
+    const fila: ExcelRow = {};
     encabezadosCarga.forEach(({ nombre, columna }) => {
       fila[nombre] = limpiarTexto(row.getCell(columna).text);
     });
@@ -176,9 +258,9 @@ export async function leerExcelSeguro(archivo) {
   return filas;
 }
 
-function obtenerEncabezados(hoja) {
+function obtenerEncabezados(hoja: ExcelJS.Worksheet): { encabezados: EncabezadoInfo[]; filaEncabezado: number } {
   for (let fila = 1; fila <= Math.min(10, hoja.rowCount); fila += 1) {
-    const encabezados = [];
+    const encabezados: EncabezadoInfo[] = [];
     hoja.getRow(fila).eachCell((cell, columna) => {
       const nombre = normalizarEncabezado(cell.text);
       if (nombre) encabezados.push({ nombre, columna });
@@ -193,7 +275,7 @@ function obtenerEncabezados(hoja) {
   lanzar("No se encontro la fila de encabezados del Excel.");
 }
 
-function validarColumnasObligatorias(encabezados) {
+function validarColumnasObligatorias(encabezados: EncabezadoInfo[]): void {
   const disponibles = new Set(encabezados.map((item) => item.nombre));
   const formatoEstandar = esFormatoEstandar(disponibles);
   const formatoNombreCompleto = esFormatoNombreCompleto(disponibles);
@@ -214,7 +296,7 @@ function validarColumnasObligatorias(encabezados) {
   if (faltantes.length) lanzar(`Faltan columnas obligatorias: ${faltantes.join(", ")}.`);
 }
 
-function esFormatoEstandar(disponibles) {
+function esFormatoEstandar(disponibles: Set<string>): boolean {
   return disponibles.has("dni") &&
     disponibles.has("alumno") &&
     disponibles.has("nivel_educativo") &&
@@ -222,18 +304,18 @@ function esFormatoEstandar(disponibles) {
     disponibles.has("curso_programa");
 }
 
-function esFormatoCargaGeneral(disponibles) {
+function esFormatoCargaGeneral(disponibles: Set<string>): boolean {
   return disponibles.has("dni") && disponibles.has("curso_programa");
 }
 
-function esFormatoDocenteTalleres(disponibles) {
+function esFormatoDocenteTalleres(disponibles: Set<string>): boolean {
   return disponibles.has("alumno") &&
     disponibles.has("nivel_educativo") &&
     disponibles.has("grado") &&
     disponibles.has("curso_programa");
 }
 
-function esFormatoNombreCompleto(disponibles) {
+function esFormatoNombreCompleto(disponibles: Set<string>): boolean {
   return disponibles.has("dni") &&
     disponibles.has("nombres") &&
     disponibles.has("grado") &&
@@ -241,21 +323,21 @@ function esFormatoNombreCompleto(disponibles) {
     !disponibles.has("apellidos");
 }
 
-function esFormatoCargaCambridge(disponibles) {
+function esFormatoCargaCambridge(disponibles: Set<string>): boolean {
   return disponibles.has("dni") &&
     disponibles.has("alumno") &&
     disponibles.has("seleccion");
 }
 
-function esFormatoCambridgeLista(disponibles) {
+function esFormatoCambridgeLista(disponibles: Set<string>): boolean {
   return disponibles.has("dni") &&
     disponibles.has("curso_programa") &&
     disponibles.has("seleccion") &&
     (disponibles.has("alumno") || disponibles.has("nombres"));
 }
 
-export function validarRegistros({ filas, programasPeriodo, existentes }) {
-  const clavesArchivo = new Set();
+export function validarRegistros({ filas, programasPeriodo, existentes }: ValidarRegistrosParams): ValidatedRecord[] {
+  const clavesArchivo = new Set<string>();
 
   return filas.map((fila, index) => {
     const normalizada = normalizarFila(fila);
@@ -264,7 +346,7 @@ export function validarRegistros({ filas, programasPeriodo, existentes }) {
     const errores = validarFilaCarga(normalizada, programaDetectado);
     const clave = claveAlumno(normalizada);
     const claveArchivo = programaDetectado ? `${programaDetectado.id}:${clave}` : clave;
-    const existentesPrograma = new Set((existentes[programaDetectado?.id] || []).map(claveAlumno));
+    const existentesPrograma = new Set<string>((existentes[programaDetectado?.id || ""] || []).map(claveAlumno));
     const duplicadoArchivo = Boolean(claveArchivo && clavesArchivo.has(claveArchivo));
     const duplicadoPrograma = Boolean(clave && existentesPrograma.has(clave));
 
@@ -287,7 +369,7 @@ export function validarRegistros({ filas, programasPeriodo, existentes }) {
   });
 }
 
-function normalizarFila(fila) {
+function normalizarFila(fila: ExcelRow): FilaNormalizada {
   const alumno = separarAlumnoCompleto(fila.alumno);
   const nivelCambridge = limpiarTexto(fila.nivel_cambridge);
   const nombres = limpiarTexto(fila.nombres) || alumno.nombres;
@@ -326,8 +408,8 @@ function normalizarFila(fila) {
   };
 }
 
-function validarFilaCarga(fila, programaDetectado) {
-  const errores = [];
+function validarFilaCarga(fila: FilaNormalizada, programaDetectado: Programa | null): string[] {
+  const errores: string[] = [];
   const esCambridge = programaDetectado && esProgramaCambridge(programaDetectado);
   if (fila.dni && !/^\d{8}$/.test(fila.dni)) errores.push("DNI invalido. Debe tener 8 digitos.");
   if (!textoSeguro(fila.alumno || `${fila.nombres} ${fila.apellidos}`)) errores.push("Falta alumno.");
@@ -343,21 +425,21 @@ function validarFilaCarga(fila, programaDetectado) {
   return errores;
 }
 
-function detectarProgramaPorCurso(curso, programas) {
+function detectarProgramaPorCurso(curso: string, programas: Programa[]): Programa | null {
   if (!curso) return null;
   const directo = programas.find((programa) => coincideCurso(curso, programa.nombre));
   if (directo) return directo;
   return /\b(cambridge|cambrigde|cabringde|camringde|ingles|ingless)\b/.test(normalizarComparacion(curso)) ? detectarProgramaCambridge(programas) : null;
 }
 
-function detectarProgramaCambridge(programas) {
+function detectarProgramaCambridge(programas: Programa[]): Programa | null {
   const candidatos = programas.filter((programa) => esProgramaCambridge(programa));
   if (candidatos.length === 1) return candidatos[0];
   if (!candidatos.length && programas.length === 1) return programas[0];
   return candidatos.find((programa) => String(programa.estado || "Habilitado") === "Habilitado") || null;
 }
 
-function esProgramaCambridge(programa) {
+function esProgramaCambridge(programa: Programa): boolean {
   const texto = normalizarComparacion([
     programa.nombre,
     programa.programa,
@@ -379,7 +461,7 @@ function esProgramaCambridge(programa) {
     );
 }
 
-function coincideCurso(curso, programa) {
+function coincideCurso(curso: string, programa: string): boolean {
   const a = normalizarComparacion(curso);
   const b = normalizarComparacion(programa);
   if (a === b) return true;
@@ -395,15 +477,25 @@ function coincideCurso(curso, programa) {
   return coberturaCurso >= 0.85 && coberturaPrograma >= 0.6;
 }
 
-function claveAlumno(alumno) {
+function claveAlumno(alumno: AlumnoBase | FilaNormalizada): string {
   if (alumno.dni) return `dni:${alumno.dni}`;
   const nombre = `${alumno.nombres || ""} ${alumno.apellidos || ""}`.trim().toLowerCase();
   return nombre ? `nombre:${nombre}:${alumno.grado}` : "";
 }
 
-export function obtenerInvitacionesAlumno(db, dni) {
-  return (db.programas || []).flatMap((programa) => {
-    const invitados = db.invitadosPorPrograma?.[programa.id] || [];
+export interface InvitacionAlumnoInfo {
+  programaId: string;
+  programa: string;
+  periodo?: string;
+  horario?: string;
+  costo?: number | string;
+  estadoPrograma?: string;
+  [key: string]: any;
+}
+
+export function obtenerInvitacionesAlumno(db: any, dni: string): InvitacionAlumnoInfo[] {
+  return (db.programas || []).flatMap((programa: Programa) => {
+    const invitados = (db.invitadosPorPrograma?.[programa.id] || []) as AlumnoBase[];
     return invitados
       .filter((invitado) => limpiarDni(invitado.dni) === dni)
       .map((invitado) => ({
@@ -418,15 +510,20 @@ export function obtenerInvitacionesAlumno(db, dni) {
   });
 }
 
-export function limpiarDni(valor) {
+export function limpiarDni(valor: any): string {
   return String(valor || "").replace(/\D/g, "");
 }
 
-export function limpiarTexto(valor) {
+export function limpiarTexto(valor: any): string {
   return String(valor ?? "").trim().replace(/[<>]/g, "");
 }
 
-function separarAlumnoCompleto(valor) {
+interface NombresApellidos {
+  nombres: string;
+  apellidos: string;
+}
+
+function separarAlumnoCompleto(valor: any): NombresApellidos {
   const partes = limpiarTexto(valor).split(/\s+/).filter(Boolean);
   if (!partes.length) return { nombres: "", apellidos: "" };
   if (partes.length === 1) return { nombres: partes[0], apellidos: "" };
@@ -436,20 +533,20 @@ function separarAlumnoCompleto(valor) {
   };
 }
 
-function textoSeguro(valor) {
+function textoSeguro(valor: any): boolean {
   return limpiarTexto(valor).length > 0;
 }
 
-export function normalizarPeriodo(valor) {
+export function normalizarPeriodo(valor: any): "verano" | "escolar" {
   return String(valor || "").toLowerCase().includes("verano") ? "verano" : "escolar";
 }
 
-function normalizarEncabezado(valor) {
+function normalizarEncabezado(valor: string): string {
   const encabezado = normalizarComparacion(valor)
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/_+/g, "_")
     .replace(/^_+|_+$/g, "");
-  const alias = {
+  const alias: Record<string, string> = {
     apellido: "apellidos",
     apellidos_y_nombres: "alumno",
     cod_estudiante: "codigo_estudiante",
@@ -479,14 +576,14 @@ function normalizarEncabezado(valor) {
   return alias[encabezado] || encabezado;
 }
 
-export function normalizarId(valor) {
+export function normalizarId(valor: string): string {
   return normalizarComparacion(valor)
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 42) || "curso";
 }
 
-export function normalizarComparacion(valor) {
+export function normalizarComparacion(valor: any): string {
   return String(valor || "")
     .trim()
     .toLowerCase()
@@ -494,7 +591,7 @@ export function normalizarComparacion(valor) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function tokensCurso(valor) {
+function tokensCurso(valor: string): string[] {
   const ignorar = new Set(["curso", "programa", "taller", "de", "del", "la", "el", "y", "para"]);
   return normalizarComparacion(valor)
     .replace(/[^a-z0-9\s]/g, " ")
@@ -502,7 +599,7 @@ function tokensCurso(valor) {
     .filter((token) => token.length > 2 && !ignorar.has(token));
 }
 
-export function parseJsonArray(valor) {
+export function parseJsonArray(valor: any): any[] {
   try {
     const parsed = JSON.parse(valor || "[]");
     return Array.isArray(parsed) ? parsed : [];
@@ -511,7 +608,7 @@ export function parseJsonArray(valor) {
   }
 }
 
-export function parseJsonObject(valor) {
+export function parseJsonObject(valor: any): Record<string, any> {
   try {
     const parsed = JSON.parse(valor || "{}");
     return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
@@ -520,20 +617,20 @@ export function parseJsonObject(valor) {
   }
 }
 
-export function renombrarArchivo(nombre) {
+export function renombrarArchivo(nombre: string): string {
   const extension = /\.xls$/i.test(nombre) ? "xls" : "xlsx";
   return `carga-${Date.now()}.${extension}`;
 }
 
-export function normalizarNombreDescarga(nombre) {
+export function normalizarNombreDescarga(nombre: string): string {
   return String(nombre || "documento.docx")
     .replace(/[^\w.-]+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "") || "documento.docx";
 }
 
-function lanzar(publicMessage) {
-  const error = new Error(publicMessage);
+function lanzar(publicMessage: string): never {
+  const error = new Error(publicMessage) as PublicError;
   error.publicMessage = publicMessage;
   throw error;
 }
