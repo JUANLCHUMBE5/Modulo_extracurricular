@@ -12,15 +12,15 @@ import {
   variablesPlantillaAceptadas,
   variablesPlantillaRequeridas,
 } from "./constants/coordinacionConstants";
-import AlumnosProgramaModal from "./components/AlumnosProgramaModal";
-import CargaExcelView from "./components/CargaExcelView";
-import CoordinacionSidebar from "./components/CoordinacionSidebar";
-import DocumentosView from "./components/DocumentosView";
-import FinalizarProgramaModal from "./components/FinalizarProgramaModal";
-import ArchivarProgramaModal from "./components/ArchivarProgramaModal";
-import ProgramaFormModal from "./components/ProgramaFormModal";
-import ProgramasView from "./components/ProgramasView";
-import AsistenciasView from "./components/AsistenciasView";
+import AlumnosProgramaModal from "./components/asistencias/AlumnosProgramaModal";
+import CargaExcelView from "./components/carga/CargaExcelView";
+import CoordinacionSidebar from "./components/shared/CoordinacionSidebar";
+import DocumentosView from "./components/documentos/DocumentosView";
+import FinalizarProgramaModal from "./components/programas/FinalizarProgramaModal";
+import ArchivarProgramaModal from "./components/programas/ArchivarProgramaModal";
+import ProgramaFormModal from "./components/programas/ProgramaFormModal";
+import ProgramasView from "./components/programas/ProgramasView";
+import AsistenciasView from "./components/asistencias/AsistenciasView";
 import useCoordinacion from "./hooks/useCoordinacion";
 import "./Coordinacion.css";
 

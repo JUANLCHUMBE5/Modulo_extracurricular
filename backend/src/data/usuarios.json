@@ -1,0 +1,54 @@
+[
+  {
+    "id": "1",
+    "nombre": "Admin Principal",
+    "usuario": "admin",
+    "rol": "Administrador",
+    "estado": "Activo",
+    "contrasena": "$2b$10$4RgmC4057HIVuuu7q2dzX.tSB5aHKypm5khzFYMjQC/T2TJUwtzKm"
+  },
+  {
+    "id": "3",
+    "nombre": "Rosa Cajera",
+    "usuario": "caja",
+    "rol": "Caja",
+    "estado": "Activo",
+    "contrasena": "$2b$10$Lu8tyQwb0yd3KzX4l8VFqOeS/ByL44NQ0TfXetVGBE9VqpCv3SsaK"
+  },
+  {
+    "id": "4",
+    "nombre": "Ana Coordinacion Academica",
+    "usuario": "coordinacion",
+    "rol": "Coordinacion",
+    "estado": "Activo",
+    "contrasena": "$2b$10$Lu8tyQwb0yd3KzX4l8VFqOeS/ByL44NQ0TfXetVGBE9VqpCv3SsaK"
+  },
+  {
+    "id": "5",
+    "nombre": "Auxiliar de Ingreso",
+    "usuario": "aux",
+    "rol": "Auxiliar",
+    "estado": "Activo",
+    "contrasena": "$2b$10$Lu8tyQwb0yd3KzX4l8VFqOeS/ByL44NQ0TfXetVGBE9VqpCv3SsaK"
+  },
+  {
+    "id": "6",
+    "nombre": "Direccion General",
+    "usuario": "dir",
+    "rol": "Direccion",
+    "estado": "Activo",
+    "contrasena": "$2b$10$Lu8tyQwb0yd3KzX4l8VFqOeS/ByL44NQ0TfXetVGBE9VqpCv3SsaK"
+  },
+  {
+    "id": "USR-044281",
+    "usuario": "mperez",
+    "nombre": "MARIA PEREZ",
+    "rol": "Secretaria",
+    "estado": "Activo",
+    "contrasena": "$2b$10$tOODVTFUX/G6.MI7qucmxOeFU2M0NXRjPhTttm.Fg2AqGg1L0XJC2",
+    "permisos": [
+      "secretaria.inscripcion",
+      "secretaria.asistencias"
+    ]
+  }
+]

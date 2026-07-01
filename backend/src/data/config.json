@@ -1,0 +1,24 @@
+{
+  "categorias": [
+    "Academico",
+    "Deportivo",
+    "Arte",
+    "Maraton",
+    "Otro"
+  ],
+  "configuracionInstitucional": {
+    "logoInstitucion": null,
+    "logoCambridge": null,
+    "firmaCoordinacion": null,
+    "firmaDireccion": null,
+    "selloInstitucion": null
+  },
+  "correlativos": {
+    "recibo": "",
+    "egreso": ""
+  },
+  "syncEvents": [],
+  "nextProgramaId": 1,
+  "nextCargaId": 1,
+  "nextDocumentoId": 1
+}

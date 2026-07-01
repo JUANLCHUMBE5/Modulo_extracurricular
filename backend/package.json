@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "start": "tsx server.ts",
-    "api": "tsx server.ts",
+    "start": "tsx src/server.ts",
+    "api": "tsx src/server.ts",
     "build": "tsc"
   },
   "dependencies": {

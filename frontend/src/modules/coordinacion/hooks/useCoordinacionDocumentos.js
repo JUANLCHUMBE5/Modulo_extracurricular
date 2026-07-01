@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   editarPrograma,
   crearProgramaDesdeDocumento,
@@ -36,6 +36,16 @@ export default function useCoordinacionDocumentos({
   const [programaDocsId, setProgramaDocsId] = useState("");
   const [lecturaDocumento, setLecturaDocumento] = useState(null);
   const [plantillaInputKey, setPlantillaInputKey] = useState(0);
+
+  // Valores computados derivados de la lista de programas
+  const programaDocs = useMemo(
+    () => (programaDocsId ? programas.find((p) => p.id === programaDocsId) || null : null),
+    [programas, programaDocsId]
+  );
+  const historialPlantillas = useMemo(
+    () => programas.filter((p) => p.plantilla && p.plantillaBase64),
+    [programas]
+  );
 
   function abrirDocumentosPrograma(prog) {
     if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar documentos del programa.");
@@ -352,6 +362,8 @@ export default function useCoordinacionDocumentos({
     setLecturaDocumento,
     plantillaInputKey,
     setPlantillaInputKey,
+    programaDocs,
+    historialPlantillas,
     abrirDocumentosPrograma,
     guardarDocumentoComoPrograma,
     guardarDocumentosPrograma,

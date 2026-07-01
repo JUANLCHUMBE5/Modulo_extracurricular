@@ -87,7 +87,7 @@ const UserRow = ({ u, onEditar, onCambiarEstado, onEliminar, onResetear, visible
       <td><EstadoBadge estado={u.estado} /></td>
       <td>
         <div className="adm-action-group">
-          <button className="adm-btn-icon adm-btn-edit" onClick={() => onEditar(u)} title="Editar">
+          <button className="adm-btn-icon adm-btn-edit" onClick={() => onEditar(u)} disabled={superAdmin} title="Editar">
             <Edit3 size={15} />
           </button>
           <button
@@ -98,7 +98,7 @@ const UserRow = ({ u, onEditar, onCambiarEstado, onEliminar, onResetear, visible
           >
             {u.estado === "Activo" ? <UserOff size={15} /> : <UserCheck size={15} />}
           </button>
-          <button className="adm-btn-icon adm-btn-reset" onClick={() => onResetear(u)} title="Reset contrasena">
+          <button className="adm-btn-icon adm-btn-reset" onClick={() => onResetear(u)} disabled={superAdmin} title="Reset contrasena">
             <Key size={15} />
           </button>
           <button className="adm-btn-icon adm-btn-delete" onClick={() => onEliminar(u)} disabled={superAdmin} title="Eliminar">

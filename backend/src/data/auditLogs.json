@@ -1,0 +1,114 @@
+[
+  {
+    "id": "AUD-105231-9fb7",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-01T18:21:45.231Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-102027-59a8",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-01T18:21:42.027Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-089983-ab35",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-01T18:21:29.989Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"Contraseña incorrecta\"}"
+  },
+  {
+    "id": "AUD-085801-8dd4",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-01T15:34:45.802Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Coordinación Académica\"}"
+  },
+  {
+    "id": "AUD-067805-d40a",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-01T15:34:27.805Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"mperez\"}"
+  },
+  {
+    "id": "AUD-057095-f8f3",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-01T15:34:17.095Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"Usuario inactivo o no existe\",\"_usuario_original\":\"SECRE\"}"
+  },
+  {
+    "id": "AUD-044393-5dad",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-01T15:34:04.393Z",
+    "accion": "USUARIO_CREAR",
+    "detalles": "{\"usuarioId\":\"USR-044281\",\"usuario\":\"mperez\"}"
+  },
+  {
+    "id": "AUD-418832-6e55",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-01T15:06:58.834Z",
+    "accion": "USUARIO_RESET_CONTRASENA",
+    "detalles": "{\"usuarioId\":\"1\"}"
+  },
+  {
+    "id": "AUD-416611-53ba",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-01T15:06:56.611Z",
+    "accion": "USUARIO_RESET_CONTRASENA",
+    "detalles": "{\"usuarioId\":\"1\"}"
+  },
+  {
+    "id": "AUD-277167-b283",
+    "usuario": "dir",
+    "rol": "direccion",
+    "fecha": "2026-07-01T14:47:57.167Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Dirección\"}"
+  },
+  {
+    "id": "AUD-270048-def8",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-01T14:47:50.048Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"Usuario inactivo o no existe\",\"_usuario_original\":\"secre\"}"
+  },
+  {
+    "id": "AUD-260884-04e3",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-01T14:47:40.884Z",
+    "accion": "USUARIO_ELIMINAR",
+    "detalles": "{\"usuarioId\":\"2\"}"
+  },
+  {
+    "id": "AUD-253269-375b",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-01T14:47:33.269Z",
+    "accion": "USUARIO_ELIMINAR",
+    "detalles": "{\"usuarioId\":\"7\"}"
+  },
+  {
+    "id": "AUD-229309-6309",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-01T14:47:09.312Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  }
+]

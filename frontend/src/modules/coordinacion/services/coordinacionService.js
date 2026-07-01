@@ -1,4 +1,5 @@
 import { isApiMode, apiClient } from "../../../services/apiClient";
+import ExcelJS from "exceljs";
 import {
   adaptarPrograma,
   adaptarInscripcion,
@@ -481,27 +482,40 @@ export async function previsualizarCargaAlumnos({ periodo, archivoNombre, archiv
   if (!archivo) throw new Error("Seleccione un archivo Excel.");
   validarArchivoExcelFrontend({ archivoNombre, archivo });
 
-  const formData = new FormData();
-  formData.append("periodo", periodo);
-  formData.append("archivo", archivo);
-  formData.append("programas", JSON.stringify(prepararProgramasParaPreview(apiDb.programas)));
-  formData.append("existentes", JSON.stringify(apiDb.invitadosPorPrograma));
-  formData.append("estudiantes", JSON.stringify(apiDb.estudiantes || {}));
-  if (programaId) formData.append("programaId", programaId);
+  const periodoNormalizado = normalizarPeriodo(periodo);
+  const programasPeriodo = (apiDb.programas || []).filter((programa) =>
+    normalizarPeriodo(programa.periodo) === periodoNormalizado
+  );
+  const programaSeleccionado = programaId
+    ? programasPeriodo.find((programa) => String(programa.id) === String(programaId)) || null
+    : null;
 
-  const response = await fetch(`${obtenerApiBase()}/api/coordinacion/cargas/preview`, {
-    method: "POST",
-    body: formData,
-  }).catch(() => {
-    throw new Error(obtenerMensajeConexionApi());
-  });
-
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.message || "No se pudo validar el archivo Excel.");
+  if (programaId && !programaSeleccionado) {
+    throw new Error("Seleccione un programa habilitado del periodo actual antes de cargar el Excel.");
   }
 
-  return data;
+  // Leer y procesar localmente en el frontend usando ExcelJS
+  const filas = await leerExcelLocal(archivo);
+  const registros = validarRegistrosLocal({
+    filas,
+    programasPeriodo,
+    programaSeleccionado,
+    existentes: apiDb.invitadosPorPrograma || {},
+    estudiantes: apiDb.estudiantes || {},
+  });
+
+  return {
+    id: `PREVIEW-${Date.now()}`,
+    periodo: periodoNormalizado,
+    archivoNombre: renombrarArchivoLocal(archivo.name),
+    registros,
+    resumen: {
+      total: registros.length,
+      validos: registros.filter((item) => item.estado === "Valido").length,
+      errores: registros.filter((item) => item.estado === "Error").length,
+      duplicados: registros.filter((item) => item.estado === "Duplicado").length,
+    },
+  };
 }
 
 export async function previsualizarCargaAlumnosMasiva({ periodo, archivos, programaId, onProgress }) {
@@ -731,3 +745,504 @@ function normalizarAlumnoCarga(estudiante = {}) {
     grado: limpiarTexto(estudiante.grado || estudiante.gradoNombre || estudiante.grado_nombre),
   };
 }
+
+// --- UTILERIAS LOCALES DE PROCESAMIENTO EXCEL FRONTEND ---
+
+async function leerExcelLocal(archivo) {
+  const arrayBuffer = await archivo.arrayBuffer();
+  const workbook = new ExcelJS.Workbook();
+  try {
+    await workbook.xlsx.load(arrayBuffer, {
+      ignoreNodes: ["dataValidations", "conditionalFormatting", "extLst"],
+    });
+  } catch (err) {
+    throw new Error("El archivo no se pudo abrir como Excel .xlsx válido. Verifique que no esté dañado, protegido o guardado en otro formato.");
+  }
+
+  const hoja = workbook.worksheets[0];
+  if (!hoja) throw new Error("El Excel no contiene hojas para validar.");
+
+  const { encabezados, filaEncabezado } = obtenerEncabezadosLocal(hoja);
+  const encabezadosCarga = encabezados.filter((item) => COLUMNAS_CARGA_EXCEL_LOCAL.has(item.nombre));
+  validarColumnasObligatoriasLocal(encabezadosCarga);
+
+  const filas = [];
+  hoja.eachRow((row, rowNumber) => {
+    if (rowNumber <= filaEncabezado) return;
+    const fila = {};
+    encabezadosCarga.forEach(({ nombre, columna }) => {
+      fila[nombre] = limpiarTextoLocal(row.getCell(columna).text);
+    });
+    if (Object.values(fila).some(Boolean)) filas.push({ filaExcel: rowNumber, ...fila });
+  });
+
+  return filas;
+}
+
+const COLUMNAS_CARGA_EXCEL_LOCAL = new Set([
+  "alumno",
+  "apellidos",
+  "codigo_estudiante",
+  "curso_programa",
+  "dni",
+  "dni_o_codigo",
+  "grado",
+  "id",
+  "nivel_cambridge",
+  "nivel_educativo",
+  "nombres",
+  "observacion",
+  "programa",
+  "seccion",
+  "seleccion",
+]);
+
+function obtenerEncabezadosLocal(hoja) {
+  for (let fila = 1; fila <= Math.min(10, hoja.rowCount); fila += 1) {
+    const encabezados = [];
+    hoja.getRow(fila).eachCell((cell, columna) => {
+      const nombre = normalizarEncabezadoLocal(cell.text);
+      if (nombre) encabezados.push({ nombre, columna });
+    });
+
+    const disponibles = new Set(encabezados.map((item) => item.nombre));
+    if (esFormatoCargaMasivaLocal(disponibles) || esFormatoCargaGeneralLocal(disponibles) || esFormatoCargaCambridgeLocal(disponibles) || esFormatoDocenteTalleresLocal(disponibles)) {
+      return { encabezados, filaEncabezado: fila };
+    }
+  }
+
+  throw new Error("No se encontró la fila de encabezados del Excel.");
+}
+
+function validarColumnasObligatoriasLocal(encabezados) {
+  const disponibles = new Set(encabezados.map((item) => item.nombre));
+  const formatoEstandar = esFormatoEstandarLocal(disponibles);
+  const formatoNombreCompleto = esFormatoNombreCompletoLocal(disponibles);
+  const formatoDocenteTalleres = esFormatoDocenteTalleresLocal(disponibles);
+  const formatoCambridgeLista = esFormatoCambridgeListaLocal(disponibles);
+  const formatoCargaMasiva = esFormatoCargaMasivaLocal(disponibles);
+  
+  const obligatorias = formatoCargaMasiva
+    ? [
+        disponibles.has("dni_o_codigo") ? "dni_o_codigo" : (disponibles.has("dni") ? "dni" : "codigo_estudiante"),
+        disponibles.has("alumno") ? "alumno" : "nombres",
+        "grado",
+        "nivel_educativo"
+      ]
+    : formatoEstandar
+    ? ["dni", "alumno", "nivel_educativo", "grado", "curso_programa"]
+    : formatoCambridgeLista
+      ? ["dni", "grado", "seleccion", "curso_programa"]
+      : esFormatoCargaCambridgeLocal(disponibles) && !esFormatoCargaGeneralLocal(disponibles)
+      ? ["dni", "alumno", "grado", "seleccion"]
+      : formatoDocenteTalleres
+        ? ["alumno", "nivel_educativo", "grado", "curso_programa"]
+      : formatoNombreCompleto
+        ? ["nombres", "grado", "curso_programa"]
+      : ["dni", "nombres", "apellidos", "grado", "curso_programa"];
+      
+  const faltantes = obligatorias.filter((columna) => !disponibles.has(columna));
+  if (faltantes.length) throw new Error(`Faltan columnas obligatorias: ${faltantes.join(", ")}.`);
+}
+
+function esFormatoCargaMasivaLocal(disponibles) {
+  return (disponibles.has("dni") || disponibles.has("codigo_estudiante") || disponibles.has("dni_o_codigo")) &&
+    disponibles.has("grado") &&
+    (disponibles.has("alumno") || disponibles.has("nombres")) &&
+    disponibles.has("nivel_educativo");
+}
+
+function esFormatoCargaGeneralLocal(disponibles) {
+  return disponibles.has("curso_programa") &&
+    (disponibles.has("dni") || disponibles.has("id") || disponibles.has("alumno") || disponibles.has("nombres"));
+}
+
+function esFormatoDocenteTalleresLocal(disponibles) {
+  return disponibles.has("alumno") &&
+    disponibles.has("nivel_educativo") &&
+    disponibles.has("grado") &&
+    disponibles.has("curso_programa");
+}
+
+function esFormatoCargaCambridgeLocal(disponibles) {
+  return disponibles.has("dni") &&
+    disponibles.has("alumno") &&
+    disponibles.has("seleccion");
+}
+
+function esFormatoCambridgeListaLocal(disponibles) {
+  return disponibles.has("dni") &&
+    disponibles.has("curso_programa") &&
+    disponibles.has("seleccion") &&
+    (disponibles.has("alumno") || disponibles.has("nombres"));
+}
+
+function esFormatoEstandarLocal(disponibles) {
+  return disponibles.has("dni") &&
+    disponibles.has("alumno") &&
+    disponibles.has("nivel_educativo") &&
+    disponibles.has("grado") &&
+    disponibles.has("curso_programa");
+}
+
+function esFormatoNombreCompletoLocal(disponibles) {
+  return disponibles.has("nombres") &&
+    disponibles.has("grado") &&
+    disponibles.has("curso_programa") &&
+    !disponibles.has("apellidos");
+}
+
+function normalizarEncabezadoLocal(valor) {
+  const encabezado = normalizarComparacionLocal(valor)
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  const alias = {
+    apellido: "apellidos",
+    apellidos_y_nombres: "alumno",
+    nombre_y_apellido: "alumno",
+    nombre_y_apellidos: "alumno",
+    nombre_apellido: "alumno",
+    nombre_apellidos: "alumno",
+    cod_estudiante: "codigo_estudiante",
+    codigo: "codigo_estudiante",
+    cod_alumno: "codigo_estudiante",
+    codigo_alumno: "codigo_estudiante",
+    cod_est: "codigo_estudiante",
+    codigoestudiante: "codigo_estudiante",
+    codigo_de_estudiante: "codigo_estudiante",
+    codigo_de_estudainte: "codigo_estudiante",
+    curso: "curso_programa",
+    curso_taller: "curso_programa",
+    nombre: "nombres",
+    nombres_y_apellidos: "alumno",
+    programa: "curso_programa",
+    modalidad: "seleccion",
+    selecci_n: "seleccion",
+    taller: "curso_programa",
+    nivel: "nivel_educativo",
+    nivel_educativo: "nivel_educativo",
+    niveleducativo: "nivel_educativo",
+    dni_o_codigo_de_estudiante: "dni_o_codigo",
+    dni_o_codigo_de_estudainte: "dni_o_codigo",
+    dni_o_codigo: "dni_o_codigo",
+    dni_codigo: "dni_o_codigo",
+  };
+  return alias[encabezado] || encabezado;
+}
+
+function normalizarComparacionLocal(valor) {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function resolverEstudianteBaseLocal(fila, indice) {
+  const porDni = indice.porDni.get(fila.dni);
+  const porCodigo = indice.porCodigo.get(normalizarComparacionLocal(fila.codigoEstudiante));
+  const coincidenciasNombre = indice.porNombre.get(normalizarComparacionLocal(fila.alumno)) || [];
+  const porNombre = coincidenciasNombre.length === 1 ? coincidenciasNombre[0] : null;
+  const estudiante = porDni || porCodigo || porNombre;
+
+  if (!estudiante) return fila;
+  const nombreExcel = normalizarComparacionLocal(fila.alumno);
+  const nombreRegistrado = normalizarComparacionLocal(estudiante.nombres);
+  const conflictoIdentidad = nombreExcel && nombreRegistrado && nombreExcel !== nombreRegistrado;
+
+  if (conflictoIdentidad && (porDni || porCodigo)) {
+    const origen = porDni ? `DNI ${fila.dni}` : `codigo ${fila.codigoEstudiante}`;
+    return {
+      ...fila,
+      erroresDatos: [
+        ...(fila.erroresDatos || []),
+        `El ${origen} ya pertenece a ${estudiante.nombres}; el Excel indica ${fila.alumno}.`,
+      ],
+    };
+  }
+
+  const updatedFila = { ...fila };
+  if (!updatedFila.dni && estudiante.dni) {
+    updatedFila.dni = estudiante.dni;
+  }
+  if (!updatedFila.codigoEstudiante && estudiante.codigoEstudiante) {
+    updatedFila.codigoEstudiante = estudiante.codigoEstudiante;
+  }
+  if (!updatedFila.nivelEducativo && (estudiante.nivel || estudiante.nivelEducativo)) {
+    updatedFila.nivelEducativo = estudiante.nivel || estudiante.nivelEducativo;
+  }
+  if (!updatedFila.seccion && estudiante.seccion) {
+    updatedFila.seccion = estudiante.seccion;
+  }
+  if (estudiante.nombres) {
+    const parts = separarAlumnoCompletoLocal(estudiante.nombres);
+    updatedFila.nombres = parts.nombres;
+    updatedFila.apellidos = parts.apellidos;
+    updatedFila.alumno = estudiante.nombres;
+  }
+
+  return {
+    ...updatedFila,
+    estudianteRegistradoDni: estudiante.dni || "",
+    estudianteRegistradoCodigo: estudiante.codigoEstudiante || "",
+    estudianteRegistradoNombre: estudiante.nombres || "",
+  };
+}
+
+function crearIndiceEstudiantesLocal(estudiantes = {}) {
+  const porDni = new Map();
+  const porCodigo = new Map();
+  const porNombre = new Map();
+
+  Object.values(estudiantes || {}).forEach((estudiante) => {
+    if (!estudiante) return;
+    const dni = limpiarTextoLocal(estudiante.dni);
+    const codigo = normalizarComparacionLocal(estudiante.codigoEstudiante);
+    const nombre = normalizarComparacionLocal(estudiante.nombres);
+    if (dni) porDni.set(dni, estudiante);
+    if (codigo) porCodigo.set(codigo, estudiante);
+    if (nombre) {
+      const lista = porNombre.get(nombre) || [];
+      lista.push(estudiante);
+      porNombre.set(nombre, lista);
+    }
+  });
+
+  return { porDni, porCodigo, porNombre };
+}
+
+function normalizarFilaLocal(fila) {
+  const alumno = separarAlumnoCompletoLocal(fila.alumno);
+  const nivelCambridge = limpiarTextoLocal(fila.nivel_cambridge);
+  const nombres = limpiarTextoLocal(fila.nombres) || alumno.nombres;
+  const apellidos = limpiarTextoLocal(fila.apellidos) || alumno.apellidos;
+
+  let dni = limpiarTextoLocal(fila.dni);
+  let codigoEstudiante = limpiarTextoLocal(fila.codigo_estudiante);
+  const rawDniOrCodigo = limpiarTextoLocal(fila.dni_o_codigo);
+  if (rawDniOrCodigo) {
+    if (/^\d{8}$/.test(rawDniOrCodigo)) {
+      dni = rawDniOrCodigo;
+    } else {
+      codigoEstudiante = rawDniOrCodigo;
+    }
+  }
+
+  const rawCurso = limpiarTextoLocal(fila.curso_programa) || limpiarTextoLocal(fila.curso) || limpiarTextoLocal(fila.programa);
+  const rawSeleccion = limpiarTextoLocal(fila.seleccion);
+  const esSeleccionGrupo = /^[A-Z]$/i.test(rawSeleccion);
+  const curso = rawCurso || (!esSeleccionGrupo ? rawSeleccion : "");
+
+  return {
+    codigoEstudiante,
+    idExcel: limpiarTextoLocal(fila.id),
+    dni,
+    alumno: limpiarTextoLocal(fila.alumno) || `${nombres} ${apellidos}`.trim(),
+    nombres,
+    apellidos,
+    nivelEducativo: limpiarTextoLocal(fila.nivel_educativo),
+    grado: limpiarTextoLocal(fila.grado),
+    seccion: limpiarTextoLocal(fila.seccion).toUpperCase(),
+    seleccion: limpiarTextoLocal(fila.seleccion).toUpperCase(),
+    nivelCambridge,
+    curso,
+    observacion: limpiarTextoLocal(fila.observacion),
+    estadoAlumno: "Invitado",
+  };
+}
+
+function separarAlumnoCompletoLocal(valor) {
+  const partes = limpiarTextoLocal(valor).split(/\s+/).filter(Boolean);
+  if (!partes.length) return { nombres: "", apellidos: "" };
+  if (partes.length === 1) return { nombres: partes[0], apellidos: "" };
+  return {
+    nombres: partes.slice(0, Math.max(1, partes.length - 2)).join(" "),
+    apellidos: partes.slice(Math.max(1, partes.length - 2)).join(" "),
+  };
+}
+
+function limpiarTextoLocal(valor) {
+  return String(valor ?? "").trim().replace(/[<>]/g, "");
+}
+
+function validarRegistrosLocal({
+  filas,
+  programasPeriodo,
+  programaSeleccionado,
+  existentes,
+  estudiantes
+}) {
+  const clavesArchivo = new Set();
+  const indiceEstudiantes = crearIndiceEstudiantesLocal(estudiantes);
+
+  return filas.map((fila, index) => {
+    const normalizada = resolverEstudianteBaseLocal(normalizarFilaLocal(fila), indiceEstudiantes);
+    const programaDetectado = programaSeleccionado ||
+      detectarProgramaPorCursoLocal(normalizada.curso, programasPeriodo) ||
+      (normalizada.nivelCambridge ? detectarProgramaCambridgeLocal(programasPeriodo) : null);
+    const errores = validarFilaCargaLocal(normalizada, programaDetectado, { programaSeleccionado: Boolean(programaSeleccionado) });
+    const clave = claveAlumnoLocal(normalizada);
+    const claveArchivo = programaDetectado ? `${programaDetectado.id}:${clave}` : clave;
+    const existentesPrograma = new Set((existentes[programaDetectado?.id] || []).map(claveAlumnoLocal));
+    const duplicadoArchivo = Boolean(claveArchivo && clavesArchivo.has(claveArchivo));
+    const duplicadoPrograma = Boolean(clave && existentesPrograma.has(clave));
+
+    if (claveArchivo) clavesArchivo.add(claveArchivo);
+    if (duplicadoArchivo) errores.push("Alumno duplicado en el archivo.");
+    if (duplicadoPrograma) errores.push("Alumno ya existe en el programa.");
+
+    const estado = errores.length > 0
+      ? (duplicadoArchivo || duplicadoPrograma ? "Duplicado" : "Error")
+      : "Valido";
+
+    return {
+      fila: fila.filaExcel || index + 2,
+      ...normalizada,
+      programaId: programaDetectado?.id || "",
+      programaNombre: programaDetectado?.nombre || "",
+      estado,
+      errores,
+    };
+  });
+}
+
+function validarFilaCargaLocal(fila, programaDetectado, opciones = {}) {
+  const errores = [...(fila.erroresDatos || [])];
+  const esCambridge = programaDetectado && esProgramaCambridgeLocal(programaDetectado);
+  if (!fila.dni) {
+    errores.push("Falta DNI y no se pudo resolver con el codigo de estudiante.");
+  } else if (!/^\d{8}$/.test(fila.dni)) {
+    errores.push("DNI invalido. Debe tener 8 digitos.");
+  }
+  if (!textoSeguroLocal(fila.alumno || `${fila.nombres} ${fila.apellidos}`)) errores.push("Falta alumno.");
+  if (!textoSeguroLocal(fila.grado)) errores.push("Falta grado.");
+  if (opciones.programaSeleccionado) {
+    if (fila.curso && !coincideCursoLocal(fila.curso, programaDetectado.nombre)) {
+      errores.push(`El taller en el Excel ("${fila.curso}") no coincide con el seleccionado ("${programaDetectado.nombre}").`);
+    }
+  } else {
+    if (!textoSeguroLocal(fila.curso) && !textoSeguroLocal(fila.nivelCambridge)) errores.push("Falta curso o nivel Cambridge.");
+    if (fila.curso && !programaDetectado) errores.push("El programa indicado no existe en el periodo seleccionado.");
+    if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
+    if (esCambridge && !/^[ABC]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A, B o C.");
+  }
+  if (programaDetectado && String(programaDetectado.estado || "Habilitado") !== "Habilitado") {
+    errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} esta ${programaDetectado.estado}. Habilitelo antes de cargar alumnos.`);
+  }
+  if (programaDetectado && !esCambridge) {
+    const nivelEstudiante = fila.nivelEducativo || fila.nivel;
+    const gradoCompleto = obtenerGradoCompletoLocal(fila.grado, nivelEstudiante);
+    if (!gradoCorrespondeAlPrograma(programaDetectado, gradoCompleto)) {
+      errores.push("El alumno no esta dentro de su grado correspondiente para este taller.");
+    }
+  }
+  if (fila.observacion && /[<>]/.test(fila.observacion)) errores.push("Observacion contiene caracteres no permitidos.");
+  return errores;
+}
+
+function obtenerGradoCompletoLocal(grado, nivel) {
+  const g = String(grado || "").trim();
+  const n = String(nivel || "").trim().toLowerCase();
+  
+  if (g.includes(":")) return g;
+  
+  let nivelPrefijo = "";
+  if (n.includes("prim") || g.toLowerCase().includes("prim")) {
+    nivelPrefijo = "Primaria";
+  } else if (n.includes("sec") || g.toLowerCase().includes("sec")) {
+    nivelPrefijo = "Secundaria";
+  } else if (n.includes("ini") || g.toLowerCase().includes("ini")) {
+    nivelPrefijo = "Inicial";
+  } else {
+    const num = parseInt(g.replace(/\D/g, ""), 10);
+    if (num >= 1 && num <= 6) {
+      nivelPrefijo = "Primaria";
+    } else if (num >= 7 && num <= 11) {
+      nivelPrefijo = "Secundaria";
+    } else {
+      nivelPrefijo = "Primaria";
+    }
+  }
+
+  const soloNum = g.replace(/\D/g, "");
+  return `${nivelPrefijo}:${soloNum}`;
+}
+
+function textoSeguroLocal(valor) {
+  return limpiarTextoLocal(valor).length > 0;
+}
+
+function coincideCursoLocal(curso, programa) {
+  const a = normalizarComparacionLocal(curso);
+  const b = normalizarComparacionLocal(programa);
+  if (a === b) return true;
+
+  const tokensA = tokensCursoLocal(a);
+  const tokensB = tokensCursoLocal(b);
+  if (!tokensA.length || !tokensB.length) return false;
+
+  const coincidencias = tokensA.filter((token) => tokensB.includes(token)).length;
+  const coberturaCurso = coincidencias / tokensA.length;
+  const coberturaPrograma = coincidencias / tokensB.length;
+
+  return coberturaCurso >= 0.85 && coberturaPrograma >= 0.6;
+}
+
+function tokensCursoLocal(valor) {
+  const ignorar = new Set(["curso", "programa", "taller", "de", "del", "la", "el", "y", "para"]);
+  return normalizarComparacionLocal(valor)
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((token) => token.length > 2 && !ignorar.has(token));
+}
+
+function esProgramaCambridgeLocal(programa) {
+  const texto = normalizarComparacionLocal([
+    programa.nombre,
+    programa.programa,
+    programa.categoria,
+    programa.tipoComunicado,
+    programa.tipo_comunicado,
+    programa.plantilla,
+    ...(programa.plantillaVariables || []),
+  ].filter(Boolean).join(" "));
+  return /\bcambridge\b/.test(texto) ||
+    /\bcambrigde\b/.test(texto) ||
+    /\bcabringde\b/.test(texto) ||
+    /\bcamringde\b/.test(texto) ||
+    /\bingles?s?\b/.test(texto) ||
+    /\bcertificacion\b/.test(texto) ||
+    /\bpreparacion\b/.test(texto) ||
+    (programa.plantillaVariables || []).some((variable) =>
+      ["anio_cert", "nivel_cambridge", "chk_a", "chk_b", "chk_c"].includes(variable)
+    );
+}
+
+function detectarProgramaCambridgeLocal(programas) {
+  const candidatos = programas.filter((programa) => esProgramaCambridgeLocal(programa));
+  if (candidatos.length === 1) return candidatos[0];
+  if (!candidatos.length && programas.length === 1) return programas[0];
+  return candidatos.find((programa) => String(programa.estado || "Habilitado") === "Habilitado") || null;
+}
+
+function detectarProgramaPorCursoLocal(curso, programas) {
+  if (!curso) return null;
+  const directo = programas.find((programa) => coincideCursoLocal(curso, programa.nombre));
+  if (directo) return directo;
+  return /\bcambridge\b/.test(normalizarComparacionLocal(curso)) ? detectarProgramaCambridgeLocal(programas) : null;
+}
+
+function claveAlumnoLocal(alumno) {
+  const dni = String(alumno.dni || "").replace(/\D/g, "");
+  if (dni) return `dni:${dni}`;
+  if (alumno.codigoEstudiante) return `codigo:${normalizarComparacionLocal(alumno.codigoEstudiante)}`;
+  const nombre = normalizarComparacionLocal(`${alumno.nombres || ""} ${alumno.apellidos || ""}`.trim());
+  return nombre ? `nombre:${nombre}:${normalizarComparacionLocal(alumno.grado)}` : "";
+}
+
+function renombrarArchivoLocal(nombre) {
+  const extension = /\.xls$/i.test(nombre) ? "xls" : "xlsx";
+  return `carga-${Date.now()}.${extension}`;
+}
+
