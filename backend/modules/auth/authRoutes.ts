@@ -2,25 +2,13 @@ import express, { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 // @ts-ignore
 import bcrypt from "bcryptjs";
-import rateLimit from "express-rate-limit";
 import { getDb, saveDb, resetDb } from "../../dbLocal.js";
 import { registrarAuditoria, prepararLogsAcceso } from "../../audit.js";
 import { requireAuth, requireRole, AuthenticatedRequest } from "../../middleware/auth.js";
+import { loginLimiter } from "../../middleware/rateLimiter.js";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
-
-// Limitador de tasa para mitigar ataques de fuerza bruta y scripts automatizados en rutas de login
-const loginLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minuto
-  max: 5, // Máximo 5 intentos por IP cada minuto
-  message: {
-    success: false,
-    message: "Demasiados intentos de inicio de sesion. Por favor, intente de nuevo en un minuto."
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
 
 /**
  * Genera una contraseña aleatoria de 8 caracteres alfanuméricos.
