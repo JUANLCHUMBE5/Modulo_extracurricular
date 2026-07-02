@@ -4,6 +4,10 @@
   "scripts": {
     "dev": "pnpm --filter backend start & pnpm --filter frontend dev",
     "build": "pnpm --filter frontend build",
-    "install:all": "pnpm install"
+    "install:all": "pnpm install",
+    "emulators": "firebase emulators:start --config backend/firebase/firebase.json --project colegio-prueba"
+  },
+  "devDependencies": {
+    "firebase-tools": "^15.22.4"
   }
 }

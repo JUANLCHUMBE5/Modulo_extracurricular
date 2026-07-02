@@ -9,12 +9,14 @@ import {
   IconLogout as LogOut,
   IconMenu2 as Menu,
   IconArchive as Archive,
+  IconUserPlus as UserPlus,
 } from "@tabler/icons-react";
 import { LOGO_COLEGIO_SRC } from "../constants/coordinacionConstants";
 
 const iconMap = {
   programas: BookOpen,
   carga: Upload,
+  registro_individual: UserPlus,
   documentos: FileText,
   asistencias: UserCheck,
   historial: Archive,

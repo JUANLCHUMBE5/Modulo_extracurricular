@@ -61,7 +61,7 @@ export const PERMISSION_GROUPS = [
     label: "Coordinación Académica",
     permissions: [
       { id: "coordinacion.programas", label: "Gestion de Programas" },
-      { id: "coordinacion.carga", label: "Carga Excel" },
+      { id: "coordinacion.carga", label: "Importar / Exportar / Registro" },
       { id: "coordinacion.documentos", label: "Plantillas / Documentos" },
       { id: "coordinacion.asistencia", label: "Asistencia y Control" },
       { id: "coordinacion.historial", label: "Historial / Archivo" },

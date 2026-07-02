@@ -11,6 +11,7 @@ import {
   IconUserPlus as UserPlus,
   IconX as X,
   IconDownload as Download,
+  IconFileText as FileText,
 } from "@tabler/icons-react";
 import { apiDb } from "../../../services/dbApi";
 import { listarInvitados } from "../services/coordinacionService";
@@ -20,6 +21,7 @@ import { PDFDocument } from "pdf-lib";
 import { toast } from "sonner";
 import SummaryBox from "./SummaryBox";
 import { textoEstadoCarga } from "../utils/coordinacionFormatters";
+import DocumentosView from "./DocumentosView";
 
 async function combinarBlobsPdf(blobs) {
   const pdfCombinado = await PDFDocument.create();
@@ -252,6 +254,34 @@ function CargaExcelView({
   toggleSidebarButton,
   ultimoLoteId,
   setUltimoLoteId,
+
+  // DocumentosView props
+  abrirEditar,
+  abrirCrearDesdeDocumento,
+  autocompletarDesdePlantilla,
+  eliminarPlantillaHistorial,
+  form,
+  guardando,
+  guardarDocumentoComoPrograma,
+  guardarDocumentosPrograma,
+  historialPlantillas,
+  lecturaDocumento,
+  plantillaInputKey,
+  programaDocs,
+  quitarPlantilla,
+  seleccionarPlantilla,
+  setForm,
+  usarPlantillaExistente,
+  variablesPlantillaAceptadas,
+  variablesPlantillaRequeridas,
+  categorias = [],
+  configInstitucional = {},
+  cargandoConfigInstitucional = false,
+  guardandoConfigInstitucional = false,
+  actualizarConfigInstitucionalImagen,
+  quitarConfigInstitucionalImagen,
+  guardarConfigInstitucional,
+  ocultarTabs = false,
 }) {
   const programasCarga = useMemo(() => programasDisponibles(programas), [programas]);
 
@@ -283,31 +313,36 @@ function CargaExcelView({
 
   useEffect(() => {
     if (modoCargaAlumnos !== "exportar") return;
+    if (programasCarga.length === 0) return;
 
     let active = true;
     const cargarInvitadosExportar = async () => {
       const yaTenemosDatos = seleccionExportarId === "all"
-        ? (programasCarga.length > 0 && programasCarga.every(prog => Array.isArray(invitadosMapRef.current[prog.id])))
+        ? (programasCarga.every(prog => Array.isArray(invitadosMapRef.current[prog.id])))
         : Array.isArray(invitadosMapRef.current[seleccionExportarId]);
 
-      if (!yaTenemosDatos) {
-        setCargandoInvitados(true);
-      }
+      if (yaTenemosDatos) return;
+
+      setCargandoInvitados(true);
       try {
-        const map = {};
+        const map = { ...invitadosMapRef.current };
         if (seleccionExportarId === "all") {
           await Promise.all(
             programasCarga.map(async (prog) => {
-              const list = await listarInvitados(prog.id);
-              if (active) {
-                map[prog.id] = list;
+              if (!Array.isArray(invitadosMapRef.current[prog.id])) {
+                const list = await listarInvitados(prog.id);
+                if (active) {
+                  map[prog.id] = list;
+                }
               }
             })
           );
         } else {
-          const list = await listarInvitados(seleccionExportarId);
-          if (active) {
-            map[seleccionExportarId] = list;
+          if (!Array.isArray(invitadosMapRef.current[seleccionExportarId])) {
+            const list = await listarInvitados(seleccionExportarId);
+            if (active) {
+              map[seleccionExportarId] = list;
+            }
           }
         }
         if (active) {
@@ -416,50 +451,52 @@ function CargaExcelView({
       <header className="coord-topbar">
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
           {toggleSidebarButton}
-          <h1>IMPORTAR/EXPORTAR EXCEL Y PDF</h1>
+          <h1>{ocultarTabs ? "REGISTRO INDIVIDUAL DE ALUMNOS" : "IMPORTAR / REGISTRAR"}</h1>
         </div>
       </header>
       <section className="coord-workspace coord-workspace-single coord-workspace-upload">
         <article className="coord-card coord-search-card coord-upload-card">
-          <div className="coord-upload-tabs" role="tablist" aria-label="Tipo de carga de alumnos">
-            <button
-              type="button"
-              className={`coord-upload-tab-masiva ${modoCargaAlumnos === "masiva" ? "is-active" : ""}`}
-              onClick={() => {
-                setModoCargaAlumnos("masiva");
-                setMensaje("");
-              }}
-            >
-              <FileSpreadsheet size={16} />
-              Carga masiva
-            </button>
-            <button
-              type="button"
-              className={`coord-upload-tab-individual ${modoCargaAlumnos === "individual" ? "is-active" : ""}`}
-              onClick={() => {
-                setModoCargaAlumnos("individual");
-                setPreviewCarga(null);
-                setProgresoCarga(null);
-                setMensaje("");
-              }}
-            >
-              <UserPlus size={16} />
-              Registro individual
-            </button>
-            <button
-              type="button"
-              className={`coord-upload-tab-exportar ${modoCargaAlumnos === "exportar" ? "is-active" : ""}`}
-              onClick={() => {
-                setModoCargaAlumnos("exportar");
-                setPreviewCarga(null);
-                setProgresoCarga(null);
-                setMensaje("");
-              }}
-            >
-              <Download size={16} />
-              Exportar forma masiva
-            </button>
-          </div>
+          {!ocultarTabs && (
+            <div className="coord-upload-tabs" role="tablist" aria-label="Tipo de carga de alumnos">
+              <button
+                type="button"
+                className={`coord-upload-tab-masiva ${modoCargaAlumnos === "masiva" ? "is-active" : ""}`}
+                onClick={() => {
+                  setModoCargaAlumnos("masiva");
+                  setMensaje("");
+                }}
+              >
+                <FileSpreadsheet size={16} />
+                Carga masiva
+              </button>
+              <button
+                type="button"
+                className={`coord-upload-tab-exportar ${modoCargaAlumnos === "exportar" ? "is-active" : ""}`}
+                onClick={() => {
+                  setModoCargaAlumnos("exportar");
+                  setPreviewCarga(null);
+                  setProgresoCarga(null);
+                  setMensaje("");
+                }}
+              >
+                <Download size={16} />
+                Exportar forma masiva
+              </button>
+              <button
+                type="button"
+                className={`coord-upload-tab-plantillas ${modoCargaAlumnos === "plantillas" ? "is-active" : ""}`}
+                onClick={() => {
+                  setModoCargaAlumnos("plantillas");
+                  setPreviewCarga(null);
+                  setProgresoCarga(null);
+                  setMensaje("");
+                }}
+              >
+                <FileText size={16} />
+                Plantillas / Documentos
+              </button>
+            </div>
+          )}
 
           {modoCargaAlumnos === "individual" ? (
           <div className="coord-form coord-individual-clean-form">
@@ -741,6 +778,39 @@ function CargaExcelView({
                 </table>
               </div>
             </>
+          ) : modoCargaAlumnos === "plantillas" ? (
+            <DocumentosView
+              abrirEditar={abrirEditar}
+              abrirCrearDesdeDocumento={abrirCrearDesdeDocumento}
+              autocompletarDesdePlantilla={autocompletarDesdePlantilla}
+              eliminarPlantillaHistorial={eliminarPlantillaHistorial}
+              form={form}
+              guardando={guardando}
+              guardarDocumentoComoPrograma={guardarDocumentoComoPrograma}
+              guardarDocumentosPrograma={guardarDocumentosPrograma}
+              historialPlantillas={historialPlantillas}
+              lecturaDocumento={lecturaDocumento}
+              mensaje={mensaje}
+              plantillaInputKey={plantillaInputKey}
+              programaDocs={programaDocs}
+              programas={programas}
+              quitarPlantilla={quitarPlantilla}
+              seleccionarPlantilla={seleccionarPlantilla}
+              setForm={setForm}
+              tipoMsg={tipoMsg}
+              usarPlantillaExistente={usarPlantillaExistente}
+              variablesPlantillaAceptadas={variablesPlantillaAceptadas}
+              variablesPlantillaRequeridas={variablesPlantillaRequeridas}
+              categorias={categorias}
+              configInstitucional={configInstitucional}
+              cargandoConfigInstitucional={cargandoConfigInstitucional}
+              guardandoConfigInstitucional={guardandoConfigInstitucional}
+              actualizarConfigInstitucionalImagen={actualizarConfigInstitucionalImagen}
+              quitarConfigInstitucionalImagen={quitarConfigInstitucionalImagen}
+              guardarConfigInstitucional={guardarConfigInstitucional}
+              toggleSidebarButton={toggleSidebarButton}
+              embedded={true}
+            />
           ) : modoCargaAlumnos === "masiva" ? (
             <div className="coord-empty coord-upload-empty">
               <ListCheck size={18} />

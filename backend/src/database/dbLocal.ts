@@ -4,6 +4,7 @@ import { initialData } from "../../../frontend/src/services/localDbClient.js";
 import { createSyncEvent, emitSyncEvent } from "../shared/syncBus.js";
 import { loadDatabaseFromFiles, saveDatabaseToFiles } from "./store.js";
 import { loadDatabaseFromPg, saveDatabaseToPg, isPgEnabled } from "./pgStore.js";
+import { loadDatabaseFromFirestore, saveDatabaseToFirestore, isFirestoreEnabled } from "./firestoreStore.js";
 import { LocalDatabase } from "./types.js";
 
 let mutationQueue: Promise<any> = Promise.resolve();
@@ -88,8 +89,12 @@ export async function getDb(): Promise<LocalDatabase> {
     return dbCache;
   }
   let db: LocalDatabase;
-  if (isPgEnabled()) {
-    db = await loadDatabaseFromPg(initialData);
+  if (isFirestoreEnabled()) {
+    const fileDb = await loadDatabaseFromFiles(initialData);
+    db = await loadDatabaseFromFirestore(fileDb);
+  } else if (isPgEnabled()) {
+    const fileDb = await loadDatabaseFromFiles(initialData);
+    db = await loadDatabaseFromPg(fileDb);
   } else {
     db = await loadDatabaseFromFiles(initialData);
   }
@@ -135,7 +140,9 @@ export async function saveDb(data: any): Promise<LocalDatabase> {
     ].slice(-MAX_SYNC_EVENTS);
   }
 
-  if (isPgEnabled()) {
+  if (isFirestoreEnabled()) {
+    await saveDatabaseToFirestore(db, changes);
+  } else if (isPgEnabled()) {
     await saveDatabaseToPg(db, changes);
   } else {
     await saveDatabaseToFiles(db);
@@ -177,7 +184,9 @@ export async function resetDb(): Promise<LocalDatabase> {
 }
 
 export function getDbSource(): string {
-  return isPgEnabled() ? "postgresql" : "local-json";
+  if (isFirestoreEnabled()) return "firestore";
+  if (isPgEnabled()) return "postgresql";
+  return "local-json";
 }
 
 function queueDbMutation(task: () => Promise<any>): Promise<any> {

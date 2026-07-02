@@ -1,133 +1,24 @@
 import { getDb, saveDb } from "../../database/dbLocal.js";
 import { registrarAuditoria } from "../../services/audit.service.js";
 import {
-  enviarCorreoGenerico,
-  generarCorreoConfirmacionPago,
-  resolverPlantillaTexto,
-  generarComunicadoPdf,
-  generarWordResuelto
-} from "../../services/mail.service.js";
-import { convertirWordAPdf } from "../../services/file.service.js";
-import {
   mapDbPaymentToApi,
   normalizarPeriodoApi,
   normalizarTextoApi
 } from "../../shared/mappers.js";
-
-function incrementarCorrelativo(valor: string): string {
-  if (!valor) return "";
-  const match = String(valor).match(/^(.*?)(\d+)$/);
-  if (!match) return valor;
-  const prefix = match[1];
-  const numStr = match[2];
-  const nextNum = Number(numStr) + 1;
-  const paddedNum = String(nextNum).padStart(numStr.length, "0");
-  return prefix + paddedNum;
-}
-
-function calcularSiguienteRecibo(startValue: string, existingNros: string[]): string {
-  if (!startValue) return "";
-  const match = String(startValue).match(/^(.*?)(\d+)$/);
-  if (!match) return startValue;
-  const prefix = match[1];
-  const startNumStr = match[2];
-  const S = Number(startNumStr);
-  const padLength = startNumStr.length;
-
-  let maxM = 0;
-  let foundAny = false;
-
-  for (const nro of existingNros) {
-    if (!nro) continue;
-    const nroStr = String(nro).trim();
-    if (nroStr.startsWith(prefix)) {
-      const numPart = nroStr.slice(prefix.length);
-      if (/^\d+$/.test(numPart)) {
-        const val = Number(numPart);
-        if (!foundAny || val > maxM) {
-          maxM = val;
-          foundAny = true;
-        }
-      }
-    }
-  }
-
-  let nextVal;
-  if (!foundAny || maxM < S) {
-    nextVal = S;
-  } else {
-    nextVal = maxM + 1;
-  }
-
-  return prefix + String(nextVal).padStart(padLength, "0");
-}
-
-function normalizarCorrelativos(db: any): any {
-  if (!db.correlativos) {
-    db.correlativos = {};
-  }
-  const c = db.correlativos;
-  
-  if (c.recibo !== undefined && c.reciboInicio === undefined) {
-    c.reciboInicio = c.recibo;
-    const existingNros = (db.pagos || []).map((p: any) => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
-    c.reciboActual = calcularSiguienteRecibo(c.recibo, existingNros);
-    delete c.recibo;
-  }
-  if (c.reciboVirtual !== undefined && c.reciboVirtualInicio === undefined) {
-    c.reciboVirtualInicio = c.reciboVirtual;
-    const existingNros = (db.pagos || []).map((p: any) => p.nroRecibo || p.nro_recibo || "").filter(Boolean);
-    c.reciboVirtualActual = calcularSiguienteRecibo(c.reciboVirtual, existingNros);
-    delete c.reciboVirtual;
-  }
-  if (c.egreso !== undefined && c.egresoInicio === undefined) {
-    c.egresoInicio = c.egreso;
-    c.egresoActual = c.egreso;
-    delete c.egreso;
-  }
-
-  if (c.reciboInicio === undefined) c.reciboInicio = "REC-0500";
-  if (c.reciboActual === undefined) c.reciboActual = "REC-0501";
-  if (c.reciboVirtualInicio === undefined) c.reciboVirtualInicio = "V-1000";
-  if (c.reciboVirtualActual === undefined) c.reciboVirtualActual = "V-1001";
-  if (c.egresoInicio === undefined) c.egresoInicio = "EGR-0200";
-  if (c.egresoActual === undefined) c.egresoActual = "EGR-0201";
-
-  return c;
-}
-
-function normalizarEstadoPagoReporteCaja(pago: any = null, inscripcion: any = null): string {
-  if (pago) {
-    const estadoPago = normalizarTextoApi(pago.estado);
-    if (["completado", "pagado", "validado"].includes(estadoPago)) return "pagado";
-    if (["por verificar", "verificando", "verificacion"].includes(estadoPago)) return "verificando";
-    if (["observado", "rechazado", "no coincide"].includes(estadoPago)) return "observado";
-    if (["anulado", "cancelado"].includes(estadoPago)) return "anulado";
-
-    const origen = normalizarTextoApi(pago.origenRegistro);
-    const tieneComprobante = Boolean(
-      pago.numeroOperacion ||
-      pago.telefonoOperacion ||
-      pago.capturaPagoBase64 ||
-      pago.capturaPagoNombre
-    );
-    if (origen.includes("portal") && tieneComprobante) return "verificando";
-  }
-
-  const estadoInscripcion = normalizarTextoApi(inscripcion?.estadoPago);
-  if (["pagado", "completado", "validado"].includes(estadoInscripcion)) return "pagado";
-  return "pendiente";
-}
-
-function pagoPerteneceAInscripcionReporte(pay: any = {}, item: any = {}): boolean {
-  if (pay.inscripcionId && item.id) return pay.inscripcionId === item.id;
-  if (pay.inscripcionId && item.inscripcionId) return pay.inscripcionId === item.inscripcionId;
-  if (pay.dniEstudiante !== item.dniEstudiante) return false;
-  if (pay.programaId && item.programaId) return pay.programaId === item.programaId;
-  return normalizarTextoApi(pay.programa) === normalizarTextoApi(item.programa);
-}
+import {
+  incrementarCorrelativo,
+  normalizarCorrelativos,
+  normalizarEstadoPagoReporteCaja,
+  pagoPerteneceAInscripcionReporte,
+  mapPaymentToReportRow,
+  mapEnrollmentToReportRow,
+  enviarCorreoConfirmacionConAdjuntos
+} from "./caja.helpers.js";
 
 export class CajaService {
+  /**
+   * Obtiene la lista de pagos de forma paginada para soporte y compatibilidad legacy.
+   */
   async getPagosLegacy(page: number | null, limit: number) {
     const db = await getDb();
     const list = db.pagos || [];
@@ -147,6 +38,9 @@ export class CajaService {
     return list;
   }
 
+  /**
+   * Obtiene la lista de pagos filtrada opcionalmente por periodo y DNI de estudiante.
+   */
   async getPagos(periodo: string, estudianteDni: string, page: number | null, limit: number) {
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
@@ -197,6 +91,9 @@ export class CajaService {
     return enriched.map(mapDbPaymentToApi);
   }
 
+  /**
+   * Registra una transacción de pago de forma presencial y la confirma inmediatamente.
+   */
   async registrarPago(operatorUsername: string, body: any) {
     const db = await getDb();
     const inscripcion_id = body.inscripcion_id || body.inscripcionId || "";
@@ -278,6 +175,9 @@ export class CajaService {
     return mapDbPaymentToApi(nuevoPago);
   }
 
+  /**
+   * Actualiza los datos principales de una transacción de pago existente.
+   */
   async updatePago(pagoId: string, body: any) {
     const db = await getDb();
     const idx = (db.pagos || []).findIndex(p => p.id === pagoId);
@@ -305,6 +205,9 @@ export class CajaService {
     return mapDbPaymentToApi(updated);
   }
 
+  /**
+   * Obtiene un resumen financiero con ingresos, egresos y saldos pendientes para un periodo.
+   */
   async getCajaResumen(periodo: string) {
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
@@ -331,6 +234,9 @@ export class CajaService {
     };
   }
 
+  /**
+   * Registra una transacción de egreso o gasto asignando un correlativo de egreso.
+   */
   async registrarEgreso(operatorUsername: string, operatorRole: string, body: any) {
     const db = await getDb();
     const corr = normalizarCorrelativos(db);
@@ -373,6 +279,9 @@ export class CajaService {
     return nuevoEgreso;
   }
 
+  /**
+   * Obtiene la información financiera y de matrícula de un estudiante específico en Caja.
+   */
   async getEstudianteCaja(dni: string, periodo: string) {
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
@@ -451,6 +360,9 @@ export class CajaService {
     }
   }
 
+  /**
+   * Obtiene la bandeja de pagos por verificar provenientes del portal de padres.
+   */
   async getBandejaPagosWeb(periodo: string) {
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
@@ -468,6 +380,9 @@ export class CajaService {
     });
   }
 
+  /**
+   * Aprueba y valida un pago web subido por un padre, asignando un correlativo y enviando correo.
+   */
   async validarPago(operatorUsername: string, operatorRole: string, pagoId: string, observaciones: string) {
     const db = await getDb();
 
@@ -503,73 +418,9 @@ export class CajaService {
 
     await saveDb(db);
 
-    const deseaCorreo = inscrip && (inscrip.enviarPdfCorreo || String(inscrip.origenRegistro || "").includes("enviar_correo"));
-    const apoderadoEmail = inscrip && (db.estudiantes?.[inscrip.dniEstudiante]?.correoApoderado || inscrip.correo || "");
-
-    if (deseaCorreo && apoderadoEmail) {
-      const studentName = inscrip.nombresEstudiante || (db.estudiantes?.[inscrip.dniEstudiante] ? `${(db.estudiantes[inscrip.dniEstudiante] as any).nombres} ${(db.estudiantes[inscrip.dniEstudiante] as any).apellidos || ""}`.trim() : "");
-      const progName = inscrip.programa || "";
-      const amount = db.pagos[idx].monto || "";
-      const receiptNo = db.pagos[idx].nroRecibo || "";
-
-      const adjuntos: any[] = [];
-      const programaObj = (db.programas?.find((p: any) => p.id === inscrip.programaId) || {}) as any;
-      const plantillaBase64 = programaObj.plantillaBase64 || inscrip.plantillaBase64;
-
-      if (plantillaBase64) {
-        try {
-          const estudianteObj = db.estudiantes?.[inscrip.dniEstudiante] || {};
-          const wordBuffer = generarWordResuelto(plantillaBase64, estudianteObj, inscrip, programaObj);
-          
-          if (wordBuffer) {
-            adjuntos.push({
-              filename: `Ficha_Matricula_${inscrip.id}.docx`,
-              content: wordBuffer
-            });
-            
-            try {
-              const pdfBuffer = await convertirWordAPdf(wordBuffer);
-              if (pdfBuffer) {
-                adjuntos.push({
-                  filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
-                  content: pdfBuffer
-                });
-              }
-            } catch (errorWordPdf: any) {
-              console.error("[WORD TO PDF ERROR] No se pudo convertir el Word resuelto a PDF, intentando generar PDF desde texto plano:", errorWordPdf.message);
-              
-              const textoPlantilla = programaObj.comunicadoCompleto || programaObj.comunicado || "";
-              if (textoPlantilla) {
-                try {
-                  const textoResuelto = resolverPlantillaTexto(textoPlantilla, estudianteObj, inscrip, programaObj);
-                  const pdfBuffer = generarComunicadoPdf(textoResuelto, progName);
-                  adjuntos.push({
-                    filename: `Ficha_Inscripcion_${inscrip.id}.pdf`,
-                    content: pdfBuffer
-                  });
-                } catch (errorTextPdf: any) {
-                  console.error("[TEXT TO PDF ERROR] Fallo al generar PDF desde texto plano:", errorTextPdf.message);
-                }
-              }
-            }
-          }
-        } catch (errorWord: any) {
-          console.error("[WORD GENERATION ERROR] Error al generar el Word resuelto, enviando Word original:", errorWord.message);
-          adjuntos.push({
-            filename: `Ficha_Matricula_${inscrip.id}.docx`,
-            content: Buffer.from(plantillaBase64, "base64")
-          });
-        }
-      }
-
-      const { asunto, html } = generarCorreoConfirmacionPago(studentName, progName, amount, receiptNo);
-      enviarCorreoGenerico({
-        para: apoderadoEmail,
-        asunto,
-        html,
-        adjuntos
-      }).catch(err => console.error("[MAIL EXCEPTION] No se pudo enviar el correo de confirmación de pago:", err.message));
-    }
+    // Orquesta la generación y el envío de los archivos de confirmación por correo en segundo plano
+    enviarCorreoConfirmacionConAdjuntos(inscrip, db, db.pagos[idx].monto, db.pagos[idx].nroRecibo)
+      .catch(err => console.error("[MAIL ERROR] Error al enviar confirmación de pago:", err.message));
 
     await registrarAuditoria(operatorUsername || "Cajera", operatorRole || "caja", "PAGO_VALIDAR", {
       pagoId,
@@ -579,6 +430,9 @@ export class CajaService {
     return mapDbPaymentToApi(db.pagos[idx]);
   }
 
+  /**
+   * Observa un pago indicando que tiene incongruencias y requiere corrección.
+   */
   async observarPago(operatorUsername: string, operatorRole: string, pagoId: string, observaciones: string) {
     const db = await getDb();
 
@@ -613,6 +467,9 @@ export class CajaService {
     return mapDbPaymentToApi(db.pagos[idx]);
   }
 
+  /**
+   * Rechaza un pago inválido (comprobante falso o incorrecto) volviendo el estado a pendiente.
+   */
   async rechazarPago(operatorUsername: string, operatorRole: string, pagoId: string, observaciones: string) {
     const db = await getDb();
 
@@ -647,6 +504,9 @@ export class CajaService {
     return mapDbPaymentToApi(db.pagos[idx]);
   }
 
+  /**
+   * Anula un pago registrado por error.
+   */
   async anularPago(operatorUsername: string, operatorRole: string, pagoId: string, observaciones: string) {
     const db = await getDb();
 
@@ -681,6 +541,9 @@ export class CajaService {
     return mapDbPaymentToApi(db.pagos[idx]);
   }
 
+  /**
+   * Genera la lista para el reporte detallado de caja según filtros de fecha, programa, medio y tipo.
+   */
   async getCajaReporte(query: any) {
     const { periodo, tipoReporte, desde, hasta, programa, medioPago, estadoPago } = query;
     const db = await getDb();
@@ -693,74 +556,10 @@ export class CajaService {
 
     if (tipoReporte === "pagos_registrados" || tipoReporte === "pagos_realizados") {
       reportList = payments.map(p => {
-        if (p.formaPago === "Egreso") {
-          return {
-            id: p.id,
-            pagoId: p.id,
-            inscripcionId: "",
-            dniEstudiante: p.dniEstudiante || "",
-            estudiante: p.nombresEstudiante || "Egreso de Caja",
-            programaId: "",
-            programa: "Egreso / Gasto",
-            periodo: period,
-            monto: p.monto,
-            estadoPago: "pagado",
-            estadoInscripcion: "",
-            formaPago: "Egreso",
-            numeroOperacion: p.numeroOperacion || "",
-            telefonoOperacion: "",
-            origen: "Cajera",
-            fuente: "pago",
-            fecha: p.fechaPago || p.fecha || "",
-            fechaRegistro: p.fecha || "",
-            fechaPago: p.fechaPago || "",
-            apoderado: "",
-            telefono: "",
-            nroRecibo: p.nroRecibo || p.nro_recibo || "",
-            grado: "",
-            seccion: "",
-            descuentoAprobado: false,
-            descuentoTipo: "",
-            descuentoMonto: 0,
-            descuentoJustificacion: "",
-            observaciones: p.observaciones || ""
-          };
-        }
         const prog = db.programas.find((progItem: any) => progItem.id === p.programaId || normalizarTextoApi(progItem.nombre) === normalizarTextoApi(p.programa));
         const student = p.dniEstudiante ? (db.estudiantes?.[p.dniEstudiante] as any) : null;
         const e = (db.inscripciones || []).find(item => item.id === p.inscripcionId || (p.dniEstudiante && item.dniEstudiante === p.dniEstudiante && item.programaId === p.programaId));
-        return {
-          id: p.id,
-          pagoId: p.id,
-          inscripcionId: p.inscripcionId || "",
-          dniEstudiante: p.dniEstudiante,
-          estudiante: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : p.nombresEstudiante || "",
-          programaId: prog ? prog.id : p.programaId || "",
-          programa: prog ? prog.nombre : p.programa || "",
-          periodo: period,
-          monto: p.monto,
-          estadoPago: normalizarEstadoPagoReporteCaja(p),
-          estadoInscripcion: "",
-          formaPago: p.formaPago,
-          numeroOperacion: p.numeroOperacion || "",
-          telefonoOperacion: p.telefonoOperacion || "",
-          origen: p.origenRegistro || "Portal parents",
-          fuente: "pago",
-          fecha: p.fechaPago || p.fecha || "",
-          fechaRegistro: p.fecha || "",
-          fechaPago: p.fechaPago || "",
-          apoderado: student ? student.apoderado : "",
-          telefono: student ? student.telefonoApoderado : "",
-          nroRecibo: p.nroRecibo || p.nro_recibo || "",
-          grado: e ? (e.gradoEstudiante || e.grado || (student ? student.grado : "")) : (student ? student.grado : ""),
-          seccion: e ? (e.seccionEstudiante || e.seccion || (student ? student.seccion : "")) : (student ? student.seccion : ""),
-          descuentoAprobado: e ? (e.descuentoAprobado || false) : false,
-          descuentoTipo: e ? (e.descuentoTipo || "") : "",
-          descuentoMonto: e ? (e.descuentoMonto || 0) : 0,
-          costoOriginal: e ? (e.costoOriginal ?? prog?.costo ?? 0) : (prog?.costo ?? 0),
-          descuentoJustificacion: e ? (e.descuentoJustificacion || "") : "",
-          observaciones: p.observaciones || p.observacion || p.pagoObservacionCaja || ""
-        };
+        return mapPaymentToReportRow(p, prog, student, e, period);
       });
     } else {
       reportList = enrollments.map(e => {
@@ -773,49 +572,7 @@ export class CajaService {
         }
         const prog = db.programas.find((progItem: any) => progItem.id === e.programaId);
         const student = db.estudiantes?.[e.dniEstudiante] as any;
-
-        const baseCosto = e.costoOriginal !== undefined && e.costoOriginal !== null
-          ? Number(e.costoOriginal)
-          : (prog ? Number(prog.costo || 0) : 0);
-        const finalCosto = e.descuentoAprobado
-          ? Math.max(0, baseCosto - Number(e.descuentoMonto || 0))
-          : baseCosto;
-        const monto = p ? p.monto : finalCosto;
-        const statePay = normalizarEstadoPagoReporteCaja(p, e);
-
-        return {
-          id: e.id,
-          inscripcionId: e.id,
-          dniEstudiante: e.dniEstudiante,
-          estudiante: student ? `${student.nombres} ${student.apellidos || ""}`.trim() : e.nombresEstudiante || "",
-          programaId: prog ? prog.id : e.programaId || "",
-          programa: prog ? prog.nombre : e.programa || "",
-          periodo: period,
-          monto,
-          estadoPago: statePay,
-          estadoInscripcion: e.estadoInscripcion || "",
-          formaPago: p ? p.formaPago : "Sin pago",
-          numeroOperacion: p ? p.numeroOperacion : "",
-          telefonoOperacion: p ? p.telefonoOperacion : "",
-          origen: p ? p.origenRegistro : e.origenRegistro || "Presencial",
-          fuente: "inscripcion",
-          pagoId: p ? p.id : "",
-          fecha: p ? (p.fechaPago || p.fecha) : e.fechaRegistro || "",
-          fechaRegistro: e.fechaRegistro || "",
-          fechaPago: p ? (p.fechaPago || p.fecha) : "",
-          apoderado: e.apoderado || "",
-          telefono: e.telefono || "",
-          puedePagarCaja: true,
-          nroRecibo: p ? (p.nroRecibo || p.nro_recibo || "") : "",
-          grado: e.gradoEstudiante || e.grado || (student ? student.grado : ""),
-          seccion: e.seccionEstudiante || e.seccion || (student ? student.seccion : ""),
-          descuentoAprobado: e.descuentoAprobado || false,
-          descuentoTipo: e.descuentoTipo || "",
-          descuentoMonto: e.descuentoMonto || 0,
-          costoOriginal: e.costoOriginal ?? (prog ? prog.costo : 0),
-          descuentoJustificacion: e.descuentoJustificacion || "",
-          observaciones: p ? (p.observaciones || p.observacion || p.pagoObservacionCaja || "") : (e.pagoObservacionCaja || "")
-        };
+        return mapEnrollmentToReportRow(e, p, prog, student, period);
       });
     }
 
@@ -844,6 +601,9 @@ export class CajaService {
     return finalReport;
   }
 
+  /**
+   * Obtiene la información detallada de una transacción de pago por su ID.
+   */
   async getPagoById(pagoId: string) {
     const db = await getDb();
     const p = (db.pagos || []).find(pay => pay.id === pagoId);
@@ -853,6 +613,9 @@ export class CajaService {
     return mapDbPaymentToApi(p);
   }
 
+  /**
+   * Registra y sube el comprobante de pago proveniente del portal de padres (modo pendiente de verificación).
+   */
   async registrarComprobante(body: any, file: Express.Multer.File | undefined) {
     const db = await getDb();
     let base64Image = "";
@@ -921,6 +684,9 @@ export class CajaService {
     return mapDbPaymentToApi(nuevoPago);
   }
 
+  /**
+   * Busca estudiantes de forma rápida por coincidencia de nombre o DNI.
+   */
   async buscarEstudiantesQuery(q: string) {
     if (!q) return [];
     const db = await getDb();
@@ -947,6 +713,9 @@ export class CajaService {
     return results;
   }
 
+  /**
+   * Anula un número correlativo físico o virtual que fue malogrado o cancelado antes de ser emitido.
+   */
   async cancelarCorrelativo(operatorUsername: string, operatorRole: string, body: any) {
     const { tipo, motivo, dniEstudiante, nombresEstudiante, nroRecibo } = body;
     if (!tipo || !motivo) {

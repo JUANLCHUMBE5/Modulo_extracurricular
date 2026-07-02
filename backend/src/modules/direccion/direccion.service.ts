@@ -2,7 +2,6 @@ import { getDb, saveDb } from "../../database/dbLocal.js";
 import { registrarAuditoria } from "../../services/audit.service.js";
 import {
   mapDbEnrollmentToApi,
-  mapDbPaymentToApi,
   mapDbProgramToApi,
   mapDbAsistenciaToApi,
   normalizarPeriodoApi,
@@ -55,6 +54,9 @@ function obtenerPrimerValor(item: any, claves: string[]) {
 }
 
 export class DireccionService {
+  /**
+   * Genera el conjunto de datos de reportes consolidando la información de asistencia, pagos e inscripciones para Dirección.
+   */
   async getReportesResumen(query: any) {
     const { periodo, anio, fechaInicio, fechaFin, programa } = query;
     const db = await getDb();
@@ -370,9 +372,13 @@ export class DireccionService {
     };
   }
 
+  /**
+   * Busca inscripciones y estudiantes activos que coincidan con la cadena para aplicarles un descuento.
+   */
   async buscarDescuentos(q: string) {
     if (!q) return [];
     const db = await getDb();
+    const query = normalizarTextoApi(q);
 
     const realEnrollments = (db.inscripciones || []).filter(ins => {
       if (ins.estadoInscripcion === "Anulada" || ins.estadoInscripcion === "anulada") return false;
@@ -440,6 +446,9 @@ export class DireccionService {
     return [...mappedReal, ...virtualEnrollments];
   }
 
+  /**
+   * Aplica un descuento (tipo beca, porcentaje o monto fijo) a una inscripción activa de un alumno.
+   */
   async aplicarDescuento(operatorUsername: string, operatorRole: string, body: any) {
     const { inscripcionId, tipo, valor, justificacion } = body;
     if (!inscripcionId) {
@@ -568,6 +577,9 @@ export class DireccionService {
     return mapDbEnrollmentToApi(db.inscripciones[index], db);
   }
 
+  /**
+   * Remueve y anula un descuento previamente aprobado en una inscripción, restaurando el costo original.
+   */
   async removerDescuento(operatorUsername: string, operatorRole: string, inscripcionId: string) {
     const db = await getDb();
     const index = (db.inscripciones || []).findIndex(ins => ins.id === inscripcionId);
@@ -600,6 +612,9 @@ export class DireccionService {
     return mapDbEnrollmentToApi(db.inscripciones[index], db);
   }
 
+  /**
+   * Obtiene la configuración actual de correlativos de recibos y egresos de caja.
+   */
   async getCorrelativos() {
     const db = await getDb();
     const c = (db.correlativos || {}) as any;
@@ -627,6 +642,9 @@ export class DireccionService {
     };
   }
 
+  /**
+   * Actualiza los valores iniciales, actuales y estados de activación de las series de correlativos de Caja.
+   */
   async updateCorrelativos(correlativos: any) {
     const db = await getDb();
     const actuales = (db.correlativos || {}) as any;

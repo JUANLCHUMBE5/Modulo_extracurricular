@@ -4,7 +4,7 @@ export const formInicial = {
   gradosAplicables: [], edadMinima: "", edadMaxima: "", fechaNacimientoDesde: "", fechaNacimientoHasta: "", dias: [], horaInicio: "", horaFin: "",
   almuerzoInicio: "", almuerzoFin: "",
   horariosPorGrupo: [], usaHorariosPorBloque: false, talleresDeportivos: [],
-  fechaInicio: "", fechaFin: "", duracionAvisoDias: "7", horaLimiteAviso: "23:59", cupos: "", costo: "", modalidadCobro: "Mensual",
+  fechaInicio: "", fechaFin: "", duracionAvisoDias: "7", horaLimiteAviso: "23:59", cupos: "", costo: "", modalidadCobro: "Unico",
   cicloI: "", cicloII: "",
   responsable: "", tutora: "", plantilla: "", plantillaBase64: "", plantillaVariables: [],
   plantillaValidada: false, plantillaActualizadaEn: "", requisitos: "",

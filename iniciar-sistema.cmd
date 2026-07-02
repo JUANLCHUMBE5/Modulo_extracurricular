@@ -28,6 +28,19 @@ if not exist "%~dp0node_modules" (
   echo.
 )
 
+:: 1.5 Iniciar el Emulador de Firebase si DATA_MODE=firestore y no esta corriendo
+findstr /C:"DATA_MODE=firestore" "%~dp0backend\.env" >nul
+if %errorlevel% equ 0 (
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $t = New-Object System.Net.Sockets.TcpClient('127.0.0.1', 8080); $t.Close(); exit 0 } catch { exit 1 }"
+  if errorlevel 1 (
+    echo [INFO] Detectado DATA_MODE=firestore. Iniciando emulador de Firebase en segundo plano...
+    start "Firebase Emulator - Modulo Extracurricular" /min cmd /c "corepack pnpm emulators"
+    timeout /t 5 >nul
+  ) else (
+    echo [INFO] Emulador de Firebase ya se encuentra activo en el puerto 8080.
+  )
+)
+
 :: 2. Iniciar el API Backend si no esta corriendo
 call :check_url "%API_URL%"
 if errorlevel 1 (

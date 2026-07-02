@@ -8,13 +8,11 @@ import {
   mapDbEnrollmentToApi,
   mapDbPaymentToApi,
   obtenerGradoCompletoApi,
-  obtenerCamposProgramaInvitacionApi,
   obtenerPlantillaProgramaApi,
   resolverHorarioPorGradoApi,
   resolverDocentePorGradoApi,
   tieneHorariosPorGrupoApi,
   normalizarPeriodoApi,
-  normalizarTextoApi,
   programaListoParaPortalPadresApi,
   programaDisponibleParaGradoApi,
   esProgramaCambridgeApi
@@ -52,6 +50,9 @@ async function saveExternalStudent(student: any): Promise<void> {
 
 export class InscripcionService {
 
+  /**
+   * Obtiene la lista de inscripciones registradas de forma paginada para soporte legacy.
+   */
   async getInscripcionesLegacy(page: number | null, limit: number) {
     const db = await getDb();
     const list = db.inscripciones || [];
@@ -71,11 +72,17 @@ export class InscripcionService {
     return list;
   }
 
+  /**
+   * Lista los documentos generados guardados en la base de datos para soporte legacy.
+   */
   async getDocumentosLegacy() {
     const db = await getDb();
     return db.documentosGenerados || [];
   }
 
+  /**
+   * Retorna una vista consolidada de información, pagos y documentos del estudiante para soporte legacy del Portal.
+   */
   async getResumenPadresLegacy(dniRaw: string) {
     const db = await getDb();
     const dni = limpiarDni(dniRaw);
@@ -110,8 +117,9 @@ export class InscripcionService {
     return { estudiante, invitaciones, inscripciones, pagos, documentos };
   }
 
-
-
+  /**
+   * Registra una nueva inscripción escolar en un taller, controlando cupos, invitaciones y creando estudiantes externos si corresponde.
+   */
   async crearInscripcion(operatorUsername: string, operatorRole: string, body: any) {
     const db = await getDb();
     const enrollmentId = `INS-${String(Date.now()).slice(-6)}`;
@@ -296,6 +304,9 @@ export class InscripcionService {
     return mapDbEnrollmentToApi(newEnrollment, db);
   }
 
+  /**
+   * Guarda el registro de un documento oficial generado y lo asocia a su correspondiente matrícula.
+   */
   async registrarDocumento(id: string, body: any) {
     const { usuario, tipo_documento, plantilla } = body;
     const db = await getDb();
@@ -331,6 +342,9 @@ export class InscripcionService {
     return docObj;
   }
 
+  /**
+   * Deriva formalmente una matrícula escolar al estado de derivación de Caja (listo para cobro presencial).
+   */
   async derivarCaja(operatorUsername: string, operatorRole: string, inscripcionId: string, body: any) {
     const db = await getDb();
     const idx = (db.inscripciones || []).findIndex(item => item.id === inscripcionId);
@@ -367,6 +381,9 @@ export class InscripcionService {
     return mapDbEnrollmentToApi(updated, db);
   }
 
+  /**
+   * Genera una reserva temporal de vacante desde el portal para proceder a pagar presencialmente en Caja.
+   */
   async reservarCaja(operatorUsername: string, operatorRole: string, inscripcionId: string, body: any) {
     const dni = String(body.dni_estudiante || operatorUsername || "").replace(/\D/g, "");
     const db = await getDb();
@@ -410,6 +427,9 @@ export class InscripcionService {
     return mapDbEnrollmentToApi(updated, db);
   }
 
+  /**
+   * Obtiene la matrícula activa no pagada de un estudiante para Secretaría.
+   */
   async buscarInscripcionesSecretaria(dni: string, periodo: string) {
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
@@ -420,6 +440,9 @@ export class InscripcionService {
     return active ? mapDbEnrollmentToApi(active, db) : null;
   }
 
+  /**
+   * Lista todas las inscripciones históricas activas de un estudiante para un periodo en Secretaría.
+   */
   async listarInscripcionesSecretaria(dni: string, periodo: string) {
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
@@ -428,6 +451,9 @@ export class InscripcionService {
     return list.map((item) => mapDbEnrollmentToApi(item, db));
   }
 
+  /**
+   * Retorna el consolidado de invitaciones, inscripciones y pagos de un estudiante para mostrarlo en el Portal de Padres.
+   */
   async getResumenPadres(dni: string) {
     const db = await getDb();
     const student = db.estudiantes?.[dni] as any;
@@ -598,6 +624,9 @@ export class InscripcionService {
     };
   }
 
+  /**
+   * Actualiza los datos de contacto del apoderado (teléfono y correo) y sincroniza los cambios en sus inscripciones activas.
+   */
   async updateApoderado(dni: string, body: any) {
     const { apoderado, telefono, telefono_apoderado, correo, correo_apoderado } = body;
     const db = await getDb();

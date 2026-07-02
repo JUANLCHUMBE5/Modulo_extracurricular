@@ -113,16 +113,45 @@ function SeccionCambridge({ form, esCambridgeForm, actualizarForm }) {
           </div>
         </div>
 
-        <div className="coord-field coord-field-full">
-          <label>Indicaciones de inscripcion y pago</label>
+        <div className="coord-field coord-field-full" style={{ marginTop: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "6px" }}>
+            <label style={{ fontSize: "13.5px", color: "#0f766e" }}>
+              <strong>📝 Indicaciones de inscripción y pago</strong>
+            </label>
+            <span style={{ fontSize: "11px", color: "#94a3b8", fontWeight: "500" }}>
+              {(form.detalleCosto || "").length} caracteres
+            </span>
+          </div>
           <textarea
-            rows={4}
+            rows={5}
             value={form.detalleCosto || ""}
             onChange={(event) => actualizarForm("detalleCosto", event.target.value)}
             placeholder="Ej. Opcion A: inscripcion presencial en Caja. Opcion B: inscripcion virtual por Yape al numero 970 836 322..."
+            style={{
+              width: "100%",
+              padding: "12px 14px",
+              resize: "vertical",
+              borderRadius: "8px",
+              border: "2px solid #ccfbf1",
+              fontSize: "13px",
+              lineHeight: "1.6",
+              fontFamily: "inherit",
+              background: "#f0fdfa",
+              transition: "border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease",
+            }}
+            onFocus={e => {
+              e.target.style.borderColor = "#0d9488";
+              e.target.style.boxShadow = "0 0 0 3px rgba(13, 148, 136, 0.1)";
+              e.target.style.background = "#ffffff";
+            }}
+            onBlur={e => {
+              e.target.style.borderColor = "#ccfbf1";
+              e.target.style.boxShadow = "none";
+              e.target.style.background = "#f0fdfa";
+            }}
           />
-          <p className="coord-field-hint">
-            Este texto acompana la informacion de pago que se muestra en la carta.
+          <p className="coord-field-hint" style={{ color: "#0d9488", fontWeight: "500", marginTop: "4px" }}>
+            Este texto acompaña la información de pago que se muestra en la carta para los padres de familia.
           </p>
         </div>
       </div>

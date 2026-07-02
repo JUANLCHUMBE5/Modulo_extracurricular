@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "start": "tsx src/server.ts",
-    "api": "tsx src/server.ts",
+    "start": "tsx --watch src/server.ts",
+    "api": "tsx --watch src/server.ts",
     "build": "tsc"
   },
   "dependencies": {
@@ -16,6 +16,7 @@
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
+    "firebase-admin": "^14.1.0",
     "jsonwebtoken": "^9.0.3",
     "jspdf": "^4.2.1",
     "multer": "^2.1.1",

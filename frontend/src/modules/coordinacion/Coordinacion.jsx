@@ -291,11 +291,8 @@ function CoordinacionInner({
                 toggleSidebarButton={toggleSidebarButton}
                 ultimoLoteId={state.ultimoLoteId}
                 setUltimoLoteId={state.setUltimoLoteId}
-              />
-            )}
 
-            {state.vista === "documentos" && state.puedeVerDocumentosVista && (
-              <DocumentosView
+                // DocumentosView props
                 abrirEditar={state.abrirEditar}
                 abrirCrearDesdeDocumento={state.abrirCrearDesdeDocumento}
                 autocompletarDesdePlantilla={state.autocompletarDesdePlantilla}
@@ -306,14 +303,11 @@ function CoordinacionInner({
                 guardarDocumentosPrograma={state.guardarDocumentosPrograma}
                 historialPlantillas={state.historialPlantillas}
                 lecturaDocumento={state.lecturaDocumento}
-                mensaje={state.mensaje}
                 plantillaInputKey={state.plantillaInputKey}
                 programaDocs={state.programaDocs}
-                programas={state.programas}
                 quitarPlantilla={state.quitarPlantilla}
                 seleccionarPlantilla={state.seleccionarPlantilla}
                 setForm={state.setForm}
-                tipoMsg={state.tipoMsg}
                 usarPlantillaExistente={state.usarPlantillaExistente}
                 variablesPlantillaAceptadas={variablesPlantillaAceptadas}
                 variablesPlantillaRequeridas={variablesPlantillaRequeridas}
@@ -324,7 +318,70 @@ function CoordinacionInner({
                 actualizarConfigInstitucionalImagen={state.actualizarConfigInstitucionalImagen}
                 quitarConfigInstitucionalImagen={state.quitarConfigInstitucionalImagen}
                 guardarConfigInstitucional={state.guardarConfigInstitucional}
+              />
+            )}
+
+            {state.vista === "registro_individual" && state.puedeVerCargaVista && (
+              <CargaExcelView
+                archivoInputKey={state.archivoInputKey}
+                archivosExcel={state.archivosExcel}
+                cargandoPreview={state.cargandoPreview}
+                cancelarCargaExcel={state.cancelarCargaExcel}
+                confirmandoCarga={state.confirmandoCarga}
+                confirmarCargaExcel={state.confirmarCargaExcel}
+                eliminandoCargaId={state.eliminandoCargaId}
+                eliminarCargaExcel={state.eliminarCargaExcel}
+                generarPreviewExcel={state.generarPreviewExcel}
+                historialCargas={state.historialCargas}
+                mensaje={state.mensaje}
+                previewCarga={state.previewCarga}
+                progresoCarga={state.progresoCarga}
+                setArchivosExcel={state.setArchivosExcel}
+                setMensaje={state.setMensaje}
+                setPreviewCarga={state.setPreviewCarga}
+                setProgresoCarga={state.setProgresoCarga}
+                tipoMsg={state.tipoMsg}
+                modoCargaAlumnos="individual"
+                setModoCargaAlumnos={() => {}}
+                alumnoIndividual={state.alumnoIndividual}
+                estadoAlumnoIndividual={state.estadoAlumnoIndividual}
+                actualizarAlumnoIndividual={state.actualizarAlumnoIndividual}
+                guardarAlumnoIndividual={state.guardarAlumnoIndividual}
+                guardandoIndividual={state.guardandoIndividual}
+                programaCargaId={state.programaCargaId}
+                setProgramaCargaId={state.setProgramaCargaId}
+                programas={state.programas}
                 toggleSidebarButton={toggleSidebarButton}
+                ultimoLoteId={state.ultimoLoteId}
+                setUltimoLoteId={state.setUltimoLoteId}
+                ocultarTabs={true}
+
+                // DocumentosView props
+                abrirEditar={state.abrirEditar}
+                abrirCrearDesdeDocumento={state.abrirCrearDesdeDocumento}
+                autocompletarDesdePlantilla={state.autocompletarDesdePlantilla}
+                eliminarPlantillaHistorial={state.eliminarPlantillaHistorial}
+                form={state.form}
+                guardando={state.guardando}
+                guardarDocumentoComoPrograma={state.guardarDocumentoComoPrograma}
+                guardarDocumentosPrograma={state.guardarDocumentosPrograma}
+                historialPlantillas={state.historialPlantillas}
+                lecturaDocumento={state.lecturaDocumento}
+                plantillaInputKey={state.plantillaInputKey}
+                programaDocs={state.programaDocs}
+                quitarPlantilla={state.quitarPlantilla}
+                seleccionarPlantilla={state.seleccionarPlantilla}
+                setForm={state.setForm}
+                usarPlantillaExistente={state.usarPlantillaExistente}
+                variablesPlantillaAceptadas={variablesPlantillaAceptadas}
+                variablesPlantillaRequeridas={variablesPlantillaRequeridas}
+                categorias={state.categorias}
+                configInstitucional={state.configInstitucional}
+                cargandoConfigInstitucional={state.cargandoConfigInstitucional}
+                guardandoConfigInstitucional={state.guardandoConfigInstitucional}
+                actualizarConfigInstitucionalImagen={state.actualizarConfigInstitucionalImagen}
+                quitarConfigInstitucionalImagen={state.quitarConfigInstitucionalImagen}
+                guardarConfigInstitucional={state.guardarConfigInstitucional}
               />
             )}
 

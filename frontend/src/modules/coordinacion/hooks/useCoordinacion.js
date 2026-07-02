@@ -306,7 +306,7 @@ export default function useCoordinacion({
       horaLimiteAviso: prog.horaLimiteAviso || prog.hora_limite_aviso || "23:59",
       cupos: String(cuposCalculados),
       costo: String(prog.costo !== undefined ? prog.costo : (prog.monto !== undefined ? prog.monto : (prog.precio !== undefined ? prog.precio : 0))),
-      modalidadCobro: prog.modalidadCobro || prog.modalidad_cobro || "Mensual",
+      modalidadCobro: prog.modalidadCobro || prog.modalidad_cobro || "Unico",
       responsable: prog.responsable || prog.docente || "",
       tutora: prog.tutora || "",
       plantilla: prog.plantilla || "",
@@ -745,6 +745,7 @@ export default function useCoordinacion({
     if (!form.cupos || Number(form.cupos) <= 0) return mostrarAlertaConfiguracion("Revise: cupos.");
     if (!esCostoValido(form.costo)) return mostrarMsg("Ingrese un costo válido en soles, con máximo dos decimales.");
     if (!form.modalidadCobro) return mostrarAlertaConfiguracion("Revise: modalidad de cobro.");
+    if (form.modalidadCobro === "Mensual") return mostrarMsg("La modalidad \"Cuota mensual\" no está disponible todavía. Seleccione \"Pago único\".");
     if (form.plantilla && !form.plantillaValidada) return mostrarMsg("La plantilla Word debe estar validada antes de guardar.");
 
     setGuardando(true);
@@ -754,6 +755,7 @@ export default function useCoordinacion({
     const edadMaximaVerano = edadesTalleres.length ? Math.max(...edadesTalleres) : "";
     const datosGuardar = {
       ...form,
+      modalidadCobro: form.modalidadCobro,
       responsable: usaTalleresPorEdad
         ? Array.from(new Set(talleres.map((t) => t.docente).filter(Boolean))).join(" · ") || form.responsable
         : gruposHorario.length > 0
@@ -1271,9 +1273,9 @@ export default function useCoordinacion({
           const numDocSugerido = sugerirNumeroDocumento(tipoDocSugerido, programas);
           nuevosCamposAcademico = {
             tipoComunicado: sugeridoTipo,
-            comunicado: template.comunicado,
-            comunicadoCompleto: template.comunicado,
-            requisitos: template.requisitos,
+            comunicado: "",
+            comunicadoCompleto: "",
+            requisitos: "",
             tipoDocumento: tipoDocSugerido,
             numeroDocumento: numDocSugerido,
           };
@@ -1725,15 +1727,15 @@ const vistasNav = [
   },
   {
     id: "carga",
-    label: "Carga Excel",
+    label: "Importar / Exportar",
     icon: null,
     permissions: ["coordinacion.carga"],
   },
   {
-    id: "documentos",
-    label: "Plantillas / Documentos",
+    id: "registro_individual",
+    label: "Registro Individual",
     icon: null,
-    permissions: ["coordinacion.documentos"],
+    permissions: ["coordinacion.carga"],
   },
   {
     id: "asistencias",

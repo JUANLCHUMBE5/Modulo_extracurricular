@@ -23,6 +23,9 @@ async function readExternalStudents(): Promise<Record<string, any>> {
 }
 
 export class EstudianteService {
+  /**
+   * Obtiene y pagina la lista de estudiantes internos del sistema.
+   */
   async getEstudiantes(page: number | null, limit: number) {
     const db = await getDb();
     const list = Object.values(db.estudiantes || {});
@@ -42,6 +45,9 @@ export class EstudianteService {
     return list;
   }
 
+  /**
+   * Obtiene la ficha de un estudiante específico a partir de su DNI.
+   */
   async getEstudianteByDni(dniRaw: string) {
     const db = await getDb();
     const dni = limpiarDni(dniRaw);
@@ -52,6 +58,9 @@ export class EstudianteService {
     return estudiante;
   }
 
+  /**
+   * Retorna la información completa de matrícula, pagos, invitaciones y documentos de un alumno (interno o externo) para Secretaría.
+   */
   async getEstudianteSecretaria(dni: string, periodo: string) {
     const db = await getDb();
     const period = normalizarPeriodoApi(periodo);
@@ -126,6 +135,9 @@ export class EstudianteService {
     return { estudiante, invitaciones, inscripciones, pagos, documentos };
   }
 
+  /**
+   * Busca estudiantes por su nombre y periodo lectivo para Secretaría, retornando su ficha de detalle correspondiente.
+   */
   async searchEstudiantesSecretaria(nombre: string, periodo: string) {
     const db = await getDb();
     const cleanSearch = normalizarTextoApi(nombre);

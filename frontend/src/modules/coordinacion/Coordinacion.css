@@ -1042,54 +1042,55 @@
 }
 
 /* Carga Masiva - Verde */
+/* Carga Masiva - Verde */
 .coord-upload-tabs button.coord-upload-tab-masiva.is-active {
-  border-bottom-color: #0c8569 !important;
-  color: #0c8569 !important;
+  border-bottom-color: #006b5b !important;
+  color: #006b5b !important;
   font-weight: 600 !important;
 }
 .coord-upload-tabs button.coord-upload-tab-masiva.is-active svg {
-  color: #0c8569 !important;
+  color: #006b5b !important;
 }
 .coord-upload-tabs button.coord-upload-tab-masiva:hover {
-  background: #f0fdf4 !important;
-  color: #0c8569 !important;
+  background: rgba(0, 107, 91, 0.05) !important;
+  color: #006b5b !important;
 }
 .coord-upload-tabs button.coord-upload-tab-masiva:hover svg {
-  color: #0c8569 !important;
+  color: #006b5b !important;
 }
 
-/* Registro Individual - Azul */
+/* Registro Individual - Verde */
 .coord-upload-tabs button.coord-upload-tab-individual.is-active {
-  border-bottom-color: #0284c7 !important;
-  color: #0284c7 !important;
+  border-bottom-color: #006b5b !important;
+  color: #006b5b !important;
   font-weight: 600 !important;
 }
 .coord-upload-tabs button.coord-upload-tab-individual.is-active svg {
-  color: #0284c7 !important;
+  color: #006b5b !important;
 }
 .coord-upload-tabs button.coord-upload-tab-individual:hover {
-  background: #f0f9ff !important;
-  color: #0284c7 !important;
+  background: rgba(0, 107, 91, 0.05) !important;
+  color: #006b5b !important;
 }
 .coord-upload-tabs button.coord-upload-tab-individual:hover svg {
-  color: #0284c7 !important;
+  color: #006b5b !important;
 }
 
-/* Exportar - Púrpura */
+/* Exportar - Verde */
 .coord-upload-tabs button.coord-upload-tab-exportar.is-active {
-  border-bottom-color: #7c3aed !important;
-  color: #7c3aed !important;
+  border-bottom-color: #006b5b !important;
+  color: #006b5b !important;
   font-weight: 600 !important;
 }
 .coord-upload-tabs button.coord-upload-tab-exportar.is-active svg {
-  color: #7c3aed !important;
+  color: #006b5b !important;
 }
 .coord-upload-tabs button.coord-upload-tab-exportar:hover {
-  background: #faf5ff !important;
-  color: #7c3aed !important;
+  background: rgba(0, 107, 91, 0.05) !important;
+  color: #006b5b !important;
 }
 .coord-upload-tabs button.coord-upload-tab-exportar:hover svg {
-  color: #7c3aed !important;
+  color: #006b5b !important;
 }
 
 /* 3. Estilo Unificado de Botones (Fondo Verde Claro Premium) */
@@ -1321,6 +1322,98 @@
   background: #e3f2fd !important;
   color: #0d47a1 !important;
   border: 1px solid #bbdefb !important;
+}
+
+/* Segmented Control Tabs for Carga Excel */
+.coord-upload-tabs {
+  display: inline-flex !important;
+  width: auto !important;
+  background: #f1f5f9 !important;
+  padding: 4px !important;
+  border-radius: 10px !important;
+  border: 1px solid #e2e8f0 !important;
+  gap: 4px !important;
+  margin-bottom: 24px !important;
+}
+
+.coord-upload-tabs button {
+  border: none !important;
+  padding: 8px 20px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  color: #64748b !important;
+  background: transparent !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+}
+
+.coord-upload-tabs button svg {
+  color: #64748b !important;
+  transition: color 0.2s ease !important;
+}
+
+/* Hover State */
+.coord-upload-tabs button:hover {
+  background: rgba(0, 107, 91, 0.05) !important;
+  color: #006b5b !important;
+}
+.coord-upload-tabs button:hover svg {
+  color: #006b5b !important;
+}
+
+/* Active State - Masiva */
+.coord-upload-tabs button.coord-upload-tab-masiva.is-active {
+  background: #ffffff !important;
+  color: #006b5b !important;
+  box-shadow: 0 4px 10px rgba(0, 107, 91, 0.08), 0 1px 3px rgba(0, 107, 91, 0.04) !important;
+  border-bottom: none !important;
+}
+.coord-upload-tabs button.coord-upload-tab-masiva.is-active svg {
+  color: #006b5b !important;
+}
+
+/* Active State - Individual */
+.coord-upload-tabs button.coord-upload-tab-individual.is-active {
+  background: #ffffff !important;
+  color: #006b5b !important;
+  box-shadow: 0 4px 10px rgba(0, 107, 91, 0.08), 0 1px 3px rgba(0, 107, 91, 0.04) !important;
+  border-bottom: none !important;
+}
+.coord-upload-tabs button.coord-upload-tab-individual.is-active svg {
+  color: #006b5b !important;
+}
+
+/* Active State - Exportar */
+.coord-upload-tabs button.coord-upload-tab-exportar.is-active {
+  background: #ffffff !important;
+  color: #006b5b !important;
+  box-shadow: 0 4px 10px rgba(0, 107, 91, 0.08), 0 1px 3px rgba(0, 107, 91, 0.04) !important;
+  border-bottom: none !important;
+}
+.coord-upload-tabs button.coord-upload-tab-exportar.is-active svg {
+  color: #006b5b !important;
+}
+
+/* Active State - Plantillas */
+.coord-upload-tabs button.coord-upload-tab-plantillas.is-active {
+  background: #ffffff !important;
+  color: #006b5b !important;
+  box-shadow: 0 4px 10px rgba(0, 107, 91, 0.08), 0 1px 3px rgba(0, 107, 91, 0.04) !important;
+  border-bottom: none !important;
+}
+.coord-upload-tabs button.coord-upload-tab-plantillas.is-active svg {
+  color: #006b5b !important;
+}
+.coord-upload-tabs button.coord-upload-tab-plantillas:hover {
+  background: rgba(0, 107, 91, 0.05) !important;
+  color: #006b5b !important;
+}
+.coord-upload-tabs button.coord-upload-tab-plantillas:hover svg {
+  color: #006b5b !important;
 }
 
 

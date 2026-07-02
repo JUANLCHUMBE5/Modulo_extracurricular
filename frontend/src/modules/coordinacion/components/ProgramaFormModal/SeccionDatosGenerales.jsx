@@ -64,7 +64,15 @@ function SeccionDatosGenerales({
           <select
             value={form.categoria}
             disabled={esCircularEspecial}
-            onChange={e => actualizarCategoriaPrograma(e.target.value)}
+            onChange={e => {
+              const val = e.target.value;
+              actualizarCategoriaPrograma(val);
+              if (val === "Otro") {
+                setMostrarGestorCategorias(true);
+              } else {
+                setMostrarGestorCategorias(false);
+              }
+            }}
             style={esCircularEspecial ? {
               background: "#e2e8f0",
               color: "#64748b",
@@ -478,11 +486,9 @@ CEL: {{CEL}}   					FIRMA:_              ________________`,
 
                 actualizarForm({
                   tipoComunicado: nuevoTipo,
-                  comunicado: template.comunicado,
-                  comunicadoCompleto: template.comunicado,
-                  requisitos: template.requisitos,
-                  tipoDocumento: tipoDocSugerido,
-                  numeroDocumento: numDocSugerido,
+                  comunicado: "",
+                  comunicadoCompleto: "",
+                  requisitos: "",
                   categoria: categoriaSugerida,
                   ...reseteos
                 });

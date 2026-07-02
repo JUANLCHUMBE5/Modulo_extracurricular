@@ -136,7 +136,7 @@ function ProgramaFormModal({
     if (!form.costo) defaults.costo = "150";
     if (!form.costoCiclo) defaults.costoCiclo = form.costo || "150";
     if (!form.montoPrimerPago) defaults.montoPrimerPago = form.costo || "150";
-    if (!form.modalidadCobro || form.modalidadCobro === "Mensual") defaults.modalidadCobro = "Unico";
+    if (!form.modalidadCobro) defaults.modalidadCobro = "Unico";
     if (!form.detalleCosto) {
       defaults.detalleCosto = "Opcion A: Inscripcion presencial. Acercarse al area de Caja del colegio con esta invitacion y realizar el primer pago de S/ 150. Presentar nombres y apellidos del alumno, grado, seccion y nivel, nombres completos del apoderado, DNI del apoderado y numero de celular del apoderado.\n\nOpcion B: Inscripcion virtual por Yape. Realizar el primer pago de S/ 150 al numero 970 836 322 y enviar la captura del pago junto con los mismos datos al numero de la institucion 970 836 322.";
     }
@@ -168,7 +168,8 @@ function ProgramaFormModal({
       norm === "talleres deportivos" ||
       norm === "deportivos" ||
       norm === "taller recreativo" ||
-      norm === "vacaciones"
+      norm === "vacaciones" ||
+      norm === "verano"
     );
   });
 
@@ -243,6 +244,7 @@ function ProgramaFormModal({
               quitarTallerDeportivo={quitarTallerDeportivo}
               iniciarEdicionTaller={iniciarEdicionTaller}
               cancelarEdicionTaller={cancelarEdicionTaller}
+              actualizarInvitacionMasiva={actualizarInvitacionMasiva}
             />
 
             <SeccionPago
@@ -253,7 +255,6 @@ function ProgramaFormModal({
               actualizarCosto={actualizarCosto}
               formatearCostoFormulario={formatearCostoFormulario}
               actualizarForm={actualizarForm}
-              actualizarInvitacionMasiva={actualizarInvitacionMasiva}
             />
 
             <SeccionCambridge

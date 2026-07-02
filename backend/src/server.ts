@@ -203,3 +203,5 @@ app.use((error: any, _req: Request, res: Response, _next: NextFunction) => {
 app.listen(PORT, API_HOST, () => {
   console.log(`Excel API listening on http://${API_HOST}:${PORT}`);
 });
+// Trigger watch reload to fetch newly seeded students in Firestore
+

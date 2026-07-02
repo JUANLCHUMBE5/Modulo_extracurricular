@@ -9,6 +9,9 @@ const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 import { ROLES_MAP } from "../../config/roles.js";
 
 export class AuthService {
+  /**
+   * Valida las credenciales de un padre (DNI y Fecha de Nacimiento) y genera su token JWT de sesión.
+   */
   async validatePadre(dni: string, fechaNacimiento: string, ip: string) {
     const db = await getDb();
     const student = db.estudiantes?.[dni];
@@ -48,6 +51,9 @@ export class AuthService {
     }
   }
 
+  /**
+   * Autentica a un usuario operador del sistema (Admin, Coordinador, Cajera, Secretaria) mediante username y password.
+   */
   async loginOperator(username: string, passwordPlana: string, ip: string) {
     const db = await getDb();
     const cleanUser = String(username || "").trim().toLowerCase();
@@ -125,6 +131,9 @@ export class AuthService {
     }
   }
 
+  /**
+   * Obtiene la información del perfil del usuario autenticado actualmente en base a su token.
+   */
   async getMe(username: string, currentRole: string) {
     if (currentRole === "padres") {
       return {
@@ -163,21 +172,33 @@ export class AuthService {
     };
   }
 
+  /**
+   * Retorna la lista formateada del registro de auditoría del sistema.
+   */
   async getAuditLogs() {
     const db = await getDb();
     return prepararLogsAcceso(db.auditLogs || []);
   }
 
+  /**
+   * Genera y retorna una copia de seguridad cruda de la base de datos local JSON.
+   */
   async getDbBackup() {
     return await getDb();
   }
 
+  /**
+   * Resetea la base de datos a sus valores iniciales por defecto (limpiando todos los datos).
+   */
   async resetDb(operatorUsername: string, operatorRole: string, ip: string) {
     const db = await resetDatabase();
     await registrarAuditoria(operatorUsername, operatorRole, "DB_RESET", { ip });
     return db;
   }
 
+  /**
+   * Lista a todos los usuarios del sistema sin exponer el hash de sus contraseñas.
+   */
   async listUsers() {
     const db = await getDb();
     return (db.usuarios || []).map(({ contrasena, ...u }) => ({
@@ -186,6 +207,9 @@ export class AuthService {
     }));
   }
 
+  /**
+   * Crea un nuevo usuario en la base de datos, encriptando su contraseña con bcrypt.
+   */
   async createUser(operatorUsername: string, operatorRole: string, userData: any) {
     const db = await getDb();
     const contrasenaPlana = userData.contrasena || "1234";
@@ -213,6 +237,9 @@ export class AuthService {
     return sanitizedNuevo;
   }
 
+  /**
+   * Actualiza la información de un usuario específico. Valida contra modificaciones no autorizadas al administrador.
+   */
   async updateUser(operatorUsername: string, operatorRole: string, id: string, userData: any, superadminKey?: string) {
     const db = await getDb();
     const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(id));
@@ -262,6 +289,9 @@ export class AuthService {
     return sanitizedUpdated;
   }
 
+  /**
+   * Cambia el estado (Activo/Inactivo) de un usuario específico. Valida contra modificaciones no autorizadas al administrador.
+   */
   async updateUserStatus(operatorUsername: string, operatorRole: string, id: string, estado: string, superadminKey?: string) {
     const db = await getDb();
     const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(id));
@@ -288,6 +318,9 @@ export class AuthService {
     return sanitizedUser;
   }
 
+  /**
+   * Resetea la contraseña de un usuario por defecto a '1234' (encriptada con bcrypt). Valida contra modificaciones no autorizadas al administrador.
+   */
   async resetUserPassword(operatorUsername: string, operatorRole: string, id: string, superadminKey?: string) {
     const db = await getDb();
     const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(id));
@@ -314,6 +347,9 @@ export class AuthService {
     return sanitizedUser;
   }
 
+  /**
+   * Elimina un usuario por completo de la base de datos. Valida contra modificaciones no autorizadas al administrador.
+   */
   async deleteUser(operatorUsername: string, operatorRole: string, id: string, superadminKey?: string) {
     const db = await getDb();
     const idx = (db.usuarios || []).findIndex(u => String(u.id) === String(id));
