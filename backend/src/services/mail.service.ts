@@ -9,26 +9,29 @@ import path from "path";
 // Si no están configuradas las variables, se crea en modo "mock" para imprimir en consola.
 let transporter: nodemailer.Transporter | null = null;
 const isConfigured = Boolean(
-  process.env.SMTP_HOST &&
-  process.env.SMTP_USER &&
-  process.env.SMTP_PASS
+  (process.env.SMTP_HOST || process.env.EMAIL_HOST) &&
+  (process.env.SMTP_USER || process.env.EMAIL_HOST_USER) &&
+  (process.env.SMTP_PASS || process.env.EMAIL_HOST_PASSWORD)
 );
 
 if (isConfigured) {
   try {
+    const host = process.env.SMTP_HOST || process.env.EMAIL_HOST;
+    const user = process.env.SMTP_USER || process.env.EMAIL_HOST_USER;
+    const pass = process.env.SMTP_PASS || process.env.EMAIL_HOST_PASSWORD;
     transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
+      host: host,
       port: parseInt(process.env.SMTP_PORT || "465"),
-      secure: process.env.SMTP_PORT === "465", // true para 465, false para 587 (STARTTLS)
+      secure: process.env.SMTP_PORT === "465" || !process.env.SMTP_PORT, // true para 465
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: user,
+        pass: pass,
       },
       tls: {
         rejectUnauthorized: false // Permite conexiones si el certificado es autofirmado
       }
     });
-    console.log(`[MAIL] Transporter SMTP inicializado con el correo: ${process.env.SMTP_USER}`);
+    console.log(`[MAIL] Transporter SMTP inicializado con el correo: ${user}`);
   } catch (error: any) {
     console.error("[MAIL ERROR] No se pudo inicializar el transporter SMTP:", error.message);
   }
@@ -67,7 +70,8 @@ export async function enviarCorreoGenerico({ para, asunto, html, adjuntos = [] }
   // Si está configurado el transporter real
   if (transporter) {
     try {
-      const remitente = `"${process.env.SMTP_SENDER_NAME || 'Módulo Extracurricular'}" <${process.env.SMTP_USER}>`;
+      const userMail = process.env.SMTP_USER || process.env.EMAIL_HOST_USER;
+      const remitente = `"${process.env.SMTP_SENDER_NAME || 'Módulo Extracurricular'}" <${userMail}>`;
       const info = await transporter.sendMail({
         from: remitente,
         to: para.trim(),
@@ -260,6 +264,7 @@ export function resolverPlantillaTexto(texto: string, estudiante: any, inscrip: 
   };
 
   const fechaHoy = formatearFecha(new Date());
+  const anioActual = String(new Date().getFullYear());
 
   // Horarios
   const rawHorario = inscrip.horario || prog.horario || "";
@@ -267,7 +272,11 @@ export function resolverPlantillaTexto(texto: string, estudiante: any, inscrip: 
   const cleanHorario = rawHorario.replace(/almuerzo.*$/i, "").trim();
 
   const datos: Record<string, string> = {
+    N_COM: inscrip.numeroDocumento || inscrip.numero_documento || inscrip.id || "",
     FECHA: fechaHoy,
+    FECHA_CARTA: fechaHoy,
+    ANIO_CARTA: anioActual,
+    ANIO_CERT: anioActual,
     TITULO: `${inscrip.tipoDocumento || "Comunicado"} ${programName}`.toUpperCase(),
     AREA: areaName,
     PROG: programName,
@@ -573,25 +582,51 @@ export function generarWordResuelto(plantillaBase64: string, estudiante: any, in
   const diaVal = diaDoc || filas[0]?.dia || "";
   const almVal = almuerzoDoc || filas[0]?.almuerzo || "";
   const claseVal = claseDoc || filas[0]?.clase || "";
+  const fila1 = filas[0] || { nivel: n1, dia: diaVal, almuerzo: almVal, clase: claseVal };
+  const fila2 = filas[1] || { nivel: n2, dia: "", almuerzo: "", clase: "" };
+  const fila3 = filas[2] || { nivel: n3, dia: "", almuerzo: "", clase: "" };
+  const fila4 = filas[3] || { nivel: n4, dia: "", almuerzo: "", clase: "" };
 
   const rawHorario = inscrip.horario || prog.horario || "";
   const cleanHorario = rawHorario.replace(/almuerzo.*$/i, "").trim();
+  const gradoSec = `${(estudiante && estudiante.grado) || inscrip.grado || ""} ${(estudiante && estudiante.seccion) || inscrip.seccion || ""}`.trim();
+  const anioActual = String(new Date().getFullYear());
+  const seleccionCambridge = String(inscrip.seleccion || estudiante?.seleccion || "")
+    .toUpperCase()
+    .replace(/[^ABC]/g, "")
+    .charAt(0);
+  const mesEvaluacion = (() => {
+    const fecha = normalizarFecha(inscrip.fechaRegistro || new Date()) || new Date();
+    return fecha.toLocaleDateString("es-PE", { month: "long" });
+  })();
+  const aulaDoc = grupo?.aula || inscrip.aula || prog.aula || "";
+  const rangoFechas = formatearRangoFechasLetras(start, end);
 
   const datos: Record<string, string> = {
+    N_COM: inscrip.numeroDocumento || inscrip.numero_documento || inscrip.id || "",
     FECHA: fechaHoy,
+    FECHA_CARTA: fechaHoy,
+    ANIO_CARTA: anioActual,
+    ANIO_CERT: anioActual,
     TITULO: `${inscrip.tipoDocumento || "Comunicado"} ${programName}`.toUpperCase(),
     AREA: areaName,
     PROG: programName,
     PROGRAMA: programName,
     CICLO: prog.periodo || inscrip.periodo || "Año Escolar",
+    CICLO_I: formatearFechaInicioRango(start, end) || rangoFechas,
+    CICLO_II: formatearFechaFinRango(start, end) || rangoFechas,
     INI: formatearFechaInicioRango(start, end),
     FIN: formatearFechaFinRango(start, end),
-    RANGO: formatearRangoFechasLetras(start, end),
-    VIGENCIA: formatearRangoFechasLetras(start, end),
+    RANGO: rangoFechas,
+    VIGENCIA: rangoFechas,
     DUR: durStr,
     COSTO: costoNum,
+    PAGO: costoNum,
     ALUMNO: studentName,
-    GRADO: `${(estudiante && estudiante.grado) || inscrip.grado || ""} ${(estudiante && estudiante.seccion) || inscrip.seccion || ""}`.trim(),
+    ALU: studentName,
+    GRADO: gradoSec,
+    NIV: inscrip.nivelCambridge || estudiante?.nivelCambridge || gradoSec,
+    AUL: aulaDoc,
     HORARIO: cleanHorario || rawHorario,
     HOR_ALM: prog.horarioRecepcionAlmuerzo || "",
     DIA: diaVal,
@@ -601,7 +636,31 @@ export function generarWordResuelto(plantillaBase64: string, estudiante: any, in
     N2: n2,
     N3: n3,
     N4: n4,
-    GR_SEC: `${(estudiante && estudiante.grado) || inscrip.grado || ""} ${(estudiante && estudiante.seccion) || inscrip.seccion || ""}`.trim(),
+    NIVEL_1: fila1.nivel,
+    DIAS_1: fila1.dia,
+    ALM_1: fila1.almuerzo,
+    CLASE_1: fila1.clase,
+    HOR_ALM_1: fila1.almuerzo,
+    NIVEL_2: fila2.nivel,
+    DIAS_2: fila2.dia,
+    ALM_2: fila2.almuerzo,
+    CLASE_2: fila2.clase,
+    HOR_ALM_2: fila2.almuerzo,
+    NIVEL_3: fila3.nivel,
+    DIAS_3: fila3.dia,
+    ALM_3: fila3.almuerzo,
+    CLASE_3: fila3.clase,
+    HOR_ALM_3: fila3.almuerzo,
+    NIVEL_4: fila4.nivel,
+    DIAS_4: fila4.dia,
+    ALM_4: fila4.almuerzo,
+    CLASE_4: fila4.clase,
+    HOR_ALM_4: fila4.almuerzo,
+    CHK_A: seleccionCambridge === "A" ? "X" : "",
+    CHK_B: seleccionCambridge === "B" ? "X" : "",
+    CHK_C: seleccionCambridge === "C" ? "X" : "",
+    MES_EVAL: mesEvaluacion,
+    GR_SEC: gradoSec,
     APOD: (estudiante && estudiante.apoderado) || inscrip.apoderado || "",
     CEL: (estudiante && estudiante.telefonoApoderado) || inscrip.telefono || ""
   };

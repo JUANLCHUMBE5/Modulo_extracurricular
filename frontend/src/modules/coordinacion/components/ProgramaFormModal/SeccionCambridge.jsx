@@ -1,5 +1,5 @@
 import { IconCertificate as Certificate } from "@tabler/icons-react";
-import { diasSemana } from "../../../constants/coordinacionConstants";
+import { diasSemana } from "../../constants/coordinacionConstants";
 
 function SeccionCambridge({ form, esCambridgeForm, actualizarForm }) {
   if (!esCambridgeForm) return null;

@@ -10,7 +10,7 @@ import {
   IconMenu2 as Menu,
   IconArchive as Archive,
 } from "@tabler/icons-react";
-import { LOGO_COLEGIO_SRC } from "../../constants/coordinacionConstants";
+import { LOGO_COLEGIO_SRC } from "../constants/coordinacionConstants";
 
 const iconMap = {
   programas: BookOpen,

@@ -74,8 +74,8 @@ export async function loadDatabaseFromFiles(defaults: LocalDatabase): Promise<Lo
       await fs.rename(OLD_DB_PATH, `${OLD_DB_PATH}.bak`);
       console.log("✅ Migración local completada. db.json respaldado a db.json.bak");
     }
-  } catch {
-    // No existe la base de datos antigua o ya fue migrada.
+  } catch (err: any) {
+    console.error("❌ ERROR DURANTE LA MIGRACIÓN:", err.message, err.stack);
   }
 
   // Carga los datos de los archivos modulares

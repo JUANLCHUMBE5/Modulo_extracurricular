@@ -25,6 +25,8 @@ import direccionRouter from "./modules/direccion/direccion.routes.js";
 import syncRouter from "./modules/sync/sync.routes.js";
 // @ts-ignore
 import secretariaRouter from "./modules/secretaria/secretaria.routes.js";
+// @ts-ignore
+import estudianteRouter from "./modules/estudiante/estudiante.routes.js";
 
 const app = express();
 const PORT = Number(process.env.PORT || process.env.EXCEL_API_PORT || 5175);
@@ -159,8 +161,8 @@ app.use("/", syncRouter);
 // 2. Interceptor de seguridad global: los endpoints de negocio /v1 requieren token JWT firmado
 app.use("/api/v1/extracurricular", requireAuth);
 
-// 3. Montaje de sub-enrutadores por dominios/roles funcionales
 app.use("/", coordinacionRouter);
+app.use("/", estudianteRouter);
 app.use("/", inscripcionRouter);
 app.use("/", cajaRouter);
 app.use("/", secretariaRouter);

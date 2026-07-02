@@ -418,8 +418,8 @@ function validarFilaCarga(fila: FilaNormalizada, programaDetectado: Programa | n
   if (fila.curso && !programaDetectado) errores.push("El programa indicado no existe en el periodo seleccionado.");
   if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
   if (esCambridge && !/^[ABC]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A, B o C.");
-  if (programaDetectado && String(programaDetectado.estado || "Habilitado") !== "Habilitado") {
-    errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} esta ${programaDetectado.estado}. Habilitelo antes de cargar alumnos.`);
+  if (programaDetectado && (String(programaDetectado.estado || "").toLowerCase() === "finalizado" || String(programaDetectado.estado || "").toLowerCase() === "archivado")) {
+    errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} está ${programaDetectado.estado}. No se pueden registrar alumnos en programas finalizados o archivados.`);
   }
   if (fila.observacion && /[<>]/.test(fila.observacion)) errores.push("Observación contiene caracteres no permitidos.");
   return errores;
@@ -549,6 +549,10 @@ function normalizarEncabezado(valor: string): string {
   const alias: Record<string, string> = {
     apellido: "apellidos",
     apellidos_y_nombres: "alumno",
+    nombre_y_apellido: "alumno",
+    nombre_y_apellidos: "alumno",
+    nombre_apellido: "alumno",
+    nombre_apellidos: "alumno",
     cod_estudiante: "codigo_estudiante",
     codigo: "codigo_estudiante",
     cod_alumno: "codigo_estudiante",

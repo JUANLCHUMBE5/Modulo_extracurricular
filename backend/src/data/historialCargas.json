@@ -1,1 +1,40 @@
-[]
+[
+  {
+    "id": "1",
+    "fecha": "2026-07-02T05:34:04.386Z",
+    "periodo": "escolar",
+    "usuario": "coordinacion",
+    "resumen": {
+      "importados": 5,
+      "duplicados": 0,
+      "total": 5
+    },
+    "registros": [
+      {
+        "dni": "33334444",
+        "nombres": "Valentina Chavez Flores",
+        "programaId": "PRG-007"
+      },
+      {
+        "dni": "44445555",
+        "nombres": "Thiago Ramos Medina",
+        "programaId": "PRG-007"
+      },
+      {
+        "dni": "55556666",
+        "nombres": "Camila Paredes Silva",
+        "programaId": "PRG-007"
+      },
+      {
+        "dni": "66667777",
+        "nombres": "Sebastian Lopez Garcia",
+        "programaId": "PRG-007"
+      },
+      {
+        "dni": "77778888",
+        "nombres": "Emily Vargas Castro",
+        "programaId": "PRG-007"
+      }
+    ]
+  }
+]

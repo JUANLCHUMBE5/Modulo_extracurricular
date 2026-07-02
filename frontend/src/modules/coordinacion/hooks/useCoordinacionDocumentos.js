@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import {
   editarPrograma,
   crearProgramaDesdeDocumento,
@@ -36,16 +36,6 @@ export default function useCoordinacionDocumentos({
   const [programaDocsId, setProgramaDocsId] = useState("");
   const [lecturaDocumento, setLecturaDocumento] = useState(null);
   const [plantillaInputKey, setPlantillaInputKey] = useState(0);
-
-  // Valores computados derivados de la lista de programas
-  const programaDocs = useMemo(
-    () => (programaDocsId ? programas.find((p) => p.id === programaDocsId) || null : null),
-    [programas, programaDocsId]
-  );
-  const historialPlantillas = useMemo(
-    () => programas.filter((p) => p.plantilla && p.plantillaBase64),
-    [programas]
-  );
 
   function abrirDocumentosPrograma(prog) {
     if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar documentos del programa.");
@@ -152,9 +142,27 @@ export default function useCoordinacionDocumentos({
 
       if (plantillaExistente) {
         setProgramaDocsId(plantillaExistente.id);
+        
+        let sugeridoTipo = plantillaExistente.tipoComunicado || datosDetectados.tipoComunicado || "";
+        if (!sugeridoTipo) {
+          if (lectura.plantillaModelo === "cambridge") {
+            sugeridoTipo = "Cambridge";
+          } else if (lectura.plantillaModelo === "reforzamiento") {
+            sugeridoTipo = "Reforzamiento (Circular)";
+          } else if (lectura.plantillaModelo === "seleccion") {
+            sugeridoTipo = "Selección (Circular)";
+          } else {
+            sugeridoTipo = "Otro genérico";
+          }
+        }
+
+        const sugeridaCategoria = plantillaExistente.categoria || datosDetectados.categoria || "Academico";
+
         setForm((actual) => ({
           ...actual,
           ...datosProgramaAFormulario(plantillaExistente),
+          categoria: sugeridaCategoria,
+          tipoComunicado: sugeridoTipo,
           plantilla: archivo.name,
           plantillaBase64,
           plantillaVariables: variablesDetectadas,
@@ -162,11 +170,27 @@ export default function useCoordinacionDocumentos({
           plantillaActualizadaEn: fechaActualIso(),
         }));
       } else {
+        let sugeridoTipo = datosDetectados.tipoComunicado || "";
+        if (!sugeridoTipo) {
+          if (lectura.plantillaModelo === "cambridge") {
+            sugeridoTipo = "Cambridge";
+          } else if (lectura.plantillaModelo === "reforzamiento") {
+            sugeridoTipo = "Reforzamiento (Circular)";
+          } else if (lectura.plantillaModelo === "seleccion") {
+            sugeridoTipo = "Selección (Circular)";
+          } else {
+            sugeridoTipo = "Otro genérico";
+          }
+        }
+
+        const sugeridaCategoria = datosDetectados.categoria || "Academico";
+
         setForm((actual) => ({
           ...actual,
           ...datosAplicables,
           nombre: actual.nombre || nombreDocumento,
-          categoria: actual.categoria || datosDetectados.categoria || categorias[0] || "",
+          categoria: sugeridaCategoria,
+          tipoComunicado: sugeridoTipo,
           plantilla: archivo.name,
           plantillaBase64,
           plantillaVariables: variablesDetectadas,
@@ -362,8 +386,6 @@ export default function useCoordinacionDocumentos({
     setLecturaDocumento,
     plantillaInputKey,
     setPlantillaInputKey,
-    programaDocs,
-    historialPlantillas,
     abrirDocumentosPrograma,
     guardarDocumentoComoPrograma,
     guardarDocumentosPrograma,

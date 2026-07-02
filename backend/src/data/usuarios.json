@@ -5,23 +5,56 @@
     "usuario": "admin",
     "rol": "Administrador",
     "estado": "Activo",
-    "contrasena": "$2b$10$4RgmC4057HIVuuu7q2dzX.tSB5aHKypm5khzFYMjQC/T2TJUwtzKm"
+    "contrasena": "1234"
+  },
+  {
+    "id": "2",
+    "nombre": "Maria Secretaria",
+    "usuario": "secretaria",
+    "rol": "Secretaria",
+    "estado": "Activo",
+    "contrasena": "1234",
+    "permisos": [
+      "secretaria.inscripcion",
+      "secretaria.asistencias"
+    ]
   },
   {
     "id": "3",
-    "nombre": "Rosa Cajera",
+    "nombre": "Jose Caja",
     "usuario": "caja",
     "rol": "Caja",
     "estado": "Activo",
-    "contrasena": "$2b$10$Lu8tyQwb0yd3KzX4l8VFqOeS/ByL44NQ0TfXetVGBE9VqpCv3SsaK"
+    "contrasena": "1234",
+    "permisos": [
+      "caja.cobro",
+      "caja.control",
+      "caja.correlativo",
+      "pagos.ver",
+      "pagos.registrar",
+      "pagos.editar"
+    ]
   },
   {
     "id": "4",
-    "nombre": "Ana Coordinacion Academica",
+    "nombre": "Ana Coordinadora",
     "usuario": "coordinacion",
     "rol": "Coordinacion",
     "estado": "Activo",
-    "contrasena": "$2b$10$Lu8tyQwb0yd3KzX4l8VFqOeS/ByL44NQ0TfXetVGBE9VqpCv3SsaK"
+    "contrasena": "$2b$10$J31VPQhw8iXXewDPNgp90O0w/tnHmpRmgVoBJfLA1guToJTpytBaq",
+    "permisos": [
+      "coordinacion.programas",
+      "coordinacion.programas.crear",
+      "coordinacion.programas.editar",
+      "coordinacion.grupos.crear",
+      "coordinacion.grupos.editar",
+      "coordinacion.alumnos.ver",
+      "coordinacion.carga",
+      "coordinacion.carga.confirmar",
+      "coordinacion.documentos",
+      "coordinacion.asistencia",
+      "coordinacion.historial"
+    ]
   },
   {
     "id": "5",
@@ -29,7 +62,10 @@
     "usuario": "aux",
     "rol": "Auxiliar",
     "estado": "Activo",
-    "contrasena": "$2b$10$Lu8tyQwb0yd3KzX4l8VFqOeS/ByL44NQ0TfXetVGBE9VqpCv3SsaK"
+    "contrasena": "1234",
+    "permisos": [
+      "auxiliar.asistencia"
+    ]
   },
   {
     "id": "6",
@@ -37,18 +73,33 @@
     "usuario": "dir",
     "rol": "Direccion",
     "estado": "Activo",
-    "contrasena": "$2b$10$Lu8tyQwb0yd3KzX4l8VFqOeS/ByL44NQ0TfXetVGBE9VqpCv3SsaK"
+    "contrasena": "1234",
+    "permisos": [
+      "direccion.resumen",
+      "direccion.reportes",
+      "direccion.descuentos",
+      "direccion.correlativos"
+    ]
   },
   {
-    "id": "USR-044281",
-    "usuario": "mperez",
-    "nombre": "MARIA PEREZ",
-    "rol": "Secretaria",
+    "id": "7",
+    "nombre": "Profesor Responsable",
+    "usuario": "profe",
+    "rol": "Coordinacion",
     "estado": "Activo",
-    "contrasena": "$2b$10$tOODVTFUX/G6.MI7qucmxOeFU2M0NXRjPhTttm.Fg2AqGg1L0XJC2",
+    "contrasena": "1234",
     "permisos": [
-      "secretaria.inscripcion",
-      "secretaria.asistencias"
+      "coordinacion.programas",
+      "coordinacion.programas.crear",
+      "coordinacion.programas.editar",
+      "coordinacion.grupos.crear",
+      "coordinacion.grupos.editar",
+      "coordinacion.alumnos.ver",
+      "coordinacion.carga",
+      "coordinacion.carga.confirmar",
+      "coordinacion.documentos",
+      "coordinacion.asistencia",
+      "coordinacion.historial"
     ]
   }
 ]

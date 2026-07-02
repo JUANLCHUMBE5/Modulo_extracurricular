@@ -459,7 +459,9 @@ function obtenerDetalleFormatoPadres(programa) {
 function obtenerDetalleFormatoDesdeWord(texto) {
   const limpio = limpiarCierreFormularioWord(texto);
   const secciones = [
-    extraerBloquePorMarcadoresWord(limpio, "Requisitos", ["requisitos"], ["costo"]),
+    extraerBloquePorMarcadoresWord(limpio, "Ventajas", ["ventajas"], ["nota", "traer los siguientes utiles", "requisitos", "costo"]),
+    extraerBloquePorMarcadoresWord(limpio, "Nota", ["nota"], ["traer los siguientes utiles", "requisitos", "costo"]),
+    extraerBloquePorMarcadoresWord(limpio, "Requisitos", ["traer los siguientes utiles", "requisitos", "materiales"], ["costo"]),
     extraerBloquePorMarcadoresWord(limpio, "Costo", ["costo"], ["el almuerzo", "almuerzo"]),
     extraerAlmuerzoWord(limpio),
   ].filter(Boolean);
@@ -521,7 +523,7 @@ function extraerAlmuerzoWord(texto) {
 
 function esTituloSeccionWord(texto) {
   const normal = normalizarTextoPadres(texto).replace(/[:.]+$/g, "");
-  return /^(club de tareas|duracion|duración|requisitos|costo|el almuerzo|almuerzo|acepto|datos del alumno|datos del apoderado)$/.test(normal);
+  return /^(club de tareas|duracion|duración|requisitos|costo|el almuerzo|almuerzo|acepto|datos del alumno|datos del apoderado|ventajas|nota|traer los siguientes utiles|materiales)$/.test(normal);
 }
 
 function extraerMensajePrincipalWord(texto) {

@@ -5,7 +5,7 @@ import {
   IconX as X,
 } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
-import { limpiarHorarioSinAlmuerzo } from "../../utils/asistenciasFormatters";
+import { limpiarHorarioSinAlmuerzo } from "../utils/asistenciasFormatters";
 
 const tabStyle = (activo) => ({
   background: "none",

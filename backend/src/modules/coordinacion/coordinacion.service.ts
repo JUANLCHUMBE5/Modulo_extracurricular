@@ -842,6 +842,73 @@ function enriquecerAsistenciaPrograma(db: any, asistencia: any = {}, programaId:
   };
 }
 
+function normalizeIncomingProgram(body: any = {}): any {
+  const result = { ...body };
+  
+  if (body.nombre_programa !== undefined) {
+    result.nombre = body.nombre_programa;
+    delete result.nombre_programa;
+  }
+  if (body.fecha_inicio !== undefined) {
+    result.fechaInicio = body.fecha_inicio;
+    delete result.fecha_inicio;
+  }
+  if (body.fecha_fin !== undefined) {
+    result.fechaFin = body.fecha_fin;
+    delete result.fecha_fin;
+  }
+  if (body.monto !== undefined) {
+    result.costo = body.monto;
+    delete result.monto;
+  }
+  if (body.grados !== undefined) {
+    result.gradosAplicables = body.grados;
+    delete result.grados;
+  }
+  if (body.modalidad_cobro !== undefined) {
+    result.modalidadCobro = body.modalidad_cobro;
+    delete result.modalidad_cobro;
+  }
+  if (body.requiere_uniforme !== undefined) {
+    result.requiereUniforme = Boolean(body.requiere_uniforme);
+    delete result.requiere_uniforme;
+  }
+  if (body.comunicado_completo !== undefined) {
+    result.comunicadoCompleto = body.comunicado_completo;
+    delete result.comunicado_completo;
+  }
+  if (body.detalle_costo !== undefined) {
+    result.detalleCosto = body.detalle_costo;
+    delete result.detalle_costo;
+  }
+  if (body.detalle_almuerzo !== undefined) {
+    result.detalleAlmuerzo = body.detalle_almuerzo;
+    delete result.detalle_almuerzo;
+  }
+  if (body.tipo_comunicado !== undefined) {
+    result.tipoComunicado = body.tipo_comunicado;
+    delete result.tipo_comunicado;
+  }
+  if (body.tipo_documento !== undefined) {
+    result.tipoDocumento = body.tipo_documento;
+    delete result.tipo_documento;
+  }
+  if (body.numero_documento !== undefined) {
+    result.numeroDocumento = body.numero_documento;
+    delete result.numero_documento;
+  }
+  if (body.area_tematica !== undefined) {
+    result.areaTematica = body.area_tematica;
+    delete result.area_tematica;
+  }
+  if (body.area__tematica !== undefined) {
+    result.areaTematica = body.area__tematica;
+    delete result.area__tematica;
+  }
+
+  return result;
+}
+
 export class CoordinacionService {
   async getCategorias() {
     const db = await getDb();
@@ -902,17 +969,19 @@ export class CoordinacionService {
     const pid = `PRG-${String(db.nextProgramaId || 100).padStart(3, "0")}`;
     db.nextProgramaId = (db.nextProgramaId || 100) + 1;
 
+    const normalizedBody = normalizeIncomingProgram(body);
+
     const nuevo = {
       id: pid,
-      ...body,
-      costo: Number(body.costo || 0),
-      cupos: Number(body.cupos || 0),
+      ...normalizedBody,
+      costo: Number(normalizedBody.costo || 0),
+      cupos: Number(normalizedBody.cupos || 0),
       cuposOcupados: 0,
-      gradosAplicables: body.gradosAplicables || [],
-      horariosPorGrupo: body.horariosPorGrupo || [],
-      tablaHorariosNivel: body.tablaHorariosNivel || [],
-      estado: body.estado || "Borrador",
-      periodo: body.periodo || "escolar"
+      gradosAplicables: normalizedBody.gradosAplicables || [],
+      horariosPorGrupo: normalizedBody.horariosPorGrupo || [],
+      tablaHorariosNivel: normalizedBody.tablaHorariosNivel || [],
+      estado: normalizedBody.estado || "Borrador",
+      periodo: normalizedBody.periodo || "escolar"
     };
 
     db.programas = db.programas || [];
@@ -925,8 +994,59 @@ export class CoordinacionService {
   }
 
   async subirDocumentoPrograma(operatorUsername: string, body: any) {
-    const { id, plantillaBase64, plantillaVariables, plantillaNombre } = body;
+    const { id, plantillaBase64, plantillaVariables, plantillaNombre, plantilla } = body;
     const db = await getDb();
+
+    if (!id) {
+      // Crear nuevo programa desde documento
+      const pid = `PRG-${String(db.nextProgramaId || 100).padStart(3, "0")}`;
+      db.nextProgramaId = (db.nextProgramaId || 100) + 1;
+
+      const nuevo = {
+        id: pid,
+        nombre: body.nombre_programa || body.nombre || "Taller desde Documento",
+        categoria: body.categoria || "General",
+        fechaInicio: body.fecha_inicio || new Date().toISOString().split("T")[0],
+        fechaFin: body.fecha_fin || new Date().toISOString().split("T")[0],
+        costo: Number(body.monto || body.costo || 0),
+        cupos: Number(body.cupos || 0),
+        cuposOcupados: 0,
+        gradosAplicables: body.grados || [],
+        horariosPorGrupo: [],
+        tablaHorariosNivel: [],
+        estado: "Borrador",
+        periodo: body.periodo || "escolar",
+        modalidadCobro: body.modalidad_cobro || "Mensual",
+        requiereUniforme: Boolean(body.requiere_uniforme),
+        horario: body.horario || "Por definir",
+        grupo: body.grupo || "Por definir",
+        dias: body.dias || [],
+        plantilla: plantillaNombre || plantilla || "",
+        plantillaBase64: plantillaBase64 || "",
+        plantillaVariables: plantillaVariables || [],
+        plantillaValidada: true,
+        creadoDesdeDocumento: true,
+        comunicado: body.comunicado || "",
+        comunicadoCompleto: body.comunicado_completo || "",
+        requisitos: body.requisitos || "",
+        detalleCosto: body.detalle_costo || "",
+        detalleAlmuerzo: body.detalle_almuerzo || "",
+        concesionarios: body.concesionarios || "",
+        tipoComunicado: body.tipo_comunicado || body.tipoComunicado || "",
+        tipoDocumento: body.tipo_documento || body.tipoDocumento || "",
+        numeroDocumento: body.numero_documento || body.numeroDocumento || "",
+        areaTematica: body.area_tematica || body.areaTematica || ""
+      };
+
+      db.programas = db.programas || [];
+      db.programas.push(nuevo);
+      await saveDb(db);
+
+      await registrarAuditoria(operatorUsername || "Coordinacion", "coordinacion", "PROGRAMA_CREAR", { programaId: pid, nombre: nuevo.nombre });
+
+      return mapDbProgramToApi(nuevo);
+    }
+
     const idx = (db.programas || []).findIndex((p: any) => p.id === id);
     if (idx === -1) {
       throw new Error("Programa no encontrado.");
@@ -934,7 +1054,8 @@ export class CoordinacionService {
 
     db.programas[idx].plantillaBase64 = plantillaBase64;
     db.programas[idx].plantillaVariables = plantillaVariables || [];
-    db.programas[idx].plantillaNombre = plantillaNombre || "";
+    db.programas[idx].plantilla = plantillaNombre || plantilla || db.programas[idx].plantilla || "";
+    db.programas[idx].plantillaNombre = plantillaNombre || plantilla || "";
     db.programas[idx].plantillaValidada = true;
     db.programas[idx].creadoDesdeDocumento = true;
 
@@ -952,14 +1073,19 @@ export class CoordinacionService {
     }
 
     const anterior = db.programas[idx];
+    const normalizedBody = normalizeIncomingProgram(body);
     const updated = {
       ...anterior,
-      ...body,
-      costo: Number(body.costo !== undefined ? body.costo : anterior.costo || 0),
-      cupos: Number(body.cupos !== undefined ? body.cupos : anterior.cupos || 0),
-      gradosAplicables: body.gradosAplicables || anterior.gradosAplicables || [],
-      horariosPorGrupo: body.horariosPorGrupo || anterior.horariosPorGrupo || [],
-      tablaHorariosNivel: body.tablaHorariosNivel || anterior.tablaHorariosNivel || []
+      ...normalizedBody,
+      costo: Number(normalizedBody.costo !== undefined ? normalizedBody.costo : (anterior.costo || 0)),
+      cupos: Number(normalizedBody.cupos !== undefined ? normalizedBody.cupos : (anterior.cupos || 0)),
+      gradosAplicables: normalizedBody.gradosAplicables || anterior.gradosAplicables || [],
+      horariosPorGrupo: normalizedBody.horariosPorGrupo || anterior.horariosPorGrupo || [],
+      tablaHorariosNivel: normalizedBody.tablaHorariosNivel || anterior.tablaHorariosNivel || [],
+      tipoComunicado: normalizedBody.tipoComunicado !== undefined ? normalizedBody.tipoComunicado : anterior.tipoComunicado,
+      tipoDocumento: normalizedBody.tipoDocumento !== undefined ? normalizedBody.tipoDocumento : anterior.tipoDocumento,
+      numeroDocumento: normalizedBody.numeroDocumento !== undefined ? normalizedBody.numeroDocumento : anterior.numeroDocumento,
+      areaTematica: normalizedBody.areaTematica !== undefined ? normalizedBody.areaTematica : anterior.areaTematica
     };
 
     db.programas[idx] = updated;

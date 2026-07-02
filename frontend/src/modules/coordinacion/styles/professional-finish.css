@@ -679,7 +679,7 @@
 
 .coord-documents-upload-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(140px, 180px) auto;
+  grid-template-columns: minmax(0, 2.2fr) minmax(160px, 1fr) minmax(180px, 1fr);
   grid-template-areas:
     "archivo archivo archivo"
     "nombre categoria accion";
@@ -737,14 +737,25 @@
 
 .coord-documents-upload-row .coord-register-button {
   grid-area: accion;
-  width: auto;
-  min-width: 176px;
+  width: 100%;
   min-height: 36px;
   padding: 0 18px;
+  background: #2f8f7a !important;
+  color: #ffffff !important;
+  border: 1px solid #2f8f7a !important;
+}
+
+.coord-documents-upload-row .coord-register-button:hover {
+  background: #237463 !important;
+  color: #ffffff !important;
+  border-color: #237463 !important;
 }
 
 .coord-documents-upload-row .coord-register-button:disabled {
-  opacity: 0.62;
+  background: #2f8f7a !important;
+  color: #ffffff !important;
+  opacity: 0.62 !important;
+  cursor: not-allowed;
 }
 
 .coord-documents-edit-button {

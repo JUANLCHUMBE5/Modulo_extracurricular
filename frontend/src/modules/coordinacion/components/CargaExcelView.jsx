@@ -12,14 +12,14 @@ import {
   IconX as X,
   IconDownload as Download,
 } from "@tabler/icons-react";
-import { apiDb } from "../../../../services/dbApi";
-import { listarInvitados } from "../../services/coordinacionService";
-import { convertirWordOriginalAPdf, crearPdfInvitacionDocumento } from "../../../secretaria/utils/secretariaDocumentoPdf";
-import { generarComunicadoWordBlob, crearDocumentoInvitacion } from "../../../secretaria/utils/secretariaDocumentoWord";
+import { apiDb } from "../../../services/dbApi";
+import { listarInvitados } from "../services/coordinacionService";
+import { convertirWordOriginalAPdf, crearPdfInvitacionDocumento } from "../../secretaria/utils/secretariaDocumentoPdf";
+import { generarComunicadoWordBlob, crearDocumentoInvitacion } from "../../secretaria/utils/secretariaDocumentoWord";
 import { PDFDocument } from "pdf-lib";
 import { toast } from "sonner";
-import SummaryBox from "../shared/SummaryBox";
-import { textoEstadoCarga } from "../../utils/coordinacionFormatters";
+import SummaryBox from "./SummaryBox";
+import { textoEstadoCarga } from "../utils/coordinacionFormatters";
 
 async function combinarBlobsPdf(blobs) {
   const pdfCombinado = await PDFDocument.create();
@@ -216,8 +216,7 @@ function normalizarTexto(valor = "") {
 
 function programasDisponibles(programas = []) {
   return programas.filter((programa) =>
-    String(programa.periodo || "escolar").toLowerCase().includes("escolar") &&
-    String(programa.estado || "Habilitado") === "Habilitado"
+    String(programa.estado || "").toLowerCase() !== "archivado"
   );
 }
 
@@ -502,9 +501,8 @@ function CargaExcelView({
                 <input
                   id="coord-individual-nombre"
                   value={alumnoIndividual.nombre}
-                  onChange={(event) => actualizarAlumnoIndividual("nombre", event.target.value)}
-                  placeholder="Nombre completo"
-                  disabled={estadoAlumnoIndividual.buscando}
+                  placeholder="Se autocompleta con el DNI"
+                  disabled={true}
                 />
               </div>
               <div className="coord-field coord-individual-clean-grade">
@@ -512,12 +510,16 @@ function CargaExcelView({
                 <input
                   id="coord-individual-grado"
                   value={alumnoIndividual.grado}
-                  onChange={(event) => actualizarAlumnoIndividual("grado", event.target.value)}
-                  placeholder="Ej: Primaria 4"
-                  disabled={estadoAlumnoIndividual.buscando}
+                  placeholder="Se autocompleta con el DNI"
+                  disabled={true}
                 />
               </div>
-              <button className="coord-register-button coord-individual-clean-submit" type="button" onClick={guardarAlumnoIndividual} disabled={guardandoIndividual}>
+              <button
+                className="coord-register-button coord-individual-clean-submit"
+                type="button"
+                onClick={guardarAlumnoIndividual}
+                disabled={guardandoIndividual || !estadoAlumnoIndividual.encontrado}
+              >
                 {guardandoIndividual ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
                 <span>{guardandoIndividual ? "Guardando" : "Agregar alumno"}</span>
               </button>

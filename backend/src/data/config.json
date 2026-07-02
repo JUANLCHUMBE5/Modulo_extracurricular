@@ -2,8 +2,8 @@
   "categorias": [
     "Academico",
     "Deportivo",
+    "Verano",
     "Arte",
-    "Maraton",
     "Otro"
   ],
   "configuracionInstitucional": {
@@ -18,7 +18,7 @@
     "egreso": ""
   },
   "syncEvents": [],
-  "nextProgramaId": 1,
-  "nextCargaId": 1,
+  "nextProgramaId": 8,
+  "nextCargaId": 2,
   "nextDocumentoId": 1
 }

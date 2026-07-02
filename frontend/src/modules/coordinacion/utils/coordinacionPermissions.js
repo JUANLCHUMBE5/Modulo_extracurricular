@@ -6,7 +6,8 @@ export function tienePermisoAsignado(user, permiso) {
     : Array.isArray(user.permissions)
       ? user.permissions
       : [];
-  return permisos.includes(permiso);
+  if (permisos.includes(permiso)) return true;
+  return permisos.some((p) => permiso.startsWith(p + "."));
 }
 
 export function puedeVerVista(user, vista) {

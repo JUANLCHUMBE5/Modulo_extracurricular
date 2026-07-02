@@ -7,7 +7,7 @@ import {
   obtenerFechaAsistencia,
   formatearHoraAsistencia,
   badgeStyle,
-} from "../../utils/asistenciasFormatters";
+} from "../utils/asistenciasFormatters";
 
 function AsistenciaDiariaTable({
   grupoActivo,

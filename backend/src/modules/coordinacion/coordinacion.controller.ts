@@ -163,6 +163,46 @@ export class CoordinacionController {
     }
   }
 
+  async previsualizarCargaExcel(req: Request, res: Response): Promise<void> {
+    try {
+      const { parseJsonArray, parseJsonObject, normalizarPeriodo } = await import("../../services/file.service.js");
+      const { generarPreviewCargaExcel } = await import("../../services/excel.service.js");
+      const db = await getDb();
+
+      const periodo = normalizarPeriodo(req.body.periodo);
+      const archivo = req.file;
+      const frontendProgramas = parseJsonArray(req.body.programas);
+      const dbProgramasMap = new Map((db.programas || []).map(p => [p.id, p]));
+      const programas = frontendProgramas.map((fp: any) => {
+        const dbProg = dbProgramasMap.get(fp.id);
+        return {
+          ...fp,
+          gradosAplicables: fp.gradosAplicables || dbProg?.gradosAplicables || [],
+          horariosPorGrupo: fp.horariosPorGrupo || dbProg?.horariosPorGrupo || []
+        };
+      });
+
+      const existentes = parseJsonObject(req.body.existentes);
+      const estudiantes = parseJsonObject(req.body.estudiantes);
+      const programaId = req.body.programaId || req.body.programa_id || "";
+
+      const preview = await generarPreviewCargaExcel({
+        periodo,
+        archivo,
+        programas: programas.length ? programas : (db.programas || []),
+        existentes: existentes && Object.keys(existentes).length ? existentes : (db.invitadosPorPrograma || {}),
+        estudiantes: estudiantes && Object.keys(estudiantes).length ? estudiantes : (db.estudiantes || {}),
+        programaId,
+      });
+
+      res.json(preview);
+    } catch (error: any) {
+      res.status(400).json({
+        message: error.publicMessage || error.message || "No se pudo validar el archivo Excel.",
+      });
+    }
+  }
+
   async confirmarCargaExcel(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const data = await service.confirmarCargaExcel(req.user?.username || "", req.body);

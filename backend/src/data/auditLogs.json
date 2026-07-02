@@ -1,114 +1,250 @@
 [
   {
-    "id": "AUD-105231-9fb7",
+    "id": "AUD-205517-9445",
     "usuario": "admin",
     "rol": "padres",
-    "fecha": "2026-07-01T18:21:45.231Z",
+    "fecha": "2026-07-02T05:46:45.517Z",
     "accion": "PADRES_VALIDAR_EXITOSO",
-    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+    "detalles": "{\"dni\":\"24730818\",\"nombres\":\"Thiago Ramos Medina\",\"_usuario_original\":\"24730818\"}"
   },
   {
-    "id": "AUD-102027-59a8",
+    "id": "AUD-185662-23c5",
     "usuario": "admin",
-    "rol": "administrador",
-    "fecha": "2026-07-01T18:21:42.027Z",
-    "accion": "INICIO_SESION",
-    "detalles": "{\"modulo\":\"Administrador\"}"
+    "rol": "padres",
+    "fecha": "2026-07-02T05:46:25.662Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"24730817\",\"nombres\":\"Valentina Chavez Flores\",\"_usuario_original\":\"24730817\"}"
   },
   {
-    "id": "AUD-089983-ab35",
+    "id": "AUD-937712-572a",
     "usuario": "admin",
-    "rol": "desconocido",
-    "fecha": "2026-07-01T18:21:29.989Z",
-    "accion": "LOGIN_FALLIDO",
-    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"Contraseña incorrecta\"}"
+    "rol": "padres",
+    "fecha": "2026-07-02T05:42:17.712Z",
+    "accion": "PADRES_VALIDAR_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"_usuario_original\":\"55556666\"}"
   },
   {
-    "id": "AUD-085801-8dd4",
+    "id": "AUD-538581-1439",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-02T05:35:38.581Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"24730817\",\"nombres\":\"Valentina Chavez Flores\",\"_usuario_original\":\"24730817\"}"
+  },
+  {
+    "id": "AUD-476226-8ad2",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-02T05:34:36.226Z",
+    "accion": "PADRES_VALIDAR_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"_usuario_original\":\"33334444\"}"
+  },
+  {
+    "id": "AUD-470915-9129",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-02T05:34:30.915Z",
+    "accion": "PADRES_VALIDAR_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"_usuario_original\":\"33334444\"}"
+  },
+  {
+    "id": "AUD-462725-50b7",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-02T05:34:22.725Z",
+    "accion": "PADRES_VALIDAR_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"_usuario_original\":\"33334444\"}"
+  },
+  {
+    "id": "AUD-444395-0fb2",
     "usuario": "coordinacion",
     "rol": "coordinacion",
-    "fecha": "2026-07-01T15:34:45.802Z",
+    "fecha": "2026-07-02T05:34:04.395Z",
+    "accion": "CARGA_EXCEL_CONFIRMAR",
+    "detalles": "{\"cargaId\":1,\"importados\":5,\"duplicados\":0}"
+  },
+  {
+    "id": "AUD-993481-40c2",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T05:26:33.481Z",
     "accion": "INICIO_SESION",
     "detalles": "{\"modulo\":\"Coordinación Académica\"}"
   },
   {
-    "id": "AUD-067805-d40a",
-    "usuario": "admin",
-    "rol": "secretaria",
-    "fecha": "2026-07-01T15:34:27.805Z",
+    "id": "AUD-147041-6061",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T05:12:27.041Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-007\",\"estadoAnterior\":\"Borrador\",\"estadoNuevo\":\"Habilitado\"}"
+  },
+  {
+    "id": "AUD-145006-f91a",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T05:12:25.007Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-007\"}"
+  },
+  {
+    "id": "AUD-047312-12a5",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T05:10:47.312Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-007\",\"nombre\":\"Circular Seleccion 2026 Inicial Y Primaria\"}"
+  },
+  {
+    "id": "AUD-025389-8cce",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T05:10:25.389Z",
     "accion": "INICIO_SESION",
-    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"mperez\"}"
+    "detalles": "{\"modulo\":\"Coordinación Académica\"}"
   },
   {
-    "id": "AUD-057095-f8f3",
-    "usuario": "admin",
-    "rol": "desconocido",
-    "fecha": "2026-07-01T15:34:17.095Z",
-    "accion": "LOGIN_FALLIDO",
-    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"Usuario inactivo o no existe\",\"_usuario_original\":\"SECRE\"}"
+    "id": "AUD-250197-2a14",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T04:57:30.197Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-006\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Habilitado\"}"
   },
   {
-    "id": "AUD-044393-5dad",
-    "usuario": "admin",
-    "rol": "administrador",
-    "fecha": "2026-07-01T15:34:04.393Z",
-    "accion": "USUARIO_CREAR",
-    "detalles": "{\"usuarioId\":\"USR-044281\",\"usuario\":\"mperez\"}"
+    "id": "AUD-247830-1188",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T04:57:27.830Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-006\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Deshabilitado\"}"
   },
   {
-    "id": "AUD-418832-6e55",
-    "usuario": "admin",
-    "rol": "administrador",
-    "fecha": "2026-07-01T15:06:58.834Z",
-    "accion": "USUARIO_RESET_CONTRASENA",
-    "detalles": "{\"usuarioId\":\"1\"}"
+    "id": "AUD-244613-6985",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T04:57:24.613Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-006\",\"estadoAnterior\":\"Borrador\",\"estadoNuevo\":\"Habilitado\"}"
   },
   {
-    "id": "AUD-416611-53ba",
-    "usuario": "admin",
-    "rol": "administrador",
-    "fecha": "2026-07-01T15:06:56.611Z",
-    "accion": "USUARIO_RESET_CONTRASENA",
-    "detalles": "{\"usuarioId\":\"1\"}"
+    "id": "AUD-481196-6047",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T03:54:41.196Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-006\"}"
   },
   {
-    "id": "AUD-277167-b283",
-    "usuario": "dir",
-    "rol": "direccion",
-    "fecha": "2026-07-01T14:47:57.167Z",
+    "id": "AUD-810776-ba6d",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T03:43:30.776Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-006\",\"nombre\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo Variables\"}"
+  },
+  {
+    "id": "AUD-679400-0779",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:51:19.400Z",
+    "accion": "PROGRAMA_ELIMINAR",
+    "detalles": "{\"programaId\":\"PRG-005\"}"
+  },
+  {
+    "id": "AUD-555321-b888",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:49:15.321Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-005\"}"
+  },
+  {
+    "id": "AUD-499138-6e32",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:48:19.138Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-005\",\"nombre\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo\"}"
+  },
+  {
+    "id": "AUD-483238-e9bd",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:48:03.238Z",
+    "accion": "PROGRAMA_ELIMINAR",
+    "detalles": "{\"programaId\":\"PRG-004\"}"
+  },
+  {
+    "id": "AUD-480250-5844",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:48:00.250Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-004\"}"
+  },
+  {
+    "id": "AUD-420096-4ed2",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:47:00.096Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-004\",\"nombre\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo\"}"
+  },
+  {
+    "id": "AUD-384078-b171",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:46:24.078Z",
+    "accion": "PROGRAMA_ELIMINAR",
+    "detalles": "{\"programaId\":\"PRG-003\"}"
+  },
+  {
+    "id": "AUD-114234-cccc",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:25:14.234Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-003\",\"nombre\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo Variables\"}"
+  },
+  {
+    "id": "AUD-934411-e53b",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:22:14.411Z",
     "accion": "INICIO_SESION",
-    "detalles": "{\"modulo\":\"Dirección\"}"
+    "detalles": "{\"modulo\":\"Coordinación Académica\"}"
   },
   {
-    "id": "AUD-270048-def8",
-    "usuario": "admin",
-    "rol": "desconocido",
-    "fecha": "2026-07-01T14:47:50.048Z",
-    "accion": "LOGIN_FALLIDO",
-    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"Usuario inactivo o no existe\",\"_usuario_original\":\"secre\"}"
+    "id": "AUD-914542-8c91",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:21:54.542Z",
+    "accion": "PROGRAMA_ELIMINAR",
+    "detalles": "{\"programaId\":\"PRG-002\"}"
   },
   {
-    "id": "AUD-260884-04e3",
-    "usuario": "admin",
-    "rol": "administrador",
-    "fecha": "2026-07-01T14:47:40.884Z",
-    "accion": "USUARIO_ELIMINAR",
-    "detalles": "{\"usuarioId\":\"2\"}"
+    "id": "AUD-907849-56ec",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:21:47.849Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-002\",\"nombre\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii\"}"
   },
   {
-    "id": "AUD-253269-375b",
-    "usuario": "admin",
-    "rol": "administrador",
-    "fecha": "2026-07-01T14:47:33.269Z",
-    "accion": "USUARIO_ELIMINAR",
-    "detalles": "{\"usuarioId\":\"7\"}"
+    "id": "AUD-891551-7beb",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:21:31.551Z",
+    "accion": "PROGRAMA_ELIMINAR",
+    "detalles": "{\"programaId\":\"PRG-001\"}"
   },
   {
-    "id": "AUD-229309-6309",
-    "usuario": "admin",
-    "rol": "administrador",
-    "fecha": "2026-07-01T14:47:09.312Z",
-    "accion": "INICIO_SESION",
-    "detalles": "{\"modulo\":\"Administrador\"}"
+    "id": "AUD-716654-e717",
+    "usuario": "coordinacion",
+    "rol": "coordinacion",
+    "fecha": "2026-07-02T02:01:56.654Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-001\",\"nombre\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii\"}"
   }
 ]

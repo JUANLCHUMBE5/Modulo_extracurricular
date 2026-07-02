@@ -8,8 +8,8 @@ import {
 } from "@tabler/icons-react";
 import ProgramaGrupoHorarioModal from "../ProgramaGrupoHorarioModal";
 import GradeSelector from "../GradeSelector";
-import { formatearHora12 } from "../../../utils/coordinacionFormatters";
-import { resumenGrados } from "../../../utils/coordinacionProgramUtils";
+import { formatearHora12 } from "../../utils/coordinacionFormatters";
+import { resumenGrados } from "../../utils/coordinacionProgramUtils";
 
 const grupoHorarioDraftInicial = {
   grados: [],

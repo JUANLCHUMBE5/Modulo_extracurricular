@@ -113,6 +113,7 @@ export default function ModuleLayout({ user, onLogout, availableModules }) {
     case "coordinacion":
       return (
         <Coordinacion
+          initialView={subview}
           delegatedContent={delegatedContent}
           moduleSwitcher={moduleSwitcher}
           onClearDelegatedModule={handleClearDelegatedModule}

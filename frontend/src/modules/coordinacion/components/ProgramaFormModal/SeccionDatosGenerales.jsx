@@ -1,56 +1,148 @@
-export const formInicial = {
-  nombre: "", periodo: "escolar", categoria: "", grupo: "", horario: "",
-  grupoEtario: "",
-  gradosAplicables: [], edadMinima: "", edadMaxima: "", fechaNacimientoDesde: "", fechaNacimientoHasta: "", dias: [], horaInicio: "", horaFin: "",
-  almuerzoInicio: "", almuerzoFin: "",
-  horariosPorGrupo: [], usaHorariosPorBloque: false, talleresDeportivos: [],
-  fechaInicio: "", fechaFin: "", duracionAvisoDias: "7", horaLimiteAviso: "23:59", cupos: "", costo: "", modalidadCobro: "Mensual",
-  cicloI: "", cicloII: "",
-  responsable: "", tutora: "", plantilla: "", plantillaBase64: "", plantillaVariables: [],
-  plantillaValidada: false, plantillaActualizadaEn: "", requisitos: "",
-  comunicado: "", comunicadoCompleto: "", detalleCosto: "", detalleAlmuerzo: "", concesionarios: "",
-  requiereUniforme: false, requiereIndumentaria: false, invitacionMasiva: false, alcanceInvitacionMasiva: "colegio",
-  anuncioImagen: "", anuncioImagenNombre: "", anuncioImagenTamano: 0, anuncioImagenComprimida: false,
-  usarFechaLimiteInscripcion: false,
-  fechaAperturaInscripcion: "",
-  horaAperturaInscripcion: "",
-  fechaLimiteInscripcion: "",
-  horaLimiteInscripcion: "",
+import { IconBook as BookOpen, IconPlus as Plus, IconTrash as Trash2 } from "@tabler/icons-react";
+import { normalizarPeriodoVista } from "../../utils/coordinacionProgramUtils";
 
-  // Nuevos campos condicionales por tipo de circular
-  tipoComunicado: "Otro genérico",
-  tipoDocumento: "Comunicado",
-  numeroDocumento: "",
-  areaTematica: "Matemática",
-  nombreCiclo: "Ciclo I",
-  tablaHorariosNivel: [],
-  incluyeAlmuerzo: false,
-  horarioRecepcionAlmuerzo: "",
-  nivelCambridge: "",
-  modalidadesCambridge: [],
-  costoCiclo: "",
-  montoPrimerPago: "",
-};
+function SeccionDatosGenerales({
+  form,
+  esFormularioVerano,
+  esAcademico,
+  esNoAcademico,
+  esCircularEspecial,
+  mostrarGestorCategorias,
+  setMostrarGestorCategorias,
+  nuevaCat,
+  setNuevaCat,
+  agregarCategoria,
+  catAEliminar,
+  setCatAEliminar,
+  quitarCategoria,
+  categoriasEscolar,
+  actualizarNombrePrograma,
+  cambiarPeriodoFormulario,
+  actualizarCategoriaPrograma,
+  actualizarForm,
+  categorias,
+  usaTalleresPorEdad,
+}) {
+  return (
+    <section className="coord-form-section">
+      <div className="coord-section-heading">
+        <BookOpen size={18} />
+        <div>
+          <h3>{esFormularioVerano ? "Datos del programa de verano" : "Datos generales"}</h3>
+        </div>
+      </div>
+      <div className={`coord-section-grid coord-general-grid ${esAcademico ? "is-academico" : ""}`}>
+        <div className="coord-field coord-program-name-field">
+          <label>{esFormularioVerano ? "Nombre del programa de verano" : "Nombre del programa"}</label>
+          <input
+            value={form.nombre}
+            onChange={e => actualizarNombrePrograma(e.target.value)}
+            placeholder={esFormularioVerano ? "Ej: Verano creativo 2026" : "Ej: Reforzamiento y nivelación"}
+          />
+        </div>
 
-export const horarioGrupoInicial = {
-  grados: [],
-  dia: "Jueves",
-  almuerzoInicio: "14:20",
-  almuerzoFin: "15:10",
-  horaInicio: "15:20",
-  horaFin: "17:20",
-  aula: "",
-  responsable: "",
-  tutora: "",
-};
+        <div className="coord-field coord-period-field">
+          <label>Periodo</label>
+          <select value={normalizarPeriodoVista(form.periodo)} onChange={e => cambiarPeriodoFormulario(e.target.value)}>
+            <option value="escolar">Año escolar</option>
+            <option value="verano">Ciclo verano</option>
+          </select>
+        </div>
 
-export const TEMPLATES_POR_TIPO = {
-  "Club de Tareas": {
-    comunicado: "Club de Tareas está diseñado para brindar a nuestros estudiantes un espacio guiado y estructurado para la resolución y presentación oportuna de sus tareas escolares, fortaleciendo sus hábitos de estudio, autonomía y organización bajo el acompañamiento de docentes especialistas.",
-    requisitos: "Cuaderno de apuntes, cartuchera completa (lápiz, borrador, tajador, regla, colores), agenda escolar física, y los textos/cuadernos de trabajo del colegio correspondientes a las tareas pendientes del día."
-  },
-  "Reforzamiento (Circular)": {
-    comunicado: `                         Carabayllo, {{FECHA_CARTA}}
+        <div className="coord-field coord-category-field">
+          <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: "4px" }}>
+            <span style={{ whiteSpace: "nowrap" }}>Categoría</span>
+            <button
+              type="button"
+              className="coord-category-toggle-btn"
+              onClick={() => setMostrarGestorCategorias(!mostrarGestorCategorias)}
+              style={{ whiteSpace: "nowrap" }}
+            >
+              {mostrarGestorCategorias ? "Ocultar" : "Gestionar"}
+            </button>
+          </label>
+          <select
+            value={form.categoria}
+            disabled={esCircularEspecial}
+            onChange={e => actualizarCategoriaPrograma(e.target.value)}
+            style={esCircularEspecial ? {
+              background: "#e2e8f0",
+              color: "#64748b",
+              cursor: "not-allowed",
+              borderColor: "#cbd5e1"
+            } : {}}
+          >
+            <option value="">Seleccione</option>
+            {esFormularioVerano ? (
+              <>
+                <option value="Vacaciones Útiles">Vacaciones Útiles</option>
+                <option value="Talleres Recreativos">Talleres Recreativos</option>
+                <option value="Talleres Deportivos">Talleres Deportivos</option>
+              </>
+            ) : (
+              categoriasEscolar.map(c => {
+                let label = c;
+                if (c === "Academico") label = "Académico";
+                if (c === "Maraton") label = "Maratón";
+                return <option key={c} value={c}>{label}</option>;
+              })
+            )}
+          </select>
+        </div>
+
+        {mostrarGestorCategorias ? (
+          <div className="coord-category-manager-container coord-field-full">
+            <div className="coord-category-manager-inner">
+              <div className="coord-field">
+                <label>Nueva categoría</label>
+                <div className="coord-inline-field">
+                  <input
+                    placeholder="Ej: Arte, verano, alto rendimiento"
+                    value={nuevaCat}
+                    onChange={e => setNuevaCat(e.target.value)}
+                  />
+                  <button type="button" className="coord-mini-btn" onClick={agregarCategoria}>
+                    <Plus size={14} />
+                  </button>
+                </div>
+              </div>
+              <div className="coord-field">
+                <label>Quitar categoría</label>
+                <div className="coord-inline-field">
+                  <select value={catAEliminar} onChange={e => setCatAEliminar(e.target.value)}>
+                    <option value="">Seleccione</option>
+                    {categoriasEscolar.map(c => {
+                      let label = c;
+                      if (c === "Academico") label = "Académico";
+                      if (c === "Maraton") label = "Maratón";
+                      return <option key={c} value={c}>{label}</option>;
+                    })}
+                  </select>
+                  <button type="button" className="coord-mini-btn coord-mini-danger-btn" onClick={quitarCategoria}>
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {esAcademico && (
+          <div className="coord-field coord-tipo-comunicado-field">
+            <label style={{ fontWeight: "700", color: "#1e3a8a" }}>Tipo de comunicado / Circular escolar</label>
+            <select
+              value={form.tipoComunicado || "Otro genérico"}
+              disabled={esNoAcademico}
+              onChange={e => {
+                const nuevoTipo = e.target.value;
+
+                const templates = {
+                  "Club de Tareas": {
+                    comunicado: "Club de Tareas está diseñado para brindar a nuestros estudiantes un espacio guiado y estructurado para la resolución y presentación oportuna de sus tareas escolares, fortaleciendo sus hábitos de estudio, autonomía y organización bajo el acompañamiento de docentes especialistas.",
+                    requisitos: "Cuaderno de apuntes, cartuchera completa (lápiz, borrador, tajador, regla, colores), agenda escolar física, y los textos/cuadernos de trabajo del colegio correspondientes a las tareas pendientes del día."
+                  },
+                  "Reforzamiento (Circular)": {
+                    comunicado: `                         Carabayllo, {{FECHA_CARTA}}
 COMUNICADO TALLER DE REFORZAMIENTO Y NIVELACIÓN SAN RAFAEL
 
 Reciba el saludo cordial de la Comunidad Educativa del Colegio Matemático “San Rafael”, en especial de esta Dirección General que está a su servicio. La presente es para manifestarle que, habiendo revisado situación académica y aptitudinal durante el I Bimestre, hemos encontrado en su menor hijo (a), dificultades en el aprendizaje del área de matemática y/o comunicación. Por tal motivo creemos oportuno dentro de la formación que se brinda en nuestra Institución, integrarlo al aula de Clases de Nivelación y Reforzamiento. 
@@ -106,14 +198,14 @@ ACEPTO:
 
 NOMBRES Y APELLIDOS DEL ALUMNO: {{ALUMNO}} GRADO/SECCIÓN: {{GR_SEC}}
 DATOS DEL APODERADO: {{APOD}}     CEL: {{CEL}}   FIRMA: _________________`,
-    requisitos: `•	01 cuaderno Triple Kids – forrado de color MARRÓN con etiqueta TALLER DE COMUNICACIÓN (4 años)
+                    requisitos: `•	01 cuaderno Triple Kids – forrado de color MARRÓN con etiqueta TALLER DE COMUNICACIÓN (4 años)
 •	01 cuaderno triple renglón A4 – forrado de color MARRÓN con etiqueta TALLER DE COMUNICACIÓN (5 años, 1°, 2° y 3° grado)
 •	01 cuaderno Cuadrimax de 1 x 1 – forrado de color NEGRO con etiqueta TALLER DE MATEMÁTICA (4 años)
 •	01 cuaderno cuadriculado A4 – forrado de color NEGRO con etiqueta TALLER DE MATEMÁTICA (5 años, 1°, 2° y 3° grado)
 •	Todos los grados – 01 cartuchera completa (lápiz negro, chequeo rojo, borrador, tajador con depósito, colores, regla de 30 cm. (solo primaria)`
-  },
-  "Certificación Cambridge": {
-    comunicado: `Carabayllo, Abril del 2026
+                  },
+                   "Certificación Cambridge": {
+                    comunicado: `Carabayllo, Abril del 2026
 CARTA DA-RCPF 2026-
 SEÑOR PADRE DE FAMILIA
 Presente. -
@@ -167,12 +259,12 @@ Atentamente,
 
                                  ____________________                           _______________________
                           COORDINACIÓN			          DIRECTOR GENERAL`,
-    requisitos: `•	Libros de preparación
+                    requisitos: `•	Libros de preparación
 •	Simulacros del examen oficial Cambridge en todos los niveles.
 •	Material adicional requerido`
-  },
-  "Cambridge": {
-    comunicado: `Carabayllo, Abril del 2026
+                  },
+                  "Cambridge": {
+                    comunicado: `Carabayllo, Abril del 2026
 CARTA DA-RCPF 2026-
 SEÑOR PADRE DE FAMILIA
 Presente. -
@@ -226,12 +318,12 @@ Atentamente,
 
                                  ____________________                           _______________________
                           COORDINACIÓN			          DIRECTOR GENERAL`,
-    requisitos: `•	Libros de preparación
+                    requisitos: `•	Libros de preparación
 •	Simulacros del examen oficial Cambridge en todos los niveles.
 •	Material adicional requerido`
-  },
-  "Selección (Circular)": {
-    comunicado: `                         Carabayllo, {{FECHA}}
+                  },
+                  "Selección (Circular)": {
+                    comunicado: `                         Carabayllo, {{FECHA}}
 SEÑORES PADRES DE FAMILIA
 Presente. -	
 ASUNTO: CARTA DE FELICITACIÓN – INVITACIÓN AULA ESPECIAL SELECCIÓN – TALENTO
@@ -313,13 +405,126 @@ NOMBRES Y APELLIDOS DEL ALUMNO: {{ALUMNO}}
 GRADO Y SECCIÓN DONDE CULMINÓ: {{GR_SEC}}
 NOMBRES Y APELLIDOS DEL APODERADO: {{APOD}}                   
 CEL: {{CEL}}   					FIRMA:_              ________________`,
-    requisitos: `•	Deberá estar entre los 3 primeros en el cuadro de mérito dentro del aula.
+                    requisitos: `•	Deberá estar entre los 3 primeros en el cuadro de mérito dentro del aula.
 •	El alumno deberá mantener buena conducta, mínimo nota 16.
 •	Deberá participar en un 90% como mínimo, de las Olimpiadas matemáticas programadas por el colegio.
 •	Deberá asistir como mínimo al 90% de las Maratones Académicas o Simulacros que se realizan previo a los concursos y/o exámenes. Costo simbólico (incluye pago al profesor y separata adicional).`
-  },
-  "Otro genérico": {
-    comunicado: "",
-    requisitos: ""
-  }
-};
+                  },
+                  "Otro genérico": {
+                    comunicado: "",
+                    requisitos: ""
+                  }
+                };
+
+                const template = templates[nuevoTipo] || { comunicado: "", requisitos: "" };
+                const tipoDocSugerido = (nuevoTipo === "Cambridge" || nuevoTipo === "Certificación Cambridge") ? "Carta" : "Comunicado";
+                const prefix = tipoDocSugerido === "Carta" ? "CAR" : "COM";
+                const anio = new Date().getFullYear();
+                const randomId = Math.floor(Math.random() * 90) + 10;
+                const numDocSugerido = `${prefix}-0${randomId}-${anio}`;
+
+                let reseteos = {};
+                if (nuevoTipo === "Otro genérico") {
+                  reseteos = {
+                    tipoDocumento: "Comunicado",
+                    numeroDocumento: "",
+                    areaTematica: "Matemática",
+                    nombreCiclo: "Ciclo I",
+                    duracionTaller: "",
+                    tablaHorariosNivel: [],
+                    incluyeAlmuerzo: false,
+                    horarioRecepcionAlmuerzo: "",
+                    nivelCambridge: "",
+                    modalidadesCambridge: [],
+                    montoPrimerPago: "",
+                    comunicado: "",
+                    comunicadoCompleto: "",
+                    requisitos: "",
+                    fechaInicio: "",
+                    fechaFin: "",
+                    duracionAvisoDias: "7",
+                    cupos: "",
+                    costo: "",
+                    modalidadCobro: "Mensual",
+                    invitacionMasiva: false,
+                    horariosPorGrupo: [],
+                    gradosAplicables: [],
+                    dias: [],
+                    horaInicio: "",
+                    horaFin: "",
+                  };
+                } else if (nuevoTipo === "Cambridge" || nuevoTipo === "Certificación Cambridge") {
+                  reseteos = {
+                    incluyeAlmuerzo: false,
+                    horarioRecepcionAlmuerzo: "",
+                    areaTematica: "Inglés / Cambridge",
+                  };
+                } else {
+                  reseteos = {
+                    nivelCambridge: "",
+                    modalidadesCambridge: [],
+                    areaTematica: "Matemática",
+                  };
+                }
+
+                let categoriaSugerida = form.categoria;
+                if (nuevoTipo !== "Otro genérico") {
+                  const academica = (categorias || []).find(c => {
+                    const normal = String(c).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    return normal === "academico";
+                  });
+                  categoriaSugerida = academica || "Academico";
+                }
+
+                actualizarForm({
+                  tipoComunicado: nuevoTipo,
+                  comunicado: template.comunicado,
+                  comunicadoCompleto: template.comunicado,
+                  requisitos: template.requisitos,
+                  tipoDocumento: tipoDocSugerido,
+                  numeroDocumento: numDocSugerido,
+                  categoria: categoriaSugerida,
+                  ...reseteos
+                });
+              }}
+              style={esNoAcademico ? {
+                background: "#e2e8f0",
+                color: "#64748b",
+                cursor: "not-allowed",
+                borderColor: "#cbd5e1"
+              } : {
+                background: "#eff6ff",
+                fontWeight: "bold",
+                borderColor: "#3b82f6"
+              }}
+            >
+              <option value="Otro genérico">Otro genérico (Taller común)</option>
+              <option value="Club de Tareas">Club de Tareas</option>
+              <option value="Reforzamiento (Circular)">Reforzamiento (Circular)</option>
+              <option value="Selección (Circular)">Selección (Circular)</option>
+              <option value="Cambridge">Cambridge</option>
+              {form.tipoComunicado === "Certificación Cambridge" && (
+                <option value="Certificación Cambridge" style={{ display: "none" }}>Certificación Cambridge</option>
+              )}
+            </select>
+          </div>
+        )}
+        {usaTalleresPorEdad && esFormularioVerano && form.talleresDeportivos?.length > 0 ? (
+          <div className="coord-field coord-field-full">
+            <div
+              className="coord-deportivo-grados-summary"
+              style={{ marginTop: "8px", padding: "8px 12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}
+            >
+              <strong>Talleres configurados:</strong>{" "}
+              <span style={{ color: "#006b5b", fontWeight: 700 }}>
+                {form.talleresDeportivos.map(t => `${t.deporte} (${t.edadMinima}-${t.edadMaxima} años)`).join(", ")}
+              </span>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+export default SeccionDatosGenerales;

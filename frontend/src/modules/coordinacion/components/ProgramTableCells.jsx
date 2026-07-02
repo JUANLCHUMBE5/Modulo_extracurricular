@@ -1,4 +1,4 @@
-import { calcularDuracionTexto, normalizarDuracionAvisoDias } from "../../../../services/dateService";
+import { calcularDuracionTexto, normalizarDuracionAvisoDias } from "../../../services/dateService";
 
 function abreviarDias(texto) {
   return String(texto || "")

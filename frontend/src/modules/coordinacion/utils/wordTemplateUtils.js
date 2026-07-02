@@ -65,10 +65,60 @@ export function extraerDatosProgramaDesdeWord(textoPlano, nombreArchivo, categor
   const detalleAlmuerzo = extraerBloqueSeccion(texto, ["el almuerzo", "almuerzo"], ["entregar este formato", "acepto", "datos del alumno"]);
   const concesionarios = extraerConcesionarios(texto);
   const modalidadCobro = extraerModalidad(texto);
+  
+  const textoLower = texto.toLowerCase();
+  const nombreArchivoLower = String(nombreArchivo || "").toLowerCase();
+
+  let tipoComunicadoSugerido = "";
+  if (nombreArchivoLower.includes("cambridge") || textoLower.includes("cambridge")) {
+    tipoComunicadoSugerido = "Cambridge";
+  } else if (
+    nombreArchivoLower.includes("club de tareas") || 
+    nombreArchivoLower.includes("club tareas") || 
+    textoLower.includes("club de tareas") || 
+    textoLower.includes("club tareas")
+  ) {
+    tipoComunicadoSugerido = "Club de Tareas";
+  } else if (
+    nombreArchivoLower.includes("reforzamiento") || 
+    textoLower.includes("reforzamiento")
+  ) {
+    tipoComunicadoSugerido = "Reforzamiento (Circular)";
+  } else if (
+    nombreArchivoLower.includes("seleccion") || 
+    nombreArchivoLower.includes("selección") || 
+    textoLower.includes("aula especial seleccion") || 
+    textoLower.includes("aula especial selección")
+  ) {
+    tipoComunicadoSugerido = "Selección (Circular)";
+  }
+
+  let areaTematicaSugerida = "";
+  if (tipoComunicadoSugerido === "Cambridge" || nombreArchivoLower.includes("ingles") || nombreArchivoLower.includes("inglés") || textoLower.includes("ingles") || textoLower.includes("inglés")) {
+    areaTematicaSugerida = "Inglés / Cambridge";
+  } else {
+    const tieneMatematica = textoLower.includes("matematica") || textoLower.includes("matemática") || nombreArchivoLower.includes("matematica") || nombreArchivoLower.includes("matemática");
+    const tieneComunicacion = textoLower.includes("comunicacion") || textoLower.includes("comunicación") || nombreArchivoLower.includes("comunicacion") || nombreArchivoLower.includes("comunicación");
+    
+    if (tieneMatematica && tieneComunicacion) {
+      areaTematicaSugerida = "Matemática y Comunicación";
+    } else if (tieneComunicacion) {
+      areaTematicaSugerida = "Comunicación";
+    } else if (tieneMatematica) {
+      areaTematicaSugerida = "Matemática";
+    } else {
+      areaTematicaSugerida = "Matemática";
+    }
+  }
+
   const datos = {};
+  datos.areaTematica = areaTematicaSugerida;
+  datos.categoria = categoriaDetectada || "Academico";
+  if (tipoComunicadoSugerido) {
+    datos.tipoComunicado = tipoComunicadoSugerido;
+  }
 
   if (nombreDetectado) datos.nombre = capitalizarTexto(nombreDetectado);
-  if (categoriaDetectada) datos.categoria = categoriaDetectada;
   if (grados.length) datos.gradosAplicables = grados;
   if (horarioDetectado) datos.dias = extraerDias(horarioDetectado);
   if (!datos.dias?.length) datos.dias = extraerDias(texto);
@@ -154,8 +204,8 @@ async function analizarZipPlantilla(zip, opciones = {}) {
   const variablesListasModelo = variablesBase.filter((variable) => presentes.includes(variable.id));
   const flexibleValida = !modeloCompleto && esPlantillaDigitalUtil(presentes);
 
-  if (validarVariables && faltantes.length && !flexibleValida) {
-    throw new Error(`La plantilla no contiene variables requeridas: ${faltantes.map((item) => item.label).join(", ")}.`);
+  if (validarVariables && presentes.length === 0) {
+    throw new Error("La plantilla no contiene ninguna variable válida (ej: {{ALUMNO}}, {{FECHA}}, etc.).");
   }
 
   return {
@@ -163,8 +213,8 @@ async function analizarZipPlantilla(zip, opciones = {}) {
     variablesListasModelo: variablesListasModelo.map((item) => item.id),
     variablesRequeridasModelo: variablesBase.map((item) => item.id),
     variablesFaltantes: faltantes.map((item) => item.id),
-    plantillaValida: faltantes.length === 0 || flexibleValida,
-    plantillaModelo: modeloCompleto?.id || (flexibleValida ? `${modeloBase?.id || "general"}-digital` : "general"),
+    plantillaValida: true,
+    plantillaModelo: modeloBase?.id || "general",
     textoPlano,
   };
 }

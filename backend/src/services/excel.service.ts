@@ -411,8 +411,8 @@ function validarFilaCarga(fila: any, programaDetectado: any, opciones: any = {})
     if (!fila.curso && fila.nivelCambridge && !programaDetectado) errores.push("No se encontro un programa Cambridge para esta carga.");
     if (esCambridge && !/^[ABC]$/.test(fila.seleccion)) errores.push("Para Cambridge, seleccion debe indicar A, B o C.");
   }
-  if (programaDetectado && String(programaDetectado.estado || "Habilitado") !== "Habilitado") {
-    errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} esta ${programaDetectado.estado}. Habilitelo antes de cargar alumnos.`);
+  if (programaDetectado && (String(programaDetectado.estado || "").toLowerCase() === "finalizado" || String(programaDetectado.estado || "").toLowerCase() === "archivado")) {
+    errores.push(`El programa ${programaDetectado.nombre || "seleccionado"} está ${programaDetectado.estado}. No se pueden registrar alumnos en programas finalizados o archivados.`);
   }
   if (programaDetectado && !esCambridge) {
     const nivelEstudiante = fila.nivelEducativo || fila.nivel;

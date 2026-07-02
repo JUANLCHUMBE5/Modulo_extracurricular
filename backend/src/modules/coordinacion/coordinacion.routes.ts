@@ -48,6 +48,7 @@ router.get("/api/v1/extracurricular/invitaciones/buscar", (req, res) => controll
 router.post("/api/v1/extracurricular/programas/:programaId/invitados", requireAuth, requireRole(["coordinacion"]), (req, res) => controller.invitarEstudiante(req, res));
 
 // --- CARGAS EXCEL (ROSTERS) ---
+router.post("/api/coordinacion/cargas/preview", upload.single("archivo"), (req, res) => controller.previsualizarCargaExcel(req, res));
 router.post("/api/v1/extracurricular/coordinacion/cargas/confirmar", requireAuth, requireRole(["coordinacion"]), (req, res) => controller.confirmarCargaExcel(req, res));
 router.get("/api/v1/extracurricular/coordinacion/cargas", requireAuth, requireRole(["coordinacion"]), (req, res) => controller.getCargasHistory(req, res));
 router.delete("/api/v1/extracurricular/coordinacion/cargas/:cargaId", requireAuth, requireRole(["coordinacion"]), (req, res) => controller.deleteCargaHistory(req, res));

@@ -158,22 +158,7 @@ export default function useCoordinacionCarga({
         programaId: programaCargaId,
         onProgress: setProgresoCarga,
       });
-      const tieneErrorDeGrado = (preview.registros || []).some(reg => 
-        Array.isArray(reg.errores) && reg.errores.some(err => 
-          String(err).toLowerCase().includes("grado correspondiente") || 
-          String(err).toLowerCase().includes("no esta dentro de su grado")
-        )
-      );
 
-      if (tieneErrorDeGrado) {
-        const confirma = window.confirm("Algunos alumnos no están dentro de los grados configurados para este taller. ¿Desea continuar de todas formas?");
-        if (!confirma) {
-          setPreviewCarga(null);
-          setProgresoCarga(null);
-          mostrarMsg("Carga cancelada por el usuario.");
-          return;
-        }
-      }
 
       setPreviewCarga(preview);
       setProgresoCarga({
@@ -203,18 +188,7 @@ export default function useCoordinacionCarga({
     if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para confirmar cargas de alumnos.");
     if (!previewCarga) return mostrarMsg("No hay registros para confirmar.");
 
-    // Verificar si algún registro tiene un error de grado que no corresponde
-    const tieneErrorDeGrado = (previewCarga.registros || []).some(reg => 
-      Array.isArray(reg.errores) && reg.errores.some(err => 
-        String(err).toLowerCase().includes("grado correspondiente") || 
-        String(err).toLowerCase().includes("no esta dentro de su grado")
-      )
-    );
 
-    if (tieneErrorDeGrado) {
-      const confirma = window.confirm("Algunos alumnos no están dentro de los grados configurados para este taller. ¿Desea continuar de todas formas?");
-      if (!confirma) return mostrarMsg("Carga cancelada por el usuario.");
-    }
 
     if (previewCarga.resumen.validos === 0) {
       return mostrarMsg("No hay registros válidos para confirmar.");

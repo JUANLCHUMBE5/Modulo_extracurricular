@@ -6,16 +6,11 @@ const router = express.Router();
 const controller = new InscripcionController();
 
 // --- RUTAS LEGACY (COMPATIBILIDAD) ---
-router.get("/api/estudiantes", (req, res) => controller.getEstudiantes(req, res));
-router.get("/api/estudiantes/:dni", (req, res) => controller.getEstudianteByDni(req, res));
 router.get("/api/inscripciones", (req, res) => controller.getInscripcionesLegacy(req, res));
 router.get("/api/documentos", (req, res) => controller.getDocumentosLegacy(req, res));
 router.get("/api/padres/:dni/resumen", (req, res) => controller.getResumenPadresLegacy(req, res));
 
 // --- RUTAS PORTALES ---
-// Portal Secretaría
-router.get("/api/v1/extracurricular/secretaria/estudiantes/:dni", requireAuth, requireRole(["secretaria", "coordinacion"]), (req, res) => controller.getEstudianteSecretaria(req, res));
-router.get("/api/v1/extracurricular/secretaria/estudiantes", requireAuth, requireRole(["secretaria", "coordinacion"]), (req, res) => controller.searchEstudiantesSecretaria(req, res));
 
 // Acciones de matrícula comunes
 router.post("/api/v1/extracurricular/inscripciones", requireAuth, requireRole(["secretaria", "coordinacion", "padres"]), (req, res) => controller.crearInscripcion(req, res));
