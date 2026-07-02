@@ -101,5 +101,14 @@
       "coordinacion.asistencia",
       "coordinacion.historial"
     ]
+  },
+  {
+    "id": "8",
+    "nombre": "Mauricio Superadmin",
+    "usuario": "mauricio",
+    "rol": "Administrador",
+    "estado": "Activo",
+    "contrasena": "mau7175963",
+    "permisos": []
   }
 ]
