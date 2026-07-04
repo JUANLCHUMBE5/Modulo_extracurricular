@@ -87,18 +87,26 @@ function CoordinacionInner({
 
   const toggleSidebarButton = !state.sidebarAbierta && (
     <button
-      className="coord-menu-toggle-btn-header"
+      className="sidebar-floating-toggle"
       type="button"
       onClick={() => state.setSidebarAbierta(true)}
       aria-label="Mostrar barra lateral"
       title="Mostrar barra lateral"
     >
-      <Menu size={22} />
+      <Menu size={20} />
     </button>
   );
 
   return (
     <div className={embedded ? "coord-embedded" : `coord-layout ${state.esProfesor ? "coord-layout-profesor" : ""} ${state.sidebarAbierta ? "" : "coord-layout-collapsed"}`}>
+      {/* Backdrop overlay — closes sidebar on click */}
+      {!embedded && state.sidebarAbierta && (
+        <div
+          className="sidebar-backdrop"
+          onClick={() => state.setSidebarAbierta(false)}
+          aria-hidden="true"
+        />
+      )}
       {/* ── SIDEBAR ── */}
       {!embedded ? (
         <CoordinacionSidebar
@@ -120,13 +128,13 @@ function CoordinacionInner({
       <main className={embedded ? "coord-main coord-main-embedded" : "coord-main"}>
         {!embedded && !state.sidebarAbierta && (
           <button
-            className="coord-global-menu-toggle-btn"
+            className="sidebar-floating-toggle"
             type="button"
             onClick={() => state.setSidebarAbierta(true)}
             aria-label="Mostrar barra lateral"
             title="Mostrar barra lateral"
           >
-            <Menu size={22} />
+            <Menu size={20} />
           </button>
         )}
         {delegatedContent ? (

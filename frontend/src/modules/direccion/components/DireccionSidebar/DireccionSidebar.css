@@ -10,15 +10,15 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: #197f10 !important; /* Fondo verde sólido */
-  border-right: none !important; /* Removido borde gris */
+  background: #197f10 !important;
+  border-right: none !important;
   padding: 24px 16px !important;
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08) !important; /* Sombra sutil de separación */
+  box-shadow: 6px 0 32px rgba(0, 0, 0, 0.2) !important;
   overflow: hidden !important;
-  width: var(--dir-sidebar, 260px) !important;
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
-              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  width: 270px !important; /* Unified 270px width */
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 /* Encabezado / Logo con orden flex para colocar el logo a la izquierda */
@@ -209,11 +209,50 @@
   transform: translateY(-1px);
 }
 
-/* Ocultar barra lateral por completo cuando está colapsada */
+/* Ocultar barra lateral con deslizamiento cuando está colapsada */
 .sidebar-collapsed .dir-sidebar {
-  width: 0px !important;
-  padding: 0px !important;
-  border-right: none !important;
-  opacity: 0 !important;
+  transform: translateX(-100%) !important;
+  box-shadow: none !important;
   pointer-events: none !important;
+}
+
+.sidebar-expanded .dir-sidebar {
+  transform: translateX(0) !important;
+}
+
+/* ═══ OVERRIDE: Unified Logout Button - White Card Style ═══ */
+.dir-logout {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  margin: 12px 0 !important;
+  padding: 10px 14px !important;
+  background: #f0fbf7 !important;
+  border: 2.5px solid #0f5b49 !important;
+  border-radius: 12px !important;
+  color: #0f5b49 !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+  font-weight: 700 !important;
+  font-size: 12.5px !important;
+  box-shadow: 0 4px 12px rgba(15, 91, 73, 0.1) !important;
+  box-sizing: border-box !important;
+}
+
+.dir-logout:hover {
+  background: #e6f5ef !important;
+  border-color: #0f5b49 !important;
+  box-shadow: 0 6px 16px rgba(15, 91, 73, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+.dir-logout svg,
+.dir-logout span {
+  color: #0f5b49 !important;
+  stroke: #0f5b49 !important;
+}
+
+.dir-sidebar > .dir-logout {
+  margin-top: auto !important;
 }

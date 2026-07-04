@@ -2,22 +2,29 @@
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 20;
-  width: var(--caja-sidebar);
+  width: 270px !important; /* Unified 270px width */
   height: 100dvh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   padding: 24px 16px !important;
   border-right: none !important;
-  background: #197f10 !important; /* Bright solid green matching Coordinacion */
-  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08) !important;
+  background: #197f10 !important;
+  box-shadow: 6px 0 32px rgba(0, 0, 0, 0.2) !important;
   overflow: hidden;
-  transition: width 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 .caja-sidebar.collapsed {
-  width: 68px;
-  padding: 20px 8px !important;
+  transform: translateX(-100%) !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+.caja-sidebar.expanded {
+  transform: translateX(0) !important;
 }
 
 .caja-sidebar.collapsed .caja-brand,
@@ -207,4 +214,37 @@
   color: #ef4444 !important;
   stroke: #ef4444 !important;
   transform: translateY(-1px);
+}
+
+/* ═══ OVERRIDE: Unified Logout Button - White Card Style ═══ */
+.caja-logout {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  margin: 12px 0 !important;
+  padding: 10px 14px !important;
+  background: #f0fbf7 !important;
+  border: 2.5px solid #0f5b49 !important;
+  border-radius: 12px !important;
+  color: #0f5b49 !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+  font-weight: 700 !important;
+  font-size: 12.5px !important;
+  box-shadow: 0 4px 12px rgba(15, 91, 73, 0.1) !important;
+  box-sizing: border-box !important;
+}
+
+.caja-logout:hover {
+  background: #e6f5ef !important;
+  border-color: #0f5b49 !important;
+  box-shadow: 0 6px 16px rgba(15, 91, 73, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+.caja-logout svg,
+.caja-logout span {
+  color: #0f5b49 !important;
+  stroke: #0f5b49 !important;
 }

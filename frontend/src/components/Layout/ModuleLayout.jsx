@@ -148,6 +148,7 @@ export default function ModuleLayout({ user, onLogout, availableModules }) {
     case "direccion":
       return (
         <Direccion
+          delegatedContent={delegatedContent}
           moduleSwitcher={moduleSwitcher}
           onLogout={onLogout}
           user={user}

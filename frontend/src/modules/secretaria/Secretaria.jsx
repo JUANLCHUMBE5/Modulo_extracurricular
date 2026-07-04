@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import useSidebar from "../../hooks/useSidebar";
 import { toast } from "sonner";
 import {
   IconLogout as LogOut,
@@ -7,6 +8,7 @@ import {
   IconUserCheck as UserCheck,
   IconChevronRight as ChevronRight,
   IconChevronDown as ChevronDown,
+  IconClipboardList as ClipboardList,
 } from "@tabler/icons-react";
 import {
   buscarEstudiantePorDni,
@@ -51,18 +53,7 @@ import "./Secretaria.css";
 function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, onLogout }) {
   const [periodo, setPeriodo] = useState("escolar");
   const [vistaActiva, setVistaActiva] = useState("inscripcion"); // "inscripcion" | "asistencias"
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    const saved = localStorage.getItem("sec_sidebar_expanded");
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-
-  const toggleSidebar = () => {
-    setSidebarExpanded((prev) => {
-      const newVal = !prev;
-      localStorage.setItem("sec_sidebar_expanded", JSON.stringify(newVal));
-      return newVal;
-    });
-  };
+  const [sidebarExpanded, toggleSidebar] = useSidebar("sec");
   const [menuAbierto, setMenuAbierto] = useState(true);
   const [dni, setDni] = useState("");
   const [mensaje, setMensaje] = useState("");
@@ -816,6 +807,14 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
 
   return (
     <div className={`secretaria-layout ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
+      {/* Backdrop overlay — closes sidebar on click */}
+      {sidebarExpanded && (
+        <div
+          className="sidebar-backdrop"
+          onClick={toggleSidebar}
+          aria-hidden="true"
+        />
+      )}
       <aside className="secretaria-sidebar">
         <div className="secretaria-sidebar-brand-row">
           <button className="secretaria-menu-toggle-btn" type="button" onClick={toggleSidebar} aria-label="Alternar barra lateral">
@@ -837,10 +836,15 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
               className="module-switcher-header"
               type="button"
             >
-              <span className="module-switcher-header-title">Módulo Asistente</span>
-              <span className="module-switcher-header-icon">
-                {menuAbierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-              </span>
+              <div className="module-switcher-header-left">
+                <ClipboardList className="module-switcher-header-main-icon" size={18} />
+                <span className="module-switcher-header-title">Módulo Asistente</span>
+              </div>
+              <div className="module-switcher-header-right">
+                <span className="module-switcher-header-icon">
+                  {menuAbierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                </span>
+              </div>
             </button>
             {menuAbierto && (
               <nav className="module-switcher-content coord-nav">
@@ -855,7 +859,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   title="Inscripción presencial"
                 >
                   <span>Inscripción presencial</span>
-                  <ChevronRight className="coord-nav-arrow" size={16} />
                 </button>
                 <button
                   className={`coord-nav-item ${!mostrarVistaDelegada && vistaActiva === "asistencias" ? "coord-nav-item-active" : ""}`}
@@ -868,7 +871,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                   title="Ver Asistencias"
                 >
                   <span>Ver Asistencias</span>
-                  <ChevronRight className="coord-nav-arrow" size={16} />
                 </button>
               </nav>
             )}
@@ -917,23 +919,21 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       </aside>
 
       <main className="secretaria-main">
+        {!sidebarExpanded && (
+          <button
+            className="sidebar-floating-toggle"
+            type="button"
+            onClick={toggleSidebar}
+            aria-label="Mostrar barra lateral"
+            title="Mostrar barra lateral"
+          >
+            <Menu size={20} />
+          </button>
+        )}
         {mostrarVistaDelegada ? (
           delegatedContent
         ) : (
           <>
-            {!sidebarExpanded && (
-              <div style={{ marginBottom: "12px" }}>
-                <button
-                  className="secretaria-menu-toggle-btn-header"
-                  type="button"
-                  onClick={toggleSidebar}
-                  aria-label="Mostrar barra lateral"
-                  title="Mostrar barra lateral"
-                >
-                  <Menu size={22} />
-                </button>
-              </div>
-            )}
             <section className="secretaria-workspace secretaria-workspace-system">
               <SecretariaSearchCard
                 aplicarEstudianteEncontrado={aplicarEstudianteEncontrado}

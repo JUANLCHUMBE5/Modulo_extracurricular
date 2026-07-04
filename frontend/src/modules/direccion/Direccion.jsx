@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useSidebar from "../../hooks/useSidebar";
 import { useParams, useNavigate } from "react-router-dom";
 import { Alert, Loader } from "@mantine/core";
 import { IconAlertCircle as AlertCircle, IconMenu2 as Menu } from "@tabler/icons-react";
@@ -30,6 +31,7 @@ export default function Direccion({
   moduleSwitcher,
   onLogout,
   user,
+  delegatedContent = null,
 }) {
   const { module, subview } = useParams();
   const navigate = useNavigate();
@@ -43,19 +45,7 @@ export default function Direccion({
     }
   };
 
-  // State of the sidebar (expanded/collapsed)
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    const saved = localStorage.getItem("dir_sidebar_expanded");
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-
-  const toggleSidebar = () => {
-    setSidebarExpanded((prev) => {
-      const newVal = !prev;
-      localStorage.setItem("dir_sidebar_expanded", JSON.stringify(newVal));
-      return newVal;
-    });
-  };
+  const [sidebarExpanded, toggleSidebar] = useSidebar("dir");
 
   const [periodo, setPeriodo] = useState("todos");
   const [anio, setAnio] = useState("todos");
@@ -619,6 +609,14 @@ export default function Direccion({
 
   return (
     <main className={embedded ? "dir-page dir-page-embedded" : `dir-page ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
+      {/* Backdrop overlay — closes sidebar on click */}
+      {!embedded && sidebarExpanded && (
+        <div
+          className="sidebar-backdrop"
+          onClick={toggleSidebar}
+          aria-hidden="true"
+        />
+      )}
       {!embedded ? (
         <DireccionSidebar
           sidebarExpanded={sidebarExpanded}
@@ -627,24 +625,21 @@ export default function Direccion({
           setVista={setVista}
           onLogout={onLogout}
           moduleSwitcher={moduleSwitcher}
+          delegatedContent={delegatedContent}
         />
       ) : null}
 
       <section className={embedded ? "dir-main dir-main-embedded" : "dir-main"}>
         {!sidebarExpanded && !embedded && (
-          <header className="dir-header">
-            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-              <button
-                className="dir-menu-toggle-btn-header"
-                type="button"
-                onClick={toggleSidebar}
-                aria-label="Mostrar barra lateral"
-                title="Mostrar barra lateral"
-              >
-                <Menu size={22} />
-              </button>
-            </div>
-          </header>
+          <button
+            className="sidebar-floating-toggle"
+            type="button"
+            onClick={toggleSidebar}
+            aria-label="Mostrar barra lateral"
+            title="Mostrar barra lateral"
+          >
+            <Menu size={20} />
+          </button>
         )}
 
         {error ? (
@@ -653,7 +648,9 @@ export default function Direccion({
           </Alert>
         ) : null}
 
-        {cargando ? (
+        {delegatedContent ? (
+          delegatedContent
+        ) : cargando ? (
           <section className="dir-loading">
             <Loader color="teal" />
             <p>Cargando informacion de Direccion...</p>

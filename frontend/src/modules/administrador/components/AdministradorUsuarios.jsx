@@ -15,7 +15,10 @@ import {
   IconUserPlus as UserPlus,
   IconSparkles as Sparkles,
   IconRefresh as Refresh,
+  IconCopy as Copy,
+  IconCheck as Check,
 } from "@tabler/icons-react";
+import { toast } from "sonner";
 import {
   ALL_PERMISSIONS,
   PERMISSION_GROUPS,
@@ -296,15 +299,26 @@ const ModalUsuario = ({ show, modoEditar, form, setForm, guardar, guardando, cer
   const [showPass, setShowPass] = useState(false);
   const [usuarioEditadoManualmente, setUsuarioEditadoManualmente] = useState(false);
   const [creadoExitoso, setCreadoExitoso] = useState(false);
+  const [copiado, setCopiado] = useState(false);
 
   useEffect(() => {
     if (show) {
       setUsuarioEditadoManualmente(modoEditar);
       setCreadoExitoso(false);
+      setCopiado(false);
     }
   }, [show, modoEditar]);
 
   if (!show) return null;
+
+  const handleCopy = () => {
+    const passwordText = form.contrasena || "123456";
+    const texto = `Nombre: ${form.nombre}\nUsuario: @${form.usuario}\nRol: ${getRoleLabel(form.rol)}\nContraseña: ${passwordText}`;
+    navigator.clipboard.writeText(texto);
+    setCopiado(true);
+    toast.success("Credenciales copiadas al portapapeles.");
+    setTimeout(() => setCopiado(false), 2000);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -336,7 +350,7 @@ const ModalUsuario = ({ show, modoEditar, form, setForm, guardar, guardando, cer
   if (creadoExitoso) {
     return (
       <div
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/55 p-5"
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/55 backdrop-blur-xs p-5"
         onClick={(e) => {
           if (e.target === e.currentTarget) {
             cerrar();
@@ -344,47 +358,69 @@ const ModalUsuario = ({ show, modoEditar, form, setForm, guardar, guardando, cer
         }}
       >
         <div
-          className="w-full max-w-[480px] overflow-auto rounded-lg border border-[#dbe3ee] bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.28)] text-center"
+          className="w-full max-w-[460px] overflow-auto rounded-xl border border-[#dbe3ee] bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.28)] text-center animate-fade-in"
           onClick={e => e.stopPropagation()}
         >
-          <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
-            <CheckCircle2 size={32} />
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-xs relative">
+            <div className="absolute inset-0 rounded-full bg-emerald-500/10 animate-ping" style={{ animationDuration: "2s" }} />
+            <CheckCircle2 size={32} className="relative z-10" />
           </div>
-          <h2 className="text-xl font-black text-slate-900 mb-2">¡Usuario creado con éxito!</h2>
-          <p className="text-[13px] text-slate-500 mb-5">
+          <h2 className="text-xl font-extrabold text-slate-900 mb-1.5 tracking-tight">¡Usuario creado con éxito!</h2>
+          <p className="text-[13px] text-slate-500 mb-5 leading-normal max-w-sm mx-auto">
             Por favor, copie o guarde las credenciales del personal antes de cerrar esta ventana:
           </p>
           
-          <div className="bg-slate-50 rounded-lg border border-[#d8e5e1] p-4 mb-5 text-left flex flex-col gap-3 font-semibold text-slate-700 text-sm">
+          <div className="rounded-xl border border-[#e8edf4] bg-[#f8fafb] p-4.5 mb-6 text-left flex flex-col gap-3.5 text-sm">
             <div>
-              <span className="text-xs text-slate-400 block font-bold uppercase">Nombre Completo</span>
-              <span className="text-slate-900 font-extrabold">{form.nombre}</span>
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-0.5">Nombre Completo</span>
+              <span className="text-slate-900 font-extrabold text-[15px] leading-tight">{form.nombre}</span>
             </div>
-            <div className="grid grid-cols-2 gap-4 border-t border-slate-200/60 pt-3">
+            
+            <div className="grid grid-cols-2 gap-4 border-t border-[#e8edf4] pt-3">
               <div>
-                <span className="text-xs text-slate-400 block font-bold uppercase">Usuario</span>
-                <span className="text-[#0e9f85] font-extrabold">@{form.usuario}</span>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-0.5">Usuario</span>
+                <span className="text-[#0e9f85] font-extrabold text-sm">@{form.usuario}</span>
               </div>
               <div>
-                <span className="text-xs text-slate-400 block font-bold uppercase">Rol</span>
-                <span className="text-slate-900 font-extrabold">{getRoleLabel(form.rol)}</span>
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-0.5">Rol</span>
+                <span className="text-slate-800 font-extrabold text-sm">{getRoleLabel(form.rol)}</span>
               </div>
             </div>
-            <div className="border-t border-slate-200/60 pt-3">
-              <span className="text-xs text-slate-400 block font-bold uppercase mb-1">Contraseña asignada</span>
-              <span className="text-slate-950 font-mono font-extrabold text-base bg-white border border-slate-200 rounded px-2.5 py-1 inline-block select-all select-text">
+            
+            <div className="border-t border-[#e8edf4] pt-3">
+              <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider block mb-0.5">Contraseña asignada</span>
+              <span className="text-slate-900 font-mono font-extrabold text-base tracking-wider select-all">
                 {form.contrasena || "123456"}
               </span>
             </div>
           </div>
 
-          <button
-            type="button"
-            className="w-full inline-flex min-h-[38px] items-center justify-center gap-2 rounded-lg border border-[#169b83] bg-[#169b83] px-4 text-[13px] font-extrabold text-white hover:bg-[#0f7d6c]"
-            onClick={cerrar}
-          >
-            Entendido y Cerrar
-          </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              className="flex-1 inline-flex min-h-[38px] items-center justify-center gap-2 rounded-lg border border-[#d8e0ea] bg-white px-4 text-xs font-extrabold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+              onClick={handleCopy}
+            >
+              {copiado ? (
+                <>
+                  <Check size={14} className="text-emerald-600" />
+                  <span>¡Copiado!</span>
+                </>
+              ) : (
+                <>
+                  <Copy size={14} className="text-slate-500" />
+                  <span>Copiar Datos</span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              className="flex-1 inline-flex min-h-[38px] items-center justify-center gap-2 rounded-lg border border-[#169b83] bg-[#169b83] px-4 text-xs font-extrabold text-white hover:bg-[#0f7d6c] transition cursor-pointer shadow-xs"
+              onClick={cerrar}
+            >
+              Entendido y Cerrar
+            </button>
+          </div>
         </div>
       </div>
     );

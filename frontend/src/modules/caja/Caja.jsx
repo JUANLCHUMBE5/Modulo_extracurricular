@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import useSidebar from "../../hooks/useSidebar";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button, Group, Modal, Text, Textarea } from "@mantine/core";
 import { toast } from "sonner";
-import { IconCheck as Check, IconX as X } from "@tabler/icons-react";
+import { IconCheck as Check, IconX as X, IconMenu2 as Menu } from "@tabler/icons-react";
 
 import CajaFields from "./components/CajaFields";
 import CajaPagoWebModals from "./components/CajaPagoWebModals";
@@ -59,18 +60,7 @@ export default function Caja({
     }
   };
 
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    const saved = localStorage.getItem("caja_sidebar_expanded");
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-
-  const toggleSidebar = () => {
-    setSidebarExpanded((prev) => {
-      const newVal = !prev;
-      localStorage.setItem("caja_sidebar_expanded", JSON.stringify(newVal));
-      return newVal;
-    });
-  };
+  const [sidebarExpanded, toggleSidebar] = useSidebar("caja");
 
   const [periodo, setPeriodo] = useState("escolar");
   const [formulario, setFormulario] = useState(formularioInicial);
@@ -876,6 +866,14 @@ export default function Caja({
 
   return (
     <main className={embedded ? "caja-page caja-page-embedded" : `caja-page ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
+      {/* Backdrop overlay — closes sidebar on click */}
+      {!embedded && sidebarExpanded && (
+        <div
+          className="sidebar-backdrop"
+          onClick={toggleSidebar}
+          aria-hidden="true"
+        />
+      )}
       {!embedded ? (
         <CajaSidebar
           sidebarExpanded={sidebarExpanded}
@@ -890,6 +888,17 @@ export default function Caja({
       ) : null}
 
       <section className={embedded ? "caja-main caja-main-embedded" : "caja-main"}>
+        {!embedded && !sidebarExpanded && (
+          <button
+            className="sidebar-floating-toggle"
+            type="button"
+            onClick={toggleSidebar}
+            aria-label="Mostrar barra lateral"
+            title="Mostrar barra lateral"
+          >
+            <Menu size={20} />
+          </button>
+        )}
         {delegatedContent ? (
           delegatedContent
         ) : (

@@ -1185,3 +1185,41 @@
   }
 }
 
+/* ═══ OVERRIDE: Unified Logout Button - White Card Style ═══ */
+.coord-logout {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  margin: 12px 0 !important;
+  padding: 10px 14px !important;
+  background: #f0fbf7 !important;
+  border: 2.5px solid #0f5b49 !important;
+  border-radius: 12px !important;
+  color: #0f5b49 !important;
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+  font-weight: 700 !important;
+  font-size: 12.5px !important;
+  box-shadow: 0 4px 12px rgba(15, 91, 73, 0.1) !important;
+  box-sizing: border-box !important;
+  grid-template-columns: none !important;
+}
+
+.coord-logout:hover {
+  background: #e6f5ef !important;
+  border-color: #0f5b49 !important;
+  box-shadow: 0 6px 16px rgba(15, 91, 73, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+.coord-logout svg,
+.coord-logout span {
+  color: #0f5b49 !important;
+  stroke: #0f5b49 !important;
+}
+
+.coord-sidebar > .coord-logout {
+  margin-top: auto !important;
+}
+

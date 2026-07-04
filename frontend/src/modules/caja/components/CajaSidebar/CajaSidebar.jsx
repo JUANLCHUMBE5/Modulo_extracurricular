@@ -8,6 +8,7 @@ import {
   IconFileMinus as FileMinus,
   IconChevronRight as ChevronRight,
   IconChevronDown as ChevronDown,
+  IconWallet as Wallet,
 } from "@tabler/icons-react";
 import { LOGO_COLEGIO_SRC } from "../../constants/cajaConstants";
 import "./CajaSidebar.css";
@@ -49,10 +50,15 @@ export default function CajaSidebar({
             className="module-switcher-header"
             type="button"
           >
-            <span className="module-switcher-header-title">Módulo Cajera</span>
-            <span className="module-switcher-header-icon">
-              {menuAbierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            </span>
+            <div className="module-switcher-header-left">
+              <Wallet className="module-switcher-header-main-icon" size={18} />
+              <span className="module-switcher-header-title">Módulo Cajera</span>
+            </div>
+            <div className="module-switcher-header-right">
+              <span className="module-switcher-header-icon">
+                {menuAbierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </span>
+            </div>
           </button>
           {menuAbierto && (
             <nav className="module-switcher-content coord-nav">
@@ -66,7 +72,6 @@ export default function CajaSidebar({
                 title="Registrar Cobro"
               >
                 <span>Registrar Cobro</span>
-                <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
               <button
                 className={`coord-nav-item ${!delegatedContent && vista === "reportes" ? "coord-nav-item-active" : ""}`}
@@ -78,7 +83,6 @@ export default function CajaSidebar({
                 title="Control y Exportacion"
               >
                 <span>Control y Exportacion</span>
-                <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
               <button
                 className={`coord-nav-item ${!delegatedContent && vista === "cancelar_correlativo" ? "coord-nav-item-active" : ""}`}
@@ -90,7 +94,6 @@ export default function CajaSidebar({
                 title="Anulación de Correlativo"
               >
                 <span>Anulación de Correlativo</span>
-                <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
             </nav>
           )}

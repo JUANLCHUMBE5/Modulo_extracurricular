@@ -6,11 +6,15 @@
 .dir-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: var(--dir-sidebar, 260px) minmax(0, 1fr);
+  grid-template-columns: var(--dir-sidebar, 270px) minmax(0, 1fr);
   color: var(--ui-ink, #0f172a);
   background: #ffffff;
   font-family: var(--font-body, system-ui, -apple-system, sans-serif);
   transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dir-page.sidebar-collapsed {
+  --dir-sidebar: 0px;
 }
 
 .dir-page *,

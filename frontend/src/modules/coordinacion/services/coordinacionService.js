@@ -42,10 +42,12 @@ import {
   normalizarPeriodosGuardados
 } from "../utils/coordinacionServiceMock";
 
+import { CONFIG_CONEXION } from "../../../conexion/conexionBackend.js";
+
 const obtenerApiBase = () => String(
   import.meta.env.VITE_API_URL ||
   (import.meta.env.DEV ? import.meta.env.VITE_LOCAL_API_URL : "") ||
-  ""
+  CONFIG_CONEXION.urlBase
 ).replace(/\/$/, "");
 
 const obtenerMensajeConexionApi = () => {

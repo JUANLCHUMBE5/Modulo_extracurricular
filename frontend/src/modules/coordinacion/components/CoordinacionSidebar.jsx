@@ -10,6 +10,7 @@ import {
   IconMenu2 as Menu,
   IconArchive as Archive,
   IconUserPlus as UserPlus,
+  IconSchool as School,
 } from "@tabler/icons-react";
 import { LOGO_COLEGIO_SRC } from "../constants/coordinacionConstants";
 
@@ -62,17 +63,21 @@ export default function CoordinacionSidebar({
             className="module-switcher-header"
             type="button"
           >
-            <span className="module-switcher-header-title">
-              {esProfesor ? "Modulo Profesores" : "Módulo Coordinación Académica"}
-            </span>
-            <span className="module-switcher-header-icon">
-              {menuAbierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            </span>
+            <div className="module-switcher-header-left">
+              <School className="module-switcher-header-main-icon" size={18} />
+              <span className="module-switcher-header-title">
+                {esProfesor ? "Modulo Profesores" : "Módulo Coordinación"}
+              </span>
+            </div>
+            <div className="module-switcher-header-right">
+              <span className="module-switcher-header-icon">
+                {menuAbierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </span>
+            </div>
           </button>
           {menuAbierto && (
             <nav className="module-switcher-content coord-nav">
               {vistasDisponibles.map(({ id, label }) => {
-                const Icon = iconMap[id] || BookOpen;
                 const active = !delegatedContent && vista === id;
                 return (
                   <button
@@ -87,7 +92,6 @@ export default function CoordinacionSidebar({
                     title={label}
                   >
                     <span>{label}</span>
-                    <ChevronRight className="coord-nav-arrow" size={16} />
                   </button>
                 );
               })}

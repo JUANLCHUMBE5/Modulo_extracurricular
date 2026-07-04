@@ -1,0 +1,67 @@
+[
+  {
+    "id": "1",
+    "nombre": "Admin Principal",
+    "usuario": "admin",
+    "rol": "Administrador",
+    "estado": "Activo",
+    "contrasena": "$2b$10$y2PFk9iZmG.wf3qbfOT2WOXulmPrWQ9GNbZuHfHKT2hcFnvYeSE82"
+  },
+  {
+    "id": "8",
+    "nombre": "Mauricio Superadmin",
+    "usuario": "mauricio",
+    "rol": "Administrador",
+    "estado": "Activo",
+    "contrasena": "123456",
+    "permisos": []
+  },
+  {
+    "id": "USR-118070",
+    "usuario": "carlos",
+    "nombre": "carlos",
+    "rol": "Secretaria",
+    "roles": [
+      "Secretaria"
+    ],
+    "estado": "Activo",
+    "contrasena": "$2b$10$XxF1ASRPImiBgWoyym6PfultgPZ535pFPj663.IVCSdFT4ijO.rVy",
+    "permisos": [
+      "usuarios.crear",
+      "usuarios.editar",
+      "usuarios.estado",
+      "usuarios.resetear",
+      "coordinacion.programas",
+      "coordinacion.carga",
+      "coordinacion.documentos",
+      "coordinacion.asistencia",
+      "coordinacion.historial",
+      "direccion.resumen",
+      "direccion.reportes",
+      "direccion.descuentos",
+      "direccion.correlativos",
+      "caja.cobro",
+      "caja.control",
+      "caja.correlativo",
+      "secretaria.inscripcion",
+      "secretaria.asistencias",
+      "auxiliar.asistencia"
+    ]
+  },
+  {
+    "id": "USR-501339",
+    "usuario": "pedro",
+    "nombre": "pedro",
+    "rol": "Caja",
+    "roles": [
+      "Caja"
+    ],
+    "estado": "Activo",
+    "contrasena": "$2b$10$mwvn9hcimh33t9TsVM7OW.jGIIrxYBk5wMbT.pAv2TxW8evVqUMee",
+    "permisos": [
+      "caja.cobro",
+      "caja.control",
+      "caja.correlativo"
+    ]
+  }
+]

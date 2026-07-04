@@ -31,9 +31,6 @@ function Login({ onLoginSuccess }) {
 
   function mostrarError(texto) {
     setError(texto);
-    toast.error("Acceso al sistema", {
-      description: texto,
-    });
   }
 
   async function handleSubmit(event) {
@@ -128,19 +125,20 @@ function Login({ onLoginSuccess }) {
             </button>
           </div>
 
-          {error ? (
-            <Alert
-              className="login-error"
-              color={esPadre ? "blue" : "sanrafael"}
-              radius="md"
-              icon={<AlertCircle size={17} />}
-              role="alert"
-            >
-              {error}
-            </Alert>
-          ) : null}
-
           <form className="login-form" onSubmit={handleSubmit}>
+            {error ? (
+              <Alert
+                className="login-error"
+                color={esPadre ? "blue" : "sanrafael"}
+                radius="md"
+                style={{ marginBottom: "16px" }}
+                icon={<AlertCircle size={17} />}
+                role="alert"
+              >
+                {error}
+              </Alert>
+            ) : null}
+
             {esPadre ? (
               <>
                 <TextInput

@@ -8,6 +8,8 @@ import {
   IconRosetteDiscount as RosetteDiscount,
   IconChevronRight as ChevronRight,
   IconChevronDown as ChevronDown,
+  IconBuilding as Building,
+  IconFileText as FileText,
 } from "@tabler/icons-react";
 import "./DireccionSidebar.css";
 
@@ -18,6 +20,7 @@ export default function DireccionSidebar({
   setVista,
   onLogout,
   moduleSwitcher,
+  delegatedContent = null,
 }) {
   const [menuAbierto, setMenuAbierto] = useState(true);
 
@@ -50,48 +53,49 @@ export default function DireccionSidebar({
             className="module-switcher-header"
             type="button"
           >
-            <span className="module-switcher-header-title">Módulo Dirección</span>
-            <span className="module-switcher-header-icon">
-              {menuAbierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            </span>
+            <div className="module-switcher-header-left">
+              <Building className="module-switcher-header-main-icon" size={18} />
+              <span className="module-switcher-header-title">Módulo Dirección</span>
+            </div>
+            <div className="module-switcher-header-right">
+              <span className="module-switcher-header-icon">
+                {menuAbierto ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              </span>
+            </div>
           </button>
           {menuAbierto && (
             <nav className="module-switcher-content coord-nav">
               <button
-                className={`coord-nav-item ${vista === "resumen" ? "coord-nav-item-active" : ""}`}
+                className={`coord-nav-item ${!delegatedContent && vista === "resumen" ? "coord-nav-item-active" : ""}`}
                 type="button"
                 onClick={() => setVista("resumen")}
                 title="Resumen general"
               >
                 <span>Resumen general</span>
-                <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
               <button
-                className={`coord-nav-item ${vista === "reportes" ? "coord-nav-item-active" : ""}`}
+                className={`coord-nav-item ${!delegatedContent && vista === "reportes" ? "coord-nav-item-active" : ""}`}
                 type="button"
                 onClick={() => setVista("reportes")}
                 title="Reportes"
               >
                 <span>Reportes</span>
-                <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
               <button
-                className={`coord-nav-item ${vista === "descuentos" ? "coord-nav-item-active" : ""}`}
+                className={`coord-nav-item ${!delegatedContent && vista === "descuentos" ? "coord-nav-item-active" : ""}`}
                 type="button"
                 onClick={() => setVista("descuentos")}
                 title="Descuentos y Becas"
               >
                 <span>Descuentos y Becas</span>
-                <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
               <button
-                className={`coord-nav-item ${vista === "correlativos" ? "coord-nav-item-active" : ""}`}
+                className={`coord-nav-item ${!delegatedContent && vista === "correlativos" ? "coord-nav-item-active" : ""}`}
                 type="button"
                 onClick={() => setVista("correlativos")}
                 title="Correlativos"
               >
                 <span>Correlativos</span>
-                <ChevronRight className="coord-nav-arrow" size={16} />
               </button>
             </nav>
           )}
@@ -99,7 +103,7 @@ export default function DireccionSidebar({
       ) : (
         <nav className="dir-nav" aria-label="Navegacion de direccion">
           <button
-            className={vista === "resumen" ? "is-active" : ""}
+            className={!delegatedContent && vista === "resumen" ? "is-active" : ""}
             type="button"
             onClick={() => setVista("resumen")}
             title="Resumen general"
@@ -107,7 +111,7 @@ export default function DireccionSidebar({
             <ChartBar size={18} />
           </button>
           <button
-            className={vista === "reportes" ? "is-active" : ""}
+            className={!delegatedContent && vista === "reportes" ? "is-active" : ""}
             type="button"
             onClick={() => setVista("reportes")}
             title="Reportes"
@@ -115,7 +119,7 @@ export default function DireccionSidebar({
             <Download size={18} />
           </button>
           <button
-            className={vista === "descuentos" ? "is-active" : ""}
+            className={!delegatedContent && vista === "descuentos" ? "is-active" : ""}
             type="button"
             onClick={() => setVista("descuentos")}
             title="Descuentos y Becas"
@@ -123,7 +127,7 @@ export default function DireccionSidebar({
             <RosetteDiscount size={18} />
           </button>
           <button
-            className={vista === "correlativos" ? "is-active" : ""}
+            className={!delegatedContent && vista === "correlativos" ? "is-active" : ""}
             type="button"
             onClick={() => setVista("correlativos")}
             title="Correlativos"

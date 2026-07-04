@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import useSidebar from "../../hooks/useSidebar";
 import {
   IconChevronDown as ChevronDown,
   IconFileText as FileText,
@@ -56,19 +57,7 @@ const LOGO_COLEGIO_SRC = "/assets/padres/logo.png.jpg";
 export default function Administrador({ onLogout }) {
   const [usuarios, setUsuarios] = useState([]);
   
-  // Estado de la barra lateral (colapsada/expandida)
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    const saved = localStorage.getItem("adm_sidebar_expanded");
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-
-  const toggleSidebar = () => {
-    setSidebarExpanded((prev) => {
-      const newVal = !prev;
-      localStorage.setItem("adm_sidebar_expanded", JSON.stringify(newVal));
-      return newVal;
-    });
-  };
+  const [sidebarExpanded, toggleSidebar] = useSidebar("adm");
 
   const [seccion, setSeccion] = useState("usuarios");
   const [busqueda, setBusqueda] = useState("");
@@ -78,7 +67,9 @@ export default function Administrador({ onLogout }) {
   const [modal, setModal] = useState({ show: false, editar: false, guardando: false });
   const [form, setForm] = useState(crearFormInicial);
 
-
+  const [usuarioAEliminar, setUsuarioAEliminar] = useState(null);
+  const [eliminarModalAbierto, setEliminarModalAbierto] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
 
   useEffect(() => {
     cargarDatos();
@@ -154,7 +145,9 @@ export default function Administrador({ onLogout }) {
       }
       if (form.contrasena.trim()) datos.contrasena = form.contrasena.trim();
       modal.editar ? await editarUsuarioController(form.id, datos) : await crearUsuarioController(datos);
-      notify(`Usuario ${modal.editar ? "actualizado" : "creado"} correctamente.`, "success");
+      if (modal.editar) {
+        notify("Usuario actualizado correctamente.", "success");
+      }
       await cargarDatos();
       if (modal.editar) {
         setModal(m => ({ ...m, show: false }));
@@ -184,15 +177,25 @@ export default function Administrador({ onLogout }) {
     } catch (err) { notify(err.message); }
   };
 
-  const eliminar = async (u) => {
-    const confirmado = window.confirm(`¿Eliminar al usuario @${u.usuario}? Esta acción no se puede deshacer.`);
-    if (!confirmado) return;
+  const eliminar = (u) => {
+    setUsuarioAEliminar(u);
+    setEliminarModalAbierto(true);
+  };
 
+  const ejecutarEliminar = async () => {
+    if (!usuarioAEliminar) return;
+    setEliminando(true);
     try {
-      await eliminarUsuarioController(u.id);
-      notify(`Usuario @${u.usuario} eliminado correctamente.`, "success");
+      await eliminarUsuarioController(usuarioAEliminar.id);
+      notify(`Usuario @${usuarioAEliminar.usuario} eliminado correctamente.`, "success");
       await cargarDatos();
-    } catch (err) { notify(err.message); }
+    } catch (err) {
+      notify(err.message);
+    } finally {
+      setEliminando(false);
+      setEliminarModalAbierto(false);
+      setUsuarioAEliminar(null);
+    }
   };
 
   const ejecutarDescargarBackup = async () => {
@@ -242,6 +245,14 @@ export default function Administrador({ onLogout }) {
 
   return (
     <div className={`adm-root ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
+      {/* Backdrop overlay — closes sidebar on click */}
+      {sidebarExpanded && (
+        <div
+          className="sidebar-backdrop"
+          onClick={toggleSidebar}
+          aria-hidden="true"
+        />
+      )}
       {/* Sidebar */}
       <aside className="adm-sidebar">
         <div className="adm-sidebar-brand-row">
@@ -286,13 +297,13 @@ export default function Administrador({ onLogout }) {
               <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
                 {!sidebarExpanded && (
                   <button 
-                    className="adm-menu-toggle-btn-header" 
+                    className="sidebar-floating-toggle" 
                     type="button" 
                     onClick={toggleSidebar} 
                     aria-label="Mostrar barra lateral"
                     title="Mostrar barra lateral"
                   >
-                    <Menu size={22} />
+                    <Menu size={20} />
                   </button>
                 )}
                 <div>
@@ -459,6 +470,55 @@ export default function Administrador({ onLogout }) {
         cerrar={() => setModal(m => ({ ...m, show: false }))}
       />
 
+      {/* Modal de Confirmación de Eliminación */}
+      {eliminarModalAbierto && usuarioAEliminar && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/55 p-5 animate-fade-in"
+          onClick={() => {
+            if (!eliminando) {
+              setEliminarModalAbierto(false);
+              setUsuarioAEliminar(null);
+            }
+          }}
+        >
+          <div
+            className="w-full max-w-[420px] rounded-lg border border-[#dbe3ee] bg-white p-6 shadow-[0_28px_70px_rgba(15,23,42,0.28)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex flex-col items-center text-center">
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 border border-red-200">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 mb-2">¿Eliminar usuario?</h3>
+              <p className="text-sm text-slate-500 mb-6 leading-relaxed">
+                ¿Está seguro que desea eliminar al usuario <span className="font-bold text-slate-800">@{usuarioAEliminar.usuario}</span>? Esta acción es definitiva y no se puede deshacer.
+              </p>
+              
+              <div className="flex w-full gap-3">
+                <button
+                  type="button"
+                  className="flex-1 min-h-[38px] rounded-lg border border-[#d8e0ea] bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                  disabled={eliminando}
+                  onClick={() => {
+                    setEliminarModalAbierto(false);
+                    setUsuarioAEliminar(null);
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 min-h-[38px] rounded-lg bg-red-600 text-sm font-semibold text-white hover:bg-red-700 transition cursor-pointer flex items-center justify-center gap-2"
+                  disabled={eliminando}
+                  onClick={ejecutarEliminar}
+                >
+                  {eliminando ? "Eliminando..." : "Eliminar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

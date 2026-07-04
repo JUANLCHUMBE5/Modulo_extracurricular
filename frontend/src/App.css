@@ -237,14 +237,14 @@ textarea:focus-visible {
 /* Desktop module sidebars stay fixed; only the workspace content scrolls. */
 @media (min-width: 761px) {
   .coord-layout {
-    grid-template-columns: var(--coord-sidebar-width, 225px) minmax(0, 1fr) !important;
+    grid-template-columns: var(--coord-sidebar-width, 270px) minmax(0, 1fr) !important;
   }
 
   .coord-sidebar {
     position: fixed !important;
     inset: 0 auto 0 0 !important;
     z-index: 20;
-    width: var(--coord-sidebar-width, 225px) !important;
+    width: var(--coord-sidebar-width, 270px) !important;
     min-height: 100dvh !important;
     height: 100dvh !important;
     overflow-y: auto !important;
@@ -256,7 +256,7 @@ textarea:focus-visible {
   }
 
   .admin-layout {
-    --admin-sidebar-width: 260px;
+    --admin-sidebar-width: 270px;
     display: block !important;
   }
 
@@ -277,36 +277,78 @@ textarea:focus-visible {
   }
 }
 
-/* Unified Collapsible Switcher Card */
+/* Global Modern Sidebar Overrides - Nivel de diseño Premium */
+.dir-sidebar,
+.caja-sidebar,
+.coord-sidebar,
+.secretaria-sidebar,
+.adm-sidebar {
+  background: linear-gradient(180deg, #0d4432 0%, #05241b 100%) !important; /* Degradado esmeralda profundo */
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18) !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
+/* Unified Collapsible Switcher Card - Contiguous Grouped Design */
 .module-switcher-group {
   display: flex !important;
   flex-direction: column !important;
-  width: calc(100% + 32px) !important;
-  margin: 0 -16px !important;
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
+  width: 100% !important; /* Horizontally aligned closer to the edge */
+  margin: 0 !important; /* No margins for contiguous look */
+  background: #f0fbf7 !important; /* Soft white/mint green background */
+  border: 2.5px solid #0f5b49 !important; /* Thick dark green border */
+  border-top: none !important; /* Collapse borders with card above */
+  border-radius: 0 !important; /* Square corners for intermediate items */
+  box-shadow: 0 4px 12px rgba(15, 91, 73, 0.1) !important;
   overflow: hidden !important;
-  padding: 0 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
-  transition: all 0.2s ease-in-out !important;
+  padding: 3px !important;
+  transition: all 0.25s ease !important;
 }
 
+.module-switcher-group:hover {
+  background: #f0fbf7 !important;
+  border-color: #0f5b49 !important;
+  box-shadow: 0 6px 16px rgba(15, 91, 73, 0.15) !important;
+}
+
+/* Active/Principal Module Card - Soft White/Mint style (User Mockup) */
+.sec-sidebar-menu-card,
+.caja-sidebar-menu-card,
+.dir-sidebar-menu-card,
+.coord-sidebar-menu-card {
+  background: #f0fbf7 !important; /* Soft white/mint green background */
+  border: 2.5px solid #0f5b49 !important; /* Thick dark green border */
+  border-radius: 12px !important; /* Default fully rounded */
+  box-shadow: 0 4px 12px rgba(15, 91, 73, 0.1) !important;
+  margin: 8px 0 0 0 !important; /* Spacer only above active card, 0 sides */
+  width: 100% !important;
+}
+
+/* Flatten bottom of active card if followed by switcher */
+.sec-sidebar-menu-card:has(~ div),
+.caja-sidebar-menu-card:has(~ div),
+.dir-sidebar-menu-card:has(~ div),
+.coord-sidebar-menu-card:has(~ div) {
+  border-radius: 12px 12px 0 0 !important;
+}
+
+/* Last card in switcher gets bottom rounded corners */
+.grid > .module-switcher-group:last-child {
+  border-radius: 0 0 12px 12px !important;
+  margin-bottom: 12px !important;
+}
+
+/* Encabezado del Módulo Principal - Layout flex flexible */
 .module-switcher-header {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
   width: 100% !important;
-  padding: 12px 24px 12px 28px !important;
-  background: rgba(0, 0, 0, 0.04) !important;
+  padding: 11px 14px !important;
+  background: transparent !important;
   border: none !important;
-  border-left: 4px solid transparent !important;
-  border-radius: 0 !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  font-size: 10.5px !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.05em !important;
-  text-transform: uppercase !important;
+  border-radius: 8px !important;
+  color: #0f5b49 !important; /* Dark green text */
   cursor: pointer !important;
   transition: all 0.2s ease !important;
   margin: 0 !important;
@@ -314,51 +356,119 @@ textarea:focus-visible {
 }
 
 .module-switcher-header:hover {
-  background: rgba(0, 0, 0, 0.12) !important;
-  color: #ffffff !important;
+  background: rgba(15, 91, 73, 0.04) !important;
 }
 
-.module-switcher-header-open {
-  background: rgba(0, 0, 0, 0.15) !important;
-  color: #ffffff !important;
-  border-left-color: rgba(255, 255, 255, 0.85) !important;
+.sec-sidebar-menu-card .module-switcher-header:hover,
+.caja-sidebar-menu-card .module-switcher-header:hover,
+.dir-sidebar-menu-card .module-switcher-header:hover,
+.coord-sidebar-menu-card .module-switcher-header:hover {
+  background: rgba(15, 91, 73, 0.04) !important;
 }
 
-.module-switcher-header:focus,
-.module-switcher-header:focus-visible,
-.module-switcher-header:active {
-  outline: none !important;
-  box-shadow: none !important;
+.module-switcher-header-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.module-switcher-header-main-icon {
+  color: #0f5b49 !important; /* Dark green icon */
+  flex-shrink: 0 !important;
+  width: 19px !important;
+  height: 19px !important;
+}
+
+.sec-sidebar-menu-card .module-switcher-header-main-icon,
+.caja-sidebar-menu-card .module-switcher-header-main-icon,
+.dir-sidebar-menu-card .module-switcher-header-main-icon,
+.coord-sidebar-menu-card .module-switcher-header-main-icon {
+  color: #0f5b49 !important; /* Dark green icon */
 }
 
 .module-switcher-header-title {
-  flex: 1 !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
   text-align: left !important;
-  color: #ffffff !important;
-  opacity: 1 !important;
+  line-height: 1.25 !important;
+  color: #0f5b49 !important; /* Dark green title */
+  white-space: normal !important; /* Wrap to next line if needed */
+  overflow: hidden !important;
+}
+
+.sec-sidebar-menu-card .module-switcher-header-title,
+.caja-sidebar-menu-card .module-switcher-header-title,
+.dir-sidebar-menu-card .module-switcher-header-title,
+.coord-sidebar-menu-card .module-switcher-header-title {
+  color: #0f5b49 !important; /* Dark green title */
+}
+
+.module-switcher-header-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+}
+
+.module-status-dot {
+  display: none !important;
+}
+
+.sec-sidebar-menu-card .module-status-dot,
+.caja-sidebar-menu-card .module-status-dot,
+.dir-sidebar-menu-card .module-status-dot,
+.coord-sidebar-menu-card .module-status-dot {
+  display: none !important;
+}
+
+.module-badge {
+  display: none !important;
+}
+
+.sec-sidebar-menu-card .module-badge,
+.caja-sidebar-menu-card .module-badge,
+.dir-sidebar-menu-card .module-badge,
+.coord-sidebar-menu-card .module-badge {
+  display: none !important;
 }
 
 .module-switcher-header-icon {
   display: flex !important;
   align-items: center !important;
-  margin-right: 16px !important;
-  color: #ffffff !important;
-  opacity: 1 !important;
-  transition: transform 0.2s ease, color 0.2s ease !important;
+  color: #0f5b49 !important;
+  transition: transform 0.2s ease !important;
+  flex-shrink: 0 !important;
 }
 
-.module-switcher-header:hover .module-switcher-header-icon {
-  color: #ffffff !important;
+.sec-sidebar-menu-card .module-switcher-header-icon,
+.caja-sidebar-menu-card .module-switcher-header-icon,
+.dir-sidebar-menu-card .module-switcher-header-icon,
+.coord-sidebar-menu-card .module-switcher-header-icon {
+  color: #0f5b49 !important;
 }
 
-.module-switcher-content {
+/* Contenedor de submódulos - Sin línea vertical */
+.module-switcher-content.coord-nav {
+  position: relative !important;
+  padding-left: 8px !important;
+  margin-left: 10px !important;
+  border-left: none !important;
+  margin-top: 4px !important;
+  margin-bottom: 8px !important;
   display: flex !important;
   flex-direction: column !important;
-  gap: 2px !important;
-  padding: 6px 16px 8px 16px !important;
-  border: none !important;
-  background: rgba(0, 0, 0, 0.1) !important;
+  gap: 4px !important;
+  background: transparent !important;
   animation: slideDown 0.2s ease-out forwards;
+}
+
+.sec-sidebar-menu-card .module-switcher-content.coord-nav,
+.caja-sidebar-menu-card .module-switcher-content.coord-nav,
+.dir-sidebar-menu-card .module-switcher-content.coord-nav,
+.coord-sidebar-menu-card .module-switcher-content.coord-nav {
+  border-left: none !important;
 }
 
 @keyframes slideDown {
@@ -372,27 +482,34 @@ textarea:focus-visible {
   }
 }
 
-
-/* Switched Items Styles inside App.css for guaranteed rendering */
+/* Submódulos (Enlaces Hijos) */
 .module-switcher-content .coord-nav-item {
   display: flex !important;
   align-items: center !important;
-  gap: 10px !important;
+  gap: 8px !important;
   width: 100% !important;
-  padding: 6px 12px !important;
-  border-radius: 6px !important;
-  font-size: 11px !important;
+  padding: 7px 10px !important;
+  border-radius: 8px !important;
+  font-size: 13.5px !important;
   font-weight: 600 !important;
   text-decoration: none !important;
   cursor: pointer !important;
-  transition: all 0.2s ease-in-out !important;
+  transition: all 0.2s ease !important;
   min-height: auto !important;
   outline: none !important;
   box-shadow: none !important;
   border: none !important;
   background: transparent !important;
-  color: #ffffff !important;
+  color: rgba(15, 91, 73, 0.75) !important; /* Dark green sub-item text */
   margin: 0 !important;
+  text-align: left !important;
+}
+
+.sec-sidebar-menu-card .coord-nav-item,
+.caja-sidebar-menu-card .coord-nav-item,
+.dir-sidebar-menu-card .coord-nav-item,
+.coord-sidebar-menu-card .coord-nav-item {
+  color: rgba(15, 91, 73, 0.75) !important; /* Dark green sub-item text */
 }
 
 .module-switcher-content .coord-nav-item:focus,
@@ -402,41 +519,315 @@ textarea:focus-visible {
   box-shadow: none !important;
 }
 
-/* Inactive Item Hover */
+/* Efecto hover suave con pequeño desplazamiento lateral */
 .module-switcher-content .coord-nav-item:not(.coord-nav-item-active):hover {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: #ffffff !important;
+  background: rgba(15, 91, 73, 0.05) !important;
+  color: #0f5b49 !important;
+  transform: translateX(3px) !important;
 }
 
-.module-switcher-content .coord-nav-item:not(.coord-nav-item-active) svg {
-  color: #ffffff !important;
-  stroke: #ffffff !important;
+.sec-sidebar-menu-card .coord-nav-item:not(.coord-nav-item-active):hover,
+.caja-sidebar-menu-card .coord-nav-item:not(.coord-nav-item-active):hover,
+.dir-sidebar-menu-card .coord-nav-item:not(.coord-nav-item-active):hover,
+.coord-sidebar-menu-card .coord-nav-item:not(.coord-nav-item-active):hover {
+  background: rgba(15, 91, 73, 0.05) !important;
+  color: #0f5b49 !important;
 }
 
-.module-switcher-content .coord-nav-item:not(.coord-nav-item-active):hover svg {
-  color: #ffffff !important;
-  stroke: #ffffff !important;
+.module-switcher-content .coord-nav-item-icon {
+  color: inherit !important;
+  opacity: 0.8 !important;
+  flex-shrink: 0 !important;
 }
 
-/* Active Item: White background, black text */
-.module-switcher-content .coord-nav-item-active {
-  background: #ffffff !important;
-  color: #000000 !important;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
-}
-
-.module-switcher-content .coord-nav-item-active svg {
-  color: #000000 !important;
-  stroke: #000000 !important;
-}
-
-.module-switcher-content .coord-nav-item-active span {
-  color: #000000 !important;
-}
-
-.module-switcher-content .coord-nav-arrow {
+/* Puntos indicadores internos para cada sub-item (Eliminados) */
+.module-switcher-content .coord-nav-item-dot {
   display: none !important;
 }
 
+.sec-sidebar-menu-card .coord-nav-item-dot,
+.caja-sidebar-menu-card .coord-nav-item-dot,
+.dir-sidebar-menu-card .coord-nav-item-dot,
+.coord-sidebar-menu-card .coord-nav-item-dot {
+  display: none !important;
+}
+
+/* Elemento Activo: Fondo translúcido con texto brillante */
+.module-switcher-content .coord-nav-item-active {
+  background: rgba(15, 91, 73, 0.1) !important;
+  color: #0f5b49 !important;
+  font-weight: 700 !important;
+  transform: translateX(3px) !important;
+}
+
+.sec-sidebar-menu-card .coord-nav-item-active,
+.caja-sidebar-menu-card .coord-nav-item-active,
+.dir-sidebar-menu-card .coord-nav-item-active,
+.coord-sidebar-menu-card .coord-nav-item-active {
+  background: rgba(15, 91, 73, 0.1) !important;
+  color: #0f5b49 !important;
+}
+
+/* Ensure the text span inside sub-items is readable on the new white cards */
+.module-switcher-content .coord-nav-item span {
+  color: rgba(15, 91, 73, 0.75) !important;
+  font-size: 13.5px !important;
+}
+
+.module-switcher-content .coord-nav-item:hover span {
+  color: #0f5b49 !important;
+}
+
+.module-switcher-content .coord-nav-item-active span {
+  color: #0f5b49 !important;
+  font-weight: 700 !important;
+}
 
 
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Global Sidebar Backdrop Overlay                                           */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 15; /* Below sidebar (z-index: 20), above content */
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  cursor: pointer;
+  animation: backdropFadeIn 0.3s ease forwards;
+}
+
+@media (min-width: 1024px) {
+  .sidebar-backdrop {
+    display: none !important;
+  }
+}
+
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Floating Menu Toggle Button (visible when sidebar is hidden)              */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.sidebar-floating-toggle {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: #0d4432;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: floatIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.sidebar-floating-toggle:hover {
+  background: #10b981;
+  box-shadow: 0 6px 24px rgba(16, 185, 129, 0.3);
+  transform: scale(1.05);
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateX(-12px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Unified Logout Button - White Card style matching modules                 */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.secretaria-logout,
+.dir-logout,
+.coord-logout,
+.caja-logout {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  margin: 12px 0 !important;
+  padding: 10px 14px !important;
+  background: #f0fbf7 !important; /* Soft white/mint green background */
+  border: 2.5px solid #0f5b49 !important; /* Thick dark green border */
+  border-radius: 12px !important;
+  color: #0f5b49 !important; /* Dark green text */
+  cursor: pointer !important;
+  transition: all 0.25s ease !important;
+  font-weight: 700 !important;
+  font-size: 12.5px !important;
+  box-shadow: 0 4px 12px rgba(15, 91, 73, 0.1) !important;
+  box-sizing: border-box !important;
+}
+
+.secretaria-logout:hover,
+.dir-logout:hover,
+.coord-logout:hover,
+.caja-logout:hover {
+  background: #f0fbf7 !important;
+  border-color: #0f5b49 !important;
+  box-shadow: 0 6px 16px rgba(15, 91, 73, 0.15) !important;
+  transform: translateY(-1px) !important;
+}
+
+.secretaria-logout svg,
+.dir-logout svg,
+.coord-logout svg,
+.caja-logout svg {
+  color: #0f5b49 !important;
+  stroke: #0f5b49 !important;
+  flex-shrink: 0 !important;
+}
+
+.secretaria-logout span,
+.dir-logout span,
+.coord-logout span,
+.caja-logout span {
+  color: #0f5b49 !important;
+  font-family: inherit !important;
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+}
+
+/* Collapsed state adjustments */
+.sidebar-collapsed .secretaria-logout,
+.sidebar-collapsed .dir-logout,
+.sidebar-collapsed .caja-logout,
+.coord-layout-collapsed .coord-logout {
+  justify-content: center !important;
+  padding: 10px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Force clean white background for all main page content containers         */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+html body .secretaria-layout,
+html body .secretaria-main,
+html body .secretaria-content,
+html body .secretaria-workspace,
+html body .coord-layout,
+html body .coord-main,
+html body .coord-content,
+html body .coord-workspace,
+html body .coord-workspace-single,
+html body .coord-workspace-upload,
+html body .dir-page,
+html body .dir-main,
+html body .dir-content,
+html body .direccion-content,
+html body .caja-page,
+html body .caja-main,
+html body .caja-content,
+html body .adm-root,
+html body .adm-main,
+html body .admin-main,
+html body .adm-content,
+html body .admin-page,
+html body .aux-root,
+html body .aux-main,
+html body .auxiliar-main,
+html body .secretaria-search-card,
+html body .coord-search-card,
+html body .dir-search-card,
+html body .caja-search-card,
+html body .adm-search-card,
+html body .secretaria-card,
+html body .coord-card,
+html body .dir-card,
+html body .caja-card,
+html body .adm-card,
+html body .dir-panel,
+html body .coord-upload-tabs {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Enable scrollability in all sidebars when content overflows                */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+.secretaria-sidebar,
+.coord-sidebar,
+.dir-sidebar,
+.caja-sidebar,
+.adm-sidebar {
+  overflow-y: auto !important;
+  scrollbar-width: thin !important;
+}
+
+/* Custom scrollbars for sidebars with green backgrounds */
+.secretaria-sidebar::-webkit-scrollbar,
+.coord-sidebar::-webkit-scrollbar,
+.dir-sidebar::-webkit-scrollbar,
+.caja-sidebar::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.secretaria-sidebar::-webkit-scrollbar-track,
+.coord-sidebar::-webkit-scrollbar-track,
+.dir-sidebar::-webkit-scrollbar-track,
+.caja-sidebar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.secretaria-sidebar::-webkit-scrollbar-thumb,
+.coord-sidebar::-webkit-scrollbar-thumb,
+.dir-sidebar::-webkit-scrollbar-thumb,
+.caja-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-radius: 10px !important;
+}
+
+.secretaria-sidebar::-webkit-scrollbar-thumb:hover,
+.coord-sidebar::-webkit-scrollbar-thumb:hover,
+.dir-sidebar::-webkit-scrollbar-thumb:hover,
+.caja-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Custom scrollbar for white Admin sidebar */
+.adm-sidebar::-webkit-scrollbar {
+  width: 6px !important;
+}
+
+.adm-sidebar::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+.adm-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15) !important;
+  border-radius: 10px !important;
+}
+
+.adm-sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Prevent brand logo and logout button from shrinking when sidebar scrolls */
+.secretaria-sidebar-brand-row,
+.coord-sidebar-brand-row,
+.dir-sidebar-brand-row,
+.caja-sidebar-brand-row,
+.adm-sidebar-brand-row,
+.secretaria-sidebar-footer,
+.secretaria-logout,
+.coord-logout,
+.dir-logout,
+.caja-logout,
+.adm-sidebar-footer,
+.adm-logout-btn {
+  flex-shrink: 0 !important;
+}

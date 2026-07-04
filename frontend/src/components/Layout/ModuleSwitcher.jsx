@@ -12,16 +12,31 @@ import {
   IconRosetteDiscount as RosetteDiscount,
   IconAdjustments as Adjustments,
   IconQrcode as QrCode,
+  IconSchool as School,
+  IconWallet as Wallet,
+  IconBuilding as Building,
+  IconClipboardList as ClipboardList,
+  IconSearch as Search,
 } from "@tabler/icons-react";
 
 export const moduleShortcutGroups = [
   {
+    id: "secretaria",
+    title: "Módulo Asistente",
+    icon: ClipboardList,
+    items: [
+      { id: "secretaria-inscripcion", label: "Inscripción presencial", module: "secretaria", view: "inscripcion", permissions: ["secretaria.inscripcion"], icon: Search },
+      { id: "secretaria-asistencias", label: "Ver Asistencias", module: "secretaria", view: "asistencias", permissions: ["secretaria.asistencias"], icon: UserCheck },
+    ],
+  },
+  {
     id: "coordinacion",
     title: "Módulo Coordinación Académica",
+    icon: School,
     items: [
       { id: "coordinacion-programas", label: "Gestion de Programas", module: "coordinacion", view: "programas", permissions: ["coordinacion.programas"], icon: BookOpen },
-      { id: "coordinacion-carga", label: "Cargar Invitados", module: "coordinacion", view: "carga", permissions: ["coordinacion.carga"], icon: Upload },
-      { id: "coordinacion-documentos", label: "Plantillas y Documentos", module: "coordinacion", view: "documentos", permissions: ["coordinacion.documentos"], icon: FileText },
+      { id: "coordinacion-carga", label: "Cargar Invitados", module: "coordinacion", view: "registro_individual", permissions: ["coordinacion.carga"], icon: Upload },
+      { id: "coordinacion-documentos", label: "Plantillas y Documentos", module: "coordinacion", view: "carga", permissions: ["coordinacion.documentos"], icon: FileText },
       { id: "coordinacion-asistencia", label: "Asistencia y Control", module: "coordinacion", view: "asistencias", permissions: ["coordinacion.asistencia"], icon: UserCheck },
       { id: "coordinacion-historial", label: "Historial / Archivo", module: "coordinacion", view: "historial", permissions: ["coordinacion.historial"], icon: Archive },
     ],
@@ -29,6 +44,7 @@ export const moduleShortcutGroups = [
   {
     id: "caja",
     title: "Módulo Cajera",
+    icon: Wallet,
     items: [
       { id: "caja-pagos", label: "Registrar Cobro", module: "caja", view: "pagos", permissions: ["caja.cobro"], icon: Receipt },
       { id: "caja-reportes", label: "Control y Exportacion", module: "caja", view: "reportes", permissions: ["caja.control"], icon: ChartBar },
@@ -38,6 +54,7 @@ export const moduleShortcutGroups = [
   {
     id: "direccion",
     title: "Módulo Dirección",
+    icon: Building,
     items: [
       { id: "direccion-resumen", label: "Resumen General", module: "direccion", view: "resumen", permissions: ["direccion.resumen"], icon: ChartBar },
       { id: "direccion-reportes", label: "Reportes", module: "direccion", view: "reportes", permissions: ["direccion.reportes"], icon: FileText },
@@ -48,6 +65,7 @@ export const moduleShortcutGroups = [
   {
     id: "auxiliar",
     title: "Módulo Auxiliar",
+    icon: QrCode,
     items: [
       { id: "auxiliar-asistencia", label: "Registrar Asistencia", module: "auxiliar", view: "asistencia", permissions: ["auxiliar.asistencia"], icon: QrCode },
     ],
@@ -67,7 +85,19 @@ export function userHasAssignedPermission(user, permission) {
 }
 
 export default function ModuleSwitcher({ activeShortcutId, availableModules, currentRole, onSelectShortcut, user }) {
-  if (availableModules.length <= 1) return null;
+  console.log("ModuleSwitcher Diagnostic:", {
+    availableModules,
+    currentRole,
+    userUsername: user?.username,
+    userRole: user?.role,
+    userPermisos: user?.permisos,
+    userPermissionsProp: user?.permissions
+  });
+
+  if (availableModules.length <= 1) {
+    console.log("ModuleSwitcher: hidden because availableModules.length <= 1");
+    return null;
+  }
   const extraModules = availableModules.filter((moduleId) => moduleId !== currentRole);
   const groups = moduleShortcutGroups
     .filter((group) => extraModules.includes(group.id))
@@ -79,7 +109,12 @@ export default function ModuleSwitcher({ activeShortcutId, availableModules, cur
     }))
     .filter((group) => group.items.length > 0);
 
-  if (groups.length === 0) return null;
+  console.log("ModuleSwitcher: extraModules/groups:", { extraModules, groupsLength: groups.length });
+
+  if (groups.length === 0) {
+    console.log("ModuleSwitcher: hidden because groups.length === 0");
+    return null;
+  }
 
   // Track which groups are expanded.
   // By default, if a group contains the currently active view, it should be expanded.
@@ -123,16 +158,20 @@ export default function ModuleSwitcher({ activeShortcutId, availableModules, cur
               className={`module-switcher-header ${isGroupOpen ? "module-switcher-header-open" : ""}`}
               type="button"
             >
-              <span className="module-switcher-header-title">{group.title}</span>
-              <span className="module-switcher-header-icon">
-                {isGroupOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-              </span>
+              <div className="module-switcher-header-left">
+                {group.icon && <group.icon className="module-switcher-header-main-icon" size={18} />}
+                <span className="module-switcher-header-title">{group.title}</span>
+              </div>
+              <div className="module-switcher-header-right">
+                <span className="module-switcher-header-icon">
+                  {isGroupOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                </span>
+              </div>
             </button>
 
             {isGroupOpen && (
               <div className="module-switcher-content coord-nav">
                 {group.items.map((item) => {
-                  const Icon = item.icon;
                   const active = activeShortcutId === item.id;
                   return (
                     <button
@@ -143,7 +182,6 @@ export default function ModuleSwitcher({ activeShortcutId, availableModules, cur
                       type="button"
                     >
                       <span>{item.label}</span>
-                      <ChevronRight className="coord-nav-arrow" size={16} />
                     </button>
                   );
                 })}

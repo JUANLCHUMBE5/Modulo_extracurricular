@@ -1,5 +1,5 @@
 .caja-page {
-  --caja-sidebar: 230px;
+  --caja-sidebar: 270px;
   min-height: 100dvh;
   display: grid;
   grid-template-columns: var(--caja-sidebar) minmax(0, 1fr);
@@ -10,7 +10,7 @@
 }
 
 .caja-page.sidebar-collapsed {
-  --caja-sidebar: 68px;
+  --caja-sidebar: 0px;
 }
 
 .caja-page *,

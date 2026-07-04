@@ -626,7 +626,7 @@
 .coord-layout {
   --coord-sidebar: #197f10 !important; /* Fondo verde para la barra lateral */
   --coord-sidebar-soft: rgba(255, 255, 255, 0.1) !important;
-  --coord-sidebar-width: 260px !important; /* Slightly wider for elegant spacing */
+  --coord-sidebar-width: 270px !important; /* Unified 270px width */
   transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
