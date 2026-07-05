@@ -275,9 +275,9 @@ export function obtenerIniciales(nombre) {
 
 export function obtenerBannerEstudiante(estudiante) {
   const sexo = normalizarSexo(estudiante?.sexo || estudiante?.genero || estudiante?.gender) || inferirSexoDemo(estudiante?.nombres);
-  if (sexo === "hombre") return "/assets/padres/BANNER%20DE%20HOMBRES.png";
-  if (sexo === "mujer") return "/assets/padres/BANNER%20DE%20MUJERES.png";
-  return "/assets/padres/BANNER%20DE%20HOMBRES.png";
+  if (sexo === "hombre") return "/assets/padres/banner-hombres.png";
+  if (sexo === "mujer") return "/assets/padres/banner-mujeres.png";
+  return "/assets/padres/banner-hombres.png";
 }
 
 function normalizarSexo(valor) {
