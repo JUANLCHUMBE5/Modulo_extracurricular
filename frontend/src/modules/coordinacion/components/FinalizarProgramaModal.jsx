@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   IconAlertTriangle as AlertTriangle,
   IconX as X,
@@ -9,6 +10,18 @@ export default function FinalizarProgramaModal({
   programa,
 }) {
   if (!programa) return null;
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
 
   return (
     <div className="coord-modal-overlay" onClick={onClose}>

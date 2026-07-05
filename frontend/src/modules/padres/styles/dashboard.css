@@ -340,7 +340,7 @@
 
 .padres-field input:focus,
 .padres-field select:focus {
-  border-color: #23977f;
+  border-color: var(--ui-primary);
   box-shadow: 0 0 0 3px rgba(35, 151, 127, 0.12);
 }
 
@@ -355,7 +355,7 @@
 
 .padres-check input {
   margin-top: 2px;
-  accent-color: #23977f;
+  accent-color: var(--ui-primary);
 }
 
 .padres-primary-button {

@@ -124,7 +124,7 @@
 
 /* Botón Actualizar Premium */
 .dir-header button {
-  background: linear-gradient(135deg, #23977f 0%, #176c60 100%) !important;
+  background: linear-gradient(135deg, var(--ui-primary) 0%, var(--ui-primary-dark) 100%) !important;
   border-radius: 12px !important;
   height: 42px !important;
   border: none !important;

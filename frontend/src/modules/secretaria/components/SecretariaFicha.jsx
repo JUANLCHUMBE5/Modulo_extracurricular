@@ -55,6 +55,18 @@ function FichaAceptación({ estudiante, inscripcion, onClose }) {
   }, [estudiante, inscripcion]);
 
   useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  useEffect(() => {
     if (documento.cargando) {
       setPdfUrl("");
       setWordPreview({ cargando: false, error: "" });

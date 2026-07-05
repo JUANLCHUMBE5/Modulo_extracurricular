@@ -123,25 +123,16 @@ function SecretariaSearchCard({
       {resultadosNombre.length ? (
         <div className="secretaria-name-results-container">
           {nivelesDisponibles.length > 1 && (
-            <div className="secretaria-filter-row" style={{ display: "flex", alignItems: "center", gap: "16px", marginTop: "8px", marginBottom: "8px", padding: "0 4px", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <label htmlFor="filtro-nivel" style={{ fontSize: "13px", fontWeight: "700", color: "#111827" }}>
+            <div className="secretaria-nivel-filter-bar">
+              <div className="secretaria-nivel-filter-group">
+                <label htmlFor="filtro-nivel" className="secretaria-nivel-filter-label">
                   Filtrar por nivel:
                 </label>
                 <select
                   id="filtro-nivel"
                   value={filtroNivel}
                   onChange={(e) => setFiltroNivel(e.target.value)}
-                  style={{
-                    padding: "2px 6px",
-                    borderRadius: "6px",
-                    border: "1px solid #9ca3af",
-                    fontSize: "13px",
-                    color: "#111827",
-                    backgroundColor: "#fff",
-                    cursor: "pointer",
-                    fontWeight: "500"
-                  }}
+                  className="secretaria-nivel-filter-select"
                 >
                   <option value="">Todos los niveles</option>
                   {nivelesDisponibles.map((nivel) => (
@@ -168,7 +159,7 @@ function SecretariaSearchCard({
               </button>
             ))}
             {resultadosFiltrados.length === 0 && (
-              <p style={{ padding: "12px", textAlign: "center", color: "#6b7280", fontSize: "13px" }}>
+              <p className="secretaria-empty-results-text">
                 No hay estudiantes en el grado seleccionado.
               </p>
             )}

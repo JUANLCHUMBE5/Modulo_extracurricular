@@ -4,7 +4,7 @@ import {
   IconFileDownload as FileDown,
   IconX as X,
 } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { limpiarHorarioSinAlmuerzo } from "../utils/asistenciasFormatters";
 
 const tabStyle = (activo) => ({
@@ -69,6 +69,18 @@ function AlumnosProgramaModal({
       ? asistencias
       : matriculados;
   const puedeDescargar = subVistaAlumnos === "matriculados";
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
 
   return (
     <div className="coord-modal-overlay" onClick={onClose}>
