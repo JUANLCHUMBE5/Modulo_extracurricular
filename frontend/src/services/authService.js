@@ -109,7 +109,11 @@ export const loginPersonal = async (username, password) => {
     String(item.usuario || "").trim().toLowerCase() === usuarioBuscado
   );
 
-  const contrasenaGuardada = String(usuario?.contrasena || "1234");
+  if (!usuario || !usuario.contrasena) {
+    return { success: false, message: "Usuario o contraseña incorrectos." };
+  }
+
+  const contrasenaGuardada = String(usuario.contrasena);
 
   let passwordValido = false;
   if (contrasenaGuardada.startsWith("$2a$") || contrasenaGuardada.startsWith("$2b$")) {
