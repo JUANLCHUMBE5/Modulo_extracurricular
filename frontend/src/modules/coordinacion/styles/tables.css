@@ -9,25 +9,29 @@
 .coord-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .coord-table th {
   background: #f8fafc;
-  padding: 10px 12px;
+  padding: 12px 14px;
   text-align: left;
   font-weight: 700;
   color: var(--coord-muted);
   border-bottom: 1px solid var(--coord-line);
   white-space: nowrap;
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .coord-table td {
-  padding: 12px 10px;
+  padding: 14px 12px;
   border-bottom: 1px solid var(--coord-soft-line);
   color: var(--coord-ink);
   vertical-align: top;
-  font-size: 12px;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
 }
 
 .coord-program-name {
@@ -35,14 +39,14 @@
   color: var(--coord-ink);
   font-weight: 800;
   overflow-wrap: anywhere;
-  line-height: 1.22;
+  line-height: var(--leading-tight);
 }
 
 .coord-program-subline {
   display: block;
   margin-top: 4px;
   color: var(--coord-muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 700;
 }
 
@@ -50,7 +54,7 @@
   display: block;
   margin-top: 3px;
   color: var(--coord-muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 700;
 }
 
@@ -63,9 +67,9 @@
 
 .coord-table-schedule strong {
   color: var(--coord-ink);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-weight: 800;
-  line-height: 1.45;
+  line-height: var(--leading-normal);
 }
 
 .coord-table-schedule span,
@@ -73,8 +77,8 @@
 .coord-table-date span,
 .coord-table-cupos span {
   color: var(--coord-ink);
-  font-size: 12px;
-  line-height: 1.45;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
 }
 
 .coord-table-small-text {
@@ -91,14 +95,14 @@
 
 .coord-date-range {
   color: var(--coord-ink);
-  font-size: 12px;
+  font-size: var(--text-sm);
   font-weight: 600;
   white-space: nowrap;
 }
 
 .coord-date-details {
   color: var(--coord-muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
 }
 
 .coord-table-cupos {

@@ -1,5 +1,21 @@
 [
   {
+    "id": "AUD-616508-ba39",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-05T18:03:36.508Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-609248-b0c4",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-05T18:03:29.248Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
     "id": "AUD-430882-afb7",
     "usuario": "admin",
     "rol": "secretaria",

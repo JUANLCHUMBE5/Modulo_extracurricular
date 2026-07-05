@@ -101,7 +101,7 @@
   padding-bottom: 10px !important;
 }
 
-/* 2. Unificación de Alturas en Campos de Entrada y Botones (34px) */
+/* 2. Unificación de Alturas en Campos de Entrada y Botones (38px) */
 .caja-search-form input,
 .caja-payment-method select,
 .caja-payment-method input,
@@ -109,16 +109,18 @@
 .caja-report-filters select,
 .caja-search input,
 .caja-search {
-  height: 34px !important;
-  min-height: 34px !important;
+  height: 38px !important;
+  min-height: 38px !important;
   box-sizing: border-box !important;
+  font-size: var(--text-base) !important;
 }
 
 .caja-search-form button,
 .caja-payment-actions button,
 .caja-header-actions button {
-  height: 34px !important;
-  min-height: 34px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  font-size: var(--text-sm) !important;
 }
 
 /* 3. Color de Letras en Negro Sólido (#000000) y Peso Regular (500) */
@@ -134,7 +136,7 @@
 .caja-student-cell span {
   color: #000000 !important;
   font-weight: 500 !important;
-  font-size: 12px !important;
+  font-size: var(--text-sm) !important;
 }
 
 .caja-payment-workspace p,
@@ -178,7 +180,7 @@
 
 .caja-payment-workspace .caja-readonly-field span,
 .caja-payment-workspace .caja-payment-method > span {
-  font-size: 13px !important;
+  font-size: var(--text-sm) !important;
   font-weight: 600 !important;
   line-height: 1.25 !important;
   text-transform: none !important;
@@ -218,9 +220,9 @@
 .caja-page .caja-report-header h1,
 .caja-page .caja-panel-header h2,
 .caja-page .caja-correlativo-workspace h2 {
-  font-size: 17px !important;
+  font-size: var(--text-lg) !important;
   font-weight: 600 !important;
-  line-height: 1.2 !important;
+  line-height: var(--leading-tight) !important;
   text-transform: none !important;
 }
 
@@ -234,9 +236,9 @@
 .caja-page .caja-table th,
 .caja-page .caja-history-table th,
 .caja-page .mantine-InputWrapper-label {
-  font-size: 13px !important;
+  font-size: var(--text-sm) !important;
   font-weight: 600 !important;
-  line-height: 1.25 !important;
+  line-height: var(--leading-tight) !important;
   text-transform: none !important;
 }
 
@@ -291,33 +293,34 @@
   color: #000000 !important;
   font-weight: 600 !important;
   border-bottom: 2px solid #e2e8f0 !important;
-  padding: 8px 10px !important;
-  font-size: 12px !important;
+  padding: 12px 14px !important;
+  font-size: var(--text-xs) !important;
 }
 
 .caja-table td {
   color: #000000 !important;
   font-weight: 500 !important;
   border-bottom: 1px solid #f1f5f9 !important;
-  padding: 6px 10px !important;
-  font-size: 13px !important;
+  padding: 12px 14px !important;
+  font-size: var(--text-sm) !important;
+  line-height: var(--leading-normal) !important;
 }
 
 /* 4. Compactación de Elementos Específicos */
 .caja-readonly-field {
-  min-height: 52px !important;
-  padding: 6px 8px !important;
-  gap: 2px !important;
+  min-height: 58px !important;
+  padding: 8px 12px !important;
+  gap: 4px !important;
 }
 
 .caja-payment-method {
-  padding: 6px 8px !important;
+  padding: 8px 12px !important;
 }
 
 .caja-course-option {
-  min-height: 54px !important;
-  padding: 8px 10px !important;
-  gap: 8px !important;
+  min-height: 60px !important;
+  padding: 12px 14px !important;
+  gap: 10px !important;
 }
 
 .caja-course-main {
@@ -329,7 +332,7 @@
 }
 
 .caja-course-amount strong {
-  font-size: 15px !important;
+  font-size: var(--text-base) !important;
 }
 
 .caja-form-title {

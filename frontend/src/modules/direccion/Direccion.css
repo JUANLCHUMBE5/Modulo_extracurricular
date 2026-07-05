@@ -82,7 +82,7 @@
 .dir-header span {
   display: inline-block;
   color: #0f766e;
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 1.5px;
@@ -92,17 +92,18 @@
 .dir-header h1 {
   margin: 0;
   color: #0c1a30;
-  font-size: 22px;
+  font-size: var(--text-2xl);
   font-weight: 850;
   letter-spacing: -0.5px;
-  line-height: 1.15;
+  line-height: var(--leading-tight);
 }
 
 .dir-header p {
   margin: 4px 0 0 0;
   color: var(--ui-muted, #64748b);
-  font-size: 12.5px;
+  font-size: var(--text-sm);
   font-weight: 500;
+  line-height: var(--leading-normal);
 }
 
 .dir-period {
@@ -153,8 +154,9 @@
   justify-content: center;
   gap: 16px;
   color: var(--ui-muted, #64748b);
-  font-size: 15px;
+  font-size: var(--text-base);
   font-weight: 600;
+  line-height: var(--leading-normal);
 }
 
 /* Diseño Responsivo Base */

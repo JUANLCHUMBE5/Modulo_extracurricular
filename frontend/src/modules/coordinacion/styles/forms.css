@@ -99,20 +99,20 @@
   align-items: center;
   gap: 6px;
   color: #3b4652;
-  font-size: 11.5px;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
 .coord-form select,
 .coord-input-wrap input {
   width: 100%;
-  height: 34px;
+  height: 38px;
   border: 1px solid #cbd5df;
   border-radius: 8px;
   background: #ffffff;
   color: var(--coord-ink);
   outline: none;
-  font-size: 13.5px;
+  font-size: var(--text-base);
   transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 
@@ -121,7 +121,7 @@
 }
 
 .coord-readonly-field {
-  min-height: 34px;
+  min-height: 38px;
   display: flex;
   align-items: center;
   padding: 0 12px;
@@ -129,7 +129,7 @@
   border-radius: 8px;
   color: var(--coord-ink);
   background: #f8fafc;
-  font-size: 13.5px;
+  font-size: var(--text-base);
   font-weight: 700;
 }
 
@@ -140,7 +140,7 @@
   grid-template-columns: 18px 1fr;
   align-items: center;
   gap: 8px;
-  height: 34px;
+  height: 38px;
   padding: 0 10px;
   border: 1px solid #cbd5df;
   border-radius: 8px;
@@ -153,10 +153,10 @@
 }
 
 .coord-input-wrap input {
-  height: 32px;
+  height: 36px;
   border: 0;
   outline: none;
-  font-size: 13.5px;
+  font-size: var(--text-base);
   color: var(--coord-ink);
   background: transparent;
   width: 100%;
@@ -172,18 +172,19 @@
 .coord-register-button,
 .coord-secondary-button,
 .coord-danger-button {
-  min-height: 34px;
+  min-height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
   border-radius: 8px;
-  padding: 0 13px;
-  font-size: 12.5px;
+  padding: 0 16px;
+  font-size: var(--text-sm);
   font-weight: 700;
   cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease;
   white-space: nowrap;
+  line-height: var(--leading-none);
 }
 
 .coord-primary-button {
@@ -204,14 +205,12 @@
   border: 1px solid #cbd5df;
   color: #3b4652;
   background: #ffffff;
-  font-size: 12px;
 }
 
 .coord-danger-button {
   border: 1px solid #b42318;
   color: #ffffff;
   background: #b42318;
-  font-size: 12px;
   box-shadow: 0 4px 10px rgba(180, 35, 24, 0.2);
 }
 

@@ -16,8 +16,8 @@
 }
 
 .coord-info-box p {
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
   margin: 0;
 }
 
@@ -67,22 +67,22 @@
 .coord-summary-item p {
   margin: 0;
   color: var(--coord-muted);
-  font-size: 11px;
+  font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
 }
 
 .coord-summary-item strong {
   display: block;
-  font-size: 20px;
+  font-size: var(--text-xl);
   color: var(--coord-ink);
 }
 
 .coord-process-note {
   margin-top: 12px;
   color: var(--coord-muted);
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
 }
 
 /* ── LOADING / EMPTY ─────────────────────────────────────── */
@@ -184,7 +184,7 @@
 }
 
 .coord-empty-clean h3 {
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 800;
   color: #000000;
   margin: 0 0 8px 0;
@@ -192,21 +192,22 @@
 }
 
 .coord-empty-clean p {
-  font-size: 14px;
+  font-size: var(--text-base);
   color: #475569;
   max-width: 460px;
   margin: 0 0 24px 0;
-  line-height: 1.6;
+  line-height: var(--leading-relaxed);
 }
 
 .coord-empty-clean-btn {
   font-weight: 700 !important;
-  font-size: 13.5px !important;
+  font-size: var(--text-base) !important;
   padding: 0 24px !important;
-  height: 42px !important;
+  height: 44px !important;
   border-radius: 10px !important;
   box-shadow: 0 4px 6px -1px rgba(23, 108, 96, 0.15), 0 2px 4px -1px rgba(23, 108, 96, 0.1) !important;
   transition: all 0.2s ease !important;
+  line-height: var(--leading-none) !important;
 }
 
 .coord-empty-clean-btn:hover {

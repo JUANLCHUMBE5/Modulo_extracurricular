@@ -17,7 +17,7 @@
 
 .secretaria-ficha-top h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--text-lg);
 }
 
 .secretaria-ficha-paper {
@@ -49,12 +49,12 @@
 }
 
 .secretaria-word-ready strong {
-  font-size: 13px;
+  font-size: var(--text-base);
 }
 
 .secretaria-word-ready span {
   color: #356154;
-  font-size: 12px;
+  font-size: var(--text-sm);
 }
 
 .secretaria-pdf-viewer {
