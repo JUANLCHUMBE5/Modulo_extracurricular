@@ -155,7 +155,7 @@ export async function obtenerProgramasCoordinacion() {
         duracionAvisoDias,
         ventanaInscripcion,
         requiereGradoCompatible: esCambridge ? false : requiereGradoCompatible,
-        registrable: !esCambridge && Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0,
+        registrable: !esCambridge && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0,
       };
     });
   }

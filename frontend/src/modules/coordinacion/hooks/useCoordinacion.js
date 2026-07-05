@@ -100,7 +100,7 @@ export default function useCoordinacion({
   user,
 }) {
   const esProfesor = user?.username === "profe" || user?.name === "Profesor";
-  const { subview } = useParams();
+  const { subview, module, delegatedModule } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const queryProgId = useMemo(() => {
@@ -115,6 +115,8 @@ export default function useCoordinacion({
   const setVista = (newView) => {
     if (!embedded) {
       navigate(`/coordinacion/${newView}`);
+    } else if (module && delegatedModule) {
+      navigate(`/${module}/delegated/${delegatedModule}/${newView}`);
     }
   };
 
@@ -214,12 +216,13 @@ export default function useCoordinacion({
   });
 
   function datosProgramaAFormulario(prog) {
+    const nombrePrograma = prog.nombre || prog.nombre_programa || "";
     const talleres = Array.isArray(prog.talleresDeportivos || prog.talleres_deportivos) 
       ? (prog.talleresDeportivos || prog.talleres_deportivos) 
       : [];
     const esVerano = normalizarPeriodoVista(prog.periodo) === "verano";
     const catLower = String(prog.categoria || "").toLowerCase();
-    const esDeportivo = catLower === "deportivo" || catLower === "talleres deportivos" || esProgramaDeportivo(prog.nombre, prog.categoria);
+    const esDeportivo = catLower === "deportivo" || catLower === "talleres deportivos" || esProgramaDeportivo(nombrePrograma, prog.categoria);
     const usaTalleresPorEdad = esVerano
       ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
       : esDeportivo;
@@ -279,7 +282,7 @@ export default function useCoordinacion({
     }
 
     return {
-      nombre: prog.nombre,
+      nombre: nombrePrograma,
       periodo: normalizarPeriodoVista(prog.periodo),
       categoria: prog.categoria,
       grupo: prog.grupo,
@@ -642,7 +645,8 @@ export default function useCoordinacion({
 
     let diasFinales = [];
     if (usaTalleresPorEdad) {
-      diasFinales = Array.from(new Set(talleres.map((t) => t.dia)));
+      const todosDias = talleres.flatMap((t) => String(t.dia || "").split(",").map(d => d.trim()).filter(Boolean));
+      diasFinales = Array.from(new Set(todosDias));
     } else if (esMaratonGuardar) {
       diasFinales = obtenerDiasEntreFechas(form.fechaInicio, form.fechaFin);
     } else {
@@ -841,6 +845,7 @@ export default function useCoordinacion({
         const nuevoPrograma = await crearPrograma(datosGuardar);
         mostrarMsg("Programa creado correctamente.", "success");
         setProgramas((actuales) => [...actuales, nuevoPrograma]);
+        setShowModal(false);
 
         // Limpiar el formulario y el estado del documento subido
         setForm(formInicial);
@@ -850,10 +855,6 @@ export default function useCoordinacion({
 
         if (!embedded) {
           navigate("/coordinacion/programas");
-        } else {
-          setModoEditar(true);
-          setForm(datosProgramaAFormulario(nuevoPrograma));
-          setShowModal(true);
         }
       }
     } catch (err) {
@@ -1087,7 +1088,7 @@ export default function useCoordinacion({
       custom: esOtro ? taller.deporte : "",
       minEdad: String(taller.edadMinima),
       maxEdad: String(taller.edadMaxima),
-      dias: [taller.dia],
+      dias: String(taller.dia || "").split(",").map(d => d.trim()).filter(Boolean),
       horaInicio: taller.horaInicio,
       horaFin: taller.horaFin,
       cupos: String(taller.cupos || 20),
@@ -1148,7 +1149,7 @@ export default function useCoordinacion({
         deporte: deporteFinal,
         edadMinima: minE,
         edadMaxima: maxE,
-        dia: tallerDepForm.dias[0] || "Lunes",
+        dia: tallerDepForm.dias.join(", "),
         horaInicio: tallerDepForm.horaInicio,
         horaFin: tallerDepForm.horaFin,
         cupos: cuposTaller,
@@ -1157,18 +1158,18 @@ export default function useCoordinacion({
       };
       nuevaLista = listaActual.map((taller, idx) => idx === indiceTallerEditando ? nuevoTaller : taller);
     } else {
-      const nuevosTalleres = tallerDepForm.dias.map(d => ({
+      const nuevoTaller = {
         deporte: deporteFinal,
         edadMinima: minE,
         edadMaxima: maxE,
-        dia: d,
+        dia: tallerDepForm.dias.join(", "),
         horaInicio: tallerDepForm.horaInicio,
         horaFin: tallerDepForm.horaFin,
         cupos: cuposTaller,
         nivel: tallerDepForm.nivel,
         docente: docenteFinal,
-      }));
-      nuevaLista = [...listaActual, ...nuevosTalleres];
+      };
+      nuevaLista = [...listaActual, nuevoTaller];
     }
     const totalCupos = nuevaLista.reduce((sum, t) => sum + (Number(t.cupos) || 20), 0);
 

@@ -266,7 +266,8 @@ function SeccionFechasHorarios({
           background: "#ffffff",
           padding: "20px",
           borderRadius: "8px",
-          border: "1px solid #cbd5e1"
+          border: "1px solid #cbd5e1",
+          alignItems: "start"
         }}>
           {/* 1. FECHA DE INICIO DE TALLER */}
           <div className="coord-field">
@@ -289,47 +290,45 @@ function SeccionFechasHorarios({
           </div>
 
           {/* Invitación masiva en Padres */}
-          {!esFormularioVerano ? (
-            <div className="coord-field">
-              <label style={{ fontWeight: "600", color: "#344054", fontSize: "13px" }}>Invitación masiva</label>
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  height: "38px",
-                  padding: "0 12px",
-                  borderRadius: "6px",
-                  border: "1px solid #cbd5e1",
-                  background: form.invitacionMasiva ? "#eef2ff" : "#f8fafc",
-                  cursor: "pointer",
-                  transition: "all 0.15s ease",
-                }}
+          <div className="coord-field">
+            <label style={{ fontWeight: "600", color: "#344054", fontSize: "13px" }}>Invitación masiva</label>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                height: "38px",
+                padding: "0 12px",
+                borderRadius: "6px",
+                border: "1px solid #cbd5e1",
+                background: form.invitacionMasiva ? "#eef2ff" : "#f8fafc",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={form.invitacionMasiva}
+                onChange={e => actualizarInvitacionMasiva(e.target.checked)}
+                style={{ accentColor: "#4f46e5", width: "15px", height: "15px" }}
+              />
+              <span style={{ fontSize: "12.5px", fontWeight: "500", color: form.invitacionMasiva ? "#3730a3" : "#64748b", whiteSpace: "nowrap" }}>
+                {form.invitacionMasiva ? "Activada" : "Desactivada"}
+              </span>
+            </label>
+            {form.invitacionMasiva && (
+              <select
+                value={form.alcanceInvitacionMasiva || "colegio"}
+                onChange={e => actualizarForm("alcanceInvitacionMasiva", e.target.value)}
+                style={{ marginTop: "6px", fontSize: "12px", height: "32px", borderRadius: "6px", border: "1px solid #cbd5e1", padding: "0 8px", background: "#fff" }}
               >
-                <input
-                  type="checkbox"
-                  checked={form.invitacionMasiva}
-                  onChange={e => actualizarInvitacionMasiva(e.target.checked)}
-                  style={{ accentColor: "#4f46e5", width: "15px", height: "15px" }}
-                />
-                <span style={{ fontSize: "12.5px", fontWeight: "500", color: form.invitacionMasiva ? "#3730a3" : "#64748b", whiteSpace: "nowrap" }}>
-                  {form.invitacionMasiva ? "Activada" : "Desactivada"}
-                </span>
-              </label>
-              {form.invitacionMasiva && (
-                <select
-                  value={form.alcanceInvitacionMasiva || "colegio"}
-                  onChange={e => actualizarForm("alcanceInvitacionMasiva", e.target.value)}
-                  style={{ marginTop: "6px", fontSize: "12px", height: "32px", borderRadius: "6px", border: "1px solid #cbd5e1", padding: "0 8px", background: "#fff" }}
-                >
-                  <option value="colegio">Todo el colegio</option>
-                  <option value="inicial">Solo Inicial</option>
-                  <option value="primaria">Solo Primaria</option>
-                  <option value="secundaria">Solo Secundaria</option>
-                </select>
-              )}
-            </div>
-          ) : <div></div>}
+                <option value="colegio">Todo el colegio</option>
+                <option value="inicial">Solo Inicial</option>
+                <option value="primaria">Solo Primaria</option>
+                <option value="secundaria">Solo Secundaria</option>
+              </select>
+            )}
+          </div>
 
           {/* 4. FECHA Y HORA DE PUBLICACION */}
           <div className="coord-field">
@@ -411,7 +410,7 @@ function SeccionFechasHorarios({
               <strong>{esFormularioVerano ? "Configuración de talleres específicos de verano por edades y horarios" : "Configuración de Deportes por Edades y Horarios"}</strong>
             </div>
             <div className={`coord-taller-builder-grid ${indiceTallerEditando !== null ? "is-editing" : ""}`}>
-              <div className={`coord-field ${esDeportivoForm ? "coord-taller-col-3" : "coord-taller-col-4"}`}>
+              <div className={`coord-field ${esDeportivoForm ? "coord-taller-col-3" : "coord-taller-col-4"}`} style={{ alignContent: "start" }}>
                 <label>{esFormularioVerano ? "Taller específico" : "Deporte"}</label>
                 <select value={tallerDepForm.deporte} onChange={e => setTallerDepForm(prev => ({ ...prev, deporte: e.target.value }))}>
                   {esFormularioVerano ? (
@@ -454,7 +453,7 @@ function SeccionFechasHorarios({
               </div>
 
               {esDeportivoForm && (
-                <div className="coord-field coord-taller-col-2">
+                <div className="coord-field coord-taller-col-2" style={{ alignContent: "start" }}>
                   <label>Nivel</label>
                   <select value={tallerDepForm.nivel} onChange={e => setTallerDepForm(prev => ({ ...prev, nivel: e.target.value }))}>
                     <option value="Formativo">Formativo</option>
@@ -463,7 +462,7 @@ function SeccionFechasHorarios({
                 </div>
               )}
 
-              <div className={`coord-field ${esDeportivoForm ? "coord-taller-col-3" : "coord-taller-col-4"}`}>
+              <div className={`coord-field ${esDeportivoForm ? "coord-taller-col-3" : "coord-taller-col-4"}`} style={{ alignContent: "start" }}>
                 <label>Edad (Mín / Máx)</label>
                 <div className="coord-flex-range">
                   <select value={tallerDepForm.minEdad} onChange={e => setTallerDepForm(prev => ({ ...prev, minEdad: e.target.value }))}>
@@ -480,8 +479,8 @@ function SeccionFechasHorarios({
                 </div>
               </div>
 
-              <div className="coord-field coord-taller-col-4">
-                <label>Días de atención</label>
+              <div className="coord-field coord-taller-col-4" style={{ alignContent: "start" }}>
+                <label>Días de clase</label>
                 <div className="coord-day-list coord-day-list-sm" style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginTop: "4px" }}>
                   {diasSemana.map((dia) => {
                     const diasSeleccionados = Array.isArray(tallerDepForm.dias) ? tallerDepForm.dias : [];

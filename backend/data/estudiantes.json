@@ -25,9 +25,10 @@
     "fechaNacimiento": "2010-01-01",
     "tipoAlumno": "Alumno interno",
     "estadoMatricula": "Activo",
-    "apoderado": "",
-    "telefonoApoderado": "",
-    "correoApoderado": ""
+    "apoderado": "MARIA PERES",
+    "telefonoApoderado": "963852852",
+    "correoApoderado": "",
+    "estadoInscripcion": "Pago exitoso"
   },
   "11112223": {
     "dni": "11112223",

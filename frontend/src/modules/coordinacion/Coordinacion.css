@@ -33,9 +33,11 @@
 }
 
 .coord-main-embedded {
-  width: min(1040px, 100%);
+  width: 100% !important;
+  max-width: 100% !important;
   min-width: 0;
-  margin: 0 auto;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   padding: 0 !important;
   overflow: visible;
 }
@@ -867,16 +869,35 @@
 
 /* ── WIDER WORKSPACE AND TOPBAR LAYOUT ── */
 .coord-topbar {
-  max-width: 1400px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   margin-bottom: 8px !important;
 }
 
 .coord-workspace {
-  max-width: 1400px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 .coord-workspace-single {
-  max-width: 1400px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.coord-card,
+.coord-search-card,
+.coord-program-card-list,
+.coord-program-card-item {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
 }
 
 .coord-program-form-card {
@@ -1160,10 +1181,15 @@
 
 /* 6. Compactación e Integración de Alturas en Coordinación (34px) */
 .coord-main {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   padding-top: 10px !important;
   padding-bottom: 10px !important;
-  padding-left: 20px !important;
-  padding-right: 20px !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  background: #ffffff !important;
 }
 
 .coord-form select,

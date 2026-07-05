@@ -515,19 +515,6 @@ CEL: {{CEL}}   					FIRMA:_              ________________`,
             </select>
           </div>
         )}
-        {usaTalleresPorEdad && esFormularioVerano && form.talleresDeportivos?.length > 0 ? (
-          <div className="coord-field coord-field-full">
-            <div
-              className="coord-deportivo-grados-summary"
-              style={{ marginTop: "8px", padding: "8px 12px", background: "#f8fafc", borderRadius: "6px", border: "1px solid #e2e8f0" }}
-            >
-              <strong>Talleres configurados:</strong>{" "}
-              <span style={{ color: "#006b5b", fontWeight: 700 }}>
-                {form.talleresDeportivos.map(t => `${t.deporte} (${t.edadMinima}-${t.edadMaxima} años)`).join(", ")}
-              </span>
-            </div>
-          </div>
-        ) : null}
       </div>
     </section>
   );

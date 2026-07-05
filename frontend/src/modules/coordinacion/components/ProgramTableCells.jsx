@@ -110,16 +110,48 @@ function HorarioTabla({ programa }) {
   const listaAgrupada = Object.values(gruposMap);
   if (listaAgrupada.length === 0) {
     return (
-      <div className="coord-table-schedule" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+      <div className="coord-table-schedule" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
         {bloques.map((bloque, index) => {
-          const matchDeportivo = String(bloque).trim().match(/^(Lunes|Martes|Mi[eé]rcoles|Jueves|Viernes|S[aá]bado|Domingo):\s*(.+)$/i);
-          if (matchDeportivo) {
+          const matchHora = String(bloque).match(/(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/);
+          let hora = "";
+          let resto = String(bloque);
+          if (matchHora) {
+            hora = matchHora[1].trim();
+            resto = String(bloque).replace(matchHora[0], "").trim();
+            resto = resto.replace(/:\s*$/, "").trim();
+          }
+
+          const indexColon = resto.indexOf(':');
+          let dias = resto;
+          let detalle = "";
+          if (indexColon !== -1) {
+            dias = resto.substring(0, indexColon).trim();
+            detalle = resto.substring(indexColon + 1).trim();
+          }
+
+          if (dias && hora) {
             return (
-              <div key={index} style={{ fontSize: "11px", color: "var(--coord-ink)", lineHeight: "1.3" }}>
-                <strong style={{ color: "var(--coord-ink)", fontWeight: "750" }}>
-                  {matchDeportivo[1]}:
-                </strong>{" "}
-                <span style={{ color: "var(--coord-ink)" }}>{matchDeportivo[2]}</span>
+              <div key={index} style={{ marginBottom: "2px", fontSize: "11px", lineHeight: "1.4" }}>
+                <strong style={{ color: "var(--coord-ink)", fontWeight: "750", display: "block" }}>
+                  {dias}
+                </strong>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px", marginTop: "2px" }}>
+                  <span style={{
+                    color: "#1e3a8a",
+                    background: "#eff6ff",
+                    padding: "1px 5px",
+                    borderRadius: "4px",
+                    fontSize: "10px",
+                    fontWeight: "600"
+                  }}>
+                    {hora}
+                  </span>
+                  {detalle && (
+                    <span style={{ color: "#64748b", fontSize: "10px" }}>
+                      • {detalle}
+                    </span>
+                  )}
+                </div>
               </div>
             );
           }

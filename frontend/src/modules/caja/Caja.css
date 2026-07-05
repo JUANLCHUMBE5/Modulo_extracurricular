@@ -694,3 +694,31 @@
   }
 }
 
+.caja-main {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+}
+
+.caja-main-embedded {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding: 0 0 32px !important;
+}
+
+.caja-header,
+.caja-payment-workspace,
+.caja-report-filters,
+.caja-panel,
+.caja-table-wrap {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+

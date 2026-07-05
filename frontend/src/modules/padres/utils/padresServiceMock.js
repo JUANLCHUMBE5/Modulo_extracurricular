@@ -1,4 +1,5 @@
 import { apiDb, saveApiDb, syncApiDb } from "../../../services/dbApi";
+import { adaptarPrograma } from "../../../services/adapters";
 import {
   calcularDuracionTexto,
   fechaActualIso,
@@ -112,8 +113,9 @@ export async function registrarInscripcionPadresMock(dni, datos, programaId = ""
   if (!programaSeleccionadoId) throw new Error("Seleccione un curso disponible para registrar.");
   const invitacion = invitaciones.find((item) => item.programaId === programaSeleccionadoId) || null;
 
-  const programa = apiDb.programas.find((item) => item.id === programaSeleccionadoId);
-  if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
+  const rawPrograma = apiDb.programas.find((item) => item.id === programaSeleccionadoId);
+  if (!rawPrograma) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
+  const programa = adaptarPrograma(rawPrograma);
   if (programa.estado !== "Habilitado") throw new Error("El programa no está habilitado.");
   const esCambridge = esProgramaCambridgePadres(programa);
   const gradoRegistro = obtenerGradoCompleto(
@@ -125,7 +127,7 @@ export async function registrarInscripcionPadresMock(dni, datos, programaId = ""
   const codigoRegistro = invitacion?.codigoEstudiante || estudiante.codigoEstudiante || "";
   const nombresRegistro = invitacion?.nombres || estudiante.nombres;
 
-  if (!invitacion && (esCambridge || !programa.invitacionMasiva)) {
+  if (!invitacion && esCambridge) {
     throw new Error("Este programa requiere invitacion de Coordinación Académica.");
   }
 
@@ -356,7 +358,7 @@ export async function reservarCupoCajaPadresMock(dni, inscripcionId) {
 export async function obtenerProgramasCoordinacionMock() {
   await delay(300);
   await syncApiDb();
-  return apiDb.programas.map((programa) => {
+  return apiDb.programas.map(adaptarPrograma).map((programa) => {
     const cupos = Number(programa.cupos || 0);
     const cuposOcupados = Number(programa.cuposOcupados || 0);
     const cuposDisponibles = Math.max(0, cupos - cuposOcupados);
@@ -401,7 +403,7 @@ export async function obtenerProgramasCoordinacionMock() {
       duracionAvisoDias,
       horaLimiteAviso: programa.horaLimiteAviso || "23:59",
       ventanaInscripcion,
-      registrable: !esCambridge && Boolean(programa.invitacionMasiva) && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0,
+      registrable: !esCambridge && programaVisibleEnPortalPadres(programa) && cuposDisponibles > 0,
     };
   });
 }
@@ -424,7 +426,7 @@ function generarPagoIdPadres() {
 function obtenerInvitaciones(dni, estudiante = null) {
   const resultado = [];
 
-  apiDb.programas.forEach((programa) => {
+  apiDb.programas.map(adaptarPrograma).forEach((programa) => {
     if (!programaVisibleEnPortalPadres(programa)) return;
 
     if (programa.invitacionMasiva && programaDisponibleParaGrado(programa, estudiante?.grado)) {
@@ -571,10 +573,11 @@ function obtenerDocumentos(dni, estudiante) {
 }
 
 function sincronizarInscripcionConPrograma(inscripcion) {
-  const programa = apiDb.programas.find((item) => {
+  const rawPrograma = apiDb.programas.find((item) => {
     if (inscripcion.programaId) return item.id === inscripcion.programaId;
-    return normalizarTexto(item.nombre) === normalizarTexto(inscripcion.programa);
+    return normalizarTexto(item.nombre || item.nombre_programa) === normalizarTexto(inscripcion.programa);
   });
+  const programa = rawPrograma ? adaptarPrograma(rawPrograma) : null;
 
   if (!programa || programa.estado === "Archivado") {
     return normalizarInscripcion({

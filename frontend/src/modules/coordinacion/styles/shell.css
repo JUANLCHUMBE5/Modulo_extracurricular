@@ -167,7 +167,7 @@
 }
 
 .coord-topbar {
-  max-width: 1120px;
+  max-width: 100%;
   margin: 0 auto 18px;
 }
 
@@ -180,7 +180,7 @@
 }
 
 .coord-workspace {
-  max-width: 1120px;
+  max-width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: 16px;
@@ -188,7 +188,7 @@
 }
 
 .coord-workspace-single {
-  max-width: 1180px;
+  max-width: 100%;
   grid-template-columns: minmax(0, 1fr);
 }
 

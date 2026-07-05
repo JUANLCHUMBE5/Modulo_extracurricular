@@ -327,11 +327,6 @@ function ProgramaFormModal({
                     ? "Editar programa"
                     : "Registrar programa"}
                 </h2>
-                <p>
-                  {esFormularioVerano
-                    ? "Complete los datos del programa antes de habilitarlo."
-                    : "Complete la configuración del taller antes de habilitarlo."}
-                </p>
               </div>
             </div>
             {formElement}
@@ -361,11 +356,6 @@ function ProgramaFormModal({
                   ? "Editar programa"
                   : "Registrar programa"}
               </h2>
-              <p>
-                {esFormularioVerano
-                  ? "Complete los datos del programa antes de habilitarlo."
-                  : "Complete la configuración del taller antes de habilitarlo."}
-              </p>
             </div>
           </div>
           <button className="coord-modal-close" type="button" onClick={() => setShowModal(false)}>

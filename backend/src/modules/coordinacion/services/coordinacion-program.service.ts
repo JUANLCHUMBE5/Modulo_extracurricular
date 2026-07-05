@@ -1,4 +1,4 @@
-﻿import { registrarAuditoria } from "../../../common/audit/audit.service.js";
+import { registrarAuditoria } from "../../../common/audit/audit.service.js";
 import {
   mapDbProgramToApi,
   normalizarPeriodoApi,
@@ -82,7 +82,7 @@ export class CoordinacionProgramService {
       gradosAplicables: normalizedBody.gradosAplicables || [],
       horariosPorGrupo: normalizedBody.horariosPorGrupo || [],
       tablaHorariosNivel: normalizedBody.tablaHorariosNivel || [],
-      estado: normalizedBody.estado || "Borrador",
+      estado: normalizedBody.estado || "Habilitado",
       periodo: normalizedBody.periodo || "escolar"
     };
 
@@ -116,7 +116,7 @@ export class CoordinacionProgramService {
         gradosAplicables: body.grados || [],
         horariosPorGrupo: [],
         tablaHorariosNivel: [],
-        estado: "Borrador",
+        estado: "Habilitado",
         periodo: body.periodo || "escolar",
         modalidadCobro: body.modalidad_cobro || "Mensual",
         requiereUniforme: Boolean(body.requiere_uniforme),

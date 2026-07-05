@@ -24,11 +24,6 @@ function SeccionComunicadoPadres({
           <BookOpen size={18} />
           <div>
             <h3 style={{ margin: 0 }}>Descripción o Comunicado para Padres</h3>
-            {conComunicadoManual ? (
-              <p style={{ margin: "2px 0 0", fontSize: "11.5px", color: "#64748b", fontWeight: "400" }}>
-                Este texto se mostrará a los padres en la invitación del programa.
-              </p>
-            ) : null}
           </div>
         </div>
         <button

@@ -922,6 +922,13 @@
   overflow: hidden;
   background: #f8fafc;
   box-shadow: 0 26px 70px rgba(5, 19, 34, 0.24);
+  box-sizing: border-box;
+}
+
+.padres-info-modal * {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
 }
 
 .padres-info-modal-head {

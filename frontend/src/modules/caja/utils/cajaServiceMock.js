@@ -662,8 +662,7 @@ function obtenerInscripcionesCaja(periodoNormalizado) {
   return [...(apiDb.inscripciones || [])]
     .filter((inscripcion) =>
       normalizarPeriodo(inscripcion.periodo || periodoNormalizado) === periodoNormalizado &&
-      inscripcion.estadoInscripcion !== "Anulada" &&
-      inscripcion.derivadoCaja
+      inscripcion.estadoInscripcion !== "Anulada"
     );
 }
 
