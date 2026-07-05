@@ -9,14 +9,14 @@ export const mantineTheme = createTheme({
   },
   colors: {
     sanrafael: [
-      "#e8f7f2", // matches --ui-primary-soft
+      "#e8f7f2", // Coincide con --ui-primary-soft
       "#d6f7ec",
       "#aeeedc",
       "#80dfc6",
       "#55ccb0",
       "#2fb89b",
-      "#23977f", // matches --ui-primary
-      "#176c60", // matches --ui-primary-dark
+      "#23977f", // Coincide con --ui-primary
+      "#176c60", // Coincide con --ui-primary-dark
       "#13544a",
       "#0c352f",
     ],
