@@ -2,8 +2,10 @@ import { CONFIG_CONEXION } from "./conexionBackend.js";
 
 export const API_BASE_URL = String(
   import.meta.env?.VITE_API_URL ||
-  (import.meta.env?.DEV ? import.meta.env?.VITE_LOCAL_API_URL || CONFIG_CONEXION.urlBase : "")
+  import.meta.env?.VITE_LOCAL_API_URL ||
+  ""
 ).replace(/\/$/, "");
+
 
 // Clase de Error de API tipificada para el manejo de fallos HTTP
 export class ApiError extends Error {

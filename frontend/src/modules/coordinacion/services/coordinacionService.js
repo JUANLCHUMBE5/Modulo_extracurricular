@@ -1,4 +1,4 @@
-import { isApiMode, apiClient } from "../../../services/apiClient";
+import { isApiMode, apiClient, API_BASE_URL } from "../../../services/apiClient";
 import {
   adaptarPrograma,
   adaptarInscripcion,
@@ -42,13 +42,7 @@ import {
   normalizarPeriodosGuardados
 } from "../utils/coordinacionServiceMock";
 
-import { CONFIG_CONEXION } from "../../../conexion/conexionBackend.js";
-
-const obtenerApiBase = () => String(
-  import.meta.env.VITE_API_URL ||
-  (import.meta.env.DEV ? import.meta.env.VITE_LOCAL_API_URL : "") ||
-  CONFIG_CONEXION.urlBase
-).replace(/\/$/, "");
+const obtenerApiBase = () => API_BASE_URL;
 
 const obtenerMensajeConexionApi = () => {
   if (import.meta.env.PROD && !obtenerApiBase()) {

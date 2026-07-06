@@ -5,8 +5,12 @@ import { pool } from "./connection.js";
  * Determina si la base de datos PostgreSQL 17 está activada en la configuración.
  */
 export function isPgEnabled(): boolean {
+  const mode = process.env.DATA_MODE;
+  if (mode === "local" || mode === "firestore") {
+    return false;
+  }
   return (
-    process.env.DATA_MODE === "postgres" ||
+    mode === "postgres" ||
     !!process.env.DATABASE_URL ||
     !!process.env.DB_HOST
   );

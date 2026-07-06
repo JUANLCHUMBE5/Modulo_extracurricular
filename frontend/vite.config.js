@@ -15,4 +15,17 @@ export default defineConfig({
       "/api": "http://127.0.0.1:5175",
     },
   },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "react-router-dom",
+      "@mantine/core",
+      "@mantine/hooks",
+      "@tabler/icons-react",
+      "exceljs",
+      "jspdf",
+      "docx-preview"
+    ],
+  },
 });
