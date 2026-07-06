@@ -91,13 +91,13 @@ exit /b %errorlevel%
 
 :check_url
 where curl >nul 2>nul
-if %errorlevel% equ 0 (
-  curl -s -I -m 1 "%~1" >nul 2>nul
-  exit /b %errorlevel%
-) else (
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -Uri '%~1' -UseBasicParsing -TimeoutSec 1 | Out-Null; exit 0 } catch { exit 1 }"
-  exit /b %errorlevel%
-)
+if %errorlevel% equ 0 goto :check_url_curl
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -Uri '%~1' -UseBasicParsing -TimeoutSec 1 | Out-Null; exit 0 } catch { exit 1 }"
+exit /b %errorlevel%
+
+:check_url_curl
+curl -s -I -m 1 "%~1" >nul 2>nul
+exit /b %errorlevel%
 
 :wait_backend_curl
 for /l %%i in (1,1,15) do (
