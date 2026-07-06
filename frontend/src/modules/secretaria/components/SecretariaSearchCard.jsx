@@ -62,6 +62,28 @@ function SecretariaSearchCard({
       <div className="secretaria-card-title" style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%" }}>
         {estudiante && modoRegistro ? (
           <>
+            <button
+              type="button"
+              className="secretaria-back-arrow-btn"
+              onClick={limpiarBusquedaEstudiante}
+              style={{
+                background: "#e8f5e9",
+                border: "1px solid #a5d6a7",
+                cursor: "pointer",
+                padding: "6px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#1b5e20",
+                borderRadius: "50%",
+                width: "36px",
+                height: "36px",
+                transition: "all 0.2s ease",
+              }}
+              title="Volver a la búsqueda"
+            >
+              <ChevronLeft size={20} />
+            </button>
             <span className="secretaria-title-icon" style={{ color: "#388e3c", display: "flex", alignItems: "center" }}>
               <UserPlus size={22} />
             </span>
@@ -84,7 +106,8 @@ function SecretariaSearchCard({
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
-                marginLeft: "auto"
+                marginLeft: "auto",
+                whiteSpace: "nowrap"
               }}
             >
               <UserCheck size={16} />
