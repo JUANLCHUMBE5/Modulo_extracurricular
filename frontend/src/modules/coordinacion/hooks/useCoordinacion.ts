@@ -1602,6 +1602,7 @@ export default function useCoordinacion({
     setPreviewCarga: carga.setPreviewCarga,
     cargandoPreview: carga.cargandoPreview,
     progresoCarga: carga.progresoCarga,
+    setProgresoCarga: carga.setProgresoCarga,
     confirmandoCarga: carga.confirmandoCarga,
     eliminandoCargaId: carga.eliminandoCargaId,
     modoCargaAlumnos: carga.modoCargaAlumnos,

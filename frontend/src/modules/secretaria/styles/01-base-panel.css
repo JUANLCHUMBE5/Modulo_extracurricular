@@ -1,0 +1,349 @@
+.secretaria-primary-button {
+  border: 1px solid var(--secretaria-blue);
+  color: #ffffff;
+  background: var(--secretaria-blue);
+  box-shadow: 0 4px 10px rgba(49, 95, 145, 0.18);
+}
+
+.secretaria-register-button {
+  justify-self: start;
+  border: 1px solid var(--secretaria-green);
+  color: #ffffff;
+  background: var(--secretaria-green);
+  box-shadow: 0 4px 10px rgba(36, 130, 103, 0.2);
+}
+
+.secretaria-secondary-button {
+  border: 1px solid #cbd5df;
+  color: #3b4652;
+  background: #ffffff;
+}
+
+.secretaria-primary-button:hover,
+.secretaria-register-button:hover {
+  filter: brightness(0.96);
+}
+
+.secretaria-primary-button:disabled,
+.secretaria-register-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.secretaria-spin {
+  animation: secretariaSpin 820ms linear infinite;
+}
+
+.secretaria-empty,
+.secretaria-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 12px;
+  border: 1px solid var(--secretaria-line);
+  border-radius: 8px;
+  color: var(--secretaria-muted);
+  background: #fbfcfd;
+}
+
+.secretaria-empty p,
+.secretaria-message p,
+.secretaria-info-box p {
+  margin: 0;
+}
+
+.secretaria-empty svg {
+  color: var(--secretaria-blue);
+}
+
+.secretaria-student-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #d8e7df;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdfb 100%);
+  animation: secretariaResult 180ms ease both;
+}
+
+.secretaria-student-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.secretaria-new-search-button {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.secretaria-avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: var(--secretaria-green);
+  font-weight: 800;
+}
+
+.secretaria-overline {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--secretaria-green);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.secretaria-student-summary strong,
+.secretaria-student-summary span {
+  display: block;
+}
+
+.secretaria-student-summary strong {
+  font-size: 16px;
+}
+
+.secretaria-student-summary span:last-child {
+  color: var(--secretaria-muted);
+  font-size: 12px;
+}
+
+.secretaria-student-data {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.secretaria-student-data div {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid #e3e8ee;
+  border-radius: 8px;
+  background: #ffffff;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.secretaria-student-data div:hover {
+  border-color: #c9ddd4;
+  background: #fbfffc;
+}
+
+.secretaria-student-data .secretaria-data-wide {
+  grid-column: 1 / -1;
+}
+
+.secretaria-student-data {
+  gap: 10px;
+}
+
+.secretaria-student-data .secretaria-data-identity,
+.secretaria-student-data .secretaria-data-process {
+  min-height: 54px;
+  padding: 8px 10px;
+}
+
+.secretaria-student-data .secretaria-data-program {
+  grid-column: span 2;
+  min-height: 58px;
+  background: #fbfdfd;
+}
+
+.secretaria-student-data .secretaria-data-contact {
+  grid-column: span 2;
+}
+
+.secretaria-student-data .secretaria-data-wide.secretaria-data-program {
+  grid-column: 1 / -1;
+}
+
+.secretaria-student-data .secretaria-data-process + .secretaria-data-program,
+.secretaria-student-data .secretaria-data-program + .secretaria-data-contact {
+  margin-top: 2px;
+}
+
+.secretaria-student-data .secretaria-data-compact {
+  padding: 7px 9px;
+}
+
+.secretaria-student-data dt {
+  margin-bottom: 3px;
+  color: var(--secretaria-muted);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.secretaria-student-data dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--secretaria-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.secretaria-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 20px;
+  border-radius: 999px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.secretaria-pill-success {
+  color: #1f6b55;
+  background: var(--secretaria-green-soft);
+}
+
+.secretaria-pill-info {
+  color: #2f5279;
+  background: var(--secretaria-blue-soft);
+}
+
+.secretaria-pill-warning {
+  color: var(--secretaria-warning);
+  background: var(--secretaria-warning-soft);
+}
+
+.secretaria-info-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 9px 10px;
+  border: 1px solid #bcd2ea;
+  border-radius: 8px;
+  color: #2f5279;
+  background: #f1f7fc;
+}
+
+.secretaria-info-box svg {
+  flex: 0 0 auto;
+  color: var(--secretaria-blue);
+}
+
+.secretaria-info-box p {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.secretaria-process-card {
+  align-self: start;
+}
+
+.secretaria-process-card h2 {
+  margin: 0 0 12px;
+}
+
+.secretaria-process-list {
+  display: grid;
+  gap: 8px;
+}
+
+.secretaria-process-item {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--secretaria-soft-line);
+  border-radius: 8px;
+  color: var(--secretaria-muted);
+  background: #ffffff;
+}
+
+.secretaria-process-item span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #d8e0e8;
+}
+
+.secretaria-process-item.is-active {
+  color: var(--secretaria-ink);
+  border-color: #c9ddd4;
+  background: #f5fbf8;
+}
+
+.secretaria-process-item.is-active span {
+  background: var(--secretaria-blue);
+}
+
+.secretaria-process-item p,
+.secretaria-process-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.secretaria-process-note {
+  margin-top: 12px;
+  color: var(--secretaria-muted);
+}
+
+.secretaria-ticket {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #c9ddd4;
+  border-radius: 8px;
+  color: var(--secretaria-ink);
+  background: #f5fbf8;
+}
+
+.secretaria-ticket span,
+.secretaria-ticket p {
+  margin: 0;
+  color: var(--secretaria-muted);
+  font-size: 12px;
+}
+
+.secretaria-ticket strong {
+  display: block;
+  margin: 4px 0;
+  font-size: 18px;
+}
+
+.secretaria-registration-card,
+.secretaria-confirmation-card {
+  max-width: 1120px;
+  margin: 16px auto 0;
+}
+
+.secretaria-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(20, 32, 47, 0.42);
+  backdrop-filter: blur(2px);
+  animation: secretariaModalFade 140ms ease both;
+}
+
+.secretaria-registration-modal {
+  width: min(860px, 100%);
+  max-height: min(88vh, 760px);
+  margin: 0;
+  overflow: auto;
+  box-shadow: 0 18px 42px rgba(24, 39, 55, 0.2);
+  animation: secretariaModalIn 160ms ease both;
+}
+
+.secretaria-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+

@@ -2,8 +2,21 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+const jsToTsResolverPlugin = () => ({
+  name: "js-to-ts-resolver",
+  resolveId(source, importer) {
+    if (source.endsWith(".js") || source.endsWith(".jsx")) {
+      if (source.startsWith(".") || source.startsWith("/")) {
+        const tsSource = source.replace(/\.js(x?)$/, ".ts$1");
+        return this.resolve(tsSource, importer, { skipSelf: true });
+      }
+    }
+    return null;
+  },
+});
+
 export default defineConfig({
-  plugins: [tailwindcss(), react()],
+  plugins: [tailwindcss(), react(), jsToTsResolverPlugin()],
   server: {
     host: "127.0.0.1",
     port: 5173,

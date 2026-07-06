@@ -1,0 +1,203 @@
+@media (max-width: 768px) {
+  .secretaria-table-header {
+    display: none !important;
+  }
+  .secretaria-name-results-grid {
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    gap: 10px !important;
+  }
+  .secretaria-student-result-card {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 14px 16px !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  }
+  .secretaria-student-result-card:hover {
+    background: #ffffff !important;
+  }
+  .secretaria-student-result-card .col-nombre {
+    font-weight: 700 !important;
+    font-size: 15px !important;
+  }
+  .secretaria-student-result-card .col-documentos,
+  .secretaria-student-result-card .col-nivel,
+  .secretaria-student-result-card .col-grado,
+  .secretaria-student-result-card .col-seccion,
+  .secretaria-student-result-card .col-programa {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 8px !important;
+    font-size: 13px !important;
+  }
+  .secretaria-result-card-actions {
+    width: 100% !important;
+    justify-content: flex-end !important;
+    border-top: 1px solid #f1f5f9 !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+  }
+}
+
+/* ── 17. Fused Workspace Card (Student Panel & Registration Unified) ──── */
+.secretaria-fused-workspace {
+  background: #ffffff !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(23, 108, 96, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04) !important;
+  padding: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin-top: 20px !important;
+  animation: secretariaModalIn 180ms ease both !important;
+}
+
+.secretaria-fused-grid-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+  width: 100% !important;
+  margin-top: 20px !important;
+}
+
+@media (min-width: 1024px) {
+  .secretaria-fused-grid-layout {
+    display: grid !important;
+    grid-template-columns: 1fr 1.5fr !important;
+    gap: 24px !important;
+    align-items: start !important;
+  }
+}
+
+/* Remove card styling from the inner student panel when fused/grid is active */
+.secretaria-fused-workspace .secretaria-student-panel,
+.secretaria-fused-grid-layout .secretaria-student-panel {
+  background: #ffffff !important;
+  border: 1px solid rgba(23, 108, 96, 0.15) !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04) !important;
+  padding: 24px !important;
+  border-radius: 16px !important;
+  margin: 0 !important;
+}
+
+/* Style the registration form section inside the fused/grid card */
+.secretaria-fused-workspace .secretaria-registration-modal-fused.is-inline,
+.secretaria-fused-grid-layout .secretaria-registration-modal-fused.is-inline {
+  position: static !important;
+  max-height: none !important;
+  width: 100% !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(23, 108, 96, 0.15) !important;
+  padding: 24px !important;
+  border-radius: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: visible !important;
+  animation: none !important;
+  margin: 0 !important;
+}
+
+.secretaria-fused-workspace .secretaria-registration-modal-fused.is-inline .secretaria-modal-header,
+.secretaria-fused-grid-layout .secretaria-registration-modal-fused.is-inline .secretaria-modal-header {
+  display: none !important;
+}
+
+.secretaria-fused-workspace .secretaria-registration-modal-fused.is-inline .secretaria-student-context,
+.secretaria-fused-grid-layout .secretaria-registration-modal-fused.is-inline .secretaria-student-context {
+  display: none !important;
+}
+
+.secretaria-fused-workspace .secretaria-registration-modal-fused.is-inline .secretaria-registration-form-clean,
+.secretaria-fused-grid-layout .secretaria-registration-modal-fused.is-inline .secretaria-registration-form-clean {
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 0 !important;
+}
+
+/* Fused Input and Select Fields */
+.secretaria-input-fused {
+  width: 100% !important;
+  height: 38px !important;
+  padding: 8px 12px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  background: #ffffff !important;
+  color: #1e293b !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  outline: none !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+.secretaria-input-fused:focus {
+  border-color: #388e3c !important;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15) !important;
+}
+
+select.secretaria-input-fused {
+  cursor: pointer !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23475569' stroke-width='2.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19.5 8.25l-7.5 7.5-7.5-7.5'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 14px !important;
+  padding-right: 32px !important;
+}
+
+/* Fused Buttons styling */
+.secretaria-btn-secondary-fused {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.secretaria-btn-secondary-fused:hover {
+  background: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.secretaria-btn-primary-fused {
+  background: #388e3c !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 18px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+.secretaria-btn-primary-fused:hover:not(:disabled) {
+  background: #2e7d32 !important;
+}
+
+.secretaria-btn-primary-fused:disabled {
+  background: #a5d6a7 !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  cursor: not-allowed !important;
+}
+
+

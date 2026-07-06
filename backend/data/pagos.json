@@ -22,5 +22,26 @@
     "observaciones": "",
     "validadoPor": "carlos",
     "validadoEn": "2026-07-05T08:17:10.873Z"
+  },
+  {
+    "id": "PAG-452450",
+    "inscripcionId": "INS-337723",
+    "dniEstudiante": "60000031",
+    "nombresEstudiante": "Daniel Garcia Paredes",
+    "programa": "Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo Variables",
+    "programaId": "PRG-102",
+    "periodo": "escolar",
+    "monto": 80,
+    "formaPago": "Efectivo",
+    "numeroOperacion": "",
+    "telefonoOperacion": "",
+    "nroRecibo": "REC-0501",
+    "capturaPagoBase64": "",
+    "estado": "validado",
+    "fecha": "2026-07-06T07:20:52.450Z",
+    "fechaPago": "2026-07-06T07:20:52.450Z",
+    "origenRegistro": "Caja",
+    "validadoPor": "Cajera",
+    "validadoEn": "2026-07-06T07:20:52.450Z"
   }
 ]

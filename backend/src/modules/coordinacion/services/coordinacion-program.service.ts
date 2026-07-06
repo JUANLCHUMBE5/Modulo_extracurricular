@@ -52,9 +52,9 @@ export class CoordinacionProgramService {
     const list = db.programas || [];
     if (periodo) {
       const period = normalizarPeriodoApi(periodo);
-      return list.filter((p: any) => normalizarPeriodoApi(p.periodo) === period).map(mapDbProgramToApi);
+      return list.filter((p: any) => normalizarPeriodoApi(p.periodo) === period).map((p: any) => mapDbProgramToApi(p, db));
     }
-    return list.map(mapDbProgramToApi);
+    return list.map((p: any) => mapDbProgramToApi(p, db));
   }
 
   async getProgramaById(id: string) {
@@ -63,7 +63,7 @@ export class CoordinacionProgramService {
     if (!prog) {
       throw new Error("Programa no encontrado.");
     }
-    return mapDbProgramToApi(prog);
+    return mapDbProgramToApi(prog, db);
   }
 
   async crearPrograma(operatorUsername: string, body: any) {
@@ -92,7 +92,7 @@ export class CoordinacionProgramService {
 
     await registrarAuditoria(operatorUsername || "Coordinacion", "coordinacion", "PROGRAMA_CREAR", { programaId: pid, nombre: nuevo.nombre });
 
-    return mapDbProgramToApi(nuevo);
+    return mapDbProgramToApi(nuevo, db);
   }
 
   async subirDocumentoPrograma(operatorUsername: string, body: any) {
@@ -146,7 +146,7 @@ export class CoordinacionProgramService {
 
       await registrarAuditoria(operatorUsername || "Coordinacion", "coordinacion", "PROGRAMA_CREAR", { programaId: pid, nombre: nuevo.nombre });
 
-      return mapDbProgramToApi(nuevo);
+      return mapDbProgramToApi(nuevo, db);
     }
 
     const idx = (db.programas || []).findIndex((p: any) => p.id === id);
@@ -164,7 +164,7 @@ export class CoordinacionProgramService {
     await coordinacionRepository.saveDb(db);
     await registrarAuditoria(operatorUsername || "Coordinacion", "coordinacion", "PROGRAMA_PLANTILLA", { programaId: id });
 
-    return mapDbProgramToApi(db.programas[idx]);
+    return mapDbProgramToApi(db.programas[idx], db);
   }
 
   async updatePrograma(operatorUsername: string, id: string, body: any) {
@@ -195,7 +195,7 @@ export class CoordinacionProgramService {
 
     await registrarAuditoria(operatorUsername || "Coordinacion", "coordinacion", "PROGRAMA_EDITAR", { programaId: id });
 
-    return mapDbProgramToApi(updated);
+    return mapDbProgramToApi(updated, db);
   }
 
   async updateProgramaEstado(operatorUsername: string, id: string, estado: string) {
@@ -215,7 +215,7 @@ export class CoordinacionProgramService {
       estadoNuevo: estado
     });
 
-    return mapDbProgramToApi(db.programas[idx]);
+    return mapDbProgramToApi(db.programas[idx], db);
   }
 
   async deletePrograma(operatorUsername: string, id: string) {

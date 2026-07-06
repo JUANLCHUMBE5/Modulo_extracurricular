@@ -1450,12 +1450,15 @@
 .coord-file-drop {
   border: 2px dashed #a5d6a7 !important;
   border-radius: 14px !important;
-  text-align: center;
   cursor: pointer;
-  padding: 28px 16px;
+  padding: 10px 16px;
   background: #f1f8e9;
   transition: all 0.25s ease;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
 }
 
 .coord-file-drop:hover,
@@ -1463,18 +1466,26 @@
   border-color: #43a047 !important;
   background: #e8f5e9;
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.10);
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.08);
 }
 
 .coord-file-drop .coord-drop-icon {
-  font-size: 28px;
+  font-size: 20px;
   color: #66bb6a;
-  display: block;
-  margin-bottom: 8px;
+  display: inline-block;
+  margin-bottom: 0;
+}
+
+.coord-file-drop .coord-drop-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 1px;
 }
 
 .coord-file-drop .coord-drop-text {
-  font-size: 14px;
+  font-size: 13px;
   color: #2e7d32;
   font-weight: 500;
   margin: 0;
@@ -1486,12 +1497,13 @@
   text-decoration: underline;
   text-decoration-color: #a5d6a7;
   text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
 }
 
 .coord-file-drop .coord-drop-sub {
-  font-size: 12px;
+  font-size: 11px;
   color: #558b2f;
-  margin-top: 4px;
+  margin-top: 1px;
   font-weight: 500;
 }
 
@@ -1802,6 +1814,7 @@
 
 .coord-export-actions .coord-btn-full {
   flex: 1;
+  margin-top: 0 !important;
 }
 
 /* ── Sección de formulario con label verde ── */

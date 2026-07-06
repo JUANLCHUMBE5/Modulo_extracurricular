@@ -1,9 +1,18 @@
+import { useEffect } from "react";
 import {
   IconCircleCheck as CheckCircle2,
 } from "@tabler/icons-react";
 import { resumirHorarioSecretaria } from "./SecretariaFields";
 
 function SecretariaSuccessModal({ inscripcion, onClose }) {
+  useEffect(() => {
+    if (!inscripcion) return;
+    const timer = setTimeout(() => {
+      onClose();
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [inscripcion, onClose]);
+
   if (!inscripcion) return null;
   const horario = resumirHorarioSecretaria(inscripcion.horario);
 
@@ -13,8 +22,8 @@ function SecretariaSuccessModal({ inscripcion, onClose }) {
         <div className="secretaria-success-icon">
           <CheckCircle2 size={44} />
         </div>
-        <h2>Inscripción registrada</h2>
-        <p>La inscripcion fue registrada correctamente.</p>
+        <h2>¡Felicidades, fue inscrito exitosamente!</h2>
+        <p>La inscripción fue registrada correctamente.</p>
         <div className="secretaria-success-summary">
           <p><strong>Estudiante:</strong> {inscripcion.nombresEstudiante}</p>
           <p><strong>Programa:</strong> {inscripcion.programa}</p>
@@ -41,3 +50,4 @@ function SecretariaSuccessModal({ inscripcion, onClose }) {
 }
 
 export default SecretariaSuccessModal;
+

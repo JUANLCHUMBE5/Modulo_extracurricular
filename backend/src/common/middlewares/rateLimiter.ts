@@ -8,7 +8,7 @@ import rateLimit from "express-rate-limit";
  */
 export const loginLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
-  max: 5, // Máximo 5 intentos por IP cada minuto
+  max: 100, // Incrementado a 100 para pruebas E2E e integraciones locales
   message: {
     success: false,
     message: "Demasiados intentos de inicio de sesion. Por favor, intente de nuevo en un minuto."

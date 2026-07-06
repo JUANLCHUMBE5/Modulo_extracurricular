@@ -1,5 +1,1637 @@
 [
   {
+    "id": "AUD-847878-c0c6",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T18:17:27.878Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-427564-5473",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T17:37:07.564Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-421398-964e",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:37:01.398Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-167147-cb94",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:32:47.147Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-162087-5878",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:32:42.087Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-153759-9ba5",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:32:33.759Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"Usuario inactivo o no existe\",\"_usuario_original\":\"coord\"}"
+  },
+  {
+    "id": "AUD-147614-486d",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T17:32:27.614Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-900455-0d2e",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:28:20.455Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-895510-9874",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:28:15.510Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-892576-a80e",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:28:12.576Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-892326-b7f3",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:28:12.326Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-891758-5990",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:28:11.758Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-889443-dd27",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:28:09.443Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-885071-5911",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:28:05.071Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-870139-6f5e",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T17:27:50.139Z",
+    "accion": "USUARIO_RESET_CONTRASENA",
+    "detalles": "{\"usuarioId\":\"USR-118070\"}"
+  },
+  {
+    "id": "AUD-865024-3714",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T17:27:45.024Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-857950-0871",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:27:37.950Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-854941-606e",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:27:34.941Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-848121-08b5",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:27:28.121Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"CARLOS\"}"
+  },
+  {
+    "id": "AUD-844961-9ecc",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:27:24.961Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"CARLOS\"}"
+  },
+  {
+    "id": "AUD-841910-b651",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:27:21.910Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"CARLOS\"}"
+  },
+  {
+    "id": "AUD-839033-ef2a",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T17:27:19.033Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"CARLOS\"}"
+  },
+  {
+    "id": "AUD-824677-c117",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T17:27:04.677Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-818785-18ac",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T17:26:58.786Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-659572-4e9c",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:40:59.572Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-658282-824a",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T07:40:58.282Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-656625-f100",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:40:56.625Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-654873-5a1a",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:40:54.873Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-652906-f25d",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:40:52.906Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-651741-1995",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T07:40:51.741Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-648009-5a59",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:40:48.009Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-325140-4da5",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:35:25.140Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-323911-5b40",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T07:35:23.911Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-322221-e9b6",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:35:22.221Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-320454-195d",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:35:20.454Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-318471-a125",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:35:18.471Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-317352-e765",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T07:35:17.352Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-313740-6c7b",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:35:13.741Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-270457-13f8",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:34:30.457Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-269213-688f",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T07:34:29.213Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-267540-6a77",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:34:27.540Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-265743-6f92",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:34:25.743Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-248441-e2ea",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:34:08.441Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-247242-e9c6",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T07:34:07.242Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-243530-b2ff",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:34:03.530Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-184594-ef03",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:33:04.594Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-183367-3ab9",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T07:33:03.367Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-181661-802a",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:33:01.661Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-179888-cdcb",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:32:59.888Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-162615-604c",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:32:42.615Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-161447-f62e",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T07:32:41.447Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-157779-5620",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:32:37.779Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-606180-746e",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:23:26.180Z",
+    "accion": "INSCRIPCION_CREAR",
+    "detalles": "{\"inscripcionId\":\"INS-606165\",\"estudianteId\":\"60000035\",\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-524676-7dee",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:22:04.676Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-459008-6d32",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:20:59.008Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-457714-56b8",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T07:20:57.714Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-455908-248d",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:20:55.908Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-454060-4ece",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:20:54.060Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-452464-edc7",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-06T07:20:52.464Z",
+    "accion": "PAGO_REGISTRAR",
+    "detalles": "{\"pagoId\":\"PAG-452450\",\"inscripcionId\":\"INS-337723\",\"monto\":80,\"_usuario_original\":\"Cajera\"}"
+  },
+  {
+    "id": "AUD-451047-9446",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:20:51.047Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-449860-63e6",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T07:20:49.860Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-446210-2e86",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:20:46.210Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-195609-e4ac",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:16:35.609Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-144907-2c2a",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:15:44.907Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-143625-fb3a",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T07:15:43.625Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-141887-9499",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:15:41.887Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-139871-e47c",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:15:39.871Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-138339-1589",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:15:38.339Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-137171-1d94",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T07:15:37.171Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-133515-d3ed",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T07:15:33.516Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-854083-755c",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:10:54.083Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-852838-c5cf",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T07:10:52.838Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-822046-6cf0",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:10:22.046Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-818563-7280",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:10:18.563Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-815241-3d37",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:10:15.241Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-807615-97e1",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:10:07.615Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-791202-0952",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:09:51.202Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-774385-9fea",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:09:34.385Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-773190-c8ae",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T07:09:33.190Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-756431-bf1e",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:09:16.431Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-533659-eae4",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:05:33.659Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-531650-d044",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T07:05:31.650Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-500834-f4dc",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:05:00.834Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-490801-5652",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:04:50.801Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-470103-f8e5",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:04:30.103Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-453090-0cd5",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:04:13.090Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-451834-55c7",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T07:04:11.834Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-434883-e30b",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T07:03:54.883Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-079144-eb98",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:57:59.144Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-074391-2b0f",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:57:54.391Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-036890-e139",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:57:16.890Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-002730-191c",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:56:42.730Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-998122-7f6f",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:56:38.122Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-990851-e279",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:56:30.851Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-989233-4370",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:56:29.233Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-984325-a936",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T06:56:24.325Z",
+    "accion": "USUARIO_RESET_CONTRASENA",
+    "detalles": "{\"usuarioId\":\"USR-118070\"}"
+  },
+  {
+    "id": "AUD-979961-e5ec",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T06:56:19.961Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-967218-a19b",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:56:07.218Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-963799-b95d",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:56:03.799Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-959349-3e3e",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:55:59.349Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-951025-ebb3",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T06:55:51.025Z",
+    "accion": "USUARIO_RESET_CONTRASENA",
+    "detalles": "{\"usuarioId\":\"USR-118070\"}"
+  },
+  {
+    "id": "AUD-946890-9917",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T06:55:46.890Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-941751-f797",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-06T06:55:41.751Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Cajera\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-933558-607d",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:55:33.558Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-923150-b1c7",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:55:23.150Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-918036-b655",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:55:18.036Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-914527-8ce8",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:55:14.527Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-910739-1c80",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:55:10.739Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-899335-0833",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T06:54:59.335Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-887219-49ff",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T06:54:47.219Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"Usuario inactivo o no existe\",\"_usuario_original\":\"secre\"}"
+  },
+  {
+    "id": "AUD-245483-cbfb",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:44:05.483Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-244517-a172",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T06:44:04.517Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-243079-52ac",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:44:03.079Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-241562-a626",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:44:01.562Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-240316-bd76",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:44:00.316Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-239366-0fb8",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T06:43:59.366Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-236646-c119",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:43:56.646Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-180936-53b6",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:43:00.936Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-179807-8819",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T06:42:59.807Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-162861-0a57",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:42:42.861Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-145969-c8ab",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:42:25.969Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-144668-dd14",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:42:24.668Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-143742-615e",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T06:42:23.742Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-140806-0377",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:42:20.806Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-053244-a180",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:40:53.244Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-052077-64c5",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T06:40:52.077Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-034856-9679",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:40:34.856Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-002710-a5d5",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:40:02.710Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-001807-86e1",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T06:40:01.807Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-998771-44d7",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:39:58.771Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-955145-98a0",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:39:15.145Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-953988-a0f1",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T06:39:13.988Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-936978-3e8d",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:38:56.978Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-919996-da42",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:38:39.996Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-903203-a0e0",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:38:23.203Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-886503-2112",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T06:38:06.503Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-883435-49ff",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:38:03.435Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-694607-35e7",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:34:54.607Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-693592-8708",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T06:34:53.592Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-691057-0391",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:34:51.057Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-310329-6d0c",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:28:30.329Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-309406-51b4",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T06:28:29.406Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-306859-9975",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:28:26.859Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-123204-bbe8",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:25:23.204Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-122297-e7dc",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T06:25:22.297Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-119714-19fb",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:25:19.714Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-016073-fdc6",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:23:36.073Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-997970-8e0a",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:23:17.970Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-948850-f470",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:22:28.850Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-631764-8a37",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:17:11.764Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-568319-9561",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:16:08.319Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-567134-2706",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T06:16:07.135Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-549235-18bc",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T06:15:49.235Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-198779-dcb0",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:53:18.779Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-197827-e3ce",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:53:17.827Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-137224-0489",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:52:17.224Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-087976-a94a",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:51:27.976Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-087028-86ea",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:51:27.028Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-084144-cf5f",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:51:24.144Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-019589-ed8e",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:50:19.589Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-018616-397d",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:50:18.616Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-001139-99eb",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:50:01.139Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-939359-6ddc",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:48:59.359Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-938419-3da5",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:48:58.419Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-922132-dc90",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-06T05:48:42.132Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-103\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-921031-5631",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:48:41.031Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-875380-20d6",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:47:55.380Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-874421-158a",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:47:54.421Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-873004-53a2",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-06T05:47:53.004Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-103\",\"nombre\":\"Test\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-871900-7b1a",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:47:51.900Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-801049-1f60",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:46:41.049Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-800058-9d05",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:46:40.058Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-782787-e5cd",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:46:22.787Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-720253-aaf8",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T05:45:20.253Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-550510-8908",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T05:42:30.510Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-549501-91bb",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:42:29.501Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-533264-c619",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T05:42:13.264Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-454166-01fb",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:40:54.166Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-453253-2adf",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:40:53.253Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-446765-9e7f",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:40:46.765Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-337738-b08f",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:38:57.738Z",
+    "accion": "INSCRIPCION_CREAR",
+    "detalles": "{\"inscripcionId\":\"INS-337723\",\"estudianteId\":\"60000031\",\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-337152-0701",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:38:57.152Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-336209-f65e",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:38:56.209Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-329940-05d6",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:38:49.940Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-231338-497c",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:37:11.338Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-230397-9c1c",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:37:10.397Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-224116-ce9f",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T05:37:04.116Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-167243-d334",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T05:36:07.243Z",
+    "accion": "USUARIO_EDITAR",
+    "detalles": "{\"usuarioId\":\"USR-118070\"}"
+  },
+  {
+    "id": "AUD-167145-45d4",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T05:36:07.145Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-978737-dcb6",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T05:32:58.737Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-971959-3017",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-06T05:32:51.959Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-965574-c21b",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T05:32:45.574Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-224744-4cdf",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-06T05:03:44.744Z",
+    "accion": "CARGA_EXCEL_CONFIRMAR",
+    "detalles": "{\"cargaId\":1,\"importados\":35,\"duplicados\":0,\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-859719-efa7",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-06T04:40:59.719Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-854810-008b",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T04:40:54.810Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-845831-18b2",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T04:40:45.831Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"Usuario inactivo o no existe\",\"_usuario_original\":\"coord\"}"
+  },
+  {
+    "id": "AUD-836791-a1b5",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T04:40:36.791Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-833881-0dab",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T04:40:33.881Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\"}"
+  },
+  {
+    "id": "AUD-981549-06d1",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-06T03:53:01.549Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Cajera\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-978882-f961",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T03:52:58.882Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-971138-b44e",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T03:52:51.138Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"CARLOS\"}"
+  },
+  {
+    "id": "AUD-965239-50f4",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-06T03:52:45.239Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"CARLOS\"}"
+  },
+  {
+    "id": "AUD-951276-21a5",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T03:52:31.276Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-943017-a72a",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-06T03:52:23.017Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
     "id": "AUD-157374-5461",
     "usuario": "admin",
     "rol": "coordinacion",

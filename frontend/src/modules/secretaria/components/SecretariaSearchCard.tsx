@@ -277,18 +277,33 @@ function SecretariaSearchCard({
                     </span>
                   </div>
                   <div className="col-acciones secretaria-result-card-actions">
-                    <button
-                      className="secretaria-action-btn register-btn"
-                      title="Registrar inscripción"
-                      type="button"
-                      onClick={async () => {
-                        setDni(item.dni || item.nombres);
-                        await aplicarEstudianteEncontrado(item, true, true);
-                      }}
-                    >
-                      <UserPlus size={15} />
-                      <span>Inscribir</span>
-                    </button>
+                    {modoBusquedaAsistencia ? (
+                      <button
+                        className="secretaria-action-btn view-btn"
+                        title="Ver asistencia"
+                        type="button"
+                        onClick={async () => {
+                          setDni(item.dni || item.nombres);
+                          await aplicarEstudianteEncontrado(item, false, true);
+                        }}
+                      >
+                        <UserCheck size={15} />
+                        <span>Ver asistencia</span>
+                      </button>
+                    ) : (
+                      <button
+                        className="secretaria-action-btn register-btn"
+                        title="Registrar inscripción"
+                        type="button"
+                        onClick={async () => {
+                          setDni(item.dni || item.nombres);
+                          await aplicarEstudianteEncontrado(item, true, true);
+                        }}
+                      >
+                        <UserPlus size={15} />
+                        <span>Inscribir</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );

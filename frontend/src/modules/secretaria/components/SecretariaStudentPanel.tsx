@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Loader, Badge, Alert, Button } from "@mantine/core";
+import SecretariaWorkshopAttendanceRow from "./SecretariaWorkshopAttendanceRow";
 import {
   IconCircleCheck as CheckCircle2,
   IconClipboardCheck as ClipboardCheck,
@@ -113,196 +114,6 @@ function obtenerInfoBoxConfig({ inscripcion, programas, esCicloVerano, invitacio
   };
 }
 
-function SecretariaWorkshopAttendanceRow({ ins, estudiante }) {
-  const [asistencias, setAsistencias] = useState([]);
-  const [cargando, setCargando] = useState(false);
-  const [mensaje, setMensaje] = useState("");
-
-  useEffect(() => {
-    if (!ins?.programaId) return;
-
-    const cargarAsistencias = async () => {
-      setCargando(true);
-      setMensaje("");
-      try {
-        const result = await listarAsistenciasPrograma(ins.programaId);
-        setAsistencias(result || []);
-      } catch (err) {
-        setAsistencias([]);
-        setMensaje(err.message || "No se pudieron cargar los datos de asistencia.");
-      } finally {
-        setCargando(false);
-      }
-    };
-
-    cargarAsistencias();
-  }, [ins]);
-
-  const fechasColumnas = useMemo(() => {
-    const agrupado = agruparAsistenciasPorFecha(asistencias);
-    return Object.keys(agrupado)
-      .sort((a, b) => a.localeCompare(b))
-      .map((clave) => {
-        const [year, month, day] = clave.split("-");
-        return {
-          clave,
-          labelDDMM: `${day}/${month}`,
-          titulo: agrupado[clave].titulo,
-        };
-      });
-  }, [asistencias]);
-
-  const checkMap = useMemo(() => {
-    const map = new Set();
-    asistencias.forEach((asist) => {
-      const dateKey = claveFechaAsistencia(obtenerFechaAsistencia(asist));
-      const dni = obtenerDniAsistencia(asist);
-      if (dni && dateKey) {
-        map.add(`${dni}:${dateKey}`);
-      }
-    });
-    return map;
-  }, [asistencias]);
-
-  const stats = useMemo(() => {
-    if (!fechasColumnas.length) return { total: 0, asistio: 0, porcentaje: 0 };
-    let total = fechasColumnas.length;
-    let asistio = 0;
-    fechasColumnas.forEach((fechaCol) => {
-      const studentDni = estudiante?.dni || ins?.dniEstudiante || "";
-      if (studentDni && checkMap.has(`${studentDni}:${fechaCol.clave}`)) {
-        asistio++;
-      }
-    });
-    const porcentaje = Math.round((asistio / total) * 100);
-    return { total, asistio, porcentaje };
-  }, [fechasColumnas, checkMap, estudiante, ins]);
-
-  const handleExportPdf = () => {
-    if (!ins || !estudiante) return;
-    try {
-      exportPdfIndividual({
-        programaSeleccionado: {
-          id: ins.programaId,
-          nombre: ins.programa,
-          horario: ins.horario,
-          responsable: ins.docente,
-        },
-        alumno: {
-          nombres: estudiante.nombres,
-          dni: estudiante.dni,
-          codigoEstudiante: estudiante.codigoEstudiante || "",
-          telefono: ins.telefono || estudiante.telefonoApoderado || "",
-        },
-        fechasColumnas,
-        checkMap,
-      });
-    } catch (err) {
-      setMensaje("No se pudo exportar el PDF: " + err.message);
-    }
-  };
-
-  return (
-    <div style={{
-      padding: "16px",
-      background: "#ffffff",
-      border: "1px solid #e2e8f0",
-      borderRadius: "12px",
-      display: "flex",
-      flexDirection: "column",
-      gap: "12px",
-      boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)",
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "8px" }}>
-        <div>
-          <strong style={{ fontSize: "15px", color: "#0f172a" }}>{ins.programa}</strong>
-          <span style={{ fontSize: "12px", color: "#64748b", display: "block", marginTop: "2px" }}>
-            <strong>Docente:</strong> {ins.docente || "No definido"} · <strong>Horario:</strong> {resumirClaseSecretaria(ins.horario)}
-          </span>
-        </div>
-        {fechasColumnas.length > 0 && (
-          <Badge color={stats.porcentaje >= 80 ? "green" : stats.porcentaje >= 50 ? "orange" : "red"} size="md" radius="sm">
-            {stats.porcentaje}% Asistencia ({stats.asistio}/{stats.total})
-          </Badge>
-        )}
-      </div>
-
-      {mensaje && (
-        <Alert color="orange" radius="sm" py={6} style={{ fontSize: "12px" }}>
-          {mensaje}
-        </Alert>
-      )}
-
-      {cargando ? (
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 0" }}>
-          <Loader size="xs" color="teal" />
-          <span style={{ fontSize: "12px", color: "#64748b" }}>Cargando asistencias...</span>
-        </div>
-      ) : fechasColumnas.length > 0 ? (
-        <>
-          <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "6px" }}>
-            {fechasColumnas.map((fechaCol) => {
-              const studentDni = estudiante?.dni || ins?.dniEstudiante || "";
-              const asistio = studentDni && checkMap.has(`${studentDni}:${fechaCol.clave}`);
-
-              const record = asistencias.find((a) => {
-                const dateKey = claveFechaAsistencia(obtenerFechaAsistencia(a));
-                const dni = obtenerDniAsistencia(a);
-                return String(dni) === String(studentDni) && dateKey === fechaCol.clave;
-              });
-
-              return (
-                <div
-                  key={fechaCol.clave}
-                  title={`${fechaCol.titulo} - ${asistio ? "Asistió" : "Faltó"}${record?.observacion ? ` (${record.observacion})` : ""}`}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    minWidth: "64px",
-                    padding: "6px",
-                    borderRadius: "6px",
-                    background: asistio ? "#f0fdf4" : "#fef2f2",
-                    border: `1px solid ${asistio ? "#bbf7d0" : "#fecaca"}`,
-                  }}
-                >
-                  <span style={{ fontSize: "10px", color: "#64748b", fontWeight: 600 }}>{fechaCol.labelDDMM}</span>
-                  <span style={{
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    color: asistio ? "#166534" : "#991b1b",
-                    marginTop: "4px"
-                  }}>
-                    {asistio ? "✓" : "—"}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "4px" }}>
-            <Button
-              size="xs"
-              variant="outline"
-              color="teal"
-              leftSection={<FileDown size={14} />}
-              onClick={handleExportPdf}
-            >
-              Exportar Reporte PDF
-            </Button>
-          </div>
-        </>
-      ) : (
-        <div style={{ padding: "8px 0", display: "flex", alignItems: "center", gap: "6px" }}>
-          <CalendarDays size={16} style={{ color: "#94a3b8" }} />
-          <span style={{ fontSize: "12px", color: "#64748b", fontStyle: "italic" }}>
-            Aún no se registran asistencias para este taller.
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function SecretariaStudentPanel({
   abrirFichaGenerada,
@@ -808,6 +619,35 @@ function SecretariaStudentPanel({
           )}
         </div>
       )}
+
+      {modoBusquedaAsistencia && inscripcionesEstudiante.length === 0 && (
+        <div style={{
+          marginTop: "20px",
+          background: "#fffdf5",
+          border: "1px solid #ffe082",
+          borderLeft: "4px solid #ffb300",
+          padding: "16px 20px",
+          borderRadius: "12px",
+          color: "#b7791f",
+          display: "flex",
+          alignItems: "center",
+          gap: "14px",
+          width: "100%",
+          gridColumn: "1 / -1",
+          boxShadow: "0 1px 3px 0 rgba(0, 0, 0, 0.05)"
+        }}>
+          <AlertTriangle size={24} style={{ color: "#ffb300", flexShrink: 0 }} />
+          <div>
+            <strong style={{ fontSize: "14px", display: "block", marginBottom: "3px", color: "#92400e" }}>
+              Sin Talleres Matriculados
+            </strong>
+            <span style={{ fontSize: "12.5px", color: "#b45309", lineHeight: "1.4" }}>
+              El estudiante no registra matrículas ni talleres extracurriculares activos en el período seleccionado.
+            </span>
+          </div>
+        </div>
+      )}
+
 
       {!modoBusquedaAsistencia && (() => {
         const config = obtenerInfoBoxConfig({

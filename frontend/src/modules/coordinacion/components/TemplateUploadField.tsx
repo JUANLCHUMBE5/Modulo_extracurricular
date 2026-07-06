@@ -53,11 +53,13 @@ function TemplateUploadField({
               }
             }}
           >
-            <FileText size={32} className="coord-drop-icon" style={{ color: "#2b6cb0" }} />
-            <p className="coord-drop-text">
-              Arrastra tu archivo Word o <span className="coord-drop-highlight" style={{ color: "#2b6cb0", textDecorationColor: "#bee3f8" }}>haz clic para elegir</span>
-            </p>
-            <div className="coord-drop-sub">.docx — máx 5 MB</div>
+            <FileText size={22} className="coord-drop-icon" style={{ color: "#2b6cb0" }} />
+            <div className="coord-drop-text-group">
+              <p className="coord-drop-text">
+                Arrastra tu archivo Word o <span className="coord-drop-highlight" style={{ color: "#2b6cb0", textDecorationColor: "#bee3f8" }}>haz clic para elegir</span>
+              </p>
+              <div className="coord-drop-sub">.docx — máx 5 MB</div>
+            </div>
             <input
               id={inputId}
               key={plantillaInputKey}

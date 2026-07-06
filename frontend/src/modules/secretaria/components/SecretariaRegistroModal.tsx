@@ -1,5 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Alert as MantineAlert } from "@mantine/core";
+import SecretariaCambridgeIngreso from "./SecretariaCambridgeIngreso";
+import SecretariaUniformeSelector from "./SecretariaUniformeSelector";
+import SecretariaApoderadoForm from "./SecretariaApoderadoForm";
 import {
   IconAlertCircle as AlertCircle,
   IconClipboardCheck as ClipboardCheck,
@@ -539,126 +542,27 @@ export default function SecretariaRegistroModal({
                           </div>
                         </div>
 
-                        {esCambridge && ingresoCambridge ? (
-                          <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "10px", borderRadius: "8px", marginTop: "10px" }}>
-                            <span style={{ fontSize: "11px", color: "#1e40af", display: "block", marginBottom: "2px" }}>Modalidad Cambridge</span>
-                            <strong style={{ fontSize: "13px", color: "#1e3a8a" }}>{ingresoCambridge} {nivelCambridge ? `(${nivelCambridge})` : ""}</strong>
-                          </div>
-                        ) : null}
+                        <SecretariaCambridgeIngreso
+                          esCambridge={esCambridge}
+                          ingresoCambridge={ingresoCambridge}
+                          nivelCambridge={nivelCambridge}
+                        />
                       </div>
                     ) : null}
 
-                {programaRegistroVista?.requiereUniforme ? (
-                  <div className="secretaria-field" style={{ marginBottom: "16px" }}>
-                    <label htmlFor="talla" style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de uniforme</label>
-                    <select
-                      id="talla"
-                      className="secretaria-input-fused"
-                      value={formulario.tallaUniforme}
-                      onChange={(event) =>
-                        actualizarFormulario("tallaUniforme", event.target.value)
-                      }
-                    >
-                      <option value="">Seleccione talla</option>
-                      <option value="S">S</option>
-                      <option value="M">M</option>
-                      <option value="L">L</option>
-                      <option value="XL">XL</option>
-                    </select>
-                  </div>
-                ) : null}
-
-                {programaRegistroVista?.requiereIndumentaria ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 18px", marginBottom: "16px" }}>
-                    <div>
-                      <label htmlFor="tallaPolo" style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de polo</label>
-                      <select
-                        id="tallaPolo"
-                        className="secretaria-input-fused"
-                        value={formulario.tallaPolo}
-                        onChange={(event) =>
-                          actualizarFormulario("tallaPolo", event.target.value)
-                        }
-                      >
-                        <option value="">Seleccione talla</option>
-                        <option value="6">6</option>
-                        <option value="8">8</option>
-                        <option value="10">10</option>
-                        <option value="12">12</option>
-                        <option value="14">14</option>
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                        <option value="XL">XL</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label htmlFor="tallaShort" style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de short</label>
-                      <select
-                        id="tallaShort"
-                        className="secretaria-input-fused"
-                        value={formulario.tallaShort}
-                        onChange={(event) =>
-                          actualizarFormulario("tallaShort", event.target.value)
-                        }
-                      >
-                        <option value="">Seleccione talla</option>
-                        <option value="6">6</option>
-                        <option value="8">8</option>
-                        <option value="10">10</option>
-                        <option value="12">12</option>
-                        <option value="14">14</option>
-                        <option value="S">S</option>
-                        <option value="M">M</option>
-                        <option value="L">L</option>
-                        <option value="XL">XL</option>
-                      </select>
-                    </div>
-                  </div>
-                ) : null}
+                <SecretariaUniformeSelector
+                  requiereUniforme={Boolean(programaRegistroVista?.requiereUniforme)}
+                  requiereIndumentaria={Boolean(programaRegistroVista?.requiereIndumentaria)}
+                  formulario={formulario}
+                  actualizarFormulario={actualizarFormulario}
+                />
 
                 </div>
 
-                {/* Padre / Apoderado */}
-                <div style={{ marginTop: "10px" }}>
-                  <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#1b5e20", marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
-                    <BookOpen size={16} style={{ color: "#388e3c" }} />
-                    Padre / Apoderado
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 12px", margin: "4px 0 6px" }}>
-                    <div style={{ gridColumn: "1 / -1" }}>
-                      <label style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Nombre del padre / apoderado</label>
-                      <input
-                        className="secretaria-input-fused"
-                        type="text"
-                        value={formulario.apoderado}
-                        onChange={(event) => actualizarFormulario("apoderado", event.target.value)}
-                        placeholder="Nombre completo del apoderado"
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Teléfono del padre</label>
-                      <input
-                        className="secretaria-input-fused"
-                        type="text"
-                        value={formulario.telefono}
-                        onChange={(event) => actualizarFormulario("telefono", event.target.value.replace(/\D/g, ""))}
-                        placeholder="987654321"
-                        maxLength="9"
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Observación (opcional)</label>
-                      <input
-                        className="secretaria-input-fused"
-                        type="text"
-                        value={formulario.observacion}
-                        onChange={(event) => actualizarFormulario("observacion", event.target.value)}
-                        placeholder="Observación opcional para el registro"
-                      />
-                    </div>
-                  </div>
-                </div>
+                <SecretariaApoderadoForm
+                  formulario={formulario}
+                  actualizarFormulario={actualizarFormulario}
+                />
 
                 </>
                 ) : null}

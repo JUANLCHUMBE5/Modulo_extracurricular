@@ -626,9 +626,10 @@
     "fechaNacimiento": "2010-01-01",
     "tipoAlumno": "Alumno interno",
     "estadoMatricula": "Activo",
-    "apoderado": "Apoderado Paredes",
-    "telefonoApoderado": "916706660",
-    "correoApoderado": ""
+    "apoderado": "Juan Garcia Lopez",
+    "telefonoApoderado": "999888777",
+    "correoApoderado": "",
+    "estadoInscripcion": "confirmada"
   },
   "60000032": {
     "dni": "60000032",
@@ -688,7 +689,8 @@
     "estadoMatricula": "Activo",
     "apoderado": "Apoderado Leon",
     "telefonoApoderado": "965626474",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "pendiente_pago"
   },
   "60000036": {
     "dni": "60000036",

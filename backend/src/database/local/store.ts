@@ -58,6 +58,7 @@ export async function loadDatabaseFromFiles(defaults: LocalDatabase): Promise<Lo
       await writeJsonFile("invitados.json", oldDb.invitadosPorPrograma || defaults.invitadosPorPrograma);
       await writeJsonFile("auditLogs.json", oldDb.auditLogs || defaults.auditLogs);
       await writeJsonFile("historialCargas.json", oldDb.historialCargas || defaults.historialCargas);
+      await writeJsonFile("plantillasPorPrograma.json", oldDb.plantillasPorPrograma || defaults.plantillasPorPrograma || {});
       
       const configData = {
         categorias: oldDb.categorias || defaults.categorias,
@@ -100,6 +101,24 @@ export async function loadDatabaseFromFiles(defaults: LocalDatabase): Promise<Lo
     readJsonFile("auditLogs.json", defaults.auditLogs),
     readJsonFile("historialCargas.json", defaults.historialCargas)
   ]);
+
+  let plantillasPorPrograma: any = null;
+  try {
+    const raw = await fs.readFile(path.join(DATA_DIR, "plantillasPorPrograma.json"), "utf8");
+    plantillasPorPrograma = JSON.parse(raw.replace(/^\uFEFF/, ""));
+  } catch {
+    // Intentar recuperar desde db.json.bak
+    try {
+      const bakPath = path.resolve(DATA_DIR, "db.json.bak");
+      const raw = await fs.readFile(bakPath, "utf8");
+      const oldDb = JSON.parse(raw.replace(/^\uFEFF/, ""));
+      plantillasPorPrograma = oldDb.plantillasPorPrograma || {};
+      await writeJsonFile("plantillasPorPrograma.json", plantillasPorPrograma);
+      console.log("♻️ Plantillas recuperadas con éxito de db.json.bak");
+    } catch {
+      plantillasPorPrograma = defaults.plantillasPorPrograma || {};
+    }
+  }
   
   const defaultConfigConfig = {
     categorias: defaults.categorias,
@@ -123,6 +142,7 @@ export async function loadDatabaseFromFiles(defaults: LocalDatabase): Promise<Lo
     asistencias,
     historialCargas,
     auditLogs,
+    plantillasPorPrograma,
     categorias: config.categorias || defaults.categorias,
     configuracionInstitucional: config.configuracionInstitucional || defaults.configuracionInstitucional,
     correlativos: config.correlativos || defaults.correlativos,
@@ -144,6 +164,7 @@ export async function saveDatabaseToFiles(db: LocalDatabase): Promise<void> {
     writeJsonFile("invitados.json", db.invitadosPorPrograma),
     writeJsonFile("auditLogs.json", db.auditLogs),
     writeJsonFile("historialCargas.json", db.historialCargas),
+    writeJsonFile("plantillasPorPrograma.json", db.plantillasPorPrograma || {}),
     writeJsonFile("config.json", {
       categorias: db.categorias,
       configuracionInstitucional: db.configuracionInstitucional,

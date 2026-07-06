@@ -13,7 +13,7 @@
     "usuario": "mauricio",
     "rol": "Administrador",
     "estado": "Activo",
-    "contrasena": "123456",
+    "contrasena": "$2b$10$89qcy2jywOY.fVxZmOgjZO/8PIDdAA0eVxOIVxraBYOeVoidFpty.",
     "permisos": []
   },
   {
@@ -25,7 +25,7 @@
       "Secretaria"
     ],
     "estado": "Activo",
-    "contrasena": "$2b$10$XxF1ASRPImiBgWoyym6PfultgPZ535pFPj663.IVCSdFT4ijO.rVy",
+    "contrasena": "$2b$10$x0/YoBK5mqzobunwMUZofeJSuMJsjUWIHRTcsnwrYSWl5WSQ1E7uy",
     "permisos": [
       "usuarios.crear",
       "usuarios.editar",

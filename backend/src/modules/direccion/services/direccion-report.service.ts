@@ -1,4 +1,4 @@
-﻿import { DireccionRepository } from "../repositories/direccion.repository.js";
+import { DireccionRepository } from "../repositories/direccion.repository.js";
 import {
   mapDbProgramToApi,
   mapDbAsistenciaToApi,
@@ -144,7 +144,7 @@ export class DireccionReportService {
 
     const inscripcionesMapeadas = inscripciones.map((item) => crearFilaInscripcionReporte(item, db.estudiantes || {}));
     const pagosMapeados = pagos.map((item) => crearFilaPagoReporte(item, db.inscripciones || []));
-    const programasMapeados = programas.map(mapDbProgramToApi);
+    const programasMapeados = programas.map((p: any) => mapDbProgramToApi(p, db));
 
     const programaIdsSet = new Set(programas.map(p => p.id));
     const asistenciasFiltradas = asistencias.filter(a => programaIdsSet.has(a.programaId || ""));

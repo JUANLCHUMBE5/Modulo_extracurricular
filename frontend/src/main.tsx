@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { MantineProvider } from "@mantine/core";
 import { Toaster } from "sonner";
 import { HashRouter } from "react-router-dom";
-import App from "./App.jsx";
+import App from "./App";
 import { mantineTheme } from "./mantineTheme";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
