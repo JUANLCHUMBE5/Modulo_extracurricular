@@ -14,11 +14,13 @@
 /* Buscador de Estudiantes */
 .dir-search-container {
   background: #ffffff !important;
-  border: none !important;
-  border-radius: 8px !important;
-  padding: 6px 0 !important;
-  box-shadow: none !important;
-  margin-bottom: 0 !important;
+  background-color: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1px solid #dcedc8 !important;
+  padding: 20px !important;
+  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
+  margin-bottom: 18px !important;
+  box-sizing: border-box !important;
 }
 
 /* Botón Buscar Alumno - Verde Claro */

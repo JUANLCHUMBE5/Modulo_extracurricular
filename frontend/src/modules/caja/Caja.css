@@ -26,10 +26,13 @@
 }
 
 .caja-main {
-  grid-column: 2;
-  width: min(1180px, calc(100% - 48px));
-  margin: 0 auto;
-  padding: 32px 24px;
+  grid-column: 2 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 24px 24px !important;
+  box-sizing: border-box !important;
+  transition: padding-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .caja-page-embedded {
@@ -39,8 +42,10 @@
 }
 
 .caja-main-embedded {
-  width: min(1040px, 100%);
-  padding: 0 0 32px;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 0 32px !important;
 }
 
 .caja-modal-header {
@@ -61,12 +66,9 @@
 /* ── VISUAL CLEANUP & COMPACTION OVERRIDES FOR CAJA MODULE ── */
 
 /* 1. Remoción de Marcos, Fondos Grises/Verdes y Sombras en Contenedores */
-.caja-payment-workspace,
 .caja-form-block,
 .caja-form.is-search-only .caja-form-block,
 .caja-header,
-.caja-report-filters,
-.caja-panel,
 .caja-table-wrap {
   border: none !important;
   box-shadow: none !important;
@@ -75,10 +77,23 @@
   padding-right: 0 !important;
 }
 
+/* Convertir paneles de Caja en tarjetas blancas flotantes de alta calidad */
+.caja-payment-workspace,
+.caja-report-filters,
+.caja-panel {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1px solid #dcedc8 !important;
+  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
+  padding: 20px !important;
+  margin-bottom: 18px !important;
+  box-sizing: border-box !important;
+}
+
 .caja-payment-workspace {
-  padding-top: 10px !important;
-  padding-bottom: 10px !important;
-  margin-bottom: 8px !important;
+  padding-top: 16px !important;
+  padding-bottom: 16px !important;
   gap: 10px !important;
 }
 
@@ -96,10 +111,7 @@
   margin-bottom: 6px !important;
 }
 
-.caja-main {
-  padding-top: 10px !important;
-  padding-bottom: 10px !important;
-}
+/* Padding is handled in the main declaration above to prevent left/right reset */
 
 /* 2. Unificación de Alturas en Campos de Entrada y Botones (38px) */
 .caja-search-form input,
@@ -697,22 +709,7 @@
   }
 }
 
-.caja-main {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  padding-left: 24px !important;
-  padding-right: 24px !important;
-}
 
-.caja-main-embedded {
-  width: 100% !important;
-  max-width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  padding: 0 0 32px !important;
-}
 
 .caja-header,
 .caja-payment-workspace,

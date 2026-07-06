@@ -1,5 +1,93 @@
 [
   {
+    "id": "AUD-157374-5461",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-05T22:55:57.374Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-245761-7a20",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-05T22:40:45.762Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"nombre\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo Variables\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-938087-074e",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-05T19:48:58.087Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Cajera\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-929534-c429",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-05T19:48:49.534Z",
+    "accion": "USUARIO_CREAR",
+    "detalles": "{\"usuarioId\":\"USR-929463\",\"usuario\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-908455-c6f4",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-05T19:48:28.455Z",
+    "accion": "USUARIO_ELIMINAR",
+    "detalles": "{\"usuarioId\":\"USR-501339\"}"
+  },
+  {
+    "id": "AUD-890704-8836",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-05T19:48:10.704Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-881427-9d0e",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-05T19:48:01.427Z",
+    "accion": "USUARIO_RESET_CONTRASENA",
+    "detalles": "{\"usuarioId\":\"USR-501339\"}"
+  },
+  {
+    "id": "AUD-869086-a0bc",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-05T19:47:49.086Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-865850-c412",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-05T19:47:45.850Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"pedro\"}"
+  },
+  {
+    "id": "AUD-356470-3d79",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-05T19:22:36.470Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-338099-4083",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-05T19:22:18.099Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
     "id": "AUD-616508-ba39",
     "usuario": "admin",
     "rol": "secretaria",

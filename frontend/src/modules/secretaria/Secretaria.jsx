@@ -71,6 +71,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   const [modoCursoAdicional, setModoCursoAdicional] = useState(false);
   const [asistenciaModal, setAsistenciaModal] = useState({ open: false, inscripcion: null });
   const [resultadosNombre, setResultadosNombre] = useState([]);
+  const [registroDesdeLista, setRegistroDesdeLista] = useState(false);
 
   function mostrarMensaje(texto, tipo = "error") {
     setMensaje(texto);
@@ -241,15 +242,14 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
           const resultados = await buscarEstudiantesPorNombre(busqueda, periodo);
           setBuscando(false);
 
-          if (resultados.length === 1) {
-            await aplicarEstudianteEncontrado(resultados[0]);
-            return;
-          }
-
-          if (resultados.length > 1) {
+          if (resultados.length >= 1) {
             setEstudiante(null);
             setResultadosNombre(resultados);
-            setMensaje("Seleccione el estudiante encontrado por nombre.");
+            setMensaje("");
+            return;
+          } else {
+            setEstudiante(null);
+            setMensaje("No se encontraron estudiantes con ese nombre en este periodo.");
             return;
           }
         }
@@ -275,7 +275,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       }
 
       setDni(dniLimpio);
-      await aplicarEstudianteEncontrado(encontrado);
+      await aplicarEstudianteEncontrado(encontrado, true, false);
     } catch (error) {
       setEstudiante(null);
       setMensaje(error.message || "No se pudo consultar el estudiante. Verifique la conexion con la base local.");
@@ -289,16 +289,10 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
       mostrarMensaje("El registro de alumno externo solo esta disponible en ciclo verano.");
       return;
     }
-
-    const dniLimpio = String(dniSugerido || dni || "").replace(/\D/g, "").slice(0, 8);
-
-    const programasActualizados = await cargarProgramasDelPeriodo();
-    const primerProgramaPeriodo = programasActualizados[0]?.id || "";
-
-    setInscripción(null);
-    setResultadosNombre([]);
+    const primerProgramaPeriodo = programas[0]?.id || "";
+    setDni(dniSugerido);
     setEstudiante({
-      dni: dniLimpio,
+      dni: dniSugerido,
       nombres: "Alumno externo por registrar",
       grado: "Por registrar",
       seccion: "Por registrar",
@@ -312,43 +306,107 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     });
     setFormulario({
       ...formularioInicial,
-      dniExterno: dniLimpio,
+      dniExterno: dniSugerido,
       programa: primerProgramaPeriodo,
     });
     setModoRegistro(true);
     setMensaje("");
   }
 
-  async function aplicarEstudianteEncontrado(encontrado) {
-    setResultadosNombre([]);
+  async function aplicarEstudianteEncontrado(encontrado, iniciarRegistro = false, desdeLista = false) {
+    setRegistroDesdeLista(desdeLista);
     const registroExistente = await buscarInscripcionEstudiante(encontrado, periodo);
     const registrosExistentes = await listarInscripcionesEstudiante(encontrado, periodo);
     const programasCompatiblesBase = await listarProgramasPorPeriodo(periodo, encontrado.grado || "", calcularEdadSecretaria(encontrado, formularioInicial));
     const programasCompatibles = programasCompatiblesBase;
     setProgramas(programasCompatibles);
-    const estadoRegistro = registroExistente?.estadoInscripción || registroExistente?.estadoInscripcion;
-    setEstudiante({
+    const estadoRegistro = registroExistente?.estadoInscripción || registroExistente?.estadoInscripción;
+    const studentData = {
       ...encontrado,
-      estadoInscripcion: estadoRegistro || encontrado.estadoInscripcion || encontrado.estadoInscripción || "No inscrito",
-      estadoInscripción: estadoRegistro || encontrado.estadoInscripcion || encontrado.estadoInscripción || "No inscrito",
+      estadoInscripción: estadoRegistro || encontrado.estadoInscripcion || encontrado.estadoInscripcion || "No inscrito",
       estadoPago: registroExistente?.estadoPago || encontrado.estadoPago,
-    });
+    };
+    setEstudiante(studentData);
     setInscripción(registroExistente);
     setInscripcionesEstudiante(registrosExistentes);
-    setFormulario({
-      ...formularioInicial,
-      programa: (encontrado.tieneInvitacion && encontrado.programaDisponible !== false) ? encontrado.programaAsignado : "",
-      apoderado: registroExistente?.apoderado ?? encontrado.apoderado ?? "",
-      telefono: registroExistente?.telefono ?? encontrado.telefonoApoderado ?? "",
-      correo: registroExistente?.correo ?? "",
-      medioEnvio: registroExistente?.medioEnvio ?? "Impreso",
-      tallaUniforme: registroExistente?.tallaUniforme ?? "",
-      tallaPolo: registroExistente?.tallaPolo ?? "",
-      tallaShort: registroExistente?.tallaShort ?? "",
-      observacion: registroExistente?.observacion ?? "",
-      tipoAlumnoVerano: periodo === "verano" ? "Alumno interno" : formularioInicial.tipoAlumnoVerano,
-      colegioProcedencia: periodo === "verano" ? (registroExistente?.colegioProcedencia || "Colegio San Rafael") : "",
-    });
+
+    if (iniciarRegistro) {
+      if (registroExistente) {
+        toast.info("El alumno ya tiene un taller registrado. Use 'Registrar curso adicional' si corresponde.");
+        setFormulario({
+          ...formularioInicial,
+          programa: (encontrado.tieneInvitacion && encontrado.programaDisponible !== false) ? encontrado.programaAsignado : "",
+          apoderado: registroExistente?.apoderado ?? encontrado.apoderado ?? "",
+          telefono: registroExistente?.telefono ?? encontrado.telefonoApoderado ?? "",
+          correo: registroExistente?.correo ?? "",
+          medioEnvio: registroExistente?.medioEnvio ?? "Impreso",
+          tallaUniforme: registroExistente?.tallaUniforme ?? "",
+          tallaPolo: registroExistente?.tallaPolo ?? "",
+          tallaShort: registroExistente?.tallaShort ?? "",
+          observacion: registroExistente?.observacion ?? "",
+          tipoAlumnoVerano: periodo === "verano" ? "Alumno interno" : formularioInicial.tipoAlumnoVerano,
+          colegioProcedencia: periodo === "verano" ? (registroExistente?.colegioProcedencia || "Colegio San Rafael") : "",
+        });
+      } else {
+        setModoCursoAdicional(false);
+        const invitacionSinHorarioLocal = !esCicloVerano && Boolean(studentData.tieneInvitacion) && studentData.programaDisponible === false && programasCompatibles.length === 0;
+        if (invitacionSinHorarioLocal) {
+          mostrarMensaje("El alumno esta cargado por Coordinación Académica, pero falta configurar un horario para su grado antes de inscribirlo.");
+          return;
+        }
+
+        const programaAsignadoActual = !esCicloVerano && Boolean(studentData.tieneInvitacion) && studentData.programaDisponible !== false
+          ? await obtenerProgramaPorId(studentData.programaAsignado, periodo).catch(() => null)
+          : null;
+
+        if (!esCicloVerano && Boolean(studentData.tieneInvitacion) && studentData.programaDisponible !== false && !programaAsignadoActual) {
+          mostrarMensaje("El programa asignado por Coordinación Académica no está habilitado o no tiene cupos disponibles.");
+          return;
+        }
+
+        const primerProgramaPeriodo = programasCompatibles[0]?.id || "";
+        const debeEscogerEntreInvitacionYMasiva = Boolean(programaAsignadoActual && programasCompatibles.length > 0);
+
+        setFormulario({
+          ...formularioInicial,
+          programa: debeEscogerEntreInvitacionYMasiva
+            ? ""
+            : programaAsignadoActual
+              ? studentData.programaAsignado
+              : primerProgramaPeriodo,
+          colegioProcedencia: studentData.esExterno ? "" : "Colegio San Rafael",
+          tipoAlumnoVerano: esCicloVerano
+            ? (studentData.esExterno ? "Alumno externo" : "Alumno interno")
+            : formularioInicial.tipoAlumnoVerano,
+          apoderado: studentData.apoderado || "",
+          telefono: studentData.telefonoApoderado || "",
+          correo: "",
+          medioEnvio: "Impreso",
+          tallaUniforme: "",
+          tallaPolo: "",
+          tallaShort: "",
+          observacion: "",
+          aceptaCondiciones: false,
+        });
+        setModoRegistro(true);
+      }
+    } else {
+      setFormulario({
+        ...formularioInicial,
+        programa: (encontrado.tieneInvitacion && encontrado.programaDisponible !== false) ? encontrado.programaAsignado : "",
+        apoderado: registroExistente?.apoderado ?? encontrado.apoderado ?? "",
+        telefono: registroExistente?.telefono ?? encontrado.telefonoApoderado ?? "",
+        correo: registroExistente?.correo ?? "",
+        medioEnvio: registroExistente?.medioEnvio ?? "Impreso",
+        tallaUniforme: registroExistente?.tallaUniforme ?? "",
+        tallaPolo: registroExistente?.tallaPolo ?? "",
+        tallaShort: registroExistente?.tallaShort ?? "",
+        observacion: registroExistente?.observacion ?? "",
+        tipoAlumnoVerano: periodo === "verano" ? "Alumno interno" : formularioInicial.tipoAlumnoVerano,
+        colegioProcedencia: periodo === "verano" ? (registroExistente?.colegioProcedencia || "Colegio San Rafael") : "",
+      });
+    }
+
     if (encontrado.tieneInvitacion && encontrado.programaDisponible === false) {
       setMensaje("Aviso: El taller invitado por Coordinación Académica no está disponible para el grado del alumno. Puede seleccionar otro taller compatible.");
     } else {
@@ -918,7 +976,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         </div>
       </aside>
 
-      <main className="secretaria-main">
+      <main className={`secretaria-main${modoRegistro ? " secretaria-main-registro-active" : ""}`}>
         {!sidebarExpanded && (
           <button
             className="sidebar-floating-toggle"
@@ -934,7 +992,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
           delegatedContent
         ) : (
           <>
-            <section className="secretaria-workspace secretaria-workspace-system">
+            <section className={`secretaria-workspace secretaria-workspace-system${modoRegistro ? " secretaria-registro-layout-active" : ""}`}>
               <SecretariaSearchCard
                 aplicarEstudianteEncontrado={aplicarEstudianteEncontrado}
                 abrirRegistroAlumnoExterno={abrirRegistroAlumnoExterno}
@@ -948,53 +1006,67 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                 setDni={setDni}
                 setPeriodo={setPeriodo}
                 modoBusquedaAsistencia={vistaActiva === "asistencias"}
+                limpiarBusquedaEstudiante={limpiarBusquedaEstudiante}
+                modoRegistro={modoRegistro}
               >
-                <SecretariaStudentPanel
-                  abrirCursoAdicional={abrirCursoAdicional}
-                  abrirFichaGenerada={abrirFichaGenerada}
-                  abrirRegistro={abrirRegistro}
-                  cursosAdicionalesDisponibles={programasCursoAdicional.length}
-                  derivarACaja={derivarACaja}
-                  derivandoCaja={derivandoCaja}
-                  esCicloVerano={esCicloVerano}
-                  estudiante={estudiante}
-                  imprimiendoFichaRegistro={imprimiendoFichaRegistro}
-                  inscripcion={inscripcion}
-                  invitacionSinHorario={invitacionSinHorario}
-                  limpiarBusquedaEstudiante={limpiarBusquedaEstudiante}
-                  nombreProgramaAMostrar={nombreProgramaAMostrar}
-                  programas={programas}
-                  tieneInvitacionOperativa={tieneInvitacionOperativa}
-                  tipoAlumnoMostrado={tipoAlumnoMostrado}
-                  inscripcionesEstudiante={inscripcionesEstudiante}
-                  onVerAsistencia={(ins) => setAsistenciaModal({ open: true, inscripcion: ins })}
-                  modoBusquedaAsistencia={vistaActiva === "asistencias"}
-                />
+                {estudiante && (
+                  <div className={modoRegistro ? "secretaria-fused-grid-layout" : "secretaria-fused-workspace"}>
+                    <SecretariaStudentPanel
+                      abrirCursoAdicional={abrirCursoAdicional}
+                      abrirFichaGenerada={abrirFichaGenerada}
+                      abrirRegistro={abrirRegistro}
+                      cursosAdicionalesDisponibles={programasCursoAdicional.length}
+                      derivarACaja={derivarACaja}
+                      derivandoCaja={derivandoCaja}
+                      esCicloVerano={esCicloVerano}
+                      estudiante={estudiante}
+                      imprimiendoFichaRegistro={imprimiendoFichaRegistro}
+                      inscripcion={inscripcion}
+                      invitacionSinHorario={invitacionSinHorario}
+                      limpiarBusquedaEstudiante={limpiarBusquedaEstudiante}
+                      nombreProgramaAMostrar={nombreProgramaAMostrar}
+                      programas={programas}
+                      tieneInvitacionOperativa={tieneInvitacionOperativa}
+                      tipoAlumnoMostrado={tipoAlumnoMostrado}
+                      inscripcionesEstudiante={inscripcionesEstudiante}
+                      onVerAsistencia={(ins) => setAsistenciaModal({ open: true, inscripcion: ins })}
+                      modoBusquedaAsistencia={vistaActiva === "asistencias"}
+                      modoRegistro={modoRegistro}
+                    />
+
+                    {modoRegistro && (
+                      <SecretariaRegistroModal
+                        actualizarFormulario={actualizarFormulario}
+                        esCicloVerano={esCicloVerano}
+                        estudiante={estudiante}
+                        formulario={formulario}
+                        guardarInscripción={guardarInscripción}
+                        guardando={guardando}
+                        horarioResumenRegistro={horarioResumenRegistro}
+                        etiquetaPrograma={etiquetaProgramaSecretaria}
+                        mensaje={mensaje}
+                        modoCursoAdicional={modoCursoAdicional}
+                        modoRegistro={modoRegistro}
+                        mostrarSelectorPrograma={mostrarSelectorPrograma}
+                        programaParaRegistro={programaParaRegistro}
+                        programas={programas}
+                        programasParaSelector={programasParaSelector}
+                        setModoRegistro={(valor) => {
+                          setModoRegistro(valor);
+                          if (!valor) {
+                            setModoCursoAdicional(false);
+                            if (registroDesdeLista) {
+                              setEstudiante(null);
+                              setRegistroDesdeLista(false);
+                            }
+                          }
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
               </SecretariaSearchCard>
-
             </section>
-
-            <SecretariaRegistroModal
-              actualizarFormulario={actualizarFormulario}
-              esCicloVerano={esCicloVerano}
-              estudiante={estudiante}
-              formulario={formulario}
-              guardarInscripción={guardarInscripción}
-              guardando={guardando}
-              horarioResumenRegistro={horarioResumenRegistro}
-              etiquetaPrograma={etiquetaProgramaSecretaria}
-              mensaje={mensaje}
-              modoCursoAdicional={modoCursoAdicional}
-              modoRegistro={modoRegistro}
-              mostrarSelectorPrograma={mostrarSelectorPrograma}
-              programaParaRegistro={programaParaRegistro}
-              programas={programas}
-              programasParaSelector={programasParaSelector}
-              setModoRegistro={(valor) => {
-                setModoRegistro(valor);
-                if (!valor) setModoCursoAdicional(false);
-              }}
-            />
             {modalExito ? (
               <SecretariaSuccessModal
                 imprimiendo={imprimiendoFichaRegistro}

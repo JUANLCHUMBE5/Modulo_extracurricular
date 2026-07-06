@@ -105,15 +105,14 @@ function DocumentosView({
 
           <div style={{ display: "flex", gap: "10px", marginTop: "12px", flexWrap: "wrap" }}>
             <button
-              className="coord-primary-button"
+              className="coord-btn-full coord-btn-validate"
               type="button"
-              onClick={guardarDocumentosPrograma}
+              onClick={form.id ? guardarDocumentosPrograma : guardarDocumentoComoPrograma}
               disabled={guardando || !form.plantilla || plantillaYaGuardada}
-              style={{ flex: 1, minWidth: "150px" }}
             >
               {guardando ? (
                 <>
-                  <Loader2 className="coord-animate-spin" size={16} />
+                  <Loader2 className="coord-spin" size={16} />
                   <span>Guardando...</span>
                 </>
               ) : (
@@ -142,18 +141,7 @@ function DocumentosView({
                 tone={variablesFaltantesDocumento.length ? "warning" : "success"}
               />
             </div>
-            {Object.keys(lecturaDocumento.datos || {}).length ? (
-              <dl className="coord-document-fields coord-document-preview-fields">
-                {Object.entries(lecturaDocumento.datos).map(([campo, valor]) => (
-                  <div key={campo}>
-                    <dt>{etiquetaCampoDocumento(campo)}</dt>
-                    <dd>{resumirTextoDocumento(valor)}</dd>
-                  </div>
-                ))}
-              </dl>
-            ) : (
-              <p className="coord-process-note">El Word conserva su diseno original; aqui solo se muestran los datos que el sistema pudo interpretar.</p>
-            )}
+            <p className="coord-process-note">El archivo Word se ha interpretado correctamente y está listo para ser asignado al programa.</p>
           </div>
         ) : null}
 

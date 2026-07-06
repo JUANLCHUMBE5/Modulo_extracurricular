@@ -3,8 +3,10 @@ import { Alert as MantineAlert } from "@mantine/core";
 import {
   IconAlertCircle as AlertCircle,
   IconCircleCheck as CheckCircle2,
+  IconCloudUpload as CloudUpload,
   IconEye as Eye,
   IconFileSpreadsheet as FileSpreadsheet,
+  IconInfoCircle as InfoCircle,
   IconListCheck as ListCheck,
   IconLoader2 as Loader2,
   IconTrash as Trash,
@@ -22,6 +24,7 @@ import { toast } from "sonner";
 import SummaryBox from "./SummaryBox";
 import { textoEstadoCarga } from "../utils/coordinacionFormatters";
 import DocumentosView from "./DocumentosView";
+import { formInicial } from "../constants/coordinacionFormDefaults";
 
 async function combinarBlobsPdf(blobs) {
   const pdfCombinado = await PDFDocument.create();
@@ -282,6 +285,7 @@ function CargaExcelView({
   quitarConfigInstitucionalImagen,
   guardarConfigInstitucional,
   ocultarTabs = false,
+  abrirDocumentosPrograma,
 }) {
   const programasCarga = useMemo(() => programasDisponibles(programas), [programas]);
 
@@ -374,6 +378,38 @@ function CargaExcelView({
       count = (invitadosMap[seleccionExportarId] || []).length;
     }
     return count;
+  }, [seleccionExportarId, programasCarga, invitadosMap]);
+
+  const estadisticasExportar = useMemo(() => {
+    let total = 0;
+    let conApoderado = 0;
+    let sinApoderado = 0;
+
+    const contarInvitado = (invitado) => {
+      total++;
+      const dbEstudiante = apiDb.estudiantes?.[invitado.dni] || invitado;
+      const tieneApoderado = Boolean(
+        (dbEstudiante.apoderado && dbEstudiante.apoderado.trim() !== "") ||
+        (dbEstudiante.telefonoApoderado && dbEstudiante.telefonoApoderado.trim() !== "")
+      );
+      if (tieneApoderado) {
+        conApoderado++;
+      } else {
+        sinApoderado++;
+      }
+    };
+
+    if (seleccionExportarId === "all") {
+      programasCarga.forEach((prog) => {
+        const list = invitadosMap[prog.id] || [];
+        list.forEach(contarInvitado);
+      });
+    } else {
+      const list = invitadosMap[seleccionExportarId] || [];
+      list.forEach(contarInvitado);
+    }
+
+    return { total, conApoderado, sinApoderado };
   }, [seleccionExportarId, programasCarga, invitadosMap]);
 
   const descargarFichasExportarTab = async () => {
@@ -568,9 +604,17 @@ function CargaExcelView({
             ) : null}
           </div>
           ) : modoCargaAlumnos === "exportar" ? (
-            <div className="coord-form coord-massive-clean-form">
-              <div className="coord-field coord-massive-clean-program">
-                <label htmlFor="coord-exportar-programa">Taller / Programa a exportar</label>
+            <div className="coord-export-box" style={{ animation: "coord-fade-in 0.25s ease" }}>
+              <div className="coord-export-box-header">
+                <Download size={22} />
+                <span>Exportar forma masiva</span>
+              </div>
+
+              <div className="coord-form-group-green">
+                <label htmlFor="coord-exportar-programa">
+                  <FileSpreadsheet size={16} />
+                  Taller / Programa a exportar
+                </label>
                 <select
                   id="coord-exportar-programa"
                   value={seleccionExportarId}
@@ -585,32 +629,89 @@ function CargaExcelView({
                 </select>
               </div>
 
-              <div style={{ marginTop: "8px", marginBottom: "12px" }}>
-                <p style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>
-                  Se generarán <b>{cargandoInvitados ? "..." : cantidadAlumnosExportar}</b> fichas/comunicados en total para los alumnos cargados en esta selección.
-                </p>
-                <p style={{ fontSize: "11px", color: "#000000", marginTop: "3px", fontWeight: 500 }}>
-                  * Nota: Las fichas se rellenarán automáticamente con los nombres y grados de los alumnos. El campo del apoderado quedará en blanco si el estudiante no tiene un apoderado previamente registrado en el sistema.
-                </p>
+              <div className="coord-counter-grid">
+                <div className="coord-counter-item">
+                  <div className="coord-counter-num">{cargandoInvitados ? "..." : estadisticasExportar.total}</div>
+                  <div className="coord-counter-label">👥 Total alumnos</div>
+                </div>
+                <div className="coord-counter-item coord-counter-green">
+                  <div className="coord-counter-num">{cargandoInvitados ? "..." : estadisticasExportar.total}</div>
+                  <div className="coord-counter-label">📄 Fichas a generar</div>
+                </div>
+                <div className="coord-counter-item coord-counter-warning">
+                  <div className="coord-counter-num">{cargandoInvitados ? "..." : (seleccionExportarId === "all" ? programasCarga.length : 1)}</div>
+                  <div className="coord-counter-label">📋 Talleres incluidos</div>
+                </div>
               </div>
 
-              <div className="coord-massive-clean-actions">
+              <div className="coord-export-actions">
                 <button
-                  className="coord-primary-button"
+                  className="coord-btn-full coord-btn-validate"
                   type="button"
                   onClick={descargarFichasExportarTab}
-                  disabled={exportando || cargandoInvitados || cantidadAlumnosExportar === 0}
-                  style={{ backgroundColor: "#2b8a3e", borderColor: "#2b8a3e" }}
+                  disabled={exportando || cargandoInvitados || estadisticasExportar.total === 0}
                 >
                   {exportando ? <Loader2 className="coord-spin" size={17} /> : <Download size={17} />}
                   <span>{exportando ? "Generando PDF..." : "Exportar PDF Único"}</span>
                 </button>
               </div>
+
+              <div className="coord-note-box">
+                <InfoCircle size={15} style={{ display: "inline", verticalAlign: "middle", marginRight: "6px" }} />
+                Las fichas se rellenarán automáticamente con los nombres y grados de los alumnos. El campo <strong>apoderado</strong> quedará en blanco si el estudiante no tiene un apoderado previamente registrado en el sistema.
+              </div>
+            </div>
+          ) : modoCargaAlumnos === "plantillas" ? (
+            <div className="coord-export-box" style={{ animation: "coord-fade-in 0.25s ease" }}>
+              <div className="coord-export-box-header">
+                <FileText size={22} />
+                <span>Plantillas / Documentos</span>
+              </div>
+
+              <DocumentosView
+                abrirEditar={abrirEditar}
+                abrirCrearDesdeDocumento={abrirCrearDesdeDocumento}
+                autocompletarDesdePlantilla={autocompletarDesdePlantilla}
+                eliminarPlantillaHistorial={eliminarPlantillaHistorial}
+                form={form}
+                guardando={guardando}
+                guardarDocumentoComoPrograma={guardarDocumentoComoPrograma}
+                guardarDocumentosPrograma={guardarDocumentosPrograma}
+                historialPlantillas={historialPlantillas}
+                lecturaDocumento={lecturaDocumento}
+                mensaje={mensaje}
+                plantillaInputKey={plantillaInputKey}
+                programaDocs={programaDocs}
+                programas={programas}
+                quitarPlantilla={quitarPlantilla}
+                seleccionarPlantilla={seleccionarPlantilla}
+                setForm={setForm}
+                tipoMsg={tipoMsg}
+                usarPlantillaExistente={usarPlantillaExistente}
+                variablesPlantillaAceptadas={variablesPlantillaAceptadas}
+                variablesPlantillaRequeridas={variablesPlantillaRequeridas}
+                categorias={categorias}
+                configInstitucional={configInstitucional}
+                cargandoConfigInstitucional={cargandoConfigInstitucional}
+                guardandoConfigInstitucional={guardandoConfigInstitucional}
+                actualizarConfigInstitucionalImagen={actualizarConfigInstitucionalImagen}
+                quitarConfigInstitucionalImagen={quitarConfigInstitucionalImagen}
+                guardarConfigInstitucional={guardarConfigInstitucional}
+                embedded={true}
+              />
             </div>
           ) : (
-          <div className="coord-form coord-massive-clean-form">
-            <div className="coord-field coord-massive-clean-program">
-              <label htmlFor="coord-programa-carga">Codigo del programa o curso</label>
+          <div className="coord-export-box" style={{ animation: "coord-fade-in 0.25s ease" }}>
+            <div className="coord-export-box-header">
+              <FileSpreadsheet size={22} />
+              <span>Carga masiva de alumnos</span>
+            </div>
+            {/* Selector de programa */}
+            <div className="coord-form-group-green">
+              <label htmlFor="coord-programa-carga">
+                <FileSpreadsheet size={16} />
+                Código del programa o curso
+              </label>
               <select
                 id="coord-programa-carga"
                 value={programaCargaId}
@@ -630,54 +731,117 @@ function CargaExcelView({
               </select>
             </div>
 
-            <div className="coord-massive-clean-row">
-              <div className="coord-field coord-massive-clean-file">
-                <label>Archivo</label>
-                <div className="coord-file-picker coord-massive-clean-picker">
-                  <input
-                    id="coord-excel-upload"
-                    key={archivoInputKey}
-                    type="file"
-                    accept=".xlsx,.xls"
-                    multiple
-                    onChange={(event) => {
-                      setArchivosExcel(Array.from(event.target.files || []));
-                      setPreviewCarga(null);
-                      setProgresoCarga(null);
-                      setMensaje("");
-                    }}
-                  />
-                  <label htmlFor="coord-excel-upload">
-                    <FileSpreadsheet size={17} />
-                    Elegir Excel
-                  </label>
-                  <span>{obtenerResumenArchivos(archivosExcel)}</span>
-                </div>
+            {/* Zona de Drag & Drop */}
+            <div className="coord-form-group-green">
+              <label>
+                <FileSpreadsheet size={16} />
+                Archivo (Excel)
+              </label>
+              <div
+                className="coord-file-drop"
+                onClick={() => document.getElementById("coord-excel-upload")?.click()}
+                onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("dragover"); }}
+                onDragLeave={(e) => e.currentTarget.classList.remove("dragover")}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove("dragover");
+                  if (e.dataTransfer.files.length) {
+                    setArchivosExcel(Array.from(e.dataTransfer.files));
+                    setPreviewCarga(null);
+                    setProgresoCarga(null);
+                    setMensaje("");
+                  }
+                }}
+              >
+                <CloudUpload size={32} className="coord-drop-icon" />
+                <p className="coord-drop-text">
+                  Arrastra tu archivo o <span className="coord-drop-highlight">haz clic para elegir</span>
+                </p>
+                <div className="coord-drop-sub">.xlsx, .xls — máx 5 MB</div>
+                <input
+                  id="coord-excel-upload"
+                  key={archivoInputKey}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  multiple
+                  onChange={(event) => {
+                    setArchivosExcel(Array.from(event.target.files || []));
+                    setPreviewCarga(null);
+                    setProgresoCarga(null);
+                    setMensaje("");
+                  }}
+                />
               </div>
 
-              <div className="coord-massive-clean-actions">
-                <button className="coord-primary-button" type="button" onClick={generarPreviewExcel} disabled={!programaCargaId || !archivosExcel.length || cargandoPreview}>
-                  {cargandoPreview ? <Loader2 className="coord-spin" size={17} /> : <Eye size={17} />}
-                  <span>{cargandoPreview ? "Validando" : "Vista previa"}</span>
-                </button>
-                {(archivosExcel.length > 0 || previewCarga) ? (
+              {archivosExcel.length > 0 && (
+                <div className="coord-file-info-bar">
+                  <CheckCircle2 size={18} />
+                  <span>{obtenerResumenArchivos(archivosExcel)}</span>
+                  <span className="coord-file-size">
+                    ({(archivosExcel.reduce((acc, f) => acc + f.size, 0) / 1024).toFixed(1)} KB)
+                  </span>
                   <button
-                    className={previewCarga ? "coord-danger-button" : "coord-secondary-button"}
                     type="button"
-                    onClick={cancelarCargaExcel}
-                    disabled={cargandoPreview || confirmandoCarga}
+                    className="coord-file-remove"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      cancelarCargaExcel();
+                    }}
                   >
-                    <X size={17} />
-                    <span>Cancelar</span>
+                    <X size={14} /> Quitar
                   </button>
-                ) : null}
-                <button className="coord-register-button" type="button" onClick={confirmarCargaExcel} disabled={!previewCarga || confirmandoCarga}>
-                  {confirmandoCarga ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
-                  <span>{confirmandoCarga ? "Guardando" : "Guardar carga"}</span>
-                </button>
+                </div>
+              )}
+
+              <div className="coord-chip-group">
+                <span className="coord-chip">DNI o Código</span>
+                <span className="coord-chip">Alumno (Nombres y Apellidos)</span>
+                <span className="coord-chip">Grado</span>
+                <span className="coord-chip">Nivel</span>
+                <span className="coord-chip coord-chip-optional">Selección (solo Cambridge)</span>
+              </div>
+              <div className="coord-chip-hint">
+                <InfoCircle size={14} />
+                La <strong>Sección</strong> se autocompleta desde la base de datos.
               </div>
             </div>
-            <p className="coord-massive-clean-hint">Formato estandarizado esperado: DNI o Código, Alumno (Nombres y Apellidos), Grado, Nivel, y Selección (solo para Cambridge). No se requiere Sección en el Excel (se autocompletará automáticamente desde la base de datos).</p>
+
+            {/* Botón principal: Validar y Previsualizar */}
+            <button
+              className="coord-btn-full coord-btn-validate"
+              type="button"
+              onClick={generarPreviewExcel}
+              disabled={!programaCargaId || !archivosExcel.length || cargandoPreview}
+            >
+              {cargandoPreview ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
+              <span>{cargandoPreview ? "Validando..." : "Validar y Previsualizar"}</span>
+            </button>
+
+            {/* Botón Guardar carga (aparece solo con preview) */}
+            {previewCarga && (
+              <button
+                className="coord-btn-full coord-btn-save"
+                type="button"
+                onClick={confirmarCargaExcel}
+                disabled={confirmandoCarga}
+              >
+                {confirmandoCarga ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
+                <span>{confirmandoCarga ? "Guardando..." : "Guardar en Base de Datos"}</span>
+              </button>
+            )}
+
+            {/* Botón Cancelar (aparece con archivos o preview) */}
+            {(archivosExcel.length > 0 || previewCarga) && (
+              <button
+                className="coord-btn-full coord-btn-cancel"
+                type="button"
+                onClick={cancelarCargaExcel}
+                disabled={cargandoPreview || confirmandoCarga}
+              >
+                <X size={17} />
+                <span>Cancelar</span>
+              </button>
+            )}
           </div>
           )}
 
@@ -778,39 +942,6 @@ function CargaExcelView({
                 </table>
               </div>
             </>
-          ) : modoCargaAlumnos === "plantillas" ? (
-            <DocumentosView
-              abrirEditar={abrirEditar}
-              abrirCrearDesdeDocumento={abrirCrearDesdeDocumento}
-              autocompletarDesdePlantilla={autocompletarDesdePlantilla}
-              eliminarPlantillaHistorial={eliminarPlantillaHistorial}
-              form={form}
-              guardando={guardando}
-              guardarDocumentoComoPrograma={guardarDocumentoComoPrograma}
-              guardarDocumentosPrograma={guardarDocumentosPrograma}
-              historialPlantillas={historialPlantillas}
-              lecturaDocumento={lecturaDocumento}
-              mensaje={mensaje}
-              plantillaInputKey={plantillaInputKey}
-              programaDocs={programaDocs}
-              programas={programas}
-              quitarPlantilla={quitarPlantilla}
-              seleccionarPlantilla={seleccionarPlantilla}
-              setForm={setForm}
-              tipoMsg={tipoMsg}
-              usarPlantillaExistente={usarPlantillaExistente}
-              variablesPlantillaAceptadas={variablesPlantillaAceptadas}
-              variablesPlantillaRequeridas={variablesPlantillaRequeridas}
-              categorias={categorias}
-              configInstitucional={configInstitucional}
-              cargandoConfigInstitucional={cargandoConfigInstitucional}
-              guardandoConfigInstitucional={guardandoConfigInstitucional}
-              actualizarConfigInstitucionalImagen={actualizarConfigInstitucionalImagen}
-              quitarConfigInstitucionalImagen={quitarConfigInstitucionalImagen}
-              guardarConfigInstitucional={guardarConfigInstitucional}
-              toggleSidebarButton={toggleSidebarButton}
-              embedded={true}
-            />
           ) : modoCargaAlumnos === "masiva" ? (
             <div className="coord-empty coord-upload-empty">
               <ListCheck size={18} />

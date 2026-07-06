@@ -715,6 +715,7 @@ textarea:focus-visible {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /* Force clean white background for all main page content containers         */
 /* ═══════════════════════════════════════════════════════════════════════════ */
+/* Layout/Main/Workspace pages take the light green background */
 html body .secretaria-layout,
 html body .secretaria-main,
 html body .secretaria-content,
@@ -739,7 +740,12 @@ html body .adm-content,
 html body .admin-page,
 html body .aux-root,
 html body .aux-main,
-html body .auxiliar-main,
+html body .auxiliar-main {
+  background: #e8f5e9 !important;
+  background-color: #e8f5e9 !important;
+}
+
+/* Cards and floating panels take a clean white background */
 html body .secretaria-search-card,
 html body .coord-search-card,
 html body .dir-search-card,
@@ -831,3 +837,32 @@ html body .coord-upload-tabs {
 .adm-logout-btn {
   flex-shrink: 0 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* Header shifts to prevent overlap with floating menu button when collapsed  */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Secretaria */
+.sidebar-collapsed .secretaria-main {
+  padding-left: 80px !important;
+  transition: padding-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 2. Coordinación */
+.coord-layout-collapsed .coord-main {
+  padding-left: 80px !important;
+  transition: padding-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 3. Caja */
+.caja-page.sidebar-collapsed .caja-main {
+  padding-left: 80px !important;
+  transition: padding-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* 4. Dirección */
+.dir-page.sidebar-collapsed .dir-main {
+  padding-left: 80px !important;
+  transition: padding-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+

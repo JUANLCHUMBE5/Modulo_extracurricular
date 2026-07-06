@@ -10,6 +10,10 @@ import {
   normalizarPeriodo,
   programaDisponibleParaEdad,
   programaDisponibleParaGrado,
+  resolverHorarioPorGrado,
+  resolverDocentePorGrado,
+  calcularCuposDisponibles,
+  tieneHorariosPorGrupo,
 } from "./secretariaServiceUtils";
 import {
   buscarEstudiantePorDniMock,
@@ -23,6 +27,88 @@ import {
   listarInscripcionesEstudianteMock,
 } from "../utils/secretariaServiceMock";
 
+function adaptarEstudianteConInvitacion(data, periodo) {
+  if (!data) return null;
+
+  // Si viene en formato plano de mock (o ya adaptado)
+  if (!data.estudiante) {
+    const student = adaptarEstudiante(data);
+    if (student) {
+      student.periodo = normalizarPeriodo(periodo) === "verano" ? "Ciclo verano" : "Año escolar";
+    }
+    return student;
+  }
+
+  // Si viene en formato envuelto de la API: { estudiante, invitaciones }
+  const student = adaptarEstudiante(data.estudiante);
+  if (!student) return null;
+
+  student.periodo = normalizarPeriodo(periodo) === "verano" ? "Ciclo verano" : "Año escolar";
+
+  const invitacion = Array.isArray(data.invitaciones) && data.invitaciones[0];
+  if (invitacion) {
+    const prog = invitacion.programa || {};
+    const inv = invitacion.invitado || {};
+
+    if (inv.nombres) student.nombres = inv.nombres;
+    if (inv.codigoEstudiante || inv.codigo_estudiante) {
+      student.codigoEstudiante = inv.codigoEstudiante || inv.codigo_estudiante;
+    }
+
+    let gradoInvitado = inv.grado || "";
+    const nivelInvitado = inv.nivel_educativo || inv.nivel || student.nivel || "";
+    if (gradoInvitado && /^\d+$/.test(String(gradoInvitado).trim()) && nivelInvitado) {
+      if (nivelInvitado.toLowerCase().includes("inicial")) {
+        gradoInvitado = `${gradoInvitado} inicial`;
+      } else {
+        gradoInvitado = `${gradoInvitado} ${nivelInvitado}`;
+      }
+    }
+    if (gradoInvitado) student.grado = gradoInvitado;
+    if (inv.seccion) student.seccion = inv.seccion;
+
+    const cuposDisponibles = calcularCuposDisponibles(prog);
+    const horarioResuelto = resolverHorarioPorGrado(prog, student.grado || "");
+    const horarioConfigurado = Boolean(horarioResuelto || !tieneHorariosPorGrupo(prog));
+
+    student.tieneInvitacion = true;
+    student.programaAsignado = invitacion.programaId || prog.id || "";
+    student.programaNombre = prog.nombre || prog.nombre_programa || "";
+    student.programaGrupo = prog.grupo || "";
+    student.programaGrupoEtario = prog.grupo_etario || prog.grupoEtario || prog.grupo || "";
+    student.programaHorario = horarioResuelto || (tieneHorariosPorGrupo(prog) ? "Horario no configurado para este grado" : (prog.horario || ""));
+    student.programaDisponible = programaDisponibleParaGrado(prog, student.grado || "");
+    student.programaHorarioConfigurado = horarioConfigurado;
+    student.programaDocente = resolverDocentePorGrado(prog, student.grado || "");
+    student.programaCosto = Number(prog.monto ?? prog.precio ?? prog.costo ?? 0);
+    student.programaCupos = cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos";
+    student.programaCuposDisponibles = cuposDisponibles;
+    student.programaModalidadCobro = prog.modalidad_cobro || prog.modalidadCobro || "";
+    student.programaRequisitos = prog.requisitos || "";
+    student.programaFechaInicio = prog.fecha_inicio || prog.fechaInicio || "";
+    student.programaFechaFin = prog.fecha_fin || prog.fechaFin || "";
+    student.programaDuracionTaller = prog.duracion || prog.duracionTaller || "";
+    student.programaDuracionAvisoDias = prog.duracion_aviso_dias || prog.duracionDias || prog.duracionAvisoDias || "";
+    student.seleccion = inv.seleccion || "";
+    student.nivelCambridge = inv.nivel_cambridge || inv.nivelCambridge || "";
+    student.plantilla = prog.plantilla || "";
+    student.plantillaBase64 = prog.plantilla_base64 || prog.plantillaBase64 || "";
+    student.plantillaVariables = prog.plantilla_variables || prog.plantillaVariables || [];
+    student.requiereUniforme = Boolean(prog.requiere_uniforme ?? prog.requiereUniforme);
+    student.requiereIndumentaria = Boolean(prog.requiere_indumentaria ?? prog.requiereIndumentaria);
+    if (inv.telefono_apoderado || inv.telefonoApoderado) {
+      student.telefonoApoderado = inv.telefono_apoderado || inv.telefonoApoderado;
+    }
+  } else {
+    student.tieneInvitacion = false;
+    student.programaAsignado = "";
+    student.requiereUniforme = false;
+    student.requiereIndumentaria = false;
+  }
+
+  return student;
+}
+
 export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
   if (isApiMode()) {
     const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes/${dni}`, {
@@ -30,11 +116,7 @@ export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
     });
     if (!res.success) return null;
     if (res.data) {
-      const student = adaptarEstudiante(res.data);
-      if (student) {
-        student.periodo = normalizarPeriodo(periodo) === "verano" ? "Ciclo verano" : "Año escolar";
-      }
-      return student;
+      return adaptarEstudianteConInvitacion(res.data, periodo);
     }
     return null;
   }
@@ -47,13 +129,7 @@ export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
       params: { nombre, periodo }
     });
     if (!res.success || !Array.isArray(res.data)) return [];
-    return res.data.map((item) => {
-      const student = adaptarEstudiante(item);
-      if (student) {
-        student.periodo = normalizarPeriodo(periodo) === "verano" ? "Ciclo verano" : "Año escolar";
-      }
-      return student;
-    });
+    return res.data.map((item) => adaptarEstudianteConInvitacion(item, periodo));
   }
   return buscarEstudiantesPorNombreMock(nombre, periodo);
 }

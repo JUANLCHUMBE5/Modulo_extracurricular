@@ -16,11 +16,11 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 18px;
-  border-radius: 8px;
-  background: #ffffff;
-  border: none !important;
-  box-shadow: none !important;
+  padding: 16px 20px !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  border: 1px solid #dcedc8 !important;
+  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
   overflow: hidden;
   transition: all 0.25s ease;
   line-height: var(--leading-tight);
@@ -193,12 +193,11 @@
 
 .dir-panel {
   min-width: 0;
-  padding: 10px 14px;
-  border: none !important;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: none !important;
-  backdrop-filter: blur(12px);
+  padding: 20px !important;
+  border-radius: 20px !important;
+  background: #ffffff !important;
+  border: 1px solid #dcedc8 !important;
+  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
   transition: all 0.25s ease;
 }
 
@@ -397,4 +396,43 @@
     width: 100%;
     padding: 10px 14px;
   }
+}
+
+/* Tarjeta unificada contenedora de Dashboard del Director */
+.dir-dashboard-workspace-card {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1px solid #dcedc8 !important;
+  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+  margin-top: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 20px !important;
+}
+
+/* Modificaciones de los paneles internos para que floten sobre fondo suave dentro de la tarjeta blanca */
+.dir-dashboard-workspace-card .dir-stat {
+  background: #f8fafc !important;
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+  border-radius: 14px !important;
+}
+
+.dir-dashboard-workspace-card .dir-panel {
+  background: #f8fafc !important;
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+  border-radius: 14px !important;
+}
+
+/* Restringir ancho de tabla e historial */
+.dir-dashboard-workspace-card .dir-table-wrap {
+  border-radius: 8px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
 }

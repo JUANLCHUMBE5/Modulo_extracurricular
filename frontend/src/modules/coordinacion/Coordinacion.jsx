@@ -326,6 +326,7 @@ function CoordinacionInner({
                 actualizarConfigInstitucionalImagen={state.actualizarConfigInstitucionalImagen}
                 quitarConfigInstitucionalImagen={state.quitarConfigInstitucionalImagen}
                 guardarConfigInstitucional={state.guardarConfigInstitucional}
+                abrirDocumentosPrograma={state.abrirDocumentosPrograma}
               />
             )}
 
@@ -390,6 +391,7 @@ function CoordinacionInner({
                 actualizarConfigInstitucionalImagen={state.actualizarConfigInstitucionalImagen}
                 quitarConfigInstitucionalImagen={state.quitarConfigInstitucionalImagen}
                 guardarConfigInstitucional={state.guardarConfigInstitucional}
+                abrirDocumentosPrograma={state.abrirDocumentosPrograma}
               />
             )}
 

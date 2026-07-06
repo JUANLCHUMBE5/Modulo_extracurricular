@@ -49,7 +49,7 @@
     ]
   },
   {
-    "id": "USR-501339",
+    "id": "USR-929463",
     "usuario": "pedro",
     "nombre": "pedro",
     "rol": "Caja",
@@ -57,7 +57,7 @@
       "Caja"
     ],
     "estado": "Activo",
-    "contrasena": "$2b$10$mwvn9hcimh33t9TsVM7OW.jGIIrxYBk5wMbT.pAv2TxW8evVqUMee",
+    "contrasena": "$2b$10$5LVkNutEE9f2NYTp9drYk.CRtgJRDvEBXmbH2Bdz9Jt0Qxo7q8pEq",
     "permisos": [
       "caja.cobro",
       "caja.control",

@@ -132,8 +132,6 @@ export function extraerDatosProgramaDesdeWord(textoPlano, nombreArchivo, categor
   if (requisitos) datos.requisitos = requisitos;
   if (comunicado) datos.comunicado = comunicado;
   if (detalleCosto) datos.detalleCosto = detalleCosto;
-  if (detalleAlmuerzo) datos.detalleAlmuerzo = detalleAlmuerzo;
-  if (concesionarios) datos.concesionarios = concesionarios;
 
   const responsable = extraerValorEtiqueta(texto, ["responsable", "docente", "profesor", "profesora"]);
   if (responsable) datos.responsable = responsable;

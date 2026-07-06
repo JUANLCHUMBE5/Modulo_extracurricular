@@ -58,14 +58,16 @@
 
 /* Área Principal (Main Content) */
 .dir-main {
-  grid-column: 2;
-  width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 32px 48px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+  grid-column: 2 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 24px 24px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+  transition: padding-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 /* Cabecera del Panel */

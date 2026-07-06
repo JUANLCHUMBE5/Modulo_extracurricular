@@ -1,4 +1,4 @@
-﻿import { Badge, Table, Loader } from "@mantine/core";
+import { Badge, Table, Loader } from "@mantine/core";
 import { BarChart, DonutChart } from "@mantine/charts";
 import {
   IconWallet as Wallet,
@@ -89,7 +89,8 @@ export default function DireccionDashboard({
       </div>
 
       {/* SECCION SEGMENTADA POR PESTANA ACTIVA */}
-      {dashboardTab === "caja" && (
+      <div className="dir-dashboard-workspace-card">
+        {dashboardTab === "caja" && (
         <>
           <section className="dir-stats" aria-label="Indicadores principales financiero">
             <StatCard
@@ -446,6 +447,7 @@ export default function DireccionDashboard({
           </section>
         </>
       )}
+      </div>
     </>
   );
 }

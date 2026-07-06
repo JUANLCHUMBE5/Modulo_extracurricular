@@ -1189,7 +1189,7 @@
   padding-bottom: 10px !important;
   padding-left: 24px !important;
   padding-right: 24px !important;
-  background: #ffffff !important;
+  background: #e8f5e9 !important;
 }
 
 .coord-form select,
@@ -1442,6 +1442,445 @@
   color: #006b5b !important;
 }
 
+/* ==========================================================================
+   REDISEÑO VISUAL — CARGAR INVITADOS (Drag & Drop, Chips, Counters)
+   ========================================================================== */
 
+/* ── Zona de Drag & Drop para archivos ── */
+.coord-file-drop {
+  border: 2px dashed #a5d6a7 !important;
+  border-radius: 14px !important;
+  text-align: center;
+  cursor: pointer;
+  padding: 28px 16px;
+  background: #f1f8e9;
+  transition: all 0.25s ease;
+  position: relative;
+}
 
+.coord-file-drop:hover,
+.coord-file-drop.dragover {
+  border-color: #43a047 !important;
+  background: #e8f5e9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.10);
+}
 
+.coord-file-drop .coord-drop-icon {
+  font-size: 28px;
+  color: #66bb6a;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.coord-file-drop .coord-drop-text {
+  font-size: 14px;
+  color: #2e7d32;
+  font-weight: 500;
+  margin: 0;
+}
+
+.coord-file-drop .coord-drop-highlight {
+  color: #1b5e20;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: #a5d6a7;
+  text-underline-offset: 2px;
+}
+
+.coord-file-drop .coord-drop-sub {
+  font-size: 12px;
+  color: #558b2f;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.coord-file-drop input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Info del archivo seleccionado ── */
+.coord-file-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin-top: 10px;
+  color: #1b5e20;
+  font-weight: 600;
+  font-size: 13px;
+  animation: coord-fade-in 0.2s ease;
+}
+
+.coord-file-info-bar svg {
+  color: #43a047;
+  flex-shrink: 0;
+}
+
+.coord-file-info-bar .coord-file-size {
+  font-weight: 400;
+  color: #33691e;
+  margin-left: 4px;
+}
+
+.coord-file-info-bar .coord-file-remove {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid #ef9a9a;
+  color: #c62828;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: auto !important;
+  min-height: auto !important;
+}
+
+.coord-file-info-bar .coord-file-remove:hover {
+  background: #ffebee;
+}
+
+/* ── Chips de columnas requeridas ── */
+.coord-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.coord-chip {
+  background: #e8f5e9;
+  padding: 3px 12px;
+  border-radius: 30px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1b5e20;
+  border: 1px solid #c8e6c9;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.coord-chip.coord-chip-optional {
+  background: #fffde7;
+  color: #f57f17;
+  border-color: #fff9c4;
+}
+
+.coord-chip-hint {
+  font-size: 12px;
+  color: #2e7d32;
+  margin-top: 4px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Botón de ancho completo ── */
+.coord-btn-full {
+  width: 100%;
+  padding: 11px 22px !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: auto !important;
+  min-height: 42px !important;
+}
+
+.coord-btn-full span,
+.coord-btn-full svg {
+  color: inherit !important;
+}
+
+.coord-btn-full:disabled {
+  background: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  border: none !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.coord-btn-full.coord-btn-validate {
+  background: #388e3c !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.coord-btn-full.coord-btn-validate:hover {
+  background: #2e7d32 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+
+.coord-btn-full.coord-btn-save {
+  background: #43a047 !important;
+  color: #ffffff !important;
+  border: none !important;
+  margin-top: 12px;
+}
+
+.coord-btn-full.coord-btn-save:hover {
+  background: #2e7d32 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+
+.coord-btn-full.coord-btn-cancel {
+  background: transparent !important;
+  color: #c62828 !important;
+  border: 1px solid #ef9a9a !important;
+  margin-top: 8px;
+}
+
+.coord-btn-full.coord-btn-cancel:hover {
+  background: #ffebee !important;
+}
+
+/* ── Preview table mejorada ── */
+.coord-preview-wrap {
+  margin-top: 16px;
+  border: 1px solid #c8e6c9;
+  border-radius: 14px;
+  overflow: hidden;
+  animation: coord-fade-in 0.25s ease;
+}
+
+.coord-preview-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.coord-preview-wrap th {
+  background: #f1f8e9 !important;
+  text-align: left;
+  padding: 10px 14px !important;
+  font-weight: 700 !important;
+  color: #1b5e20 !important;
+  border-bottom: 1px solid #c8e6c9 !important;
+  font-size: 12px !important;
+}
+
+.coord-preview-wrap td {
+  padding: 8px 14px !important;
+  border-bottom: 1px solid #e8f5e9 !important;
+  color: #1e3a2a !important;
+  font-size: 13px !important;
+}
+
+.coord-preview-footer {
+  padding: 10px 14px;
+  background: #f1f8e9;
+  font-size: 13px;
+  font-weight: 600;
+  border-top: 1px solid #c8e6c9;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #1b5e20;
+}
+
+.coord-preview-footer .coord-preview-error {
+  color: #c62828;
+}
+
+/* ── Exportar Box ── */
+.coord-export-box {
+  background: #f1f8e9;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #c8e6c9;
+}
+
+.coord-export-box-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.coord-export-box-header svg {
+  color: #388e3c;
+}
+
+.coord-export-box-header span {
+  font-weight: 700;
+  font-size: 16px;
+  color: #1b5e20;
+}
+
+/* ── Counter Grid (3 columnas) ── */
+.coord-counter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.coord-counter-item {
+  background: #ffffff;
+  padding: 14px 8px;
+  border-radius: 12px;
+  border: 1px solid #c8e6c9;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.coord-counter-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.coord-counter-num {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1b5e20;
+  line-height: 1.2;
+}
+
+.coord-counter-item.coord-counter-green .coord-counter-num {
+  color: #2e7d32;
+}
+
+.coord-counter-item.coord-counter-warning .coord-counter-num {
+  color: #f57f17;
+}
+
+.coord-counter-label {
+  font-size: 12px;
+  color: #2e7d32;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ── Nota informativa ── */
+.coord-note-box {
+  font-size: 13px;
+  color: #2e7d32;
+  background: #e8f5e9;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border-left: 4px solid #66bb6a;
+  margin-top: 14px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.coord-note-box strong {
+  color: #1b5e20;
+}
+
+/* ── Export action buttons row ── */
+.coord-export-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.coord-export-actions .coord-btn-full {
+  flex: 1;
+}
+
+/* ── Sección de formulario con label verde ── */
+.coord-form-group-green {
+  margin-bottom: 16px;
+}
+
+.coord-form-group-green > label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #2e7d32 !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.coord-form-group-green > label svg {
+  color: #388e3c;
+}
+
+.coord-form-group-green select {
+  width: 100%;
+  padding: 10px 14px !important;
+  border-radius: 12px !important;
+  border: 1px solid #c8e6c9 !important;
+  background: white !important;
+  font-size: 14px !important;
+  color: #1e3a2a !important;
+  transition: all 0.2s ease;
+  height: auto !important;
+  min-height: 40px !important;
+}
+
+.coord-form-group-green select:focus {
+  outline: none;
+  border-color: #43a047 !important;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15) !important;
+}
+
+/* ── Animación de entrada ── */
+@keyframes coord-fade-in {
+  from { opacity: 0.4; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive para counter grid ── */
+@media (max-width: 700px) {
+  .coord-counter-grid {
+    grid-template-columns: 1fr;
+  }
+  .coord-export-actions {
+    flex-direction: column;
+  }
+}
+
+/* ── Botón Guardar en Modales ── */
+.coord-modal-actions .coord-register-button {
+  background: #388e3c !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.coord-modal-actions .coord-register-button:hover {
+  background: #2e7d32 !important;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.25) !important;
+}
+
+.coord-modal-actions .coord-register-button span,
+.coord-modal-actions .coord-register-button svg {
+  color: #ffffff !important;
+}
+
+.coord-modal-actions .coord-register-button:disabled,
+.coord-modal-actions .coord-register-button:disabled span,
+.coord-modal-actions .coord-register-button:disabled svg {
+  background: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+}

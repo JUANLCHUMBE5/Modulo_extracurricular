@@ -10,6 +10,8 @@ import {
   IconCalendar as Calendar,
   IconClock as Clock,
   IconCoffee as Coffee,
+  IconBookmark as Bookmark,
+  IconBook as BookOpen,
 } from "@tabler/icons-react";
 import {
   CampoLectura,
@@ -50,7 +52,8 @@ export default function SecretariaRegistroModal({
   const formRef = useRef(null);
   const obtenerEtiquetaPrograma = etiquetaPrograma || ((programa) => programa?.nombre || "");
   const programaUnicoSelector = programasParaSelector.length === 1 ? programasParaSelector[0] : null;
-  const programaRegistroVista = programaParaRegistro || programaUnicoSelector;
+  const programaSeleccionadoEnForm = formulario.programa ? programas.find(p => p.id === formulario.programa) : null;
+  const programaRegistroVista = programaSeleccionadoEnForm || programaParaRegistro || programaUnicoSelector;
   const esCambridge = /cambridge/i.test([
     programaRegistroVista?.nombre,
     programaRegistroVista?.programa,
@@ -78,42 +81,31 @@ export default function SecretariaRegistroModal({
   }, [modoRegistro, estudiante?.dni, estudiante?.codigoEstudiante, estudiante?.nombres]);
 
   return (
-<>
-        {modoRegistro && estudiante ? (
-          <div
-            className="secretaria-modal-overlay"
-            role="presentation"
-          >
-            <section
-              ref={modalRef}
-              className={`secretaria-card secretaria-registration-card secretaria-registration-modal${esCicloVerano ? " is-summer-registration" : ""}${estudiante.esExterno ? " is-external-registration" : ""}`}
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="secretaria-registration-title"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <div className="secretaria-modal-header">
-                <div className="secretaria-card-title">
-                  <span className="secretaria-title-icon">
-                    <ClipboardCheck size={21} />
-                  </span>
-                  <div className="secretaria-modal-header-info">
-                    <h2 id="secretaria-registration-title" className="secretaria-modal-title">
-                      {modoCursoAdicional ? "Registrar curso adicional" : esCicloVerano ? "Registro Ciclo Verano" : "Registrar Inscripción"}
-                    </h2>
-                  </div>
+    <>
+      {modoRegistro && estudiante ? (
+        <section
+          ref={modalRef}
+          className={`secretaria-card secretaria-registration-card secretaria-registration-modal-fused is-inline${esCicloVerano ? " is-summer-registration" : ""}${estudiante.esExterno ? " is-external-registration" : ""}`}
+          role="region"
+          aria-labelledby="secretaria-registration-title"
+        >
+              <form ref={formRef} className="secretaria-registration-form-fused" onSubmit={guardarInscripción}>
+                
+                {/* Title */}
+                <div style={{
+                  fontSize: "12px",
+                  fontWeight: "750",
+                  color: "#558b2f",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  marginBottom: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}>
+                  <span style={{ color: "#66bb6a", display: "flex", alignItems: "center" }}><BookOpen size={15} /></span>
+                  <span>PROGRAMA Y TALLER</span>
                 </div>
-                <button
-                  className="secretaria-modal-close"
-                  type="button"
-                  aria-label="Cerrar formulario de inscripcion"
-                  onClick={() => setModoRegistro(false)}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form ref={formRef} className="secretaria-registration-form secretaria-registration-form-clean" onSubmit={guardarInscripción}>
 
                 {mensaje ? (
                   <MantineAlert
@@ -124,29 +116,6 @@ export default function SecretariaRegistroModal({
                   >
                     {mensaje}
                   </MantineAlert>
-                ) : null}
-
-                {!esCicloVerano ? (
-                  <div className="secretaria-student-context secretaria-field-full">
-                    <div className="secretaria-student-context-item is-name">
-                      <span>Alumno</span>
-                      <strong>{estudiante.nombres}</strong>
-                    </div>
-                    <div className="secretaria-student-context-item">
-                      <span>DNI</span>
-                      <strong>{estudiante.dni || "Sin DNI"}</strong>
-                    </div>
-                    <div className="secretaria-student-context-item">
-                      <span>Grado</span>
-                      <strong>{estudiante.grado}</strong>
-                    </div>
-                    {!estudiante.esExterno ? (
-                      <div className="secretaria-student-context-item">
-                        <span>Sección / Aula</span>
-                        <strong>{estudiante.seccion || "Sin sección/aula"}</strong>
-                      </div>
-                    ) : null}
-                  </div>
                 ) : null}
 
                 {esCicloVerano ? (
@@ -386,83 +355,205 @@ export default function SecretariaRegistroModal({
                 ) : null}
 
                 {!esCicloVerano ? (
-                <>
-                <div className="secretaria-registration-section secretaria-registration-program secretaria-field-full">
-                {mostrarSelectorPrograma ? (
-                  <div className="secretaria-field secretaria-program-select-field">
-                    <label htmlFor="programa">Programa o taller</label>
-                    <select
-                      id="programa"
-                      value={formulario.programa}
-                      disabled={programasParaSelector.length === 0}
-                      onChange={(event) =>
-                        actualizarFormulario("programa", event.target.value)
-                      }
-                    >
-                      <option value="">
-                        {programasParaSelector.length
-                          ? "Seleccione programa"
-                          : esCicloVerano
-                            ? "No hay programas de ciclo verano disponibles"
-                            : "No hay programas habilitados para este grado"}
-                      </option>
-                      {programasParaSelector.map((programa) => (
-                        <option key={programa.id} value={programa.id}>
-                          {obtenerEtiquetaPrograma(programa)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <CampoLectura className="secretaria-program-readonly-field" label="Programa / taller" value={programaRegistroVista?.nombre || estudiante.programaNombre || ""} />
-                )}
-
-                {programasParaSelector.length === 0 && (esCicloVerano || !estudiante.tieneInvitacion) ? (
-                  <MantineAlert
-                    className="secretaria-message secretaria-modal-message secretaria-field-full"
-                    color="orange"
-                    radius="md"
-                    icon={<AlertCircle size={18} />}
-                  >
-                    {esCicloVerano
-                      ? "Coordinación Académica debe registrar y habilitar un programa de ciclo verano disponible para el estudiante."
-                      : "Coordinación Académica debe registrar y habilitar un programa disponible para el grado del estudiante."}
-                  </MantineAlert>
-                ) : null}
-
-                {mostrarDetallePrograma ? (
-                  <div className="secretaria-program-details-card secretaria-field-full">
-                    <h4 className="secretaria-details-card-title">Resumen del Taller</h4>
-                    <div className="secretaria-schedule-summary">
-                      <DatoHorario label="Día" value={horarioResumenRegistro.dia} icon={Calendar} themeClass="is-dia" />
-                      <DatoHorario label="Clase" value={horarioResumenRegistro.clase} icon={Clock} themeClass="is-clase" />
-                      <DatoHorario label="Almuerzo" value={horarioResumenRegistro.almuerzo} icon={Coffee} themeClass="is-almuerzo" />
+                  <>
+                    <div className="secretaria-registration-section secretaria-registration-program secretaria-field-full">
+                      <div className="secretaria-field-full" style={{ marginBottom: "8px" }}>
+                        <label style={{ fontWeight: "700", color: "#344054", fontSize: "12.5px", display: "block", marginBottom: "6px" }}>
+                          Talleres disponibles para el grado del alumno (Seleccione uno)
+                        </label>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "8px" }}>
+                          {programasParaSelector.map((programa) => {
+                            const isSelected = formulario.programa === programa.id || (programasParaSelector.length === 1 && !formulario.programa);
+                            const cupos = formatearCuposSecretaria(programa);
+                            return (
+                              <div
+                                key={programa.id}
+                                onClick={() => {
+                                  if (formulario.programa === programa.id) {
+                                    actualizarFormulario("programa", "");
+                                  } else {
+                                    actualizarFormulario("programa", programa.id);
+                                  }
+                                }}
+                                style={{
+                                  border: isSelected ? "2px solid #0c8569" : "1.5px solid #cbd5e1",
+                                  background: isSelected ? "#e6fcf5" : "#ffffff",
+                                  borderRadius: "10px",
+                                  padding: "8px 12px",
+                                  cursor: "pointer",
+                                  transition: "all 0.2s ease-in-out",
+                                  boxShadow: isSelected ? "0 4px 12px rgba(12, 133, 105, 0.08)" : "none",
+                                  position: "relative",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  justifyContent: "space-between",
+                                  gap: "4px"
+                                }}
+                                className={`secretaria-program-option-card ${isSelected ? "is-active" : ""}`}
+                              >
+                                <div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                                    <span style={{
+                                      fontSize: "9px",
+                                      fontWeight: "700",
+                                      textTransform: "uppercase",
+                                      color: isSelected ? "#0c8569" : "#4b5563",
+                                      background: isSelected ? "#c3fae8" : "#f3f4f6",
+                                      padding: "2px 8px",
+                                      borderRadius: "4px"
+                                    }}>
+                                      {programa.categoria || "Taller"}
+                                    </span>
+                                    {isSelected && (
+                                      <span style={{
+                                        background: "#0c8569",
+                                        color: "#ffffff",
+                                        borderRadius: "50%",
+                                        width: "18px",
+                                        height: "18px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "10px",
+                                        fontWeight: "bold"
+                                      }}>
+                                        ✓
+                                      </span>
+                                    )}
+                                  </div>
+                                  <strong style={{ fontSize: "12.5px", color: "#1f2937", display: "block", lineHeight: "1.3" }}>
+                                    {programa.nombre}
+                                  </strong>
+                                </div>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", color: "#6b7280", borderTop: "1px solid #f3f4f6", paddingTop: "3px" }}>
+                                  <span>Costo: S/ {Number(programa.costo || 0).toFixed(0)}</span>
+                                  <span style={{ color: Number(programa.cupos || 0) > 0 ? "#15803d" : "#b91c1c", fontWeight: "600" }}>
+                                    Cupos: {cupos}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
                     </div>
-                    <div className="secretaria-details-divider" />
-                    <div className="secretaria-details-meta-grid">
-                      {esCambridge && ingresoCambridge ? (
-                        <div className="secretaria-meta-item is-cambridge">
-                          <span>Modalidad Cambridge</span>
-                          <strong>{ingresoCambridge} {nivelCambridge ? `(${nivelCambridge})` : ""}</strong>
+
+                    {programasParaSelector.length === 0 && (esCicloVerano || !estudiante.tieneInvitacion) ? (
+                      <MantineAlert
+                        className="secretaria-message secretaria-modal-message secretaria-field-full"
+                        color="orange"
+                        radius="md"
+                        icon={<AlertCircle size={18} />}
+                      >
+                        {esCicloVerano
+                          ? "Coordinación Académica debe registrar y habilitar un programa de ciclo verano disponible para el estudiante."
+                          : "Coordinación Académica debe registrar y habilitar un programa disponible para el grado del estudiante."}
+                      </MantineAlert>
+                    ) : null}
+
+                    {mostrarDetallePrograma && programaRegistroVista ? (
+                      <div className="secretaria-add-course-summary secretaria-field-full" style={{
+                        display: "block",
+                        background: "#f1f8e9",
+                        border: "1px solid #c8e6c9",
+                        borderRadius: "12px",
+                        padding: "10px 14px",
+                        margin: "10px 0"
+                      }}>
+                        {/* Header of summary */}
+                        <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#1b5e20", marginBottom: "2px", display: "flex", alignContent: "center", alignItems: "center", gap: "6px" }}>
+                          <Bookmark size={15} style={{ color: "#388e3c" }} />
+                          Taller asignado
                         </div>
-                      ) : null}
-                      <div className="secretaria-meta-item">
-                        <span>Costo Referencial</span>
-                        <strong>S/ {Number(programaRegistroVista.costo).toFixed(2)}</strong>
+                        <div style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", marginBottom: "8px" }}>
+                          {programaRegistroVista.plantilla || "TALLER"} &middot; {programaRegistroVista.nombre}
+                        </div>
+
+                        {/* White dashboard cards grid */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                          <div style={{ background: "#ffffff", border: "1px solid #c8e6c9", padding: "6px 10px", borderRadius: "10px" }}>
+                            <span style={{ fontSize: "9.5px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>Costo Referencial</span>
+                            <strong style={{ fontSize: "13.5px", color: "#1b5e20", fontWeight: "800" }}>S/ {Number(programaRegistroVista.costo || 0).toFixed(2)}</strong>
+                          </div>
+                          <div style={{ background: "#ffffff", border: "1px solid #c8e6c9", padding: "6px 10px", borderRadius: "10px" }}>
+                            <span style={{ fontSize: "9.5px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>Cupos Disponibles</span>
+                            <strong style={{ fontSize: "13.5px", color: "#2e7d32", fontWeight: "800", display: "flex", alignItems: "center", gap: "5px" }}>
+                              <Users size={15} style={{ color: "#388e3c" }} />
+                              {formatearCuposSecretaria(programaRegistroVista)}
+                            </strong>
+                          </div>
+                        </div>
+
+                        {/* Dashed divider */}
+                        <div style={{ borderTop: "1px dashed #c8e6c9", margin: "8px 0 6px" }} />
+
+                        {/* Bottom horizontal pills */}
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px" }}>
+                          <div style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            background: "#ffffff",
+                            border: "1px solid #c8e6c9",
+                            borderRadius: "20px",
+                            padding: "3px 10px",
+                            fontSize: "11.5px",
+                            fontWeight: "600",
+                            color: "#1b5e20"
+                          }}>
+                            <Clock size={13} style={{ color: "#388e3c" }} />
+                            <span>{horarioResumenRegistro.clase || "—"}</span>
+                          </div>
+
+                          {programaRegistroVista.incluyeAlmuerzo && (
+                            <div style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                              background: "#ffffff",
+                              border: "1px solid #c8e6c9",
+                              borderRadius: "20px",
+                              padding: "3px 10px",
+                              fontSize: "11.5px",
+                              fontWeight: "600",
+                              color: "#1b5e20"
+                            }}>
+                              <Coffee size={13} style={{ color: "#388e3c" }} />
+                              <span>Almuerzo: {horarioResumenRegistro.almuerzo || "—"}</span>
+                            </div>
+                          )}
+
+                          <div style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            background: "#ffffff",
+                            border: "1px solid #c8e6c9",
+                            borderRadius: "20px",
+                            padding: "3px 10px",
+                            fontSize: "11.5px",
+                            fontWeight: "600",
+                            color: "#1b5e20"
+                          }}>
+                            <Calendar size={13} style={{ color: "#388e3c" }} />
+                            <span>{horarioResumenRegistro.dia || "—"}</span>
+                          </div>
+                        </div>
+
+                        {esCambridge && ingresoCambridge ? (
+                          <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "10px", borderRadius: "8px", marginTop: "10px" }}>
+                            <span style={{ fontSize: "11px", color: "#1e40af", display: "block", marginBottom: "2px" }}>Modalidad Cambridge</span>
+                            <strong style={{ fontSize: "13px", color: "#1e3a8a" }}>{ingresoCambridge} {nivelCambridge ? `(${nivelCambridge})` : ""}</strong>
+                          </div>
+                        ) : null}
                       </div>
-                      <div className="secretaria-meta-item">
-                        <span>Cupos Disponibles</span>
-                        <strong className="secretaria-highlight-green">{formatearCuposSecretaria(programaRegistroVista)}</strong>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
+                    ) : null}
 
                 {programaRegistroVista?.requiereUniforme ? (
-                  <div className="secretaria-field">
-                    <label htmlFor="talla">Talla de uniforme</label>
+                  <div className="secretaria-field" style={{ marginBottom: "16px" }}>
+                    <label htmlFor="talla" style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de uniforme</label>
                     <select
                       id="talla"
+                      className="secretaria-input-fused"
                       value={formulario.tallaUniforme}
                       onChange={(event) =>
                         actualizarFormulario("tallaUniforme", event.target.value)
@@ -478,11 +569,12 @@ export default function SecretariaRegistroModal({
                 ) : null}
 
                 {programaRegistroVista?.requiereIndumentaria ? (
-                  <>
-                    <div className="secretaria-field">
-                      <label htmlFor="tallaPolo">Talla de polo</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 18px", marginBottom: "16px" }}>
+                    <div>
+                      <label htmlFor="tallaPolo" style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de polo</label>
                       <select
                         id="tallaPolo"
+                        className="secretaria-input-fused"
                         value={formulario.tallaPolo}
                         onChange={(event) =>
                           actualizarFormulario("tallaPolo", event.target.value)
@@ -500,10 +592,11 @@ export default function SecretariaRegistroModal({
                         <option value="XL">XL</option>
                       </select>
                     </div>
-                    <div className="secretaria-field">
-                      <label htmlFor="tallaShort">Talla de short</label>
+                    <div>
+                      <label htmlFor="tallaShort" style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de short</label>
                       <select
                         id="tallaShort"
+                        className="secretaria-input-fused"
                         value={formulario.tallaShort}
                         onChange={(event) =>
                           actualizarFormulario("tallaShort", event.target.value)
@@ -521,60 +614,82 @@ export default function SecretariaRegistroModal({
                         <option value="XL">XL</option>
                       </select>
                     </div>
-                  </>
+                  </div>
                 ) : null}
-                </div>
-
-                <div className="secretaria-registration-section secretaria-registration-contact secretaria-field-full">
-                <CampoTexto
-                  label="Nombre del padre / apoderado"
-                  value={formulario.apoderado}
-                  onChange={(value) => actualizarFormulario("apoderado", value)}
-                  placeholder="Nombre completo del apoderado"
-                />
-
-                <CampoTexto
-                  label="Teléfono del padre"
-                  icon={<Phone size={15} />}
-                  value={formulario.telefono}
-                  onChange={(value) =>
-                    actualizarFormulario("telefono", value.replace(/\D/g, ""))
-                  }
-                  placeholder="987654321"
-                  maxLength="9"
-                />
-
-                <div className="secretaria-field secretaria-field-full secretaria-registration-observation">
-                  <label htmlFor="observacion">Observación</label>
-                  <textarea
-                    id="observacion"
-                    rows="3"
-                    placeholder="Observación opcional para el registro"
-                    value={formulario.observacion}
-                    onChange={(event) =>
-                      actualizarFormulario("observacion", event.target.value)
-                    }
-                  />
-                </div>
 
                 </div>
+
+                {/* Padre / Apoderado */}
+                <div style={{ marginTop: "10px" }}>
+                  <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#1b5e20", marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
+                    <BookOpen size={16} style={{ color: "#388e3c" }} />
+                    Padre / Apoderado
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 12px", margin: "4px 0 6px" }}>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <label style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Nombre del padre / apoderado</label>
+                      <input
+                        className="secretaria-input-fused"
+                        type="text"
+                        value={formulario.apoderado}
+                        onChange={(event) => actualizarFormulario("apoderado", event.target.value)}
+                        placeholder="Nombre completo del apoderado"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Teléfono del padre</label>
+                      <input
+                        className="secretaria-input-fused"
+                        type="text"
+                        value={formulario.telefono}
+                        onChange={(event) => actualizarFormulario("telefono", event.target.value.replace(/\D/g, ""))}
+                        placeholder="987654321"
+                        maxLength="9"
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Observación (opcional)</label>
+                      <input
+                        className="secretaria-input-fused"
+                        type="text"
+                        value={formulario.observacion}
+                        onChange={(event) => actualizarFormulario("observacion", event.target.value)}
+                        placeholder="Observación opcional para el registro"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 </>
                 ) : null}
 
-                <label className="secretaria-check secretaria-field-full">
+                {/* Términos y condiciones */}
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  margin: "8px 0 10px",
+                  background: "#f1f8e9",
+                  padding: "8px 12px",
+                  borderRadius: "12px",
+                  border: "1px solid #c8e6c9"
+                }}>
                   <input
                     type="checkbox"
+                    id="termsCheck"
                     checked={formulario.aceptaCondiciones}
-                    onChange={(event) =>
-                      actualizarFormulario("aceptaCondiciones", event.target.checked)
-                    }
+                    onChange={(event) => actualizarFormulario("aceptaCondiciones", event.target.checked)}
+                    style={{ width: "18px", height: "18px", accentColor: "#388e3c", cursor: "pointer" }}
                   />
-                  <span>El padre/apoderado acepta las condiciones del programa.</span>
-                </label>
+                  <label htmlFor="termsCheck" style={{ fontSize: "12.5px", fontWeight: "600", color: "#1b5e20", cursor: "pointer" }}>
+                    <strong>El padre/apoderado acepta las condiciones del programa.</strong>
+                  </label>
+                </div>
 
-                <div className="secretaria-form-actions">
+                {/* Acciones */}
+                <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
                   <button
-                    className="secretaria-secondary-button"
+                    className="secretaria-btn-secondary-fused"
                     type="button"
                     onClick={() => setModoRegistro(false)}
                   >
@@ -586,24 +701,23 @@ export default function SecretariaRegistroModal({
                       : Boolean(programaRegistroVista);
                     return (
                       <button
-                        className="secretaria-register-button"
+                        className="secretaria-btn-primary-fused"
                         type="submit"
-                        disabled={guardando || !tieneProgramaValido}
+                        disabled={guardando || !tieneProgramaValido || !formulario.aceptaCondiciones}
                       >
                         {guardando ? (
                           <Loader2 className="secretaria-spin" size={17} />
                         ) : (
                           <ClipboardCheck size={17} />
                         )}
-                        <span>{guardando ? "Guardando" : modoCursoAdicional ? "Confirmar curso adicional" : "Confirmar inscripcion"}</span>
+                        <span>{guardando ? "Guardando..." : "Confirmar Inscripción"}</span>
                       </button>
                     );
                   })()}
                 </div>
               </form>
-            </section>
-          </div>
-        ) : null}
-</>
+        </section>
+      ) : null}
+    </>
   );
 }

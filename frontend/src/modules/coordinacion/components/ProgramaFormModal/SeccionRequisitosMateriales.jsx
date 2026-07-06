@@ -20,7 +20,7 @@ function limpiarItem(linea) {
 }
 
 export function parseStructuredSections(comunicadoCompleto, requisitosRaw) {
-  const lineas = (comunicadoCompleto || "").split("\n").map(l => l.trim());
+  const lineas = (requisitosRaw || "").split("\n").map(l => l.trim());
   const requisitosGrupos = [];
   let grupoActual = null;
 

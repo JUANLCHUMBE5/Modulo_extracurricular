@@ -10,11 +10,12 @@
 
 /* Dashboard de Analíticos en Vivo */
 .dir-analysis-dashboard {
-  background: #ffffff;
-  border: 1px solid rgba(226, 236, 233, 0.8);
-  border-radius: 12px;
-  padding: 16px 20px;
-  box-shadow: 0 10px 30px rgba(15, 31, 51, 0.025);
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1px solid #dcedc8 !important;
+  padding: 20px !important;
+  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
 }
 
 .dir-analysis-header {
@@ -214,11 +215,14 @@
 
 /* Constructor de Reportes Personalizados */
 .dir-custom-report-builder {
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
-  box-shadow: none !important;
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  border-radius: 20px !important;
+  border: 1px solid #dcedc8 !important;
+  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
+  padding: 20px !important;
+  box-sizing: border-box !important;
+  margin-bottom: 18px !important;
 }
 
 .dir-builder-header {

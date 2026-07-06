@@ -32,40 +32,104 @@ function TemplateUploadField({
   }
 
   return (
-    <div className="coord-field coord-field-full">
-      <div className="coord-template-compact-row">
-        <div className="coord-template-file-control">
-          <label>{modoDocumentos ? "Subir documento Word" : "Documento Word"}</label>
-          <div className="coord-template-file-row">
+    <div className="coord-field coord-field-full" style={{ animation: "coord-fade-in 0.25s ease" }}>
+      {modoDocumentos ? (
+        <div className="coord-form-group-green">
+          <label>
+            <FileText size={16} />
+            Subir documento Word
+          </label>
+          <div
+            className="coord-file-drop"
+            onClick={() => document.getElementById(inputId)?.click()}
+            onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("dragover"); }}
+            onDragLeave={(e) => e.currentTarget.classList.remove("dragover")}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove("dragover");
+              if (e.dataTransfer.files.length) {
+                const fakeEvent = { target: { files: e.dataTransfer.files } };
+                onSelect(fakeEvent);
+              }
+            }}
+          >
+            <FileText size={32} className="coord-drop-icon" style={{ color: "#2b6cb0" }} />
+            <p className="coord-drop-text">
+              Arrastra tu archivo Word o <span className="coord-drop-highlight" style={{ color: "#2b6cb0", textDecorationColor: "#bee3f8" }}>haz clic para elegir</span>
+            </p>
+            <div className="coord-drop-sub">.docx — máx 5 MB</div>
             <input
               id={inputId}
-              className="coord-template-file"
               key={plantillaInputKey}
               type="file"
               accept=".docx"
               onChange={onSelect}
+              style={{ display: "none" }}
             />
-            <label className="coord-template-file-button" htmlFor={inputId}>
-              {form.plantilla ? "Cambiar Word" : "Seleccionar Word"}
-            </label>
-            <div className="coord-template-file-name">
-              <FileText size={16} />
-              <span title={form.plantilla || ""}>{form.plantilla || "Sin documento seleccionado"}</span>
-            </div>
-            {form.plantilla ? (
-              <>
-                <span className={`coord-pill ${form.plantillaValidada ? "coord-pill-success" : "coord-pill-error"}`}>
-                  {form.plantillaValidada ? "Validada" : "Pendiente"}
+          </div>
+
+          {form.plantilla && (
+            <div className="coord-file-info-bar" style={{ background: "#ebf8ff", borderColor: "#bee3f8", color: "#2b6cb0" }}>
+              <FileText size={18} style={{ color: "#3182ce" }} />
+              <span>{form.plantilla}</span>
+              {form.plantillaValidada ? (
+                <span className="coord-pill coord-pill-success" style={{ marginLeft: "8px" }}>
+                  Validada
                 </span>
-                <button type="button" className="coord-remove-template-btn" onClick={onRemove}>
-                  <X size={14} />
-                  <span>Quitar</span>
-                </button>
-              </>
-            ) : null}
+              ) : (
+                <span className="coord-pill coord-pill-error" style={{ marginLeft: "8px" }}>
+                  Pendiente
+                </span>
+              )}
+              <button
+                type="button"
+                className="coord-file-remove"
+                style={{ borderColor: "#fed7d7", color: "#c53030" }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove();
+                }}
+              >
+                <X size={14} /> Quitar
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="coord-template-compact-row">
+          <div className="coord-template-file-control">
+            <label>Documento Word</label>
+            <div className="coord-template-file-row">
+              <input
+                id={inputId}
+                className="coord-template-file"
+                key={plantillaInputKey}
+                type="file"
+                accept=".docx"
+                onChange={onSelect}
+              />
+              <label className="coord-template-file-button" htmlFor={inputId}>
+                {form.plantilla ? "Cambiar Word" : "Seleccionar Word"}
+              </label>
+              <div className="coord-template-file-name">
+                <FileText size={16} />
+                <span title={form.plantilla || ""}>{form.plantilla || "Sin documento seleccionado"}</span>
+              </div>
+              {form.plantilla ? (
+                <>
+                  <span className={`coord-pill ${form.plantillaValidada ? "coord-pill-success" : "coord-pill-error"}`}>
+                    {form.plantillaValidada ? "Validada" : "Pendiente"}
+                  </span>
+                  <button type="button" className="coord-remove-template-btn" onClick={onRemove}>
+                    <X size={14} />
+                    <span>Quitar</span>
+                  </button>
+                </>
+              ) : null}
+            </div>
           </div>
         </div>
-      </div>
+      )}
       {plantillasDisponibles.length && !modoDocumentos ? (
         <div className="coord-template-reuse">
           <label>Usar plantilla de otro programa</label>
