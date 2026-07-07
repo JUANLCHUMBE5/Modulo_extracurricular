@@ -1,153 +1,25 @@
 import { useState } from "react";
-import {
-  IconAlertCircle as AlertCircle,
-  IconFileText as FileText,
-  IconCalendar as Calendar,
-  IconClock as Clock,
-  IconUser as User,
-  IconReceipt as Receipt,
-  IconClipboardCheck as ClipboardCheck,
-  IconBook2 as BookOpen,
-} from "@tabler/icons-react";
+import { IconAlertCircle as AlertCircle, IconFileText as FileText } from "@tabler/icons-react";
 import PortalBadge from "./PortalBadge";
 import { describirSeleccionCambridgePadres, obtenerTipoCampo, convertirHorasAMPM } from "../utils/padresTextUtils";
+import {
+  obtenerTalleresEstructurados,
+  formatTime12h,
+  obtenerEmojiDeporte,
+  obtenerIconoPorTipo,
+  obtenerClasePorTipo,
+} from "../utils/comunicadoStepHelpers";
 
 const opcionesCambridge = [
-  { id: "A", titulo: "A", detalle: "Promovido/a por Certificado Oficial 2025" },
-  { id: "B", titulo: "B", detalle: "Ingresante por Admission Test" },
-  { id: "C", titulo: "C", detalle: "Ingresante por Desempeno Academico" },
+  { id: "A", titulo: "A", detail: "Promovido/a por Certificado Oficial 2025", detalle: "Promovido/a por Certificado Oficial 2025" },
+  { id: "B", titulo: "B", detail: "Ingresante por Admission Test", detalle: "Ingresante por Admission Test" },
+  { id: "C", titulo: "C", detail: "Ingresante por Desempeno Academico", detalle: "Ingresante por Desempeno Academico" },
 ];
-
-function obtenerTalleresEstructurados(programa) {
-  if (!programa) return [];
-
-  const categoria = String(programa.categoria || "").toLowerCase();
-  const tieneTalleres = Array.isArray(programa.talleresDeportivos) && programa.talleresDeportivos.length > 0;
-
-  if (categoria !== "deportivo" && !tieneTalleres) {
-    return [];
-  }
-
-  // 1. Si tiene talleresDeportivos (arreglo estructurado)
-  if (tieneTalleres) {
-    return programa.talleresDeportivos.map(taller => {
-      const nivelLabel = taller.nivel ? ` [${taller.nivel}]` : "";
-      const label = `${taller.deporte}${nivelLabel} (${taller.edadMinima}-${taller.edadMaxima} a.) (${taller.horaInicio}-${taller.horaFin})`;
-      const horarioCompleto = `${taller.dia}: ${taller.deporte}${nivelLabel} (${taller.edadMinima}-${taller.edadMaxima} a.): ${taller.horaInicio}-${taller.horaFin}`;
-      return {
-        dia: taller.dia,
-        deporte: taller.deporte,
-        nivel: taller.nivel || "",
-        edadMinima: taller.edadMinima,
-        edadMaxima: taller.edadMaxima,
-        horaInicio: taller.horaInicio,
-        horaFin: taller.horaFin,
-        horarioCompleto,
-        label,
-      };
-    });
-  }
-
-  // 2. Fallback a parsear el texto de horario
-  const texto = String(programa.horario || "").trim();
-  if (!texto) return [];
-
-  const sessions = texto.split("/").map(s => s.trim()).filter(Boolean);
-  const isComplex = sessions.some(s => s.includes(":"));
-  if (!isComplex) return [];
-
-  const resultado = [];
-  sessions.forEach((session) => {
-    const colonIdx = session.indexOf(":");
-    let day = "";
-    let content = session;
-    if (colonIdx > -1) {
-      const left = session.substring(0, colonIdx).trim();
-      if (!/\d/.test(left)) {
-        day = left;
-        content = session.substring(colonIdx + 1).trim();
-      }
-    }
-
-    const activities = content.split(",").map(a => a.trim()).filter(Boolean);
-    activities.forEach((act) => {
-      const actColonIdx = act.indexOf(":");
-      if (actColonIdx > -1) {
-        const name = act.substring(0, actColonIdx).trim();
-        const time = act.substring(actColonIdx + 1).trim();
-
-        let deporte = name;
-        let edadMinima = "";
-        let edadMaxima = "";
-        const matchEdad = name.match(/^(.+?)\s*\((\d+)-(\d+)\s*a\.\)/);
-        if (matchEdad) {
-          deporte = matchEdad[1].trim();
-          edadMinima = matchEdad[2];
-          edadMaxima = matchEdad[3];
-        }
-
-        const label = `${name} (${time})`;
-        const horarioCompleto = `${day}: ${name}: ${time}`;
-
-        resultado.push({
-          dia: day,
-          deporte,
-          edadMinima,
-          edadMaxima,
-          horaInicio: time.split("-")[0]?.trim() || "",
-          horaFin: time.split("-")[1]?.trim() || "",
-          horarioCompleto,
-          label,
-        });
-      }
-    });
-  });
-
-  return resultado;
-}
-
-function formatTime12h(timeStr) {
-  if (!timeStr) return "";
-  const parts = timeStr.split(":");
-  if (parts.length < 2) return timeStr;
-  let hour = parseInt(parts[0], 10);
-  const minute = parts[1].trim();
-  if (Number.isNaN(hour)) return timeStr;
-  const ampm = hour >= 12 ? "PM" : "AM";
-  hour = hour % 12;
-  hour = hour ? hour : 12; // 0 should be 12
-  return `${hour}:${minute} ${ampm}`;
-}
-
-function obtenerEmojiDeporte(deporte) {
-  const d = String(deporte || "").toLowerCase();
-  if (d.includes("futbol") || d.includes("fútbol")) return "⚽";
-  if (d.includes("basquet") || d.includes("básquet") || d.includes("basketball")) return "🏀";
-  if (d.includes("voley") || d.includes("vóley") || d.includes("volleyball")) return "🏐";
-  return "🏆";
-}
-
-function obtenerIconoPorTipo(tipo = "") {
-  if (tipo === "vigencia") return Calendar;
-  if (tipo === "horario") return Clock;
-  if (tipo === "costo") return Receipt;
-  if (tipo === "plazo") return ClipboardCheck;
-  if (tipo === "responsable") return User;
-  return BookOpen;
-}
-
-function obtenerClasePorTipo(tipo = "") {
-  if (tipo === "vigencia") return "is-vigencia";
-  if (tipo === "horario") return "is-horario";
-  if (tipo === "costo") return "is-costo";
-  if (tipo === "plazo") return "is-plazo";
-  if (tipo === "responsable") return "is-responsable";
-  return "is-general";
-}
 
 export default function ComunicadoStep({
   comunicadoPadres,
   infoProgramaAceptada,
+  comunicadoLeidoEnSesion,
   programa,
   setInfoProgramaAbierta,
   setPasoActivo,
@@ -173,15 +45,36 @@ export default function ComunicadoStep({
   const talleres = obtenerTalleresEstructurados(programa);
   const tieneOpciones = talleres.length > 0;
 
-  const [diaSeleccionado, setDiaSeleccionado] = useState(() => {
-    if (horarioSeleccionado && horarioSeleccionado.includes(":")) {
-      return horarioSeleccionado.split(":")[0].trim();
+  const nivelesDisponibles = Array.from(new Set(talleres.map(t => t.nivel).filter(Boolean)));
+
+  const [nivelSeleccionado, setNivelSeleccionado] = useState(() => {
+    if (horarioSeleccionado) {
+      const matchNivel = talleres.find(t => t.horarioCompleto === horarioSeleccionado);
+      if (matchNivel) return matchNivel.nivel;
     }
     return "";
   });
 
-  const diasDisponibles = Array.from(new Set(talleres.map(t => t.dia).filter(Boolean)));
-  const talleresFiltrados = talleres.filter(t => t.dia === diaSeleccionado);
+  const [diaSeleccionado, setDiaSeleccionado] = useState(() => {
+    if (horarioSeleccionado) {
+      const matchDia = talleres.find(t => t.horarioCompleto === horarioSeleccionado);
+      if (matchDia) return matchDia.dia;
+    }
+    return "";
+  });
+
+  const diasDisponibles = Array.from(
+    new Set(
+      talleres
+        .filter(t => !nivelSeleccionado || t.nivel === nivelSeleccionado)
+        .map(t => t.dia)
+        .filter(Boolean)
+    )
+  );
+
+  const talleresFiltrados = talleres.filter(
+    t => t.dia === diaSeleccionado && (!nivelSeleccionado || t.nivel === nivelSeleccionado)
+  );
 
   const manejarCambioDia = (dia) => {
     setDiaSeleccionado(dia);
@@ -196,7 +89,7 @@ export default function ComunicadoStep({
 
   const tieneComunicado = Boolean((programa.comunicado && programa.comunicado.trim()) || (programa.comunicadoCompleto && programa.comunicadoCompleto.trim()));
   const tieneRequisitos = Boolean(programa.requisitos && programa.requisitos.trim());
-  const mostrarCarta = tieneComunicado && tieneRequisitos;
+  const mostrarCarta = true;
 
   return (
     <article className="padres-flow-panel padres-flow-step-panel">
@@ -252,17 +145,20 @@ export default function ComunicadoStep({
 
               return segmentos.map((segmento, idx) => {
                 if (segmento.type === "grid") {
+                  const hasResponsable = Array.isArray(segmento.items) && segmento.items.some((item) => obtenerTipoCampo(item.label) === "responsable");
+                  const gridStyle = {
+                    gridTemplateColumns: hasResponsable
+                      ? "minmax(250px, 1.4fr) repeat(3, minmax(140px, 0.7fr))"
+                      : "minmax(250px, 1.4fr) repeat(2, minmax(140px, 0.7fr))"
+                  };
                   return (
-                    <div key={`grid-${idx}`} className="padres-comunicado-details-grid">
+                    <div key={`grid-${idx}`} className="padres-comunicado-details-grid" style={gridStyle}>
                       {segmento.items.map((item, itemIdx) => {
                         const tipo = obtenerTipoCampo(item.label);
                         const Icono = obtenerIconoPorTipo(tipo);
                         const clase = obtenerClasePorTipo(tipo);
                         return (
                           <div key={itemIdx} className={`padres-comunicado-detail-item ${clase}`}>
-                            <div className="padres-comunicado-detail-icon">
-                              <Icono size={16} />
-                            </div>
                             <div className="padres-comunicado-detail-info">
                               <span className="padres-comunicado-detail-label">{item.label}</span>
                               <span className="padres-comunicado-detail-value">{item.value}</span>
@@ -274,7 +170,7 @@ export default function ComunicadoStep({
                   );
                 }
                 return (
-                  <p key={`text-${idx}`} style={{ margin: "12px 0", fontSize: "14.5px", lineHeight: "1.6", color: "#000000" }}>
+                  <p key={`text-${idx}`} style={{ margin: "12px 0", fontSize: "14.5px", lineHeight: "1.6", color: "#334155", textAlign: "justify", textJustify: "inter-word", wordBreak: "break-word" }}>
                     {segmento.content}
                   </p>
                 );
@@ -379,7 +275,7 @@ export default function ComunicadoStep({
               </strong>
             </div>
 
-            {programa.cupos && (
+            {!!programa.cupos && (
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                 <span style={{ fontSize: "11px", color: "#64748b", fontWeight: "700", textTransform: "uppercase" }}>Cupos</span>
                 <strong style={{ fontSize: "14px", color: "#0f172a" }}>{programa.cupos} vacantes</strong>
@@ -407,40 +303,80 @@ export default function ComunicadoStep({
           border: "1px solid #e2e8f0",
           marginTop: "12px"
         }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-            <label style={{ fontSize: "13px", fontWeight: "800", color: "#334155", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              1. Seleccione el día:
-            </label>
-            <select
-              value={diaSeleccionado}
-              onChange={(e) => manejarCambioDia(e.target.value)}
-              style={{
-                width: "100%",
-                minHeight: "42px",
-                padding: "8px 12px",
-                borderRadius: "10px",
-                border: "1px solid #cbd5e1",
-                background: "#ffffff",
-                fontSize: "14px",
-                color: "#1e293b",
-                fontWeight: "700",
-                cursor: "pointer",
-                boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
-              }}
-            >
-              <option value="">-- Seleccionar día --</option>
-              {diasDisponibles.map((dia) => (
-                <option key={dia} value={dia}>
-                  Solo disponible el {dia}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* 1. Seleccione el tipo de taller (si aplica) */}
+          {nivelesDisponibles.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "800", color: "#334155", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                1. Seleccione el tipo de taller:
+              </label>
+              <select
+                value={nivelSeleccionado}
+                onChange={(e) => {
+                  setNivelSeleccionado(e.target.value);
+                  setDiaSeleccionado("");
+                  setHorarioSeleccionado("");
+                }}
+                style={{
+                  width: "100%",
+                  minHeight: "42px",
+                  padding: "8px 12px",
+                  borderRadius: "10px",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  fontSize: "14px",
+                  color: "#1e293b",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                }}
+              >
+                <option value="">-- Seleccionar tipo --</option>
+                {nivelesDisponibles.map((niv) => (
+                  <option key={niv} value={niv}>
+                    Taller {niv}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
+          {/* 2. Seleccione el día (se muestra si no hay niveles, o si ya seleccionó el nivel) */}
+          {(nivelesDisponibles.length === 0 || nivelSeleccionado) ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <label style={{ fontSize: "13px", fontWeight: "800", color: "#334155", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                {nivelesDisponibles.length > 0 ? "2." : "1."} Seleccione el día:
+              </label>
+              <select
+                value={diaSeleccionado}
+                onChange={(e) => manejarCambioDia(e.target.value)}
+                style={{
+                  width: "100%",
+                  minHeight: "42px",
+                  padding: "8px 12px",
+                  borderRadius: "10px",
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  fontSize: "14px",
+                  color: "#1e293b",
+                  fontWeight: "700",
+                  cursor: "pointer",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.05)"
+                }}
+              >
+                <option value="">-- Seleccionar día --</option>
+                {diasDisponibles.map((dia) => (
+                  <option key={dia} value={dia}>
+                    Solo disponible el {dia}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
 
           {diaSeleccionado ? (
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "4px" }}>
               <label style={{ fontSize: "13px", fontWeight: "800", color: "#334155", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                2. Seleccione el deporte y grupo de edad:
+                {nivelesDisponibles.length > 0 ? "3." : "2."} Seleccione el deporte y grupo de edad:
               </label>
 
               <div style={{
@@ -616,11 +552,9 @@ export default function ComunicadoStep({
         <div className={`padres-flow-read-card${infoProgramaAceptada ? " is-accepted" : ""}`}>
           <div>
             <strong>{infoProgramaAceptada ? "Comunicado aceptado" : "Lectura requerida"}</strong>
-            <p>
-              {infoProgramaAceptada
-                ? "La familia ya aceptó la información del programa."
-                : "Abra el comunicado completo, revise las condiciones y marque la aceptación al final."}
-            </p>
+            {infoProgramaAceptada && (
+              <p>La familia ya aceptó la información del programa.</p>
+            )}
           </div>
           <button className="padres-flow-secondary-button" type="button" onClick={() => setInfoProgramaAbierta(true)}>
             <FileText size={16} />
@@ -633,7 +567,7 @@ export default function ComunicadoStep({
         <button
           className="padres-flow-primary-button"
           type="button"
-          disabled={(mostrarCarta ? !infoProgramaAceptada : false) || continuarDeshabilitado}
+          disabled={(mostrarCarta ? (!infoProgramaAceptada || !comunicadoLeidoEnSesion) : false) || continuarDeshabilitado}
           onClick={() => setPasoActivo(2)}
         >
           Continuar a datos

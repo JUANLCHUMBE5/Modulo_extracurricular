@@ -106,6 +106,7 @@ export function obtenerVentanaInscripcion(fechaInicio, fechaBase = new Date(), d
         horaLimite: horaFormateada,
         duracionAvisoDias: 0,
         mensaje,
+        limiteTimestamp: limite.getTime(),
       };
     }
   }
@@ -146,6 +147,7 @@ export function obtenerVentanaInscripcion(fechaInicio, fechaBase = new Date(), d
     mensaje: permitida
       ? `Aviso de inscripción habilitado hasta el ${format(limite, "dd/MM/yyyy", { locale: es })} a las ${horaFormateada}.`
       : "El aviso de inscripción regular cerró. Derive al padre a Cajera para evaluar el registro.",
+    limiteTimestamp: limite.getTime(),
   };
 }
 
@@ -155,7 +157,8 @@ export function normalizarFecha(valor) {
 
   const texto = String(valor).trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
-    const fecha = parseISO(texto);
+    const partes = texto.split("-").map(Number);
+    const fecha = new Date(partes[0], partes[1] - 1, partes[2]);
     if (isValid(fecha)) return fecha;
   }
 

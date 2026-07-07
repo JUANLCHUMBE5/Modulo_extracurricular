@@ -12,125 +12,15 @@ import {
 import { formatearSoles } from "../hooks/usePadres";
 import PortalBadge from "./PortalBadge";
 
+import {
+  esPagoEnVerificacion,
+  esPagoObservado,
+  obtenerMotivoPagoObservado,
+  esPagoAprobado,
+  leerArchivoComoBase64,
+} from "../utils/pagoStepHelpers";
+
 const PAGO_QR_SRC = "/PAGO_QR.jpg";
-
-function esPagoEnVerificacion(inscripcion, pagoConfirmado) {
-  const estadoInscripcion = normalizarTexto(inscripcion?.estadoInscripcion);
-  const pagoCorresponde = Boolean(
-    pagoConfirmado?.inscripcionId &&
-    inscripcion?.id &&
-    pagoConfirmado.inscripcionId === inscripcion.id
-  );
-  const tienePagoRegistrado = Boolean(inscripcion?.pagoId || pagoCorresponde);
-  const estadoPago = normalizarTexto([
-    pagoCorresponde ? pagoConfirmado?.estado : "",
-    pagoCorresponde ? pagoConfirmado?.estadoPago : "",
-    pagoCorresponde ? pagoConfirmado?.estadoVerificacion : "",
-    inscripcion?.estadoPago,
-    inscripcion?.estadoInscripcion,
-  ].filter(Boolean).join(" "));
-  if (["observado", "observada", "rechazado", "rechazada", "no coincide"].some((item) => estadoPago.includes(item))) return false;
-  return tienePagoRegistrado && (estadoInscripcion.includes("verificacion") ||
-    estadoInscripcion.includes("validacion") ||
-    estadoInscripcion.includes("proceso") ||
-    estadoPago.includes("verificando") ||
-    estadoPago.includes("por verificar") ||
-    estadoPago.includes("proceso") ||
-    estadoPago.includes("validacion"));
-}
-
-function esPagoObservado(inscripcion, pagoConfirmado) {
-  const pagoCorresponde = Boolean(
-    pagoConfirmado?.inscripcionId &&
-    inscripcion?.id &&
-    pagoConfirmado.inscripcionId === inscripcion.id
-  );
-  const texto = normalizarTexto([
-    pagoCorresponde ? pagoConfirmado?.estado : "",
-    pagoCorresponde ? pagoConfirmado?.estadoPago : "",
-    pagoCorresponde ? pagoConfirmado?.estadoVerificacion : "",
-    pagoCorresponde ? pagoConfirmado?.observaciones : "",
-    inscripcion?.estadoPago,
-    inscripcion?.estadoInscripcion,
-    inscripcion?.pagoObservacionCaja,
-  ].filter(Boolean).join(" "));
-
-  return ["observado", "observada", "rechazado", "rechazada", "no coincide"].some((item) => texto.includes(item));
-}
-
-function obtenerMotivoPagoObservado(inscripcion, pagoConfirmado) {
-  return (
-    inscripcion?.pagoObservacionCaja ||
-    pagoConfirmado?.observaciones ||
-    pagoConfirmado?.observacion ||
-    "El pago fue observado por Cajera. Revise el numero de operacion, telefono y captura antes de volver a enviarlo."
-  );
-}
-
-function esPagoAprobado(inscripcion, pagoConfirmado) {
-  const pagoCorresponde = Boolean(
-    pagoConfirmado?.inscripcionId &&
-    inscripcion?.id &&
-    pagoConfirmado.inscripcionId === inscripcion.id
-  );
-  const texto = normalizarTexto([
-    pagoCorresponde ? pagoConfirmado?.estado : "",
-    pagoCorresponde ? pagoConfirmado?.estadoVerificacion : "",
-    inscripcion?.estadoPago,
-    inscripcion?.estadoInscripcion,
-  ].filter(Boolean).join(" "));
-
-  return ["completado", "pagado", "validado", "pago validado"].some((item) => texto.includes(item));
-}
-
-function normalizarTexto(valor) {
-  return String(valor || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
-}
-
-function leerArchivoComoBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const maxWidth = 800;
-        const maxHeight = 800;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width);
-            width = maxWidth;
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height);
-            height = maxHeight;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext("2d");
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const base64 = canvas.toDataURL("image/jpeg", 0.7);
-        resolve(base64);
-      };
-      img.onerror = () => {
-        resolve(event.target.result);
-      };
-    };
-    reader.onerror = () => reject(new Error("No se pudo leer la captura del pago."));
-  });
-}
 
 export default function PagoStep({
   datosConfirmados,
@@ -237,7 +127,7 @@ export default function PagoStep({
             <div style={{ marginTop: "8px" }}>
               <strong style={{ fontSize: "17px", display: "block", fontWeight: 800 }}>¡Inscripción y Pago Confirmados!</strong>
               <span style={{ fontSize: "14px", display: "block", color: "#14532d", marginTop: "6px", lineHeight: "1.5" }}>
-                El pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido validado y aprobado exitosamente por el área de Cajera.
+                El pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido validado y aprobado exitosamente por el área.
                 El estudiante se encuentra debidamente inscrito.
               </span>
             </div>
@@ -368,7 +258,7 @@ export default function PagoStep({
                 El comprobante de pago para el programa <b>{programa?.programa || programa?.nombre}</b> por el monto de <b>{monto}</b> ha sido recibido correctamente.
                 <br />
                 <br />
-                El área de Cajera validará la transacción a la brevedad. Una vez aprobada, tu estado cambiará a <b>Inscrito</b>.
+                El área validará la transacción a la brevedad. Una vez aprobada, tu estado cambiará a <b>Inscrito</b>.
               </span>
             </div>
             <div style={{ marginTop: "24px" }}>

@@ -1,4 +1,3 @@
-import React, { useState, useEffect, useRef } from "react";
 import { Button, Select, Textarea, TextInput, Paper, Text, Group } from "@mantine/core";
 import {
   IconReceiptOff as ReceiptOff,
@@ -9,384 +8,64 @@ import {
   IconCoins as Coins,
   IconCheck as Check
 } from "@tabler/icons-react";
-import { toast } from "sonner";
-import {
-  buscarEstudiantesCajaQuery,
-  listarPagos,
-  anularPago,
-  registrarEgresoCaja
-} from "../../cajaService";
-import { obtenerCorrelativos } from "../../../direccion/direccionService";
+import { formatearSoles } from "../../utils/cajaFormatters";
+import useCajaCancelarCorrelativo from "../../hooks/useCajaCancelarCorrelativo";
 
 export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar, periodo, onCorrelativoCancelado }) {
-  const [correlativos, setCorrelativos] = useState(null);
-  const [motivo, setMotivo] = useState("");
-  const [busqueda, setBusqueda] = useState("");
-  const [resultados, setResultados] = useState([]);
-  const [buscandoEstudiante, setBuscandoEstudiante] = useState(false);
-  const [estudianteSeleccionado, setEstudianteSeleccionado] = useState(null);
+  const {
+    correlativos,
+    motivo,
+    setMotivo,
+    busqueda,
+    setBusqueda,
+    resultados,
+    buscandoEstudiante,
+    estudianteSeleccionado,
+    pagosEstudiante,
+    cargandoPagos,
+    pagoSeleccionadoId,
+    setPagoSeleccionadoId,
+    cargando,
+    cargandoCorr,
+    activeTab,
+    setActiveTab,
+    beneficiario,
+    setBeneficiario,
+    dniEgreso,
+    setDniEgreso,
+    montoEgreso,
+    setMontoEgreso,
+    conceptoEgreso,
+    setConceptoEgreso,
+    guardandoEgreso,
+    tipoEgreso,
+    busquedaEgreso,
+    setBusquedaEgreso,
+    resultadosEgreso,
+    buscandoEstudianteEgreso,
+    estudianteEgreso,
+    pagosEgreso,
+    cargandoPagosEgreso,
+    pagoEgresoSeleccionadoId,
+    handleBuscarEstudianteEgreso,
+    seleccionarEstudianteEgreso,
+    handlePagoEgresoChange,
+    handleQuitarEstudianteEgreso,
+    handleTipoEgresoChange,
+    handleRegistrarEgreso,
+    getPagoSeleccionado,
+    getComprobanteFinal,
+    handleBuscarEstudiante,
+    handleSeleccionarEstudiante,
+    handleQuitarEstudiante,
+    handleCancelar,
+  } = useCajaCancelarCorrelativo({
+    periodo,
+    onCorrelativoCancelado,
+  });
 
-  // Estados para selección de pago de estudiante
-  const [pagosEstudiante, setPagosEstudiante] = useState([]);
-  const [cargandoPagos, setCargandoPagos] = useState(false);
-  const [pagoSeleccionadoId, setPagoSeleccionadoId] = useState(null);
-  const pagoPreseleccionadoRef = useRef(null);
-
-  const [cargando, setCargando] = useState(false);
-  const [cargandoCorr, setCargandoCorr] = useState(false);
-
-  // Tab state
-  const [activeTab, setActiveTab] = useState("anular"); // "anular" | "egreso"
-
-  // Form states for Egreso
-  const [beneficiario, setBeneficiario] = useState("");
-  const [dniEgreso, setDniEgreso] = useState("");
-  const [montoEgreso, setMontoEgreso] = useState("");
-  const [conceptoEgreso, setConceptoEgreso] = useState("");
-  const [guardandoEgreso, setGuardandoEgreso] = useState(false);
-
-  // States for student-based Egreso
-  const [tipoEgreso, setTipoEgreso] = useState("estudiante"); // "estudiante" | "general"
-  const [busquedaEgreso, setBusquedaEgreso] = useState("");
-  const [resultadosEgreso, setResultadosEgreso] = useState([]);
-  const [buscandoEstudianteEgreso, setBuscandoEstudianteEgreso] = useState(false);
-  const [estudianteEgreso, setEstudianteEgreso] = useState(null);
-  const [pagosEgreso, setPagosEgreso] = useState([]);
-  const [cargandoPagosEgreso, setCargandoPagosEgreso] = useState(false);
-  const [pagoEgresoSeleccionadoId, setPagoEgresoSeleccionadoId] = useState(null);
-
-  const handleBuscarEstudianteEgreso = async (e) => {
-    e?.preventDefault();
-    const query = String(busquedaEgreso || "").trim();
-    if (!query) {
-      toast.error("Búsqueda vacía", { description: "Ingrese el DNI o nombres para buscar." });
-      return;
-    }
-    if (query.length < 3) {
-      toast.error("Búsqueda corta", { description: "Ingrese al menos 3 caracteres." });
-      return;
-    }
-    setBuscandoEstudianteEgreso(true);
-    setResultadosEgreso([]);
-    try {
-      const res = await buscarEstudiantesCajaQuery(query);
-      if (res && res.length === 1) {
-        seleccionarEstudianteEgreso(res[0]);
-      } else if (res && res.length > 1) {
-        setResultadosEgreso(res);
-      } else {
-        toast.error("No encontrado", { description: "No se encontró ningún estudiante con ese DNI o nombre." });
-      }
-    } catch (err) {
-      toast.error("Error al buscar", { description: err.message || "Intente nuevamente." });
-    } finally {
-      setBuscandoEstudianteEgreso(false);
-    }
-  };
-
-  const seleccionarEstudianteEgreso = async (est) => {
-    setEstudianteEgreso(est);
-    setResultadosEgreso([]);
-    setBeneficiario(est.nombres);
-    setDniEgreso(est.dni);
-
-    // Cargar sus pagos pagados
-    setCargandoPagosEgreso(true);
-    setPagosEgreso([]);
-    setPagoEgresoSeleccionadoId(null);
-    try {
-      const res = await listarPagos(periodo || "escolar", { estudianteDni: est.dni });
-      const pagados = (res || []).filter(p => {
-        const estado = String(`${p.estado || ""} ${p.estadoPago || ""} ${p.estadoVerificacion || ""}`).toLowerCase();
-        return ["validado", "completado", "pagado", "aprobado"].some((item) => estado.includes(item));
-      });
-      setPagosEgreso(pagados);
-      if (pagados.length > 0) {
-        setPagoEgresoSeleccionadoId(pagados[0].id);
-        actualizarCamposConPagoEgreso(pagados[0], est);
-      } else {
-        toast.warning("Sin pagos", { description: "El estudiante no tiene pagos aprobados para devolver." });
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setCargandoPagosEgreso(false);
-    }
-  };
-
-  const actualizarCamposConPagoEgreso = (pago, est) => {
-    if (!pago) return;
-    setMontoEgreso(String(pago.monto || 0));
-    setConceptoEgreso(
-      `Devolución por concepto de taller de ${pago.programa || "Extracurricular"}. Referencia: Recibo N° ${pago.nroRecibo || "S/N"}.`
-    );
-  };
-
-  const handlePagoEgresoChange = (val) => {
-    setPagoEgresoSeleccionadoId(val);
-    const pago = pagosEgreso.find(p => p.id === val);
-    if (pago && estudianteEgreso) {
-      actualizarCamposConPagoEgreso(pago, estudianteEgreso);
-    }
-  };
-
-  const handleQuitarEstudianteEgreso = () => {
-    setEstudianteEgreso(null);
-    setResultadosEgreso([]);
-    setBusquedaEgreso("");
-    setPagosEgreso([]);
-    setPagoEgresoSeleccionadoId(null);
-    setBeneficiario("");
-    setDniEgreso("");
-    setMontoEgreso("");
-    setConceptoEgreso("");
-  };
-
-  const handleTipoEgresoChange = (newTipo) => {
-    setTipoEgreso(newTipo);
-    handleQuitarEstudianteEgreso();
-  };
-
-  const handleRegistrarEgreso = async (e) => {
-    e.preventDefault();
-
-    if (correlativos?.egresoActive === false) {
-      toast.error("Serie Inactiva", { description: "La serie de recibos de egreso está inactiva. Actívela en Dirección." });
-      return;
-    }
-
-    const limpioBeneficiario = String(beneficiario || "").trim();
-    const limpioConcepto = String(conceptoEgreso || "").trim();
-    const numMonto = Number(montoEgreso);
-
-    if (!limpioBeneficiario) {
-      toast.error("Campo requerido", { description: "Debe ingresar el nombre del beneficiario." });
-      return;
-    }
-
-    if (isNaN(numMonto) || numMonto <= 0) {
-      toast.error("Monto inválido", { description: "El monto debe ser un número mayor a 0." });
-      return;
-    }
-
-    if (!limpioConcepto) {
-      toast.error("Campo requerido", { description: "Debe ingresar el concepto o justificación." });
-      return;
-    }
-
-    setGuardandoEgreso(true);
-    try {
-      const datos = {
-        beneficiario: limpioBeneficiario,
-        dni: dniEgreso.trim(),
-        monto: numMonto,
-        concepto: limpioConcepto,
-        periodo: periodo || "escolar",
-      };
-
-      const resEgreso = await registrarEgresoCaja(datos);
-
-      toast.success("Egreso registrado", {
-        description: `Se registró el egreso ${resEgreso.nroRecibo} por S/ ${numMonto.toFixed(2)} correctamente.`,
-      });
-
-      // Clear form
-      setBeneficiario("");
-      setDniEgreso("");
-      setMontoEgreso("");
-      setConceptoEgreso("");
-
-      await cargarCorrelativos();
-
-      if (onCorrelativoCancelado) {
-        onCorrelativoCancelado();
-      }
-    } catch (err) {
-      toast.error("Error al registrar", { description: err.message || "Intente nuevamente." });
-    } finally {
-      setGuardandoEgreso(false);
-    }
-  };
-
-  async function cargarCorrelativos() {
-    setCargandoCorr(true);
-    try {
-      const res = await obtenerCorrelativos();
-      if (res) {
-        setCorrelativos(res);
-      }
-    } catch (err) {
-      toast.error("Error", { description: "No se pudieron cargar los correlativos actuales." });
-    } finally {
-      setCargandoCorr(false);
-    }
-  }
-
-  useEffect(() => {
-    cargarCorrelativos();
-  }, []);
-
-  const obtenerFechaHoy = () => {
-    const fecha = new Date();
-    const yyyy = fecha.getFullYear();
-    const mm = String(fecha.getMonth() + 1).padStart(2, "0");
-    const dd = String(fecha.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
-  };
-
-  const esTallerVigenteParaAnulacion = (pago = {}) => {
-    const estadoPrograma = String(pago.estadoPrograma || pago.estado_programa || "").toLowerCase();
-    if (["finalizado", "archivado", "deshabilitado", "inactivo"].some((estado) => estadoPrograma.includes(estado))) {
-      return false;
-    }
-
-    const fechaFin = String(pago.programaFechaFin || pago.programa_fecha_fin || pago.fechaFin || "").slice(0, 10);
-    if (fechaFin && fechaFin < obtenerFechaHoy()) return false;
-
-    return true;
-  };
-
-  const esPagoAnulable = (pago = {}) => {
-    const estado = String(`${pago.estado || ""} ${pago.estadoPago || ""} ${pago.estadoVerificacion || ""}`).toLowerCase();
-    const tieneRecibo = Boolean(pago.nroRecibo || pago.nro_recibo);
-    const estaPagado = ["validado", "completado", "pagado", "aprobado"].some((item) => estado.includes(item));
-    const estaAnulado = ["anulado", "cancelado"].some((item) => estado.includes(item));
-    return tieneRecibo && estaPagado && !estaAnulado && esTallerVigenteParaAnulacion(pago);
-  };
-
-  const getPagoSeleccionado = () => {
-    if (estudianteSeleccionado) {
-      return pagosEstudiante.find((p) => p.id === pagoSeleccionadoId) || null;
-    }
-    return null;
-  };
-
-  const getComprobanteFinal = () => {
-    const pago = getPagoSeleccionado();
-    if (pago) return pago.nroRecibo || pago.nro_recibo || "S/N";
-    return "";
-  };
-
-  // Cargar pagos del estudiante cuando es seleccionado
-  const cargarPagosEstudiante = async (dni) => {
-    if (!dni) return;
-    setCargandoPagos(true);
-    setPagosEstudiante([]);
-    setPagoSeleccionadoId(null);
-    try {
-      const res = await listarPagos(periodo || "escolar", { estudianteDni: dni });
-      const activos = (res || []).filter(esPagoAnulable);
-      setPagosEstudiante(activos);
-      if (activos.length > 0) {
-        const pagoPreseleccionado = pagoPreseleccionadoRef.current;
-        const existePreseleccion = pagoPreseleccionado && activos.some((pago) => pago.id === pagoPreseleccionado);
-        setPagoSeleccionadoId(existePreseleccion ? pagoPreseleccionado : activos[0].id);
-        pagoPreseleccionadoRef.current = null;
-      }
-    } catch (err) {
-      toast.error("Error al cargar pagos", { description: "No se pudieron obtener los pagos del estudiante." });
-    } finally {
-      setCargandoPagos(false);
-    }
-  };
-
-  useEffect(() => {
-    if (estudianteSeleccionado) {
-      cargarPagosEstudiante(estudianteSeleccionado.dni);
-    } else {
-      setPagosEstudiante([]);
-      setPagoSeleccionadoId(null);
-    }
-  }, [estudianteSeleccionado, periodo]);
-
-  const handleBuscarEstudiante = async (e) => {
-    e?.preventDefault();
-    const query = String(busqueda || "").trim();
-    if (!query) {
-      toast.error("Búsqueda vacía", { description: "Ingrese el DNI, nombre o apellido del estudiante." });
-      return;
-    }
-    if (query.length < 3) {
-      toast.error("Búsqueda corta", { description: "Ingrese al menos 3 caracteres." });
-      return;
-    }
-    setBuscandoEstudiante(true);
-    setResultados([]);
-    try {
-      const res = await buscarEstudiantesCajaQuery(query);
-      if (res && res.length === 1) {
-        setEstudianteSeleccionado(res[0]);
-        setResultados([]);
-        toast.success("Estudiante seleccionado", { description: res[0].nombres });
-      } else if (res && res.length > 1) {
-        setResultados(res);
-      } else {
-        toast.error("No encontrado", { description: "No se encontro ningun estudiante con ese DNI, nombre o apellido." });
-      }
-    } catch (err) {
-      toast.error("Error al buscar", { description: err.message || "Intente nuevamente." });
-    } finally {
-      setBuscandoEstudiante(false);
-    }
-  };
-
-  const handleSeleccionarEstudiante = (est) => {
-    setEstudianteSeleccionado(est);
-    setResultados([]);
-  };
-
-  const handleQuitarEstudiante = () => {
-    setEstudianteSeleccionado(null);
-    setResultados([]);
-    setBusqueda("");
-  };
-
-  const handleCancelar = async () => {
-    if (!motivo.trim()) {
-      toast.error("Campo requerido", { description: "Debe ingresar el motivo de la cancelación." });
-      return;
-    }
-
-    const comprobanteFinal = getComprobanteFinal();
-    if (!estudianteSeleccionado) {
-      toast.error("Seleccione estudiante", { description: "Primero busque y seleccione un estudiante." });
-      return;
-    }
-    if (!comprobanteFinal) {
-      toast.error("Seleccione recibo", { description: "Seleccione uno de los recibos disponibles para anular." });
-      return;
-    }
-
-    setCargando(true);
-    try {
-      if (!pagoSeleccionadoId) {
-        toast.error("Seleccione pago", { description: "El estudiante no tiene pagos seleccionables." });
-        setCargando(false);
-        return;
-      }
-
-      await anularPago(pagoSeleccionadoId, motivo);
-
-      toast.success("Pago anulado", {
-        description: `El recibo ${comprobanteFinal} de ${estudianteSeleccionado.nombres} fue anulado correctamente.`,
-      });
-
-      setMotivo("");
-      setEstudianteSeleccionado(null);
-      setPagosEstudiante([]);
-      setPagoSeleccionadoId(null);
-      setBusqueda("");
-
-      await cargarCorrelativos();
-      if (onCorrelativoCancelado) {
-        onCorrelativoCancelado();
-      }
-    } catch (err) {
-      toast.error("Error", { description: err.message || "No se pudo procesar la anulación." });
-    } finally {
-      setCargando(false);
-    }
-  };
+  const pagoSeleccionado = getPagoSeleccionado();
+  const comprobanteFinal = getComprobanteFinal();
 
   return (
     <section className="caja-payment-workspace caja-correlativo-workspace" style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
@@ -506,136 +185,120 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
                         style={{
                           padding: "10px 12px",
                           textAlign: "left",
-                          background: "transparent",
                           border: "none",
+                          background: "none",
                           borderBottom: "1px solid #f1f5f9",
                           cursor: "pointer",
-                          display: "flex",
-                          flexDirection: "column"
+                          fontSize: "13px",
+                          transition: "background 0.2s"
                         }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
-                        onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
                       >
-                        <Text size="sm" fw={600} color="#1f2937">{est.nombres}</Text>
-                        <Text size="xs" color="#6b7280">DNI: {est.dni}</Text>
+                        <Text span fw={700} color="#1e293b">{est.nombres}</Text>
+                        <Text span size="xs" color="#64748b" style={{ marginLeft: "8px" }}>DNI: {est.dni}</Text>
                       </button>
                     ))}
                   </div>
                 )}
               </div>
             ) : (
-              <div style={{ background: "#eefbf7", border: "1px solid #b9e6dc", padding: "12px 16px", borderRadius: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                 <div>
-                  <Text size="xs" color="#087364" fw={700}>Estudiante asociado:</Text>
-                  <Text size="sm" fw={700} color="#0c8569">{estudianteSeleccionado.nombres}</Text>
-                  <Text size="xs" color="#087364" style={{ marginTop: "2px" }}>DNI: {estudianteSeleccionado.dni}</Text>
+                  <Text size="xs" color="dimmed">Estudiante Seleccionado:</Text>
+                  <Text fw={700} size="sm" color="#1e293b">{estudianteSeleccionado.nombres}</Text>
+                  <Text size="xs" color="dimmed">DNI: {estudianteSeleccionado.dni}</Text>
                 </div>
-                <Button size="xs" variant="subtle" color="red" onClick={handleQuitarEstudiante}>
+                <Button size="xs" variant="outline" color="red" onClick={handleQuitarEstudiante}>
                   Cambiar estudiante
                 </Button>
               </div>
             )}
 
-            {/* LISTADO DE PAGOS DEL ESTUDIANTE */}
+            {/* SELECCIÓN DE RECIBO/COMPROBANTE VINCULADO */}
             {estudianteSeleccionado && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <Text size="sm" fw={700} color="#374151">Seleccionar Recibo a Anular</Text>
                 {cargandoPagos ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "center", padding: "20px" }}>
-                    <Loader size={20} style={{ animation: "spin 1s linear infinite" }} />
-                    <Text size="sm" color="dimmed">Cargando pagos activos...</Text>
-                  </div>
+                  <Group justify="center" p="md">
+                    <Loader size="sm" />
+                    <Text size="xs" color="dimmed">Cargando recibos del estudiante...</Text>
+                  </Group>
                 ) : pagosEstudiante.length === 0 ? (
-                  <Paper withBorder p="sm" style={{ background: "#f8fafc", borderColor: "#e2e8f0" }}>
-                    <Text size="sm" color="dimmed" style={{ textAlign: "center" }}>
-                      El estudiante no tiene recibos anulables en talleres vigentes del periodo actual.
-                    </Text>
-                  </Paper>
-                ) : (
-                  <div className="caja-anulacion-selector">
-                    <div className="caja-anulacion-selector-head">
-                      <div>
-                        <Text size="sm" fw={800} color="#111827">Recibos disponibles para anular</Text>
-                        <Text size="xs" color="#64748b">Seleccione el comprobante correcto antes de confirmar.</Text>
-                      </div>
-                      <span className="caja-anulacion-count">
-                        {pagosEstudiante.length} {pagosEstudiante.length === 1 ? "opción" : "opciones"}
-                      </span>
-                    </div>
-
-                    <div className="caja-anulacion-options">
-                      {pagosEstudiante.map((pago) => {
-                        const seleccionado = pago.id === pagoSeleccionadoId;
-                        const recibo = pago.nroRecibo || pago.nro_recibo || "S/N";
-                        const programa = pago.programa || pago.programaNombre || "Taller no identificado";
-                        const fecha = String(pago.fechaPago || pago.fecha || pago.fechaRegistro || "").slice(0, 10) || "-";
-                        const medio = pago.formaPago || pago.medioPago || pago.metodo || "-";
-
-                        return (
-                          <button
-                            key={pago.id}
-                            type="button"
-                            className={`caja-anulacion-option${seleccionado ? " is-selected" : ""}`}
-                            onClick={() => setPagoSeleccionadoId(pago.id)}
-                          >
-                            <span className="caja-anulacion-option-check" aria-hidden="true">
-                              {seleccionado ? <Check size={14} stroke={3} /> : null}
-                            </span>
-                            <span className="caja-anulacion-option-body">
-                              <span className="caja-anulacion-option-top">
-                                <span className="caja-anulacion-receipt">Recibo {recibo}</span>
-                                <strong>S/ {Number(pago.monto || 0).toFixed(2)}</strong>
-                              </span>
-                              <span className="caja-anulacion-program">{programa}</span>
-                              <span className="caja-anulacion-meta">
-                                <span>Fecha: {fecha}</span>
-                                <span>Medio: {medio}</span>
-                              </span>
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
+                  <div style={{ padding: "16px", textAlign: "center", border: "1px dashed #cbd5e1", borderRadius: "8px" }}>
+                    <Text size="sm" color="dimmed">El estudiante no registra recibos activos anulables para talleres vigentes.</Text>
                   </div>
+                ) : (
+                  <Select
+                    placeholder="Seleccione un comprobante..."
+                    data={pagosEstudiante.map((p) => ({
+                      value: p.id,
+                      label: `Recibo N° ${p.nroRecibo || p.nro_recibo || "S/N"} - ${p.programa || "Sin Taller"} (S/ ${Number(p.monto).toFixed(2)})`
+                    }))}
+                    value={pagoSeleccionadoId}
+                    onChange={setPagoSeleccionadoId}
+                    styles={{
+                      input: { borderRadius: "8px", height: "38px" }
+                    }}
+                  />
                 )}
               </div>
             )}
 
-            {/* MOTIVO DE CANCELACIÓN (SIEMPRE OBLIGATORIO) */}
-            <Textarea
-              label="Justificación / Motivo de la anulación"
-              placeholder="Ej. Error de digitación en el monto o papel de recibo atascado."
-              required
-              rows={4}
-              value={motivo}
-              onChange={(e) => setMotivo(e.currentTarget.value)}
-              styles={{
-                label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
-                input: { borderRadius: "8px" }
-              }}
-            />
+            {pagoSeleccionado && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", background: "#f8fafc", padding: "14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                <div>
+                  <Text size="xs" color="dimmed">Taller/Curso:</Text>
+                  <Text size="sm" fw={700}>{pagoSeleccionado.programa || "-"}</Text>
+                </div>
+                <div>
+                  <Text size="xs" color="dimmed">Monto pagado:</Text>
+                  <Text size="sm" fw={700} color="red">{formatearSoles(pagoSeleccionado.monto)}</Text>
+                </div>
+                <div>
+                  <Text size="xs" color="dimmed">N° de recibo/operación:</Text>
+                  <Text size="sm" fw={700}>{pagoSeleccionado.nroRecibo || "-"}</Text>
+                </div>
+                <div>
+                  <Text size="xs" color="dimmed">Fecha de pago:</Text>
+                  <Text size="sm" fw={700}>{String(pagoSeleccionado.fecha || pagoSeleccionado.fechaPago || "").slice(0, 10)}</Text>
+                </div>
+              </div>
+            )}
 
-            <Group justify="flex-end" style={{ marginTop: "8px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <Text size="sm" fw={700} color="#374151">Justificación o Motivo de la Anulación *</Text>
+              <Textarea
+                placeholder="Indique brevemente el motivo de la anulación física o del cobro..."
+                value={motivo}
+                onChange={(e) => setMotivo(e.currentTarget.value)}
+                required
+                rows={4}
+                styles={{
+                  input: { borderRadius: "8px" }
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
               <Button
-                color="orange"
-                loading={cargando}
                 onClick={handleCancelar}
+                loading={cargando}
+                disabled={!estudianteSeleccionado || !comprobanteFinal || !motivo.trim()}
                 leftSection={<ReceiptOff size={16} />}
-                disabled={!getComprobanteFinal()}
+                color="red"
                 styles={{
                   root: {
-                    height: "38px",
+                    height: "40px",
                     borderRadius: "8px",
-                    fontWeight: 700,
-                    background: "#f59e0b",
-                    "&:hover": {
-                      background: "#d97706"
-                    }
+                    fontWeight: 600,
+                    padding: "0 24px"
                   }
                 }}
               >
-                Confirmar Anulación
+                Anular Recibo / Comprobante
               </Button>
-            </Group>
+            </div>
           </Paper>
         </>
       ) : (
@@ -643,190 +306,242 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
             <Coins size={24} style={{ color: "#0c8569" }} />
             <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: "#1f2937" }}>
-              Registrar Egreso de Caja
+              Registro de Egresos de Caja (Gasto/Devolución)
             </h2>
           </div>
 
+          <Paper withBorder p="md" radius="md" style={{ background: "#f0fdf4", borderColor: "#dcfce7", width: "100%" }}>
+            <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+              <AlertTriangle size={20} style={{ color: "#16a34a", flexShrink: 0, marginTop: "2px" }} />
+              <div>
+                <Text fw={700} color="#14532d" size="sm">¡Importante!</Text>
+                <Text size="xs" color="#14532d" style={{ marginTop: "4px", lineHeight: "1.4" }}>
+                  Esta función registra una salida de dinero en efectivo de la caja. El correlativo de egreso se auto-generará. Recuerde que el egreso afecta el balance de cierre diario.
+                </Text>
+              </div>
+            </div>
+          </Paper>
+
           <Paper withBorder p="lg" radius="md" shadow="sm" style={{ width: "100%", display: "flex", flexDirection: "column", gap: "20px" }}>
-            {/* BÚSQUEDA DE ESTUDIANTE */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", background: "#f8fafc", padding: "16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-              {!estudianteEgreso ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <form className="caja-search-form-responsive" onSubmit={handleBuscarEstudianteEgreso} style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
-                    <TextInput
-                      label="Buscar Estudiante para Devolución"
-                      placeholder="Ej. 77889900 o Rojas García"
-                      value={busquedaEgreso}
-                      onChange={(e) => setBusquedaEgreso(e.currentTarget.value)}
-                      styles={{
-                        label: { fontSize: "12px", fontWeight: 700, color: "#475569", marginBottom: "4px" },
-                        input: { borderRadius: "8px", height: "36px" }
-                      }}
-                      style={{ flex: 1 }}
-                    />
-                    <Button
-                      type="submit"
-                      loading={buscandoEstudianteEgreso}
-                      leftSection={<Search size={15} />}
-                      styles={{
-                        root: {
-                          height: "36px",
-                          borderRadius: "8px",
-                          fontWeight: 600,
-                          background: "#0c8569",
-                          "&:hover": {
-                            background: "#0a6c55"
-                          }
-                        }
-                      }}
-                    >
-                      Buscar
-                    </Button>
-                  </form>
-
-                  {resultadosEgreso.length > 0 && (
-                    <div style={{ maxHeight: "150px", overflowY: "auto", border: "1px solid #cbd5e1", borderRadius: "8px", background: "#ffffff", display: "flex", flexDirection: "column", marginTop: "4px" }}>
-                      {resultadosEgreso.map((est) => (
-                        <button
-                          key={est.dni}
-                          type="button"
-                          onClick={() => seleccionarEstudianteEgreso(est)}
-                          style={{
-                            padding: "8px 12px",
-                            textAlign: "left",
-                            background: "transparent",
-                            border: "none",
-                            borderBottom: "1px solid #f1f5f9",
-                            cursor: "pointer",
-                            display: "flex",
-                            flexDirection: "column"
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = "#f8fafc"}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                        >
-                          <Text size="sm" fw={600} color="#1f2937">{est.nombres}</Text>
-                          <Text size="xs" color="#6b7280">DNI: {est.dni}</Text>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <Text size="xs" color="#087364" fw={700}>Estudiante para Devolución:</Text>
-                    <Text size="sm" fw={700} color="#0c8569">{estudianteEgreso.nombres}</Text>
-                    <Text size="xs" color="#087364">DNI: {estudianteEgreso.dni}</Text>
-                  </div>
-                  <Button size="xs" variant="subtle" color="red" onClick={handleQuitarEstudianteEgreso}>
-                    Cambiar estudiante
-                  </Button>
-                </div>
-              )}
-
-              {/* DROPDOWN DE PAGOS DEL ESTUDIANTE A DEVOLVER */}
-              {estudianteEgreso && (
-                <div style={{ marginTop: "8px" }}>
-                  {cargandoPagosEgreso ? (
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 0" }}>
-                      <Loader size={16} style={{ animation: "spin 1s linear infinite" }} />
-                      <Text size="xs" color="dimmed">Buscando talleres pagados...</Text>
-                    </div>
-                  ) : pagosEgreso.length === 0 ? (
-                    <Text size="xs" color="orange" fw={600}>
-                      El estudiante no tiene pagos registrados en estado 'Pagado' en este período.
-                    </Text>
-                  ) : (
-                    <Select
-                      label="Seleccione el Pago / Taller a Devolver"
-                      placeholder="Seleccione una transacción"
-                      data={pagosEgreso.map((p) => ({
-                        value: p.id,
-                        label: `${p.programa || "Pago"} - Recibo: ${p.nroRecibo || "S/N"} - S/ ${Number(p.monto || 0).toFixed(2)}`
-                      }))}
-                      value={pagoEgresoSeleccionadoId}
-                      onChange={handlePagoEgresoChange}
-                      styles={{
-                        label: { fontSize: "12px", fontWeight: 700, color: "#475569", marginBottom: "4px" },
-                        input: { borderRadius: "8px", height: "36px" }
-                      }}
-                    />
-                  )}
-                </div>
-              )}
+            
+            {/* TIPO DE EGRESO */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <Text size="sm" fw={700} color="#374151">Tipo de Egreso</Text>
+              <div style={{ display: "flex", gap: "16px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="tipoEgreso"
+                    value="estudiante"
+                    checked={tipoEgreso === "estudiante"}
+                    onChange={() => handleTipoEgresoChange("estudiante")}
+                    style={{ accentColor: "#0c8569" }}
+                  />
+                  Devolución a Estudiante
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "14px", cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="tipoEgreso"
+                    value="general"
+                    checked={tipoEgreso === "general"}
+                    onChange={() => handleTipoEgresoChange("general")}
+                    style={{ accentColor: "#0c8569" }}
+                  />
+                  Gasto General (Proveedores / Caja Chica)
+                </label>
+              </div>
             </div>
 
-            {/* FORMULARIO DE REGISTRO SIMPLIFICADO */}
-            {estudianteEgreso && pagoEgresoSeleccionadoId && (
-              <form onSubmit={handleRegistrarEgreso} style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "8px" }}>
-                <Paper withBorder p="md" radius="md" style={{ background: "#f8fafc", borderColor: "#e2e8f0" }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                      <div>
-                        <Text size="xs" color="dimmed" fw={700}>Beneficiario (Estudiante):</Text>
-                        <Text size="sm" fw={700} color="#1f2937">{beneficiario}</Text>
-                      </div>
-                      <div>
-                        <Text size="xs" color="dimmed" fw={700}>DNI:</Text>
-                        <Text size="sm" fw={700} color="#1f2937">{dniEgreso}</Text>
-                      </div>
-                    </div>
+            {/* BÚSQUEDA DE ESTUDIANTE PARA DEVOLUCIÓN */}
+            {tipoEgreso === "estudiante" && (
+              <>
+                {!estudianteEgreso ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <form className="caja-search-form-responsive" onSubmit={handleBuscarEstudianteEgreso} style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
+                      <TextInput
+                        label="Buscar Estudiante para Devolución"
+                        placeholder="Ej. 12345678 o Perez Garcia"
+                        value={busquedaEgreso}
+                        onChange={(e) => setBusquedaEgreso(e.currentTarget.value)}
+                        styles={{
+                          label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
+                          input: { borderRadius: "8px", height: "38px" }
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      <Button
+                        type="submit"
+                        loading={buscandoEstudianteEgreso}
+                        leftSection={<Search size={16} />}
+                        styles={{
+                          root: {
+                            height: "38px",
+                            borderRadius: "8px",
+                            fontWeight: 600,
+                            background: "#f1f5f9",
+                            color: "#475569",
+                            border: "1px solid #cbd5e1",
+                            "&:hover": { background: "#e2e8f0" }
+                          }
+                        }}
+                      >
+                        Buscar
+                      </Button>
+                    </form>
 
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", paddingTop: "10px", borderTop: "1px solid #f1f5f9" }}>
-                      <div>
-                        <Text size="xs" color="dimmed" fw={700}>Monto a Devolver:</Text>
-                        <Text size="md" fw={800} color="#0c8569">S/ {Number(montoEgreso || 0).toFixed(2)}</Text>
+                    {resultadosEgreso.length > 0 && (
+                      <div style={{ maxHeight: "150px", overflowY: "auto", border: "1px solid #cbd5e1", borderRadius: "8px", background: "#ffffff", display: "flex", flexDirection: "column", marginTop: "4px" }}>
+                        {resultadosEgreso.map((est) => (
+                          <button
+                            key={est.dni}
+                            type="button"
+                            onClick={() => seleccionarEstudianteEgreso(est)}
+                            style={{
+                              padding: "10px 12px",
+                              textAlign: "left",
+                              border: "none",
+                              background: "none",
+                              borderBottom: "1px solid #f1f5f9",
+                              cursor: "pointer",
+                              fontSize: "13px",
+                              transition: "background 0.2s"
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = "#f8fafc")}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                          >
+                            <Text span fw={700} color="#1e293b">{est.nombres}</Text>
+                            <Text span size="xs" color="#64748b" style={{ marginLeft: "8px" }}>DNI: {est.dni}</Text>
+                          </button>
+                        ))}
                       </div>
-                      <div>
-                        <Text size="xs" color="dimmed" fw={700}>N° Recibo de Egreso:</Text>
-                        <Group gap="xs" style={{ marginTop: "2px" }}>
-                          <strong style={{ fontSize: "14px", color: correlativos?.egresoActive === false ? "#ef4444" : "#0c8569", fontFamily: "var(--font-body)" }}>
-                            {correlativos?.egresoActive === false ? "Serie Inactiva" : (correlativos?.egresoActual || "EGR-0001")}
-                          </strong>
-                          <span style={{
-                            fontSize: "10px",
-                            fontWeight: 700,
-                            color: correlativos?.egresoActive === false ? "#ef4444" : "#0c8569",
-                            background: correlativos?.egresoActive === false ? "#fee2e2" : "#e6f4ea",
-                            padding: "1px 5px",
-                            borderRadius: "4px"
-                          }}>
-                            {correlativos?.egresoActive === false ? "Inactivo" : "Activo"}
-                          </span>
-                        </Group>
-                      </div>
-                    </div>
-
-                    <div style={{ paddingTop: "10px", borderTop: "1px solid #f1f5f9" }}>
-                      <Text size="xs" color="dimmed" fw={700}>Concepto / Justificación del Egreso:</Text>
-                      <Text size="xs" color="#374151" style={{ fontStyle: "italic", marginTop: "2px" }}>{conceptoEgreso}</Text>
-                    </div>
+                    )}
                   </div>
-                </Paper>
+                ) : (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+                    <div>
+                      <Text size="xs" color="dimmed">Estudiante Seleccionado:</Text>
+                      <Text fw={700} size="sm" color="#1e293b">{estudianteEgreso.nombres}</Text>
+                      <Text size="xs" color="dimmed">DNI: {estudianteEgreso.dni}</Text>
+                    </div>
+                    <Button size="xs" variant="outline" color="red" onClick={handleQuitarEstudianteEgreso}>
+                      Cambiar estudiante
+                    </Button>
+                  </div>
+                )}
 
-                <Group justify="flex-end" style={{ marginTop: "4px" }}>
-                  <Button
-                    type="submit"
-                    loading={guardandoEgreso}
-                    disabled={correlativos?.egresoActive === false}
-                    leftSection={<Coins size={16} />}
-                    styles={{
-                      root: {
-                        height: "38px",
-                        borderRadius: "8px",
-                        fontWeight: 700,
-                        background: "#0c8569",
-                        "&:hover": {
-                          background: "#0a6c55"
-                        }
-                      }
-                    }}
-                  >
-                    Registrar Egreso
-                  </Button>
-                </Group>
-              </form>
+                {/* SELECTOR DE PAGO PARA DEVOLVER */}
+                {estudianteEgreso && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <Text size="sm" fw={700} color="#374151">Seleccionar Pago a Devolver</Text>
+                    {cargandoPagosEgreso ? (
+                      <Group justify="center" p="md">
+                        <Loader size="sm" />
+                        <Text size="xs" color="dimmed">Cargando pagos del estudiante...</Text>
+                      </Group>
+                    ) : pagosEgreso.length === 0 ? (
+                      <div style={{ padding: "16px", textAlign: "center", border: "1px dashed #cbd5e1", borderRadius: "8px" }}>
+                        <Text size="sm" color="dimmed">El estudiante no registra pagos activos para devolver.</Text>
+                      </div>
+                    ) : (
+                      <Select
+                        placeholder="Seleccione un pago..."
+                        data={pagosEgreso.map((p) => ({
+                          value: p.id,
+                          label: `Recibo N° ${p.nroRecibo || p.nro_recibo || "S/N"} - ${p.programa || "Sin Taller"} (S/ ${Number(p.monto).toFixed(2)})`
+                        }))}
+                        value={pagoEgresoSeleccionadoId}
+                        onChange={handlePagoEgresoChange}
+                        styles={{
+                          input: { borderRadius: "8px", height: "38px" }
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
+              </>
             )}
+
+            {/* FORMULARIO DE EGRESO */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <TextInput
+                label="Nombre del Beneficiario *"
+                placeholder="Persona que recibe el dinero"
+                value={beneficiario}
+                onChange={(e) => setBeneficiario(e.currentTarget.value)}
+                disabled={tipoEgreso === "estudiante" && Boolean(estudianteEgreso)}
+                required
+                styles={{
+                  label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
+                  input: { borderRadius: "8px", height: "38px" }
+                }}
+              />
+              <TextInput
+                label="DNI del Beneficiario"
+                placeholder="8 dígitos"
+                value={dniEgreso}
+                onChange={(e) => setDniEgreso(e.currentTarget.value)}
+                disabled={tipoEgreso === "estudiante" && Boolean(estudianteEgreso)}
+                maxLength={8}
+                styles={{
+                  label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
+                  input: { borderRadius: "8px", height: "38px" }
+                }}
+              />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <TextInput
+                label="Monto de Salida (S/) *"
+                placeholder="0.00"
+                value={montoEgreso}
+                onChange={(e) => setMontoEgreso(e.currentTarget.value)}
+                required
+                styles={{
+                  label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
+                  input: { borderRadius: "8px", height: "38px" }
+                }}
+              />
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                <Text size="xs" color="dimmed" style={{ marginBottom: "20px" }}>
+                  Siguiente egreso auto-correlativo: <strong>{correlativos?.egreso || "—"}</strong>
+                </Text>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <Text size="sm" fw={700} color="#374151">Concepto o Justificación del Egreso *</Text>
+              <Textarea
+                placeholder="Ej. Devolución de pago por concepto de taller de robótica..."
+                value={conceptoEgreso}
+                onChange={(e) => setConceptoEgreso(e.currentTarget.value)}
+                required
+                rows={3}
+                styles={{
+                  input: { borderRadius: "8px" }
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+              <Button
+                onClick={handleRegistrarEgreso}
+                loading={guardandoEgreso}
+                disabled={!beneficiario || !montoEgreso || !conceptoEgreso}
+                leftSection={<Coins size={16} />}
+                color="teal"
+                styles={{
+                  root: {
+                    height: "40px",
+                    borderRadius: "8px",
+                    fontWeight: 600,
+                    padding: "0 24px"
+                  }
+                }}
+              >
+                Registrar Salida / Egreso
+              </Button>
+            </div>
           </Paper>
         </>
       )}

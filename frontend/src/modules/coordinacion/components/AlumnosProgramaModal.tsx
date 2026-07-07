@@ -35,13 +35,6 @@ function obtenerEstiloInscripcion(estado = "") {
   return badgeStyle(esActivo, esAdvertencia ? "warning" : "error");
 }
 
-function obtenerEstiloPago(estado = "") {
-  const norm = String(estado).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const esActivo = ["pagado", "completado", "validado", "pago validado", "exitoso", "aprobado"].includes(norm);
-  const esAdvertencia = ["pendiente", "verificando", "por verificar", "en verificacion", "pago en proceso", "pago en ..."].some(term => norm.includes(term));
-  return badgeStyle(esActivo, esAdvertencia ? "warning" : "error");
-}
-
 function describirSeleccionCambridge(valor = "") {
   const seleccion = String(valor || "").trim().toUpperCase();
   const opciones = {
@@ -255,7 +248,6 @@ function TablaMatriculados({ alumnos }) {
             <th>Grado</th>
             <th>Nivel</th>
             <th>Estado Inscripción</th>
-            <th>Estado Pago</th>
             <th>Canal</th>
             <th>Fecha</th>
           </tr>
@@ -273,11 +265,6 @@ function TablaMatriculados({ alumnos }) {
                 <td>
                   <span style={obtenerEstiloInscripcion(alumno.estadoInscripcion)}>
                     {alumno.estadoInscripcion}
-                  </span>
-                </td>
-                <td>
-                  <span style={obtenerEstiloPago(alumno.estadoPago)}>
-                    {alumno.estadoPago}
                   </span>
                 </td>
                 <td><span style={{ fontSize: "11px", fontWeight: 600, color: "#475467" }}>{alumno.origenRegistro}</span></td>
@@ -494,7 +481,6 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
               <th>Grado</th>
               <th>Nivel</th>
               <th>Horario del taller</th>
-              <th>Pago</th>
               <th>Acceso</th>
               <th>Observacion</th>
             </tr>
@@ -519,11 +505,6 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
                   <td>{grado}</td>
                   <td>{nivel}</td>
                   <td>{obtenerHorarioAsistencia(asistencia) || "-"}</td>
-                  <td>
-                    <span style={obtenerEstiloPago(asistencia.estadoPago)}>
-                      {asistencia.estadoPago || "Pendiente"}
-                    </span>
-                  </td>
                   <td>
                     <span style={badgeStyle(esAccesoPermitido, toneAcceso)}>
                       {textoAcceso}

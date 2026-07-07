@@ -90,29 +90,10 @@ function SecretariaSearchCard({
             <div>
               <h2 style={{ color: "#1b5e20", margin: 0, fontSize: "18px", fontWeight: "800" }}>Registrar inscripción</h2>
             </div>
-            <button
-              className="secretaria-action-btn register-btn"
-              type="button"
-              onClick={limpiarBusquedaEstudiante}
-              style={{
-                background: "#e8f5e9",
-                color: "#1b5e20",
-                border: "1px solid #a5d6a7",
-                padding: "6px 16px",
-                borderRadius: "30px",
-                fontSize: "13px",
-                fontWeight: "600",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginLeft: "auto",
-                whiteSpace: "nowrap"
-              }}
-            >
+            <div className="secretaria-gestion-alumnos-btn">
               <UserCheck size={16} />
               <span>Gestión de alumnos</span>
-            </button>
+            </div>
           </>
         ) : (
           <>

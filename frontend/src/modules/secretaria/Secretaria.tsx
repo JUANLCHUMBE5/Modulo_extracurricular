@@ -52,6 +52,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     registroDesdeLista,
     esCicloVerano,
     invitacionSinHorario,
+    tieneInvitacionOperativa,
     nombreProgramaAMostrar,
     tipoAlumnoMostrado,
     programasCursoAdicional,
@@ -244,7 +245,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                       modoRegistro={modoRegistro}
                     />
 
-                    {modoRegistro && (
+                    {(modoRegistro || vistaActiva === "inscripcion") && (
                       <SecretariaRegistroModal
                         actualizarFormulario={actualizarFormulario}
                         esCicloVerano={esCicloVerano}
@@ -256,7 +257,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                         etiquetaPrograma={etiquetaProgramaSecretaria}
                         mensaje={mensaje}
                         modoCursoAdicional={modoCursoAdicional}
-                        modoRegistro={modoRegistro}
+                        modoRegistro={modoRegistro || vistaActiva === "inscripcion"}
                         mostrarSelectorPrograma={mostrarSelectorPrograma}
                         programaParaRegistro={programaParaRegistro}
                         programas={programas}
@@ -271,6 +272,15 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                             }
                           }
                         }}
+                        inscripcion={inscripcion}
+                        abrirFichaGenerada={abrirFichaGenerada}
+                        imprimiendoFichaRegistro={imprimiendoFichaRegistro}
+                        derivarACaja={derivarACaja}
+                        derivandoCaja={derivandoCaja}
+                        cursosAdicionalesDisponibles={programasCursoAdicional.length}
+                        abrirCursoAdicional={abrirCursoAdicional}
+                        setModoCursoAdicional={setModoCursoAdicional}
+                        limpiarBusquedaEstudiante={limpiarBusquedaEstudiante}
                       />
                     )}
                   </div>

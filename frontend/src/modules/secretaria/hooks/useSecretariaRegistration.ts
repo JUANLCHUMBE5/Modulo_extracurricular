@@ -24,6 +24,7 @@ import { construirPayloadInscripcion, completarInscripcionConProgramaActual } fr
 
 export function useSecretariaRegistration({
   periodo,
+  vistaActiva,
   estudiante,
   inscripcion,
   inscripcionesEstudiante,
@@ -212,6 +213,9 @@ export function useSecretariaRegistration({
           tipoAlumnoVerano: periodo === "verano" ? "Alumno interno" : formularioInicial.tipoAlumnoVerano,
           colegioProcedencia: periodo === "verano" ? (registroExistente?.colegioProcedencia || "Colegio San Rafael") : "",
         });
+        if (vistaActiva === "inscripcion") {
+          setModoRegistro(true);
+        }
       } else {
         setModoCursoAdicional(false);
         const esCicloVerano = periodo === "verano";
@@ -320,7 +324,7 @@ export function useSecretariaRegistration({
       const payloadInscripcion = construirPayloadInscripcion({
         estudiante,
         formulario,
-        programaActualizado,
+        programaActualizado: programaParaRegistro,
         programaParaRegistro,
         periodo,
         registroAdicional,
@@ -350,13 +354,12 @@ export function useSecretariaRegistration({
         } : actual
       );
 
-      setModoRegistro(false);
+      if (vistaActiva !== "inscripcion") {
+        setModoRegistro(false);
+      }
       setModoCursoAdicional(false);
       setModalExito(true);
       setMensaje("");
-      toast.success("Asistente", {
-        description: registroAdicional ? "Curso adicional registrado correctamente." : "Inscripción registrada correctamente.",
-      });
     } catch (err) {
       mostrarMensaje(err.message || "No se pudo registrar la inscripcion. Intente actualizar y vuelva a confirmar.");
     } finally {

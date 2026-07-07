@@ -233,7 +233,7 @@ export default function SecretariaWorkshopAttendanceRow({ ins, estudiante }) {
       )}
 
       {cargando ? (
-        <div style={{ display: "flex", alignItems: "center", justifyInscripciones: "center", justifyContent: "center", gap: "10px", padding: "40px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", padding: "40px 0" }}>
           <Loader size="sm" color="teal" />
           <span style={{ fontSize: "14px", color: "#64748b", fontWeight: 500 }}>Cargando matriz de asistencia...</span>
         </div>

@@ -38,17 +38,6 @@ export default function CajaReportes({
           </div>
         </div>
         <div className="caja-header-actions">
-          <Select
-            aria-label="Periodo"
-            className="caja-period"
-            data={[
-              { value: "escolar", label: "Año escolar" },
-              { value: "verano", label: "Ciclo verano" },
-            ]}
-            onChange={(valor) => setPeriodo(valor || "escolar")}
-            value={periodo}
-            size="sm"
-          />
           <Button
             className="caja-btn-descargar"
             leftSection={<Download size={15} color="#ffffff" />}

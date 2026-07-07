@@ -1,4 +1,5 @@
-import { apiDb, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
+import { apiDb as apiDbRaw, nextApiId, saveApiDb, syncApiDb } from "../../../services/dbApi";
+const apiDb = apiDbRaw as any;
 import { resolverHorarioPorGrado, resolverDocentePorGrado } from "../../secretaria/services/secretariaServiceUtils";
 import {
   calcularDuracionTexto,
@@ -24,6 +25,31 @@ import {
   validarDatosPrograma,
   sincronizarGradosProgramaConInvitados
 } from "../services/coordinacionServiceUtils";
+import {
+  normalizarPeriodosGuardados,
+  finalizarProgramasVencidos,
+  normalizarAlumnoCarga,
+  listarInvitadosMock,
+  listarMatriculadosMock,
+} from "./coordinacionServiceMockHelpers";
+export {
+  normalizarPeriodosGuardados,
+  listarInvitadosMock,
+  listarMatriculadosMock,
+};
+
+import {
+  buscarAlumnoCargaPorDniMock,
+  confirmarCargaAlumnosMock,
+  listarHistorialCargasMock,
+  eliminarCargaAlumnosMock,
+} from "./coordinacionServiceMockCarga";
+export {
+  buscarAlumnoCargaPorDniMock,
+  confirmarCargaAlumnosMock,
+  listarHistorialCargasMock,
+  eliminarCargaAlumnosMock,
+};
 
 const delay = (ms = 600) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -34,7 +60,7 @@ const normalizarTextoSimple = (valor = "") =>
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
-const esCategoriaAcademica = (programa = {}) => {
+const esCategoriaAcademica = (programa: any = {}) => {
   const norm = normalizarTextoSimple(programa.categoria);
   return norm.includes("academ") || norm.includes("vacaciones utiles");
 };
@@ -391,89 +417,7 @@ export async function eliminarProgramaMock(id) {
   return true;
 }
 
-export async function listarInvitadosMock(programaId) {
-  await delay(400);
-  await syncApiDb();
-  const todosInvitados = [...(apiDb.invitadosPorPrograma[programaId] || [])];
 
-  const inscripcionesActivas = (apiDb.inscripciones || [])
-    .filter((ins) => ins.programaId === programaId && ins.estadoInscripcion !== "Anulada");
-
-  if (!inscripcionesActivas.length) return todosInvitados;
-
-  const dnisMatriculados = new Set(
-    inscripcionesActivas
-      .map((ins) => String(ins.dniEstudiante || "").replace(/\D/g, ""))
-      .filter(Boolean)
-  );
-  const codigosMatriculados = new Set(
-    inscripcionesActivas
-      .map((ins) => String(ins.codigoEstudiante || "").trim().toUpperCase())
-      .filter(Boolean)
-  );
-  const nombresMatriculados = new Set(
-    inscripcionesActivas
-      .map((ins) => normalizarTextoSimple(ins.nombresEstudiante))
-      .filter(Boolean)
-  );
-
-  return todosInvitados.filter((invitado) => {
-    const dniInvitado = String(invitado.dni || "").replace(/\D/g, "");
-    const codigoInvitado = String(invitado.codigoEstudiante || "").trim().toUpperCase();
-    const nombreInvitado = normalizarTextoSimple(invitado.nombres);
-
-    if (dniInvitado && dnisMatriculados.has(dniInvitado)) return false;
-    if (codigoInvitado && codigosMatriculados.has(codigoInvitado)) return false;
-
-    if (dniInvitado) {
-      const estudianteBase = apiDb.estudiantes?.[dniInvitado];
-      if (estudianteBase) {
-        const codigoDesdeBase = String(estudianteBase.codigoEstudiante || "").trim().toUpperCase();
-        if (codigoDesdeBase && codigosMatriculados.has(codigoDesdeBase)) return false;
-      }
-    }
-
-    if (codigoInvitado) {
-      const estudianteBase = Object.values(apiDb.estudiantes || {}).find(
-        (e) => String(e.codigoEstudiante || "").trim().toUpperCase() === codigoInvitado
-      );
-      if (estudianteBase && estudianteBase.dni) {
-        const dniDesdeBase = String(estudianteBase.dni).replace(/\D/g, "");
-        if (dniDesdeBase && dnisMatriculados.has(dniDesdeBase)) return false;
-      }
-    }
-
-    if (nombreInvitado && nombresMatriculados.has(nombreInvitado)) return false;
-
-    return true;
-  });
-}
-
-export async function listarMatriculadosMock(programaId) {
-  await delay(400);
-  await syncApiDb();
-  return (apiDb.inscripciones || [])
-    .filter((item) => item.programaId === programaId && item.estadoInscripcion !== "Anulada")
-    .map((item) => {
-      const dniBase = item.dniEstudiante || "";
-      const estudianteBase = dniBase ? (apiDb.estudiantes?.[dniBase] || null) : null;
-      return {
-        id: item.id,
-        dni: item.dniEstudiante || estudianteBase?.dni || "",
-        codigoEstudiante: item.codigoEstudiante || estudianteBase?.codigoEstudiante || "",
-        nombres: item.nombresEstudiante || estudianteBase?.nombres || "",
-        grado: item.gradoEstudiante || item.grado || estudianteBase?.grado || "",
-        seccion: item.seccion || item.seccionEstudiante || estudianteBase?.seccion || "",
-        estadoInscripcion: item.estadoInscripcion || "",
-        estadoPago: item.estadoPago || "",
-        origenRegistro: item.origenRegistro || "Presencial",
-        fechaRegistro: item.fechaRegistro || "",
-        costo: item.costo,
-        apoderado: item.apoderado || estudianteBase?.apoderado || "",
-        telefono: item.telefono || estudianteBase?.telefonoApoderado || "",
-      };
-    });
-}
 
 export async function listarAsistenciasProgramaMock(programaId) {
   await delay(400);
@@ -487,7 +431,7 @@ export async function listarAsistenciasProgramaMock(programaId) {
       const coincideNombre = nombrePrograma && normalizarTextoSimple(item.programa) === nombrePrograma;
       return coincideId || coincideNombre;
     })
-    .sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0))
+    .sort((a, b) => new Date(b.fechaRegistro || 0).getTime() - new Date(a.fechaRegistro || 0).getTime())
     .map((item) => {
       const inscripcion = buscarInscripcionAsistenciaMock(item, programaId);
       const estudiante = apiDb.estudiantes?.[item.dniEstudiante || inscripcion?.dniEstudiante] || null;
@@ -520,7 +464,7 @@ export async function listarAsistenciasProgramaMock(programaId) {
     });
 }
 
-function buscarInscripcionAsistenciaMock(asistencia = {}, programaId = "") {
+function buscarInscripcionAsistenciaMock(asistencia: any = {}, programaId = "") {
   const dni = asistencia.dniEstudiante || asistencia.dni || "";
   const nombrePrograma = normalizarTextoSimple(asistencia.programa);
   return (apiDb.inscripciones || []).find((item) => asistencia.inscripcionId && item.id === asistencia.inscripcionId)
@@ -583,211 +527,7 @@ export async function importarInvitadosMock(programaId, lista) {
   return { importados: nuevos.length, duplicados };
 }
 
-export async function buscarAlumnoCargaPorDniMock(dni) {
-  await syncApiDb();
-  const estudiante = apiDb.estudiantes?.[dni];
-  if (!estudiante) return null;
-  return normalizarAlumnoCarga(estudiante);
-}
 
-export async function confirmarCargaAlumnosMock(preview) {
-  await delay(600);
-  await syncApiDb();
-  const validos = preview.registros.filter((item) => item.estado === "Valido");
-  const registrosPorArchivo = new Map();
-  const validosPorArchivo = new Map();
-  const programasTocados = new Set();
-  const nuevasCargas = [];
-
-  (preview.registros || []).forEach((item) => {
-    const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
-    if (!registrosPorArchivo.has(archivoNombre)) registrosPorArchivo.set(archivoNombre, []);
-    registrosPorArchivo.get(archivoNombre).push(item);
-  });
-
-  validos.forEach((item) => {
-    const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
-    if (!validosPorArchivo.has(archivoNombre)) validosPorArchivo.set(archivoNombre, []);
-    validosPorArchivo.get(archivoNombre).push(item);
-  });
-
-  validos.forEach((item) => {
-    if (!item.programaId) return;
-    const archivoNombre = item.archivoNombre || preview.archivoNombre || "Carga Excel";
-    const grupoArchivo = validosPorArchivo.get(archivoNombre) || [];
-    if (!grupoArchivo.cargaId) {
-      const todayStr = new Date().toDateString();
-      const existing = (apiDb.historialCargas || []).find(
-        (c) =>
-          c.archivoNombre === "Registro individual" &&
-          c.fecha &&
-          new Date(c.fecha).toDateString() === todayStr
-      );
-      if (archivoNombre === "Registro individual" && existing) {
-        grupoArchivo.cargaId = existing.id;
-      } else {
-        grupoArchivo.cargaId = `CARGA-${Date.now().toString().slice(-8)}-${Math.random().toString(16).slice(2, 6)}`;
-      }
-      grupoArchivo.registrosHistorial = [];
-    }
-    const cargaId = grupoArchivo.cargaId;
-    const existentes = apiDb.invitadosPorPrograma[item.programaId] || [];
-    const programaCarga = apiDb.programas.find((programa) => programa.id === item.programaId);
-    const clave = claveAlumno(item);
-    const alumnoYaExiste = Boolean(clave && existentes.some((existente) => claveAlumno(existente) === clave));
-    if (alumnoYaExiste) {
-      item.estado = "Duplicado";
-      item.errores = [...(item.errores || []), "Alumno ya existe en este taller vigente."];
-      grupoArchivo.duplicadosConfirmacion = (grupoArchivo.duplicadosConfirmacion || 0) + 1;
-      return;
-    }
-    if (!esProgramaCambridge(programaCarga)) {
-      agregarGradoProgramaDesdeAlumno(programaCarga, item.grado);
-      programasTocados.add(item.programaId);
-    }
-    const invitado = {
-      cargaId,
-      codigoEstudiante: item.codigoEstudiante || "",
-      dni: item.dni,
-      nombres: `${item.nombres} ${item.apellidos}`.trim(),
-      grado: item.grado,
-      seccion: item.seccion,
-      nivelEducativo: item.nivelEducativo || "",
-      seleccion: item.seleccion || "",
-      nivelCambridge: item.nivelCambridge || "",
-      periodo: normalizarPeriodo(preview.periodo),
-      telefonoApoderado: item.telefono,
-      correo: item.correo,
-      observacion: item.observacion,
-      archivoNombre,
-      estado: item.estadoAlumno || "Invitado",
-    };
-    apiDb.invitadosPorPrograma[item.programaId] = [
-      ...existentes,
-      invitado,
-    ];
-    grupoArchivo.registrosHistorial.push({
-      programaId: item.programaId,
-      programaNombre: item.programaNombre || "",
-      archivoNombre,
-      dni: item.dni,
-      codigoEstudiante: item.codigoEstudiante || "",
-      nombres: invitado.nombres,
-      grado: item.grado,
-      seccion: item.seccion,
-    });
-  });
-
-  programasTocados.forEach((programaId) => {
-    sincronizarGradosProgramaConInvitados(programaId);
-  });
-
-  const duplicadosConfirmacionTotal = Array.from(validosPorArchivo.values()).reduce(
-    (total, grupoArchivo) => total + (grupoArchivo.duplicadosConfirmacion || 0),
-    0
-  );
-
-  validosPorArchivo.forEach((grupoArchivo, archivoNombre) => {
-    if (!grupoArchivo.cargaId) return;
-    const registrosArchivo = registrosPorArchivo.get(archivoNombre) || grupoArchivo;
-    const importadosArchivo = (grupoArchivo.registrosHistorial || []).length;
-
-    const todayStr = new Date().toDateString();
-    const existingIndex = (apiDb.historialCargas || []).find(
-      (c) =>
-        c.archivoNombre === "Registro individual" &&
-        c.fecha &&
-        new Date(c.fecha).toDateString() === todayStr
-    );
-
-    if (archivoNombre === "Registro individual" && existingIndex !== -1) {
-      const ec = apiDb.historialCargas[existingIndex];
-      ec.registros = [...(ec.registros || []), ...(grupoArchivo.registrosHistorial || [])];
-      ec.resumen = {
-        importados: (ec.resumen?.importados || 0) + importadosArchivo,
-        total: (ec.resumen?.total || 0) + registrosArchivo.length,
-        errores: (ec.resumen?.errores || 0) + registrosArchivo.filter((item) => item.estado === "Error").length,
-        duplicados: (ec.resumen?.duplicados || 0) + registrosArchivo.filter((item) => item.estado === "Duplicado").length,
-      };
-    } else {
-      if (importadosArchivo === 0) return;
-      nuevasCargas.push({
-        id: grupoArchivo.cargaId,
-        fecha: fechaActualIso(),
-        periodo: normalizarPeriodo(preview.periodo),
-        archivoNombre,
-        archivos: [archivoNombre],
-        resumen: {
-          importados: importadosArchivo,
-          total: registrosArchivo.length,
-          errores: registrosArchivo.filter((item) => item.estado === "Error").length,
-          duplicados: registrosArchivo.filter((item) => item.estado === "Duplicado").length,
-        },
-        registros: grupoArchivo.registrosHistorial || [],
-      });
-    }
-  });
-
-  apiDb.historialCargas = Array.isArray(apiDb.historialCargas) ? apiDb.historialCargas : [];
-  apiDb.historialCargas = [...nuevasCargas, ...apiDb.historialCargas];
-
-  await saveApiDb();
-  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
-
-  const primerArchivoNombre = validos[0] ? (validos[0].archivoNombre || preview.archivoNombre || "Carga Excel") : "";
-  const returnedCargaId = primerArchivoNombre ? (validosPorArchivo.get(primerArchivoNombre)?.cargaId || "") : "";
-
-  return {
-    cargaId: returnedCargaId,
-    cargaIds: nuevasCargas.map((carga) => carga.id),
-    cargas: nuevasCargas,
-    importados: validos.length - duplicadosConfirmacionTotal,
-    total: preview.resumen?.total || validos.length,
-    errores: preview.resumen?.errores || 0,
-    duplicados: (preview.resumen?.duplicados || 0) + duplicadosConfirmacionTotal,
-  };
-}
-
-export async function listarHistorialCargasMock() {
-  await delay(200);
-  await syncApiDb();
-  return Array.isArray(apiDb.historialCargas) ? [...apiDb.historialCargas] : [];
-}
-
-export async function eliminarCargaAlumnosMock(cargaId) {
-  await delay(400);
-  await syncApiDb();
-  apiDb.historialCargas = Array.isArray(apiDb.historialCargas) ? apiDb.historialCargas : [];
-  const carga = apiDb.historialCargas.find((item) => item.id === cargaId);
-  if (!carga) throw new Error("No se encontro la carga seleccionada.");
-
-  const registros = Array.isArray(carga.registros) ? carga.registros : [];
-  const tieneInscripcion = registros.some((registro) =>
-    apiDb.inscripciones.some((inscripcion) =>
-      inscripcion.programaId === registro.programaId &&
-      inscripcion.dniEstudiante === registro.dni &&
-      inscripcion.estadoInscripcion !== "Anulada"
-    )
-  );
-  if (tieneInscripcion) {
-    throw new Error("No se puede borrar esta carga porque uno o mas alumnos ya tienen inscripcion activa.");
-  }
-
-  let eliminados = 0;
-  const programasAfectados = new Set(registros.map((registro) => registro.programaId).filter(Boolean));
-  programasAfectados.forEach((programaId) => {
-    const actuales = apiDb.invitadosPorPrograma[programaId] || [];
-    const filtrados = actuales.filter((invitado) => invitado.cargaId !== cargaId);
-    eliminados += actuales.length - filtrados.length;
-    apiDb.invitadosPorPrograma[programaId] = filtrados;
-    sincronizarGradosProgramaConInvitados(programaId);
-  });
-
-  apiDb.historialCargas = apiDb.historialCargas.filter((item) => item.id !== cargaId);
-  await saveApiDb();
-  window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
-  return { cargaId, eliminados };
-}
 
 export async function obtenerActividadProgramaMock(programaId) {
   await delay(200);
@@ -812,49 +552,4 @@ export async function obtenerListaAsistenciaMock(programaId) {
   }));
 }
 
-// --- MOCK INTERNAL HELPERS ---
-export function normalizarPeriodosGuardados() {
-  let cambio = false;
-  apiDb.programas.forEach((programa) => {
-    const normalizado = normalizarPeriodo(programa.periodo);
-    if (programa.periodo !== normalizado) {
-      programa.periodo = normalizado;
-      cambio = true;
-    }
-  });
-  if (cambio) {
-    saveApiDb();
-    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
-  }
-}
 
-function finalizarProgramasVencidos() {
-  const hoy = normalizarFecha(fechaActualInput());
-  if (!hoy) return;
-
-  let cambio = false;
-  apiDb.programas.forEach((programa) => {
-    if (!debeArchivarPorFecha(programa, hoy)) return;
-    programa.finalizadoAutomaticamenteEn = programa.finalizadoAutomaticamenteEn || fechaActualIso();
-    programa.archivadoAutomaticamenteEn = programa.archivadoAutomaticamenteEn || fechaActualIso();
-    programa.estado = "Archivado";
-    cambio = true;
-  });
-
-  if (cambio) {
-    saveApiDb();
-    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "coordinacion" } }));
-  }
-}
-
-function normalizarAlumnoCarga(estudiante = {}) {
-  const nombres = limpiarTexto(estudiante.nombres);
-  const apellidos = limpiarTexto(estudiante.apellidos);
-  const nombreCompleto = [nombres, apellidos].filter(Boolean).join(" ").trim() || nombres;
-
-  return {
-    dni: limpiarTexto(estudiante.dni).replace(/\D/g, ""),
-    nombre: nombreCompleto,
-    grado: limpiarTexto(estudiante.grado || estudiante.gradoNombre || estudiante.grado_nombre),
-  };
-}

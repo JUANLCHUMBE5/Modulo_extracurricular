@@ -1,4 +1,5 @@
-import { apiDb, saveApiDb, syncApiDb } from "../../../services/dbApi";
+import { apiDb as apiDbRaw, saveApiDb, syncApiDb } from "../../../services/dbApi";
+const apiDb = apiDbRaw as any;
 import { fechaActualIso } from "../../../services/dateService";
 import {
   esRegistroWeb,
@@ -8,47 +9,25 @@ import {
   normalizarTexto,
   obtenerEstadoRevisionWeb,
 } from "../cajaServiceUtils";
+import {
+  calcularSiguienteRecibo,
+  enriquecerPagoConProgramaCaja,
+  resolverProgramaVigenteCaja,
+  coincideProgramaFiltroCaja,
+  obtenerInscripcionesCaja,
+  crearFilaPago,
+  encontrarPagoInscripcion,
+  encontrarPagoActivoDuplicado,
+  sincronizarPagoConInscripcion,
+  incrementarCorrelativo,
+  generarPagoId,
+  crearEstudianteDesdeInscripcion,
+  obtenerProgramasVigentesCaja,
+} from "./cajaServiceMockHelpers";
 
 const esperar = (ms = 300) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function calcularSiguienteRecibo(startValue, existingNros) {
-  if (!startValue) return "";
-  const match = String(startValue).match(/^(.*?)(\d+)$/);
-  if (!match) return startValue;
-  const prefix = match[1];
-  const startNumStr = match[2];
-  const S = Number(startNumStr);
-  const padLength = startNumStr.length;
-
-  let maxM = 0;
-  let foundAny = false;
-
-  for (const nro of existingNros) {
-    if (!nro) continue;
-    const nroStr = String(nro).trim();
-    if (nroStr.startsWith(prefix)) {
-      const numPart = nroStr.slice(prefix.length);
-      if (/^\d+$/.test(numPart)) {
-        const val = Number(numPart);
-        if (!foundAny || val > maxM) {
-          maxM = val;
-          foundAny = true;
-        }
-      }
-    }
-  }
-
-  let nextVal;
-  if (!foundAny || maxM < S) {
-    nextVal = S;
-  } else {
-    nextVal = maxM + 1;
-  }
-
-  return prefix + String(nextVal).padStart(padLength, "0");
-}
-
-export async function listarPagosMock(periodo = "escolar", filtros = {}) {
+export async function listarPagosMock(periodo = "escolar", filtros: any = {}) {
   await esperar(400);
   await syncApiDb();
 
@@ -70,40 +49,10 @@ export async function listarPagosMock(periodo = "escolar", filtros = {}) {
 
   return pagos
     .map((pago) => enriquecerPagoConProgramaCaja(pago, programasVigentes))
-    .sort((a, b) => new Date(b.fecha || b.fechaPago || 0) - new Date(a.fecha || a.fechaPago || 0));
+    .sort((a, b) => new Date(b.fecha || b.fechaPago || 0).getTime() - new Date(a.fecha || a.fechaPago || 0).getTime());
 }
 
-function enriquecerPagoConProgramaCaja(pago = {}, programasVigentes = null) {
-  const inscripcion = (apiDb.inscripciones || []).find((item) =>
-    (pago.inscripcionId && item.id === pago.inscripcionId) ||
-    (
-      item.dniEstudiante === (pago.dniEstudiante || pago.estudianteDni) &&
-      (
-        (pago.programaId && item.programaId === pago.programaId) ||
-        normalizarTexto(item.programa) === normalizarTexto(pago.programa || pago.programaNombre)
-      )
-    )
-  );
-  const programa = resolverProgramaVigenteCaja(
-    {
-      programaId: pago.programaId || inscripcion?.programaId,
-      programa: pago.programa || pago.programaNombre || inscripcion?.programa,
-      periodo: pago.periodo,
-    },
-    programasVigentes
-  );
 
-  return {
-    ...pago,
-    programaId: pago.programaId || inscripcion?.programaId || programa?.id || "",
-    programa: pago.programa || pago.programaNombre || inscripcion?.programa || programa?.nombre || "",
-    programaNombre: pago.programaNombre || pago.programa || inscripcion?.programa || programa?.nombre || "",
-    programaFechaInicio: programa?.fechaInicio || inscripcion?.fechaInicio || "",
-    programaFechaFin: programa?.fechaFin || inscripcion?.fechaFin || "",
-    estadoPrograma: programa?.estado || "",
-    nombresEstudiante: pago.nombresEstudiante || inscripcion?.nombresEstudiante || "",
-  };
-}
 
 export async function registrarPagoMock(datosPago) {
   await esperar(500);
@@ -237,7 +186,7 @@ export async function obtenerEstudiantePorDniMock(dni, periodo = "") {
       item.dniEstudiante === dni &&
       (!periodoNormalizado || normalizarPeriodo(item.periodo || periodoNormalizado) === periodoNormalizado)
     )
-    .sort((a, b) => new Date(b.fechaRegistro || 0) - new Date(a.fechaRegistro || 0));
+    .sort((a, b) => new Date(b.fechaRegistro || 0).getTime() - new Date(a.fechaRegistro || 0).getTime());
   const pagosEstudiante = (apiDb.pagos || []).filter((pago) => pago.dniEstudiante === dni || pago.estudianteDni === dni);
   const estadosCerrados = ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"];
   const esEstadoCerrado = (...valores) => {
@@ -351,7 +300,7 @@ export async function listarBandejaPagosWebMock(periodo = "escolar") {
     })
     .map((inscripcion) => {
       const pago = encontrarPagoInscripcion(inscripcion, pagos);
-      const programa = programas.get(inscripcion.programaId) || {};
+      const programa: any = programas.get(inscripcion.programaId) || {};
       const estadoRevision = obtenerEstadoRevisionWeb(inscripcion, pago);
       return {
         id: `${inscripcion.id}-${pago?.id || "sin-pago"}`,
@@ -382,7 +331,7 @@ export async function listarBandejaPagosWebMock(periodo = "escolar") {
         origen: inscripcion.origenRegistro || pago?.origenRegistro || "Portal padres",
       };
     })
-    .sort((a, b) => new Date(b.fecha || b.fechaRegistro || 0) - new Date(a.fecha || a.fechaRegistro || 0));
+    .sort((a, b) => new Date(b.fecha || b.fechaRegistro || 0).getTime() - new Date(a.fecha || a.fechaRegistro || 0).getTime());
 }
 
 export async function validarPagoWebMock(pagoId, observaciones = "") {
@@ -430,7 +379,7 @@ export async function rechazarPagoWebMock(pagoId, observaciones = "Pago rechazad
   });
 }
 
-export async function generarReporteCajaMock(filtros = {}) {
+export async function generarReporteCajaMock(filtros: any = {}) {
   await esperar(450);
   await syncApiDb();
 
@@ -541,77 +490,7 @@ export async function anularPagoMock(pagoId, observaciones = "Pago anulado por C
   return pagoActualizado;
 }
 
-// --- MOCK INTERNAL HELPERS ---
 
-function generarPagoId() {
-  const pagos = Array.isArray(apiDb.pagos) ? apiDb.pagos : [];
-  const usados = new Set(pagos.map((pago) => String(pago.id || "")));
-  let id = `PAG-${Date.now().toString().slice(-8)}`;
-  while (usados.has(id)) {
-    id = `PAG-${Date.now().toString().slice(-8)}-${Math.floor(Math.random() * 90) + 10}`;
-  }
-  return id;
-}
-
-function crearEstudianteDesdeInscripcion(inscripcion) {
-  if (!inscripcion) return null;
-
-  return {
-    dni: inscripcion.dniEstudiante || "",
-    codigoEstudiante: inscripcion.codigoEstudiante || "",
-    nombres: inscripcion.nombresEstudiante || "",
-    apellidos: "",
-    grado: inscripcion.gradoEstudiante || inscripcion.grado || "",
-    seccion: inscripcion.seccionEstudiante || inscripcion.seccion || "",
-    tipoAlumno: inscripcion.tipoAlumno || "",
-    apoderado: inscripcion.apoderado || "",
-    telefonoApoderado: inscripcion.telefono || "",
-    correoApoderado: inscripcion.correo || "",
-    estadoInscripcion: inscripcion.estadoInscripcion || "Pendiente de pago",
-  };
-}
-
-function obtenerProgramasVigentesCaja(periodoNormalizado = "escolar") {
-  const porId = new Map();
-  const porNombre = new Map();
-  const items = [];
-
-  [...(Array.isArray(apiDb.programas) ? apiDb.programas : [])]
-    .filter((programa) => normalizarPeriodo(programa.periodo || periodoNormalizado) === periodoNormalizado)
-    .filter((programa) => !["eliminado"].includes(normalizarTexto(programa.estado)))
-    .forEach((programa) => {
-      if (!programa?.id) return;
-
-      const nombreKey = normalizarTexto(programa.nombre);
-      if (nombreKey && porNombre.has(nombreKey)) return;
-
-      const item = {
-        ...programa,
-        nombre: programa.nombre || "Sin programa",
-      };
-      items.push(item);
-      porId.set(item.id, item);
-      if (nombreKey) porNombre.set(nombreKey, item);
-    });
-
-  return { items, porId, porNombre };
-}
-
-function resolverProgramaVigenteCaja(registro = {}, programasVigentes) {
-  const catalogo = programasVigentes || obtenerProgramasVigentesCaja(normalizarPeriodo(registro.periodo));
-  const porId = catalogo.porId || new Map();
-  const porNombre = catalogo.porNombre || new Map();
-  const id = registro.programaId || registro.programaAsignado || "";
-  const nombre = registro.programa || registro.programaNombre || "";
-
-  return porId.get(id) || porNombre.get(normalizarTexto(nombre)) || null;
-}
-
-function coincideProgramaFiltroCaja(registro = {}, programaId = "todos", programasVigentes) {
-  if (!programaId || programaId === "todos") return true;
-  const programa = resolverProgramaVigenteCaja(registro, programasVigentes);
-  return programa?.id === programaId;
-}
 
 async function actualizarEstadoPagoWeb(pagoId, cambios) {
   await esperar(350);
@@ -658,163 +537,7 @@ async function actualizarEstadoPagoWeb(pagoId, cambios) {
   return pagoActualizado;
 }
 
-function obtenerInscripcionesCaja(periodoNormalizado) {
-  return [...(apiDb.inscripciones || [])]
-    .filter((inscripcion) =>
-      normalizarPeriodo(inscripcion.periodo || periodoNormalizado) === periodoNormalizado &&
-      inscripcion.estadoInscripcion !== "Anulada"
-    );
-}
 
-function crearFilaPago(pago, programasVigentes = null) {
-  if (pago.formaPago === "Egreso") {
-    return {
-      id: pago.id,
-      pagoId: pago.id,
-      inscripcionId: "",
-      dniEstudiante: pago.dniEstudiante || "",
-      estudiante: pago.nombresEstudiante || "Egreso de Caja",
-      programaId: "",
-      programa: "Egreso / Gasto",
-      periodo: normalizarPeriodo(pago.periodo),
-      monto: Number(pago.monto || 0),
-      estadoPago: "pagado",
-      estadoInscripcion: "",
-      formaPago: "Egreso",
-      numeroOperacion: pago.numeroOperacion || "",
-      telefonoOperacion: "",
-      origen: "Cajera",
-      fuente: "pago",
-      fecha: pago.fechaPago || pago.fecha || "",
-      fechaRegistro: "",
-      fechaPago: pago.fechaPago || pago.fecha || "",
-      apoderado: "",
-      telefono: "",
-      nroRecibo: pago.nroRecibo || pago.nro_recibo || "",
-      grado: "",
-      seccion: "",
-      descuentoAprobado: false,
-      descuentoTipo: "",
-      descuentoMonto: 0,
-      observaciones: pago.observaciones || "",
-    };
-  }
-
-  const program = resolverProgramaVigenteCaja(pago, programasVigentes || obtenerProgramasVigentesCaja(normalizarPeriodo(pago.periodo)));
-  if (!program) return null;
-
-  const inscripcion = (apiDb.inscripciones || []).find((ins) => ins.id === pago.inscripcionId) || null;
-  const estudiante = apiDb.estudiantes?.[pago.dniEstudiante || pago.estudianteDni] || null;
-  const esWebReserva = inscripcion ? (inscripcion.derivadoCaja || inscripcion.estadoCaja === "reservado_caja" || String(inscripcion.estadoInscripcion).toLowerCase().includes("reserva")) : false;
-
-  const formaPago = esWebReserva
-    ? `Reserva / Web / ${pago.formaPago || pago.medioPago || "Efectivo"}`
-    : (pago.formaPago || pago.medioPago || "Sin medio");
-
-  return {
-    id: pago.id,
-    pagoId: pago.id,
-    inscripcionId: pago.inscripcionId || "",
-    dniEstudiante: pago.dniEstudiante || pago.estudianteDni || "",
-    estudiante: estudiante ? `${estudiante.nombres || ""} ${estudiante.apellidos || ""}`.trim() : pago.nombresEstudiante || pago.estudianteNombre || "Sin nombre",
-    programaId: program.id,
-    programa: program.nombre || pago.programa || pago.programaNombre || "",
-    periodo: normalizarPeriodo(pago.periodo),
-    monto: Number(pago.monto || 0),
-    estadoPago: normalizarEstadoPago(pago.estado),
-    estadoInscripcion: "",
-    formaPago,
-    numeroOperacion: pago.numeroOperacion || pago.referenciaPago || "",
-    telefonoOperacion: pago.telefonoOperacion || "",
-    origen: esWebReserva ? "Portal padres" : "Cajera",
-    fuente: "pago",
-    fecha: pago.fechaPago || pago.fecha || "",
-    fechaRegistro: "",
-    fechaPago: pago.fechaPago || pago.fecha || "",
-    apoderado: pago.apoderado || "",
-    telefono: pago.telefono || "",
-    nroRecibo: pago.nroRecibo || pago.nro_recibo || "",
-    grado: inscripcion ? (inscripcion.gradoEstudiante || inscripcion.grado || (estudiante ? estudiante.grado : "")) : (estudiante ? estudiante.grado : ""),
-    seccion: inscripcion ? (inscripcion.seccion || inscripcion.seccionEstudiante || (estudiante ? estudiante.seccion : "")) : (estudiante ? estudiante.seccion : ""),
-    descuentoAprobado: inscripcion ? (inscripcion.descuentoAprobado || false) : false,
-    descuentoTipo: inscripcion ? (inscripcion.descuentoTipo || "") : "",
-    descuentoMonto: inscripcion ? (inscripcion.descuentoMonto || 0) : 0,
-    costoOriginal: inscripcion ? (inscripcion.costoOriginal ?? program.costo ?? 0) : (program.costo ?? 0),
-    descuentoJustificacion: inscripcion ? (inscripcion.descuentoJustificacion || "") : "",
-    observaciones: pago.observaciones || pago.observacion || (inscripcion ? inscripcion.pagoObservacionCaja : "") || "",
-  };
-}
-
-function encontrarPagoInscripcion(inscripcion, pagos) {
-  return pagos.find((pago) => pago.inscripcionId && pago.inscripcionId === inscripcion.id)
-    || pagos.find((pago) =>
-      (pago.dniEstudiante || pago.estudianteDni) === inscripcion.dniEstudiante &&
-      (pago.programaId === inscripcion.programaId ||
-        normalizarTexto(pago.programa || pago.programaNombre) === normalizarTexto(inscripcion.programa))
-    )
-    || null;
-}
-
-function encontrarPagoActivoDuplicado(datosPago = {}) {
-  const pagos = Array.isArray(apiDb.pagos) ? apiDb.pagos : [];
-  const inscripcionId = datosPago.inscripcionId || "";
-  const dniEstudiante = datosPago.dniEstudiante || datosPago.estudianteDni || "";
-  const programaId = datosPago.programaId || "";
-  const programaNombre = normalizarTexto(datosPago.programa || datosPago.programaNombre);
-
-  return pagos.find((pago) => {
-    const estado = normalizarEstadoPago(pago.estado || pago.estadoPago || pago.estadoVerificacion);
-    if (["observado", "anulado"].includes(estado)) return false;
-    if (inscripcionId && pago.inscripcionId === inscripcionId) return true;
-
-    const mismoDni = (pago.dniEstudiante || pago.estudianteDni) === dniEstudiante;
-    if (!mismoDni) return false;
-    if (programaId && pago.programaId === programaId) return true;
-    return programaNombre && normalizarTexto(pago.programa || pago.programaNombre) === programaNombre;
-  }) || null;
-}
-
-function sincronizarPagoConInscripcion(pago) {
-  if (!Array.isArray(apiDb.inscripciones)) return;
-
-  const index = apiDb.inscripciones.findIndex((inscripcion) =>
-    (pago.inscripcionId && inscripcion.id === pago.inscripcionId) ||
-    (
-      inscripcion.dniEstudiante === (pago.dniEstudiante || pago.estudianteDni) &&
-      (
-        inscripcion.programaId === pago.programaId ||
-        normalizarTexto(inscripcion.programa) === normalizarTexto(pago.programa || pago.programaNombre)
-      )
-    )
-  );
-
-  if (index === -1) return;
-
-  const estadoPago = pago.estado === "completado"
-    ? "Pagado"
-    : pago.estado === "cancelado"
-    ? "Anulado"
-    : "Pendiente";
-
-  apiDb.inscripciones[index] = {
-    ...apiDb.inscripciones[index],
-    estadoPago,
-    estadoInscripcion: estadoPago === "Pagado" ? "Pago validado" : apiDb.inscripciones[index].estadoInscripcion,
-    pagoId: pago.id,
-    fechaPago: pago.fechaPago || pago.fecha,
-  };
-}
-
-function incrementarCorrelativo(valor) {
-  if (!valor) return "";
-  const match = String(valor).match(/^(.*?)(\d+)$/);
-  if (!match) return valor;
-  const prefix = match[1];
-  const numStr = match[2];
-  const nextNum = Number(numStr) + 1;
-  const paddedNum = String(nextNum).padStart(numStr.length, "0");
-  return prefix + paddedNum;
-}
 
 export async function buscarEstudiantesCajaQueryMock(query) {
   await esperar(200);
@@ -823,7 +546,7 @@ export async function buscarEstudiantesCajaQueryMock(query) {
   if (!q) return [];
 
   const estudiantes = Object.values(apiDb.estudiantes || {});
-  const matchingEstudiantes = estudiantes.filter((e) => {
+  const matchingEstudiantes = estudiantes.filter((e: any) => {
     const nombresComp = `${e.nombres || ""} ${e.apellidos || ""}`;
     return (
       normalizarTexto(e.dni || "").includes(q) ||
@@ -833,106 +556,10 @@ export async function buscarEstudiantesCajaQueryMock(query) {
     );
   });
 
-  return matchingEstudiantes.map((e) => ({
+  return matchingEstudiantes.map((e: any) => ({
     dni: e.dni || "",
     nombres: `${e.nombres || ""} ${e.apellidos || ""}`.trim() || "Sin Nombre",
   }));
 }
 
-export async function cancelarCorrelativoCajaMock(tipo, motivo, dniEstudiante = "", nombresEstudiante = "", nroRecibo = "") {
-  await esperar(300);
-  await syncApiDb();
-
-  if (!apiDb.correlativos) apiDb.correlativos = {};
-  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
-
-  let val = "";
-  if (nroRecibo) {
-    val = String(nroRecibo).trim();
-    if (tipo === "recibo" && val === apiDb.correlativos.reciboActual) {
-      apiDb.correlativos.reciboActual = incrementarCorrelativo(val);
-    } else if (tipo === "reciboVirtual" && val === apiDb.correlativos.reciboVirtualActual) {
-      apiDb.correlativos.reciboVirtualActual = incrementarCorrelativo(val);
-    } else if (tipo === "egreso" && val === apiDb.correlativos.egresoActual) {
-      apiDb.correlativos.egresoActual = incrementarCorrelativo(val);
-    }
-  } else {
-    if (tipo === "recibo") {
-      val = apiDb.correlativos.reciboActual || "REC-0001";
-      apiDb.correlativos.reciboActual = incrementarCorrelativo(val);
-    } else if (tipo === "reciboVirtual") {
-      val = apiDb.correlativos.reciboVirtualActual || "V-0001";
-      apiDb.correlativos.reciboVirtualActual = incrementarCorrelativo(val);
-    } else if (tipo === "egreso") {
-      val = apiDb.correlativos.egresoActual || "EGR-0001";
-      apiDb.correlativos.egresoActual = incrementarCorrelativo(val);
-    } else {
-      throw new Error("Tipo de correlativo no válido.");
-    }
-  }
-
-  if (!val) {
-    throw new Error("No se encontró un correlativo actual para este tipo.");
-  }
-
-  const nuevoPagoAnulado = {
-    id: `PAG-CANC-${String(Date.now()).slice(-6)}`,
-    inscripcionId: null,
-    dniEstudiante: dniEstudiante || "ANULADO",
-    nombresEstudiante: nombresEstudiante || (tipo === "egreso" ? `EGRESO ANULADO: ${val}` : `RECIBO ANULADO: ${val}`),
-    programa: "",
-    programaId: "",
-    periodo: "escolar",
-    monto: 0,
-    formaPago: tipo === "reciboVirtual" ? "Yape" : "Efectivo",
-    nroRecibo: val,
-    estado: "anulado",
-    fecha: fechaActualIso(),
-    fechaPago: fechaActualIso(),
-    origenRegistro: "Caja",
-    observaciones: `Correlativo cancelado/anulado por Cajera. Motivo: ${motivo}`,
-    createdAt: fechaActualIso(),
-  };
-
-  apiDb.pagos.push(nuevoPagoAnulado);
-  await saveApiDb();
-  window.dispatchEvent(new Event("mock-db-updated"));
-
-  return nuevoPagoAnulado;
-}
-
-export async function registrarEgresoMock(datosEgreso) {
-  await esperar(400);
-  await syncApiDb();
-
-  if (!apiDb.correlativos) apiDb.correlativos = {};
-  if (!Array.isArray(apiDb.pagos)) apiDb.pagos = [];
-
-  const nroRecibo = apiDb.correlativos.egresoActual || apiDb.correlativos.egreso || "EGR-0001";
-  apiDb.correlativos.egresoActual = incrementarCorrelativo(nroRecibo);
-
-  const nuevoEgreso = {
-    id: `PAG-EGR-${String(Date.now()).slice(-6)}`,
-    inscripcionId: null,
-    dniEstudiante: datosEgreso.dni || "",
-    nombresEstudiante: datosEgreso.beneficiario || "Egreso de Caja",
-    programa: "",
-    programaId: "",
-    monto: Number(datosEgreso.monto || 0),
-    formaPago: "Egreso",
-    nroRecibo: nroRecibo,
-    periodo: normalizarPeriodo(datosEgreso.periodo || "escolar"),
-    fecha: datosEgreso.fecha || fechaActualIso(),
-    fechaPago: datosEgreso.fecha || fechaActualIso(),
-    estado: "completado",
-    origenRegistro: "Caja",
-    observaciones: datosEgreso.concepto || "Egreso registrado",
-    createdAt: fechaActualIso()
-  };
-
-  apiDb.pagos.push(nuevoEgreso);
-  await saveApiDb();
-  window.dispatchEvent(new Event("mock-db-updated"));
-
-  return nuevoEgreso;
-}
+export { cancelarCorrelativoCajaMock, registrarEgresoMock } from "./cajaServiceMockEgresos";

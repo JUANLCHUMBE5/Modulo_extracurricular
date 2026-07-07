@@ -108,3 +108,111 @@ export function limpiarHorarioSinAlmuerzo(horarioStr = "") {
     .replace(/\s+/g, " ")
     .trim();
 }
+
+export function formatGradoLabel(g: any) {
+  if (!g) return "Sin Grado";
+  const parts = String(g || "").split(":");
+  if (parts.length === 2) {
+    const nivel = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+    return `${parts[1]}° ${nivel}`;
+  }
+  const match = String(g).match(/(\d+)\s+(\w+)/);
+  if (match) {
+    const nivel = match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+    return `${match[1]}° ${nivel}`;
+  }
+  return g;
+}
+
+export function obtenerNombreHojaSeguro(name: string) {
+  let clean = String(name || "Hoja")
+    .replace(/[\\/?*\[\]:]/g, "")
+    .trim();
+  if (clean.length > 31) {
+    clean = clean.substring(0, 31);
+  }
+  return clean || "Hoja";
+}
+
+export function normalizarTextoSimple(val = "") {
+  return String(val || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+export function compararGrados(g1 = "", g2 = "") {
+  const t1 = String(g1 || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const t2 = String(g2 || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+    
+  if (t1 === t2) return true;
+
+  const num1 = t1.match(/\d+/)?.[0] || "";
+  const num2 = t2.match(/\d+/)?.[0] || "";
+  if (!num1 || !num2 || num1 !== num2) return false;
+
+  const nivel1 = ["inicial", "primaria", "secundaria"].find((n) => t1.includes(n)) || "";
+  const nivel2 = ["inicial", "primaria", "secundaria"].find((n) => t2.includes(n)) || "";
+
+  return nivel1 === nivel2;
+}
+
+export const parseDiasSemana = (texto = "") => {
+  const norm = String(texto || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  
+  const diasEncontrados = [];
+  if (norm.includes("lunes")) diasEncontrados.push(1);
+  if (norm.includes("martes")) diasEncontrados.push(2);
+  if (norm.includes("miercoles")) diasEncontrados.push(3);
+  if (norm.includes("jueves")) diasEncontrados.push(4);
+  if (norm.includes("viernes")) diasEncontrados.push(5);
+  if (norm.includes("sabado")) diasEncontrados.push(6);
+  if (norm.includes("domingo")) diasEncontrados.push(0);
+  return diasEncontrados;
+};
+
+export const generarFechasProgramadas = (prog: any, inicioStr: string, finStr: string) => {
+  if (!inicioStr || !finStr) return [];
+  
+  let textoDias = "";
+  if (Array.isArray(prog?.horariosPorGrupo) && prog.horariosPorGrupo.length > 0) {
+    textoDias = prog.horariosPorGrupo.map((g: any) => g.dia).join(", ");
+  } else {
+    textoDias = prog?.horario || "";
+  }
+  
+  const diasSemana = parseDiasSemana(textoDias);
+  if (diasSemana.length === 0) return [];
+  
+  const start = new Date(inicioStr + "T00:00:00");
+  const end = new Date(finStr + "T00:00:00");
+  
+  const dates = [];
+  let current = new Date(start);
+  let safety = 0;
+  while (current <= end && safety < 366) {
+    safety++;
+    const dayOfWeek = current.getDay();
+    if (diasSemana.includes(dayOfWeek)) {
+      const year = current.getFullYear();
+      const month = String(current.getMonth() + 1).padStart(2, "0");
+      const day = String(current.getDate()).padStart(2, "0");
+      dates.push(`${year}-${month}-${day}`);
+    }
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+};

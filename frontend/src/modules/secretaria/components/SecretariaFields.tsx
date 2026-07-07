@@ -1,6 +1,6 @@
 import { IconCircleCheck as CheckCircle2 } from "@tabler/icons-react";
 
-function ProcesoItem({ activo, completado, texto }) {
+function ProcesoItem({ activo, completado, texto }: { activo: boolean; completado: boolean; texto: string }) {
   return (
     <div className={`secretaria-process-item ${activo ? "is-active" : ""} ${completado ? "is-complete" : ""}`}>
       <span>{completado ? <CheckCircle2 size={15} /> : null}</span>
@@ -9,7 +9,17 @@ function ProcesoItem({ activo, completado, texto }) {
   );
 }
 
-function CampoTexto({ label, icon, value, onChange, placeholder, maxLength, className = "" }) {
+interface CampoTextoProps {
+  label: string;
+  icon?: React.ReactNode;
+  value: any;
+  onChange: (value: any) => void;
+  placeholder?: string;
+  maxLength?: number | string;
+  className?: string;
+}
+
+function CampoTexto({ label, icon, value, onChange, placeholder, maxLength, className = "" }: CampoTextoProps) {
   return (
     <div className={`secretaria-field ${className}`.trim()}>
       <label>
@@ -20,13 +30,13 @@ function CampoTexto({ label, icon, value, onChange, placeholder, maxLength, clas
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        maxLength={maxLength}
+        maxLength={maxLength as any}
       />
     </div>
   );
 }
 
-function CampoLectura({ label, value, className = "" }) {
+function CampoLectura({ label, value, className = "" }: { label: string; value: any; className?: string }) {
   return (
     <div className={`secretaria-field ${className}`.trim()}>
       <label>{label}</label>
@@ -35,7 +45,7 @@ function CampoLectura({ label, value, className = "" }) {
   );
 }
 
-function DatoHorario({ label, value, icon: Icon, themeClass }) {
+function DatoHorario({ label, value, icon: Icon, themeClass }: { label: string; value: any; icon?: any; themeClass?: string }) {
   const isValido = value && value !== "-" && String(value).trim().toLowerCase() !== "no definido" && String(value).trim() !== "";
   if (!isValido) return null;
 
@@ -60,18 +70,18 @@ const diasSemanaSecretaria = [
   { valor: "Domingo", patron: /\bdomingo\b/i },
 ];
 
-function listarDiasHorario(texto) {
+function listarDiasHorario(texto: string) {
   return diasSemanaSecretaria
     .filter((dia) => dia.patron.test(texto))
     .map((dia) => dia.valor);
 }
 
-function formatearDiasHorario(dias) {
+function formatearDiasHorario(dias: string[]) {
   if (dias.length <= 2) return dias.join(" y ");
   return `${dias.slice(0, -1).join(", ")} y ${dias[dias.length - 1]}`;
 }
 
-function resumirHorarioSecretaria(horario) {
+function resumirHorarioSecretaria(horario: any) {
   const texto = String(horario || "");
   const dia = formatearDiasHorario(listarDiasHorario(texto));
   const clase = formatearRangoHoraSecretaria(texto.match(/clase\s+([^,·/]+)/i)?.[1]?.trim() || "");
@@ -83,13 +93,13 @@ function resumirHorarioSecretaria(horario) {
   };
 }
 
-function resumirClaseSecretaria(horario) {
+function resumirClaseSecretaria(horario: any) {
   const clase = resumirHorarioSecretaria(horario).clase || "";
   if (!clase) return String(horario || "");
   return formatearRangoHoraSecretaria(clase);
 }
 
-function formatearRangoHoraSecretaria(valor) {
+function formatearRangoHoraSecretaria(valor: string) {
   return String(valor || "")
     .replace(/\s*-\s*/g, " - ")
     .replace(/\b(\d{1,2}):(\d{2})(?:\s*(AM|PM))?\b/gi, (_, hora, minuto, periodo) => {
@@ -101,7 +111,7 @@ function formatearRangoHoraSecretaria(valor) {
     .replace(/\bPM\s+AM\b/gi, "AM");
 }
 
-function formatearHoraClase(horaTexto, minutoTexto) {
+function formatearHoraClase(horaTexto: string, minutoTexto: string) {
   const hora = Number(horaTexto);
   const minuto = String(minutoTexto || "00").padStart(2, "0");
   if (!Number.isFinite(hora)) return `${horaTexto}:${minuto}`;
@@ -111,7 +121,7 @@ function formatearHoraClase(horaTexto, minutoTexto) {
   return `${hora - 12}:${minuto} PM`;
 }
 
-function formatearCuposSecretaria(programa) {
+function formatearCuposSecretaria(programa: any) {
   if (!programa) return "";
   if (Number.isFinite(Number(programa.cuposDisponibles))) return String(programa.cuposDisponibles);
   const match = String(programa.cupos || "").match(/\d+/);

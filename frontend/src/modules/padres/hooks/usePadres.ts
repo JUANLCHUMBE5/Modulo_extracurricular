@@ -38,7 +38,16 @@ function usePadres(user) {
   const [programasCoordinacion, setProgramasCoordinacion] = useState([]);
   const [cargandoProgramas, setCargandoProgramas] = useState(false);
   const [programaSeleccionadoId, setProgramaSeleccionadoId] = useState("");
-  const [infoProgramaAbierta, setInfoProgramaAbierta] = useState(false);
+  const [infoProgramaAbierta, setInfoProgramaAbiertaState] = useState(false);
+  const [comunicadoLeidoEnSesion, setComunicadoLeidoEnSesion] = useState(false);
+
+  const setInfoProgramaAbierta = useCallback((val) => {
+    setInfoProgramaAbiertaState(val);
+    if (val) {
+      setComunicadoLeidoEnSesion(true);
+    }
+  }, []);
+
   const [infoProgramaAceptada, setInfoProgramaAceptada] = useState(false);
   const [pagoConfirmado, setPagoConfirmado] = useState(null);
   const formularioEditadoRef = useRef(false);
@@ -251,6 +260,16 @@ function usePadres(user) {
         const tieneInvitacion = Array.isArray(resumen?.invitaciones) && resumen.invitaciones.some(
           (inv) => (inv.programaId === item.id || inv.id === item.id)
         );
+
+        if (item.ventanaInscripcion && !item.ventanaInscripcion.permitida) {
+          const limiteTime = item.ventanaInscripcion.limiteTimestamp;
+          if (limiteTime && Date.now() > limiteTime + 24 * 60 * 60 * 1000) {
+            if (!programasYaRegistrados.has(item.id)) {
+              return false;
+            }
+          }
+        }
+
         return (item.registrable || tieneInvitacion) && item.disponibleParaGrado;
       })
       .map((item) => ({
@@ -266,14 +285,12 @@ function usePadres(user) {
   useEffect(() => {
     const programaIdActual = programa?.programaId || programa?.id || null;
     if (programaIdActual !== programaIdAnteriorRef.current) {
-      const habiaProgramaPrevio = Boolean(programaIdAnteriorRef.current);
       programaIdAnteriorRef.current = programaIdActual;
-      if (habiaProgramaPrevio) {
-        formularioEditadoRef.current = false;
-        setInfoProgramaAceptada(false);
-        setInfoProgramaAbierta(false);
-        setPagoConfirmado(null);
-      }
+      formularioEditadoRef.current = false;
+      setInfoProgramaAceptada(false);
+      setInfoProgramaAbierta(false);
+      setPagoConfirmado(null);
+      setComunicadoLeidoEnSesion(false);
     }
   }, [programa?.programaId, programa?.id]);
 
@@ -447,8 +464,9 @@ function usePadres(user) {
     try {
       const pago = await registrarPagoVerificacionPadres(user.dni, inscripcionId, datosPago);
       setPagoConfirmado(pago);
-      toast.success("Pago enviado a verificacion", {
-        description: "El colegio validara la operacion. Por ahora figura como pago en verificacion.",
+      toast.dismiss();
+      toast.success("Inscripción y pago registrados", {
+        description: "Inscripción registrada con éxito y comprobante enviado a verificación. El colegio validará la operación.",
       });
       await cargarResumen({ silencioso: true });
       return true;
@@ -470,8 +488,9 @@ function usePadres(user) {
     setGuardando(true);
     try {
       await reservarCupoCajaPadres(user.dni, inscripcionId);
-      toast.success("Cupo reservado", {
-        description: "Tu cupo ha sido reservado. Acercate a Caja para realizar el pago.",
+      toast.dismiss();
+      toast.success("Inscripción y reserva registradas", {
+        description: "Inscripción registrada con éxito y vacante reservada. Por favor, acércate a Caja para realizar el pago.",
       });
       await cargarResumen({ silencioso: true });
       return true;
@@ -499,6 +518,7 @@ function usePadres(user) {
     guardando,
     infoProgramaAbierta,
     infoProgramaAceptada,
+    comunicadoLeidoEnSesion,
     iniciales,
     inscripcion,
     inscripciones,

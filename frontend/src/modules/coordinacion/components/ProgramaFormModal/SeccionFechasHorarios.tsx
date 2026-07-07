@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import {
   IconCalendar as CalendarDays,
   IconPlus as Plus,
@@ -10,21 +9,10 @@ import ProgramaGrupoHorarioModal from "../ProgramaGrupoHorarioModal";
 import GradeSelector from "../GradeSelector";
 import { formatearHora12 } from "../../utils/coordinacionFormatters";
 import { resumenGrados } from "../../utils/coordinacionProgramUtils";
+import useSeccionFechasHorarios from "../../hooks/useSeccionFechasHorarios";
+import GrupoHorariosList from "./GrupoHorariosList";
 
-const grupoHorarioDraftInicial = {
-  grados: [],
-  dia: "Jueves",
-  aula: "",
-  almuerzoInicio: "14:20",
-  almuerzoFin: "15:10",
-  horaInicio: "15:20",
-  horaFin: "17:20",
-  responsable: "",
-  tutora: "",
-  cupos: 20,
-};
-
-function SeccionFechasHorarios({
+export default function SeccionFechasHorarios({
   form,
   esFormularioVerano,
   esMaratonForm,
@@ -50,108 +38,24 @@ function SeccionFechasHorarios({
   cancelarEdicionTaller,
   actualizarInvitacionMasiva,
 }) {
-  const [mostrarGrupoModal, setMostrarGrupoModal] = useState(false);
-  const [grupoDraft, setGrupoDraft] = useState(grupoHorarioDraftInicial);
-  const [grupoDraftError, setGrupoDraftError] = useState("");
-  const [grupoDraftErrorTick, setGrupoDraftErrorTick] = useState(0);
-  const [indiceGrupoEditando, setIndiceGrupoEditando] = useState(null);
+  const {
+    mostrarGrupoModal,
+    grupoDraft,
+    grupoDraftError,
+    grupoDraftErrorTick,
+    actualizarGrupoDraft,
+    toggleGradoDraft,
+    cerrarGrupoModal,
+    guardarGrupoDraft,
+    iniciarEdicionGrupo,
+    iniciarAdicionGrupo,
+  } = useSeccionFechasHorarios({
+    esCambridgeForm,
+    actualizarGrupoHorario,
+    agregarGrupoHorario,
+  });
 
   const usaFormularioPorBloques = true;
-
-  function actualizarGrupoDraft(campo, valor) {
-    setGrupoDraftError("");
-    setGrupoDraft((actual) => ({ ...actual, [campo]: valor }));
-  }
-
-  function toggleGradoDraft(valor) {
-    setGrupoDraftError("");
-    setGrupoDraft((actual) => {
-      const grados = Array.isArray(actual.grados) ? actual.grados : [];
-      return {
-        ...actual,
-        grados: grados.includes(valor)
-          ? grados.filter((item) => item !== valor)
-          : [...grados, valor],
-      };
-    });
-  }
-
-  function cerrarGrupoModal() {
-    setMostrarGrupoModal(false);
-    setGrupoDraft(grupoHorarioDraftInicial);
-    setGrupoDraftError("");
-    setIndiceGrupoEditando(null);
-  }
-
-  function guardarGrupoDraft() {
-    const grados = Array.isArray(grupoDraft.grados) ? grupoDraft.grados.filter(Boolean) : [];
-    const dias = String(grupoDraft.dia || "").split(",").map(d => d.trim()).filter(Boolean);
-
-    const targetHoraInicio = grupoDraft.horaInicio || "15:20";
-    const targetHoraFin = grupoDraft.horaFin || "17:20";
-    const targetAlmInicio = grupoDraft.almuerzoInicio || "";
-    const targetAlmFin = grupoDraft.almuerzoFin || "";
-    const targetAula = grupoDraft.aula || "";
-
-    if ((!esCambridgeForm && !grados.length) || !dias.length) {
-      setGrupoDraftError(esCambridgeForm ? "Faltan días del bloque." : "Faltan grados o días del bloque.");
-      setGrupoDraftErrorTick((actual) => actual + 1);
-      return;
-    }
-
-    if (!targetHoraInicio || !targetHoraFin) {
-      setGrupoDraftError("Defina las horas de inicio y fin de clase.");
-      setGrupoDraftErrorTick((actual) => actual + 1);
-      return;
-    }
-    if (targetHoraInicio >= targetHoraFin) {
-      setGrupoDraftError("La hora de inicio de clase debe ser menor a la hora de fin.");
-      setGrupoDraftErrorTick((actual) => actual + 1);
-      return;
-    }
-
-    if (grupoDraft.almuerzoInicio && grupoDraft.almuerzoFin) {
-      if (!targetAlmInicio || !targetAlmFin) {
-        setGrupoDraftError("Complete las horas de inicio y fin de almuerzo.");
-        setGrupoDraftErrorTick((actual) => actual + 1);
-        return;
-      }
-      if (targetAlmInicio >= targetAlmFin) {
-        setGrupoDraftError("La hora de inicio del almuerzo debe ser menor a la hora de fin.");
-        setGrupoDraftErrorTick((actual) => actual + 1);
-        return;
-      }
-    }
-
-    if (!String(grupoDraft.responsable || "").trim()) {
-      setGrupoDraftError("Ingrese el docente o tutor responsable del bloque.");
-      setGrupoDraftErrorTick((actual) => actual + 1);
-      return;
-    }
-
-    const cuposVal = Number(grupoDraft.cupos);
-    if (grupoDraft.cupos === "" || Number.isNaN(cuposVal) || cuposVal <= 0) {
-      setGrupoDraftError("Ingrese un número de cupos válido para el bloque (mínimo 1).");
-      setGrupoDraftErrorTick((actual) => actual + 1);
-      return;
-    }
-
-    const grupoCompleto = {
-      ...grupoDraft,
-      horaInicio: targetHoraInicio,
-      horaFin: targetHoraFin,
-      almuerzoInicio: targetAlmInicio,
-      almuerzoFin: targetAlmFin,
-      aula: targetAula,
-    };
-
-    if (indiceGrupoEditando !== null) {
-      actualizarGrupoHorario(indiceGrupoEditando, grupoCompleto);
-    } else {
-      agregarGrupoHorario({ ...grupoCompleto, id: grupoDraft.id || `grupo-${Date.now()}` });
-    }
-    cerrarGrupoModal();
-  }
 
   if (esMaratonForm) {
     return (
@@ -392,11 +296,7 @@ function SeccionFechasHorarios({
                 gap: "6px",
                 boxShadow: "0 2px 4px rgba(31, 143, 115, 0.15)"
               }}
-              onClick={() => {
-                setIndiceGrupoEditando(null);
-                setGrupoDraft(grupoHorarioDraftInicial);
-                setMostrarGrupoModal(true);
-              }}
+              onClick={iniciarAdicionGrupo}
             >
               <Plus size={16} /> Añadir bloque
             </button>
@@ -413,34 +313,16 @@ function SeccionFechasHorarios({
               <div className={`coord-field ${esDeportivoForm ? "coord-taller-col-3" : "coord-taller-col-4"}`} style={{ alignContent: "start" }}>
                 <label>{esFormularioVerano ? "Taller específico" : "Deporte"}</label>
                 <select value={tallerDepForm.deporte} onChange={e => setTallerDepForm(prev => ({ ...prev, deporte: e.target.value }))}>
-                  {esFormularioVerano ? (
-                    form.categoria === "Talleres Deportivos" ? (
-                      <>
-                        <option value="Fútbol">Fútbol</option>
-                        <option value="Vóley">Vóley</option>
-                        <option value="Básquet">Básquet</option>
-                        <option value="Otro">Otro deporte...</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="Danza">Danza</option>
-                        <option value="Mini Chef">Mini Chef</option>
-                        <option value="Pintura">Pintura</option>
-                        <option value="Teatro">Teatro</option>
-                        <option value="Inglés">Inglés</option>
-                        <option value="Zancos">Zancos</option>
-                        <option value="Artes plásticas">Artes plásticas</option>
-                        <option value="Otro">Otro taller...</option>
-                      </>
-                    )
-                  ) : (
-                    <>
-                      <option value="Vóley">Vóley</option>
-                      <option value="Fútbol">Fútbol</option>
-                      <option value="Básquet">Básquet</option>
-                      <option value="Otro">Otro deporte...</option>
-                    </>
-                  )}
+                  {(esFormularioVerano
+                    ? (form.categoria === "Talleres Deportivos"
+                      ? ["Fútbol", "Vóley", "Básquet", "Otro"]
+                      : ["Danza", "Mini Chef", "Pintura", "Teatro", "Inglés", "Zancos", "Artes plásticas", "Otro"])
+                    : ["Vóley", "Fútbol", "Básquet", "Otro"]
+                  ).map((val) => (
+                    <option key={val} value={val}>
+                      {val === "Otro" ? (esFormularioVerano ? "Otro taller..." : "Otro deporte...") : val}
+                    </option>
+                  ))}
                 </select>
                 {tallerDepForm.deporte === "Otro" && (
                   <input
@@ -629,90 +511,12 @@ function SeccionFechasHorarios({
 
         {/* Listado de bloques de horarios */}
         {usaFormularioPorBloques && !usaTalleresPorEdad && !esCambridgeForm && (
-          <div className="coord-field coord-field-full coord-block-form-panel" style={{ marginTop: "4px" }}>
-            <div className="coord-group-schedule-head" style={{ marginBottom: "12px" }}>
-              <strong>Horarios por grado/bloque/docente</strong>
-            </div>
-            {formHorariosPorGrupo.length ? (
-              <div className="coord-group-schedule-list coord-group-schedule-list-compact">
-                {formHorariosPorGrupo.map((grupo, index) => (
-                  <div className="coord-group-schedule coord-group-schedule-compact" key={grupo.id || index}>
-                    <strong className="coord-group-schedule-badge">Grupo {index + 1}</strong>
-                    <div className="coord-group-schedule-cell">
-                      <span>Grados</span>
-                      <p>{resumenGrados(grupo.grados || []) || "Sin grados"}</p>
-                    </div>
-                    <div className="coord-group-schedule-cell">
-                      <span>Días</span>
-                      <p>{grupo.dia || "Sin día"}</p>
-                    </div>
-                    <div className="coord-group-schedule-cell">
-                      <span>Almuerzo</span>
-                      <p>{grupo.almuerzoInicio && grupo.almuerzoFin ? `${formatearHora12(grupo.almuerzoInicio)} a ${formatearHora12(grupo.almuerzoFin)}` : "No incluye"}</p>
-                    </div>
-                    <div className="coord-group-schedule-cell">
-                      <span>Clase</span>
-                      <p>{formatearHora12(grupo.horaInicio || "15:20")} a {formatearHora12(grupo.horaFin || "17:20")}</p>
-                    </div>
-                    <div className="coord-group-schedule-cell">
-                      <span>Docente / aula</span>
-                      <p>{[grupo.responsable, grupo.tutora, grupo.aula ? `Aula: ${grupo.aula}` : ""].filter(Boolean).join(" · ") || "Sin docente"}</p>
-                    </div>
-                    <div className="coord-group-schedule-cell" style={{ maxWidth: "80px" }}>
-                      <span>Cupos</span>
-                      <p>{grupo.cupos || 20}</p>
-                    </div>
-                    <div className="coord-group-actions">
-                      <button
-                        type="button"
-                        className="coord-duplicate-btn"
-                        onClick={() => {
-                          const copia = { ...grupo, id: `grupo-${Date.now()}-${Math.random().toString(16).slice(2, 6)}` };
-                          agregarGrupoHorario(copia);
-                        }}
-                        title="Duplicar bloque"
-                      >
-                        <CopyIcon size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="coord-edit-btn"
-                        onClick={() => {
-                          setIndiceGrupoEditando(index);
-                          setGrupoDraft(grupo);
-                          setMostrarGrupoModal(true);
-                        }}
-                        aria-label="Editar grupo"
-                      >
-                        <Edit3 size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        className="coord-delete-btn"
-                        onClick={() => quitarGrupoHorario(index)}
-                        aria-label="Quitar grupo"
-                      >
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div
-                style={{
-                  padding: "20px",
-                  border: "1px dashed #cbd5e1",
-                  borderRadius: "8px",
-                  color: "#667085",
-                  textAlign: "center",
-                  background: "#f8fafc"
-                }}
-              >
-                Aún no se han configurado bloques de horarios. Agregue uno usando el botón "+ Añadir bloque" de arriba.
-              </div>
-            )}
-          </div>
+          <GrupoHorariosList
+            formHorariosPorGrupo={formHorariosPorGrupo}
+            agregarGrupoHorario={agregarGrupoHorario}
+            iniciarEdicionGrupo={iniciarEdicionGrupo}
+            quitarGrupoHorario={quitarGrupoHorario}
+          />
         )}
 
         {/* Modal de edición/adición de bloque */}
@@ -734,5 +538,3 @@ function SeccionFechasHorarios({
     </section>
   );
 }
-
-export default SeccionFechasHorarios;

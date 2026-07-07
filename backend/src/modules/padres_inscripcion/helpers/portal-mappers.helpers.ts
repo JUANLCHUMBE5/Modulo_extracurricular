@@ -88,7 +88,14 @@ function mapProgramaPortalBase(db: any, prog: any, gradoCompleto: string, invita
     modalidades_cambridge: prog.modalidadesCambridge || [],
     costo_ciclo: prog.costoCiclo || (prog.costo ? String(prog.costo) : ""),
     monto_primer_pago: prog.montoPrimerPago || "",
-    dias: Array.isArray(prog.dias) ? prog.dias : []
+    dias: Array.isArray(prog.dias) ? prog.dias : [],
+    duracion_aviso_dias: prog.duracionAvisoDias || 7,
+    hora_limite_aviso: prog.horaLimiteAviso || "23:59",
+    usar_fecha_limite_inscripcion: prog.usarFechaLimiteInscripcion,
+    fecha_apertura_inscripcion: prog.fechaAperturaInscripcion || "",
+    hora_apertura_inscripcion: prog.horaAperturaInscripcion || "",
+    fecha_limite_inscripcion: prog.fechaLimiteInscripcion || "",
+    hora_limite_inscripcion: prog.horaLimiteInscripcion || "23:59"
   };
 }
 

@@ -28,6 +28,8 @@
   grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.28fr);
   gap: 18px;
   align-items: start;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .padres-flow-yape-card,
@@ -77,6 +79,9 @@
 
 .padres-flow-payment-form {
   padding: 16px;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .padres-flow-payment-fields {
@@ -123,6 +128,17 @@
   color: #9a3f00;
   font-weight: 850;
   cursor: pointer;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.padres-flow-upload-box span {
+  max-width: calc(100% - 30px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .padres-flow-upload-box input {
@@ -514,6 +530,9 @@
 .padres-flow-panel {
   border-radius: 16px;
   padding: 13px 18px;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .padres-flow-program-card,

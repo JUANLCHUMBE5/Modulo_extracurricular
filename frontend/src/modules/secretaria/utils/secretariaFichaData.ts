@@ -4,35 +4,75 @@ import {
   formatearFechaPeru,
   normalizarFecha,
 } from "../../../services/dateService";
+import {
+  cleanFallbackText,
+  base64ToArrayBuffer,
+  escaparHtml,
+  escaparXml,
+  escaparRegExp,
+  procesarTextoComunicado,
+  formatearFechaFicha,
+  formatearFechaValor,
+  normalizarNombreArchivo,
+  normalizarComparacion,
+  normalizarSeleccionCambridge,
+  describirSeleccionCambridgeFicha,
+  esFichaCambridge,
+  extraerDiasHorario,
+  extraerHorasHorario,
+  extraerAlmuerzoHorario,
+  formatearMesEvaluacion,
+  coincideGradoDocumento,
+  descomponerGradoDocumento,
+  formatearGradoDocumento,
+  formatearRangoHoraDocumento,
+  formatearRangoHoraTexto,
+  formatearHoraDocumento,
+  calcularDuracionTexto,
+  obtenerNombrePeriodo,
+  formatearNivelesDocumento,
+  obtenerInfoGrado,
+  agruparGradosConsecutivos,
+  crearHorarioDocumento,
+  crearFilasHorarioDocumento,
+  obtenerFilaHorario,
+} from "./secretariaFichaHelpers";
 
-export function cleanFallbackText(value) {
-  if (value === undefined || value === null) return "";
-  const str = String(value).trim();
-  const lower = str.toLowerCase();
+export {
+  cleanFallbackText,
+  base64ToArrayBuffer,
+  escaparHtml,
+  escaparXml,
+  escaparRegExp,
+  procesarTextoComunicado,
+  formatearFechaFicha,
+  formatearFechaValor,
+  normalizarNombreArchivo,
+  normalizarComparacion,
+  normalizarSeleccionCambridge,
+  describirSeleccionCambridgeFicha,
+  esFichaCambridge,
+  extraerDiasHorario,
+  extraerHorasHorario,
+  extraerAlmuerzoHorario,
+  formatearMesEvaluacion,
+  coincideGradoDocumento,
+  descomponerGradoDocumento,
+  formatearGradoDocumento,
+  formatearRangoHoraDocumento,
+  formatearRangoHoraTexto,
+  formatearHoraDocumento,
+  calcularDuracionTexto,
+  obtenerNombrePeriodo,
+  formatearNivelesDocumento,
+  obtenerInfoGrado,
+  agruparGradosConsecutivos,
+  crearHorarioDocumento,
+  crearFilasHorarioDocumento,
+  obtenerFilaHorario,
+};
 
-  if (
-    lower === "no definido" ||
-    lower === "no definido." ||
-    lower === "no registrado" ||
-    lower === "no registrado." ||
-    lower === "sin codigo" ||
-    lower === "sin código" ||
-    lower === "sin código."
-  ) {
-    return "";
-  }
-
-  if (
-    lower === "horario no configurado para este grado" ||
-    lower === "horario no configurado para este grado."
-  ) {
-    return "Por confirmar";
-  }
-
-  return str;
-}
-
-export function crearDatosFicha(estudiante, inscripcion) {
+export function crearDatosFicha(estudiante: any, inscripcion: any) {
   const fechaRegistro = normalizarFecha(inscripcion.fechaRegistro) || new Date();
   const seleccionCambridge = normalizarSeleccionCambridge(inscripcion.seleccion || estudiante?.seleccion);
   const nivelCambridge = inscripcion.nivelCambridge || estudiante?.nivelCambridge || "";
@@ -96,8 +136,7 @@ export function crearDatosFicha(estudiante, inscripcion) {
   };
 }
 
-
-export function crearResumenInvitacion(ficha) {
+export function crearResumenInvitacion(ficha: any) {
   const resumen = [
     ["Estudiante", ficha.estudiante.nombre],
     ["DNI", ficha.estudiante.dni],
@@ -127,7 +166,7 @@ export function crearResumenInvitacion(ficha) {
   return resumen;
 }
 
-export function crearMapaVariablesDocumento(estudiante, inscripcion) {
+export function crearMapaVariablesDocumento(estudiante: any, inscripcion: any) {
   const costo = Number(inscripcion.costo || 0).toFixed(2);
   const fechaInicio = formatearFechaInicioRango(inscripcion.fechaInicio, inscripcion.fechaFin);
   const fechaFin = formatearFechaFinRango(inscripcion.fechaInicio, inscripcion.fechaFin);
@@ -198,457 +237,57 @@ export function crearMapaVariablesDocumento(estudiante, inscripcion) {
     APOD: apoderado,
     CEL: telefono,
     NUMERO_DOCUMENTO: inscripcion.numeroDocumento || inscripcion.numero_documento || "",
-    TIPO_DOCUMENTO: inscripcion.tipoDocumento || inscripcion.tipo_documento || "Comunicado",
-    AREA_TEMATICA: inscripcion.areaTematica || inscripcion.area_tematica || "No aplica",
-    MOTIVO_JUSTIFICACION: inscripcion.motivoJustificacion || inscripcion.motivo_justificacion || inscripcion.comunicado || inscripcion.comunicadoCompleto || "",
-    NOMBRE_CICLO: inscripcion.nombreCiclo || inscripcion.nombre_ciclo || "",
-    DURACION: inscripcion.duracion || inscripcion.duracionTaller || "",
-    INCLUYE_ALMUERZO: (inscripcion.incluyeAlmuerzo || inscripcion.incluye_almuerzo) ? "Sí" : "No",
-    HORARIO_RECEPCION_ALMUERZO: inscripcion.horarioRecepcionAlmuerzo || inscripcion.horario_recepcion_almuerzo || "",
-    NIVEL_CAMBRIDGE: inscripcion.nivelCambridge || inscripcion.nivel_cambridge || "",
-    MODALIDADES_CAMBRIDGE: Array.isArray(inscripcion.modalidadesCambridge || inscripcion.modalidades_cambridge) ? (inscripcion.modalidadesCambridge || inscripcion.modalidades_cambridge).join(", ") : "",
-    COSTO_CICLO: inscripcion.costoCiclo || inscripcion.costo_ciclo || (inscripcion.costo ? String(inscripcion.costo) : ""),
-    MONTO_PRIMER_PAGO: inscripcion.montoPrimerPago || inscripcion.monto_primer_pago || "",
-    num: inscripcion.id || "",
-    numero: inscripcion.id || "",
-    nro: inscripcion.id || "",
-    alumno,
-    nombre_alumno: alumno,
-    "nombre del alumno": alumno,
-    estudiante: alumno,
-    dni: inscripcion.dniEstudiante || estudiante?.dni || "Sin DNI",
-    codigo: inscripcion.codigoEstudiante || estudiante?.codigoEstudiante || "",
-    codigo_estudiante: inscripcion.codigoEstudiante || estudiante?.codigoEstudiante || "",
-    grado,
-    seccion,
-    sección: seccion,
-    apoderado,
-    nombre_apoderado: apoderado,
-    "nombre del apoderado": apoderado,
-    celular: telefono,
-    telefono,
-    teléfono: telefono,
-    telefono_apoderado: telefono,
-    correo: inscripcion.correo || "",
-    medio_envio: inscripcion.medioEnvio || "",
-    programa: inscripcion.programa || "",
-    prog: inscripcion.programa || "",
-    curso: inscripcion.programa || "",
-    curso_programa: inscripcion.programa || "",
-    nivel: estudiante?.grado || "",
-    nivel1: grado,
-    grado_seccion: gradoSeccion,
-    periodo: estudiante?.periodo || obtenerNombrePeriodo(inscripcion.periodo),
-    ciclo: estudiante?.periodo || obtenerNombrePeriodo(inscripcion.periodo),
-    horario,
-    dia: dias,
-    dias,
-    día: dias,
-    días: dias,
-    dia1: dias,
-    día1: dias,
-    hora: horas,
-    horas,
-    clases: horas || inscripcion.horario || "",
-    clase: horas || inscripcion.horario || "",
-    clase1: horas || inscripcion.horario || "",
-    almuerzo: almuerzo || "",
-    alm: almuerzo || "",
-    alm1: almuerzo || "",
-    costo,
-    modalidad_cobro: modalidadCobro,
-    requisitos: inscripcion.requisitos || "",
-    observacion: inscripcion.observacion || "",
-    inicio: fechaInicio,
-    ini: fechaInicio,
-    fecha_inicio: fechaInicio,
-    fin: fechaFin,
-    fecha_fin: fechaFin,
-    rango: rangoFechas,
-    rango_fechas: rangoFechas,
-    vigencia: rangoFechas,
-    duracion,
-    dur: duracion,
-    duración: duracion,
-    fecha: fechaActual,
-    fecha_carta: fechaActualLarga,
-    mes_eval: mesEvaluacion,
-    gr_sec: gradoSeccion,
-    apod: apoderado,
-    cel: telefono,
-    nivel_1: fila1.nivel,
-    dias_1: fila1.dia,
-    alm_1: fila1.almuerzo,
-    clase_1: fila1.clase,
-    hor_alm_1: fila1.almuerzo,
-    nivel_2: fila2.nivel,
-    dias_2: fila2.dia,
-    alm_2: fila2.almuerzo,
-    clase_2: fila2.clase,
-    hor_alm_2: fila2.almuerzo,
-    comunicado: cleanFallbackText(inscripcion.comunicado || inscripcion.comunicadoCompleto) || "",
-    COMUNICADO: cleanFallbackText(inscripcion.comunicado || inscripcion.comunicadoCompleto) || "",
+    MOTIVO: inscripcion.motivoJustificacion || "",
+    TABLA_GRADOS: inscripcion.tablaHorariosNivel || [],
+    DOCENTE: cleanFallbackText(inscripcion.docente) || "",
+    RESPONSABLE: cleanFallbackText(inscripcion.docente) || "",
+    DIAS: dias,
+    CLASE_1: fila1.clase || "",
+    CLASE_2: fila2.clase || "",
+    ALM_1: fila1.almuerzo || "",
+    ALM_2: fila2.almuerzo || "",
+    HOR_ALM_1: fila1.almuerzo || "",
+    HOR_ALM_2: fila2.almuerzo || "",
+    NIVEL_1: fila1.nivel || "",
+    NIVEL_2: fila2.nivel || "",
+    NIVEL_CAMBRIDGE: nivelCambridge || "",
+    SELECCION: describirSeleccionCambridgeFicha(seleccionCambridge),
+    FECHA_LOTE: fechaActualLarga,
+    MES_EVAL: mesEvaluacion || "",
   };
 }
 
-export function base64ToArrayBuffer(base64) {
-  const binario = atob(base64);
-  const bytes = new Uint8Array(binario.length);
-  for (let index = 0; index < binario.length; index += 1) {
-    bytes[index] = binario.charCodeAt(index);
-  }
-  return bytes.buffer;
+function formatearFechaInicioRango(inicio: any, fin: any) {
+  if (!inicio && !fin) return "";
+  const d = normalizarFecha(inicio || fin);
+  return d ? formatearFechaFicha(d) : "";
 }
 
-export function escaparHtml(valor) {
-  return String(valor ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function formatearFechaFinRango(inicio: any, fin: any) {
+  if (!inicio && !fin) return "";
+  const d = normalizarFecha(fin || inicio);
+  return d ? formatearFechaFicha(d) : "";
 }
 
-export function escaparXml(valor) {
-  return String(valor ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
+function formatearRangoFechasLetras(inicio: any, fin: any) {
+  const dIni = normalizarFecha(inicio);
+  const dFin = normalizarFecha(fin);
+  if (!dIni && !dFin) return "";
+  if (!dIni) return formatearFechaLargaPeru(dFin, "");
+  if (!dFin) return formatearFechaLargaPeru(dIni, "");
 
-export function escaparRegExp(valor) {
-  return String(valor).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-export function procesarTextoComunicado(texto, estudiante, inscripcion) {
-  if (!texto) return "";
-  const mapa = crearMapaVariablesDocumento(estudiante, inscripcion);
-  let resultado = String(texto);
-
-  // Replace variables like {{VARIABLE}}
-  Object.entries(mapa).forEach(([key, val]) => {
-    const patron = new RegExp(`\\{\\{\\s*${escaparRegExp(key)}\\s*\\}\\}`, "gi");
-    resultado = resultado.replace(patron, String(val ?? ""));
-  });
-
-  return resultado;
-}
-
-export function formatearFechaFicha(fecha) {
-  return formatearFechaPeru(fecha, formatearFechaPeru(new Date()));
-}
-
-export function formatearFechaValor(valor) {
-  return formatearFechaPeru(valor);
-}
-
-export function normalizarNombreArchivo(valor) {
-  return String(valor || "sin-codigo")
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, "-")
-    .replace(/^-+|-+$/g, "") || "sin-codigo";
-}
-
-function formatearFechaInicioRango(inicio, fin) {
-  const fechaInicio = normalizarFecha(inicio);
-  const fechaFin = normalizarFecha(fin);
-  if (!fechaInicio) return "";
-
-  const mismoAnio = fechaFin && fechaInicio.getFullYear() === fechaFin.getFullYear();
-  return formatearFechaLetras(fechaInicio, { incluirAnio: !mismoAnio });
-}
-
-function formatearFechaFinRango(inicio, fin) {
-  const fechaInicio = normalizarFecha(inicio);
-  const fechaFin = normalizarFecha(fin);
-  if (!fechaFin) return "";
-
-  const mismoAnio = fechaInicio && fechaInicio.getFullYear() === fechaFin.getFullYear();
-  return formatearFechaLetras(fechaFin, { incluirAnio: true, usarDeAnio: mismoAnio });
-}
-
-function formatearRangoFechasLetras(inicio, fin) {
-  const fechaInicio = normalizarFecha(inicio);
-  const fechaFin = normalizarFecha(fin);
-  if (!fechaInicio && !fechaFin) return "";
-  if (!fechaInicio) return formatearFechaLetras(fechaFin, { incluirAnio: true });
-  if (!fechaFin) return formatearFechaLetras(fechaInicio, { incluirAnio: true });
-  return `del ${formatearFechaInicioRango(inicio, fin)} al ${formatearFechaFinRango(inicio, fin)}`;
-}
-
-function formatearFechaLetras(fecha, { incluirAnio = true, usarDeAnio = true } = {}) {
-  if (!fecha) return "";
   const meses = [
-    "enero",
-    "febrero",
-    "marzo",
-    "abril",
-    "mayo",
-    "junio",
-    "julio",
-    "agosto",
-    "septiembre",
-    "octubre",
-    "noviembre",
-    "diciembre",
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"
   ];
-  const base = `${fecha.getDate()} de ${meses[fecha.getMonth()]}`;
-  if (!incluirAnio) return base;
-  return `${base}${usarDeAnio ? " de" : ""} ${fecha.getFullYear()}`;
-}
 
-function extraerDiasHorario(horario) {
-  const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-  const texto = normalizarComparacion(horario);
-  return dias
-    .filter((dia) => texto.includes(normalizarComparacion(dia)))
-    .join(", ");
-}
-
-function normalizarSeleccionCambridge(valor) {
-  const texto = normalizarComparacion(valor).replace(/[^abc]/g, "");
-  return texto.charAt(0).toUpperCase();
-}
-
-function describirSeleccionCambridgeFicha(valor = "") {
-  const seleccion = normalizarSeleccionCambridge(valor);
-  const opciones = {
-    A: "A - Promovido/a por Certificado Oficial 2025",
-    B: "B - Ingresante por Admission Test",
-    C: "C - Ingresante por Desempeno Academico",
-  };
-  return opciones[seleccion] || "Pendiente de definir";
-}
-
-function esFichaCambridge(ficha) {
-  return normalizarComparacion([
-    ficha?.programa?.nombre,
-    ficha?.programa?.plantilla,
-  ].filter(Boolean).join(" ")).includes("cambridge");
-}
-
-function extraerHorasHorario(horario) {
-  const matches = [...String(horario || "").matchAll(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/gi)]
-    .map((match) => {
-      const minuto = match[2] || "00";
-      return formatearHoraDocumento(`${match[1]}:${minuto}`);
-    });
-
-  return matches.length >= 2 ? `${matches[0]} a ${matches[1]}` : "";
-}
-
-function extraerAlmuerzoHorario(horario) {
-  const match = String(horario || "").match(/almuerzo\s+([^,·/]+)/i);
-  return formatearRangoHoraTexto(match?.[1]?.trim() || "");
-}
-
-function formatearMesEvaluacion(valor) {
-  const fecha = normalizarFecha(valor) || new Date();
-  return new Intl.DateTimeFormat("es-PE", { month: "long" }).format(fecha);
-}
-
-function crearFilasHorarioDocumento(inscripcion, estudiante, horarioRespaldo) {
-  const grupos = Array.isArray(inscripcion?.horariosPorGrupo) ? inscripcion.horariosPorGrupo : [];
-  const gradoAlumno = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
-
-  // Filtrar los grupos que correspondan al grado del alumno
-  const gruposFiltrados = grupos.filter((item) =>
-    (item.grados || []).some((grado) => coincideGradoDocumento(grado, gradoAlumno))
-  );
-
-  // Si no hay grupos que coincidan, mostramos todos (respaldo)
-  const gruposAMostrar = gruposFiltrados.length > 0 ? gruposFiltrados : grupos;
-
-  const filas = gruposAMostrar
-    .map((grupo) => ({
-      nivel: formatearNivelesDocumento(grupo.grados),
-      dia: grupo.dia || "",
-      almuerzo: formatearRangoHoraDocumento(grupo.almuerzoInicio, grupo.almuerzoFin),
-      clase: formatearRangoHoraDocumento(grupo.horaInicio, grupo.horaFin),
-    }))
-    .filter((fila) => fila.nivel || fila.dia || fila.almuerzo || fila.clase);
-
-  if (filas.length) return filas;
-
-  const gradoAlumnoRespaldo = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
-  return [{
-    nivel: horarioRespaldo.niveles[0] || formatearGradoDocumento(gradoAlumnoRespaldo),
-    dia: horarioRespaldo.dia || extraerDiasHorario(inscripcion?.horario),
-    almuerzo: horarioRespaldo.almuerzo || extraerAlmuerzoHorario(inscripcion?.horario),
-    clase: horarioRespaldo.clase || extraerHorasHorario(inscripcion?.horario),
-  }];
-}
-
-function obtenerFilaHorario(filas, index) {
-  return filas[index] || {
-    nivel: "",
-    dia: "",
-    almuerzo: "",
-    clase: "",
-  };
-}
-
-export function formatearNivelesDocumento(grados = []) {
-  return (Array.isArray(grados) ? grados : [])
-    .map(formatearGradoDocumento)
-    .filter(Boolean)
-    .join(", ");
-}
-
-function obtenerInfoGrado(gradoStr) {
-  const texto = String(gradoStr || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  let nivel = "primaria";
-  if (texto.includes("inicial") || texto.includes("ano") || texto.includes("anos")) {
-    nivel = "inicial";
-  } else if (texto.includes("secundaria") || texto.includes("sec")) {
-    nivel = "secundaria";
+  if (dIni.getFullYear() === dFin.getFullYear() && dIni.getMonth() === dFin.getMonth()) {
+    return `Del ${dIni.getDate()} al ${dFin.getDate()} de ${meses[dIni.getMonth()]} de ${dIni.getFullYear()}`;
   }
 
-  const match = texto.match(/\d+/);
-  const numero = match ? parseInt(match[0], 10) : null;
-
-  return { nivel, numero, original: gradoStr };
-}
-
-export function agruparGradosConsecutivos(gradosArray) {
-  if (!Array.isArray(gradosArray) || gradosArray.length === 0) return [];
-
-  const parsed = gradosArray.map(g => obtenerInfoGrado(g));
-
-  const levels = { inicial: [], primaria: [], secundaria: [] };
-  parsed.forEach(p => {
-    if (levels[p.nivel]) {
-      levels[p.nivel].push(p);
-    } else {
-      levels.primaria.push(p);
-    }
-  });
-
-  const subgroups = [];
-
-  ["inicial", "primaria", "secundaria"].forEach(levelName => {
-    const items = levels[levelName];
-    if (items.length === 0) return;
-
-    items.sort((a, b) => {
-      const numA = a.numero === null ? 99 : a.numero;
-      const numB = b.numero === null ? 99 : b.numero;
-      return numA - numB;
-    });
-
-    let currentRun = [];
-    for (let i = 0; i < items.length; i++) {
-      const current = items[i];
-      if (currentRun.length === 0) {
-        currentRun.push(current);
-      } else {
-        const last = currentRun[currentRun.length - 1];
-        if (
-          current.numero !== null &&
-          last.numero !== null &&
-          current.numero === last.numero + 1
-        ) {
-          currentRun.push(current);
-        } else {
-          subgroups.push(currentRun.map(r => r.original));
-          currentRun = [current];
-        }
-      }
-    }
-    if (currentRun.length > 0) {
-      subgroups.push(currentRun.map(r => r.original));
-    }
-  });
-
-  return subgroups;
-}
-
-function crearHorarioDocumento(inscripcion, estudiante) {
-  const grupos = Array.isArray(inscripcion?.horariosPorGrupo) ? inscripcion.horariosPorGrupo : [];
-  const gradoAlumno = inscripcion?.gradoEstudiante || inscripcion?.grado || estudiante?.grado || "";
-  const grupo = grupos.find((item) => (item.grados || []).some((grado) => coincideGradoDocumento(grado, gradoAlumno)));
-  const gradoDelTurno = grupo?.grados?.find((grado) => coincideGradoDocumento(grado, gradoAlumno)) || gradoAlumno;
-  const nivelesTurno = gradoDelTurno ? [formatearGradoDocumento(gradoDelTurno)] : [];
-  if (!grupo) {
-    return {
-      dia: extraerDiasHorario(inscripcion?.horario),
-      almuerzo: extraerAlmuerzoHorario(inscripcion?.horario),
-      clase: extraerHorasHorario(inscripcion?.horario),
-      aula: inscripcion?.aula || "",
-      niveles: nivelesTurno,
-    };
+  if (dIni.getFullYear() === dFin.getFullYear()) {
+    return `Del ${dIni.getDate()} de ${meses[dIni.getMonth()]} al ${dFin.getDate()} de ${meses[dFin.getMonth()]} de ${dIni.getFullYear()}`;
   }
 
-  return {
-    dia: grupo.dia || "",
-    almuerzo: formatearRangoHoraDocumento(grupo.almuerzoInicio, grupo.almuerzoFin),
-    clase: formatearRangoHoraDocumento(grupo.horaInicio, grupo.horaFin),
-    aula: grupo.aula || "",
-    niveles: nivelesTurno,
-  };
-}
-
-function coincideGradoDocumento(valorGrupo, gradoAlumno) {
-  const grupo = descomponerGradoDocumento(valorGrupo);
-  const alumno = descomponerGradoDocumento(gradoAlumno);
-  if (!grupo.numero || !alumno.numero) return false;
-  if (grupo.numero !== alumno.numero) return false;
-  return !grupo.nivel || !alumno.nivel || grupo.nivel === alumno.nivel;
-}
-
-function descomponerGradoDocumento(valor) {
-  const texto = normalizarComparacion(valor).replace(":", " ");
-  const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
-  const numero = texto.match(/\d+/)?.[0] || "";
-  return { nivel, numero };
-}
-
-function formatearGradoDocumento(valor) {
-  const texto = String(valor || "").replace(/^(Inicial|Primaria|Secundaria):/i, "").trim();
-  if (!texto) return "";
-  const numero = texto.match(/\d+/)?.[0];
-  if (normalizarComparacion(valor).includes("inicial") && numero) return `INICIAL ${numero} AÑOS`;
-  if (/años?/i.test(texto)) return texto.toUpperCase();
-  if (!numero) return texto.toUpperCase();
-  return `${numero}°GRADO`;
-}
-
-export function formatearRangoHoraDocumento(inicio, fin) {
-  if (!inicio || !fin) return "";
-  return `${formatearHoraDocumento(inicio)} a ${formatearHoraDocumento(fin)}`;
-}
-
-function formatearRangoHoraTexto(valor) {
-  const horas = [...String(valor || "").matchAll(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/gi)]
-    .map((match) => formatearHoraDocumento(`${match[1]}:${match[2] || "00"}`));
-  if (horas.length >= 2) return `${horas[0]} a ${horas[1]}`;
-  return String(valor || "").replace(/\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)\b/gi, "").trim();
-}
-
-function formatearHoraDocumento(valor) {
-  const match = String(valor || "").match(/^(\d{1,2}):(\d{2})/);
-  if (!match) return valor || "";
-  const hora = Number(match[1]);
-  const minutos = match[2];
-  const hora12 = hora > 12 ? hora - 12 : hora || 12;
-  return `${hora12}:${minutos}`;
-}
-
-function normalizarComparacion(valor) {
-  return String(valor || "")
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function calcularDuracionTexto(inicio, fin) {
-  return calcularDuracionFechas(inicio, fin);
-}
-
-function obtenerNombrePeriodo(periodo) {
-  return String(periodo || "").toLowerCase().includes("verano")
-    ? "Ciclo verano"
-    : "Año escolar";
+  return `Del ${dIni.getDate()} de ${meses[dIni.getMonth()]} de ${dIni.getFullYear()} al ${dFin.getDate()} de ${meses[dFin.getMonth()]} de ${dFin.getFullYear()}`;
 }

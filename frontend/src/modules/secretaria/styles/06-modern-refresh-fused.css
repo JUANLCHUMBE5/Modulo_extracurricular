@@ -200,4 +200,24 @@ select.secretaria-input-fused {
   cursor: not-allowed !important;
 }
 
+.secretaria-gestion-alumnos-btn {
+  background: #e8f5e9 !important;
+  color: #1b5e20 !important;
+  border: 1px solid #a5d6a7 !important;
+  padding: 6px 16px !important;
+  border-radius: 30px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: default !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-left: auto !important;
+  white-space: nowrap !important;
+  height: auto !important;
+  width: auto !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
+}
+
 

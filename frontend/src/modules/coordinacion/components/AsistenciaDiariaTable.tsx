@@ -28,7 +28,6 @@ function AsistenciaDiariaTable({
             <th>Estudiante</th>
             {tallerId === "TODOS_TALLERES" && <th>Taller</th>}
             <th>Grado</th>
-            <th>Pago</th>
             <th>Acceso</th>
             <th>{grupoActivo ? "Observación" : "Observación / Firma"}</th>
             <th style={{ width: "80px", textAlign: "center" }}>Reporte</th>
@@ -77,11 +76,6 @@ function AsistenciaDiariaTable({
                     {tallerId === "TODOS_TALLERES" && <td>{labelTaller || "—"}</td>}
                     <td>{labelGrado || "—"}</td>
                     <td>
-                      <span style={badgeStyle(String(asist.estadoPago).toLowerCase() === "pagado", "warning")}>
-                        {asist.estadoPago || "Pendiente"}
-                      </span>
-                    </td>
-                    <td>
                       <span style={badgeStyle(esAccesoPermitido, toneAcceso)}>
                         {textoAcceso}
                       </span>
@@ -110,7 +104,7 @@ function AsistenciaDiariaTable({
               })
             ) : (
               <tr>
-                <td colSpan={tallerId === "TODOS_TALLERES" ? 10 : 9} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
+                <td colSpan={tallerId === "TODOS_TALLERES" ? 9 : 8} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
                   No se encontraron estudiantes para la búsqueda.
                 </td>
               </tr>
@@ -152,11 +146,6 @@ function AsistenciaDiariaTable({
                     {tallerId === "TODOS_TALLERES" && <td>{labelTaller || "—"}</td>}
                     <td>{labelGrado || "—"}</td>
                     <td>
-                      <span style={badgeStyle(String(alumno.estadoPago).toLowerCase() === "pagado", "warning")}>
-                        {alumno.estadoPago || "Pendiente"}
-                      </span>
-                    </td>
-                    <td>
                       <span style={badgeStyle(esAccesoPermitido, "warning")}>
                         {textoAcceso}
                       </span>
@@ -178,7 +167,7 @@ function AsistenciaDiariaTable({
               })
             ) : (
               <tr>
-                <td colSpan={tallerId === "TODOS_TALLERES" ? 9 : 8} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
+                <td colSpan={tallerId === "TODOS_TALLERES" ? 8 : 7} style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>
                   No se encontraron estudiantes matriculados para la búsqueda.
                 </td>
               </tr>

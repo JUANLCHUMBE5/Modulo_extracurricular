@@ -19,7 +19,14 @@ import {
   registrarEgresoMock,
 } from "./utils/cajaServiceMock";
 
-export async function listarPagos(periodo = "escolar", filtros = {}) {
+export async function listarPagos(periodo = "todos", filtros = {}) {
+  if (periodo === "todos") {
+    const [escolar, verano] = await Promise.all([
+      listarPagos("escolar", filtros),
+      listarPagos("verano", filtros),
+    ]);
+    return [...escolar, ...verano];
+  }
   if (isApiMode()) {
     const res = await apiClient.get("/api/v1/extracurricular/pagos", {
       params: { periodo, ...filtros }
@@ -83,7 +90,23 @@ export async function actualizarPago(pagoId, datosActualizados) {
   return actualizarPagoMock(pagoId, datosActualizados);
 }
 
-export async function obtenerResumenCaja(periodo = "escolar") {
+export async function obtenerResumenCaja(periodo = "todos") {
+  if (periodo === "todos") {
+    const [escolar, verano] = await Promise.all([
+      obtenerResumenCaja("escolar"),
+      obtenerResumenCaja("verano"),
+    ]);
+    return {
+      totalIngreso: (escolar?.totalIngreso || 0) + (verano?.totalIngreso || 0),
+      totalEgreso: (escolar?.totalEgreso || 0) + (verano?.totalEgreso || 0),
+      totalIngresoNeto: (escolar?.totalIngresoNeto || 0) + (verano?.totalIngresoNeto || 0),
+      totalPendiente: (escolar?.totalPendiente || 0) + (verano?.totalPendiente || 0),
+      totalCancelado: (escolar?.totalCancelado || 0) + (verano?.totalCancelado || 0),
+      cantidadPagos: (escolar?.cantidadPagos || 0) + (verano?.cantidadPagos || 0),
+      cantidadEgresos: (escolar?.cantidadEgresos || 0) + (verano?.cantidadEgresos || 0),
+      cantidadPendientes: (escolar?.cantidadPendientes || 0) + (verano?.cantidadPendientes || 0),
+    };
+  }
   if (isApiMode()) {
     const res = await apiClient.get("/api/v1/extracurricular/caja/resumen", {
       params: { periodo }
@@ -132,23 +155,66 @@ export async function obtenerEstudiantePorDni(dni, periodo = "") {
   return obtenerEstudiantePorDniMock(dni, periodo);
 }
 
-export async function generarReportePagos(filtros = {}) {
+export async function generarReportePagos(filtros: any = {}) {
   // En ambos modos, se delega al listado de pagos
-  const pagos = await listarPagos(filtros.periodo || "escolar", filtros);
+  const pagos = await listarPagos(filtros.periodo || "todos", filtros);
   return pagos;
 }
 
-export async function obtenerOpcionesReporteCaja(periodo = "escolar") {
-  // Nota: En modo API real se podría llamar a un endpoint, pero como no existía en el código original,
-  // delegamos a mock o definimos por API. El original solo usaba mock.
+export async function obtenerOpcionesReporteCaja(periodo = "todos") {
+  if (periodo === "todos") {
+    const [escolar, verano] = await Promise.all([
+      obtenerOpcionesReporteCaja("escolar"),
+      obtenerOpcionesReporteCaja("verano"),
+    ]);
+    
+    const vistosProgramas = new Set();
+    const programas = [...(escolar?.programas || []), ...(verano?.programas || [])].filter((p: any) => {
+      const key = p.value || p.id || p.nombre || p;
+      if (vistosProgramas.has(key)) return false;
+      vistosProgramas.add(key);
+      return true;
+    });
+    
+    const vistosMedios = new Set();
+    const mediosPago = [...(escolar?.mediosPago || []), ...(verano?.mediosPago || [])].filter((m: any) => {
+      const key = m.value || m.id || m.nombre || m;
+      if (vistosMedios.has(key)) return false;
+      vistosMedios.add(key);
+      return true;
+    });
+
+    const vistosGrados = new Set();
+    const grados = [...(escolar?.grados || []), ...(verano?.grados || [])].filter((g: any) => {
+      const key = g.value || g.id || g.nombre || g;
+      if (vistosGrados.has(key)) return false;
+      vistosGrados.add(key);
+      return true;
+    });
+
+    const vistosSecciones = new Set();
+    const secciones = [...(escolar?.secciones || []), ...(verano?.secciones || [])].filter((s: any) => {
+      const key = s.value || s.id || s.nombre || s;
+      if (vistosSecciones.has(key)) return false;
+      vistosSecciones.add(key);
+      return true;
+    });
+
+    return { programas, mediosPago, grados, secciones };
+  }
   if (isApiMode()) {
-    // Si hay endpoint de opciones se llama aquí, de lo contrario se asume mock o comportamiento genérico.
-    // Para ser fiel a la estructura original, delegamos a mock si no hay llamada API definida.
   }
   return obtenerOpcionesReporteCajaMock(periodo);
 }
 
-export async function listarBandejaPagosWeb(periodo = "escolar") {
+export async function listarBandejaPagosWeb(periodo = "todos") {
+  if (periodo === "todos") {
+    const [escolar, verano] = await Promise.all([
+      listarBandejaPagosWeb("escolar"),
+      listarBandejaPagosWeb("verano"),
+    ]);
+    return [...escolar, ...verano];
+  }
   if (isApiMode()) {
     const res = await apiClient.get("/api/v1/extracurricular/caja/bandeja-pagos-web", {
       params: { periodo }
@@ -214,7 +280,15 @@ export async function rechazarPagoWeb(pagoId, observaciones = "Pago rechazado po
   return rechazarPagoWebMock(pagoId, observaciones);
 }
 
-export async function generarReporteCaja(filtros = {}) {
+export async function generarReporteCaja(filtros: any = {}) {
+  const period = filtros.periodo || "todos";
+  if (period === "todos") {
+    const [escolar, verano] = await Promise.all([
+      generarReporteCaja({ ...filtros, periodo: "escolar" }),
+      generarReporteCaja({ ...filtros, periodo: "verano" }),
+    ]);
+    return [...escolar, ...verano];
+  }
   if (isApiMode()) {
     const res = await apiClient.get("/api/v1/extracurricular/caja/reporte", {
       params: filtros

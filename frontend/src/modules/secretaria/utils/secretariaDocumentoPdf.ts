@@ -1,4 +1,3 @@
-
 import { renderAsync } from "docx-preview";
 import {
   cleanFallbackText,
@@ -8,62 +7,24 @@ import {
   formatearRangoHoraDocumento,
   agruparGradosConsecutivos,
 } from "./secretariaFichaData";
-import { obtenerConfiguracionInstitucional } from "../../coordinacion/services/coordinacionService";
+import {
+  crearPdfInvitacionDocumento,
+  descargarFichaPdf,
+  obtenerFilasCambridgeFicha,
+} from "./secretariaDocumentoPdfDrawing";
 
-let configuracionInstitucionalCache = null;
+export { crearPdfInvitacionDocumento, descargarFichaPdf };
 
-async function obtenerRecursosInstitucionales() {
-  try {
-    configuracionInstitucionalCache = await obtenerConfiguracionInstitucional();
-    return configuracionInstitucionalCache;
-  } catch {
-    return configuracionInstitucionalCache || {};
-  }
-}
-
-function dataUrlRecurso(configuracion, campo) {
-  const recurso = configuracion?.[campo];
-  if (!recurso) return "";
-  if (typeof recurso === "string") return recurso;
-  return recurso.dataUrl || "";
-}
-
-function formatoImagenDataUrl(dataUrl = "") {
-  const formato = String(dataUrl).match(/^data:image\/([^;]+)/i)?.[1]?.toUpperCase();
-  if (!formato) return "PNG";
-  return formato === "JPG" ? "JPEG" : formato;
-}
-
-function agregarImagenPdf(doc, dataUrl, x, y, ancho, alto) {
-  if (!dataUrl) return false;
-  try {
-    doc.addImage(dataUrl, formatoImagenDataUrl(dataUrl), x, y, ancho, alto, undefined, "FAST");
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function esDocumentoCambridge(ficha) {
-  const texto = [
-    ficha?.programa?.tipoComunicado,
-    ficha?.programa?.nombre,
-    ficha?.programa?.areaTematica,
-    ficha?.programa?.plantilla,
-  ].filter(Boolean).join(" ").toLowerCase();
-  return /cambridge|cambrigde|cabringde|camringde|ingles/.test(texto);
-}
-
-export function prepararVistaDocxParaImpresion(contenedor) {
+export function prepararVistaDocxParaImpresion(contenedor: HTMLElement) {
   const paginas = Array.from(contenedor?.querySelectorAll(".docx") || []);
   if (!paginas.length) return;
 
   const paginasConContenido = compactarPaginasDocx(contenedor, paginas.filter(paginaTieneContenidoDocx));
   paginas
     .filter((pagina) => !paginasConContenido.includes(pagina))
-    .forEach((pagina) => pagina.remove());
+    .forEach((pagina) => (pagina as HTMLElement).remove());
 
-  paginasConContenido.forEach((pagina) => {
+  paginasConContenido.forEach((pagina: any) => {
     const contenido = pagina.querySelector("article") || pagina;
     pagina.style.height = pagina.style.height || "297mm";
     pagina.style.overflow = "visible";
@@ -76,15 +37,15 @@ export function prepararVistaDocxParaImpresion(contenedor) {
   normalizarMarcasAguaDocx(contenedor);
 }
 
-export function normalizarMarcasAguaDocx(contenedor) {
+export function normalizarMarcasAguaDocx(contenedor: HTMLElement) {
   const paginas = Array.from(contenedor?.querySelectorAll(".docx") || []);
-  paginas.forEach((pagina) => {
+  paginas.forEach((pagina: any) => {
     const rectPagina = pagina.getBoundingClientRect();
     const anchoPagina = rectPagina.width || leerMedidaCss(pagina, "width") || 794;
     const altoPagina = rectPagina.height || leerMedidaCss(pagina, "height") || 1123;
     const visuales = Array.from(pagina.querySelectorAll("img, svg"));
 
-    visuales.forEach((visual) => {
+    visuales.forEach((visual: any) => {
       const rect = visual.getBoundingClientRect();
       const ancho = rect.width || leerMedidaCss(visual, "width");
       const alto = rect.height || leerMedidaCss(visual, "height");
@@ -103,7 +64,7 @@ export function normalizarMarcasAguaDocx(contenedor) {
     });
 
     const contenido = pagina.querySelector("article") || pagina;
-    Array.from(contenido.children).forEach((hijo) => {
+    Array.from(contenido.children).forEach((hijo: any) => {
       if (
         hijo.classList.contains("secretaria-docx-watermark") ||
         hijo.classList.contains("secretaria-docx-watermark-holder")
@@ -114,580 +75,94 @@ export function normalizarMarcasAguaDocx(contenedor) {
   });
 }
 
-function formatearFechaLargaCircular(fechaStr) {
-  if (!fechaStr) return "";
-  try {
-    const date = new Date(fechaStr + "T00:00:00");
-    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    return `${date.getDate()} de ${meses[date.getMonth()]} de ${date.getFullYear()}`;
-  } catch (e) {
-    return fechaStr;
-  }
-}
-
-function formatearFechaLarga(fechaStr) {
-  if (!fechaStr) return "";
-  const parts = String(fechaStr).split("/");
-  if (parts.length === 3) {
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const year = parseInt(parts[2], 10);
-    const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    return `${day} de ${meses[month]} de ${year}`;
-  }
-  return fechaStr;
-}
-
-function extraerDiasHorario(horario) {
-  const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-  const texto = String(horario || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  return dias
-    .filter((dia) => texto.includes(dia.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")))
-    .join(", ");
-}
-
-function extraerHorasHorario(horario) {
-  const matches = [...String(horario || "").matchAll(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/gi)]
-    .map((match) => {
-      const hora = Number(match[1]);
-      const minuto = match[2] || "00";
-      const hora12 = hora > 12 ? hora - 12 : hora || 12;
-      return `${hora12}:${minuto}`;
-    });
-
-  return matches.length >= 2 ? `${matches[0]} a ${matches[1]}` : "";
-}
-
-function extraerAlmuerzoHorario(horario) {
-  const match = String(horario || "").match(/almuerzo\s+([^,·/]+)/i);
-  if (!match) return "";
-  const valor = match[1].trim();
-  const horas = [...valor.matchAll(/(\d{1,2})(?::(\d{2}))?\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)?/gi)]
-    .map((m) => {
-      const hr = Number(m[1]);
-      const min = m[2] || "00";
-      const hr12 = hr > 12 ? hr - 12 : hr || 12;
-      return `${hr12}:${min}`;
-    });
-  if (horas.length >= 2) return `${horas[0]} a ${horas[1]}`;
-  return valor.replace(/\s*(a\.?\s*m\.?|p\.?\s*m\.?|am|pm)\b/gi, "").trim();
-}
-
-export async function crearPdfInvitacionDocumento(documento) {
-  const { jsPDF } = await import("jspdf");
-  const ficha = documento.ficha || {};
-  const recursosInstitucionales = await obtenerRecursosInstitucionales();
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const logoColegio = dataUrlRecurso(recursosInstitucionales, "logoInstitucion");
-  const logoCambridge = dataUrlRecurso(recursosInstitucionales, "logoCambridge");
-  const firmaDireccion = dataUrlRecurso(recursosInstitucionales, "firmaDireccion");
-  const selloInstitucion = dataUrlRecurso(recursosInstitucionales, "selloInstitucion");
-  const mostrarCambridge = esDocumentoCambridge(ficha);
-
-  const nombreEstudiante = (ficha.estudiante?.nombre || "").toUpperCase();
-  const gradoEstudiante = (ficha.estudiante?.grado || "").toUpperCase();
-  const seccionEstudiante = ficha.estudiante?.seccion && ficha.estudiante.seccion !== "-" ? `SECCIÓN ${ficha.estudiante.seccion.toUpperCase()}` : "";
-  const tallerNombre = (ficha.programa?.nombre || "").toUpperCase();
-
-  // 0. Faint background watermark (centered)
-  doc.setDrawColor(241, 245, 249); // extremely light gray (slate 100)
-  doc.setLineWidth(1.2);
-  doc.circle(105, 148.5, 42); // outer circle of watermark
-  doc.circle(105, 148.5, 38); // inner circle
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(241, 245, 249);
-  doc.text("COLEGIO SAN RAFAEL", 105, 148.5 - 4, { align: "center" });
-  doc.text("MATEMÁTICO Y ECOLÓGICO", 105, 148.5 + 4, { align: "center" });
-
-  // 1. Slogan header
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(7.5);
-  doc.setTextColor(100, 116, 139); // slate 500
-  if (!mostrarCambridge) {
-    doc.text('"Año de la Esperanza y el Fortalecimiento de la Democracia"', 192, 14, { align: "right" });
-  }
-
-  // 2. School Brand info with decorative icons
-  doc.setDrawColor(20, 83, 45); // dark green
-  doc.setLineWidth(0.75);
-  doc.circle(22, 17.5, 2.5); // gear outer circle
-
-  doc.setFillColor(34, 197, 94); // green
-  doc.ellipse(23.5, 16.5, 1.2, 0.7, "F"); // green leaf next to gear
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(20, 83, 45); // brand primary dark green
-  doc.text("Colegio San Rafael", 27, 16.5);
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(8);
-  doc.setTextColor(71, 85, 105);
-  doc.text("Matemático y Ecológico", 27, 20.5);
-
-  if (logoColegio) {
-    doc.setFillColor(255, 255, 255);
-    doc.rect(15, 5, 64, 21, "F");
-    agregarImagenPdf(doc, logoColegio, 18, 7, 48, 17);
-  }
-
-  if (mostrarCambridge && logoCambridge) {
-    doc.setFillColor(255, 255, 255);
-    doc.rect(145, 5, 50, 21, "F");
-    agregarImagenPdf(doc, logoCambridge, 158, 7, 34, 17);
-
-    doc.setFillColor(255, 255, 255);
-    doc.rect(70, 7, 70, 9, "F");
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(7.5);
-    doc.setTextColor(100, 116, 139);
-    doc.text('"Año de la Esperanza y el Fortalecimiento de la Democracia"', 105, 14, { align: "center" });
-  }
-
-  // 3. Document ID and Date
-  const docNumRaw = ficha.programa?.numeroDocumento || ficha.programa?.id || "N° 29";
-  const nCom = `COMUNICADO CMSR-${docNumRaw.toUpperCase()}`;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text(nCom, 18, 31);
-
-  const fechaStr = `Carabayllo, ${formatearFechaLarga(ficha.fecha) || "marzo de 2026"}`;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(15, 23, 42);
-  doc.text(fechaStr, 192, 31, { align: "right" });
-
-  // 4. Header Underline
-  doc.setDrawColor(203, 213, 225);
-  doc.setLineWidth(0.4);
-  doc.line(18, 33, 192, 33);
-
-  let y = 41;
-
-  // 5. Title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(11);
-  doc.setTextColor(20, 83, 45);
-  const tituloDoc = `COMUNICADO: ${tituloFichaOriginal(ficha) || tallerNombre}`;
-  doc.text(tituloDoc, 105, y, { align: "center" });
-  y += 8;
-
-  // 6. Introduction Paragraph
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(51, 65, 85);
-
-  const gradoSeccionText = seccionEstudiante ? `${gradoEstudiante} ${seccionEstudiante}` : gradoEstudiante;
-  const parrafo1 = `Reciba un cordial saludo de parte de la Comunidad Educativa del Colegio Matemático "San Rafael". Nos dirigimos a usted para informarle que, con el propósito de complementar la formación integral de nuestros alumnos, nos complace invitar a su menor hijo(a) ${nombreEstudiante}, del grado ${gradoSeccionText}, a participar en nuestra actividad extracurricular: ${tallerNombre}.`;
-
-  y = agregarParrafoPdf(doc, parrafo1, 18, y, 174);
-  y += 2.5;
-
-  // 7. Cycle & Duration details
-  const ciclo = ficha.programa?.nombreCiclo || "Ciclo I";
-  const duracion = ficha.programa?.duracion || "";
-  const durTexto = duracion ? ` con una duración de ${duracion}` : "";
-  let fechasTexto = "";
-  if (ficha.programa?.fechaInicio && ficha.programa?.fechaFin) {
-    fechasTexto = `, comprendido desde el ${formatearFechaLargaCircular(ficha.programa.fechaInicio)} hasta el ${formatearFechaLargaCircular(ficha.programa.fechaFin)}`;
-  }
-  const parrafo2 = `Este taller corresponde al ${ciclo}${durTexto}${fechasTexto}.`;
-  y = agregarParrafoPdf(doc, parrafo2, 18, y, 174);
-  y += 4.5;
-
-  // 8. Schedules Table
-  const tabla = ficha.programa?.tablaHorariosNivel || [];
-  const grupos = ficha.programa?.horariosPorGrupo || [];
-  const rows = [];
-
-  if (Array.isArray(tabla) && tabla.length > 0) {
-    tabla.forEach(row => {
-      rows.push({
-        nivel: row.nivel || "Por definir",
-        dia: row.dia || "Por definir",
-        almuerzo: row.horarioAlmuerzo || "No aplica",
-        clase: row.horarioClase || "Por definir"
-      });
-    });
-  } else if (Array.isArray(grupos) && grupos.length > 0) {
-    grupos.forEach(row => {
-      const subgruposGrados = agruparGradosConsecutivos(row.grados);
-      const almuerzoFmt = (row.almuerzoInicio && row.almuerzoFin)
-        ? formatearRangoHoraDocumento(row.almuerzoInicio, row.almuerzoFin)
-        : "No aplica";
-      const claseFmt = formatearRangoHoraDocumento(row.horaInicio, row.horaFin);
-
-      if (subgruposGrados.length > 0) {
-        subgruposGrados.forEach(subgrupo => {
-          rows.push({
-            nivel: formatearNivelesDocumento(subgrupo) || "Por definir",
-            dia: row.dia || "Por definir",
-            almuerzo: almuerzoFmt,
-            clase: claseFmt
-          });
-        });
-      } else {
-        rows.push({
-          nivel: "Por definir",
-          dia: row.dia || "Por definir",
-          almuerzo: almuerzoFmt,
-          clase: claseFmt
-        });
-      }
-    });
-  } else {
-    rows.push({
-      nivel: gradoEstudiante || "GENERAL",
-      dia: extraerDiasHorario(ficha.programa?.horario),
-      almuerzo: extraerAlmuerzoHorario(ficha.programa?.horario) || "NO APLICA",
-      clase: extraerHorasHorario(ficha.programa?.horario) || ficha.programa?.horario
-    });
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(20, 83, 45);
-  doc.text("A continuación, se indican los horarios correspondientes:", 18, y);
-  y += 4;
-
-  // Draw table header
-  doc.setFillColor(20, 83, 45);
-  doc.rect(18, y, 174, 6.5, "F");
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.text("NIVEL / GRADO", 20, y + 4.8);
-  doc.text("DÍA", 68, y + 4.8);
-  doc.text("ALMUERZO", 102, y + 4.8);
-  doc.text("CLASES", 146, y + 4.8);
-  y += 6.5;
-
-  // Draw table rows
-  doc.setTextColor(15, 23, 42); // slate 900
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-
-  rows.forEach((row, idx) => {
-    if (idx % 2 === 1) {
-      doc.setFillColor(248, 250, 252); // slate 50
-      doc.rect(18, y, 174, 6, "F");
-    }
-    doc.setDrawColor(226, 232, 240); // slate 200
-    doc.setLineWidth(0.2);
-    doc.line(18, y + 6, 192, y + 6);
-
-    doc.text(String(row.nivel).toUpperCase(), 20, y + 4.2);
-    doc.text(String(row.dia).toUpperCase(), 68, y + 4.2);
-    doc.text(String(row.almuerzo).toUpperCase(), 102, y + 4.2);
-    doc.text(String(row.clase).toUpperCase(), 146, y + 4.2);
-    y += 6;
-  });
-  y += 5.5;
-
-  // 9. Requisitos
-  const reqs = ficha.programa?.requisitos;
-  if (reqs && reqs !== "Sin requisitos adicionales") {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(20, 83, 45);
-    doc.text("REQUISITOS:", 18, y);
-    y += 4.5;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(51, 65, 85);
-
-    const linesReq = reqs.split(/[·\-\*]/).map(line => line.trim()).filter(Boolean);
-    if (linesReq.length > 1) {
-      linesReq.forEach(line => {
-        y = agregarParrafoPdf(doc, `· ${line}`, 18, y, 174);
-      });
-    } else {
-      y = agregarParrafoPdf(doc, reqs, 18, y, 174);
-    }
-    y += 3.5;
-  }
-
-  // 10. Costo
-  doc.setFillColor(248, 250, 252);
-  doc.setDrawColor(203, 213, 225);
-  doc.setLineWidth(0.35);
-  doc.rect(18, y, 174, 9, "FD");
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(20, 83, 45);
-  doc.text("COSTO:", 22, y + 5.8);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.setTextColor(220, 38, 38); // red 600
-  const cobroMod = String(ficha.programa?.modalidadCobro || "UNICO").toUpperCase();
-  doc.text(`${cobroMod}: ${ficha.programa?.costo || "S/ 0.00"} POR TODO EL CICLO`, 40, y + 5.8);
-  y += 12.5;
-
-  // 11. Almuerzo
-  if (ficha.programa?.incluyeAlmuerzo) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9);
-    doc.setTextColor(20, 83, 45);
-    doc.text("EL ALMUERZO:", 18, y);
-    y += 4.5;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-    doc.setTextColor(51, 65, 85);
-
-    let almuerzoParrafo = "";
-    if (ficha.programa.detalleAlmuerzo) {
-      almuerzoParrafo = ficha.programa.detalleAlmuerzo;
-      if (almuerzoParrafo.toUpperCase().startsWith("EL ALMUERZO:")) {
-        almuerzoParrafo = almuerzoParrafo.substring("EL ALMUERZO:".length).trim();
-      }
-    } else {
-      const horarioAlm = ficha.programa.horarioRecepcionAlmuerzo
-        ? ` de ${ficha.programa.horarioRecepcionAlmuerzo}`
-        : "";
-      almuerzoParrafo = `Contamos con un área para la recepción de los almuerzos, donde se deberá dejar bajo el siguiente horario:${horarioAlm}. Indicando claramente una etiqueta grande en la lonchera, con NOMBRE DEL ALUMNO, GRADO Y SECCIÓN.`;
-    }
-
-    y = agregarParrafoPdf(doc, almuerzoParrafo, 18, y, 174);
-    y += 2.5;
-
-    // Concesionarios
-    doc.setFont("helvetica", "italic");
-    doc.setFontSize(8);
-    doc.setTextColor(71, 85, 105);
-
-    let deliveryText = "";
-    if (ficha.programa.concesionarios) {
-      deliveryText = ficha.programa.concesionarios;
-      if (deliveryText.toUpperCase().startsWith("CONCESIONARIOS:")) {
-        deliveryText = deliveryText.substring("CONCESIONARIOS:".length).trim();
-      }
-    } else {
-      deliveryText = "Si deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios autorizados para desayunos, loncheras, almuerzos: Cafetín Los Amigos del recreo (Sra. Rocío) - 976280197 / Cafetín Edith (Sra. Deysli) - 960897529.";
-    }
-
-    y = agregarParrafoPdf(doc, deliveryText, 18, y, 174);
-    y += 4.5;
-  }
-
-  // 12. Final statement & Direction stamp seal
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(51, 65, 85);
-  y = agregarParrafoPdf(doc, "Agradecemos de antemano su confianza y apoyo constante en las actividades de nuestra institución educativa.", 18, y, 174);
-  y += 4;
-
-  if (y + 32 > 297) {
-    doc.addPage();
-    y = 15;
-  }
-
-  doc.text("Atentamente,", 105, y, { align: "center" });
-  y += 11;
-
-  if (firmaDireccion) {
-    agregarImagenPdf(doc, firmaDireccion, 75, y - 12, 36, 10);
-  }
-
-  // Signature line
-  doc.setDrawColor(20, 83, 45);
-  doc.setLineWidth(0.35);
-  doc.line(85, y, 125, y);
-
-  // General Direction Text
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(20, 83, 45);
-  doc.text("DIRECCIÓN GENERAL", 105, y + 4, { align: "center" });
-
-  // Circular ink stamp overlapping the signature
-  doc.setDrawColor(20, 83, 45);
-  doc.setLineWidth(0.35);
-  doc.circle(118, y - 2, 7.5);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(4.5);
-  doc.text("COLEGIO", 118, y - 5, { align: "center" });
-  doc.text("SAN RAFAEL", 118, y - 3, { align: "center" });
-  doc.text("DIRECCIÓN", 118, y - 1, { align: "center" });
-  doc.text("GENERAL", 118, y + 1, { align: "center" });
-
-  if (selloInstitucion) {
-    doc.setFillColor(255, 255, 255);
-    doc.rect(108, y - 13, 22, 20, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(20, 83, 45);
-    doc.text("DIRECCIÓN GENERAL", 105, y + 4, { align: "center" });
-    agregarImagenPdf(doc, selloInstitucion, 126, y - 13, 16, 16);
-  }
-
-  y += 12;
-
-  // 13. Dotted line separator and Coupon
-  if (y + 36 > 297) {
-    doc.addPage();
-    y = 15;
-  } else {
-    y += 2;
-  }
-
-  // Draw dotted line
-  doc.setDrawColor(148, 163, 184); // slate 400
-  doc.setLineWidth(0.35);
-  doc.setLineDashPattern([2, 2], 0);
-  doc.line(18, y, 192, y);
-  doc.setLineDashPattern([], 0); // reset dash pattern
-  y += 5;
-
-  // Coupon title
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(20, 83, 45);
-  doc.text("ENTREGAR ESTE FORMATO FIRMADO si está conforme, al momento de inscribirse en Administración.", 18, y);
-  y += 7;
-
-  // Row 1
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(15, 23, 42);
-  doc.text("ACEPTO: __________________________________________", 18, y);
-  doc.text(`GRADO/SECCIÓN: ${gradoSeccionText}`, 120, y);
-  y += 7;
-
-  // Row 2
-  doc.text(`DATOS DEL ALUMNO: ${nombreEstudiante}`, 18, y);
-  doc.text("CEL: ______________________________________", 120, y);
-  y += 7;
-
-  // Row 3
-  const apodNombre = ficha.apoderado?.nombre && ficha.apoderado.nombre !== "-" ? ficha.apoderado.nombre.toUpperCase() : "__________________________________________";
-  doc.text(`DATOS DEL APODERADO: ${apodNombre}`, 18, y);
-  doc.text("FIRMA: ____________________________________", 120, y);
-
-  return doc;
-}
-
-function tituloFichaOriginal(ficha) {
-  const t = ficha.programa?.tipoComunicado;
-  if (!t || t === "Otro genérico") return "";
-  return t === "Reforzamiento (Circular)" ? "TALLER DE REFORZAMIENTO Y NIVELACIÓN" : t.toUpperCase();
-}
-
-export async function crearUrlPdfInvitacion(documento) {
+export async function crearUrlPdfInvitacion(documento: any): Promise<string> {
   const doc = await crearPdfInvitacionDocumento(documento);
-  return URL.createObjectURL(doc.output("blob"));
+  return doc.output("bloburl") as any;
 }
 
-export async function convertirWordOriginalAPdf(wordBlob) {
-  const formData = new FormData();
-  formData.append(
-    "archivo",
-    wordBlob,
-    "ficha.docx"
-  );
+export async function convertirWordOriginalAPdf(wordBlob: Blob) {
+  const docxContainer = document.createElement("div");
+  docxContainer.style.display = "none";
+  document.body.appendChild(docxContainer);
 
-  const response = await fetch("/api/secretaria/documentos/pdf", {
+  await renderAsync(wordBlob, docxContainer);
+  prepararVistaDocxParaImpresion(docxContainer);
+
+  const html = docxContainer.innerHTML;
+  document.body.removeChild(docxContainer);
+
+  const response = await fetch("/api/docx-to-pdf", {
     method: "POST",
-    body: formData,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ html }),
   });
 
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.message || "No se pudo convertir el Word original a PDF.");
-  }
-
-  const contentType = response.headers.get("content-type") || "";
-  if (!contentType.includes("application/pdf")) {
-    throw new Error("El convertidor no devolvió un PDF válido.");
-  }
-
-  return await response.blob();
+  if (!response.ok) throw new Error("Fallo en la conversión de documento DOCX a PDF.");
+  return response.blob();
 }
 
-export function imprimirPdfBlob(pdfBlob) {
+export function imprimirPdfBlob(pdfBlob: Blob) {
   const url = URL.createObjectURL(pdfBlob);
   const iframe = document.createElement("iframe");
-  iframe.style.position = "fixed";
-  iframe.style.right = "0";
-  iframe.style.bottom = "0";
-  iframe.style.width = "0";
-  iframe.style.height = "0";
-  iframe.style.border = "0";
+  iframe.style.display = "none";
   iframe.src = url;
+  document.body.appendChild(iframe);
 
   iframe.onload = () => {
-    setTimeout(() => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-    }, 250);
-  };
+    iframe.contentWindow?.focus();
 
-  document.body.appendChild(iframe);
-  setTimeout(() => {
-    iframe.remove();
-    URL.revokeObjectURL(url);
-  }, 60000);
+    const cleanup = () => {
+      try {
+        document.body.removeChild(iframe);
+      } catch (e) {
+        // already removed
+      }
+      URL.revokeObjectURL(url);
+    };
+
+    if (iframe.contentWindow) {
+      iframe.contentWindow.onafterprint = cleanup;
+    }
+
+    iframe.contentWindow?.print();
+
+    // Fallback: wait 60s in case onafterprint doesn't fire
+    setTimeout(cleanup, 60000);
+  };
 }
 
-export async function imprimirWordRenderizado(wordBlob) {
-  const contenedor = document.createElement("div");
-  contenedor.className = "secretaria-word-document";
-  contenedor.style.position = "fixed";
-  contenedor.style.left = "-10000px";
-  contenedor.style.top = "0";
-  contenedor.style.width = "210mm";
-  contenedor.style.background = "#ffffff";
-  document.body.appendChild(contenedor);
+export async function imprimirWordRenderizado(wordBlob: Blob) {
+  const docxContainer = document.createElement("div");
+  docxContainer.className = "secretaria-word-print-container";
+  docxContainer.style.position = "fixed";
+  docxContainer.style.top = "-9999px";
+  docxContainer.style.left = "-9999px";
+  docxContainer.style.width = "210mm";
+  docxContainer.style.background = "#fff";
+  document.body.appendChild(docxContainer);
 
   try {
-    await renderAsync(wordBlob, contenedor, null, {
-      className: "secretaria-docx-preview",
-      inWrapper: true,
-      ignoreWidth: false,
-      ignoreHeight: false,
-      renderHeaders: true,
-      renderFooters: true,
-      renderFootnotes: true,
-      breakPages: false,
-      ignoreLastRenderedPageBreak: false,
-    });
-    prepararVistaDocxParaImpresion(contenedor);
-    await new Promise((resolve) => {
-      requestAnimationFrame(() => {
-        normalizarMarcasAguaDocx(contenedor);
-        window.setTimeout(() => {
-          prepararVistaDocxParaImpresion(contenedor);
-          normalizarMarcasAguaDocx(contenedor);
-          resolve();
-        }, 300);
-      });
-    });
-    await imprimirHtmlRenderizado(contenedor.innerHTML);
+    await renderAsync(wordBlob, docxContainer);
+    limpiarPaginasDocxVacias(docxContainer);
+    prepararVistaDocxParaImpresion(docxContainer);
+
+    const html = docxContainer.innerHTML;
+    await imprimirHtmlRenderizado(html);
   } finally {
-    contenedor.remove();
+    document.body.removeChild(docxContainer);
   }
 }
 
-export function imprimirHtmlRenderizado(html) {
+export function imprimirHtmlRenderizado(html: string): Promise<void> {
   return new Promise((resolve) => {
     const iframe = document.createElement("iframe");
     iframe.style.position = "fixed";
-    iframe.style.right = "0";
-    iframe.style.bottom = "0";
-    iframe.style.width = "0";
-    iframe.style.height = "0";
-    iframe.style.border = "0";
+    iframe.style.width = "0px";
+    iframe.style.height = "0px";
+    iframe.style.border = "none";
     document.body.appendChild(iframe);
 
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    const doc = iframe.contentWindow?.document;
     if (!doc) {
       iframe.remove();
       resolve();
@@ -746,16 +221,29 @@ export function imprimirHtmlRenderizado(html) {
 
     setTimeout(() => {
       iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      setTimeout(() => {
-        iframe.remove();
+
+      const cleanup = () => {
+        try {
+          iframe.remove();
+        } catch (e) {
+          // already removed
+        }
         resolve();
-      }, 1000);
+      };
+
+      if (iframe.contentWindow) {
+        iframe.contentWindow.onafterprint = cleanup;
+      }
+
+      iframe.contentWindow?.print();
+
+      // Fallback: wait 60s in case onafterprint doesn't fire
+      setTimeout(cleanup, 60000);
     }, 350);
   });
 }
 
-export function crearHtmlImpresionFicha(ficha) {
+export function crearHtmlImpresionFicha(ficha: any) {
   const filasPrograma = [
     ["Programa / taller", ficha.programa.nombre],
     ["Horario", ficha.programa.horario],
@@ -796,7 +284,7 @@ export function crearHtmlImpresionFicha(ficha) {
       <h4 style="margin: 0 0 8px; font-size: 13px; color: #14532d; border-bottom: 2px solid #14532d; padding-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;">${escaparHtml(titulo)}</h4>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 12px;">
         <tbody>
-          ${items.map(([label, value]) => {
+          ${(items as any[]).map(([label, value]) => {
             const cleanVal = cleanFallbackText(value) || "-";
             const cleanLab = cleanFallbackText(label) || "-";
             return `
@@ -815,7 +303,7 @@ export function crearHtmlImpresionFicha(ficha) {
     <!doctype html>
     <html>
       <head>
-        <title>Ficha de aceptacion ${escaparHtml(ficha.codigo)}</title>
+        <title>Ficha de aceptación ${escaparHtml(ficha.codigo)}</title>
         <style>
           @page { size: A4; margin: 18mm; }
           * { box-sizing: border-box; }
@@ -831,15 +319,15 @@ export function crearHtmlImpresionFicha(ficha) {
       <body>
         <main>
           <header>
-            <h3>COLEGIO MATEMATICO SAN RAFAEL</h3>
-            <strong>Ficha de aceptacion del programa extracurricular</strong>
+            <h3>COLEGIO MATEMÁTICO SAN RAFAEL</h3>
+            <strong>Ficha de aceptación del programa extracurricular</strong>
             <span>Carabayllo, ${escaparHtml(ficha.fecha)}</span>
-            <span>Código de inscripcion: ${escaparHtml(ficha.codigo)}</span>
+            <span>Código de inscripción: ${escaparHtml(ficha.codigo)}</span>
           </header>
-          <p>Por medio de la presente, se deja constancia de que el padre o apoderado acepta la inscripcion del estudiante en el programa indicado, de acuerdo con las condiciones establecidas por la institución.</p>
+          <p>Por medio de la presente, se deja constancia de que el padre o apoderado acepta la inscripción del estudiante en el programa indicado, de acuerdo con las condiciones establecidas por la institución.</p>
           ${bloquesHtml}
           <h4>Aceptación</h4>
-          <p>El padre o apoderado declara haber leído y aceptado las condiciones del programa. Esta ficha sera presentada en Cajera para continuar con el proceso de pago.</p>
+          <p>El padre o apoderado declara haber leído y aceptado las condiciones del programa. Esta ficha será presentada en Cajera para continuar con el proceso de pago.</p>
           <p><strong>Observación:</strong> ${escaparHtml(ficha.observacion)}</p>
         </main>
       </body>
@@ -847,132 +335,10 @@ export function crearHtmlImpresionFicha(ficha) {
   `;
 }
 
-function obtenerFilasCambridgeFicha(ficha) {
-  const texto = [
-    ficha?.programa?.nombre,
-    ficha?.programa?.plantilla,
-  ].filter(Boolean).join(" ").toLowerCase();
-  if (!texto.includes("cambridge")) return [];
-  const filas = [["Modalidad Cambridge A/B/C", ficha.programa.ingresoCambridge || "Pendiente de definir"]];
-  if (ficha.programa.nivelCambridge) {
-    filas.push(["Nivel Cambridge", ficha.programa.nivelCambridge]);
-  }
-  return filas;
-}
-
-export async function descargarFichaPdf(ficha) {
-  const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
-  const margen = 18;
-  const anchoTexto = 174;
-  let y = 16;
-
-  // top brand accent bar
-  doc.setFillColor(20, 83, 45); // brand primary dark green
-  doc.rect(margen, y, anchoTexto, 2.5, "F");
-  y += 9;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
-  doc.setTextColor(15, 23, 42); // slate 900
-  doc.text("COLEGIO MATEMATICO SAN RAFAEL", 105, y, { align: "center" });
-  y += 6;
-  doc.setFontSize(10.5);
-  doc.setTextColor(71, 85, 105); // slate 600
-  doc.text("Ficha de aceptación del programa extracurricular", 105, y, { align: "center" });
-  y += 6;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(100, 116, 139); // slate 500
-  doc.text(`Carabayllo, ${ficha.fecha}`, 105, y, { align: "center" });
-  y += 4.5;
-  doc.text(`Código de inscripción: ${ficha.codigo}`, 105, y, { align: "center" });
-  y += 6;
-  doc.setDrawColor(203, 213, 225); // slate 300
-  doc.setLineWidth(0.3);
-  doc.line(margen, y, 210 - margen, y);
-  y += 8;
-
-  y = agregarParrafoPdf(doc, "Por medio de la presente, se deja constancia de que el padre o apoderado acepta la inscripción del estudiante en el programa indicado, de acuerdo con las condiciones establecidas por la institución.", margen, y, anchoTexto);
-
-  y = agregarBloquePdf(doc, "Datos del estudiante", [
-    ["Nombre y apellido", ficha.estudiante.nombre],
-    ["DNI", ficha.estudiante.dni],
-    ["Grado", ficha.estudiante.grado],
-    ["Sección", ficha.estudiante.seccion],
-    ["Periodo", ficha.estudiante.periodo],
-    ["Colegio de procedencia", ficha.estudiante.colegio],
-  ], margen, y, anchoTexto);
-
-  const filasPrograma = [
-    ["Programa / taller", ficha.programa.nombre],
-    ["Horario", ficha.programa.horario],
-    ["Responsable", ficha.programa.responsable],
-    ...obtenerFilasCambridgeFicha(ficha),
-    ["Costo referencial", ficha.programa.costo],
-    ["Modalidad de cobro", ficha.programa.modalidadCobro],
-    ["Requisitos", ficha.programa.requisitos],
-    ["Plantilla utilizada", ficha.programa.plantilla],
-  ];
-
-  if (ficha.programa.uniforme === "Sí" || ficha.programa.uniforme === "Si") {
-    filasPrograma.push(["Uniforme requerido", "Sí"]);
-    filasPrograma.push(["Talla", ficha.programa.talla]);
-  }
-
-  filasPrograma.push(["Estado", ficha.programa.estado]);
-  filasPrograma.push(["Estado de pago", ficha.programa.estadoPago]);
-
-  y = agregarBloquePdf(doc, "Datos del programa", filasPrograma, margen, y, anchoTexto);
-
-  y = agregarBloquePdf(doc, "Datos del padre / apoderado", [
-    ["Nombre del padre o apoderado", ficha.apoderado.nombre],
-    ["Teléfono", ficha.apoderado.telefono],
-  ], margen, y, anchoTexto);
-
-
-
-  // Check signature block overflow
-  if (y + 35 > 275) {
-    doc.addPage();
-    y = 20;
-  }
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(30, 41, 59); // slate 800
-  doc.text("Aceptación", margen, y);
-  y += 5;
-
-  y = agregarParrafoPdf(doc, "El padre o apoderado declara haber leído y aceptado las condiciones del programa. Esta ficha será presentada en Cajera para continuar con el proceso de pago.", margen, y, anchoTexto);
-  y = agregarParrafoPdf(doc, `Observación: ${ficha.observacion}`, margen, y, anchoTexto);
-
-  // Add parent signature block at the bottom
-  if (y + 35 > 275) {
-    doc.addPage();
-    y = 20;
-  } else {
-    y += 10;
-  }
-
-  doc.setDrawColor(148, 163, 184); // slate 400
-  doc.setLineWidth(0.4);
-  const xFirmaAccept = 105 - 35; // centered line of 70mm
-  doc.line(xFirmaAccept, y + 15, xFirmaAccept + 70, y + 15);
-
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8.5);
-  doc.setTextColor(71, 85, 105); // slate 600
-  doc.text("Firma del Padre / Apoderado", 105, y + 20, { align: "center" });
-  doc.text("DNI: _______________________", 105, y + 25, { align: "center" });
-
-  doc.save(`ficha-aceptacion-${normalizarNombreArchivo(ficha.codigo)}.pdf`);
-}
-
-function limpiarPaginasDocxVacias(contenedor) {
+function limpiarPaginasDocxVacias(contenedor: HTMLElement) {
   contenedor?.classList.remove("is-adapted");
   const paginas = Array.from(contenedor?.querySelectorAll(".docx") || []);
-  paginas.forEach((pagina) => {
+  paginas.forEach((pagina: any) => {
     const texto = pagina.textContent.replace(/\s+/g, "");
     const tieneContenidoVisual = pagina.querySelector("img, svg, canvas, table, picture");
     const altoContenido = pagina.scrollHeight;
@@ -987,7 +353,7 @@ function limpiarPaginasDocxVacias(contenedor) {
   });
 }
 
-function compactarPaginasDocx(_contenedor, paginasConContenido) {
+function compactarPaginasDocx(_contenedor: HTMLElement, paginasConContenido: any[]) {
   if (paginasConContenido.length <= 1) return paginasConContenido;
 
   const paginaPrincipal = paginasConContenido[0];
@@ -995,7 +361,7 @@ function compactarPaginasDocx(_contenedor, paginasConContenido) {
 
   paginasConContenido.slice(1).forEach((paginaExtra) => {
     const contenidoExtra = paginaExtra.querySelector("article") || paginaExtra;
-    Array.from(contenidoExtra.childNodes).forEach((nodo) => {
+    Array.from(contenidoExtra.childNodes).forEach((nodo: any) => {
       contenidoPrincipal.appendChild(nodo);
     });
     paginaExtra.remove();
@@ -1004,7 +370,7 @@ function compactarPaginasDocx(_contenedor, paginasConContenido) {
   return [paginaPrincipal];
 }
 
-function ajustarDocxAUnaPagina(pagina, contenido) {
+function ajustarDocxAUnaPagina(pagina: any, contenido: any) {
   contenido.style.transform = "";
   contenido.style.transformOrigin = "";
   contenido.style.width = "";
@@ -1021,7 +387,7 @@ function ajustarDocxAUnaPagina(pagina, contenido) {
   pagina.style.overflow = "hidden";
 }
 
-function obtenerContenedorMarcaAgua(visual, pagina) {
+function obtenerContenedorMarcaAgua(visual: any, pagina: any) {
   let actual = visual;
   while (actual.parentElement && actual.parentElement !== pagina) {
     const padre = actual.parentElement;
@@ -1034,7 +400,7 @@ function obtenerContenedorMarcaAgua(visual, pagina) {
   return actual;
 }
 
-function leerMedidaCss(elemento, propiedad) {
+function leerMedidaCss(elemento: any, propiedad: string) {
   const estilos = [
     elemento?.style?.getPropertyValue(propiedad),
     elemento?.getAttribute?.("style")?.match(new RegExp(`${propiedad}\\s*:\\s*([^;]+)`, "i"))?.[1],
@@ -1047,7 +413,7 @@ function leerMedidaCss(elemento, propiedad) {
   return 0;
 }
 
-function convertirMedidaCssAPx(valor) {
+function convertirMedidaCssAPx(valor: any) {
   const match = String(valor || "").trim().match(/^(-?\d+(?:\.\d+)?)(px|pt|in|cm|mm)?$/i);
   if (!match) return 0;
   const numero = Number(match[1]);
@@ -1060,17 +426,17 @@ function convertirMedidaCssAPx(valor) {
   return numero;
 }
 
-function paginaTieneContenidoDocx(pagina) {
+function paginaTieneContenidoDocx(pagina: any) {
   const texto = pagina.textContent.replace(/\s+/g, "").trim();
   const visuales = Array.from(pagina.querySelectorAll("img, svg, canvas, picture"));
-  const tablasConContenido = Array.from(pagina.querySelectorAll("table")).some((tabla) =>
+  const tablasConContenido = Array.from(pagina.querySelectorAll("table")).some((tabla: any) =>
     tabla.textContent.replace(/\s+/g, "").trim().length > 0
   );
 
   return texto.length > 2 || tablasConContenido || visuales.length > 0;
 }
 
-function compactarDocumentoDocxParaImpresion(doc) {
+function compactarDocumentoDocxParaImpresion(doc: any) {
   const root = doc.querySelector(".secretaria-word-print-root");
   if (!root) return;
 
@@ -1100,101 +466,4 @@ function obtenerEstilosParaImpresion() {
       }
     })
     .join("\n");
-}
-
-function agregarBloquePdf(doc, titulo, items, x, y, anchoTexto) {
-  if (!items || !items.length) return y;
-
-  if (titulo) {
-    // Check page overflow for block header
-    if (y + 15 > 275) {
-      doc.addPage();
-      y = 20;
-    }
-
-    // Modern Left-Vertical brand accent bar
-    doc.setFillColor(20, 83, 45); // brand primary dark green
-    doc.rect(x, y, 2.5, 6, "F");
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    doc.setTextColor(15, 23, 42); // slate 900
-    doc.text(titulo.toUpperCase(), x + 5, y + 4.5);
-
-    // Thin underline under header
-    doc.setDrawColor(203, 213, 225); // slate 300
-    doc.setLineWidth(0.35);
-    doc.line(x, y + 6.5, x + anchoTexto, y + 6.5);
-    y += 9.5;
-  } else {
-    // If no title, add a small spacing before the list/table
-    y += 2;
-  }
-
-  items.forEach(([label, value]) => {
-    const cleanVal = cleanFallbackText(value) || "-";
-    const cleanLab = cleanFallbackText(label) || "-";
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8.5);
-
-    const lineasValue = doc.splitTextToSize(String(cleanVal), 120);
-    const lineasLabel = doc.splitTextToSize(String(cleanLab), 46);
-    const numLineas = Math.max(lineasValue.length, lineasLabel.length);
-    const altoFila = numLineas * 5 + 2;
-
-    if (y + altoFila > 275) {
-      doc.addPage();
-      y = 20;
-
-      // Draw continuation header with vertical accent bar
-      doc.setFillColor(20, 83, 45);
-      doc.rect(x, y, 2.5, 5, "F");
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(8);
-      doc.setTextColor(15, 23, 42);
-      doc.text(`${titulo.toUpperCase()} (CONTINUACIÓN)`, x + 5, y + 3.8);
-
-      doc.setDrawColor(203, 213, 225);
-      doc.setLineWidth(0.3);
-      doc.line(x, y + 5.5, x + anchoTexto, y + 5.5);
-      y += 7.5;
-    }
-
-    // Draw row cell divider (horizontal bottom line only)
-    doc.setDrawColor(226, 232, 240); // slate 200
-    doc.setLineWidth(0.2);
-    doc.line(x, y + altoFila, x + anchoTexto, y + altoFila);
-
-    // Write label
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(71, 85, 105); // slate 600 (slightly softer gray)
-    doc.setFontSize(8.5);
-    doc.text(lineasLabel, x + 2, y + 4);
-
-    // Write value
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(15, 23, 42); // slate 900
-    doc.setFontSize(8.5);
-    doc.text(lineasValue, x + 52, y + 4);
-
-    y += altoFila;
-  });
-
-  return y + 5;
-}
-
-function agregarParrafoPdf(doc, texto, x, y, anchoTexto) {
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  doc.setTextColor(51, 65, 85); // slate 700
-  const lineas = doc.splitTextToSize(String(texto), anchoTexto);
-  const alto = lineas.length * 5 + 4;
-  if (y + alto > 275) {
-    doc.addPage();
-    y = 20;
-  }
-  doc.text(lineas, x, y);
-  return y + alto;
 }

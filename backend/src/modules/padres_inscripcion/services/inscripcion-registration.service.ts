@@ -48,6 +48,58 @@ export class InscripcionRegistrationService {
       throw new Error("El estudiante ya cuenta con una inscripciÃ³n activa en este programa.");
     }
 
+    if (operatorRole === "padres") {
+      let isWindowOpen = true;
+      if (prog.usarFechaLimiteInscripcion === true || String(prog.usarFechaLimiteInscripcion) === "true") {
+        const limiteDia = prog.fechaLimiteInscripcion;
+        if (limiteDia) {
+          const partes = String(limiteDia).split("-").map(Number);
+          if (partes.length === 3) {
+            const limite = new Date(partes[0], partes[1] - 1, partes[2]);
+            const horaStr = String(prog.horaLimiteInscripcion || "23:59").trim();
+            const horaRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+            let horas = 23;
+            let minutos = 59;
+            if (horaRegex.test(horaStr)) {
+              const [h, m] = horaStr.split(":");
+              horas = parseInt(h, 10);
+              minutos = parseInt(m, 10);
+            }
+            limite.setHours(horas, minutos, 59, 999);
+            if (Date.now() > limite.getTime()) {
+              isWindowOpen = false;
+            }
+          }
+        }
+      } else if (prog.fechaInicio) {
+        const partes = String(prog.fechaInicio).split("-").map(Number);
+        if (partes.length === 3) {
+          const inicio = new Date(partes[0], partes[1] - 1, partes[2]);
+          const diasAviso = Math.min(7, Math.max(1, Math.trunc(Number(prog.duracionAvisoDias)) || 2));
+          const limite = new Date(inicio);
+          limite.setDate(inicio.getDate() + diasAviso - 1);
+          
+          const horaStr = String(prog.horaLimiteAviso || "23:59").trim();
+          const horaRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+          let horas = 23;
+          let minutos = 59;
+          if (horaRegex.test(horaStr)) {
+            const [h, m] = horaStr.split(":");
+            horas = parseInt(h, 10);
+            minutos = parseInt(m, 10);
+          }
+          limite.setHours(horas, minutos, 59, 999);
+          if (Date.now() > limite.getTime()) {
+            isWindowOpen = false;
+          }
+        }
+      }
+
+      if (!isWindowOpen) {
+        throw new Error("El plazo de inscripción web cerró. Derive al apoderado a Cajera para evaluar el registro.");
+      }
+    }
+
     const invitadosPrograma = db.invitadosPorPrograma?.[programa_id] || [];
     const invitacionRegistro = invitadosPrograma.find(
       inv => String(inv.dni).replace(/\D/g, "") === String(estudiante_id).replace(/\D/g, "")

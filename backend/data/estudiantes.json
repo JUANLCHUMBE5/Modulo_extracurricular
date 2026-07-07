@@ -642,9 +642,11 @@
     "fechaNacimiento": "2010-01-01",
     "tipoAlumno": "Alumno interno",
     "estadoMatricula": "Activo",
-    "apoderado": "Apoderado Ortiz",
+    "apoderado": "maria perez",
     "telefonoApoderado": "983073977",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "confirmada",
+    "estadoCaja": "derivado_caja"
   },
   "60000033": {
     "dni": "60000033",
@@ -703,9 +705,10 @@
     "fechaNacimiento": "2010-01-01",
     "tipoAlumno": "Alumno interno",
     "estadoMatricula": "Activo",
-    "apoderado": "Apoderado Huaman",
+    "apoderado": "carlos perexe",
     "telefonoApoderado": "926793008",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "pendiente_pago"
   },
   "60000037": {
     "dni": "60000037",
@@ -733,9 +736,10 @@
     "fechaNacimiento": "2010-01-01",
     "tipoAlumno": "Alumno interno",
     "estadoMatricula": "Activo",
-    "apoderado": "Apoderado Aquino",
+    "apoderado": "maria carbajal",
     "telefonoApoderado": "950913501",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "pendiente_pago"
   },
   "60000039": {
     "dni": "60000039",
@@ -780,7 +784,9 @@
     "estadoMatricula": "Activo",
     "apoderado": "Apoderado Huaman",
     "telefonoApoderado": "937052676",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "pendiente_pago",
+    "estadoCaja": "derivado_caja"
   },
   "60000042": {
     "dni": "60000042",
@@ -870,7 +876,8 @@
     "estadoMatricula": "Activo",
     "apoderado": "Apoderado Leon",
     "telefonoApoderado": "970897052",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "pendiente_pago"
   },
   "60000048": {
     "dni": "60000048",
@@ -945,7 +952,8 @@
     "estadoMatricula": "Activo",
     "apoderado": "Apoderado Quispe",
     "telefonoApoderado": "989097553",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "pendiente_pago"
   },
   "60000053": {
     "dni": "60000053",
@@ -1020,7 +1028,8 @@
     "estadoMatricula": "Activo",
     "apoderado": "Apoderado Huaman",
     "telefonoApoderado": "938919252",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "confirmada"
   },
   "60000058": {
     "dni": "60000058",

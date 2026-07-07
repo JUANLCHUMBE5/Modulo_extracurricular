@@ -1210,84 +1210,98 @@
 
 /* Nuevo bloque de detalles organizados del programa en el portal de padres */
 .padres-comunicado-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
-  margin: 16px 0;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 14px 16px;
-  box-shadow: none;
+  display: grid !important;
+  grid-template-columns: minmax(250px, 1.4fr) repeat(3, minmax(140px, 0.7fr)) !important;
+  gap: 16px !important;
+  margin: 20px 0 !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  padding: 16px 20px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02) !important;
 }
 
 .padres-comunicado-detail-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 8px;
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 14px !important;
+  padding: 6px !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
 }
 
 .padres-comunicado-detail-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #f97316;
-  background: #fff5eb;
-  flex: 0 0 auto;
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #f97316 !important;
+  background: #fff5eb !important;
+  flex: 0 0 auto !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03) !important;
 }
 
 /* Diferentes colores de fondo y texto para los iconos en base a su naturaleza */
 .padres-comunicado-detail-item.is-vigencia .padres-comunicado-detail-icon {
-  color: #2563eb;
-  background: #eff6ff;
+  color: #2563eb !important;
+  background: #eff6ff !important;
 }
 
 .padres-comunicado-detail-item.is-horario .padres-comunicado-detail-icon {
-  color: #16a34a;
-  background: #f0fdf4;
+  color: #059669 !important;
+  background: #ecfdf5 !important;
 }
 
 .padres-comunicado-detail-item.is-costo .padres-comunicado-detail-icon {
-  color: #d97706;
-  background: #fffbeb;
+  color: #d97706 !important;
+  background: #fffbeb !important;
 }
 
 .padres-comunicado-detail-item.is-plazo .padres-comunicado-detail-icon {
-  color: #dc2626;
-  background: #fef2f2;
+  color: #dc2626 !important;
+  background: #fef2f2 !important;
 }
 
 .padres-comunicado-detail-item.is-responsable .padres-comunicado-detail-icon {
-  color: #7c3aed;
-  background: #f5f3ff;
+  color: #7c3aed !important;
+  background: #f5f3ff !important;
 }
 
 .padres-comunicado-detail-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
 }
 
 .padres-comunicado-detail-label {
-  font-size: 11px;
-  font-weight: 850;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 2px;
+  font-size: 10px !important;
+  font-weight: 850 !important;
+  color: #64748b !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  margin-bottom: 3px !important;
 }
 
 .padres-comunicado-detail-value {
-  font-size: 13px;
-  font-weight: 700;
-  color: #000000;
-  line-height: 1.4;
-  word-break: break-word;
-  white-space: pre-line;
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  color: #1e293b !important;
+  line-height: 1.45 !important;
+  word-break: break-word !important;
+  white-space: pre-line !important;
+}
+
+@media (max-width: 640px) {
+  .padres-comunicado-details-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    padding: 14px 16px !important;
+  }
+
+  .padres-comunicado-detail-item:not(:last-child) {
+    border-bottom: 1px solid #f1f5f9 !important;
+    padding-bottom: 14px !important;
+  }
 }

@@ -1,4 +1,4 @@
-import { Button, Select } from "@mantine/core";
+import { Button, Select, Tooltip } from "@mantine/core";
 import {
   IconClipboardList as ClipboardList,
   IconReceipt2 as Receipt,
@@ -10,6 +10,7 @@ import {
   IconCoin as Coin,
   IconInfoCircle as InfoCircle,
   IconCalendar as Calendar,
+  IconEye,
 } from "@tabler/icons-react";
 import { formatearFechaPeru } from "../../../services/dateService";
 import { formatearSoles } from "../utils/cajaFormatters";
@@ -29,6 +30,7 @@ export default function CajaFields({
   onSeleccionarInscripcionCaja,
   resultadosBusqueda = [],
   onSeleccionarEstudiante,
+  onVerHistorialAlumno,
 }) {
   const pagoHabilitado = modoEdicion || Boolean(formulario.inscripcionId);
   const mostrarSelectorTallerCaja = !pagoHabilitado && !modoEdicion && inscripcionesCaja.length > 0;
@@ -100,15 +102,38 @@ export default function CajaFields({
             <div className="caja-search-results">
               <div className="caja-search-results-title">Seleccione un estudiante:</div>
               {resultadosBusqueda.map((est) => (
-                <button
-                  key={est.dni}
-                  type="button"
-                  className="caja-search-result-item"
-                  onClick={() => onSeleccionarEstudiante?.(est)}
-                >
-                  <span className="caja-search-result-name">{est.nombres}</span>
-                  <span className="caja-search-result-dni">DNI: {est.dni}</span>
-                </button>
+                <div key={est.dni} className="caja-search-result-row">
+                  <div
+                    className="caja-search-result-info-btn"
+                    onClick={() => onSeleccionarEstudiante?.(est)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        onSeleccionarEstudiante?.(est);
+                      }
+                    }}
+                  >
+                    <span className="caja-search-result-name">{est.nombres}</span>
+                    <span className="caja-search-result-dni">DNI: {est.dni}</span>
+                  </div>
+                  <Tooltip label="Ver historial de pagos">
+                    <button
+                      type="button"
+                      className="caja-search-result-eye-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onVerHistorialAlumno?.({
+                          dniEstudiante: est.dni,
+                          estudiante: est.nombres,
+                        });
+                      }}
+                      aria-label="Ver historial"
+                    >
+                      <IconEye size={16} />
+                    </button>
+                  </Tooltip>
+                </div>
               ))}
             </div>
           ) : null}

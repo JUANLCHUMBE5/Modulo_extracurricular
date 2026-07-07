@@ -58,7 +58,6 @@ const columnasMatriculados = [
   { header: "Estudiante", key: "nombres", width: 35 },
   { header: "Grado", key: "grado", width: 15 },
   { header: "Estado Inscripción", key: "estadoInscripcion", width: 25 },
-  { header: "Estado Pago", key: "estadoPago", width: 20 },
   { header: "Canal/Origen", key: "origenRegistro", width: 20 },
   { header: "Fecha Registro", key: "fechaRegistro", width: 25 },
 ];

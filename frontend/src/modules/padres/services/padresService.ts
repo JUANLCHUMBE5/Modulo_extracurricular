@@ -18,7 +18,7 @@ import {
   obtenerResumenPadreMock,
   guardarDatosApoderadoPadresMock,
   registrarInscripcionPadresMock,
-  registrarPagoVerificacionPadresMock,
+  registrarPagoPadresMock,
   reservarCupoCajaPadresMock,
   obtenerProgramasCoordinacionMock,
 } from "../utils/padresServiceMock";
@@ -114,7 +114,7 @@ export async function registrarPagoVerificacionPadres(dni, inscripcionId, datosP
     if (!res.success) throw new Error(res.message || "Error al subir comprobante de pago");
     return adaptarPago(res.data);
   }
-  return registrarPagoVerificacionPadresMock(dni, inscripcionId, datosPago);
+  return registrarPagoPadresMock(dni, inscripcionId, datosPago);
 }
 
 export async function reservarCupoCajaPadres(dni, inscripcionId) {

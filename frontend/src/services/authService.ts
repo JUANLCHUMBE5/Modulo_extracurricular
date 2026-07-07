@@ -6,6 +6,26 @@ import bcrypt from "bcryptjs";
 
 const delay = (ms = 650) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function normalizarFecha(fechaStr) {
+  if (!fechaStr) return "";
+  const limpia = String(fechaStr).trim();
+  const matchYmd = limpia.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (matchYmd) {
+    const y = matchYmd[1];
+    const m = matchYmd[2].padStart(2, "0");
+    const d = matchYmd[3].padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  const matchDmy = limpia.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (matchDmy) {
+    const d = matchDmy[1].padStart(2, "0");
+    const m = matchDmy[2].padStart(2, "0");
+    const y = matchDmy[3];
+    return `${y}-${m}-${d}`;
+  }
+  return limpia;
+}
+
 const aliasesUsuario = {
   asistente: "secretaria",
   cajera: "caja",
@@ -178,7 +198,9 @@ export const loginPadre = async (dni, fechaNacimiento) => {
   }
 
   const estudiante = apiDb.estudiantes[dniLimpio];
-  if (!estudiante || estudiante.fechaNacimiento !== fechaNacimiento) {
+  const fnDb = estudiante ? normalizarFecha(estudiante.fechaNacimiento) : "";
+  const fnInput = normalizarFecha(fechaNacimiento);
+  if (!estudiante || fnDb !== fnInput) {
     return { success: false, message: "DNI o fecha de nacimiento incorrectos." };
   }
 

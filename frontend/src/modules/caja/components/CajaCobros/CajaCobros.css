@@ -178,27 +178,54 @@
   background: #f8fbfa;
 }
 
-.caja-search-result-item {
+.caja-search-result-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 12px 14px;
-  border: none;
   border-bottom: 1px solid #f0f5f3;
-  color: #101828;
   background: #ffffff;
-  text-align: left;
-  cursor: pointer;
   transition: background 0.15s ease;
 }
 
-.caja-search-result-item:last-child {
+.caja-search-result-row:last-child {
   border-bottom: none;
 }
 
-.caja-search-result-item:hover {
+.caja-search-result-row:hover {
   background: #effaf7;
+}
+
+.caja-search-result-info-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  padding: 12px 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.caja-search-result-eye-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-right: 12px;
+  border: 1px solid #0d9488;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0d9488;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.caja-search-result-eye-btn:hover {
+  background: #0d9488;
+  color: #ffffff;
 }
 
 .caja-search-result-name {

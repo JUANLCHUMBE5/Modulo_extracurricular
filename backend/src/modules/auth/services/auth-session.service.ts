@@ -1,4 +1,4 @@
-﻿import jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 // @ts-ignore
 import bcrypt from "bcryptjs";
 import { registrarAuditoria } from "../../../common/audit/audit.service.js";
@@ -8,11 +8,33 @@ import { AuthRepository } from "../repositories/auth.repository.js";
 const JWT_SECRET = process.env.JWT_SECRET || "default_secret";
 const authRepository = new AuthRepository();
 
+function normalizarFecha(fechaStr: string): string {
+  if (!fechaStr) return "";
+  const limpia = fechaStr.trim();
+  const matchYmd = limpia.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (matchYmd) {
+    const y = matchYmd[1];
+    const m = matchYmd[2].padStart(2, "0");
+    const d = matchYmd[3].padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  const matchDmy = limpia.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+  if (matchDmy) {
+    const d = matchDmy[1].padStart(2, "0");
+    const m = matchDmy[2].padStart(2, "0");
+    const y = matchDmy[3];
+    return `${y}-${m}-${d}`;
+  }
+  return limpia;
+}
+
 export class AuthSessionService {
   async validatePadre(dni: string, fechaNacimiento: string, ip: string) {
     const db = await authRepository.getDb();
     const student = db.estudiantes?.[dni];
-    if (student && student.fechaNacimiento === fechaNacimiento) {
+    const fnDb = student ? normalizarFecha(student.fechaNacimiento) : "";
+    const fnInput = normalizarFecha(fechaNacimiento);
+    if (student && fnDb === fnInput) {
       const token = jwt.sign({
         username: student.dni,
         role: "padres",

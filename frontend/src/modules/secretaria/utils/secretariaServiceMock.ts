@@ -4,52 +4,50 @@ import {
   listarProgramasMock,
   obtenerProgramaMock,
 } from "../../coordinacion/utils/coordinacionServiceMock";
-import { debeArchivarPorFecha } from "../../coordinacion/services/coordinacionServiceUtils";
 import {
   calcularDuracionTexto,
-  fechaActualInput,
   fechaActualIso,
   normalizarDuracionAvisoDias,
-  normalizarFecha,
-  obtenerVentanaInscripcion,
 } from "../../../services/dateService";
 import {
   calcularCuposDisponibles,
   claveAlumno,
   clavesAlumnoInscripcion,
-  extraerDiasHorario,
   normalizarEstadoPagoSecretaria,
   normalizarPeriodo,
   normalizarTexto,
-  obtenerDatosCambridgeSeguros,
-  obtenerDiasCruzados,
   programaDisponibleParaEdad,
   programaDisponibleParaGrado,
   resolverDocentePorGrado,
   resolverHorarioPorGrado,
   tieneHorariosPorGrupo,
+  obtenerDatosCambridgeSeguros,
 } from "../services/secretariaServiceUtils";
+import {
+  obtenerGradoCompleto,
+  obtenerEstadoInscripcionPorPeriodo,
+  obtenerEstadoPagoPorPeriodo,
+  buscarInvitacionEnMemoria,
+  obtenerPlantillaProgramaLocal,
+  adaptarInvitadoComoEstudiante,
+  adaptarEstudianteBase,
+  finalizarProgramasVencidos,
+  validarVentanaInscripcionRegular,
+  validarCruceHorarioAlumno,
+  encontrarPagoActivoInscripcion,
+  sincronizarInscripcionConProgramaActual,
+  adaptarProgramaCoordinacion,
+} from "./secretariaServiceMockHelpers";
+
+export { finalizarProgramasVencidos };
 
 const esperar = (ms = 350) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function obtenerGradoCompleto(grado, nivel, respaldoGrado = "") {
-  let g = String(grado || "").trim();
-  if (!g) return String(respaldoGrado || "").trim();
-  const gLower = g.toLowerCase();
-  if (!gLower.includes("primaria") && !gLower.includes("secundaria") && !gLower.includes("inicial")) {
-    const n = String(nivel || "").trim();
-    if (n) {
-      g = `${g} ${n}`;
-    }
-  }
-  return g;
-}
-
-export async function buscarEstudiantePorDniMock(dni, periodo = "escolar") {
+export async function buscarEstudiantePorDniMock(dni: string, periodo = "escolar") {
   await esperar(350);
   await syncApiDb();
   const periodoNormalizado = normalizarPeriodo(periodo);
-  const estudiante = apiDb.estudiantes[dni];
+  const estudiante = (apiDb as any).estudiantes?.[dni];
   const invitacionPeriodo = periodoNormalizado === "verano"
     ? null
     : await buscarInvitacionPorDniPeriodo(dni, periodoNormalizado);
@@ -64,8 +62,10 @@ export async function buscarEstudiantePorDniMock(dni, periodo = "escolar") {
     return adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo);
   }
 
+  const gradoCompleto = obtenerGradoCompleto(estudiante.grado, estudiante.nivel);
   return {
     ...estudiante,
+    grado: gradoCompleto,
     periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
     estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(dni, periodoNormalizado),
     estadoPago: obtenerEstadoPagoPorPeriodo(dni, periodoNormalizado),
@@ -78,17 +78,17 @@ export async function buscarEstudiantePorDniMock(dni, periodo = "escolar") {
   };
 }
 
-export async function buscarEstudiantesPorNombreMock(nombre, periodo = "escolar") {
+export async function buscarEstudiantesPorNombreMock(nombre: string, periodo = "escolar") {
   await esperar(350);
   await syncApiDb();
   const periodoNormalizado = normalizarPeriodo(periodo);
   const termino = normalizarTexto(nombre);
   if (termino.length < 3) return [];
 
-  const resultados = [];
+  const resultados: any[] = [];
   const vistos = new Set();
 
-  Object.values(apiDb.estudiantes).forEach((estudiante) => {
+  Object.values((apiDb as any).estudiantes || {}).forEach((estudiante: any) => {
     const textoBusqueda = normalizarTexto(`${estudiante.nombres} ${estudiante.codigoEstudiante || ""}`);
     if (!textoBusqueda.includes(termino)) return;
 
@@ -96,10 +96,13 @@ export async function buscarEstudiantesPorNombreMock(nombre, periodo = "escolar"
     const invitacion = periodoNormalizado === "verano"
       ? null
       : buscarInvitacionEnMemoria(estudiante.dni, periodoNormalizado, estudiante.grado);
-    resultados.push(invitacion
-      ? adaptarEstudianteBase(estudiante, periodoNormalizado, invitacion)
-      : {
+    if (invitacion) {
+      resultados.push(adaptarEstudianteBase(estudiante, periodoNormalizado, invitacion));
+    } else {
+      const gradoCompletoNombre = obtenerGradoCompleto(estudiante.grado, estudiante.nivel);
+      resultados.push({
           ...estudiante,
+          grado: gradoCompletoNombre,
           periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
           estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
           "estadoInscripción": obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
@@ -111,13 +114,14 @@ export async function buscarEstudiantesPorNombreMock(nombre, periodo = "escolar"
           requiereUniforme: false,
           requiereIndumentaria: false,
         });
+    }
   });
 
   if (periodoNormalizado !== "verano") {
-    apiDb.programas
-      .filter((programa) => normalizarPeriodo(programa.periodo) === periodoNormalizado)
-      .forEach((programa) => {
-        (apiDb.invitadosPorPrograma[programa.id] || []).forEach((invitado) => {
+    ((apiDb as any).programas || [])
+      .filter((programa: any) => normalizarPeriodo(programa.periodo) === periodoNormalizado)
+      .forEach((programa: any) => {
+        ((apiDb as any).invitadosPorPrograma?.[programa.id] || []).forEach((invitado: any) => {
           const clave = claveAlumno(invitado);
           if (vistos.has(clave)) return;
 
@@ -137,7 +141,7 @@ export async function buscarEstudiantesPorNombreMock(nombre, periodo = "escolar"
   return resultados.slice(0, 8);
 }
 
-export async function listarProgramasPorPeriodoMock(periodo, gradoAlumno = "", edadAlumno = "") {
+export async function listarProgramasPorPeriodoMock(periodo: string, gradoAlumno = "", edadAlumno = "") {
   const programas = await listarProgramasMock();
   const periodoNormalizado = normalizarPeriodo(periodo);
   return programas
@@ -152,13 +156,14 @@ export async function listarProgramasPorPeriodoMock(periodo, gradoAlumno = "", e
     .map((programa) => adaptarProgramaCoordinacion(programa, gradoAlumno));
 }
 
-export async function obtenerProgramaPorIdMock(programaId, periodo) {
+export async function obtenerProgramaPorIdMock(programaId: string, periodo: string) {
   const programa = await obtenerProgramaMock(programaId);
+  if (!programa) return null;
   if (normalizarPeriodo(programa.periodo) !== normalizarPeriodo(periodo)) return null;
   return adaptarProgramaCoordinacion(programa);
 }
 
-export async function registrarInscripcionMock(payload) {
+export async function registrarInscripcionMock(payload: any) {
   await esperar(500);
   await syncApiDb();
   finalizarProgramasVencidos();
@@ -168,7 +173,7 @@ export async function registrarInscripcionMock(payload) {
     throw new Error("El alumno externo solo puede registrarse en ciclo verano.");
   }
 
-  const programa = apiDb.programas.find((item) => item.id === payload.programaId);
+  const programa = ((apiDb as any).programas || []).find((item: any) => item.id === payload.programaId);
   if (!programa) throw new Error("El programa ya no existe. Coordinación debe revisarlo.");
   if (programa.estado !== "Habilitado") {
     throw new Error("No se puede registrar la inscripción porque el programa no está habilitado.");
@@ -184,7 +189,7 @@ export async function registrarInscripcionMock(payload) {
     if (tieneRangoEdad && (!Number.isFinite(edadRegistro) || edadRegistro <= 0)) {
       throw new Error("Ingrese la edad del alumno para validar el programa de verano.");
     }
-    if (!programaDisponibleParaEdad(programa, edadRegistro)) {
+    if (!programaDisponibleParaEdad(programa, String(edadRegistro))) {
       throw new Error("El programa no esta disponible para la edad del alumno. Coordinación Académica debe revisar el rango de edades.");
     }
   }
@@ -193,7 +198,7 @@ export async function registrarInscripcionMock(payload) {
   }
 
   const clavesPayload = clavesAlumnoInscripcion(payload);
-  const duplicada = apiDb.inscripciones.some((item) =>
+  const duplicada = ((apiDb as any).inscripciones || []).some((item: any) =>
     item.programaId === payload.programaId &&
     item.estadoInscripcion !== "Anulada" &&
     clavesAlumnoInscripcion(item).some((clave) => clavesPayload.includes(clave))
@@ -251,16 +256,18 @@ export async function registrarInscripcionMock(payload) {
     modalidadesCambridge: programa.modalidadesCambridge || [],
     costoCiclo: programa.costoCiclo || (programa.costo ? String(programa.costo) : ""),
     montoPrimerPago: programa.montoPrimerPago || "",
-    comunicado: programa.comunicado || "",
-    comunicadoCompleto: programa.comunicadoCompleto || "",
+    comunicado: programmeComunicado(programa),
+    comunicadoCompleto: programmeComunicadoCompleto(programa),
   };
 
-  apiDb.inscripciones.push(registro);
+  if (!Array.isArray((apiDb as any).inscripciones)) (apiDb as any).inscripciones = [];
+  (apiDb as any).inscripciones.push(registro);
   programa.cuposOcupados = Number(programa.cuposOcupados || 0) + 1;
 
   if (payload.esNuevoVerano) {
-    apiDb.estudiantes[payload.dniEstudiante] = {
-      ...(apiDb.estudiantes[payload.dniEstudiante] || {}),
+    if (!(apiDb as any).estudiantes) (apiDb as any).estudiantes = {};
+    (apiDb as any).estudiantes[payload.dniEstudiante] = {
+      ...((apiDb as any).estudiantes[payload.dniEstudiante] || {}),
       dni: payload.dniEstudiante,
       codigoEstudiante: payload.codigoEstudiante || `EXT-${payload.dniEstudiante}`,
       nombres: payload.nombresEstudiante,
@@ -283,7 +290,7 @@ export async function registrarInscripcionMock(payload) {
     };
   }
 
-  const estudiante = apiDb.estudiantes[payload.dniEstudiante];
+  const estudiante = (apiDb as any).estudiantes?.[payload.dniEstudiante];
   if (estudiante) {
     estudiante.apoderado = payload.apoderado;
     estudiante.telefonoApoderado = payload.telefono;
@@ -295,12 +302,20 @@ export async function registrarInscripcionMock(payload) {
   return registro;
 }
 
+function programmeComunicado(p: any) {
+  return p.comunicado || "";
+}
+
+function programmeComunicadoCompleto(p: any) {
+  return p.comunicadoCompleto || "";
+}
+
 export async function registrarDocumentoGeneradoMock({
   estudiante,
   inscripcion,
   usuario = "Secretaría",
   tipoDocumento = "Comunicado personalizado",
-}) {
+}: any) {
   await esperar(250);
   await syncApiDb();
 
@@ -316,8 +331,9 @@ export async function registrarDocumentoGeneradoMock({
     plantilla: inscripcion.plantilla || "",
   };
 
-  apiDb.documentosGenerados.unshift(documento);
-  const registro = apiDb.inscripciones.find((item) => item.id === inscripcion.id);
+  if (!Array.isArray((apiDb as any).documentosGenerados)) (apiDb as any).documentosGenerados = [];
+  (apiDb as any).documentosGenerados.unshift(documento);
+  const registro = ((apiDb as any).inscripciones || []).find((item: any) => item.id === inscripcion.id);
   if (registro) {
     registro.documentoGenerado = true;
     registro.ultimoDocumentoGeneradoId = documento.id;
@@ -328,11 +344,11 @@ export async function registrarDocumentoGeneradoMock({
   return documento;
 }
 
-export async function derivarInscripcionCajaMock(inscripcionId, datos = {}) {
+export async function derivarInscripcionCajaMock(inscripcionId: string, datos: any = {}) {
   await esperar(250);
   await syncApiDb();
 
-  const inscripcion = apiDb.inscripciones.find((item) => item.id === inscripcionId);
+  const inscripcion = ((apiDb as any).inscripciones || []).find((item: any) => item.id === inscripcionId);
   if (!inscripcion) {
     throw new Error("No se encontro la inscripcion para derivar a Cajera.");
   }
@@ -365,7 +381,7 @@ export async function derivarInscripcionCajaMock(inscripcionId, datos = {}) {
 
   Object.assign(inscripcion, actualizada);
 
-  const estudiante = apiDb.estudiantes[inscripcion.dniEstudiante || datos.dniEstudiante];
+  const estudiante = (apiDb as any).estudiantes?.[inscripcion.dniEstudiante || datos.dniEstudiante];
   if (estudiante) {
     estudiante.estadoInscripcion = inscripcion.estadoInscripcion;
     estudiante.estadoCaja = inscripcion.estadoCaja;
@@ -376,7 +392,7 @@ export async function derivarInscripcionCajaMock(inscripcionId, datos = {}) {
   return actualizada;
 }
 
-export async function buscarInscripcionEstudianteMock(estudiante, periodo = "escolar") {
+export async function buscarInscripcionEstudianteMock(estudiante: any, periodo = "escolar") {
   await esperar(200);
   await syncApiDb();
 
@@ -384,21 +400,21 @@ export async function buscarInscripcionEstudianteMock(estudiante, periodo = "esc
   const clavesEstudiante = clavesAlumnoInscripcion(estudiante);
   if (!clavesEstudiante.length) return null;
 
-  const inscripciones = [...apiDb.inscripciones]
+  const inscripciones = [...((apiDb as any).inscripciones || [])]
     .reverse()
-    .filter((item) =>
+    .filter((item: any) =>
       item.estadoInscripcion !== "Anulada" &&
       normalizarPeriodo(item.periodo) === periodoNormalizado &&
       clavesAlumnoInscripcion(item).some((clave) => clavesEstudiante.includes(clave))
     );
 
-  const isPaid = (item) => ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(est => String(item.estadoPago || "").toLowerCase().includes(est) || String(item.estadoInscripcion || "").toLowerCase().includes(est));
+  const isPaid = (item: any) => ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(est => String(item.estadoPago || "").toLowerCase().includes(est) || String(item.estadoInscripcion || "").toLowerCase().includes(est));
   const pendiente = inscripciones.find((item) => !isPaid(item));
   const inscripcion = pendiente || inscripciones.find((item) => item.programaId === estudiante?.programaAsignado) || inscripciones[0] || null;
   return sincronizarInscripcionConProgramaActual(inscripcion);
 }
 
-export async function listarInscripcionesEstudianteMock(estudiante, periodo = "escolar") {
+export async function listarInscripcionesEstudianteMock(estudiante: any, periodo = "escolar") {
   await esperar(160);
   await syncApiDb();
 
@@ -406,362 +422,12 @@ export async function listarInscripcionesEstudianteMock(estudiante, periodo = "e
   const clavesEstudiante = clavesAlumnoInscripcion(estudiante);
   if (!clavesEstudiante.length) return [];
 
-  return [...apiDb.inscripciones]
+  return [...((apiDb as any).inscripciones || [])]
     .reverse()
-    .filter((item) =>
+    .filter((item: any) =>
       item.estadoInscripcion !== "Anulada" &&
       normalizarPeriodo(item.periodo) === periodoNormalizado &&
       clavesAlumnoInscripcion(item).some((clave) => clavesEstudiante.includes(clave))
     )
     .map((item) => sincronizarInscripcionConProgramaActual(item) || item);
-}
-
-// --- LOCAL MOCK INTERNAL HELPERS ---
-
-function obtenerEstadoInscripcionPorPeriodo(dni, periodo) {
-  if (!dni) return "No inscrito";
-  const inscripcion = [...apiDb.inscripciones]
-    .reverse()
-    .find((item) =>
-      item.dniEstudiante === dni &&
-      normalizarPeriodo(item.periodo) === normalizarPeriodo(periodo)
-    );
-
-  return inscripcion?.estadoInscripcion || "No inscrito";
-}
-
-function obtenerEstadoPagoPorPeriodo(dni, periodo) {
-  if (!dni) return "Sin pago";
-  const inscripcion = [...apiDb.inscripciones]
-    .reverse()
-    .find((item) =>
-      item.dniEstudiante === dni &&
-      normalizarPeriodo(item.periodo) === normalizarPeriodo(periodo)
-    );
-
-  return inscripcion?.estadoPago || "Sin pago";
-}
-
-function buscarInvitacionEnMemoria(dni, periodo, gradoAlumno = "") {
-  if (!dni) return null;
-  const periodoNormalizado = normalizarPeriodo(periodo);
-
-  for (const programa of apiDb.programas) {
-    if (normalizarPeriodo(programa.periodo) !== periodoNormalizado) continue;
-    const invitado = (apiDb.invitadosPorPrograma[programa.id] || []).find((item) => item.dni === dni);
-    if (invitado) return { programaId: programa.id, programa, invitado };
-  }
-
-  return null;
-}
-
-function adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado) {
-  const { programa, invitado } = invitacionPeriodo;
-  const student = apiDb.estudiantes[invitado.dni] || {};
-  const gradoInvitado = obtenerGradoCompleto(
-    invitado.grado,
-    invitado.nivelEducativo || invitado.nivel || student.nivel || "",
-    student.grado
-  );
-  const horarioResuelto = resolverHorarioPorGrado(programa, gradoInvitado);
-  const horarioConfigurado = Boolean(horarioResuelto || !tieneHorariosPorGrupo(programa));
-  const cuposDisponibles = calcularCuposDisponibles(programa);
-  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
-  return {
-    dni: invitado.dni || "",
-    codigoEstudiante: invitado.codigoEstudiante || "",
-    nombres: invitado.nombres,
-    grado: gradoInvitado || "No definido",
-    seccion: invitado.seccion || "No definido",
-    tipoAlumno: "Alumno invitado",
-    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
-    estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(invitado.dni, periodoNormalizado),
-    estadoPago: obtenerEstadoPagoPorPeriodo(invitado.dni, periodoNormalizado),
-    origenRegistro: "Carga Excel de Coordinación",
-    tieneInvitacion: true,
-    programaAsignado: invitacionPeriodo.programaId,
-    programaNombre: programa.nombre,
-    programaGrupo: programa.grupo || "",
-    programaGrupoEtario: programa.grupoEtario || programa.grupo || "",
-    programaHorario: horarioResuelto || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario),
-    programaDisponible: programaDisponibleParaGrado(programa, gradoInvitado),
-    programaHorarioConfigurado: horarioConfigurado,
-    programaDocente: resolverDocentePorGrado(programa, gradoInvitado),
-    programaCosto: Number(programa.costo ?? 0),
-    programaCupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
-    programaCuposDisponibles: cuposDisponibles,
-    programaModalidadCobro: programa.modalidadCobro || "",
-    programaRequisitos: programa.requisitos || "",
-    programaFechaInicio: programa.fechaInicio || "",
-    programaFechaFin: programa.fechaFin || "",
-    programaDuracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
-    programaDuracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
-    programaHoraLimiteAviso: programa.horaLimiteAviso || "23:59",
-    seleccion: invitado.seleccion || "",
-    nivelCambridge: invitado.nivelCambridge || "",
-    plantilla: plantillaPrograma.plantilla,
-    plantillaBase64: plantillaPrograma.plantillaBase64,
-    plantillaVariables: plantillaPrograma.plantillaVariables,
-    plantillaValidada: plantillaPrograma.plantillaValidada,
-    requiereUniforme: Boolean(programa.requiereUniforme),
-    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
-    telefonoApoderado: invitado.telefonoApoderado || "",
-  };
-}
-
-function adaptarEstudianteBase(estudiante, periodoNormalizado, invitacionPeriodo) {
-  const { programa, invitado = {} } = invitacionPeriodo;
-  const gradoInvitacion = obtenerGradoCompleto(
-    invitado.grado,
-    invitado.nivelEducativo || invitado.nivel || estudiante.nivel || "",
-    estudiante.grado
-  );
-  const seccionInvitacion = invitado.seccion || estudiante.seccion;
-  const nivelInvitacion = invitado.nivelEducativo || estudiante.nivel || "";
-  const horarioResuelto = resolverHorarioPorGrado(programa, gradoInvitacion);
-  const horarioConfigurado = Boolean(horarioResuelto || !tieneHorariosPorGrupo(programa));
-  const cuposDisponibles = calcularCuposDisponibles(programa);
-  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
-  return {
-    ...estudiante,
-    codigoEstudiante: invitado.codigoEstudiante || estudiante.codigoEstudiante || "",
-    nombres: invitado.nombres || estudiante.nombres,
-    grado: gradoInvitacion,
-    seccion: seccionInvitacion,
-    nivel: nivelInvitacion,
-    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
-    estadoInscripcion: obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
-    "estadoInscripción": obtenerEstadoInscripcionPorPeriodo(estudiante.dni, periodoNormalizado),
-    estadoPago: obtenerEstadoPagoPorPeriodo(estudiante.dni, periodoNormalizado),
-    origenRegistro: "Base general de estudiantes + carga Excel de Coordinación",
-    tieneInvitacion: true,
-    programaAsignado: invitacionPeriodo.programaId,
-    programaNombre: programa.nombre,
-    programaGrupo: programa.grupo || "",
-    programaGrupoEtario: programa.grupoEtario || programa.grupo || "",
-    programaHorario: horarioResuelto || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario),
-    programaDisponible: programaDisponibleParaGrado(programa, gradoInvitacion),
-    programaHorarioConfigurado: horarioConfigurado,
-    programaDocente: resolverDocentePorGrado(programa, gradoInvitacion),
-    programaCosto: Number(programa.costo ?? 0),
-    programaCupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
-    programaCuposDisponibles: cuposDisponibles,
-    programaModalidadCobro: programa.modalidadCobro || "",
-    programaRequisitos: programa.requisitos || "",
-    programaFechaInicio: programa.fechaInicio || "",
-    programaFechaFin: programa.fechaFin || "",
-    programaDuracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
-    programaDuracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
-    programaHoraLimiteAviso: programa.horaLimiteAviso || "23:59",
-    seleccion: invitado.seleccion || "",
-    nivelCambridge: invitado.nivelCambridge || "",
-    plantilla: plantillaPrograma.plantilla,
-    plantillaBase64: plantillaPrograma.plantillaBase64,
-    plantillaVariables: plantillaPrograma.plantillaVariables,
-    plantillaValidada: plantillaPrograma.plantillaValidada,
-    requiereUniforme: Boolean(programa.requiereUniforme),
-    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
-  };
-}
-
-function finalizarProgramasVencidos() {
-  const hoy = normalizarFecha(fechaActualInput());
-  if (!hoy) return;
-
-  let cambio = false;
-  apiDb.programas.forEach((programa) => {
-    if (!debeArchivarPorFecha(programa, hoy)) return;
-    programa.finalizadoAutomaticamenteEn = programa.finalizadoAutomaticamenteEn || fechaActualIso();
-    programa.archivadoAutomaticamenteEn = programa.archivadoAutomaticamenteEn || fechaActualIso();
-    programa.estado = "Archivado";
-    cambio = true;
-  });
-
-  if (cambio) {
-    saveApiDb();
-    window.dispatchEvent(new CustomEvent("mock-db-updated", { detail: { modulo: "secretaria" } }));
-  }
-}
-
-function validarVentanaInscripcionRegular(programa, payload = {}) {
-  if (payload.registroCaja) return;
-
-  const ventana = obtenerVentanaInscripcion(programa.fechaInicio, new Date(), programa.duracionAvisoDias, programa.horaLimiteAviso, programa);
-  if (ventana.permitida) return;
-
-  throw new Error("El aviso de inscripcion regular cerro. Derive al padre a Cajera para evaluar y registrar la matricula.");
-}
-
-function validarCruceHorarioAlumno(payload, horarioNuevo = "") {
-  const diasNuevo = extraerDiasHorario(horarioNuevo);
-  if (!diasNuevo.size) return;
-
-  const clavesPayload = clavesAlumnoInscripcion(payload);
-  const periodoPayload = normalizarPeriodo(payload.periodo);
-  const cruce = apiDb.inscripciones
-    .map((item) => ({
-      item,
-      diasExistentes: extraerDiasHorario(item.horario),
-      diasCruzados: obtenerDiasCruzados(diasNuevo, extraerDiasHorario(item.horario)),
-    }))
-    .find(({ item, diasCruzados }) =>
-      item.estadoInscripcion !== "Anulada" &&
-      item.programaId !== payload.programaId &&
-      normalizarPeriodo(item.periodo) === periodoPayload &&
-      clavesAlumnoInscripcion(item).some((clave) => clavesPayload.includes(clave)) &&
-      diasCruzados.length > 0
-    );
-
-  if (cruce) {
-    throw new Error(`El alumno ya tiene una inscripcion con cruce de dia (${cruce.diasCruzados.join(", ")}) en ${cruce.item.programa || "otro programa"}.`);
-  }
-}
-
-function encontrarPagoActivoInscripcion(inscripcion = {}) {
-  const pagos = Array.isArray(apiDb.pagos) ? apiDb.pagos : [];
-  const programaNombre = normalizarTexto(inscripcion.programa);
-
-  return pagos.find((pago) => {
-    const estado = normalizarEstadoPagoSecretaria([pago.estado, pago.estadoPago, pago.estadoVerificacion].join(" "));
-    if (estado.includes("observado") || estado.includes("rechazado") || estado.includes("anulado") || estado.includes("cancelado")) {
-      return false;
-    }
-    if (pago.inscripcionId && pago.inscripcionId === inscripcion.id) return true;
-
-    const mismoDni = (pago.dniEstudiante || pago.estudianteDni) === inscripcion.dniEstudiante;
-    if (!mismoDni) return false;
-    if (pago.programaId && pago.programaId === inscripcion.programaId) return true;
-    return programaNombre && normalizarTexto(pago.programa || pago.programaNombre) === programaNombre;
-  }) || null;
-}
-
-function sincronizarInscripcionConProgramaActual(inscripcion) {
-  if (!inscripcion) return null;
-
-  const programa = apiDb.programas.find((item) =>
-    item.id === inscripcion.programaId ||
-    normalizarTexto(item.nombre) === normalizarTexto(inscripcion.programa)
-  );
-  if (!programa) {
-    const plantillaInscripcion = obtenerPlantillaProgramaLocal(null, inscripcion?.programaId);
-    return {
-      ...inscripcion,
-      plantilla: plantillaInscripcion.plantilla || inscripcion.plantilla || "",
-      plantillaBase64: obtenerPlantillaBase64(inscripcion, null),
-      plantillaVariables: obtenerPlantillaVariables(inscripcion, null),
-      plantillaValidada: Boolean(plantillaInscripcion.plantillaValidada || inscripcion.plantillaValidada),
-    };
-  }
-  if (!programaDisponibleParaGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado)) return null;
-  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
-
-  return {
-    ...inscripcion,
-    programa: programa.nombre || inscripcion.programa,
-    horario: resolverHorarioPorGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado) || (tieneHorariosPorGrupo(programa) ? "Horario no configurado para este grado" : programa.horario) || inscripcion.horario,
-    docente: resolverDocentePorGrado(programa, inscripcion.gradoEstudiante || inscripcion.grado) || inscripcion.docente || "No definido",
-    costo: Number(programa.costo ?? inscripcion.costo ?? 0),
-    modalidadCobro: programa.modalidadCobro || inscripcion.modalidadCobro || "",
-    fechaInicio: programa.fechaInicio || inscripcion.fechaInicio || "",
-    fechaFin: programa.fechaFin || inscripcion.fechaFin || "",
-    cicloI: programa.cicloI || inscripcion.cicloI || "",
-    cicloII: programa.cicloII || inscripcion.cicloII || "",
-    duracionTaller: programa.duracionTaller || inscripcion.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
-    duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias || inscripcion.duracionAvisoDias, 7),
-    horaLimiteAviso: programa.horaLimiteAviso || inscripcion.horaLimiteAviso || "23:59",
-    gradosAplicables: programa.gradosAplicables || inscripcion.gradosAplicables || [],
-    horariosPorGrupo: programa.horariosPorGrupo || inscripcion.horariosPorGrupo || [],
-    grupo: programa.grupo || inscripcion.grupo || "",
-    grupoEtario: programa.grupoEtario || inscripcion.grupoEtario || programa.grupo || "",
-    requisitos: programa.requisitos || inscripcion.requisitos || "",
-    plantilla: plantillaPrograma.plantilla || inscripcion.plantilla || "",
-    plantillaBase64: obtenerPlantillaBase64(inscripcion, programa),
-    plantillaVariables: obtenerPlantillaVariables(inscripcion, programa),
-    plantillaValidada: Boolean(plantillaPrograma.plantillaValidada || inscripcion.plantillaValidada),
-    requiereUniforme: Boolean(programa.requiereUniforme),
-    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
-    tipoComunicado: programa.tipoComunicado || inscripcion.tipoComunicado || "Otro genérico",
-    tipoDocumento: programa.tipoDocumento || inscripcion.tipoDocumento || "Comunicado",
-    numeroDocumento: programa.numeroDocumento || inscripcion.numeroDocumento || "",
-    areaTematica: programa.areaTematica || inscripcion.areaTematica || "No aplica",
-    motivoJustificacion: programa.motivoJustificacion || inscripcion.motivoJustificacion || programa.comunicado || inscripcion.comunicado || "",
-    nombreCiclo: programa.nombreCiclo || inscripcion.nombreCiclo || "Ciclo I",
-    duracion: programa.duracion || inscripcion.duracion || programa.duracionTaller || inscripcion.duracionTaller || "",
-    tablaHorariosNivel: programa.tablaHorariosNivel || inscripcion.tablaHorariosNivel || [],
-    incluyeAlmuerzo: programa.incluyeAlmuerzo !== undefined ? Boolean(programa.incluyeAlmuerzo) : Boolean(inscripcion.incluyeAlmuerzo),
-    horarioRecepcionAlmuerzo: programa.horarioRecepcionAlmuerzo || inscripcion.horarioRecepcionAlmuerzo || "",
-    nivelCambridge: programa.nivelCambridge || inscripcion.nivelCambridge || "",
-    modalidadesCambridge: programa.modalidadesCambridge || inscripcion.modalidadesCambridge || [],
-    costoCiclo: programa.costoCiclo || inscripcion.costoCiclo || programa.costo || inscripcion.costo || "",
-    montoPrimerPago: programa.montoPrimerPago || inscripcion.montoPrimerPago || "",
-    comunicado: programa.comunicado || inscripcion.comunicado || "",
-    comunicadoCompleto: programa.comunicadoCompleto || inscripcion.comunicadoCompleto || "",
-  };
-}
-
-function obtenerPlantillaBase64(inscripcion, programa) {
-  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa, programa?.id || inscripcion?.programaId);
-  return plantillaPrograma.plantillaBase64 || inscripcion?.plantillaBase64 || "";
-}
-
-function obtenerPlantillaVariables(inscripcion, programa) {
-  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa, programa?.id || inscripcion?.programaId);
-  return plantillaPrograma.plantillaVariables.length ? plantillaPrograma.plantillaVariables : (inscripcion?.plantillaVariables || []);
-}
-
-function obtenerPlantillaProgramaLocal(programa = null, programaId = "") {
-  const id = programa?.id || programId || "";
-  const plantillaGuardada = apiDb.plantillasPorPrograma?.[id] || {};
-  const variablesPrograma = Array.isArray(programa?.plantillaVariables) ? programa.plantillaVariables : [];
-  const variablesGuardadas = Array.isArray(plantillaGuardada.plantillaVariables) ? plantillaGuardada.plantillaVariables : [];
-  const plantillaBase64 = programa?.plantillaBase64 || plantillaGuardada.plantillaBase64 || "";
-
-  return {
-    plantilla: programa?.plantilla || plantillaGuardada.plantilla || "",
-    plantillaBase64,
-    plantillaVariables: variablesPrograma.length ? variablesPrograma : variablesGuardadas,
-    plantillaValidada: Boolean(programa?.plantillaValidada || plantillaGuardada.plantillaValidada || plantillaBase64),
-  };
-}
-
-function adaptarProgramaCoordinacion(programa, gradoAlumno = "") {
-  const periodoNormalizado = normalizarPeriodo(programa.periodo);
-  const cuposDisponibles = calcularCuposDisponibles(programa);
-  const plantillaPrograma = obtenerPlantillaProgramaLocal(programa);
-  return {
-    id: programa.id,
-    nombre: programa.nombre,
-    grupo: programa.grupo || "",
-    grupoEtario: programa.grupoEtario || programa.grupo || "",
-    periodo: periodoNormalizado === "verano" ? "Ciclo verano" : "Año escolar",
-    horario: resolverHorarioPorGrado(programa, gradoAlumno) || programa.horario,
-    horariosPorGrupo: programa.horariosPorGrupo || [],
-    gradosAplicables: programa.gradosAplicables || [],
-    docente: resolverDocentePorGrado(programa, gradoAlumno),
-    costo: Number(programa.costo ?? 0),
-    cupos: cuposDisponibles > 0 ? `${cuposDisponibles} cupos disponibles` : "Sin cupos",
-    cuposDisponibles,
-    requiereUniforme: Boolean(programa.requiereUniforme),
-    requiereIndumentaria: Boolean(programa.requiereIndumentaria),
-    uniforme: programa.requiereUniforme ? "Sí" : "No",
-    modalidadCobro: programa.modalidadCobro || "",
-    fechaInicio: programa.fechaInicio || "",
-    fechaFin: programa.fechaFin || "",
-    cicloI: programa.cicloI || "",
-    cicloII: programa.cicloII || "",
-    duracionTaller: programa.duracionTaller || calcularDuracionTexto(programa.fechaInicio, programa.fechaFin),
-    duracionAvisoDias: normalizarDuracionAvisoDias(programa.duracionAvisoDias, 7),
-    horaLimiteAviso: programa.horaLimiteAviso || "23:59",
-    edadMinima: programa.edadMinima || "",
-    edadMaxima: programa.edadMaxima || "",
-    fechaNacimientoDesde: programa.fechaNacimientoDesde || "",
-    fechaNacimientoHasta: programa.fechaNacimientoHasta || "",
-    requisitos: programa.requisitos || "",
-    plantilla: plantillaPrograma.plantilla,
-    plantillaBase64: plantillaPrograma.plantillaBase64,
-    plantillaVariables: plantillaPrograma.plantillaVariables,
-    plantillaValidada: plantillaPrograma.plantillaValidada,
-    invitacionMasiva: Boolean(programa.invitacionMasiva),
-    estado: programa.estado,
-  };
 }

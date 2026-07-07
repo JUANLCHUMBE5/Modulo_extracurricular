@@ -18,6 +18,7 @@ export function useSecretariaState({ onClearDelegatedModule } = {}) {
 
   const registration = useSecretariaRegistration({
     periodo: search.periodo,
+    vistaActiva: search.vistaActiva,
     estudiante: search.estudiante,
     inscripcion: search.inscripcion,
     inscripcionesEstudiante: search.inscripcionesEstudiante,

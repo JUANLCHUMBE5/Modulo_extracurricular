@@ -109,20 +109,20 @@
 }
 
 .caja-report-card-label {
-  font-size: 10px !important;
+  font-size: 12px !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.04em !important;
 }
 
 .caja-report-card-value {
-  font-size: 18px !important;
+  font-size: 20px !important;
   font-weight: 800 !important;
   line-height: 1.1 !important;
 }
 
 .caja-report-card-subtext {
-  font-size: 10.5px !important;
+  font-size: 12px !important;
   font-weight: 600 !important;
   color: #64748b !important;
   margin-top: 0 !important;
@@ -145,7 +145,7 @@
   flex-direction: column;
   gap: 1px;
   color: #334155 !important;
-  font-size: 10px !important;
+  font-size: 11.5px !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.03em !important;
@@ -155,14 +155,14 @@
 .caja-report-filters-card select,
 .caja-report-filters-card input {
   width: 100%;
-  height: 23px !important;
-  min-height: 23px !important;
-  padding: 0 6px;
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 8px;
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   background: #ffffff;
   color: #1e293b !important;
-  font-size: 11px !important;
+  font-size: 12.5px !important;
   font-weight: 600 !important;
   transition: all 0.2s ease;
 }
@@ -337,15 +337,15 @@
 }
 
 .caja-report-panel .caja-table th {
-  padding: 3px 6px !important;
-  font-size: 10.5px !important;
+  padding: 10px 12px !important;
+  font-size: 12px !important;
   line-height: 1.15 !important;
 }
 
 .caja-report-panel .caja-table td {
-  padding: 2.5px 6px !important;
-  font-size: 11px !important;
-  line-height: 1.2 !important;
+  padding: 8px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.25 !important;
 }
 
 .caja-report-panel .caja-student-cell {
@@ -360,16 +360,16 @@
 .caja-report-panel .caja-row-muted,
 .caja-report-panel .caja-operation-code,
 .caja-report-panel .caja-phone-channel {
-  font-size: 11px !important;
-  line-height: 1.2 !important;
+  font-size: 11.5px !important;
+  line-height: 1.25 !important;
 }
 
 .caja-report-panel .caja-badge-status {
-  min-height: 18px !important;
-  height: 18px !important;
-  padding: 0 8px !important;
-  font-size: 10px !important;
-  line-height: 18px !important;
+  min-height: 22px !important;
+  height: 22px !important;
+  padding: 0 10px !important;
+  font-size: 11px !important;
+  line-height: 22px !important;
 }
 
 .caja-student-cell {

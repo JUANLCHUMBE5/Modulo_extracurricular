@@ -1,4 +1,4 @@
-﻿import { registrarAuditoria } from "../../../common/audit/audit.service.js";
+import { registrarAuditoria } from "../../../common/audit/audit.service.js";
 import {
   mapDbEnrollmentToApi,
   normalizarTextoApi,
@@ -18,8 +18,8 @@ export class DireccionDescuentosService {
 
     const realEnrollments = (db.inscripciones || []).filter(ins => {
       if (ins.estadoInscripcion === "Anulada" || ins.estadoInscripcion === "anulada") return false;
-      const dniCoincide = String(ins.dni || ins.dniEstudiante || "").includes(q);
-      const nombreCoincide = String(ins.estudiante || ins.nombresEstudiante || "").toLowerCase().includes(q);
+      const dniCoincide = String(ins.dni || ins.dniEstudiante || "").includes(query);
+      const nombreCoincide = String(ins.estudiante || ins.nombresEstudiante || "").toLowerCase().includes(query);
       return dniCoincide || nombreCoincide;
     });
 
@@ -32,8 +32,8 @@ export class DireccionDescuentosService {
       invitados.forEach(invitado => {
         const dni = String(invitado.dni || "").replace(/\D/g, "");
         const name = String(invitado.nombres || "").toLowerCase();
-        const matchesDni = dni.includes(q);
-        const matchesName = name.includes(q);
+        const matchesDni = dni.includes(query);
+        const matchesName = name.includes(query);
 
         if (matchesDni || matchesName) {
           const existeReal = (db.inscripciones || []).some(ins =>
