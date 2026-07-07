@@ -134,6 +134,7 @@ export default function useCoordinacion({
     mostrarMsg,
     cargarDatos,
     setUltimoLoteId,
+    vista,
   });
 
   const documentos = useCoordinacionDocumentos({
@@ -604,6 +605,13 @@ export default function useCoordinacion({
     confirmarCargaExcel: carga.confirmarCargaExcel,
     eliminarCargaExcel: carga.eliminarCargaExcel,
     cancelarCargaExcel: carga.cancelarCargaExcel,
+    busquedaAlumno: carga.busquedaAlumno,
+    setBusquedaAlumno: carga.setBusquedaAlumno,
+    resultadosAlumnos: carga.resultadosAlumnos,
+    buscandoAlumnos: carga.buscandoAlumnos,
+    setAlumnoIndividual: carga.setAlumnoIndividual,
+    setEstadoAlumnoIndividual: carga.setEstadoAlumnoIndividual,
+    registrarAlumnoDirecto: carga.registrarAlumnoDirecto,
 
     programaDocsId: documentos.programaDocsId,
     lecturaDocumento: documentos.lecturaDocumento,

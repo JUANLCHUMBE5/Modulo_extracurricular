@@ -96,7 +96,7 @@ export default function AuxiliarAlertViews({
             </div>
             <div className="detail-item">
               <span className="label">HORARIO</span>
-              <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3" }}>
+              <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3", wordBreak: "break-word" }}>
                 {(() => {
                   const infoHorario = parsearHorario(estudiante.horario);
                   return (
@@ -138,7 +138,7 @@ export default function AuxiliarAlertViews({
         </div>
         <div className="kiosk-status-right">
           <p className="kiosk-status-message-highlight" style={{ color: "#e11d48" }}>
-            El taller ya finalizó. El horario de clase era de {verificarLlegadaTemprano(estudiante.horario).horaInicio} a {verificarLlegadaTemprano(estudiante.horario).horaFin}.
+            El taller ya finalizo. El horario de clase era de {verificarLlegadaTemprano(estudiante.horario).horaInicio} a {verificarLlegadaTemprano(estudiante.horario).horaFin}.
           </p>
 
           <div className="kiosk-student-details-box">
@@ -148,7 +148,7 @@ export default function AuxiliarAlertViews({
             </div>
             <div className="detail-item">
               <span className="label">HORARIO</span>
-              <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3" }}>
+              <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3", wordBreak: "break-word" }}>
                 {(() => {
                   const infoHorario = parsearHorario(estudiante.horario);
                   return (
@@ -190,7 +190,7 @@ export default function AuxiliarAlertViews({
         </div>
         <div className="kiosk-status-right">
           <p className="kiosk-status-message-highlight" style={{ color: "#e11d48" }}>
-            {estudiante.accion || "Este estudiante ya registró su ingreso hace poco. Espere 15 minutos para volver a registrarse."}
+            {estudiante.accion || "Este estudiante ya registro su ingreso hace poco. Espere 15 minutos para volver a registrarse."}
           </p>
 
           <div className="kiosk-student-details-box">
@@ -200,7 +200,7 @@ export default function AuxiliarAlertViews({
             </div>
             <div className="detail-item">
               <span className="label">HORARIO</span>
-              <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3" }}>
+              <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3", wordBreak: "break-word" }}>
                 {(() => {
                   const infoHorario = parsearHorario(estudiante.horario);
                   return (
@@ -237,14 +237,14 @@ export default function AuxiliarAlertViews({
           <div className="kiosk-status-header-icon error-shake">
             <XCircle size={72} />
           </div>
-          <span className="kiosk-badge-tag error">DÍA INCORRECTO</span>
+          <span className="kiosk-badge-tag error">DIA INCORRECTO</span>
           <h2 className="student-name">¡Hola, {estudiante.nombres}! 📅</h2>
         </div>
         <div className="kiosk-status-right">
           <div className="kiosk-alert-explanation">
             <p><strong>{estudiante.mensajeAcceso || "Hoy no le toca este taller."}</strong></p>
             <p className="sub-msg">
-              {estudiante.accion || "El alumno está matriculado en este taller, pero las clases corresponden a otros días de la semana según el horario establecido."}
+              {estudiante.accion || "El alumno esta matriculado en este taller, pero las clases corresponden a otros dias de la semana segun el horario establecido."}
             </p>
           </div>
 
@@ -255,7 +255,7 @@ export default function AuxiliarAlertViews({
             </div>
             <div className="detail-item">
               <span className="label">HORARIO</span>
-              <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3" }}>
+              <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3", wordBreak: "break-word" }}>
                 {(() => {
                   const infoHorario = parsearHorario(estudiante.horario);
                   return (

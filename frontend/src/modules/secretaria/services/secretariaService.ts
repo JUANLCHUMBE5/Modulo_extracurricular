@@ -2,6 +2,7 @@ import { isApiMode, apiClient } from "../../../services/apiClient";
 import {
   adaptarEstudiante,
   adaptarInscripcion,
+  adaptarPrograma,
 } from "../../../services/adapters";
 import {
   listarProgramas,
@@ -155,7 +156,7 @@ export async function obtenerProgramaPorId(programaId, periodo) {
   if (isApiMode()) {
     const res = await apiClient.get(`/api/v1/extracurricular/programas/${programaId}`);
     if (!res.success) return null;
-    return res.data;
+    return adaptarPrograma(res.data);
   }
   return obtenerProgramaPorIdMock(programaId, periodo);
 }

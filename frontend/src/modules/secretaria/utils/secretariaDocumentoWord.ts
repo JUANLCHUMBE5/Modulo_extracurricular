@@ -39,6 +39,7 @@ export async function crearDocumentoInvitacion(estudiante: any, inscripcion: any
       observacion: inscripcion.observacion,
     };
     return {
+      ficha,
       lineas: crearLineasInvitacionDefault(ficha),
       html: "",
     };
@@ -67,6 +68,7 @@ export async function crearDocumentoInvitacion(estudiante: any, inscripcion: any
       observacion: inscripcion.observacion,
     };
     return {
+      ficha,
       lineas: crearLineasInvitacionDefault(ficha),
       html: "",
     };

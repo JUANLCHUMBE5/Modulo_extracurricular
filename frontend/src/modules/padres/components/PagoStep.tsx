@@ -56,7 +56,10 @@ export default function PagoStep({
     /^\d{9}$/.test(telefonoPago.trim()) &&
     captura?.base64
   );
-  const puedeEnviarVerificacion = Boolean(inscripcion && pagoListo && mostrarFormularioPago && !requiereCaja && formularioPagoCompleto);
+  const esDeshabilitado = programa?.estado === "Deshabilitado" || inscripcion?.estadoPrograma === "Deshabilitado";
+  const esPlazoVencido = programa?.ventanaInscripcion?.permitida === false;
+  const esNoIniciado = programa?.ventanaInscripcion?.noIniciada === true;
+  const puedeEnviarVerificacion = Boolean(inscripcion && pagoListo && mostrarFormularioPago && !requiereCaja && formularioPagoCompleto && !esDeshabilitado && !esPlazoVencido && !esNoIniciado);
   const textoBoton = pagoVerificando
     ? "Pago pendiente de verificacion"
     : "Enviar pago";
@@ -464,6 +467,27 @@ export default function PagoStep({
 
             {errorFormulario ? <p className="padres-flow-payment-error">{errorFormulario}</p> : null}
 
+            {esDeshabilitado ? (
+              <section className="padres-flow-payment-error" role="alert" style={{ marginTop: "12px" }}>
+                <strong>Taller deshabilitado.</strong>{" "}
+                <span>Este taller ya no se encuentra activo y no se admiten más registros de pago.</span>
+              </section>
+            ) : null}
+
+            {esPlazoVencido && !esDeshabilitado ? (
+              <section className="padres-flow-payment-error" role="alert" style={{ marginTop: "12px" }}>
+                <strong>Plazo de inscripción vencido.</strong>{" "}
+                <span>El plazo límite para registrar el pago de este taller ha vencido y no se admiten más operaciones.</span>
+              </section>
+            ) : null}
+
+            {esNoIniciado && !esDeshabilitado && !esPlazoVencido ? (
+              <section className="padres-flow-payment-error" role="alert" style={{ marginTop: "12px", backgroundColor: "#fefce8", borderColor: "#fef08a", color: "#a16207" }}>
+                <strong>Inscripción no iniciada.</strong>{" "}
+                <span>{programa?.ventanaInscripcion?.mensaje || "El proceso de inscripción y pago aún no está habilitado."}</span>
+              </section>
+            ) : null}
+
             {pagoVerificando ? (
               <section className="padres-flow-pay-pending">
                 <ClockHour4 size={18} />
@@ -488,7 +512,7 @@ export default function PagoStep({
                 <button
                   className="padres-flow-primary-button"
                   type="submit"
-                  disabled={guardando}
+                  disabled={guardando || esDeshabilitado || esPlazoVencido || esNoIniciado}
                 >
                   {guardando ? <Loader2 className="padres-spin" size={16} /> : pagoVerificando ? <ClockHour4 size={16} /> : <CreditCard size={16} />}
                   {textoBoton}

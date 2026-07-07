@@ -16,7 +16,7 @@ export class InscripcionRegistrationService {
   async crearInscripcion(operatorUsername: string, operatorRole: string, body: any) {
     const db = await inscripcionRepository.getDb();
     const enrollmentId = `INS-${String(Date.now()).slice(-6)}`;
-    const { estudiante_id, programa_id, origen_inscripcion, seccion, grado, apoderado, telefono_apoderado, correo_apoderado, talla_uniforme, talla_polo, talla_short, seleccion, nivel_cambridge } = body;
+    const { estudiante_id, programa_id, origen_inscripcion, seccion, grado, apoderado, telefono_apoderado, correo_apoderado, talla_uniforme, talla_polo, talla_short, seleccion, nivel_cambridge, horario } = body;
 
     if (operatorRole === "padres" && String(operatorUsername) !== String(estudiante_id)) {
       throw new Error("No estÃ¡ autorizado para inscribir a este estudiante.");
@@ -149,7 +149,7 @@ export class InscripcionRegistrationService {
       programa: prog.nombre,
       categoria: prog.categoria,
       periodo: prog.periodo || "escolar",
-      horario: resolverHorarioPorGradoApi(prog, gradoRegistro) || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario) || "",
+      horario: horario || resolverHorarioPorGradoApi(prog, gradoRegistro) || (tieneHorariosPorGrupoApi(prog) ? "Horario no configurado para este grado" : prog.horario) || "",
       docente: resolverDocentePorGradoApi(prog, gradoRegistro),
       costo: prog.costo,
       modalidadCobro: prog.modalidadCobro || "Mensual",

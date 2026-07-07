@@ -94,9 +94,10 @@ function resumirHorarioSecretaria(horario: any) {
 }
 
 function resumirClaseSecretaria(horario: any) {
-  const clase = resumirHorarioSecretaria(horario).clase || "";
-  if (!clase) return String(horario || "");
-  return formatearRangoHoraSecretaria(clase);
+  const h = resumirHorarioSecretaria(horario);
+  if (!h.clase) return String(horario || "");
+  const range = formatearRangoHoraSecretaria(h.clase);
+  return h.dia ? `${h.dia}: ${range}` : range;
 }
 
 function formatearRangoHoraSecretaria(valor: string) {

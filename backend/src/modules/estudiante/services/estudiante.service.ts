@@ -133,7 +133,9 @@ export class EstudianteService {
 
     Object.values(db.estudiantes || {}).forEach((student: any) => {
       const fullname = normalizarTextoApi(student.nombres);
-      if (fullname.includes(cleanSearch)) {
+      const dniVal = String(student.dni || "").trim();
+      const codeVal = String(student.codigoEstudiante || student.codigo || "").trim();
+      if (fullname.includes(cleanSearch) || dniVal.includes(cleanSearch) || codeVal.includes(cleanSearch)) {
         matchingDnis.add(student.dni);
       }
     });
@@ -143,7 +145,9 @@ export class EstudianteService {
       const invitados = db.invitadosPorPrograma[prog.id] || [];
       invitados.forEach((inv) => {
         const fullname = normalizarTextoApi(inv.nombres);
-        if (fullname.includes(cleanSearch)) {
+        const dniVal = String(inv.dni || "").trim();
+        const codeVal = String(inv.codigoEstudiante || inv.codigo || "").trim();
+        if (fullname.includes(cleanSearch) || dniVal.includes(cleanSearch) || codeVal.includes(cleanSearch)) {
           matchingDnis.add(inv.dni);
         }
       });

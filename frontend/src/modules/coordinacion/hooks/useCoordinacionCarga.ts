@@ -6,16 +6,19 @@ import {
   confirmarCargaAlumnos,
   eliminarCargaAlumnos,
 } from "../services/coordinacionService";
+import { isApiMode } from "../../../services/apiClient";
 
 export default function useCoordinacionCarga({
   puedeCargarAlumnos,
+  paraPeriodo,
   cargaPeriodo,
   programaCargaId,
   setProgramaCargaId,
   mostrarMsg,
   cargarDatos,
   setUltimoLoteId,
-}) {
+  vista,
+}: any) {
   const [archivosExcel, setArchivosExcel] = useState([]);
   const [archivoInputKey, setArchivoInputKey] = useState(0);
   const [previewCarga, setPreviewCarga] = useState(null);
@@ -27,6 +30,19 @@ export default function useCoordinacionCarga({
   const [alumnoIndividual, setAlumnoIndividual] = useState({ dni: "", nombre: "", grado: "" });
   const [guardandoIndividual, setGuardandoIndividual] = useState(false);
   const [estadoAlumnoIndividual, setEstadoAlumnoIndividual] = useState({ buscando: false, mensaje: "", encontrado: false });
+
+  // Search states for student lookup
+  const [busquedaAlumno, setBusquedaAlumno] = useState("");
+  const [resultadosAlumnos, setResultadosAlumnos] = useState<any[]>([]);
+  const [buscandoAlumnos, setBuscandoAlumnos] = useState(false);
+
+  useEffect(() => {
+    if (vista === "registro_individual") {
+      setModoCargaAlumnos("individual");
+    } else if (vista === "carga") {
+      setModoCargaAlumnos("masiva");
+    }
+  }, [vista]);
 
   function actualizarAlumnoIndividual(campo, valor) {
     if (campo === "dni") {
@@ -76,6 +92,39 @@ export default function useCoordinacionCarga({
     };
   }, [alumnoIndividual.dni, modoCargaAlumnos, cargaPeriodo]);
 
+  useEffect(() => {
+    if (modoCargaAlumnos !== "individual") return;
+    const query = busquedaAlumno.trim();
+    if (query.length < 3) {
+      setResultadosAlumnos([]);
+      return;
+    }
+
+    let activo = true;
+    const timer = setTimeout(async () => {
+      setBuscandoAlumnos(true);
+      try {
+        const queryLimpia = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        const { buscarEstudiantesPorNombre } = await import("../../secretaria/services/secretariaService");
+        const results = await buscarEstudiantesPorNombre(queryLimpia, cargaPeriodo);
+        const alumnosEncontrados = results.map((r: any) => r.estudiante || r);
+
+        if (activo) {
+          setResultadosAlumnos(alumnosEncontrados);
+        }
+      } catch (err: any) {
+        console.error("Error al buscar estudiantes:", err);
+      } finally {
+        if (activo) setBuscandoAlumnos(false);
+      }
+    }, 300);
+
+    return () => {
+      activo = false;
+      clearTimeout(timer);
+    };
+  }, [busquedaAlumno, modoCargaAlumnos, cargaPeriodo]);
+
   async function guardarAlumnoIndividual(forzarGrado = false) {
     if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para registrar alumnos.");
     if (!programaCargaId) return mostrarMsg("Seleccione un programa o curso.");
@@ -120,6 +169,53 @@ export default function useCoordinacionCarga({
       }
       mostrarMsg("Alumno registrado individualmente con éxito.", "success");
     } catch (err) {
+      mostrarMsg(err.message || "Error al registrar el alumno.");
+    } finally {
+      setGuardandoIndividual(false);
+    }
+  }
+
+  async function registrarAlumnoDirecto(student: any, forzarGrado = false) {
+    if (!puedeCargarAlumnos) return mostrarMsg("No tiene permiso para registrar alumnos.");
+    if (!programaCargaId) {
+      alert("Por favor, seleccione primero el taller o programa.");
+      return;
+    }
+
+    const name = student.nombres || student.nombre || "";
+    const confirma = window.confirm(`¿Está seguro que quiere añadir al alumno "${name}" al taller seleccionado?`);
+    if (!confirma) return;
+
+    setGuardandoIndividual(true);
+    try {
+      const resultado = await registrarAlumnoIndividualCarga({
+        periodo: cargaPeriodo,
+        programaId: programaCargaId,
+        dni: student.dni,
+        nombre: name,
+        grado: student.grado || "",
+        forzarGrado,
+      });
+
+      if (resultado && resultado.requiereConfirmacion) {
+        setGuardandoIndividual(false);
+        const confirmaForzar = window.confirm(resultado.mensaje);
+        if (confirmaForzar) {
+          return registrarAlumnoDirecto(student, true);
+        }
+        return;
+      }
+
+      setAlumnoIndividual({
+        dni: student.dni || "",
+        nombre: name,
+        grado: student.grado || ""
+      });
+      setEstadoAlumnoIndividual({ buscando: false, mensaje: "Alumno registrado con éxito.", encontrado: true });
+      setBusquedaAlumno("");
+      mostrarMsg("Alumno registrado en el taller correctamente.", "success");
+      if (cargarDatos) await cargarDatos();
+    } catch (err: any) {
       mostrarMsg(err.message || "Error al registrar el alumno.");
     } finally {
       setGuardandoIndividual(false);
@@ -266,5 +362,11 @@ export default function useCoordinacionCarga({
     confirmarCargaExcel,
     eliminarCargaExcel,
     cancelarCargaExcel,
+    busquedaAlumno,
+    setBusquedaAlumno,
+    resultadosAlumnos,
+    buscandoAlumnos,
+    setEstadoAlumnoIndividual,
+    registrarAlumnoDirecto,
   };
 }

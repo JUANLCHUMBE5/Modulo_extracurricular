@@ -1,5 +1,381 @@
 [
   {
+    "id": "AUD-140109-747e",
+    "usuario": "admin",
+    "rol": "auxiliar",
+    "fecha": "2026-07-07T19:05:40.109Z",
+    "accion": "ASISTENCIA_REGISTRAR",
+    "detalles": "{\"alumno\":\"Luciana Torres Rojas\",\"taller\":\"DEPROTIVOS\",\"fecha\":\"2026-07-07T19:05:40.041Z\",\"estado\":\"pagado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-131830-2516",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T19:05:31.830Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-101\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-115761-fb16",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T19:05:15.762Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-101\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-091665-58cf",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T19:04:51.695Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-101\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-339177-d446",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T18:18:59.179Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-101\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-779658-332b",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T18:09:39.658Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-101\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-763972-55a1",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T18:09:23.972Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-101\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-730994-e073",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T18:08:50.994Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-101\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-717145-631d",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T18:08:37.145Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-101\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-667083-7a08",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T18:07:47.083Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-101\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Habilitado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-293934-ece8",
+    "usuario": "admin",
+    "rol": "auxiliar",
+    "fecha": "2026-07-07T18:01:33.934Z",
+    "accion": "ASISTENCIA_REGISTRAR",
+    "detalles": "{\"alumno\":\"Sofia Paredes Leon\",\"taller\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo Variables\",\"fecha\":\"2026-07-07T18:01:33.856Z\",\"estado\":\"pagado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-290292-c3e9",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T18:01:30.292Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-231381-f0e4",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T18:00:31.382Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-081001-309a",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T17:58:01.001Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-057654-9177",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T17:57:37.654Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-293439-957e",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T17:44:53.440Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-040511-8b49",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T17:40:40.513Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-887567-c20b",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T17:21:27.567Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-879934-5180",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T17:21:19.934Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-852246-a076",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T17:20:52.246Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-834597-8c48",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T17:20:34.597Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-861321-fcca",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T17:04:21.321Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-817055-3bf8",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-07T17:03:37.055Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-730453-ddbc",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-07T17:02:10.453Z",
+    "accion": "PAGO_REGISTRAR",
+    "detalles": "{\"pagoId\":\"PAG-730371\",\"inscripcionId\":\"INS-596581\",\"monto\":80,\"_usuario_original\":\"Cajera\"}"
+  },
+  {
+    "id": "AUD-722090-cd08",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-07T17:02:02.090Z",
+    "accion": "PAGO_REGISTRAR",
+    "detalles": "{\"pagoId\":\"PAG-722020\",\"inscripcionId\":\"INS-606165\",\"monto\":80,\"_usuario_original\":\"Cajera\"}"
+  },
+  {
+    "id": "AUD-711566-c455",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-07T17:01:51.566Z",
+    "accion": "PAGO_REGISTRAR",
+    "detalles": "{\"pagoId\":\"PAG-711484\",\"inscripcionId\":\"INS-528088\",\"monto\":80,\"_usuario_original\":\"Cajera\"}"
+  },
+  {
+    "id": "AUD-528183-b40c",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-07T16:58:48.183Z",
+    "accion": "INSCRIPCION_CREAR",
+    "detalles": "{\"inscripcionId\":\"INS-528088\",\"estudianteId\":\"60000010\",\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-788110-216d",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-07T16:46:28.110Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000010\",\"nombres\":\"Mariana Ramos Medina\",\"_usuario_original\":\"60000010\"}"
+  },
+  {
+    "id": "AUD-062970-095b",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T16:34:22.970Z",
+    "accion": "CARGA_EXCEL_CONFIRMAR",
+    "detalles": "{\"cargaId\":2,\"importados\":1,\"duplicados\":0,\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-720562-0c7f",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-07T16:28:40.563Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-699346-de38",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-07T15:38:19.347Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-691039-c56b",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-07T15:38:11.060Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-627709-0da6",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T15:03:47.709Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-582139-7295",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T15:03:02.144Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-296706-c451",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T14:58:16.709Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-967968-1e5c",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T14:52:47.971Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-102\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Habilitado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-025644-c7f0",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-07T14:37:05.644Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000038\",\"nombres\":\"Valentina Salazar Aquino\",\"_usuario_original\":\"60000038\"}"
+  },
+  {
+    "id": "AUD-008693-a751",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T14:36:48.693Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-102\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Deshabilitado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-006573-6fae",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T14:36:46.573Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-101\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Deshabilitado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-925914-a006",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-07T14:35:25.914Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000038\",\"nombres\":\"Valentina Salazar Aquino\",\"_usuario_original\":\"60000038\"}"
+  },
+  {
+    "id": "AUD-868233-9bd3",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T14:34:28.233Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-101\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Habilitado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-864509-a3e9",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T14:34:24.510Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-101\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Deshabilitado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-832330-1ace",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-07T14:33:52.345Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-101\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Deshabilitado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-968374-a86b",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-07T13:29:28.374Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-964149-d39f",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-07T13:29:24.150Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-953514-7b1a",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-07T13:29:13.514Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-939767-9e3a",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-07T13:28:59.768Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
     "id": "AUD-253488-48d7",
     "usuario": "admin",
     "rol": "caja",

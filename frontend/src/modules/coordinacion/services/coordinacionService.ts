@@ -615,7 +615,7 @@ export async function buscarAlumnoCargaPorDni(dni, periodo = "escolar") {
       params: { periodo: normalizarPeriodo(periodo) },
     });
     if (!res.success || !res.data) return null;
-    return normalizarAlumnoCarga(adaptarEstudiante(res.data));
+    return normalizarAlumnoCarga(adaptarEstudiante(res.data.estudiante));
   }
   return buscarAlumnoCargaPorDniMock(dniLimpio);
 }

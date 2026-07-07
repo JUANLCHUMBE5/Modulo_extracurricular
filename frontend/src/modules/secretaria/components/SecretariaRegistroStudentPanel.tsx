@@ -220,24 +220,30 @@ export default function SecretariaRegistroStudentPanel({
 
       {/* Invitation Note Info Box */}
       <div style={{
-        background: "#fff8e1",
-        borderLeft: "4px solid #fbc02d",
+        background: esPagoCompletado ? "#e8f5e9" : "#fff8e1",
+        borderLeft: esPagoCompletado ? "4px solid #43a047" : "4px solid #fbc02d",
         padding: "8px 12px",
         borderRadius: "8px",
         fontSize: "12px",
-        color: "#4e342e",
+        color: esPagoCompletado ? "#1b5e20" : "#4e342e",
         marginTop: "12px",
         display: "flex",
         alignItems: "flex-start",
         gap: "8px"
       }}>
-        <IconoBox size={14} style={{ color: "#f57f17", marginTop: "1px", flexShrink: 0 }} />
+        {esPagoCompletado ? (
+          <CheckCircle2 size={14} style={{ color: "#43a047", marginTop: "1px", flexShrink: 0 }} />
+        ) : (
+          <IconoBox size={14} style={{ color: "#f57f17", marginTop: "1px", flexShrink: 0 }} />
+        )}
         <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-          <strong style={{ fontWeight: "700", color: "#4e342e" }}>
-            {tieneInvitacionOperativa ? "Invitación individual" : "Invitación masiva"}
+          <strong style={{ fontWeight: "700", color: esPagoCompletado ? "#1b5e20" : "#4e342e" }}>
+            {esPagoCompletado ? "Matrícula completada" : tieneInvitacionOperativa ? "Invitación individual" : "Invitación masiva"}
           </strong>
           <span style={{ fontSize: "11.5px", lineHeight: "1.3" }}>
-            {inscripcion?.derivadoCaja ? (
+            {esPagoCompletado ? (
+              "El estudiante ya cuenta con un taller matriculado."
+            ) : inscripcion?.derivadoCaja ? (
               `Derivado exitosamente a Cajera: ${inscripcion.programa || "taller seleccionado"}. Este mismo taller ya no se puede derivar otra vez.`
             ) : tieneInvitacionOperativa ? (
               "El estudiante tiene invitación registrada. Asistente solo podrá inscribirlo en el programa asignado por Coordinación Académica."

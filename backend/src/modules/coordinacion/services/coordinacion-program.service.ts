@@ -3,7 +3,9 @@ import {
   mapDbProgramToApi,
   normalizarPeriodoApi,
   sincronizarPlantillaProgramaApi,
-  sincronizarGradosProgramaConInvitadosApi
+  sincronizarGradosProgramaConInvitadosApi,
+  resolverHorarioPorGradoApi,
+  resolverDocentePorGradoApi
 } from "../../../common/shared/mappers.js";
 import { normalizarConfiguracionInstitucional } from "../helpers/institutional.helpers.js";
 import { normalizeIncomingProgram } from "../helpers/program.helpers.js";
@@ -191,6 +193,29 @@ export class CoordinacionProgramService {
     };
 
     db.programas[idx] = updated;
+
+    // Sincronizar automaticamente matriculas existentes de este programa
+    if (Array.isArray(db.inscripciones)) {
+      db.inscripciones.forEach((ins: any) => {
+        if (ins.programaId === id) {
+          ins.fechaInicio = updated.fechaInicio || updated.fecha_inicio || ins.fechaInicio || "";
+          ins.fechaFin = updated.fechaFin || updated.fecha_fin || ins.fechaFin || "";
+          ins.programa = updated.nombre || ins.programa || "";
+          
+          const newHorario = resolverHorarioPorGradoApi(updated, ins.gradoEstudiante || ins.grado || "") || updated.horario || "";
+          if (newHorario) {
+            ins.horario = newHorario;
+          }
+          
+          const newDocente = resolverDocentePorGradoApi(updated, ins.gradoEstudiante || ins.grado || "");
+          if (newDocente) {
+            ins.docente = newDocente;
+          }
+
+        }
+      });
+    }
+
     await coordinacionRepository.saveDb(db);
 
     await registrarAuditoria(operatorUsername || "Coordinacion", "coordinacion", "PROGRAMA_EDITAR", { programaId: id });

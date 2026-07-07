@@ -454,6 +454,19 @@
       "nivelCambridge": "",
       "nivelEducativo": "",
       "cargaId": 1
+    },
+    {
+      "dni": "60000010",
+      "codigoEstudiante": "",
+      "nombres": "Mariana Ramos Medina",
+      "grado": "3 inicial",
+      "seccion": "",
+      "correo": "",
+      "telefonoApoderado": "",
+      "seleccion": "",
+      "nivelCambridge": "",
+      "nivelEducativo": "",
+      "cargaId": 2
     }
   ]
 }

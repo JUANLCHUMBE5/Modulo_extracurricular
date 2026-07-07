@@ -175,6 +175,45 @@ function formatearGradoApi(valor: any): string {
  */
 export function resolverHorarioPorGradoApi(programa: any, gradoAlumno: string = ""): string {
   const grupos = programa?.horariosPorGrupo || [];
+  
+  // Si no hay grupos, pero es un taller deportivo con talleresDeportivos
+  if ((!Array.isArray(grupos) || grupos.length === 0) && Array.isArray(programa?.talleresDeportivos) && programa.talleresDeportivos.length > 0) {
+    const matchGrado = String(gradoAlumno || "").match(/\d+/);
+    const num = matchGrado ? parseInt(matchGrado[0], 10) : 6;
+    let edad = num;
+    const lowerGrado = String(gradoAlumno || "").toLowerCase();
+    if (lowerGrado.includes("primaria")) {
+      edad = num + 5;
+    } else if (lowerGrado.includes("secundaria")) {
+      edad = num + 11;
+    } else if (lowerGrado.includes("inicial")) {
+      edad = num;
+    }
+    if (edad < 6) {
+      edad = 6;
+    }
+
+    const filtered = programa.talleresDeportivos.filter((t: any) => 
+      edad >= Number(t.edadMinima || 0) && edad <= Number(t.edadMaxima || 99)
+    );
+
+    if (filtered.length > 0) {
+      const diasMap: Record<string, string[]> = {};
+      filtered.forEach((t: any) => {
+        const dia = t.dia || "Sin dia";
+        if (!diasMap[dia]) {
+          diasMap[dia] = [];
+        }
+        const nivelLabel = t.nivel ? ` [${t.nivel}]` : "";
+        diasMap[dia].push(`${t.deporte}${nivelLabel} (${t.edadMinima}-${t.edadMaxima} a.): ${t.horaInicio || ""}-${t.horaFin || ""}`);
+      });
+
+      return Object.entries(diasMap)
+        .map(([dia, list]) => `${dia}: ${list.join(", ")}`)
+        .join(" / ");
+    }
+  }
+
   if (!Array.isArray(grupos) || grupos.length === 0) return "";
 
   const gradoNormalizado = descomponerGradoApi(gradoAlumno);
@@ -218,11 +257,42 @@ export function resolverHorarioPorGradoApi(programa: any, gradoAlumno: string = 
  */
 export function resolverDocentePorGradoApi(programa: any, gradoAlumno: string = ""): string {
   const grupos = programa?.horariosPorGrupo || [];
-  if (!Array.isArray(grupos) || grupos.length === 0) return programa.responsable || programa.docente || "No definido";
+
+  // Si no hay grupos, pero es un taller deportivo con talleresDeportivos
+  if ((!Array.isArray(grupos) || grupos.length === 0) && Array.isArray(programa?.talleresDeportivos) && programa.talleresDeportivos.length > 0) {
+    const matchGrado = String(gradoAlumno || "").match(/\d+/);
+    const num = matchGrado ? parseInt(matchGrado[0], 10) : 6;
+    let edad = num;
+    const lowerGrado = String(gradoAlumno || "").toLowerCase();
+    if (lowerGrado.includes("primaria")) {
+      edad = num + 5;
+    } else if (lowerGrado.includes("secundaria")) {
+      edad = num + 11;
+    } else if (lowerGrado.includes("inicial")) {
+      edad = num;
+    }
+    if (edad < 6) {
+      edad = 6;
+    }
+
+    const filtered = programa.talleresDeportivos.filter((t: any) => 
+      edad >= Number(t.edadMinima || 0) && edad <= Number(t.edadMaxima || 99)
+    );
+
+    if (filtered.length > 0) {
+      const docentes = Array.from(new Set(filtered.map((t: any) => t.docente).filter(Boolean)));
+      if (docentes.length > 0) {
+        return docentes.join(" · ");
+      }
+    }
+  }
+
+  const actualGrupos = Array.isArray(grupos) ? grupos : [];
+  if (actualGrupos.length === 0) return programa.responsable || programa.docente || "No definido";
 
   const gradoNormalizado = descomponerGradoApi(gradoAlumno);
   if (!gradoNormalizado.numero) return programa.responsable || programa.docente || "No definido";
-  const grupo = grupos.find((item: any) =>
+  const grupo = actualGrupos.find((item: any) =>
     (item.grados || []).some((grado: any) => coincideGradoApi(grado, gradoNormalizado))
   );
 

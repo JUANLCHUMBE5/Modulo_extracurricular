@@ -5,6 +5,10 @@ import { mismoCodigo, normalizarTexto } from "./identity.helpers.js";
  * Resuelve el horario asignado a una inscripción (incluyendo horarios dinámicos por grupo).
  */
 export function obtenerHorarioDeInscripcion(db: any, inscripcion: any, estudiante: any): string {
+  if (inscripcion?.horario && !inscripcion.horario.includes("no configurado") && !inscripcion.horario.includes("No registrado")) {
+    return inscripcion.horario;
+  }
+
   const prog = (db.programas || []).find((p: any) => p.id === inscripcion?.programaId);
   
   if (prog && tieneHorariosPorGrupoApi(prog)) {
@@ -13,10 +17,6 @@ export function obtenerHorarioDeInscripcion(db: any, inscripcion: any, estudiant
       || (estudiante ? obtenerGradoCompletoApi(estudiante.grado, estudiante.nivel) : "");
     const horarioDinamico = resolverHorarioPorGradoApi(prog, gradoEst);
     if (horarioDinamico) return horarioDinamico;
-  }
-  
-  if (inscripcion?.horario && !inscripcion.horario.includes("no configurado") && !inscripcion.horario.includes("No registrado")) {
-    return inscripcion.horario;
   }
   
   if (!prog) return "";

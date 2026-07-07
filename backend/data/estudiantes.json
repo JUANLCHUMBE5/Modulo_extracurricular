@@ -311,9 +311,10 @@
     "fechaNacimiento": "2010-01-01",
     "tipoAlumno": "Alumno interno",
     "estadoMatricula": "Activo",
-    "apoderado": "Apoderado Medina",
-    "telefonoApoderado": "972935404",
-    "correoApoderado": ""
+    "apoderado": "Apoderado Torress uuuuuuu",
+    "telefonoApoderado": "929558807",
+    "correoApoderado": "",
+    "estadoInscripcion": "confirmada"
   },
   "60000011": {
     "dni": "60000011",
@@ -692,7 +693,7 @@
     "apoderado": "Apoderado Leon",
     "telefonoApoderado": "965626474",
     "correoApoderado": "",
-    "estadoInscripcion": "pendiente_pago"
+    "estadoInscripcion": "confirmada"
   },
   "60000036": {
     "dni": "60000036",
@@ -785,7 +786,7 @@
     "apoderado": "Apoderado Huaman",
     "telefonoApoderado": "937052676",
     "correoApoderado": "",
-    "estadoInscripcion": "pendiente_pago",
+    "estadoInscripcion": "confirmada",
     "estadoCaja": "derivado_caja"
   },
   "60000042": {

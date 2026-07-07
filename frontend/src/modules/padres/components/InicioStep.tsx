@@ -30,7 +30,7 @@ function ProgramaPrincipal({
     ? [...new Set(programa.talleresDeportivos.map((t: any) => t.nivel).filter(Boolean))]
     : [];
 
-  const nombrePrograma = programa.nombre;
+  const nombrePrograma = programa.nombre || programa.programa || "";
 
   let buttonText = "Confirmar vacante";
   let buttonDisabled = false;
@@ -39,6 +39,10 @@ function ProgramaPrincipal({
   let esPagado = false;
   let esVerificando = false;
   let esPendienteCaja = false;
+
+  const esDeshabilitado = programa?.estado === "Deshabilitado" || programa?.estadoPrograma === "Deshabilitado";
+  const esPlazoVencido = programa?.ventanaInscripcion?.permitida === false;
+  const esNoIniciado = programa?.ventanaInscripcion?.noIniciada === true;
 
   if (inscripcion) {
     const estadoPago = obtenerEstadoPagoPadres(inscripcion);
@@ -55,6 +59,15 @@ function ProgramaPrincipal({
     } else if (esPendienteCaja) {
       buttonText = "Reserva pendiente";
       buttonDisabled = true;
+    } else if (esDeshabilitado) {
+      buttonText = "Taller deshabilitado";
+      buttonDisabled = true;
+    } else if (esNoIniciado) {
+      buttonText = "Próximamente";
+      buttonDisabled = true;
+    } else if (esPlazoVencido) {
+      buttonText = "Plazo vencido";
+      buttonDisabled = true;
     } else {
       buttonText = "Continuar al pago";
       buttonAction = () => setPasoActivo(3);
@@ -64,6 +77,15 @@ function ProgramaPrincipal({
     buttonDisabled = true;
   } else if (programa?.ventanaInscripcion?.permitida === false) {
     buttonText = "Inscripciones cerradas";
+    buttonDisabled = true;
+  } else if (esDeshabilitado) {
+    buttonText = "Taller deshabilitado";
+    buttonDisabled = true;
+  } else if (esNoIniciado) {
+    buttonText = "Próximamente";
+    buttonDisabled = true;
+  } else if (esPlazoVencido) {
+    buttonText = "Plazo vencido";
     buttonDisabled = true;
   }
 
@@ -94,6 +116,24 @@ function ProgramaPrincipal({
       noteBg = "#fefce8";
       noteTextColor = "#a16207";
       noteBorderColor = "#fef08a";
+    } else if (esDeshabilitado) {
+      noteText = "Este taller se encuentra deshabilitado y no admite registros de pago.";
+      noteIconColor = "#dc2626";
+      noteBg = "#fef2f2";
+      noteTextColor = "#991b1b";
+      noteBorderColor = "#fca5a5";
+    } else if (esNoIniciado) {
+      noteText = programa?.ventanaInscripcion?.mensaje || "La inscripción y pago iniciarán próximamente.";
+      noteIconColor = "#ca8a04";
+      noteBg = "#fefce8";
+      noteTextColor = "#a16207";
+      noteBorderColor = "#fef08a";
+    } else if (esPlazoVencido) {
+      noteText = "El plazo límite de inscripción y pago para este taller ha vencido.";
+      noteIconColor = "#dc2626";
+      noteBg = "#fef2f2";
+      noteTextColor = "#991b1b";
+      noteBorderColor = "#fca5a5";
     } else {
       noteText = "Inscripción pendiente de pago.";
       noteIconColor = "#dc2626";

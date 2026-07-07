@@ -104,44 +104,10 @@ export default function AuxiliarConsole({
       )}
 
       <form className="auxiliar-input-form" onSubmit={handleBuscar}>
-        {modo !== "DNI" ? (
+        {modo !== "DNI" && (
           <label htmlFor="auxiliar-codigo">
             Código QR (Lectura Manual)
           </label>
-        ) : (
-          <div className="taller-filter-group" style={{ marginBottom: "10px" }}>
-            <label htmlFor="taller-select" style={{ display: "block", fontSize: "0.82rem", fontWeight: 800, color: "#475569", marginBottom: "4px" }}>
-              Filtrar por Taller
-            </label>
-            <select
-              id="taller-select"
-              value={programaSeleccionado}
-              onChange={(e) => {
-                setProgramaSeleccionado(e.target.value);
-                if (resultadosBusqueda) setResultadosBusqueda(null);
-              }}
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: "10px",
-                border: "2px solid #bae6fd",
-                outline: "none",
-                fontFamily: "inherit",
-                fontSize: "0.9rem",
-                fontWeight: 700,
-                color: "#1e293b",
-                backgroundColor: "#f8fafc",
-                cursor: "pointer"
-              }}
-            >
-              <option value="">Todos los talleres</option>
-              {programas.map((prog) => (
-                <option key={prog.id || prog.programaId} value={prog.id || prog.programaId}>
-                  {prog.nombre || prog.programa}
-                </option>
-              ))}
-            </select>
-          </div>
         )}
 
         <div className="input-group">

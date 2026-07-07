@@ -1,7 +1,17 @@
 export function parsearHorario(horarioStr) {
   if (!horarioStr) return { nivel: "", dias: "", hora: "" };
 
-  let cleaned = String(horarioStr).trim();
+  const str = String(horarioStr).trim();
+  
+  // Si contiene multiples rangos de hora (por ejemplo, / o multiples coincidencias de formato hora)
+  const hourRegexGlobal = /(\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\s*-\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?)/gi;
+  const matches = str.match(hourRegexGlobal);
+  if (str.includes("/") || (matches && matches.length > 1)) {
+    // Es un horario complejo/multiple. Devolvemos vacio para que la UI muestre la cadena original intacta.
+    return { nivel: "", dias: "", hora: "" };
+  }
+
+  let cleaned = str;
   // Limpiar almuerzo y clase
   cleaned = cleaned.replace(/almuerzo\s+\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?\s*-\s*\d{1,2}:\d{2}\s*(?:AM|PM|am|pm)?,?\s*/gi, "");
   cleaned = cleaned.replace(/clase\s+/gi, "");

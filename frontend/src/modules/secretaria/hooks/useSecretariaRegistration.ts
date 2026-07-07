@@ -75,8 +75,8 @@ export function useSecretariaRegistration({
         if (!estudiante) return true;
         return programaDisponibleParaGrado(programa, gradoEstudiante || "");
       });
-  const tieneInvitacionOperativa = !esCicloVerano && Boolean(estudiante?.tieneInvitacion) && estudiante?.programaDisponible !== false;
-  const invitacionSinHorario = !esCicloVerano && Boolean(estudiante?.tieneInvitacion) && estudiante?.programaDisponible === false && programasCompatiblesFormulario.length === 0;
+  const tieneInvitacionOperativa = !esCicloVerano && Boolean(estudiante?.tieneInvitacion);
+  const invitacionSinHorario = false;
   const tipoAlumnoMostrado = esCicloVerano
     ? (estudiante?.esExterno ? "Alumno externo" : "Alumno interno")
     : estudiante?.tipoAlumno;
@@ -219,13 +219,9 @@ export function useSecretariaRegistration({
       } else {
         setModoCursoAdicional(false);
         const esCicloVerano = periodo === "verano";
-        const invitacionSinHorarioLocal = !esCicloVerano && Boolean(studentData.tieneInvitacion) && studentData.programaDisponible === false && compatibles.length === 0;
-        if (invitacionSinHorarioLocal) {
-          mostrarMensaje("El alumno esta cargado por Coordinación Académica, pero falta configurar un horario para su grado antes de inscribirlo.");
-          return;
-        }
+        const invitacionSinHorarioLocal = false;
 
-        const tieneInvitacionOperativa = !esCicloVerano && Boolean(studentData.tieneInvitacion) && studentData.programaDisponible !== false;
+        const tieneInvitacionOperativa = !esCicloVerano && Boolean(studentData.tieneInvitacion);
         const programaAsignadoActual = tieneInvitacionOperativa
           ? await obtenerProgramaPorId(studentData.programaAsignado, periodo).catch(() => null)
           : null;
@@ -278,11 +274,7 @@ export function useSecretariaRegistration({
       });
     }
 
-    if (studentData.tieneInvitacion && studentData.programaDisponible === false) {
-      mostrarMensaje("Aviso: El taller invitado por Coordinación Académica no está disponible para el grado del alumno. Puede seleccionar otro taller compatible.");
-    } else {
-      setMensaje("");
-    }
+    setMensaje("");
   }
 
   async function guardarInscripción(event) {

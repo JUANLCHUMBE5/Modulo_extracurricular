@@ -1,7 +1,8 @@
-﻿import {
+import {
   esDiaCorrecto,
   obtenerMinutosRestantesIngresoReciente,
-  resolverEstadoPago
+  resolverEstadoPago,
+  esLlegadaTardanza
 } from "./access-state.helpers.js";
 import { mismoCodigo, normalizarIdentificadores, normalizarTexto } from "./identity.helpers.js";
 import {
@@ -131,7 +132,7 @@ export function resolverValidacion(db: any, identificadores: any = {}): any {
         estadoPago: "Pagado",
         accesoPermitido: false,
         mensajeAcceso: "Hoy no le toca este taller",
-        accion: "El alumno estÃ¡ matriculado en este taller, pero las clases corresponden a otros dÃ­as de la semana.",
+        accion: "El alumno esta matriculado en este taller, pero las clases corresponden a otros dias de la semana.",
         color: "rojo",
         horario,
         programa: programaNombre,
@@ -155,7 +156,7 @@ export function resolverValidacion(db: any, identificadores: any = {}): any {
         estadoPago: "Pagado",
         accesoPermitido: false,
         mensajeAcceso: "Ya registrado",
-        accion: `Este estudiante ya registrÃ³ su ingreso hace poco. PodrÃ¡ registrarse nuevamente en ${minsRestantes} minuto(s).`,
+        accion: `Este estudiante ya registro su ingreso hace poco. Podra registrarse nuevamente en ${minsRestantes} minuto(s).`,
         color: "rojo",
         horario,
         programa: programaNombre,
@@ -163,16 +164,19 @@ export function resolverValidacion(db: any, identificadores: any = {}): any {
       });
     }
     
+    const tolerancia = Number(dbProg?.tolerancia || 10);
+    const esTardio = esLlegadaTardanza(horario, tolerancia);
+
     return crearRespuestaInscripcion({
       inscripcion,
       estudiante,
       pago,
-      estadoAcceso: "pagado",
+      estadoAcceso: esTardio ? "tardanza" : "pagado",
       estadoPago: "Pagado",
       accesoPermitido: true,
-      mensajeAcceso: "Pago validado",
-      accion: "Ingreso permitido.",
-      color: "verde",
+      mensajeAcceso: esTardio ? "Tardanza" : "Pago validado",
+      accion: esTardio ? "Ingreso registrado con tardanza." : "Ingreso permitido.",
+      color: esTardio ? "naranja" : "verde",
       horario,
       programa: programaNombre,
       programaId,

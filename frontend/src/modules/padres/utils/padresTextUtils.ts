@@ -154,7 +154,7 @@ export function convertirHorasAMPM(texto: any) {
 
 export function dividirHorarioPadres(horario: any) {
   const texto = repararTexto(String(horario || "")).trim();
-  const partes = texto.match(/^(.+?):\s*([^,]+?)\s+almuerzo\s+([^,]+),\s*clase\s+(.+)$/i);
+  const partes = texto.match(/^(.+?):\s*(.+?)\s+almuerzo\s+([^,]+),\s*clase\s+(.+)$/i);
   if (!partes) return null;
   return {
     grados: partes[1].trim(),

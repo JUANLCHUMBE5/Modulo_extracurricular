@@ -64,7 +64,7 @@ export function obtenerMinutosRestantesIngresoReciente(
     const fechaAst = new Date(ast.fechaRegistro);
     if (isNaN(fechaAst.getTime())) return;
     const diffMs = nowMs - fechaAst.getTime();
-    const limiteMs = 15 * 60 * 1000;
+    const limiteMs = 60 * 60 * 1000; // 1 hora de bloqueo para evitar fraude / compartir accesos
     if (diffMs >= 0 && diffMs < limiteMs) {
       const mins = Math.ceil((limiteMs - diffMs) / 60000);
       if (mins > maxRestante) maxRestante = mins;
@@ -103,4 +103,76 @@ export function ordenarPorFecha(items: any[], campoPreferido: string = "fechaReg
     const fechaB = new Date(b?.[campoPreferido] || b?.fechaPago || b?.fecha || b?.createdAt || 0).getTime();
     return fechaB - fechaA;
   });
+}
+
+function getAhoraLima(): Date {
+  const ahora = new Date();
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Lima",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      hour12: false
+    });
+    const parts = formatter.formatToParts(ahora);
+    const getVal = (type: string) => parseInt(parts.find(p => p.type === type)?.value || "0", 10);
+    return new Date(getVal("year"), getVal("month") - 1, getVal("day"), getVal("hour"), getVal("minute"), getVal("second"));
+  } catch (e) {
+    return ahora;
+  }
+}
+
+/**
+ * Determina si la llegada actual del alumno es considerada tardanza.
+ */
+export function esLlegadaTardanza(horarioStr: string, toleranciaMinutos: number = 10): boolean {
+  if (!horarioStr) return false;
+
+  const str = String(horarioStr);
+  let match = str.match(/clase\s*(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?\s*-\s*(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
+
+  if (!match) {
+    const cleaned = str.replace(/almuerzo\s+\d{2}:\d{2}-\d{2}:\d{2},?\s*/gi, "");
+    match = cleaned.match(/(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?\s*-\s*(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
+    if (!match) {
+      const singleMatch = cleaned.match(/(\d{1,2}):(\d{2})\s*(am|pm|a\.m\.|p\.m\.)?/i);
+      if (!singleMatch) return false;
+
+      const hours = parseInt(singleMatch[1], 10);
+      const minutes = parseInt(singleMatch[2], 10);
+      const meridian = singleMatch[3] ? singleMatch[3].toLowerCase().replace(/\s/g, "") : null;
+
+      let hours24 = hours;
+      if (meridian) {
+        if (meridian.includes("p") && hours < 12) hours24 += 12;
+        else if (meridian.includes("a") && hours === 12) hours24 = 0;
+      }
+      const inicioMinutos = hours24 * 60 + minutes;
+
+      const ahora = getAhoraLima();
+      const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
+
+      return ahoraMinutos > (inicioMinutos + toleranciaMinutos);
+    }
+  }
+
+  const startHrs = parseInt(match[1], 10);
+  const startMins = parseInt(match[2], 10);
+  const startMeridian = match[3] ? match[3].toLowerCase().replace(/\s/g, "") : null;
+
+  let startHrs24 = startHrs;
+  if (startMeridian) {
+    if (startMeridian.includes("p") && startHrs < 12) startHrs24 += 12;
+    else if (startMeridian.includes("a") && startHrs === 12) startHrs24 = 0;
+  }
+  const inicioMinutos = startHrs24 * 60 + startMins;
+
+  const ahora = getAhoraLima();
+  const ahoraMinutos = ahora.getHours() * 60 + ahora.getMinutes();
+
+  return ahoraMinutos > (inicioMinutos + toleranciaMinutos);
 }

@@ -42,6 +42,17 @@ export async function obtenerResumenPadre(dni) {
     const pagos = (data.pagos || []).map(adaptarPago);
     const documentos = data.documentos || [];
     const inscripcionActual = obtenerProgramaPrincipalPadres(inscripciones);
+    if (inscripcionActual) {
+      const duracionAvisoDias = normalizarDuracionAvisoDias(inscripcionActual.duracionAvisoDias, 7);
+      inscripcionActual.duracionAvisoDias = duracionAvisoDias;
+      inscripcionActual.ventanaInscripcion = obtenerVentanaInscripcion(
+        inscripcionActual.fechaInicio,
+        new Date(),
+        duracionAvisoDias,
+        inscripcionActual.horaLimiteAviso,
+        inscripcionActual
+      );
+    }
     const invitacionActual = obtenerProgramaPrincipalPadres(invitaciones);
 
     return {

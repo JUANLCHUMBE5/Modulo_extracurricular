@@ -295,6 +295,13 @@ function CoordinacionInner({
                 guardandoIndividual={state.guardandoIndividual}
                 programaCargaId={state.programaCargaId}
                 setProgramaCargaId={state.setProgramaCargaId}
+                busquedaAlumno={state.busquedaAlumno}
+                setBusquedaAlumno={state.setBusquedaAlumno}
+                resultadosAlumnos={state.resultadosAlumnos}
+                buscandoAlumnos={state.buscandoAlumnos}
+                setAlumnoIndividual={state.setAlumnoIndividual}
+                setEstadoAlumnoIndividual={state.setEstadoAlumnoIndividual}
+                registrarAlumnoDirecto={state.registrarAlumnoDirecto}
                 programas={state.programas}
                 toggleSidebarButton={toggleSidebarButton}
                 ultimoLoteId={state.ultimoLoteId}
@@ -359,6 +366,13 @@ function CoordinacionInner({
                 guardandoIndividual={state.guardandoIndividual}
                 programaCargaId={state.programaCargaId}
                 setProgramaCargaId={state.setProgramaCargaId}
+                busquedaAlumno={state.busquedaAlumno}
+                setBusquedaAlumno={state.setBusquedaAlumno}
+                resultadosAlumnos={state.resultadosAlumnos}
+                buscandoAlumnos={state.buscandoAlumnos}
+                setAlumnoIndividual={state.setAlumnoIndividual}
+                setEstadoAlumnoIndividual={state.setEstadoAlumnoIndividual}
+                registrarAlumnoDirecto={state.registrarAlumnoDirecto}
                 programas={state.programas}
                 toggleSidebarButton={toggleSidebarButton}
                 ultimoLoteId={state.ultimoLoteId}

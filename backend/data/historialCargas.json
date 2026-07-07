@@ -1,5 +1,23 @@
 [
   {
+    "id": "2",
+    "fecha": "2026-07-07T16:34:22.911Z",
+    "periodo": "escolar",
+    "usuario": "carlos",
+    "resumen": {
+      "importados": 1,
+      "duplicados": 0,
+      "total": 1
+    },
+    "registros": [
+      {
+        "dni": "60000010",
+        "nombres": "Mariana Ramos Medina",
+        "programaId": "PRG-102"
+      }
+    ]
+  },
+  {
     "id": "1",
     "fecha": "2026-07-06T05:03:44.734Z",
     "periodo": "escolar",
