@@ -4,7 +4,7 @@ import Login from "./components/Login/Login";
 import { apiDb, syncApiDb } from "./services/dbApi";
 import { isApiMode, apiClient } from "./services/apiClient";
 import { startSyncEventsClient } from "./services/syncEventsClient";
-import { normalizeUser } from "./modules/administrador/models/usuarioModel";
+import { normalizeUser } from "./modules/administrador/utils/usuarioModel";
 import ModuleLayout, { moduleLabels } from "./components/Layout/ModuleLayout";
 
 const moduleAccessRules = {

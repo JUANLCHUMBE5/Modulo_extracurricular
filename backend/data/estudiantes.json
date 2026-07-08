@@ -660,9 +660,10 @@
     "fechaNacimiento": "2010-01-01",
     "tipoAlumno": "Alumno interno",
     "estadoMatricula": "Activo",
-    "apoderado": "Apoderado Ortiz",
+    "apoderado": "Apoderado Ortizsdg",
     "telefonoApoderado": "980305677",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "confirmada"
   },
   "60000034": {
     "dni": "60000034",
@@ -693,7 +694,7 @@
     "apoderado": "Apoderado Leon",
     "telefonoApoderado": "965626474",
     "correoApoderado": "",
-    "estadoInscripcion": "confirmada"
+    "estadoInscripcion": "pendiente_pago"
   },
   "60000036": {
     "dni": "60000036",
@@ -1060,7 +1061,9 @@
     "estadoMatricula": "Activo",
     "apoderado": "Apoderado Rojas",
     "telefonoApoderado": "957294141",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "pendiente_pago",
+    "estadoCaja": "derivado_caja"
   },
   "60000060": {
     "dni": "60000060",

@@ -1,7 +1,7 @@
 import { apiDb, saveApiDb, syncApiDb } from "./dbApi";
 import { isApiMode, apiClient } from "./apiClient";
 import { adaptarEstudiante } from "./adapters";
-import { normalizeUser } from "../modules/administrador/models/usuarioModel";
+import { normalizeUser } from "../modules/administrador/utils/usuarioModel";
 import bcrypt from "bcryptjs";
 
 const delay = (ms = 650) => new Promise((resolve) => setTimeout(resolve, ms));

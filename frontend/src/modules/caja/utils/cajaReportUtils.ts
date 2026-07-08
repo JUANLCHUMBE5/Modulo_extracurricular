@@ -176,3 +176,65 @@ export function descargarArchivoCsv(contenido, nombreArchivo) {
   enlace.click();
   URL.revokeObjectURL(enlace.href);
 }
+
+export async function descargarReporteCajaExcel(datos: any[], filtros: any = {}, periodo: string) {
+  const ExcelJS = (await import("exceljs")).default;
+  const { agregarHoja, descargarBlob } = await import("../../direccion/utils/direccionExcelHelpers");
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "Colegio San Rafael";
+  workbook.created = new Date();
+
+  const columnas = [
+    { header: "N°", key: "index", width: 8 },
+    { header: "Nombres y Apellidos", key: "estudiante", width: 32 },
+    { header: "Taller", key: "programa", width: 32 },
+    { header: "Grado", key: "grado", width: 14 },
+    { header: "Sección", key: "seccion", width: 10 },
+    { header: "Fecha", key: "fecha", width: 16 },
+    { header: "Recibo", key: "nroRecibo", width: 14 },
+    { header: "Beca", key: "beca", width: 10 },
+    { header: "Descuento", key: "descuento", width: 14 },
+    { header: "Anulado", key: "anulado", width: 10 },
+    { header: "Estado", key: "estado", width: 16 },
+    { header: "Monto Pagado", key: "montoPagado", width: 15 },
+    { header: "Monto Anulado", key: "montoAnulado", width: 15 },
+    { header: "Justificación / Observación", key: "observaciones", width: 30 },
+  ];
+
+  const filas = datos.map((fila, index) => {
+    const estadoNormalizado = normalizarEstadoPagoVista(fila.estadoPago, fila.estado, fila.estadoVerificacion);
+    const descuentoTipo = String(fila.descuentoTipo || "").trim();
+    const descuentoEsBeca = fila.descuentoAprobado && descuentoTipo.toLowerCase() === "beca";
+    const descuentoNoBeca = fila.descuentoAprobado && !descuentoEsBeca;
+    const montoDescuento = obtenerMontoDescuentoReporte(fila);
+    const montoNum = Number(fila.monto || 0);
+
+    return {
+      index: index + 1,
+      estudiante: fila.estudiante ? String(fila.estudiante).toUpperCase() : "SIN NOMBRE",
+      programa: fila.programa ? String(fila.programa).toUpperCase() : "-",
+      grado: fila.grado || "-",
+      seccion: fila.seccion || "-",
+      fecha: fila.fecha || fila.fechaPago || fila.fechaRegistro,
+      nroRecibo: fila.nroRecibo || fila.nro_recibe || fila.nro_recibo || "-",
+      beca: descuentoEsBeca ? "SI" : "-",
+      descuento: descuentoNoBeca ? `S/ ${montoDescuento.toFixed(2)}` : "-",
+      anulado: estadoNormalizado === "anulado" ? "SI" : "-",
+      estado: fila.estadoPago ? String(fila.estadoPago).toUpperCase() : "-",
+      montoPagado: estadoNormalizado === "anulado" ? 0 : montoNum,
+      montoAnulado: estadoNormalizado === "anulado" ? montoNum : 0,
+      observaciones: fila.observaciones || fila.descuentoJustificacion || "-",
+    };
+  });
+
+  agregarHoja(workbook, "Transacciones de Caja", filas, columnas, { ...filtros, periodo });
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  
+  const nombreArchivo = `reporte-caja-${periodo}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  descargarBlob(blob, nombreArchivo);
+}

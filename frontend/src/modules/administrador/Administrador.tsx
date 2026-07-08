@@ -19,23 +19,23 @@ import {
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import {
-  listarUsuariosController,
-  crearUsuarioController,
-  editarUsuarioController,
-  cambiarEstadoUsuarioController,
-  eliminarUsuarioController,
-  resetearContrasenaUsuarioController,
-  listarLogsAuditoriaController,
-  descargarBackupController,
-  resetearBaseDatosController,
-} from "./controllers/administradorController";
+  listarUsuarios,
+  crearUsuario,
+  editarUsuario,
+  cambiarEstadoUsuario,
+  eliminarUsuario,
+  resetearContrasenaUsuario,
+  descargarBackup,
+  resetearBaseDatos,
+} from "./administradorService";
 import {
   ALL_PERMISSIONS,
   ROLES,
   getRoleLabel,
   getRequiredPermissionsByRole,
   normalizeUser,
-} from "./models/usuarioModel";
+  buildUserPayload,
+} from "./utils/usuarioModel";
 
 import { ModalUsuario, StatCard, TablaUsuarios } from "./components/AdministradorUsuarios";
 import "./Administrador.css";
@@ -88,7 +88,8 @@ export default function Administrador({ onLogout }) {
   const cargarDatos = async () => {
     setCargando(true);
     try {
-      setUsuarios(await listarUsuariosController());
+      const rawUsers = await listarUsuarios();
+      setUsuarios(rawUsers.map(normalizeUser));
     } catch (err) {
       notify("Error al cargar: " + err.message);
     }
@@ -144,7 +145,8 @@ export default function Administrador({ onLogout }) {
         }
       }
       if (form.contrasena.trim()) datos.contrasena = form.contrasena.trim();
-      modal.editar ? await editarUsuarioController(form.id, datos) : await crearUsuarioController(datos);
+      const payload = buildUserPayload(datos);
+      modal.editar ? await editarUsuario(form.id, payload) : await crearUsuario(payload);
       if (modal.editar) {
         notify("Usuario actualizado correctamente.", "success");
       }
@@ -164,7 +166,7 @@ export default function Administrador({ onLogout }) {
   const alternarEstado = async (u) => {
     const nuevo = u.estado === "Activo" ? "Inactivo" : "Activo";
     try {
-      await cambiarEstadoUsuarioController(u.id, nuevo);
+      await cambiarEstadoUsuario(u.id, nuevo);
       notify(`Usuario ${nuevo === "Activo" ? "activado" : "desactivado"}.`, "success");
       await cargarDatos();
     } catch (err) { notify(err.message); }
@@ -172,7 +174,7 @@ export default function Administrador({ onLogout }) {
 
   const resetear = async (u) => {
     try {
-      await resetearContrasenaUsuarioController(u.id);
+      await resetearContrasenaUsuario(u.id);
       notify(`Contraseña de @${u.usuario} reiniciada a 123456.`, "success");
     } catch (err) { notify(err.message); }
   };
@@ -186,7 +188,7 @@ export default function Administrador({ onLogout }) {
     if (!usuarioAEliminar) return;
     setEliminando(true);
     try {
-      await eliminarUsuarioController(usuarioAEliminar.id);
+      await eliminarUsuario(usuarioAEliminar.id);
       notify(`Usuario @${usuarioAEliminar.usuario} eliminado correctamente.`, "success");
       await cargarDatos();
     } catch (err) {
@@ -201,7 +203,7 @@ export default function Administrador({ onLogout }) {
   const ejecutarDescargarBackup = async () => {
     try {
       notify("Generando copia de seguridad...", "success");
-      const backupObj = await descargarBackupController();
+      const backupObj = await descargarBackup();
       const blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -212,7 +214,7 @@ export default function Administrador({ onLogout }) {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       notify("Copia de seguridad descargada exitosamente.", "success");
-    } catch (err) {
+    } catch (err: any) {
       notify("Error al descargar copia de seguridad: " + err.message);
     }
   };
@@ -233,7 +235,7 @@ export default function Administrador({ onLogout }) {
 
     try {
       notify("Iniciando restablecimiento de base de datos...", "success");
-      await resetearBaseDatosController();
+      await resetearBaseDatos();
       notify("Base de datos restablecida correctamente.", "success");
       await cargarDatos();
 

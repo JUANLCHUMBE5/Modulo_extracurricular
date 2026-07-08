@@ -22,7 +22,7 @@ import {
   getRequiredPermissionsByRole,
   isSuperAdmin,
   normalizeUser,
-} from "../models/usuarioModel";
+} from "../utils/usuarioModel";
 import {
   StatCard,
   TablaUsuarios,

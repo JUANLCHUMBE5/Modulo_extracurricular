@@ -15,7 +15,7 @@ export async function descargarReporteDireccionExcel(panel: any, tipoReporte: st
     agregarHoja(workbook, "Resumen", resumen, [
       { header: "Indicador", key: "indicador", width: 28 },
       { header: "Valor", key: "valor", width: 18 },
-    ]);
+    ], filtros);
   }
 
   if (tipoReporte === "completo" || tipoReporte === "programas") {
@@ -32,7 +32,7 @@ export async function descargarReporteDireccionExcel(panel: any, tipoReporte: st
       { header: "Costo", key: "costo", width: 12 },
       { header: "Proyectado", key: "proyectado", width: 14 },
       { header: "Recaudado", key: "recaudado", width: 14 },
-    ]);
+    ], filtros);
   }
 
   if (tipoReporte === "completo" || tipoReporte === "inscripciones") {
@@ -49,7 +49,7 @@ export async function descargarReporteDireccionExcel(panel: any, tipoReporte: st
       { header: "Fecha registro", key: "fechaRegistro", width: 22 },
       { header: "Apoderado", key: "apoderado", width: 24 },
       { header: "Teléfono", key: "telefono", width: 16 },
-    ]);
+    ], filtros);
   }
 
   if (tipoReporte === "completo" || tipoReporte === "pagos") {
@@ -72,7 +72,7 @@ export async function descargarReporteDireccionExcel(panel: any, tipoReporte: st
       { header: "Fecha", key: "fecha", width: 22 },
       { header: "N° de comprobante", key: "nroRecibo", width: 18 },
       { header: "Observaciones / Motivo Anulación", key: "observaciones", width: 30 },
-    ]);
+    ], filtros);
   }
 
   const buffer = await workbook.xlsx.writeBuffer();

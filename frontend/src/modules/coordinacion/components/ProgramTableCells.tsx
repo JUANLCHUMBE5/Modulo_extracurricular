@@ -112,6 +112,67 @@ function HorarioTabla({ programa }) {
     return (
       <div className="coord-table-schedule" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
         {bloques.map((bloque, index) => {
+          // Check if block matches "Days: Sport: Time, Sport: Time" format
+          const dayMatch = String(bloque).trim().match(/^(.*?(?:Lunes|Martes|Mi[eé]rcoles|Jueves|Viernes|S[aá]bado|Domingo).*?)\s*:\s*(.*)$/i);
+          if (dayMatch) {
+            const dias = dayMatch[1].trim();
+            const rest = dayMatch[2].trim();
+            
+            // Extract all Sport: Time pairs
+            const itemRegex = /([^:,]+?)\s*:\s*(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/g;
+            let m;
+            const items: { label: string, time: string }[] = [];
+            while ((m = itemRegex.exec(rest)) !== null) {
+              const label = m[1].replace(/^[\s,]+|[\s,]+$/g, "").trim();
+              items.push({
+                label,
+                time: m[2].trim()
+              });
+            }
+
+            if (items.length > 0) {
+              const timeGroups: { [time: string]: string[] } = {};
+              const timeOrder: string[] = [];
+              items.forEach(item => {
+                if (!timeGroups[item.time]) {
+                  timeGroups[item.time] = [];
+                  timeOrder.push(item.time);
+                }
+                timeGroups[item.time].push(item.label);
+              });
+
+              return (
+                <div key={index} style={{ marginBottom: "6px", fontSize: "11px", lineHeight: "1.4" }}>
+                  <strong style={{ color: "var(--coord-ink)", fontWeight: "750", display: "block" }}>
+                    {dias}
+                  </strong>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "2px" }}>
+                    {timeOrder.map((time, tIdx) => (
+                      <div key={tIdx} style={{ paddingLeft: "4px" }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px" }}>
+                          <span style={{
+                            color: "#1e3a8a",
+                            background: "#eff6ff",
+                            padding: "1px 5px",
+                            borderRadius: "4px",
+                            fontSize: "10px",
+                            fontWeight: "600"
+                          }}>
+                            {time}
+                          </span>
+                          <span style={{ color: "#64748b", fontSize: "10px" }}>
+                            • {timeGroups[time].join(", ")}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+          }
+
+          // Fallback to original block parsing
           const matchHora = String(bloque).match(/(\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})/);
           let hora = "";
           let resto = String(bloque);
@@ -276,10 +337,47 @@ function GradosTabla({ programa }) {
   if (!grados) return <span className="coord-table-small-text">Por definir</span>;
 
   const partes = String(grados).split(/\s*\/\s*/g).filter(Boolean);
-  if (partes.length > 1) {
+  
+  // Group sports/levels by age ranges
+  const groups: { [key: string]: string[] } = {};
+  const order: string[] = [];
+
+  partes.forEach(p => {
+    const cleanP = p.trim();
+    // Match something like "Fútbol [Formativo] (6-9 años)"
+    const match = cleanP.match(/^(.*?)\s*(\([^)]+\))$/);
+    if (match) {
+      const key = match[1].trim();
+      const ageRange = match[2].trim();
+      if (!groups[key]) {
+        groups[key] = [];
+        order.push(key);
+      }
+      groups[key].push(ageRange);
+    } else {
+      order.push(cleanP);
+    }
+  });
+
+  const finalPartes: string[] = [];
+  const processedKeys = new Set<string>();
+
+  order.forEach(item => {
+    if (groups[item]) {
+      if (!processedKeys.has(item)) {
+        processedKeys.add(item);
+        const combinedAgeRanges = groups[item].join("-");
+        finalPartes.push(`${item} ${combinedAgeRanges}`);
+      }
+    } else {
+      finalPartes.push(item);
+    }
+  });
+
+  if (finalPartes.length > 1) {
     return (
       <div className="coord-table-small-text" style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-        {partes.map((p, idx) => (
+        {finalPartes.map((p, idx) => (
           <div key={idx} style={{ lineHeight: "1.4" }}>
             • {p}
           </div>
@@ -287,7 +385,7 @@ function GradosTabla({ programa }) {
       </div>
     );
   }
-  return <span className="coord-table-small-text" style={{ lineHeight: "1.4" }}>{grados}</span>;
+  return <span className="coord-table-small-text" style={{ lineHeight: "1.4" }}>{finalPartes[0] || grados}</span>;
 }
 
 function VigenciaTabla({ inicio, fin, duracion, avisoDias }) {

@@ -21,6 +21,7 @@ import {
   descargarArchivoCsv,
   generarCSVReporteCaja,
   normalizarEstadoPagoVista,
+  descargarReporteCajaExcel,
 } from "../utils/cajaReportUtils";
 import { obtenerPagoPorId } from "../cajaService";
 import useCajaVerificacion from "./useCajaVerificacion";
@@ -403,9 +404,8 @@ export default function useCaja({
         }
         return true;
       });
-      const csv = generarCSVReporteCaja(datosFiltrados);
-      descargarArchivoCsv(csv, `reporte-caja-${periodo}-${fechaActualInput()}.csv`);
-      toast.success("Reporte descargado", { description: "El archivo CSV se genero correctamente." });
+      await descargarReporteCajaExcel(datosFiltrados, filtrosReporte, periodo);
+      toast.success("Reporte descargado", { description: "El archivo Excel se generó correctamente." });
     } catch (error: any) {
       toast.error("No se pudo descargar", { description: error.message || "Intente nuevamente." });
     }

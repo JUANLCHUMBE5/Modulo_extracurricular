@@ -169,12 +169,13 @@
     "telefonoOperacion": "",
     "nroRecibo": "REC-0507",
     "capturaPagoBase64": "",
-    "estado": "validado",
+    "estado": "anulado",
     "fecha": "2026-07-07T17:02:02.020Z",
     "fechaPago": "2026-07-07T17:02:02.020Z",
     "origenRegistro": "Caja",
-    "validadoPor": "Cajera",
-    "validadoEn": "2026-07-07T17:02:02.020Z"
+    "validadoPor": "carlos",
+    "validadoEn": "2026-07-08T14:03:36.381Z",
+    "observaciones": "sdfsdgfgf dfgdf"
   },
   {
     "id": "PAG-730371",
@@ -196,5 +197,26 @@
     "origenRegistro": "Caja",
     "validadoPor": "Cajera",
     "validadoEn": "2026-07-07T17:02:10.371Z"
+  },
+  {
+    "id": "PAG-844282",
+    "inscripcionId": "INS-823614",
+    "dniEstudiante": "60000033",
+    "nombresEstudiante": "Diego Mendoza Ortiz",
+    "programa": "Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo",
+    "programaId": "PRG-102",
+    "periodo": "escolar",
+    "monto": 80,
+    "formaPago": "Yape",
+    "numeroOperacion": "",
+    "telefonoOperacion": "",
+    "nroRecibo": "REC-0509",
+    "capturaPagoBase64": "",
+    "estado": "validado",
+    "fecha": "2026-07-08T13:54:04.282Z",
+    "fechaPago": "2026-07-08T13:54:04.282Z",
+    "origenRegistro": "Caja",
+    "validadoPor": "Cajera",
+    "validadoEn": "2026-07-08T13:54:04.282Z"
   }
 ]

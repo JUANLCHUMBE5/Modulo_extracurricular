@@ -1,6 +1,6 @@
 import { apiDb, nextApiId, saveApiDb, syncApiDb, resetApiDb } from "../../services/dbApi";
 import { isApiMode, apiClient } from "../../services/apiClient";
-import { ALL_PERMISSIONS, getRoleLabel, isSuperAdmin } from "./models/usuarioModel";
+import { ALL_PERMISSIONS, getRoleLabel, isSuperAdmin } from "./utils/usuarioModel";
 
 const delay = (ms = 500) => new Promise((resolve) => setTimeout(resolve, ms));
 

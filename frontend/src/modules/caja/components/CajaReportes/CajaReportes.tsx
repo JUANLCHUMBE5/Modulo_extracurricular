@@ -55,7 +55,7 @@ export default function CajaReportes({
               }
             }}
           >
-            Descargar CSV
+            Descargar Excel
           </Button>
         </div>
       </header>

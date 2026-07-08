@@ -11,7 +11,7 @@ import {
   getRoleLabel,
   isSuperAdmin,
   normalizeUser,
-} from "../models/usuarioModel";
+} from "../utils/usuarioModel";
 
 export const StatCard = ({ label, value, icon: Icon, delay = 0 }: any) => (
   <div className="adm-stat-card" style={{ animationDelay: `${delay}ms` }}>

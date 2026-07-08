@@ -467,13 +467,15 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
     ? "Alumnos y Pagos"
     : "Reporte Personalizado";
 
-  agregarHoja(workbook, sheetName, finalRows, sheetColumns);
+  agregarHoja(workbook, sheetName, finalRows, sheetColumns, filtros);
 
   const hoja = workbook.getWorksheet(sheetName);
   if (hoja) {
+    const startRow = hoja.views?.[0]?.ySplit || 1;
+
     if (tipoDatos === "direccion_alumnos_asistencias") {
       hoja.eachRow((row, rowNum) => {
-        if (rowNum > 1) {
+        if (rowNum > startRow) {
           row.eachCell((cell, colNum) => {
             const colKey = sheetColumns[colNum - 1]?.key;
             if (colKey && (colKey.startsWith("W_") || colKey.startsWith("D_") || /^\d{4}-\d{2}$/.test(colKey))) {
@@ -500,13 +502,15 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
         return formatearFechaPeru(fechaStr, fechaStr);
       };
 
-      const headerRow = hoja.getRow(1);
+      const headerRow = hoja.getRow(startRow);
       headerRow.font = { name: "Arial", size: 10, bold: true, color: { argb: "FF1F4E78" } };
       headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD8E4BC" } };
       headerRow.alignment = { vertical: "middle", horizontal: "center" };
       headerRow.height = 25;
 
       hoja.eachRow((row, rowNum) => {
+        if (rowNum < startRow) return;
+
         row.eachCell((cell) => {
           cell.border = {
             top: { style: "thin", color: { argb: "FF000000" } },
@@ -517,7 +521,7 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
           cell.alignment = { vertical: "middle", horizontal: "left" };
         });
 
-        if (rowNum > 1) {
+        if (rowNum > startRow) {
           row.eachCell((cell, colNum) => {
             const colKey = sheetColumns[colNum - 1]?.key;
             if (["index", "grado", "seccion", "fechaPago", "fecha", "fechaRegistro", "nroRecibo"].includes(colKey)) {
@@ -540,7 +544,7 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
       });
     } else if (tipoDatos === "programas") {
       hoja.eachRow((row, rowNum) => {
-        if (rowNum > 1) {
+        if (rowNum > startRow) {
           row.eachCell((cell, colNum) => {
             const colKey = sheetColumns[colNum - 1]?.key;
             if (colKey === "costo" || colKey === "proyectado" || colKey === "recaudado" || colKey === "porCobrar") {

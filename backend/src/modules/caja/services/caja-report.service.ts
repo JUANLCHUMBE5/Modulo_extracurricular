@@ -95,6 +95,42 @@ export class CajaReportService {
       return true;
     });
 
+    // Ordenar del registro más reciente (último) al más antiguo
+    finalReport.sort((a, b) => {
+      const timeA = parseDateString(a.fecha || a.fechaRegistro || a.fechaPago);
+      const timeB = parseDateString(b.fecha || b.fechaRegistro || b.fechaPago);
+      if (timeB !== timeA) {
+        return timeB - timeA;
+      }
+      return String(b.id || "").localeCompare(String(a.id || ""));
+    });
+
     return finalReport;
   }
+}
+
+function parseDateString(dateStr: string): number {
+  if (!dateStr) return 0;
+  if (dateStr.includes("-") && dateStr.indexOf("-") === 4) {
+    return new Date(dateStr).getTime();
+  }
+  if (dateStr.includes("/")) {
+    const parts = dateStr.split("/");
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const yearPart = parts[2].trim().split(" ");
+      const year = parseInt(yearPart[0], 10);
+      if (yearPart.length > 1) {
+        const timeParts = yearPart[1].split(":");
+        const hour = parseInt(timeParts[0] || "0", 10);
+        const min = parseInt(timeParts[1] || "0", 10);
+        const sec = parseInt(timeParts[2] || "0", 10);
+        return new Date(year, month, day, hour, min, sec).getTime();
+      }
+      return new Date(year, month, day).getTime();
+    }
+  }
+  const t = Date.parse(dateStr);
+  return isNaN(t) ? 0 : t;
 }

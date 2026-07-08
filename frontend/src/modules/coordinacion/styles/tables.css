@@ -313,7 +313,7 @@
 
 .coord-program-card-grid {
   display: grid;
-  grid-template-columns: minmax(130px, 0.9fr) minmax(195px, 1.5fr) minmax(100px, 0.7fr) minmax(165px, 1.15fr) minmax(70px, 0.5fr) minmax(70px, 0.5fr);
+  grid-template-columns: minmax(130px, 1.1fr) minmax(195px, 1.6fr) minmax(100px, 0.8fr) minmax(165px, 1.3fr) minmax(80px, 0.8fr) minmax(80px, 1.2fr);
   gap: 0;
   border-top: 1px solid #eef3f6;
   padding-top: 14px;
@@ -351,6 +351,11 @@
   font-size: 13px;
   font-weight: 750;
   line-height: 1.25;
+}
+
+.coord-program-card-cost {
+  justify-items: end;
+  text-align: right;
 }
 
 .coord-program-card-detail .coord-table-small-text,

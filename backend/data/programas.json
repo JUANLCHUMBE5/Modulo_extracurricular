@@ -43,7 +43,7 @@
     "usarFechaLimiteInscripcion": true,
     "fechaAperturaInscripcion": "2026-07-06",
     "horaAperturaInscripcion": "17:00",
-    "fechaLimiteInscripcion": "2026-07-07",
+    "fechaLimiteInscripcion": "2026-07-09",
     "horaLimiteInscripcion": "00:59",
     "anuncioImagen": "",
     "anuncioImagenNombre": "",
@@ -137,7 +137,7 @@
     "fechaFin": "2026-07-31",
     "costo": 80,
     "cupos": 20,
-    "cuposOcupados": 10,
+    "cuposOcupados": 12,
     "gradosAplicables": [
       "Primaria:1",
       "Primaria:2",

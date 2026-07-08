@@ -35,6 +35,26 @@ function clone(value: any): any {
   return JSON.parse(JSON.stringify(value));
 }
 
+function ecualizarCuposEnMemoria(db: LocalDatabase) {
+  if (!Array.isArray(db.programas) || !Array.isArray(db.inscripciones)) return;
+  
+  const counts: Record<string, number> = {};
+  db.inscripciones.forEach((ins: any) => {
+    if (ins && ins.programaId) {
+      const estado = String(ins.estadoPago || "").toLowerCase();
+      if (estado !== "anulado" && estado !== "rechazado") {
+        counts[ins.programaId] = (counts[ins.programaId] || 0) + 1;
+      }
+    }
+  });
+
+  db.programas.forEach((prog: any) => {
+    if (prog && prog.id) {
+      prog.cuposOcupados = counts[prog.id] || 0;
+    }
+  });
+}
+
 function mergeWithDefaults(stored: any, defaults: any): LocalDatabase {
   let correlativosObj = stored.correlativos || defaults.correlativos || { recibo: "", egreso: "" };
   const storedCats = stored.categorias || [];
@@ -45,7 +65,7 @@ function mergeWithDefaults(stored: any, defaults: any): LocalDatabase {
     } catch {}
   }
 
-  return {
+  const db: LocalDatabase = {
     ...defaults,
     ...stored,
     correlativos: correlativosObj,
@@ -75,6 +95,10 @@ function mergeWithDefaults(stored: any, defaults: any): LocalDatabase {
     usuarios: stored.usuarios || defaults.usuarios,
     auditLogs: stored.auditLogs || defaults.auditLogs || [],
   };
+
+  ecualizarCuposEnMemoria(db);
+
+  return db;
 }
 
 // ==========================================

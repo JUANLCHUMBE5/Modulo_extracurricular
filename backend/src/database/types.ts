@@ -163,4 +163,5 @@ export interface LocalDatabase {
   nextCargaId?: number;
   nextDocumentoId?: number;
   programas_documentos?: any[];
+  plantillasPorPrograma?: Record<string, any>;
 }

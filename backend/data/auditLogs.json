@@ -1,5 +1,77 @@
 [
   {
+    "id": "AUD-520559-1fac",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-08T14:05:20.559Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-101\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-505040-f873",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-08T14:05:05.040Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000037\",\"nombres\":\"Alejandro Leon Paredes\",\"_usuario_original\":\"60000037\"}"
+  },
+  {
+    "id": "AUD-416496-7a40",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-08T14:03:36.496Z",
+    "accion": "PAGO_ANULAR",
+    "detalles": "{\"pagoId\":\"PAG-722020\",\"observaciones\":\"sdfsdgfgf dfgdf\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-844446-58b5",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-08T13:54:04.446Z",
+    "accion": "PAGO_REGISTRAR",
+    "detalles": "{\"pagoId\":\"PAG-844282\",\"inscripcionId\":\"INS-823614\",\"monto\":80,\"_usuario_original\":\"Cajera\"}"
+  },
+  {
+    "id": "AUD-823712-ee13",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-08T13:53:43.713Z",
+    "accion": "INSCRIPCION_CREAR",
+    "detalles": "{\"inscripcionId\":\"INS-823614\",\"estudianteId\":\"60000033\",\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-528390-c2b4",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-08T13:48:48.390Z",
+    "accion": "INSCRIPCION_ESTADO",
+    "detalles": "{\"inscripcionId\":\"INS-385251\",\"alumno\":\"Gabriel Gutierrez Rojas\",\"taller\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo\",\"estadoAnterior\":\"pendiente_pago\",\"estadoNuevo\":\"pendiente_pago\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-385381-6fe1",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-08T13:46:25.381Z",
+    "accion": "INSCRIPCION_CREAR",
+    "detalles": "{\"inscripcionId\":\"INS-385251\",\"estudianteId\":\"60000059\",\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-023481-4912",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-08T13:40:23.487Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-486468-43bd",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-08T12:58:06.469Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
     "id": "AUD-140109-747e",
     "usuario": "admin",
     "rol": "auxiliar",

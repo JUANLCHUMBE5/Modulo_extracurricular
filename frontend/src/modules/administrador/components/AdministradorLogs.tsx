@@ -3,7 +3,7 @@ import {
   IconFileText as FileText,
   IconX as X,
 } from "@tabler/icons-react";
-import { getRoleLabel } from "../models/usuarioModel";
+import { getRoleLabel } from "../utils/usuarioModel";
 
 const formatearFecha = (fechaStr) => {
   if (!fechaStr) return "";
