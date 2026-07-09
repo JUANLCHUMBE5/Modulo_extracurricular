@@ -266,7 +266,7 @@ function CoordinacionInner({
               />
             )}
 
-            {state.vista === "carga" && state.puedeVerCargaVista && (
+            {(state.vista === "carga" || state.vista === "documentos") && state.puedeVerCargaVista && (
               <CargaExcelView
                 archivoInputKey={state.archivoInputKey}
                 archivosExcel={state.archivosExcel}

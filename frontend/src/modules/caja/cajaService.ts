@@ -17,6 +17,8 @@ import {
   cancelarCorrelativoCajaMock,
   buscarEstudiantesCajaQueryMock,
   registrarEgresoMock,
+  obtenerMetodosPagoMock,
+  guardarMetodosPagoMock,
 } from "./utils/cajaServiceMock";
 
 export async function listarPagos(periodo = "todos", filtros = {}) {
@@ -350,4 +352,51 @@ export async function registrarEgresoCaja(datosEgreso) {
     return res.data;
   }
   return registrarEgresoMock(datosEgreso);
+}
+
+const LOCAL_STORAGE_METODOS_KEY = "san_rafael_caja_metodos_pago";
+
+export async function obtenerMetodosPago() {
+  if (isApiMode()) {
+    try {
+      const res = await apiClient.get("/api/v1/extracurricular/caja/metodos-pago");
+      if (res && res.success && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (err) {
+      console.warn("Backend does not support /api/v1/extracurricular/caja/metodos-pago, using localStorage fallback.");
+    }
+    
+    try {
+      const saved = localStorage.getItem(LOCAL_STORAGE_METODOS_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Error reading localStorage:", e);
+    }
+    return ["Efectivo", "Yape", "Plin", "Transferencia", "Tarjeta"];
+  }
+  return obtenerMetodosPagoMock();
+}
+
+export async function guardarMetodosPago(metodos: string[]) {
+  if (isApiMode()) {
+    try {
+      const res = await apiClient.post("/api/v1/extracurricular/caja/metodos-pago", { metodos });
+      if (res && res.success && Array.isArray(res.data)) {
+        return res.data;
+      }
+    } catch (err) {
+      console.warn("Backend does not support /api/v1/extracurricular/caja/metodos-pago, saving to localStorage fallback.");
+    }
+    
+    try {
+      localStorage.setItem(LOCAL_STORAGE_METODOS_KEY, JSON.stringify(metodos));
+    } catch (e) {
+      console.error("Error saving to localStorage:", e);
+    }
+    return metodos;
+  }
+  return guardarMetodosPagoMock(metodos);
 }

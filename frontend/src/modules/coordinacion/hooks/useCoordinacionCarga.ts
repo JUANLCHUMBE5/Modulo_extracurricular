@@ -41,6 +41,8 @@ export default function useCoordinacionCarga({
       setModoCargaAlumnos("individual");
     } else if (vista === "carga") {
       setModoCargaAlumnos("masiva");
+    } else if (vista === "documentos") {
+      setModoCargaAlumnos("plantillas");
     }
   }, [vista]);
 

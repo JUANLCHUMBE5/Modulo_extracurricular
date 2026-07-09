@@ -147,12 +147,6 @@ function ProgramasView({
                 </>
               ) : (
                 <>
-                  <Badge variant="light" color="blue" size="md">
-                    {todosLosProgramas.filter(p => p.estado !== "Archivado").length} en total
-                  </Badge>
-                  <Badge variant="light" color="green" size="md">
-                    {todosLosProgramas.filter(p => p.estado === "Habilitado").length} disponibles
-                  </Badge>
                   {programas.length !== todosLosProgramas.filter(p => p.estado !== "Archivado").length && (
                     <Badge variant="filled" color="orange" size="md">
                       {programas.length} filtrados
@@ -367,7 +361,16 @@ function ProgramasView({
                         </Badge>
                       </Table.Td>
                       <Table.Td style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>
-                        {programa.responsable ? String(programa.responsable).replace(/\s*-\s*/g, ", ").trim() : "No asignado"}
+                        {(() => {
+                          if (!programa.responsable) return "No asignado";
+                          const clean = String(programa.responsable).trim();
+                          if (!clean || clean.toLowerCase() === "no asignado") return "No asignado";
+                          const count = clean
+                            .split(/\s*(?:·|,|-|\by\b)\s*/)
+                            .map(n => n.trim())
+                            .filter(Boolean).length;
+                          return count <= 1 ? "Tutor: 1" : `Tutores: ${count}`;
+                        })()}
                       </Table.Td>
                       <Table.Td style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>
                         <VigenciaTabla

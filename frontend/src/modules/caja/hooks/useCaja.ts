@@ -13,6 +13,8 @@ import {
   obtenerHistorialAlumnoCaja,
   registrarPago,
   buscarEstudiantesCajaQuery,
+  obtenerMetodosPago,
+  guardarMetodosPago,
 } from "../cajaService";
 import { obtenerCorrelativos } from "../../direccion/direccionService";
 import { fechaActualInput } from "../../../services/dateService";
@@ -77,6 +79,7 @@ export default function useCaja({
     grado: "todos", seccion: "todos", mes: "todos", anio: "todos",
   });
   const [correlativos, setCorrelativos] = useState({ recibo: "", egreso: "" });
+  const [metodosPago, setMetodosPago] = useState<string[]>([]);
 
   /* ── Carga de datos ── */
 
@@ -91,14 +94,27 @@ export default function useCaja({
     lastFetchTimeRef.current = Date.now();
     setCargando(true);
     try {
-      const [datosPagos, datosResumen] = await Promise.all([
-        listarPagos(periodo), obtenerResumenCaja(periodo), cargarCorrelativos(),
+      const [datosPagos, datosResumen, , metodos] = await Promise.all([
+        listarPagos(periodo), obtenerResumenCaja(periodo), cargarCorrelativos(), obtenerMetodosPago()
       ]);
       setPagos(datosPagos);
       setResumen(datosResumen);
+      if (metodos) setMetodosPago(metodos);
     } catch (error: any) {
       toast.error("Cajera", { description: error.message || "No se pudo cargar la informacion." });
     } finally { setCargando(false); }
+  }
+
+  async function actualizarMetodosPago(nuevosMetodos: string[]) {
+    try {
+      const res = await guardarMetodosPago(nuevosMetodos);
+      setMetodosPago(res);
+      toast.success("Métodos de Pago", { description: "Los métodos de pago han sido actualizados." });
+      return true;
+    } catch (err: any) {
+      toast.error("Error", { description: err.message || "No se pudieron actualizar los métodos de pago." });
+      return false;
+    }
   }
 
   async function cargarReporteCaja() {
@@ -463,6 +479,7 @@ export default function useCaja({
     buscarEstudiante, seleccionarInscripcionCaja, seleccionarEstudianteDesdeBusqueda,
     guardarPago, limpiarPagoActual, abrirPagoDesdeReporte, abrirModalEdicion, cerrarModal,
     cargarDatos, cargarReporteCaja, cargarCorrelativos,
+    metodosPago, actualizarMetodosPago,
     // Delegados de verificación y anulación
     ...verificacion,
   };

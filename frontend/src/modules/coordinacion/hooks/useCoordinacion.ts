@@ -732,6 +732,12 @@ const vistasNav = [
     permissions: ["coordinacion.carga"],
   },
   {
+    id: "documentos",
+    label: "Plantillas y Documentos",
+    icon: null,
+    permissions: ["coordinacion.documentos"],
+  },
+  {
     id: "asistencias",
     label: "Asistencia y Control",
     icon: null,

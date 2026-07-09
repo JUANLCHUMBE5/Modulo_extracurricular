@@ -562,4 +562,21 @@ export async function buscarEstudiantesCajaQueryMock(query) {
   }));
 }
 
+export async function obtenerMetodosPagoMock() {
+  await esperar(100);
+  await syncApiDb();
+  if (!Array.isArray(apiDb.metodosPago)) {
+    apiDb.metodosPago = ["Efectivo", "Yape", "Plin", "Transferencia", "Tarjeta"];
+  }
+  return apiDb.metodosPago;
+}
+
+export async function guardarMetodosPagoMock(metodos: string[]) {
+  await esperar(200);
+  await syncApiDb();
+  apiDb.metodosPago = metodos;
+  await saveApiDb();
+  return apiDb.metodosPago;
+}
+
 export { cancelarCorrelativoCajaMock, registrarEgresoMock } from "./cajaServiceMockEgresos";

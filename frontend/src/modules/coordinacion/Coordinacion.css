@@ -38,7 +38,7 @@
   min-width: 0;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  padding: 0 !important;
+  padding: 16px 24px 32px !important;
   overflow: visible;
 }
 
@@ -1350,96 +1350,90 @@
   border: 1px solid #bbdefb !important;
 }
 
-/* Segmented Control Tabs for Carga Excel */
-.coord-upload-tabs {
-  display: inline-flex !important;
-  width: auto !important;
-  background: #f1f5f9 !important;
-  padding: 4px !important;
-  border-radius: 10px !important;
-  border: 1px solid #e2e8f0 !important;
-  gap: 4px !important;
-  margin-bottom: 24px !important;
+/* Segmented Control Tabs for Carga Excel — Re-styled to match Direccion's clean tab style */
+html body .coord-upload-tabs {
+  display: flex !important;
+  gap: 8px !important;
+  margin-bottom: 10px !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  width: 100% !important;
 }
 
-.coord-upload-tabs button {
-  border: none !important;
-  padding: 8px 20px !important;
-  font-size: 13.5px !important;
-  font-weight: 600 !important;
-  border-radius: 8px !important;
-  color: #64748b !important;
-  background: transparent !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  display: inline-flex !important;
+html body .coord-upload-tabs button {
+  display: flex !important;
   align-items: center !important;
   gap: 8px !important;
+  padding: 10px 16px !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  background: transparent !important;
+  background-color: transparent !important;
   cursor: pointer !important;
+  color: #000000 !important;
+  transition: all 0.2s ease !important;
+  margin-bottom: -2px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important; /* Medium weight matching Direccion */
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  height: auto !important;
+  min-height: auto !important;
+  text-transform: none !important;
 }
 
-.coord-upload-tabs button svg {
-  color: #64748b !important;
-  transition: color 0.2s ease !important;
+html body .coord-upload-tabs button svg {
+  color: #000000 !important;
+  transition: all 0.2s ease !important;
+  flex-shrink: 0 !important;
 }
 
 /* Hover State */
-.coord-upload-tabs button:hover {
-  background: rgba(0, 107, 91, 0.05) !important;
-  color: #006b5b !important;
-}
-.coord-upload-tabs button:hover svg {
-  color: #006b5b !important;
-}
-
-/* Active State - Masiva */
-.coord-upload-tabs button.coord-upload-tab-masiva.is-active {
-  background: #ffffff !important;
-  color: #006b5b !important;
-  box-shadow: 0 4px 10px rgba(0, 107, 91, 0.08), 0 1px 3px rgba(0, 107, 91, 0.04) !important;
-  border-bottom: none !important;
-}
-.coord-upload-tabs button.coord-upload-tab-masiva.is-active svg {
-  color: #006b5b !important;
+html body .coord-upload-tabs button:hover,
+html body .coord-upload-tabs button.coord-upload-tab-masiva:hover,
+html body .coord-upload-tabs button.coord-upload-tab-individual:hover,
+html body .coord-upload-tabs button.coord-upload-tab-exportar:hover,
+html body .coord-upload-tabs button.coord-upload-tab-plantillas:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  color: #000000 !important;
 }
 
-/* Active State - Individual */
-.coord-upload-tabs button.coord-upload-tab-individual.is-active {
-  background: #ffffff !important;
-  color: #006b5b !important;
-  box-shadow: 0 4px 10px rgba(0, 107, 91, 0.08), 0 1px 3px rgba(0, 107, 91, 0.04) !important;
-  border-bottom: none !important;
-}
-.coord-upload-tabs button.coord-upload-tab-individual.is-active svg {
-  color: #006b5b !important;
+html body .coord-upload-tabs button:hover svg,
+html body .coord-upload-tabs button.coord-upload-tab-masiva:hover svg,
+html body .coord-upload-tabs button.coord-upload-tab-individual:hover svg,
+html body .coord-upload-tabs button.coord-upload-tab-exportar:hover svg,
+html body .coord-upload-tabs button.coord-upload-tab-plantillas:hover svg {
+  color: #000000 !important;
 }
 
-/* Active State - Exportar */
-.coord-upload-tabs button.coord-upload-tab-exportar.is-active {
-  background: #ffffff !important;
-  color: #006b5b !important;
-  box-shadow: 0 4px 10px rgba(0, 107, 91, 0.08), 0 1px 3px rgba(0, 107, 91, 0.04) !important;
-  border-bottom: none !important;
-}
-.coord-upload-tabs button.coord-upload-tab-exportar.is-active svg {
-  color: #006b5b !important;
+/* Active State - Unificado para todos */
+html body .coord-upload-tabs button.is-active,
+html body .coord-upload-tabs button.coord-upload-tab-masiva.is-active,
+html body .coord-upload-tabs button.coord-upload-tab-individual.is-active,
+html body .coord-upload-tabs button.coord-upload-tab-exportar.is-active,
+html body .coord-upload-tabs button.coord-upload-tab-plantillas.is-active {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #000000 !important;
+  font-weight: 600 !important; /* Semi-bold weight matching Direccion */
+  border-bottom: 2px solid #0c8569 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }
 
-/* Active State - Plantillas */
-.coord-upload-tabs button.coord-upload-tab-plantillas.is-active {
-  background: #ffffff !important;
-  color: #006b5b !important;
-  box-shadow: 0 4px 10px rgba(0, 107, 91, 0.08), 0 1px 3px rgba(0, 107, 91, 0.04) !important;
-  border-bottom: none !important;
-}
-.coord-upload-tabs button.coord-upload-tab-plantillas.is-active svg {
-  color: #006b5b !important;
-}
-.coord-upload-tabs button.coord-upload-tab-plantillas:hover {
-  background: rgba(0, 107, 91, 0.05) !important;
-  color: #006b5b !important;
-}
-.coord-upload-tabs button.coord-upload-tab-plantillas:hover svg {
-  color: #006b5b !important;
+html body .coord-upload-tabs button.is-active svg,
+html body .coord-upload-tabs button.coord-upload-tab-masiva.is-active svg,
+html body .coord-upload-tabs button.coord-upload-tab-individual.is-active svg,
+html body .coord-upload-tabs button.coord-upload-tab-exportar.is-active svg,
+html body .coord-upload-tabs button.coord-upload-tab-plantillas.is-active svg {
+  color: #0c8569 !important;
 }
 
 /* ==========================================================================

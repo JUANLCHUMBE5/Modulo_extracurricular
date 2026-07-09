@@ -17,10 +17,10 @@
   align-items: center;
   gap: 12px;
   padding: 16px 20px !important;
-  border-radius: 20px !important;
+  border-radius: 12px !important;
   background: #ffffff !important;
-  border: 1px solid #dcedc8 !important;
-  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.015) !important;
   overflow: hidden;
   transition: all 0.25s ease;
   line-height: var(--leading-tight);
@@ -194,10 +194,10 @@
 .dir-panel {
   min-width: 0;
   padding: 20px !important;
-  border-radius: 20px !important;
+  border-radius: 12px !important;
   background: #ffffff !important;
-  border: 1px solid #dcedc8 !important;
-  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.015) !important;
   transition: all 0.25s ease;
 }
 
@@ -402,9 +402,9 @@
 .dir-dashboard-workspace-card {
   background: #ffffff !important;
   background-color: #ffffff !important;
-  border-radius: 20px !important;
-  border: 1px solid #dcedc8 !important;
-  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.015) !important;
   padding: 24px !important;
   box-sizing: border-box !important;
   margin-top: 16px !important;

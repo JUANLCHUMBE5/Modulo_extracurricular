@@ -17,6 +17,7 @@ import {
   IconBuilding as Building,
   IconClipboardList as ClipboardList,
   IconSearch as Search,
+  IconCreditCard as CreditCard,
 } from "@tabler/icons-react";
 
 export const moduleShortcutGroups = [
@@ -35,8 +36,8 @@ export const moduleShortcutGroups = [
     icon: School,
     items: [
       { id: "coordinacion-programas", label: "Gestion de Programas", module: "coordinacion", view: "programas", permissions: ["coordinacion.programas"], icon: BookOpen },
-      { id: "coordinacion-carga", label: "Cargar Invitados", module: "coordinacion", view: "registro_individual", permissions: ["coordinacion.carga"], icon: Upload },
-      { id: "coordinacion-documentos", label: "Plantillas y Documentos", module: "coordinacion", view: "carga", permissions: ["coordinacion.documentos"], icon: FileText },
+      { id: "coordinacion-carga", label: "Cargar Invitados", module: "coordinacion", view: "carga", permissions: ["coordinacion.carga"], icon: Upload },
+      { id: "coordinacion-documentos", label: "Plantillas y Documentos", module: "coordinacion", view: "documentos", permissions: ["coordinacion.documentos"], icon: FileText },
       { id: "coordinacion-asistencia", label: "Asistencia y Control", module: "coordinacion", view: "asistencias", permissions: ["coordinacion.asistencia"], icon: UserCheck },
       { id: "coordinacion-historial", label: "Historial / Archivo", module: "coordinacion", view: "historial", permissions: ["coordinacion.historial"], icon: Archive },
     ],
@@ -49,6 +50,7 @@ export const moduleShortcutGroups = [
       { id: "caja-pagos", label: "Registrar Cobro", module: "caja", view: "pagos", permissions: ["caja.cobro"], icon: Receipt },
       { id: "caja-reportes", label: "Control y Exportacion", module: "caja", view: "reportes", permissions: ["caja.control"], icon: ChartBar },
       { id: "caja-correlativo", label: "Anulación de Correlativo", module: "caja", view: "cancelar_correlativo", permissions: ["caja.correlativo"], icon: ReceiptOff },
+      { id: "caja-metodos-pago", label: "Métodos de Pago", module: "caja", view: "metodos_pago", permissions: ["caja.cobro"], icon: CreditCard },
     ],
   },
   {

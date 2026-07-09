@@ -9,6 +9,7 @@ import {
   IconChevronRight as ChevronRight,
   IconChevronDown as ChevronDown,
   IconWallet as Wallet,
+  IconCreditCard as CreditCard,
 } from "@tabler/icons-react";
 import { LOGO_COLEGIO_SRC } from "../../constants/cajaConstants";
 import "./CajaSidebar.css";
@@ -95,6 +96,17 @@ export default function CajaSidebar({
               >
                 <span>Anulación de Correlativo</span>
               </button>
+              <button
+                className={`coord-nav-item ${!delegatedContent && vista === "metodos_pago" ? "coord-nav-item-active" : ""}`}
+                onClick={() => {
+                  onClearDelegatedModule?.();
+                  setVista("metodos_pago");
+                }}
+                type="button"
+                title="Métodos de Pago"
+              >
+                <span>Métodos de Pago</span>
+              </button>
             </nav>
           )}
         </div>
@@ -132,6 +144,17 @@ export default function CajaSidebar({
             title="Anulación de Correlativo"
           >
             <ReceiptOff size={17} />
+          </button>
+          <button
+            className={!delegatedContent && vista === "metodos_pago" ? "is-active" : ""}
+            onClick={() => {
+              onClearDelegatedModule?.();
+              setVista("metodos_pago");
+            }}
+            type="button"
+            title="Métodos de Pago"
+          >
+            <CreditCard size={17} />
           </button>
         </nav>
       )}

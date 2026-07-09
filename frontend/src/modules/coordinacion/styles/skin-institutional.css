@@ -8,10 +8,10 @@
   --coord-bg: #f4f7fb;
   --coord-sidebar: #173f3a;
   --coord-sidebar-soft: #214d47;
-  --coord-green: #3f6fbd;
-  --coord-green-soft: #edf4ff;
-  --coord-blue: #3f6fbd;
-  --coord-blue-soft: #edf4ff;
+  --coord-green: #176c60;
+  --coord-green-soft: #e8f7f2;
+  --coord-blue: #176c60;
+  --coord-blue-soft: #e8f7f2;
   --coord-warning: #a76516;
   --coord-warning-soft: #fff5e3;
   --coord-cream: #ffffff;
@@ -19,7 +19,7 @@
   --coord-red: #c84848;
   --coord-red-soft: #fff0f0;
   background:
-    radial-gradient(circle at 88% 8%, rgba(63, 111, 189, 0.09), transparent 28%),
+    radial-gradient(circle at 88% 8%, rgba(23, 108, 96, 0.09), transparent 28%),
     linear-gradient(180deg, #fbfcff 0%, var(--coord-bg) 100%);
 }
 
@@ -75,8 +75,8 @@
 .coord-title-icon,
 .coord-modal-icon,
 .coord-section-heading > svg {
-  color: #3f6fbd;
-  background: #edf4ff;
+  color: #176c60;
+  background: #e8f7f2;
 }
 
 .coord-register-button,
@@ -91,12 +91,12 @@
 }
 
 .coord-primary-button {
-  border-color: #2c4774;
-  background: #2c4774;
+  border-color: #176c60;
+  background: #176c60;
 }
 
 .coord-primary-button:hover {
-  background: #243b61;
+  background: #0d3b35;
 }
 
 .coord-input-wrap:focus-within,
@@ -104,49 +104,49 @@
 .coord-program-form input:focus,
 .coord-program-form select:focus,
 .coord-program-form textarea:focus {
-  border-color: #3f6fbd;
-  box-shadow: 0 0 0 3px rgba(63, 111, 189, 0.13);
+  border-color: #176c60;
+  box-shadow: 0 0 0 3px rgba(23, 108, 96, 0.13);
 }
 
 .coord-secondary-button:hover,
 .coord-template-autofill:hover,
 .coord-modal-close:hover {
-  border-color: #3f6fbd;
-  color: #2c4774;
-  background: #f3f7ff;
+  border-color: #176c60;
+  color: #176c60;
+  background: #e8f7f2;
 }
 
 .coord-pill,
 .coord-template-var.is-ok {
-  border-color: #d8e5fb;
-  color: #315f9f;
-  background: #edf4ff;
+  border-color: #bdf1e5;
+  color: #176c60;
+  background: #e8f7f2;
 }
 
 .coord-upload-progress {
-  border-color: #d8e5fb;
-  background: #f4f8ff;
+  border-color: #bdf1e5;
+  background: #f0fbf8;
 }
 
 .coord-upload-progress-bar span,
 .coord-bar-fill {
-  background: #3f6fbd;
+  background: #176c60;
 }
 
 .coord-load-success {
-  border-color: #d8e5fb;
-  background: #f4f8ff;
+  border-color: #bdf1e5;
+  background: #f0fbf8;
 }
 
 .coord-summary-green span,
 .coord-template-var.is-ok {
-  color: #315f9f;
-  background: #edf4ff;
+  color: #176c60;
+  background: #e8f7f2;
 }
 
 .coord-check-option input[type="checkbox"],
 .coord-checkbox-row input[type="checkbox"] {
-  accent-color: #3f6fbd;
+  accent-color: #176c60;
 }
 
 .coord-layout.coord-layout-collapsed {

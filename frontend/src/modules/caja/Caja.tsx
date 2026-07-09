@@ -8,6 +8,7 @@ import CajaSidebar from "./components/CajaSidebar/CajaSidebar";
 import CajaCobros from "./components/CajaCobros/CajaCobros";
 import CajaReportes from "./components/CajaReportes/CajaReportes";
 import CajaCancelarCorrelativo from "./components/CajaCancelarCorrelativo/CajaCancelarCorrelativo";
+import CajaMetodosPago from "./components/CajaMetodosPago/CajaMetodosPago";
 import HistorialAlumnoModal from "./components/CajaReportes/HistorialAlumnoModal";
 
 import { formatearSoles } from "./utils/cajaFormatters";
@@ -102,6 +103,13 @@ export default function Caja({
                   caja.cargarCorrelativos();
                 }}
               />
+            ) : caja.vista === "metodos_pago" ? (
+              <CajaMetodosPago
+                sidebarExpanded={sidebarExpanded}
+                toggleSidebar={toggleSidebar}
+                metodosPago={caja.metodosPago}
+                actualizarMetodosPago={caja.actualizarMetodosPago}
+              />
             ) : (
               <CajaCobros
                 pagoConfirmado={caja.pagoConfirmado}
@@ -126,6 +134,7 @@ export default function Caja({
                 resultadosBusqueda={caja.resultadosBusqueda}
                 onSeleccionarEstudiante={caja.seleccionarEstudianteDesdeBusqueda}
                 onVerHistorialAlumno={caja.abrirHistorialAlumno}
+                metodosPago={caja.metodosPago}
               />
             )}
           </>
@@ -166,6 +175,7 @@ export default function Caja({
           inscripcionesCaja={caja.inscripcionesCaja}
           resultadosBusqueda={caja.resultadosBusqueda}
           onSeleccionarEstudiante={caja.seleccionarEstudianteDesdeBusqueda}
+          metodosPago={caja.metodosPago}
         />
         <Group justify="flex-end" mt="lg">
           <Button onClick={caja.cerrarModal} variant="default">

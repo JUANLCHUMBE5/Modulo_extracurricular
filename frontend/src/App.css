@@ -445,8 +445,25 @@ textarea:focus-visible {
 .sec-sidebar-menu-card .module-switcher-header-icon,
 .caja-sidebar-menu-card .module-switcher-header-icon,
 .dir-sidebar-menu-card .module-switcher-header-icon,
-.coord-sidebar-menu-card .module-switcher-header-icon {
+.coord-sidebar-menu-card .module-switcher-header-icon,
+.module-switcher-header-icon-container {
   color: #0f5b49 !important;
+}
+
+/* Acordeón del ModuleSwitcher con transición de grid */
+.module-switcher-wrapper {
+  display: grid !important;
+  grid-template-rows: 0fr !important;
+  transition: grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  overflow: hidden !important;
+}
+
+.module-switcher-wrapper.is-open {
+  grid-template-rows: 1fr !important;
+}
+
+.module-switcher-inner {
+  min-height: 0 !important;
 }
 
 /* Contenedor de submódulos - Sin línea vertical */
@@ -461,7 +478,6 @@ textarea:focus-visible {
   flex-direction: column !important;
   gap: 4px !important;
   background: transparent !important;
-  animation: slideDown 0.2s ease-out forwards;
 }
 
 .sec-sidebar-menu-card .module-switcher-content.coord-nav,
@@ -471,15 +487,14 @@ textarea:focus-visible {
   border-left: none !important;
 }
 
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Rotación del icono chevron */
+.module-switcher-header-icon-container {
+  display: inline-flex !important;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.module-switcher-header-icon-container.is-open {
+  transform: rotate(90deg) !important;
 }
 
 /* Submódulos (Enlaces Hijos) */

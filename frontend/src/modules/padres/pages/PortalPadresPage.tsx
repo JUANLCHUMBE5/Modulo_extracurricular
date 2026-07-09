@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Alert } from "@mantine/core";
 import {
   IconAlertCircle as AlertCircle,
@@ -9,6 +10,9 @@ import {
   IconClipboardCheck as ClipboardCheck,
   IconCircleCheck as CheckCircle2,
   IconToolsKitchen2 as Utensils,
+  IconBell as Megaphone,
+  IconChevronLeft as ChevronLeft,
+  IconChevronRight as ChevronRight,
 } from "@tabler/icons-react";
 import AsistentePadres from "../components/AsistentePadres";
 import ComunicadoStep from "../components/ComunicadoStep";
@@ -110,6 +114,22 @@ export default function Padres({ user, onLogout }) {
     actualizarAceptacionComunicado,
     continuarDesdeComunicado,
   } = usePortalPadres({ user, padresHook });
+
+  const [slideIndex, setSlideIndex] = useState(0);
+
+  useEffect(() => {
+    if (!anuncioPadres || !Array.isArray(anuncioPadres) || anuncioPadres.length <= 1 || anuncioCerrado) {
+      return;
+    }
+    const interval = setInterval(() => {
+      setSlideIndex((prev) => (prev + 1) % anuncioPadres.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [anuncioPadres, anuncioCerrado]);
+
+  useEffect(() => {
+    setSlideIndex(0);
+  }, [anuncioPadres]);
 
   function renderPaso() {
     if (pasoActivo === 1) {
@@ -444,6 +464,135 @@ export default function Padres({ user, onLogout }) {
           setPagoDetalle={setPagoDetalle}
         />
       ) : null}
+
+      {Array.isArray(anuncioPadres) && anuncioPadres.length > 0 && !anuncioCerrado && (
+        <div className="padres-modal-backdrop" style={{ zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center", position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0, 0, 0, 0.6)" }}>
+          <section
+            className="padres-info-modal"
+            role="dialog"
+            aria-modal="true"
+            style={{ maxWidth: "min(95vw, 450px)", width: "fit-content", padding: "16px", borderRadius: "12px", background: "#ffffff", display: "flex", flexDirection: "column", gap: "12px", boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)", position: "relative" }}
+          >
+            <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <Megaphone size={20} style={{ color: "#0c8569" }} />
+                <h3 style={{ margin: 0, fontSize: "16px", fontWeight: 850, color: "#111827" }}>
+                  {anuncioPadres.length > 1 
+                    ? `Anuncio Oficial (${slideIndex + 1} de ${anuncioPadres.length})`
+                    : "Anuncio Oficial"
+                  }
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAnuncioCerrado(true)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "flex", alignItems: "center", padding: "4px" }}
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            {/* Slider Content Wrapper */}
+            <div style={{ position: "relative", textAlign: "center", padding: "4px 0", minHeight: "200px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {/* Left Arrow (only if multiple announcements) */}
+              {anuncioPadres.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setSlideIndex((prev) => (prev === 0 ? anuncioPadres.length - 1 : prev - 1))}
+                  style={{
+                    position: "absolute",
+                    left: "-12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "50%",
+                    width: "36px",
+                    height: "36px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                    color: "#475569",
+                    zIndex: 2,
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; e.currentTarget.style.color = "#0c8569"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; e.currentTarget.style.color = "#475569"; }}
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              )}
+
+              {/* Current Active Announcement Image */}
+              <div style={{ width: "100%", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <img
+                  src={anuncioPadres[slideIndex]?.imagen}
+                  alt={anuncioPadres[slideIndex]?.nombre || "Anuncio"}
+                  style={{ width: "100%", borderRadius: "8px", maxHeight: "65vh", objectFit: "contain", display: "block", transition: "opacity 0.3s ease" }}
+                />
+              </div>
+
+              {/* Right Arrow (only if multiple announcements) */}
+              {anuncioPadres.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setSlideIndex((prev) => (prev + 1) % anuncioPadres.length)}
+                  style={{
+                    position: "absolute",
+                    right: "-12px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "#ffffff",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "50%",
+                    width: "36px",
+                    height: "36px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                    color: "#475569",
+                    zIndex: 2,
+                    transition: "all 0.2s"
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f8fafc"; e.currentTarget.style.color = "#0c8569"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "#ffffff"; e.currentTarget.style.color = "#475569"; }}
+                >
+                  <ChevronRight size={20} />
+                </button>
+              )}
+            </div>
+
+            {/* Bottom dots for multiple slides */}
+            {anuncioPadres.length > 1 && (
+              <div style={{ display: "flex", justifyContent: "center", gap: "6px", margin: "4px 0" }}>
+                {anuncioPadres.map((_, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setSlideIndex(idx)}
+                    style={{
+                      width: "8px",
+                      height: "8px",
+                      borderRadius: "50%",
+                      padding: 0,
+                      border: "none",
+                      backgroundColor: idx === slideIndex ? "#0c8569" : "#cbd5e1",
+                      cursor: "pointer",
+                      transition: "background-color 0.2s"
+                    }}
+                    aria-label={`Ir al anuncio ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+            
+          </section>
+        </div>
+      )}
 
       <AsistentePadres
         abierto={asistenteAbierto}

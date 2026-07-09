@@ -29,6 +29,7 @@ export default function CajaCobros({
   resultadosBusqueda = [],
   onSeleccionarEstudiante,
   onVerHistorialAlumno,
+  metodosPago = [],
 }) {
   const siguienteRecibo = correlativos.reciboActual || correlativos.recibo || "";
 
@@ -62,6 +63,7 @@ export default function CajaCobros({
           resultadosBusqueda={resultadosBusqueda}
           onSeleccionarEstudiante={onSeleccionarEstudiante}
           onVerHistorialAlumno={onVerHistorialAlumno}
+          metodosPago={metodosPago}
         />
         {formulario.inscripcionId ? (
           formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar" ? (

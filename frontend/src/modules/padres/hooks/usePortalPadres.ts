@@ -128,7 +128,57 @@ export default function usePortalPadres({ user, padresHook }: UsePortalPadresPro
   const programaConAnuncio = programaActual?.anuncioImagen
     ? programaActual
     : programasDisponibles.find((item: any) => item.anuncioImagen);
-  const anuncioPadres = programaConAnuncio?.anuncioImagen
+
+  const getGlobalAnuncios = () => {
+    try {
+      const storedList = localStorage.getItem("san_rafael_anuncios_list");
+      const list = storedList ? JSON.parse(storedList) : [];
+
+      const storedSingle = localStorage.getItem("san_rafael_anuncio_publicado");
+      if (storedSingle) {
+        const single = JSON.parse(storedSingle);
+        if (single && single.imagen) {
+          const id = single.id || "ANUNCIO-LEGACY";
+          if (!list.some((item: any) => item.id === id)) {
+            list.push({ ...single, id });
+          }
+        }
+      }
+
+      const parseLocalDatetime = (dateStr: string) => {
+        if (!dateStr) return null;
+        if (dateStr.length === 10 && !dateStr.includes("T")) {
+          return new Date(`${dateStr}T23:59:59`);
+        }
+        return new Date(dateStr);
+      };
+
+      if (Array.isArray(list)) {
+        const filtered = list
+          .filter((item: any) => {
+            if (!item || item.activo === false) return false;
+            if (!item.fechaHasta) return true;
+            const expiration = parseLocalDatetime(item.fechaHasta);
+            if (!expiration || isNaN(expiration.getTime())) return true;
+            return expiration > new Date();
+          })
+          .map((item: any) => ({
+            id: item.id,
+            imagen: item.imagen,
+            nombre: item.nombre,
+            programa: "General",
+          }));
+        console.log("Anuncios vigentes cargados:", filtered);
+        return filtered;
+      }
+    } catch (e) {
+      console.error("Error reading global announcements:", e);
+    }
+    return [];
+  };
+
+  const anunciosGlobales = getGlobalAnuncios();
+  const anuncioPrograma = programaConAnuncio?.anuncioImagen
     ? {
         id: programaConAnuncio.programaId || programaConAnuncio.id || programaConAnuncio.programa || programaConAnuncio.nombre,
         imagen: programaConAnuncio.anuncioImagen,
@@ -136,6 +186,10 @@ export default function usePortalPadres({ user, padresHook }: UsePortalPadresPro
         programa: programaConAnuncio.programa || programaConAnuncio.nombre,
       }
     : null;
+
+  const anuncioPadres = anunciosGlobales.length > 0
+    ? anunciosGlobales
+    : (anuncioPrograma ? [anuncioPrograma] : []);
 
   const datosConfirmados = Boolean(
     (form.apoderado.trim() &&
@@ -187,9 +241,13 @@ export default function usePortalPadres({ user, padresHook }: UsePortalPadresPro
     setPasoActivo(0);
   }, [cargando, guardando, inscripcionPago, pasoActivo, user?.dni, invitacionPendiente, programaAdicional]);
 
+  const anuncioIdsString = Array.isArray(anuncioPadres)
+    ? anuncioPadres.map((p: any) => p.id).join(",")
+    : "";
+
   useEffect(() => {
     setAnuncioCerrado(false);
-  }, [anuncioPadres?.id]);
+  }, [anuncioIdsString]);
 
   useEffect(() => {
     setComunicadoCompletoVisto(false);

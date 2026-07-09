@@ -92,18 +92,31 @@ export default function DireccionCorrelativos({
   };
 
   return (
-    <section className="dir-correlativos-view" style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <article className="dir-correlativos-container" style={{ borderRadius: "8px", overflow: "hidden", padding: "6px 0" }}>
-        <div style={{ marginBottom: "8px" }}>
-          <h2 style={{ margin: 0, color: "#000000", fontSize: "16px", fontWeight: 800 }}>Correlativos del Sistema</h2>
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
+      <header style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <h2 style={{ margin: 0, color: "#111827", fontSize: "20px", fontWeight: 800 }}>
+          Correlativos del Sistema
+        </h2>
+      </header>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", maxWidth: "600px" }}>
+      <section
+        style={{
+          background: "#ffffff",
+          border: "1px solid #e2e8f0",
+          borderRadius: "12px",
+          padding: "24px",
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          gap: "20px"
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px", maxWidth: "600px" }}>
           {/* Recibo Físico */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "12px", fontWeight: 700, color: "#0c8569" }}>N° de Recibo de Ingreso</span>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: "#0c8569" }}>N° de Recibo de Ingreso</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Switch
                   checked={correlativosForm.reciboActive !== false}
                   disabled={guardandoCorrelativos}
@@ -119,19 +132,19 @@ export default function DireccionCorrelativos({
                   }}
                 />
                 <span style={{
-                  fontSize: "10px",
+                  fontSize: "11px",
                   fontWeight: 700,
                   color: correlativosForm.reciboActive !== false ? "#0c8569" : "#dc2626",
                   backgroundColor: correlativosForm.reciboActive !== false ? "#ecfdf5" : "#fef2f2",
                   padding: "2px 8px",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   transition: "all 0.2s ease"
                 }}>
                   {correlativosForm.reciboActive !== false ? "Activo" : "Inactivo"}
                 </span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div style={{ display: "flex", gap: "12px" }}>
               <TextInput
                 label="Inicio (Valor Inicial)"
                 placeholder="Ej. REC-0500"
@@ -153,13 +166,11 @@ export default function DireccionCorrelativos({
             </div>
           </div>
 
-
-
           {/* Egreso */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "12px", fontWeight: 700, color: "#0c8569" }}>N° de Recibo de Egreso</span>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: "#0c8569" }}>N° de Recibo de Egreso</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Switch
                   checked={correlativosForm.egresoActive !== false}
                   disabled={guardandoCorrelativos}
@@ -175,19 +186,19 @@ export default function DireccionCorrelativos({
                   }}
                 />
                 <span style={{
-                  fontSize: "10px",
+                  fontSize: "11px",
                   fontWeight: 700,
                   color: correlativosForm.egresoActive !== false ? "#0c8569" : "#dc2626",
                   backgroundColor: correlativosForm.egresoActive !== false ? "#ecfdf5" : "#fef2f2",
                   padding: "2px 8px",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   transition: "all 0.2s ease"
                 }}>
                   {correlativosForm.egresoActive !== false ? "Activo" : "Inactivo"}
                 </span>
               </div>
             </div>
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div style={{ display: "flex", gap: "12px" }}>
               <TextInput
                 label="Inicio (Valor Inicial)"
                 placeholder="Ej. EGR-0200"
@@ -209,53 +220,47 @@ export default function DireccionCorrelativos({
             </div>
           </div>
 
-          <div style={{ marginTop: "6px", display: "flex", gap: "8px" }}>
+          <div style={{ marginTop: "8px", display: "flex", gap: "8px" }}>
             {!editando ? (
               <Button
                 onClick={handleIniciarEdicion}
-                leftSection={<Edit size={12} />}
+                leftSection={<Edit size={14} />}
                 styles={{
                   root: {
-                    height: "28px",
+                    height: "36px",
                     borderRadius: "6px",
-                    fontWeight: 700,
-                    fontSize: "12px",
-                    padding: "0 14px",
-                    background: "#e6fcf5",
-                    color: "#0c8569",
-                    border: "1px solid #c3fae8",
+                    fontWeight: 600,
+                    fontSize: "13px",
+                    padding: "0 16px",
+                    background: "#0c8569",
+                    color: "#ffffff",
                     transition: "all 0.2s ease",
                     "&:hover": {
-                      background: "#c3fae8",
-                      color: "#09634e",
-                      borderColor: "#a3f5d8"
+                      background: "#0a7058"
                     }
                   }
                 }}
               >
-                Editar
+                Editar Correlativos
               </Button>
             ) : (
               <>
                 <Button
                   loading={guardandoCorrelativos}
                   onClick={handleSave}
-                  leftSection={<Check size={12} />}
+                  leftSection={<Check size={14} />}
                   styles={{
                     root: {
-                      height: "28px",
+                      height: "36px",
                       borderRadius: "6px",
-                      fontWeight: 700,
-                      fontSize: "12px",
-                      padding: "0 14px",
-                      background: "#e6fcf5",
-                      color: "#0c8569",
-                      border: "1px solid #c3fae8",
+                      fontWeight: 600,
+                      fontSize: "13px",
+                      padding: "0 16px",
+                      background: "#000000",
+                      color: "#ffffff",
                       transition: "all 0.2s ease",
                       "&:hover": {
-                        background: "#c3fae8",
-                        color: "#09634e",
-                        borderColor: "#a3f5d8"
+                        background: "#1e293b"
                       }
                     }
                   }}
@@ -266,13 +271,13 @@ export default function DireccionCorrelativos({
                   variant="subtle"
                   color="gray"
                   onClick={handleCancelarEdicion}
-                  leftSection={<Cancel size={12} />}
+                  leftSection={<Cancel size={14} />}
                   styles={{
                     root: {
-                      height: "28px",
+                      height: "36px",
                       borderRadius: "6px",
-                      fontWeight: 600,
-                      fontSize: "12px",
+                      fontWeight: 500,
+                      fontSize: "13px",
                     }
                   }}
                 >
@@ -282,7 +287,7 @@ export default function DireccionCorrelativos({
             )}
           </div>
         </div>
-      </article>
-    </section>
+      </section>
+    </div>
   );
 }

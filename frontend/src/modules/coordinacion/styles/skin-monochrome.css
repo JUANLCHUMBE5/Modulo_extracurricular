@@ -265,8 +265,8 @@
 
 .coord-modal {
   border: 1px solid #e7e7e7;
-  border-radius: 20px;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.24);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
 }
 
 .coord-modal-actions {

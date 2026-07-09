@@ -31,6 +31,7 @@ export default function CajaFields({
   resultadosBusqueda = [],
   onSeleccionarEstudiante,
   onVerHistorialAlumno,
+  metodosPago = [],
 }) {
   const pagoHabilitado = modoEdicion || Boolean(formulario.inscripcionId);
   const mostrarSelectorTallerCaja = !pagoHabilitado && !modoEdicion && inscripcionesCaja.length > 0;
@@ -61,11 +62,15 @@ export default function CajaFields({
           { value: "Descuento", label: "Descuento" },
         ]
       : []),
-    { value: "Efectivo", label: "Efectivo" },
-    { value: "Yape", label: "Yape" },
-    { value: "Plin", label: "Plin" },
-    { value: "Transferencia", label: "Transferencia" },
-    { value: "Tarjeta", label: "Tarjeta" },
+    ...(Array.isArray(metodosPago) && metodosPago.length > 0
+      ? metodosPago.map((m) => ({ value: m, label: m }))
+      : [
+          { value: "Efectivo", label: "Efectivo" },
+          { value: "Yape", label: "Yape" },
+          { value: "Plin", label: "Plin" },
+          { value: "Transferencia", label: "Transferencia" },
+          { value: "Tarjeta", label: "Tarjeta" },
+        ]),
   ];
 
   const datosLectura = [

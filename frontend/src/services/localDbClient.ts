@@ -6,6 +6,7 @@ const STORAGE_KEY = "san_rafael_mock_database_v2";
 
 export const initialData = {
   categorias: ["Academico", "Deportivo", "Arte", "Maraton", "Otro"],
+  metodosPago: ["Efectivo", "Yape", "Plin", "Transferencia", "Tarjeta"],
   configuracionInstitucional: {
     logoInstitucion: null,
     logoCambridge: null,

@@ -34,6 +34,29 @@ export default function DireccionDescuentos({
     return clean.slice(0, 2);
   };
 
+  // Validación y cálculo en tiempo real
+  const costoOriginal = inscripcionSeleccionada
+    ? Number(inscripcionSeleccionada.costoOriginal || inscripcionSeleccionada.costo || 0)
+    : 0;
+  const valorNum = Number(datosBeneficio.valor || 0);
+  const esValorInvalido =
+    datosBeneficio.tipo === "porcentaje"
+      ? valorNum > 100 || (valorNum < 0 && datosBeneficio.valor !== "")
+      : datosBeneficio.tipo === "monto"
+        ? valorNum > costoOriginal || (valorNum < 0 && datosBeneficio.valor !== "")
+        : false;
+
+  const descuentoCalculado =
+    datosBeneficio.tipo === "beca"
+      ? costoOriginal
+      : datosBeneficio.tipo === "porcentaje"
+        ? (costoOriginal * Math.min(valorNum, 100)) / 100
+        : datosBeneficio.tipo === "monto"
+          ? Math.min(valorNum, costoOriginal)
+          : 0;
+
+  const costoFinalCalculado = Math.max(0, costoOriginal - descuentoCalculado);
+
   return (
     <section className="dir-descuentos-view" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       <article className="dir-search-container" style={{ borderRadius: "8px", overflow: "hidden" }}>
@@ -74,9 +97,10 @@ export default function DireccionDescuentos({
               <Table striped highlightOnHover verticalSpacing="xs">
                 <Table.Thead>
                   <Table.Tr style={{ background: "#f8fafc" }}>
-                    <Table.Th style={{ width: "32%" }}>Estudiante</Table.Th>
+                    <Table.Th style={{ width: "24%" }}>Estudiante</Table.Th>
                     <Table.Th style={{ width: "12%" }}>DNI</Table.Th>
-                    <Table.Th style={{ width: "24%" }}>Taller / Programa</Table.Th>
+                    <Table.Th style={{ width: "14%" }}>Categoría</Table.Th>
+                    <Table.Th style={{ width: "22%" }}>Taller / Programa</Table.Th>
                     <Table.Th style={{ textAlign: "right", width: "12%" }}>Costo Taller</Table.Th>
                     <Table.Th style={{ width: "14%" }}>Beneficio</Table.Th>
                     <Table.Th style={{ textAlign: "right", width: "12%" }}>Costo Final</Table.Th>
@@ -106,11 +130,11 @@ export default function DireccionDescuentos({
                         <Table.Td style={{ fontWeight: 500, color: "#000000" }}>
                           {ins.dni || ins.dniEstudiante}
                         </Table.Td>
+                        <Table.Td style={{ fontWeight: 500, color: "#000000", fontSize: "12px" }}>
+                          {ins.categoria || "Extracurricular"}
+                        </Table.Td>
                         <Table.Td>
-                          <div style={{ display: "flex", flexDirection: "column" }}>
-                            <span style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>{ins.programa}</span>
-                            <span style={{ fontSize: "11px", color: "#000000", marginTop: "2px", fontWeight: 500 }}>{ins.categoria || "Extracurricular"}</span>
-                          </div>
+                          <span style={{ fontSize: "13px", color: "#000000", fontWeight: 500 }}>{ins.programa}</span>
                         </Table.Td>
                         <Table.Td style={{ textAlign: "right" }} className={tieneDescuento ? "dir-cost-original-td" : ""}>
                           {formatearSoles(ins.costoOriginal || ins.costo)}
@@ -259,7 +283,7 @@ export default function DireccionDescuentos({
               value={datosBeneficio.valor}
               onChange={(e) => setDatosBeneficio({ ...datosBeneficio, valor: e.target.value })}
               type="number"
-              min="1"
+              min="0"
               required
               size="xs"
               styles={{
@@ -267,6 +291,59 @@ export default function DireccionDescuentos({
                 input: { borderRadius: "6px", borderColor: "#cbd5e1", height: "28px" }
               }}
             />
+          )}
+
+          {/* Resumen de cálculo en tiempo real */}
+          {inscripcionSeleccionada && (
+            <div style={{
+              backgroundColor: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: "8px",
+              padding: "10px 12px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+              marginTop: "4px"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#475569" }}>
+                <span>Costo original:</span>
+                <span style={{ fontWeight: 600, color: "#1f2937" }}>{formatearSoles(costoOriginal)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#475569" }}>
+                <span>Descuento aplicado:</span>
+                <span style={{ fontWeight: 600, color: "#b91c1c" }}>
+                  {descuentoCalculado > 0 ? `- ${formatearSoles(descuentoCalculado)}` : "S/ 0.00"}
+                </span>
+              </div>
+              <Divider style={{ margin: "2px 0" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: 700, color: "#1e293b" }}>
+                <span>Costo final a pagar:</span>
+                <span style={{ color: "#166534" }}>{formatearSoles(costoFinalCalculado)}</span>
+              </div>
+
+              {esValorInvalido && (
+                <div style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  backgroundColor: "#fef2f2",
+                  border: "1px solid #fecdd3",
+                  color: "#9f1239",
+                  padding: "6px 8px",
+                  borderRadius: "6px",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  marginTop: "4px"
+                }}>
+                  <AlertCircle size={14} />
+                  <span>
+                    {datosBeneficio.tipo === "porcentaje"
+                      ? "El porcentaje de descuento no puede ser mayor al 100%."
+                      : `El descuento no puede superar el costo original (${formatearSoles(costoOriginal)}).`}
+                  </span>
+                </div>
+              )}
+            </div>
           )}
 
           <Textarea
@@ -312,12 +389,13 @@ export default function DireccionDescuentos({
               <Button
                 onClick={guardarBeneficio}
                 loading={buscandoDescuento}
+                disabled={esValorInvalido || !datosBeneficio.justificacion.trim() || (datosBeneficio.tipo !== "beca" && !datosBeneficio.valor)}
                 size="xs"
                 styles={{
                   root: {
                     borderRadius: "6px",
                     fontWeight: 600,
-                    background: "#000000",
+                    background: esValorInvalido ? "#94a3b8" : "#000000",
                     color: "#ffffff",
                     padding: "0 12px",
                     height: "28px"

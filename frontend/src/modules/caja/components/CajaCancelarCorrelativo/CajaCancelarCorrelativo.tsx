@@ -71,17 +71,17 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
     <section className="caja-payment-workspace caja-correlativo-workspace" style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%" }}>
 
       {/* TABS DE SELECCIÓN */}
-      <div style={{ display: "flex", borderBottom: "2px solid #e2e8f0", paddingBottom: "0px", gap: "24px", marginBottom: "8px" }}>
+      <div style={{ display: "flex", gap: "24px", marginBottom: "16px" }}>
         <button
           onClick={() => setActiveTab("anular")}
           type="button"
           style={{
             background: "none",
             border: "none",
-            borderBottom: activeTab === "anular" ? "3px solid #b45309" : "3px solid transparent",
-            color: activeTab === "anular" ? "#b45309" : "#64748b",
-            fontSize: "16px",
-            fontWeight: 700,
+            borderBottom: activeTab === "anular" ? "2px solid #0c8569" : "2px solid transparent",
+            color: activeTab === "anular" ? "#000000" : "#64748b",
+            fontSize: "15px",
+            fontWeight: activeTab === "anular" ? 600 : 500,
             padding: "8px 4px 12px 4px",
             cursor: "pointer",
             display: "flex",
@@ -99,10 +99,10 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
           style={{
             background: "none",
             border: "none",
-            borderBottom: activeTab === "egreso" ? "3px solid #0c8569" : "3px solid transparent",
-            color: activeTab === "egreso" ? "#0c8569" : "#64748b",
-            fontSize: "16px",
-            fontWeight: 700,
+            borderBottom: activeTab === "egreso" ? "2px solid #0c8569" : "2px solid transparent",
+            color: activeTab === "egreso" ? "#000000" : "#64748b",
+            fontSize: "15px",
+            fontWeight: activeTab === "egreso" ? 600 : 500,
             padding: "8px 4px 12px 4px",
             cursor: "pointer",
             display: "flex",
@@ -118,9 +118,9 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
 
       {activeTab === "anular" ? (
         <>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-            <ReceiptOff size={24} style={{ color: "#b45309" }} />
-            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: "#1f2937" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+            <ReceiptOff size={22} color="#0c8569" />
+            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: "#111827" }}>
               Anulación de Correlativo / Recibo del Sistema
             </h2>
           </div>
@@ -303,9 +303,9 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
         </>
       ) : (
         <>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "4px" }}>
-            <Coins size={24} style={{ color: "#0c8569" }} />
-            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: "#1f2937" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+            <Coins size={22} color="#0c8569" />
+            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: 800, color: "#111827" }}>
               Registro de Egresos de Caja (Gasto/Devolución)
             </h2>
           </div>

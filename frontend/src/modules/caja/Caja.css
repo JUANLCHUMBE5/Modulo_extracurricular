@@ -45,7 +45,7 @@
   width: 100% !important;
   max-width: 100% !important;
   margin: 0 !important;
-  padding: 0 0 32px !important;
+  padding: 16px 24px 32px !important;
 }
 
 .caja-modal-header {
@@ -83,9 +83,9 @@
 .caja-panel {
   background: #ffffff !important;
   background-color: #ffffff !important;
-  border-radius: 20px !important;
-  border: 1px solid #dcedc8 !important;
-  box-shadow: 0 8px 24px rgba(0, 40, 20, 0.04) !important;
+  border-radius: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.015) !important;
   padding: 20px !important;
   margin-bottom: 18px !important;
   box-sizing: border-box !important;

@@ -25,7 +25,7 @@ export default function FinalizarProgramaModal({
 
   return (
     <div className="coord-modal-overlay" onClick={onClose}>
-      <div className="coord-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "480px", borderRadius: "16px", overflow: "hidden" }}>
+      <div className="coord-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "480px", borderRadius: "12px", overflow: "hidden" }}>
         <div style={{ position: "relative", padding: "24px 24px 20px" }}>
           <button
             type="button"

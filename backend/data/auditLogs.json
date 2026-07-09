@@ -1,5 +1,69 @@
 [
   {
+    "id": "AUD-019014-31a3",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-09T19:23:39.023Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000047\",\"nombres\":\"Lucas Paredes Leon\",\"_usuario_original\":\"60000047\"}"
+  },
+  {
+    "id": "AUD-586096-aeef",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-09T19:16:26.106Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000047\",\"nombres\":\"Lucas Paredes Leon\",\"_usuario_original\":\"60000047\"}"
+  },
+  {
+    "id": "AUD-903725-1fd9",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-09T16:18:23.725Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-364028-ba6c",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-09T16:09:24.034Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-084487-da8b",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-09T16:04:44.487Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-374739-98bd",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-09T13:56:14.742Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-814679-d7a5",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-09T13:46:54.691Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-931147-ef94",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-09T12:58:51.148Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
     "id": "AUD-520559-1fac",
     "usuario": "admin",
     "rol": "coordinacion",

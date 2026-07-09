@@ -1,5 +1,5 @@
 import React from "react";
-import { Badge, Group, ActionIcon, Tooltip } from "@mantine/core";
+import { Badge, Group, ActionIcon, Tooltip, Menu } from "@mantine/core";
 import {
   IconCircleCheck as CheckCircle2,
   IconEdit as Edit3,
@@ -8,6 +8,7 @@ import {
   IconToggleRight as ToggleRight,
   IconTrash as Trash2,
   IconCopy as Copy,
+  IconDotsVertical as DotsVertical,
 } from "@tabler/icons-react";
 import { formatearSoles } from "../utils/coordinacionFormatters";
 import { CuposTabla, GradosTabla, HorarioTabla, VigenciaTabla, AulasTabla } from "./ProgramTableCells";
@@ -28,6 +29,117 @@ export default function ProgramCardItem({
   finalizarPrograma,
   eliminarCurso,
 }: any) {
+  const tieneAccionesExtra = (
+    mostrarSoloArchivados
+      ? !!(puedeCrearProgramas && clonarPrograma)
+      : !!(
+          (puedeCrearProgramas && clonarPrograma) ||
+          (puedeEditarProgramas && programa.estado !== "Finalizado") ||
+          puedeEditarProgramas
+        )
+  );
+
+  const accionesMarkup = tieneAccionesPrograma ? (
+    <div className="coord-program-card-actions" aria-label={`Acciones de ${programa.nombre}`} style={{ minWidth: "auto" }}>
+      <Group gap={6} justify="flex-end">
+        {puedeEditarProgramas && !mostrarSoloArchivados ? (
+          <Tooltip label="Editar">
+            <ActionIcon
+              className="coord-program-action coord-program-action-edit"
+              size="sm"
+              color="blue"
+              variant="light"
+              onClick={() => abrirEditar(programa)}
+            >
+              <Edit3 size={15} />
+            </ActionIcon>
+          </Tooltip>
+        ) : null}
+        {puedeVerAlumnos ? (
+          <Tooltip label={mostrarSoloArchivados ? "Ver alumnos (Historial)" : "Ver alumnos"}>
+            <ActionIcon
+              className="coord-program-action coord-program-action-view"
+              size="sm"
+              color="cyan"
+              variant="light"
+              onClick={() => verInvitados(programa)}
+            >
+              <Eye size={15} />
+            </ActionIcon>
+          </Tooltip>
+        ) : null}
+        {tieneAccionesExtra ? (
+          <Menu shadow="md" width={180} position="bottom-end">
+            <Menu.Target>
+              <Tooltip label="Más acciones">
+                <ActionIcon
+                  className="coord-program-action"
+                  size="sm"
+                  color="gray"
+                  variant="light"
+                  style={{ background: "#f1f5f9", border: "1px solid #cbd5e1", color: "#475569" }}
+                >
+                  <DotsVertical size={15} />
+                </ActionIcon>
+              </Tooltip>
+            </Menu.Target>
+
+            <Menu.Dropdown>
+              {mostrarSoloArchivados ? (
+                <>
+                  {puedeCrearProgramas && clonarPrograma && (
+                    <Menu.Item
+                      leftSection={<Copy size={14} />}
+                      onClick={() => clonarPrograma(programa)}
+                    >
+                      Clonar para nuevo ciclo
+                    </Menu.Item>
+                  )}
+                </>
+              ) : (
+                <>
+                  {puedeCrearProgramas && clonarPrograma && (
+                    <Menu.Item
+                      leftSection={<Copy size={14} />}
+                      onClick={() => clonarPrograma(programa)}
+                    >
+                      Clonar taller
+                    </Menu.Item>
+                  )}
+                  {puedeEditarProgramas && programa.estado !== "Finalizado" && (
+                    <Menu.Item
+                      leftSection={programa.estado === "Habilitado" ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                      onClick={() => toggleEstado(programa)}
+                    >
+                      {programa.estado === "Habilitado" ? "Deshabilitar" : "Habilitar"}
+                    </Menu.Item>
+                  )}
+                  {puedeEditarProgramas && programa.estado !== "Finalizado" && (
+                    <Menu.Item
+                      leftSection={<CheckCircle2 size={14} />}
+                      onClick={() => finalizarPrograma(programa)}
+                    >
+                      Finalizar taller
+                    </Menu.Item>
+                  )}
+                  {puedeEditarProgramas && (
+                    <Menu.Item
+                      color="red"
+                      leftSection={<Trash2 size={14} />}
+                      onClick={() => eliminarCurso(programa)}
+                    >
+                      Archivar taller
+                    </Menu.Item>
+                  )}
+                </>
+              )}
+            </Menu.Dropdown>
+          </Menu>
+        ) : null}
+      </Group>
+    </div>
+  ) : null;
+
   return (
     <article
       className={`coord-program-card-item coord-program-card-${String(programa.estado || "").toLowerCase()} coord-cat-${obtenerClaseCategoria(programa.categoria)}`}
@@ -47,16 +159,30 @@ export default function ProgramCardItem({
               <span className={`coord-badge-period coord-badge-period-${String(programa.periodo || "").toLowerCase()}`}>
                 {String(programa.periodo || "").toLowerCase() === "verano" ? "Ciclo verano" : "Año escolar"}
               </span>
-              <span>Tutor: {programa.responsable ? String(programa.responsable).replace(/\s*-\s*/g, ", ").trim() : "No asignado"}</span>
+              <span>
+                {(() => {
+                  if (!programa.responsable) return "Tutor: No asignado";
+                  const clean = String(programa.responsable).trim();
+                  if (!clean || clean.toLowerCase() === "no asignado") return "Tutor: No asignado";
+                  const count = clean
+                    .split(/\s*(?:·|,|-|\by\b)\s*/)
+                    .map(n => n.trim())
+                    .filter(Boolean).length;
+                  return count <= 1 ? "Tutor: 1" : `Tutores: ${count}`;
+                })()}
+              </span>
             </div>
           </div>
-          <Badge
-            color={programa.estado === "Habilitado" ? "blue" : programa.estado === "Deshabilitado" ? "red" : programa.estado === "Archivado" ? "gray" : "yellow"}
-            variant={programa.estado === "Deshabilitado" || programa.estado === "Archivado" ? "filled" : "light"}
-            size="sm"
-          >
-            {programa.estado}
-          </Badge>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <Badge
+              color={programa.estado === "Habilitado" ? "blue" : programa.estado === "Deshabilitado" ? "red" : programa.estado === "Archivado" ? "gray" : "yellow"}
+              variant={programa.estado === "Deshabilitado" || programa.estado === "Archivado" ? "filled" : "light"}
+              size="sm"
+            >
+              {programa.estado}
+            </Badge>
+            {accionesMarkup}
+          </div>
         </div>
 
         <div className="coord-program-card-grid">
@@ -67,10 +193,6 @@ export default function ProgramCardItem({
           <div className="coord-program-card-detail coord-program-card-schedule">
             <span>Días y horario</span>
             <HorarioTabla programa={programa} />
-          </div>
-          <div className="coord-program-card-detail">
-            <span>Aulas</span>
-            <AulasTabla programa={programa} />
           </div>
           <div className="coord-program-card-detail">
             <span>Vigencia</span>
@@ -92,123 +214,6 @@ export default function ProgramCardItem({
         </div>
       </div>
 
-      {tieneAccionesPrograma ? (
-        <div className="coord-program-card-actions" aria-label={`Acciones de ${programa.nombre}`}>
-          <Group gap={6} justify="flex-end">
-            {mostrarSoloArchivados ? (
-              <>
-                {puedeVerAlumnos ? (
-                  <Tooltip label="Ver alumnos (Historial)">
-                    <ActionIcon
-                      className="coord-program-action coord-program-action-view"
-                      size="sm"
-                      color="cyan"
-                      variant="light"
-                      onClick={() => verInvitados(programa)}
-                    >
-                      <Eye size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                ) : null}
-                {puedeCrearProgramas && clonarPrograma ? (
-                  <Tooltip label="Clonar para nuevo ciclo">
-                    <ActionIcon
-                      className="coord-program-action coord-program-action-clone"
-                      size="sm"
-                      color="indigo"
-                      variant="light"
-                      onClick={() => clonarPrograma(programa)}
-                    >
-                      <Copy size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                ) : null}
-              </>
-            ) : (
-              <>
-                {puedeEditarProgramas ? (
-                  <Tooltip label="Editar">
-                    <ActionIcon
-                      className="coord-program-action coord-program-action-edit"
-                      size="sm"
-                      color="blue"
-                      variant="light"
-                      onClick={() => abrirEditar(programa)}
-                    >
-                      <Edit3 size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                ) : null}
-                {puedeVerAlumnos ? (
-                  <Tooltip label="Ver alumnos">
-                    <ActionIcon
-                      className="coord-program-action coord-program-action-view"
-                      size="sm"
-                      color="cyan"
-                      variant="light"
-                      onClick={() => verInvitados(programa)}
-                    >
-                      <Eye size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                ) : null}
-                {puedeCrearProgramas && clonarPrograma ? (
-                  <Tooltip label="Clonar taller">
-                    <ActionIcon
-                      className="coord-program-action coord-program-action-clone"
-                      size="sm"
-                      color="indigo"
-                      variant="light"
-                      onClick={() => clonarPrograma(programa)}
-                    >
-                      <Copy size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                ) : null}
-                {puedeEditarProgramas && programa.estado !== "Finalizado" && (
-                  <Tooltip label={programa.estado === "Habilitado" ? "Deshabilitar" : "Habilitar"}>
-                    <ActionIcon
-                      className={`coord-program-action ${programa.estado === "Habilitado" ? "coord-program-action-disable" : "coord-program-action-enable"}`}
-                      size="sm"
-                      color={programa.estado === "Habilitado" ? "orange" : "green"}
-                      variant="light"
-                      onClick={() => toggleEstado(programa)}
-                    >
-                      {programa.estado === "Habilitado" ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-                {puedeEditarProgramas && programa.estado !== "Finalizado" && (
-                  <Tooltip label="Finalizar">
-                    <ActionIcon
-                      className="coord-program-action coord-program-action-finish"
-                      size="sm"
-                      color="teal"
-                      variant="light"
-                      onClick={() => finalizarPrograma(programa)}
-                    >
-                      <CheckCircle2 size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                )}
-                {puedeEditarProgramas ? (
-                  <Tooltip label="Archivar taller">
-                    <ActionIcon
-                      className="coord-program-action coord-program-action-delete"
-                      size="sm"
-                      color="red"
-                      variant="light"
-                      onClick={() => eliminarCurso(programa)}
-                    >
-                      <Trash2 size={15} />
-                    </ActionIcon>
-                  </Tooltip>
-                ) : null}
-              </>
-            )}
-          </Group>
-        </div>
-      ) : null}
     </article>
   );
 }

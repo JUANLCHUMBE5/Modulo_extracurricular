@@ -68,6 +68,39 @@ function obtenerHoraInicio(timeStr) {
   return limpio.split("-")[0].trim();
 }
 
+function simplificarYAgruparEtiquetas(labels: string[]): string {
+  const grupos: { [base: string]: string[] } = {};
+  const orden: string[] = [];
+
+  labels.forEach((label) => {
+    const base = label
+      .replace(/\[[^\]]+\]/g, "")
+      .replace(/\([^)]+\)/g, "")
+      .trim();
+
+    const matchParentesis = label.match(/\(([^)]+)\)/);
+    const edad = matchParentesis ? matchParentesis[1].trim() : "";
+
+    if (!base) return;
+
+    if (!grupos[base]) {
+      grupos[base] = [];
+      orden.push(base);
+    }
+    if (edad && !grupos[base].includes(edad)) {
+      grupos[base].push(edad);
+    }
+  });
+
+  return orden
+    .map((base) => {
+      const edades = grupos[base];
+      if (edades.length === 0) return base;
+      return `${base} (${edades.join(", ")})`;
+    })
+    .join(", ");
+}
+
 function HorarioTabla({ programa }) {
   const texto = String(programa?.horario || "").trim();
   if (!texto || texto.toLowerCase() === "por definir") {
@@ -161,7 +194,7 @@ function HorarioTabla({ programa }) {
                             {time}
                           </span>
                           <span style={{ color: "#64748b", fontSize: "10px" }}>
-                            • {timeGroups[time].join(", ")}
+                            • {simplificarYAgruparEtiquetas(timeGroups[time])}
                           </span>
                         </div>
                       </div>
@@ -238,34 +271,15 @@ function HorarioTabla({ programa }) {
             <strong style={{ color: "var(--coord-ink)", fontWeight: "750" }}>
               {diasTexto}:
             </strong>
-            {item.almuerzoInicio ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                <span style={{
-                  fontWeight: "750",
-                  color: "#006b5b",
-                  background: "#e6f4ea",
-                  padding: "0 3px",
-                  borderRadius: "3px",
-                  fontSize: "9px",
-                  textTransform: "uppercase",
-                  lineHeight: "1.2"
-                }}>Alm</span>
-                {item.almuerzoInicio}
-              </span>
-            ) : null}
-            {item.almuerzoInicio && item.claseInicio ? <span style={{ color: "#cbd5e1" }}>|</span> : null}
             {item.claseInicio ? (
-              <span style={{ display: "inline-flex", alignItems: "center", gap: "3px" }}>
-                <span style={{
-                  fontWeight: "750",
-                  color: "#1e3a8a",
-                  background: "#eff6ff",
-                  padding: "0 3px",
-                  borderRadius: "3px",
-                  fontSize: "9px",
-                  textTransform: "uppercase",
-                  lineHeight: "1.2"
-                }}>Clase</span>
+              <span style={{
+                color: "#1e3a8a",
+                background: "#eff6ff",
+                padding: "1px 5px",
+                borderRadius: "4px",
+                fontSize: "10px",
+                fontWeight: "600"
+              }}>
                 {item.claseInicio}
               </span>
             ) : null}
@@ -390,13 +404,16 @@ function GradosTabla({ programa }) {
 
 function VigenciaTabla({ inicio, fin, duracion, avisoDias }) {
   const duracionTexto = duracion || calcularDuracionTexto(inicio, fin);
-  const diasAviso = normalizarDuracionAvisoDias(avisoDias, 7);
   return (
-    <div className="coord-table-date">
-      <span className="coord-date-range">{formatearFechaCorta(inicio)} al {formatearFechaCorta(fin)}</span>
-      <small className="coord-date-details">
-        {duracionTexto ? `${duracionTexto} · ` : ""}Aviso {diasAviso} d.
-      </small>
+    <div className="coord-table-date" style={{ display: "flex", flexDirection: "column", gap: "1px", lineHeight: "1.25" }}>
+      <span style={{ fontWeight: 600, color: "var(--coord-ink)", fontSize: "12px" }}>{formatearFechaCorta(inicio)}</span>
+      <span style={{ color: "#64748b", fontSize: "11px", fontWeight: 500, paddingLeft: "2px" }}>al</span>
+      <span style={{ fontWeight: 600, color: "var(--coord-ink)", fontSize: "12px" }}>{formatearFechaCorta(fin)}</span>
+      {duracionTexto && (
+        <small className="coord-date-details" style={{ fontSize: "10.5px", marginTop: "2px", fontWeight: 500 }}>
+          {duracionTexto}
+        </small>
+      )}
     </div>
   );
 }
