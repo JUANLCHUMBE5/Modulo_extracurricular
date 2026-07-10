@@ -2,13 +2,15 @@ import express from "express";
 import { AuthController } from "../controllers/auth.controller.js";
 import { requireAuth, requireRole } from "../../../common/middlewares/auth.js";
 import { loginLimiter } from "../../../common/middlewares/rateLimiter.js";
+import { validateBody } from "../../../common/middlewares/validation.js";
+import { LoginSchema, ValidatePadreSchema, CreateUserSchema } from "../dtos/auth.dto.js";
 
 const router = express.Router();
 const controller = new AuthController();
 
 // --- RUTAS PÚBLICAS / PORTAL DE PADRES ---
-router.post("/api/v1/extracurricular/padres/validar", loginLimiter, (req, res) => controller.validatePadre(req, res));
-router.post("/api/v1/auth/login", loginLimiter, (req, res) => controller.loginOperator(req, res));
+router.post("/api/v1/extracurricular/padres/validar", loginLimiter, validateBody(ValidatePadreSchema), (req, res) => controller.validatePadre(req, res));
+router.post("/api/v1/auth/login", loginLimiter, validateBody(LoginSchema), (req, res) => controller.loginOperator(req, res));
 
 // --- RUTAS PROTEGIDAS GENERALES ---
 router.get("/api/v1/auth/me", requireAuth, (req, res) => controller.getMe(req, res));
@@ -20,7 +22,7 @@ router.post("/api/v1/administrador/db/reset", requireAuth, requireRole(["adminis
 
 // Gestión de usuarios operadores
 router.get("/api/v1/usuarios", requireAuth, requireRole(["administrador"]), (req, res) => controller.listUsers(req, res));
-router.post("/api/v1/usuarios", requireAuth, requireRole(["administrador"]), (req, res) => controller.createUser(req, res));
+router.post("/api/v1/usuarios", requireAuth, requireRole(["administrador"]), validateBody(CreateUserSchema), (req, res) => controller.createUser(req, res));
 router.put("/api/v1/usuarios/:id", requireAuth, requireRole(["administrador"]), (req, res) => controller.updateUser(req, res));
 router.put("/api/v1/usuarios/:id/estado", requireAuth, requireRole(["administrador"]), (req, res) => controller.updateUserStatus(req, res));
 router.post("/api/v1/usuarios/:id/resetear-contrasena", requireAuth, requireRole(["administrador"]), (req, res) => controller.resetUserPassword(req, res));

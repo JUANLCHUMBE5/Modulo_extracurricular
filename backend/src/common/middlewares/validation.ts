@@ -8,7 +8,7 @@ export const validateBody = (schema: ZodSchema) => {
       res.status(400).json({
         ok: false,
         error: "Error de validación de datos",
-        detalles: result.error.errors.map(err => ({
+        detalles: ((result.error as any).errors || (result.error as any).issues || []).map((err: any) => ({
           campo: err.path.join("."),
           mensaje: err.message
         }))
