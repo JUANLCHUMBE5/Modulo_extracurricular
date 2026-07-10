@@ -1,4 +1,4 @@
-import { normalizarPeriodoApi, normalizarTextoApi } from "../../../common/shared/mappers.js";
+import { normalizarPeriodoApi, normalizarTextoApi, parseMonto } from "../../../common/shared/mappers.js";
 import { abreviar, normalizarEstadoPago } from "./report.helpers.js";
 
 export function crearFilaInscripcionReporte(item: any, estudiantes: any = {}) {
@@ -13,23 +13,23 @@ export function crearFilaInscripcionReporte(item: any, estudiantes: any = {}) {
     programaId: item.programaId || item.programa_id || "",
     estadoInscripcion: item.estadoInscripcion || "",
     estadoPago: normalizarEstadoPago(item.estadoPago),
-    costo: Number(item.costo || 0),
+    costo: parseMonto(item.costo || 0),
     origen: item.origenRegistro || "",
     fechaRegistro: item.fechaRegistro || "",
     apoderado: item.apoderado || student.apoderado || "",
     telefono: item.telefono || student.telefonoApoderado || (student as any).telefono || "",
-    costoOriginal: item.costoOriginal !== undefined ? Number(item.costoOriginal) : Number(item.costo || 0),
+    costoOriginal: parseMonto(item.costoOriginal !== undefined ? item.costoOriginal : (item.costo || 0)),
     descuentoAprobado: item.descuentoAprobado || false,
     descuentoTipo: item.descuentoTipo || "",
-    descuentoValor: Number(item.descuentoValor || 0),
-    descuentoMonto: Number(item.descuentoMonto || 0),
+    descuentoValor: parseMonto(item.descuentoValor || 0),
+    descuentoMonto: parseMonto(item.descuentoMonto || 0),
   };
 }
 
 export function crearFilaPagoReporte(item: any, inscripciones: any[] = []) {
   const inscripcion = inscripciones.find((ins) =>
     (item.inscripcionId && ins.id === item.inscripcionId) ||
-    (item.dniEstudiante && ins.dniEstudiante === item.dniEstudiante && normalizarTextoApi(ins.programa) === normalizarTextoApi(item.programa))
+    (item.dniEstudiante && ins.dniEstudiante === item.dniEstudiante && ins.programaId === item.programaId)
   ) || null;
 
   return {
@@ -39,7 +39,7 @@ export function crearFilaPagoReporte(item: any, inscripciones: any[] = []) {
     dni: item.dniEstudiante || item.estudianteDni || "",
     estudiante: item.nombresEstudiante || item.estudianteNombre || "",
     programa: item.programa || item.programaNombre || "",
-    monto: Number(item.monto || 0),
+    monto: parseMonto(item.monto || 0),
     estado: normalizarEstadoPago(item.estado),
     estadoVerificacion: item.estadoVerificacion || "",
     medio: item.formaPago || item.medioPago || "",
@@ -48,29 +48,29 @@ export function crearFilaPagoReporte(item: any, inscripciones: any[] = []) {
     observaciones: item.observaciones || "",
     descuentoAprobado: Boolean(inscripcion?.descuentoAprobado),
     descuentoTipo: inscripcion?.descuentoTipo || "",
-    descuentoValor: Number(inscripcion?.descuentoValor || 0),
-    descuentoMonto: Number(inscripcion?.descuentoMonto || 0),
+    descuentoValor: parseMonto(inscripcion?.descuentoValor || 0),
+    descuentoMonto: parseMonto(inscripcion?.descuentoMonto || 0),
     descuentoJustificacion: inscripcion?.descuentoJustificacion || "",
   };
 }
 
 export function crearFilaProgramaResumen(prog: any, inscripciones: any[] = [], pagos: any[] = []) {
   const inscripcionesPrograma = inscripciones.filter((item) =>
-    item.programaId === prog.id || normalizarTextoApi(item.programa) === normalizarTextoApi(prog.nombre)
+    item.programaId === prog.id
   );
   const pagosPrograma = pagos.filter((item) =>
-    item.programaId === prog.id || normalizarTextoApi(item.programa || item.programaNombre) === normalizarTextoApi(prog.nombre)
+    item.programaId === prog.id
   );
   const inscritos = inscripcionesPrograma.length;
   const cupos = Number(prog.cupos || 0);
   const ocupados = Math.max(Number(prog.cuposOcupados || 0), inscritos);
-  const proyectado = inscripcionesPrograma.reduce((sum, item) => sum + Number(item.costo ?? prog.costo ?? 0), 0);
-  const recaudado = pagosPrograma
+  const proyectado = parseMonto(inscripcionesPrograma.reduce((sum, item) => sum + parseMonto(item.costo ?? prog.costo ?? 0), 0));
+  const recaudado = parseMonto(pagosPrograma
     .filter((item) => normalizarEstadoPago(item.estado) === "Pagado")
-    .reduce((sum, item) => sum + Number(item.monto || 0), 0);
+    .reduce((sum, item) => sum + parseMonto(item.monto || 0), 0));
 
   const conBeca = inscripcionesPrograma.filter((item) => item.descuentoAprobado).length;
-  const porCobrar = Math.max(0, proyectado - recaudado);
+  const porCobrar = parseMonto(Math.max(0, proyectado - recaudado));
 
   return {
     id: prog.id,
@@ -83,7 +83,7 @@ export function crearFilaProgramaResumen(prog: any, inscripciones: any[] = [], p
     ocupados,
     inscritos,
     conBeca,
-    costo: Number(prog.costo || 0),
+    costo: parseMonto(prog.costo || 0),
     proyectado,
     recaudado,
     porCobrar,
@@ -111,11 +111,7 @@ export function crearAsistenciaPorPrograma(filasProgramas: any[] = [], asistenci
   return filasProgramas.slice(0, 8).map((prog) => {
     const asistidosHoy = new Set(
       asistenciasHoy
-        .filter(item => {
-          const idCoincide = item.programaId && prog.id && String(item.programaId) === String(prog.id);
-          const nombreCoincide = item.programa && prog.nombre && normalizarTextoApi(item.programa) === normalizarTextoApi(prog.nombre);
-          return idCoincide || nombreCoincide;
-        })
+        .filter(item => item.programaId && prog.id && String(item.programaId) === String(prog.id))
         .map(item => item.dniEstudiante || item.codigoEstudiante || item.nombresEstudiante).filter(Boolean)
     ).size;
 

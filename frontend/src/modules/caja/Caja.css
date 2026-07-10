@@ -13,18 +13,6 @@
   --caja-sidebar: 0px;
 }
 
-.caja-page *,
-.caja-page button,
-.caja-page input,
-.caja-page select,
-.caja-page textarea,
-.caja-payment-method *,
-.caja-payment-method input,
-.caja-payment-method select,
-.caja-search-form input {
-  font-family: var(--font-body) !important;
-}
-
 .caja-main {
   grid-column: 2 !important;
   width: 100% !important;
@@ -111,8 +99,6 @@
   margin-bottom: 6px !important;
 }
 
-/* Padding is handled in the main declaration above to prevent left/right reset */
-
 /* 2. Unificación de Alturas en Campos de Entrada y Botones (38px) */
 .caja-search-form input,
 .caja-payment-method select,
@@ -124,7 +110,6 @@
   height: 38px !important;
   min-height: 38px !important;
   box-sizing: border-box !important;
-  font-size: var(--text-base) !important;
 }
 
 .caja-search-form button,
@@ -132,62 +117,6 @@
 .caja-header-actions button {
   height: 38px !important;
   min-height: 38px !important;
-  font-size: var(--text-sm) !important;
-}
-
-/* 3. Color de Letras en Negro Sólido (#000000) y Peso Regular (500) */
-.caja-payment-workspace label,
-.caja-payment-method,
-.caja-report-filters label,
-.caja-filter-label,
-.caja-readonly-field span,
-.caja-course-main span,
-.caja-course-amount span,
-.caja-pagination-info,
-.caja-pagination-count,
-.caja-student-cell span {
-  color: #000000 !important;
-  font-weight: 500 !important;
-  font-size: var(--text-sm) !important;
-}
-
-.caja-payment-workspace p,
-.caja-payment-workspace span,
-.caja-payment-workspace small,
-.caja-header p,
-.caja-panel-header p,
-.caja-empty span {
-  color: #000000 !important;
-  font-weight: 500 !important;
-}
-
-.caja-search-form input,
-.caja-payment-method select,
-.caja-payment-method input,
-.caja-report-filters input,
-.caja-report-filters select,
-.caja-search input,
-.caja-table td {
-  color: #000000 !important;
-  font-weight: 500 !important;
-}
-
-.caja-payment-approved span {
-  color: #000000 !important;
-  font-weight: 500 !important;
-}
-
-/* Registrar pago: una sola voz tipografica para campos, labels y botones */
-.caja-payment-workspace,
-.caja-payment-workspace *,
-.caja-payment-workspace input,
-.caja-payment-workspace select,
-.caja-payment-workspace option,
-.caja-payment-workspace button,
-.caja-payment-workspace .mantine-Button-root,
-.caja-payment-workspace .mantine-Button-label {
-  font-family: var(--font-body) !important;
-  letter-spacing: 0 !important;
 }
 
 .caja-payment-workspace .caja-readonly-field span,
@@ -195,37 +124,13 @@
   font-size: var(--text-sm) !important;
   font-weight: 600 !important;
   line-height: 1.25 !important;
-  text-transform: none !important;
 }
 
 .caja-payment-workspace .caja-readonly-field strong,
 .caja-payment-workspace .caja-search-form input,
 .caja-payment-workspace .caja-payment-method select,
-.caja-payment-workspace .caja-payment-method input,
-.caja-payment-workspace .mantine-Button-label {
+.caja-payment-workspace .caja-payment-method input {
   font-weight: 600 !important;
-}
-
-/* Caja: un solo estilo de letra para cobros, reportes y anulaciones */
-.caja-page,
-.caja-page *,
-.caja-page button,
-.caja-page input,
-.caja-page select,
-.caja-page textarea,
-.caja-page table,
-.caja-page th,
-.caja-page td,
-.caja-page .mantine-Button-root,
-.caja-page .mantine-Button-label,
-.caja-page .mantine-InputWrapper-label,
-.caja-page .mantine-TextInput-input,
-.caja-page .mantine-Select-input,
-.caja-page .mantine-Textarea-input,
-.caja-page .mantine-Text-root,
-.caja-page .mantine-Badge-label {
-  font-family: var(--font-body) !important;
-  letter-spacing: 0 !important;
 }
 
 .caja-page .caja-form-title h3,
@@ -235,7 +140,6 @@
   font-size: var(--text-lg) !important;
   font-weight: 600 !important;
   line-height: var(--leading-tight) !important;
-  text-transform: none !important;
 }
 
 .caja-page label,
@@ -246,12 +150,10 @@
 .caja-page .caja-report-filters-card label,
 .caja-page .caja-filter-label,
 .caja-page .caja-table th,
-.caja-page .caja-history-table th,
-.caja-page .mantine-InputWrapper-label {
+.caja-page .caja-history-table th {
   font-size: var(--text-sm) !important;
   font-weight: 600 !important;
   line-height: var(--leading-tight) !important;
-  text-transform: none !important;
 }
 
 .caja-page p,
@@ -261,13 +163,11 @@
 .caja-page input,
 .caja-page select,
 .caja-page textarea,
-.caja-page .mantine-Text-root,
 .caja-page .caja-report-card-subtext,
 .caja-page .caja-row-muted,
 .caja-page .caja-operation-code,
 .caja-page .caja-phone-channel {
   font-weight: 500 !important;
-  text-transform: none !important;
 }
 
 .caja-page strong,
@@ -275,11 +175,8 @@
 .caja-page .caja-readonly-field strong,
 .caja-page .caja-report-card-value,
 .caja-page .caja-student-cell strong,
-.caja-page .caja-amount,
-.caja-page .mantine-Button-label,
-.caja-page .mantine-Badge-label {
+.caja-page .caja-amount {
   font-weight: 600 !important;
-  text-transform: none !important;
 }
 
 /* Peso 600 para Valores Destacados y Nombres en Tablas */
@@ -521,69 +418,6 @@
   font-size: 15px !important;
 }
 
-/* Caja final: anulación/correlativos usa la misma letra que registrar pago */
-.caja-correlativo-workspace,
-.caja-correlativo-workspace *,
-.caja-correlativo-workspace button,
-.caja-correlativo-workspace input,
-.caja-correlativo-workspace select,
-.caja-correlativo-workspace textarea,
-.caja-correlativo-workspace .mantine-Button-root,
-.caja-correlativo-workspace .mantine-Button-label,
-.caja-correlativo-workspace .mantine-InputWrapper-label,
-.caja-correlativo-workspace .mantine-TextInput-input,
-.caja-correlativo-workspace .mantine-Select-input,
-.caja-correlativo-workspace .mantine-Textarea-input,
-.caja-correlativo-workspace .mantine-Text-root {
-  font-family: var(--font-body) !important;
-  letter-spacing: 0 !important;
-  text-transform: none !important;
-}
-
-.caja-correlativo-workspace h2 {
-  font-size: 17px !important;
-  font-weight: 600 !important;
-  line-height: 1.2 !important;
-}
-
-.caja-correlativo-workspace .mantine-InputWrapper-label,
-.caja-correlativo-workspace label,
-.caja-correlativo-workspace span[style*="font-size: 12px"] {
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  line-height: 1.25 !important;
-}
-
-.caja-correlativo-workspace .mantine-TextInput-input,
-.caja-correlativo-workspace .mantine-Select-input,
-.caja-correlativo-workspace .mantine-Textarea-input,
-.caja-correlativo-workspace input,
-.caja-correlativo-workspace select,
-.caja-correlativo-workspace textarea {
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  line-height: 1.35 !important;
-}
-
-.caja-correlativo-workspace .mantine-Button-root,
-.caja-correlativo-workspace .mantine-Button-label,
-.caja-correlativo-workspace button {
-  font-size: 14px !important;
-  font-weight: 600 !important;
-}
-
-.caja-correlativo-workspace .mantine-Text-root,
-.caja-correlativo-workspace p,
-.caja-correlativo-workspace small {
-  font-size: 13px !important;
-  font-weight: 500 !important;
-}
-
-.caja-correlativo-workspace strong,
-.caja-correlativo-workspace b {
-  font-weight: 600 !important;
-}
-
 .caja-anulacion-selector {
   display: grid;
   gap: 8px;
@@ -709,8 +543,6 @@
   }
 }
 
-
-
 .caja-header,
 .caja-payment-workspace,
 .caja-report-filters,
@@ -721,4 +553,3 @@
   margin-left: 0 !important;
   margin-right: 0 !important;
 }
-

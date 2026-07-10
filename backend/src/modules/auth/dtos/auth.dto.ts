@@ -15,14 +15,14 @@ export const ValidatePadreSchema = z.object({
   fecha_nacimiento: z.string({ message: "La fecha de nacimiento es requerida" }),
 });
 
-// Schema for user creation
+// Schema for user creation (matches auth-user.service.ts fields)
 export const CreateUserSchema = z.object({
-  username: z.string({ message: "El nombre de usuario es requerido" }).min(2, "El usuario debe tener al menos 2 caracteres"),
-  password: z.string({ message: "La contraseña es requerida" }).min(4, "La contraseña debe tener al menos 4 caracteres"),
-  role: z.enum(["administrador", "coordinacion", "secretaria", "caja", "auxiliar"], {
-    message: "El rol no es válido"
-  }),
-  nombres: z.string().optional(),
+  usuario: z.string({ message: "El nombre de usuario es requerido" }).min(2, "El usuario debe tener al menos 2 caracteres"),
+  nombre: z.string().optional(),
+  contrasena: z.string().optional(),
+  rol: z.string().optional(),
+  roles: z.array(z.string()).optional(),
+  estado: z.string().optional(),
   permisos: z.array(z.string()).optional(),
 });
 

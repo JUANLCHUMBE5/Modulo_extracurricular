@@ -43,7 +43,7 @@ export class AuthSessionService {
         dni: student.dni,
         estudiante: student.nombres,
         permissions: []
-      }, JWT_SECRET, { expiresIn: "24h" });
+      }, JWT_SECRET, { expiresIn: "20m" });
 
       await registrarAuditoria(student.dni, "padres", "PADRES_VALIDAR_EXITOSO", { dni, nombres: student.nombres });
 
@@ -121,7 +121,7 @@ export class AuthSessionService {
           roles: mappedRoles, // Soporte multi-rol
           name: userObj.nombre,
           permissions: userObj.permisos || []
-        }, JWT_SECRET, { expiresIn: "24h" });
+        }, JWT_SECRET, { expiresIn: "2h" });
 
         await registrarAuditoria(userObj.usuario, role, "INICIO_SESION");
 

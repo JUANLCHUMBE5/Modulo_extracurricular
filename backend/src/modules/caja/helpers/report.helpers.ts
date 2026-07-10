@@ -33,8 +33,7 @@ export function pagoPerteneceAInscripcionReporte(pay: any = {}, item: any = {}):
   if (pay.inscripcionId && item.id) return pay.inscripcionId === item.id;
   if (pay.inscripcionId && item.inscripcionId) return pay.inscripcionId === item.inscripcionId;
   if (pay.dniEstudiante !== item.dniEstudiante) return false;
-  if (pay.programaId && item.programaId) return pay.programaId === item.programaId;
-  return normalizarTextoApi(pay.programa) === normalizarTextoApi(item.programa);
+  return pay.programaId === item.programaId;
 }
 
 /**

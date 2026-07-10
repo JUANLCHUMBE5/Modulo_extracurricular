@@ -1,4 +1,4 @@
-import { normalizeAttendanceStateToFrontend, normalizeEnrollmentStateToFrontend, normalizePaymentStateToFrontend, normalizeProgramStateToFrontend, normalizarTextoApi } from "./normalization.js";
+import { normalizeAttendanceStateToFrontend, normalizeEnrollmentStateToFrontend, normalizePaymentStateToFrontend, normalizeProgramStateToFrontend, normalizarTextoApi, parseMonto } from "./normalization.js";
 import { esProgramaCambridgeApi, obtenerGradoCompletoApi, obtenerPlantillaProgramaApi, resolverDocentePorGradoApi, resolverHorarioPorGradoApi, tieneHorariosPorGrupoApi } from "./programs.js";
 
 /**
@@ -41,7 +41,7 @@ export function mapDbProgramToApi(p: any, db: any = null): any {
     fecha_fin: p.fechaFin,
     hora_inicio: p.horaInicio,
     hora_fin: p.horaFin,
-    monto: p.costo,
+    monto: parseMonto(p.costo),
     cupos: p.cupos,
     cupos_disponibles: p.cupos,
     cupos_ocupados: p.cuposOcupados || 0,
@@ -93,8 +93,8 @@ export function mapDbProgramToApi(p: any, db: any = null): any {
     horario_recepcion_almuerzo: p.horarioRecepcionAlmuerzo || "",
     nivel_cambridge: p.nivelCambridge || "",
     modalidades_cambridge: p.modalidadesCambridge || [],
-    costo_ciclo: p.costoCiclo || (p.costo ? String(p.costo) : ""),
-    monto_primer_pago: p.montoPrimerPago || "",
+    costo_ciclo: p.costoCiclo ? String(parseMonto(p.costoCiclo)) : (p.costo ? String(parseMonto(p.costo)) : ""),
+    monto_primer_pago: p.montoPrimerPago ? parseMonto(p.montoPrimerPago) : "",
     dias: Array.isArray(p.dias) ? p.dias : []
   };
 }
@@ -127,7 +127,7 @@ export function mapDbEnrollmentToApi(item: any, db: any = null): any {
     categoria: item.categoria || programa.categoria || "",
     horario: item.horario || resolverHorarioPorGradoApi(programa, gradoEstudiante) || (tieneHorariosPorGrupoApi(programa) ? "Horario no configurado para este grado" : programa.horario) || "",
     docente: item.docente || item.responsable || resolverDocentePorGradoApi(programa, gradoEstudiante) || "No definido",
-    monto: item.costo ?? programa.costo ?? 0,
+    monto: parseMonto(item.costo ?? programa.costo ?? 0),
     modalidad_cobro: item.modalidadCobro || programa.modalidadCobro || "Mensual",
     fecha_inicio: item.fechaInicio || programa.fechaInicio || "",
     fecha_fin: item.fechaFin || programa.fechaFin || "",
@@ -149,8 +149,8 @@ export function mapDbEnrollmentToApi(item: any, db: any = null): any {
     horario_recepcion_almuerzo: item.horarioRecepcionAlmuerzo || programa.horarioRecepcionAlmuerzo || "",
     nivel_cambridge: item.nivelCambridge || programa.nivelCambridge || "",
     modalidades_cambridge: item.modalidadesCambridge || programa.modalidadesCambridge || [],
-    costo_ciclo: item.costoCiclo ?? programa.costoCiclo ?? item.costo ?? programa.costo ?? "",
-    monto_primer_pago: item.montoPrimerPago ?? programa.montoPrimerPago ?? "",
+    costo_ciclo: parseMonto(item.costoCiclo ?? programa.costoCiclo ?? item.costo ?? programa.costo ?? 0),
+    monto_primer_pago: parseMonto(item.montoPrimerPago ?? programa.montoPrimerPago ?? 0),
     duracion_aviso_dias: item.duracionAvisoDias || programa.duracionAvisoDias || 7,
     hora_limite_aviso: item.horaLimiteAviso || programa.horaLimiteAviso || "23:59",
     estado_programa: normalizeProgramStateToFrontend(programa.estado || "Habilitado"),
@@ -169,7 +169,7 @@ export function mapDbEnrollmentToApi(item: any, db: any = null): any {
     estado_pago: (() => {
       const payments = db?.pagos || [];
       const p = payments.find((pay: any) => pay.inscripcionId === item.id) || 
-                payments.find((pay: any) => pay.dniEstudiante === item.dniEstudiante && (pay.programaId === item.programaId || normalizarTextoApi(pay.programa) === normalizarTextoApi(item.programa)));
+                payments.find((pay: any) => pay.dniEstudiante === item.dniEstudiante && pay.programaId === item.programaId);
       if (p) {
         return normalizePaymentStateToFrontend(p.estado || "pendiente");
       }
@@ -183,10 +183,10 @@ export function mapDbEnrollmentToApi(item: any, db: any = null): any {
     fecha_pago: item.fechaPago || "",
     derivado_caja: Boolean(item.derivadoCaja),
     estado_caja: item.estadoCaja || "",
-    costoOriginal: item.costoOriginal,
-    descuentoMonto: item.descuentoMonto,
+    costoOriginal: parseMonto(item.costoOriginal ?? item.costo ?? 0),
+    descuentoMonto: parseMonto(item.descuentoMonto ?? 0),
     descuentoTipo: item.descuentoTipo,
-    descuentoValor: item.descuentoValor,
+    descuentoValor: parseMonto(item.descuentoValor ?? 0),
     descuentoJustificacion: item.descuentoJustificacion,
     descuentoAprobado: item.descuentoAprobado || false,
     descuentoAprobadoPor: item.descuentoAprobadoPor,
@@ -203,7 +203,7 @@ export function mapDbPaymentToApi(item: any): any {
   return {
     pago_id: item.id,
     inscripcion_id: item.inscripcionId,
-    monto_pago: item.monto,
+    monto_pago: parseMonto(item.monto),
     metodo_pago: item.formaPago,
     estado_pago: normalizePaymentStateToFrontend(item.estado),
     comprobante_url: item.capturaPagoBase64 || "",
@@ -225,11 +225,11 @@ export function mapDbPaymentToApi(item: any): any {
     nroRecibo: item.nroRecibo || item.nro_recibo || "",
     descuento_aprobado: item.descuentoAprobado || false,
     descuento_tipo: item.descuentoTipo || "",
-    descuento_monto: item.descuentoMonto || 0,
+    descuento_monto: parseMonto(item.descuentoMonto ?? 0),
     descuento_justificacion: item.descuentoJustificacion || "",
     descuentoAprobado: item.descuentoAprobado || false,
     descuentoTipo: item.descuentoTipo || "",
-    descuentoMonto: item.descuentoMonto || 0,
+    descuentoMonto: parseMonto(item.descuentoMonto ?? 0),
     descuentoJustificacion: item.descuentoJustificacion || ""
   };
 }

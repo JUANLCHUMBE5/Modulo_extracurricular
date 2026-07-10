@@ -4,7 +4,8 @@ import {
   normalizarTextoApi,
   resolverHorarioPorGradoApi,
   resolverDocentePorGradoApi,
-  obtenerGradoCompletoApi
+  obtenerGradoCompletoApi,
+  parseMonto
 } from "../../../common/shared/mappers.js";
 import { DireccionRepository } from "../repositories/direccion.repository.js";
 
@@ -160,7 +161,7 @@ export class DireccionDescuentosService {
 
     const payments = db.pagos || [];
     const pagoAsociado = payments.find(pay => pay.inscripcionId === ins.id) ||
-      payments.find(pay => pay.dniEstudiante === ins.dniEstudiante && (pay.programaId === ins.programaId || normalizarTextoApi(pay.programa) === normalizarTextoApi(ins.programa)));
+      payments.find(pay => pay.dniEstudiante === ins.dniEstudiante && pay.programaId === ins.programaId);
 
     if (pagoAsociado) {
       const estPago = normalizarTextoApi(pagoAsociado.estado);
@@ -169,7 +170,7 @@ export class DireccionDescuentosService {
       }
     }
 
-    const costoOriginal = Number(ins.costoOriginal ?? ins.costo ?? 0);
+    const costoOriginal = parseMonto(ins.costoOriginal ?? ins.costo ?? 0);
     let descuentoMonto = 0;
     let nuevoCosto = costoOriginal;
 
@@ -178,20 +179,20 @@ export class DireccionDescuentosService {
       nuevoCosto = 0;
     } else if (tipo === "porcentaje") {
       const pct = Number(valor || 0);
-      descuentoMonto = Math.round((costoOriginal * pct) / 100);
-      nuevoCosto = Math.max(0, costoOriginal - descuentoMonto);
+      descuentoMonto = parseMonto((costoOriginal * pct) / 100);
+      nuevoCosto = parseMonto(Math.max(0, costoOriginal - descuentoMonto));
     } else if (tipo === "monto") {
-      descuentoMonto = Number(valor || 0);
-      nuevoCosto = Math.max(0, costoOriginal - descuentoMonto);
+      descuentoMonto = parseMonto(valor || 0);
+      nuevoCosto = parseMonto(Math.max(0, costoOriginal - descuentoMonto));
     }
 
     db.inscripciones[index] = {
       ...ins,
-      costo: nuevoCosto,
-      costoOriginal,
-      descuentoMonto,
+      costo: parseMonto(nuevoCosto),
+      costoOriginal: parseMonto(costoOriginal),
+      descuentoMonto: parseMonto(descuentoMonto),
       descuentoTipo: tipo,
-      descuentoValor: Number(valor || 0),
+      descuentoValor: parseMonto(valor || 0),
       descuentoJustificacion: justificacion.trim(),
       descuentoAprobado: true,
       descuentoAprobadoPor: "DirecciÃ³n",

@@ -7,6 +7,7 @@ import {
   obtenerPagoPorId,
   anularPago,
 } from "../cajaService";
+import { useDoubleSubmit } from "../../../hooks/useDoubleSubmit";
 
 /**
  * Hook que gestiona la verificación de pagos web (Yape),
@@ -57,7 +58,8 @@ export default function useCajaVerificacion({
     }
   }
 
-  async function aprobarPagoWebDirecto(fila: any) {
+  // Double submit wrapped actions
+  const { execute: aprobarPagoWebDirectoAction } = useDoubleSubmit(async (fila: any) => {
     try {
       setCargando(true);
       await validarPagoWeb(fila.pagoId);
@@ -70,9 +72,13 @@ export default function useCajaVerificacion({
     } finally {
       setCargando(false);
     }
+  });
+
+  async function aprobarPagoWebDirecto(fila: any) {
+    await aprobarPagoWebDirectoAction(fila);
   }
 
-  async function aprobarPagoWebDesdeModal() {
+  const { execute: aprobarPagoWebDesdeModalAction } = useDoubleSubmit(async () => {
     if (!pagoVerificar) return;
     try {
       setGuardandoVerificacion(true);
@@ -87,6 +93,10 @@ export default function useCajaVerificacion({
     } finally {
       setGuardandoVerificacion(false);
     }
+  });
+
+  async function aprobarPagoWebDesdeModal() {
+    await aprobarPagoWebDesdeModalAction();
   }
 
   async function abrirObservarModal(fila: any) {
@@ -133,7 +143,7 @@ export default function useCajaVerificacion({
     }
   }
 
-  async function observarPagoWebDesdeModal() {
+  const { execute: observarPagoWebDesdeModalAction } = useDoubleSubmit(async () => {
     if (!pagoVerificar) return;
     if (!observacionTexto.trim()) {
       toast.error("Observar pago", { description: "Debe ingresar una observacion para observar el pago." });
@@ -155,9 +165,13 @@ export default function useCajaVerificacion({
     } finally {
       setGuardandoVerificacion(false);
     }
+  });
+
+  async function observarPagoWebDesdeModal() {
+    await observarPagoWebDesdeModalAction();
   }
 
-  async function confirmarRechazoPagoWeb() {
+  const { execute: confirmarRechazoPagoWebAction } = useDoubleSubmit(async () => {
     if (!pagoVerificar) return;
     if (!rechazoTexto.trim()) {
       toast.error("Rechazar pago", { description: "Debe ingresar una observacion para rechazar el pago." });
@@ -179,6 +193,10 @@ export default function useCajaVerificacion({
     } finally {
       setGuardandoVerificacion(false);
     }
+  });
+
+  async function confirmarRechazoPagoWeb() {
+    await confirmarRechazoPagoWebAction();
   }
 
   /* ── Anulación ── */
@@ -196,7 +214,7 @@ export default function useCajaVerificacion({
     setAnulacionTexto("");
   }
 
-  async function confirmarAnularPago() {
+  const { execute: confirmarAnularPagoAction } = useDoubleSubmit(async () => {
     if (!pagoAnular) return;
     if (!anulacionTexto.trim()) {
       toast.error("Anular pago", { description: "Debe ingresar una justificación para anular el pago." });
@@ -215,6 +233,10 @@ export default function useCajaVerificacion({
     } finally {
       setGuardando(false);
     }
+  });
+
+  async function confirmarAnularPago() {
+    await confirmarAnularPagoAction();
   }
 
   return {

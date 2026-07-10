@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useDoubleSubmit } from "../../../hooks/useDoubleSubmit";
 
 import { formularioInicial } from "../constants/cajaConstants";
 import {
@@ -330,7 +331,7 @@ export default function useCaja({
     return "";
   }
 
-  async function guardarPago() {
+  const { execute: guardarPagoAction } = useDoubleSubmit(async () => {
     const error = validarPago();
     if (error) { setMensaje(error); return; }
     setGuardando(true); setMensaje("");
@@ -362,6 +363,10 @@ export default function useCaja({
       await cargarDatos(); await cargarReporteCaja();
     } catch (err: any) { toast.error("No se pudo guardar", { description: err.message || "Revise los datos del pago." }); }
     finally { setGuardando(false); }
+  });
+
+  async function guardarPago() {
+    await guardarPagoAction();
   }
 
   function abrirPagoDesdeReporte(fila: any) {

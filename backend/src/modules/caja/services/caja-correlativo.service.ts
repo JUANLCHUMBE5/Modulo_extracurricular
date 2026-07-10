@@ -1,4 +1,5 @@
 import { registrarAuditoria } from "../../../common/audit/audit.service.js";
+import { parseMonto } from "../../../common/shared/mappers.js";
 import {
   incrementarCorrelativo,
   normalizarCorrelativos
@@ -28,7 +29,7 @@ export class CajaCorrelativoService {
       nombresEstudiante: body.beneficiario || "Egreso de Caja",
       programa: "",
       programaId: "",
-      monto: Number(body.monto || 0),
+      monto: parseMonto(body.monto),
       formaPago: "Egreso",
       numeroOperacion: "",
       telefonoOperacion: "",

@@ -4,9 +4,9 @@
 @import "./styles/catalog.css";
 @import "./styles/refinements.css";
 @import "./styles/portal.css";
-@import "./styles/mobile-cleanup.css";
-@import "./styles/responsive-polish.css";
-@import "./styles/mobile-tight.css";
+@import "./styles/movil/mobile-cleanup.css";
+@import "./styles/movil/responsive-polish.css";
+@import "./styles/movil/mobile-tight.css";
 @import "./styles/account-assistant.css";
-@import "./styles/mobile-flow.css";
+@import "./styles/movil/mobile-flow.css";
 @import "./styles/padres-overrides.css";

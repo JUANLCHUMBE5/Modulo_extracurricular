@@ -1,7 +1,8 @@
-﻿import {
+import {
   mapDbPaymentToApi,
   normalizarPeriodoApi,
-  normalizarTextoApi
+  normalizarTextoApi,
+  parseMonto
 } from "../../../common/shared/mappers.js";
 import { CajaRepository } from "../repositories/caja.repository.js";
 
@@ -37,21 +38,15 @@ export class CajaPaymentQueryService {
     const enriched = filtered.map(p => {
       const inscripcion = (db.inscripciones || []).find(item =>
         (p.inscripcionId && item.id === p.inscripcionId) ||
-        (
-          item.dniEstudiante === (p.dniEstudiante || p.estudianteDni) &&
-          (
-            (p.programaId && item.programaId === p.programaId) ||
-            normalizarTextoApi(item.programa) === normalizarTextoApi(p.programa || p.programaNombre)
-          )
-        )
+        (item.dniEstudiante === (p.dniEstudiante || p.estudianteDni) && item.programaId === p.programaId)
       );
       const programa = (db.programas || []).find(item =>
-        item.id === (p.programaId || inscripcion?.programaId) ||
-        normalizarTextoApi(item.nombre) === normalizarTextoApi(p.programa || p.programaNombre || inscripcion?.programa)
+        item.id === (p.programaId || inscripcion?.programaId)
       );
 
       return {
         ...p,
+        monto: parseMonto(p.monto),
         programaId: p.programaId || inscripcion?.programaId || programa?.id || "",
         programa: p.programa || p.programaNombre || inscripcion?.programa || programa?.nombre || "",
         programaFechaInicio: programa?.fechaInicio || inscripcion?.fechaInicio || "",

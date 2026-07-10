@@ -1,4 +1,4 @@
-import { normalizarPeriodoApi, normalizarTextoApi } from "../../../common/shared/mappers.js";
+import { normalizarPeriodoApi, normalizarTextoApi, parseMonto } from "../../../common/shared/mappers.js";
 import {
   mapEnrollmentToReportRow,
   mapPaymentToReportRow,
@@ -20,14 +20,14 @@ export class CajaReportService {
     const pagosIngresos = pagosCompletados.filter(p => p.formaPago !== "Egreso");
     const pagosEgresos = pagosCompletados.filter(p => p.formaPago === "Egreso");
 
-    const totalIngreso = pagosIngresos.reduce((sum, p) => sum + Number(p.monto || 0), 0);
-    const totalEgreso = pagosEgresos.reduce((sum, p) => sum + Number(p.monto || 0), 0);
-    const totalCobrado = totalIngreso - totalEgreso;
+    const totalIngreso = parseMonto(pagosIngresos.reduce((sum, p) => sum + Number(p.monto || 0), 0));
+    const totalEgreso = parseMonto(pagosEgresos.reduce((sum, p) => sum + Number(p.monto || 0), 0));
+    const totalCobrado = parseMonto(totalIngreso - totalEgreso);
 
     const enrollments = (db.inscripciones || []).filter(item => normalizarPeriodoApi(item.periodo) === period && item.estadoInscripcion !== "Anulada");
     const paidInscripIds = new Set(pagosIngresos.map(p => p.inscripcionId));
     const pendingInscrip = enrollments.filter(e => !paidInscripIds.has(e.id));
-    const totalPendiente = pendingInscrip.reduce((sum, e) => sum + Number(e.costo || 0), 0);
+    const totalPendiente = parseMonto(pendingInscrip.reduce((sum, e) => sum + Number(e.costo || 0), 0));
 
     return {
       totalCobrado,
@@ -53,7 +53,7 @@ export class CajaReportService {
 
     if (tipoReporte === "pagos_registrados" || tipoReporte === "pagos_realizados") {
       reportList = payments.map(p => {
-        const prog = db.programas.find((progItem: any) => progItem.id === p.programaId || normalizarTextoApi(progItem.nombre) === normalizarTextoApi(p.programa));
+        const prog = db.programas.find((progItem: any) => progItem.id === p.programaId);
         const student = p.dniEstudiante ? (db.estudiantes?.[p.dniEstudiante] as any) : null;
         const e = (db.inscripciones || []).find(item => item.id === p.inscripcionId || (p.dniEstudiante && item.dniEstudiante === p.dniEstudiante && item.programaId === p.programaId));
         return mapPaymentToReportRow(p, prog, student, e, period);

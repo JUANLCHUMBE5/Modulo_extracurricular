@@ -5,15 +5,13 @@ import { obtenerGradoCompletoApi, normalizarTextoApi, resolverHorarioPorGradoApi
  */
 export function buscarInscripcionAsistencia(db: any, asistencia: any = {}, programmeId: string = ""): any {
   const dni = asistencia.dniEstudiante || asistencia.dni || "";
-  const programaNombre = normalizarTextoApi(asistencia.programa);
   return (db.inscripciones || []).find((item: any) => asistencia.inscripcionId && item.id === asistencia.inscripcionId)
     || (db.inscripciones || []).find((item: any) =>
       dni &&
       item.dniEstudiante === dni &&
       (
         (programmeId && item.programaId === programmeId) ||
-        (asistencia.programaId && item.programaId === asistencia.programaId) ||
-        (programaNombre && normalizarTextoApi(item.programa) === programaNombre)
+        (asistencia.programaId && item.programaId === asistencia.programaId)
       )
     )
     || null;
@@ -26,7 +24,6 @@ export function enriquecerAsistenciaPrograma(db: any, asistencia: any = {}, prog
   const inscripcion = buscarInscripcionAsistencia(db, asistencia, programaId);
   const estudiante = db.estudiantes?.[asistencia.dniEstudiante || inscripcion?.dniEstudiante] || null;
   const programa = (db.programas || []).find((item: any) => item.id === (inscripcion?.programaId || asistencia.programaId || programaId))
-    || (db.programas || []).find((item: any) => normalizarTextoApi(item.nombre) === normalizarTextoApi(inscripcion?.programa || asistencia.programa))
     || null;
   const gradoEstudiante = inscripcion?.gradoEstudiante
     || inscripcion?.grado

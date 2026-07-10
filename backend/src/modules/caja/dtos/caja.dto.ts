@@ -1,22 +1,39 @@
 import { z } from "zod";
 
-// --- Registro de pago ---
+// --- Registro de pago (matches caja-payment-registration.service.ts) ---
 export const RegistrarPagoSchema = z.object({
-  estudianteDni: z.string({ message: "El DNI del estudiante es requerido" }),
-  inscripcionId: z.string({ message: "El ID de inscripción es requerido" }),
-  monto: z.union([z.number(), z.string()], { message: "El monto es requerido" }),
-  medioPago: z.string().optional(),
-  observaciones: z.string().optional(),
-  comprobante: z.string().optional(),
-  concepto: z.string().optional(),
+  inscripcion_id: z.string().optional(),
+  inscripcionId: z.string().optional(),
+  monto: z.union([z.number(), z.string()]).optional(),
+  monto_pago: z.union([z.number(), z.string()]).optional(),
+  forma_pago: z.string().optional(),
+  metodo_pago: z.string().optional(),
+  formaPago: z.string().optional(),
+  numero_operacion: z.string().optional(),
+  numeroOperacion: z.string().optional(),
+  telefono_operacion: z.string().optional(),
+  telefonoOperacion: z.string().optional(),
+  fecha_pago: z.string().optional(),
+  fechaPago: z.string().optional(),
+  fecha: z.string().optional(),
+  usuario_registro: z.string().optional(),
+  origen_registro: z.string().optional(),
+  dni_estudiante: z.string().optional(),
+  dniEstudiante: z.string().optional(),
+  nombres_estudiante: z.string().optional(),
+  nombresEstudiante: z.string().optional(),
+  programa: z.string().optional(),
+  programaNombre: z.string().optional(),
+  periodo: z.string().optional(),
 });
 
-// --- Registro de egreso ---
+// --- Registro de egreso (matches caja-correlativo.service.ts) ---
 export const RegistrarEgresoSchema = z.object({
-  concepto: z.string({ message: "El concepto del egreso es requerido" }).min(2, "El concepto debe tener al menos 2 caracteres"),
   monto: z.union([z.number(), z.string()], { message: "El monto es requerido" }),
-  categoria: z.string().optional(),
-  observaciones: z.string().optional(),
+  concepto: z.string().optional(),
+  beneficiario: z.string().optional(),
+  dni: z.string().optional(),
+  periodo: z.string().optional(),
   fecha: z.string().optional(),
 });
 
@@ -25,11 +42,13 @@ export const AccionPagoSchema = z.object({
   observaciones: z.string().optional(),
 });
 
-// --- Cancelar correlativo ---
+// --- Cancelar correlativo (matches caja-correlativo.service.ts) ---
 export const CancelarCorrelativoSchema = z.object({
-  serie: z.string({ message: "La serie es requerida" }),
-  correlativo: z.union([z.number(), z.string()], { message: "El correlativo es requerido" }),
-  motivo: z.string().optional(),
+  tipo: z.string({ message: "El tipo de correlativo es requerido" }),
+  motivo: z.string({ message: "El motivo es requerido" }),
+  nroRecibo: z.string().optional(),
+  dniEstudiante: z.string().optional(),
+  nombresEstudiante: z.string().optional(),
 });
 
 export type RegistrarPagoDto = z.infer<typeof RegistrarPagoSchema>;

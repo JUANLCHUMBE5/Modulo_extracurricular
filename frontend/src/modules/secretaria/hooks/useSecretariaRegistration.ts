@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useDoubleSubmit } from "../../../hooks/useDoubleSubmit";
 import {
   buscarInscripcionEstudiante,
   listarInscripcionesEstudiante,
@@ -231,7 +232,7 @@ export function useSecretariaRegistration({
     setMensaje("");
   }
 
-  async function guardarInscripción(event: any) {
+  const { execute: guardarInscripciónAction } = useDoubleSubmit(async (event: any) => {
     event.preventDefault();
     setMensaje("");
 
@@ -311,6 +312,10 @@ export function useSecretariaRegistration({
     } finally {
       setGuardando(false);
     }
+  });
+
+  async function guardarInscripción(event: any) {
+    await guardarInscripciónAction(event);
   }
 
   async function abrirRegistro() {
@@ -420,7 +425,7 @@ export function useSecretariaRegistration({
     }
   }
 
-  async function derivarACaja() {
+  const { execute: derivarACajaAction } = useDoubleSubmit(async () => {
     if (!inscripcion || derivandoCaja) return;
     if (inscripcion.derivadoCaja) {
       mostrarMensaje("Este taller ya fue derivado a Cajera. Registre un curso adicional si necesita derivar otro taller.");
@@ -466,6 +471,10 @@ export function useSecretariaRegistration({
     } finally {
       setDerivandoCaja(false);
     }
+  });
+
+  async function derivarACaja() {
+    await derivarACajaAction();
   }
 
   return {

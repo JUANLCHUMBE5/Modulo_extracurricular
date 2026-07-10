@@ -1,5 +1,29 @@
 [
   {
+    "id": "AUD-624743-78e1",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-10T19:27:04.743Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000031\",\"nombres\":\"Daniel Garcia Paredes\",\"_usuario_original\":\"60000031\"}"
+  },
+  {
+    "id": "AUD-650989-4441",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-10T19:10:50.990Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-641042-8e48",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-10T19:10:41.042Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
     "id": "AUD-371645-27f0",
     "usuario": "admin",
     "rol": "coordinacion",

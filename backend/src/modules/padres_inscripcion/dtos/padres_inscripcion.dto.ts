@@ -1,36 +1,47 @@
 import { z } from "zod";
 
-// --- Crear inscripción ---
+// --- Crear inscripción (matches inscripcion-registration.service.ts) ---
 export const CrearInscripcionSchema = z.object({
-  estudianteDni: z.string({ message: "El DNI del estudiante es requerido" }),
-  programaId: z.string({ message: "El ID del programa es requerido" }),
-  periodo: z.string().optional(),
-  grupo: z.string().optional(),
+  estudiante_id: z.string({ message: "El DNI del estudiante es requerido" }),
+  programa_id: z.string({ message: "El ID del programa es requerido" }),
+  origen_inscripcion: z.string().optional(),
+  seccion: z.string().optional(),
   grado: z.string().optional(),
   apoderado: z.string().optional(),
-  telefonoApoderado: z.string().optional(),
+  telefono_apoderado: z.string().optional(),
+  correo_apoderado: z.string().optional(),
+  talla_uniforme: z.string().optional(),
+  talla_polo: z.string().optional(),
+  talla_short: z.string().optional(),
+  seleccion: z.string().optional(),
+  nivel_cambridge: z.string().optional(),
+  horario: z.string().optional(),
 });
 
-// --- Registrar documento de inscripción ---
+// --- Registrar documento de inscripción (matches inscripcion-workflow.service.ts) ---
 export const RegistrarDocumentoSchema = z.object({
-  tipo: z.string().optional(),
-  nombre: z.string().optional(),
-  contenido: z.string().optional(),
-  base64: z.string().optional(),
+  usuario: z.string().optional(),
+  tipo_documento: z.string().optional(),
+  plantilla: z.string().optional(),
 });
 
-// --- Derivar a caja ---
+// --- Derivar a caja / Reservar caja (matches inscripcion-workflow.service.ts) ---
+// derivarCaja hace spread de body completo, reservarCaja usa body.dni_estudiante
 export const DerivarCajaSchema = z.object({
+  dni_estudiante: z.string().optional(),
   monto: z.union([z.number(), z.string()]).optional(),
   observaciones: z.string().optional(),
+  costo: z.union([z.number(), z.string()]).optional(),
+  costoOriginal: z.union([z.number(), z.string()]).optional(),
 });
 
-// --- Actualizar apoderado ---
+// --- Actualizar apoderado (matches inscripcion-portal.service.ts) ---
 export const UpdateApoderadoSchema = z.object({
-  nombre: z.string().optional(),
+  apoderado: z.string().optional(),
   telefono: z.string().optional(),
-  email: z.string().optional(),
-  parentesco: z.string().optional(),
+  telefono_apoderado: z.string().optional(),
+  correo: z.string().optional(),
+  correo_apoderado: z.string().optional(),
 });
 
 export type CrearInscripcionDto = z.infer<typeof CrearInscripcionSchema>;

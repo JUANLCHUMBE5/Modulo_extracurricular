@@ -1,0 +1,174 @@
+/* ==========================================================================
+   PORTAL PADRES - ACCOUNT & ASSISTANT MOBILE STYLES (COLEGIO SAN RAFAEL)
+   ========================================================================== */
+
+@media (max-width: 640px) {
+  .padres-brand-logo {
+    width: 92px;
+    height: 44px;
+  }
+
+  .padres-user-dropdown {
+    right: -2px;
+    min-width: 158px;
+  }
+
+  .padres-history-modal {
+    width: calc(100vw - 20px);
+  }
+
+  .padres-history-row {
+    grid-template-columns: 1fr auto;
+    gap: 7px 10px;
+    padding: 10px 0;
+  }
+
+  .padres-history-row span:nth-child(2),
+  .padres-history-status,
+  .padres-history-row button {
+    justify-self: end;
+  }
+
+  .padres-history-detail dl {
+    grid-template-columns: 1fr;
+  }
+
+  .padres-invoice-detail {
+    padding: 16px 16px 20px;
+  }
+
+  .padres-invoice-detail h2 {
+    margin: 22px 0 18px;
+  }
+
+  .padres-invoice-summary div {
+    grid-template-columns: 1fr;
+  }
+
+  .padres-invoice-item {
+    grid-template-columns: 1fr;
+  }
+
+  .padres-invoice-item b {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .padres-assistant {
+    left: 8px;
+    right: 8px;
+    bottom: max(8px, env(safe-area-inset-bottom));
+    width: auto;
+    max-height: calc(100dvh - 16px);
+    border-radius: 12px;
+  }
+
+  .padres-assistant header {
+    padding: 8px 10px;
+  }
+
+  .padres-rafael-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+  }
+
+  .padres-assistant header strong {
+    font-size: 13px;
+  }
+
+  .padres-assistant header span {
+    margin-top: 2px;
+    font-size: 10px;
+  }
+
+  .padres-assistant-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .padres-chat {
+    gap: 6px;
+  }
+
+  .padres-bot-avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 7px;
+  }
+
+  .padres-chat p {
+    max-width: calc(100% - 30px);
+    padding: 7px 8px;
+    font-size: 10.5px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .padres-chat-padre p {
+    max-width: 82%;
+  }
+
+  .padres-assistant-shortcuts {
+    gap: 5px;
+    padding: 7px 8px;
+  }
+
+  .padres-assistant-shortcuts > span {
+    font-size: 9px;
+  }
+
+  .padres-assistant-shortcuts > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .padres-assistant-shortcuts button {
+    min-height: 28px;
+    justify-content: center;
+    gap: 4px;
+    padding: 3px 6px;
+    font-size: 9.5px;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .padres-assistant-shortcuts button svg {
+    width: 12px;
+    height: 12px;
+    flex: 0 0 auto;
+  }
+
+  .padres-assistant-form {
+    gap: 6px;
+    padding: 7px 8px 8px;
+  }
+
+  .padres-assistant-form input {
+    height: 32px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .padres-assistant-form button {
+    width: 34px;
+    min-height: 32px;
+  }
+
+  .padres-assistant-fab {
+    right: 14px;
+    bottom: 14px;
+    width: 46px;
+    min-height: 44px;
+  }
+
+  .padres-assistant-fab::before {
+    min-width: 72px;
+    padding: 7px 9px;
+    font-size: 11px;
+  }
+}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cambiarEstadoPrograma, eliminarPrograma } from "../../services/coordinacionService";
 import { datosProgramaAFormulario, sugerirNumeroDocumento } from "../../utils/coordinacionFormHelpers";
 import { fechaActualInput } from "../../../../services/dateService";
+import { useDoubleSubmit } from "../../../../hooks/useDoubleSubmit";
 
 interface UseCoordinacionAccionesProgramaProps {
   programas: any[];
@@ -115,7 +116,8 @@ export default function useCoordinacionAccionesPrograma({
     }
   }
 
-  async function toggleEstado(prog: any) {
+  // Wrap toggling status with useDoubleSubmit
+  const { execute: toggleEstadoAction } = useDoubleSubmit(async (prog: any) => {
     if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para cambiar el estado de programas.");
     const nuevo = prog.estado === "Habilitado" ? "Deshabilitado" : "Habilitado";
     try {
@@ -125,6 +127,10 @@ export default function useCoordinacionAccionesPrograma({
     } catch (err: any) {
       mostrarMsg(err.message || "No se pudo cambiar el estado del programa.");
     }
+  });
+
+  async function toggleEstado(prog: any) {
+    await toggleEstadoAction(prog);
   }
 
   async function finalizarPrograma(prog: any) {
@@ -132,7 +138,8 @@ export default function useCoordinacionAccionesPrograma({
     setProgramaAFinalizar(prog);
   }
 
-  async function confirmarFinalizar() {
+  // Wrap finalizar confirmation with useDoubleSubmit
+  const { execute: confirmarFinalizarAction } = useDoubleSubmit(async () => {
     if (!programaAFinalizar) return;
     const prog = programaAFinalizar;
     setProgramaAFinalizar(null);
@@ -146,6 +153,10 @@ export default function useCoordinacionAccionesPrograma({
     } catch (err: any) {
       mostrarMsg(err.message || "No se pudo finalizar el programa.");
     }
+  });
+
+  async function confirmarFinalizar() {
+    await confirmarFinalizarAction();
   }
 
   async function eliminarCurso(prog: any) {
@@ -153,7 +164,8 @@ export default function useCoordinacionAccionesPrograma({
     setProgramaAArchivar(prog);
   }
 
-  async function confirmarArchivar() {
+  // Wrap archivar confirmation with useDoubleSubmit
+  const { execute: confirmarArchivarAction } = useDoubleSubmit(async () => {
     if (!programaAArchivar) return;
     const prog = programaAArchivar;
     setProgramaAArchivar(null);
@@ -164,9 +176,14 @@ export default function useCoordinacionAccionesPrograma({
     } catch (err: any) {
       mostrarMsg(err.message || "No se pudo archivar el programa.");
     }
+  });
+
+  async function confirmarArchivar() {
+    await confirmarArchivarAction();
   }
 
-  async function restaurarPrograma(prog: any) {
+  // Wrap restore with useDoubleSubmit
+  const { execute: restaurarProgramaAction } = useDoubleSubmit(async (prog: any) => {
     if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para restaurar programas.");
     try {
       await cambiarEstadoPrograma(prog.id, "Deshabilitado");
@@ -175,6 +192,10 @@ export default function useCoordinacionAccionesPrograma({
     } catch (err: any) {
       mostrarMsg(err.message || "No se pudo restaurar el programa.");
     }
+  });
+
+  async function restaurarPrograma(prog: any) {
+    await restaurarProgramaAction(prog);
   }
 
   function clonarPrograma(prog: any) {

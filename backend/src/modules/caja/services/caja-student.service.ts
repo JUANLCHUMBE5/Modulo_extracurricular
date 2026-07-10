@@ -27,10 +27,7 @@ export class CajaStudentService {
       (item.id && pago.inscripcionId === item.id) ||
       (
         (pago.dniEstudiante || pago.estudianteDni) === item.dniEstudiante &&
-        (
-          (item.programaId && pago.programaId === item.programaId) ||
-          normalizarTextoApi(pago.programa || pago.programaNombre) === normalizarTextoApi(item.programa)
-        )
+        pago.programaId === item.programaId
       )
     );
     const isPaid = (item: any) => {

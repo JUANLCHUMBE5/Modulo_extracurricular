@@ -4,11 +4,11 @@ import { IconMenu2 as Menu, IconCheck as Check, IconCoins as Coins } from "@tabl
 import { toast } from "sonner";
 import { registrarEgresoCaja } from "../../cajaService";
 import { obtenerCorrelativos } from "../../../direccion/direccionService";
+import { useDoubleSubmit } from "../../../hooks/useDoubleSubmit";
 
 export default function CajaEgresos({ sidebarExpanded, toggleSidebar, periodo, onEgresoRegistrado }) {
-  const [correlativos, setCorrelativos] = useState(null);
+  const [correlativos, setCorrelativos] = useState<any>(null);
   const [cargandoCorr, setCargandoCorr] = useState(false);
-  const [guardando, setGuardando] = useState(false);
 
   // Form states
   const [beneficiario, setBeneficiario] = useState("");
@@ -34,7 +34,29 @@ export default function CajaEgresos({ sidebarExpanded, toggleSidebar, periodo, o
     cargarCorrelativos();
   }, []);
 
-  const handleRegistrar = async (e) => {
+  // Wrap the registration call with useDoubleSubmit
+  const { isSubmitting: guardando, execute: registrarEgresoAction } = useDoubleSubmit(
+    async (datos: any) => {
+      const resEgreso = await registrarEgresoCaja(datos);
+      toast.success("Egreso registrado", {
+        description: `Se registró el egreso ${resEgreso.nroRecibo} por S/ ${datos.monto.toFixed(2)} correctamente.`,
+      });
+
+      // Clear form
+      setBeneficiario("");
+      setDni("");
+      setMonto("");
+      setConcepto("");
+
+      await cargarCorrelativos();
+
+      if (onEgresoRegistrado) {
+        onEgresoRegistrado();
+      }
+    }
+  );
+
+  const handleRegistrar = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (correlativos?.egresoActive === false) {
@@ -61,38 +83,15 @@ export default function CajaEgresos({ sidebarExpanded, toggleSidebar, periodo, o
       return;
     }
 
-    setGuardando(true);
-    try {
-      const datos = {
-        beneficiario: limpioBeneficiario,
-        dni: dni.trim(),
-        monto: numMonto,
-        concepto: limpioConcepto,
-        periodo: periodo || "escolar",
-      };
+    const datos = {
+      beneficiario: limpioBeneficiario,
+      dni: dni.trim(),
+      monto: numMonto,
+      concepto: limpioConcepto,
+      periodo: periodo || "escolar",
+    };
 
-      const resEgreso = await registrarEgresoCaja(datos);
-
-      toast.success("Egreso registrado", {
-        description: `Se registró el egreso ${resEgreso.nroRecibo} por S/ ${numMonto.toFixed(2)} correctamente.`,
-      });
-
-      // Clear form
-      setBeneficiario("");
-      setDni("");
-      setMonto("");
-      setConcepto("");
-
-      await cargarCorrelativos();
-
-      if (onEgresoRegistrado) {
-        onEgresoRegistrado();
-      }
-    } catch (err) {
-      toast.error("Error al registrar", { description: err.message || "Intente nuevamente." });
-    } finally {
-      setGuardando(false);
-    }
+    await registrarEgresoAction(datos);
   };
 
   const egresoActual = correlativos?.egresoActual || "Pendiente de cargar";
@@ -139,7 +138,7 @@ export default function CajaEgresos({ sidebarExpanded, toggleSidebar, periodo, o
 
             <TextInput
               label="DNI / RUC (Opcional)"
-              placeholder="Ej. 12345678"
+              placeholder="Ej. 75640223"
               value={dni}
               onChange={(e) => setDni(e.currentTarget.value)}
               styles={{
@@ -148,35 +147,30 @@ export default function CajaEgresos({ sidebarExpanded, toggleSidebar, periodo, o
               }}
               style={{ flex: 1, minWidth: "150px" }}
             />
-          </div>
 
-          <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
             <TextInput
-              label="Monto a entregar (S/)"
-              placeholder="Ej. 150.00"
+              label="Monto (S/)"
+              placeholder="0.00"
               required
-              type="number"
-              step="0.01"
-              min="0.01"
               value={monto}
               onChange={(e) => setMonto(e.currentTarget.value)}
               styles={{
                 label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
                 input: { borderRadius: "8px", height: "38px" }
               }}
-              style={{ flex: 1, minWidth: "150px" }}
+              style={{ flex: 1, minWidth: "120px" }}
             />
 
             <TextInput
-              label="N° de Comprobante de Egreso (Siguiente a Generar)"
+              label="Nro Recibo de Egreso"
               value={egresoActual}
-              disabled={true}
+              disabled
               styles={{
                 label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
                 input: {
                   borderRadius: "8px",
                   height: "38px",
-                  backgroundColor: "#f3f4f6",
+                  background: "#f3f4f6",
                   color: "#1f2937",
                   fontWeight: 700,
                   opacity: 1

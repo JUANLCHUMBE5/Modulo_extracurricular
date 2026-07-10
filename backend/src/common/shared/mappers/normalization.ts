@@ -141,3 +141,36 @@ export function normalizarTextoApi(valor: any): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 }
+
+/**
+ * Parsea un monto numérico asegurando que tenga un formato de 2 decimales y maneje casos especiales como ". 1" o ".1"
+ * @param monto Valor del monto a parsear
+ * @returns Número con 2 decimales de precisión
+ */
+export function parseMonto(monto: any): number {
+  if (monto === undefined || monto === null) return 0;
+  let valStr = String(monto).trim();
+  // Quitar símbolos de moneda y espacios intermedios
+  valStr = valStr.replace(/[S/$\s]/g, "");
+  
+  // Si empieza con punto o coma (ej: ". 1" o ", 1" o ".1"), quitamos ese carácter inicial
+  if (valStr.startsWith(".") || valStr.startsWith(",")) {
+    valStr = valStr.slice(1).trim();
+  }
+  
+  // Reemplazar coma decimal por punto decimal
+  valStr = valStr.replace(",", ".");
+  
+  const num = parseFloat(valStr);
+  return isNaN(num) ? 0 : Number(num.toFixed(2));
+}
+
+/**
+ * Formatea un monto con exactamente 2 decimales como cadena de texto.
+ * @param monto Valor del monto
+ * @returns Cadena con formato "XX.XX"
+ */
+export function formatMonto(monto: any): string {
+  return parseMonto(monto).toFixed(2);
+}
+

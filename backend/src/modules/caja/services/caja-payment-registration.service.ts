@@ -1,5 +1,5 @@
-﻿import { registrarAuditoria } from "../../../common/audit/audit.service.js";
-import { mapDbPaymentToApi } from "../../../common/shared/mappers.js";
+import { registrarAuditoria } from "../../../common/audit/audit.service.js";
+import { mapDbPaymentToApi, parseMonto } from "../../../common/shared/mappers.js";
 import {
   incrementarCorrelativo,
   normalizarCorrelativos
@@ -12,7 +12,8 @@ export class CajaPaymentRegistrationService {
   async registrarPago(operatorUsername: string, body: any) {
     const db = await cajaRepository.getDb();
     const inscripcion_id = body.inscripcion_id || body.inscripcionId || "";
-    const monto = body.monto !== undefined ? body.monto : (body.monto_pago !== undefined ? body.monto_pago : 0);
+    const rawMonto = body.monto !== undefined ? body.monto : (body.monto_pago !== undefined ? body.monto_pago : 0);
+    const monto = parseMonto(rawMonto);
     const forma_pago = body.forma_pago || body.metodo_pago || body.formaPago || "Efectivo";
     const numero_operacion = body.numero_operacion || body.numeroOperacion || "";
     const telefono_operacion = body.telefono_operacion || body.telefonoOperacion || "";
@@ -39,7 +40,7 @@ export class CajaPaymentRegistrationService {
       programa: programa || (inscrip ? inscrip.programa : ""),
       programaId: (inscrip ? inscrip.programaId : ""),
       periodo: periodo || (inscrip ? inscrip.periodo : "escolar"),
-      monto: Number(
+      monto: parseMonto(
         monto ||
         (inscrip
           ? (inscrip.costo !== undefined
@@ -141,7 +142,7 @@ export class CajaPaymentRegistrationService {
       programaId: inscrip.programaId || "",
       programa: body.nombre_programa || inscrip.programa || "",
       periodo: body.periodo || inscrip.periodo || "escolar",
-      monto: Number(
+      monto: parseMonto(
         body.monto_pago ||
         (inscrip.costo !== undefined
           ? inscrip.costo

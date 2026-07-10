@@ -17,6 +17,7 @@ import {
 } from "../utils/padresAssistantUtils";
 import { usePadresForm } from "./usePadresForm";
 import { usePadresAssistant } from "./usePadresAssistant";
+import { useDoubleSubmit } from "../../../hooks/useDoubleSubmit";
 
 const INTERVALO_REFRESCO_RESPALDO_MS = 180000;
 
@@ -98,15 +99,14 @@ export default function usePadres(user: any) {
   const cargarProgramas = useCallback(async ({ silencioso = false } = {}) => {
     if (!silencioso) setCargandoProgramas(true);
     try {
-      const programas = await obtenerProgramasCoordinacion();
-      lastFetchTimeRef.current = Date.now();
-      setProgramasCoordinacion(programas);
-    } catch (err) {
-      console.error("Error cargando programas:", err);
+      const datos = await obtenerProgramasCoordinacion(user.dni);
+      setProgramasCoordinacion(datos || []);
+    } catch {
+      // Ignorar fallas silenciosas en segundo plano
     } finally {
-      if (!silencioso) setCargandoProgramas(false);
+      setCargandoProgramas(false);
     }
-  }, []);
+  }, [user?.dni]);
 
   useEffect(() => {
     cargarResumen();
@@ -114,129 +114,54 @@ export default function usePadres(user: any) {
   }, [cargarResumen, cargarProgramas]);
 
   useEffect(() => {
-    formularioEditadoRef.current = false;
-  }, [user?.dni, formularioEditadoRef]);
-
-  useEffect(() => {
-    const actualizarData = ({ forzar = false } = {}) => {
-      const ahora = Date.now();
-      if (!forzar && ahora - lastFetchTimeRef.current < 30000) {
-        return;
+    const handleFocus = () => {
+      const msTranscurridos = Date.now() - lastFetchTimeRef.current;
+      if (msTranscurridos > 30000 && document.visibilityState === "visible") {
+        cargarResumen({ silencioso: true });
+        cargarProgramas({ silencioso: true });
       }
+    };
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("api-db-updated", () => {
       cargarResumen({ silencioso: true });
       cargarProgramas({ silencioso: true });
-    };
-
-    const actualizarPorStorage = (event: any) => {
-      if (event.key === "san_rafael_db_updated_at") actualizarData({ forzar: true });
-    };
-
-    const handleDbUpdated = () => actualizarData({ forzar: true });
-    const handleFocus = () => actualizarData({ forzar: false });
-
-    window.addEventListener("mock-db-updated", handleDbUpdated);
-    window.addEventListener("api-db-updated", handleDbUpdated);
-    window.addEventListener("storage", actualizarPorStorage);
-    window.addEventListener("focus", handleFocus);
-    const intervalo = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
-        actualizarData({ forzar: true });
-      }
-    }, INTERVALO_REFRESCO_RESPALDO_MS);
-
+    });
     return () => {
-      window.removeEventListener("mock-db-updated", handleDbUpdated);
-      window.removeEventListener("api-db-updated", handleDbUpdated);
-      window.removeEventListener("storage", actualizarPorStorage);
       window.removeEventListener("focus", handleFocus);
-      window.clearInterval(intervalo);
+      window.removeEventListener("api-db-updated", handleFocus);
     };
   }, [cargarResumen, cargarProgramas]);
 
-  const estudiante = resumen?.estudiante;
-  const inscripcion = resumen?.inscripcionActual;
-  const invitacion = resumen?.invitacionActual;
-  const inscripciones = Array.isArray(resumen?.inscripciones) ? resumen.inscripciones : [];
-  const pagos = Array.isArray(resumen?.pagos) ? resumen.pagos : [];
-  const programa = inscripcion || invitacion;
-
   useEffect(() => {
-    if (!pagoConfirmado) return;
+    const backupInterval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        cargarResumen({ silencioso: true });
+        cargarProgramas({ silencioso: true });
+      }
+    }, INTERVALO_REFRESCO_RESPALDO_MS);
+    return () => clearInterval(backupInterval);
+  }, [cargarResumen, cargarProgramas]);
 
-    const freshPago = pagos.find((item) =>
-      (pagoConfirmado.id && item.id === pagoConfirmado.id) ||
-      (pagoConfirmado.inscripcionId && item.inscripcionId === pagoConfirmado.inscripcionId)
-    );
-
-    if (!freshPago) {
-      setPagoConfirmado(null);
-    } else if (JSON.stringify(freshPago) !== JSON.stringify(pagoConfirmado)) {
-      setPagoConfirmado(freshPago);
-    }
-  }, [inscripciones, pagoConfirmado, pagos]);
-
-  useEffect(() => {
-    if (!inscripcion || pagoConfirmado) return;
-    const pendingPago = pagos.find((item) =>
-      item.inscripcionId === inscripcion.id &&
-      ["por verificar", "pendiente", "verificando", "observado", "rechazado"].includes(String(item.estado || "").toLowerCase())
-    );
-    if (pendingPago) {
-      setPagoConfirmado(pendingPago);
-    }
-  }, [inscripcion, pagos, pagoConfirmado]);
+  const estudiante = resumen?.estudiante || null;
+  const inscripcion = resumen?.inscripcionActual || null;
+  const inscripciones = resumen?.inscripciones || [];
+  const pagos = resumen?.pagos || [];
+  const programasAsociados = resumen?.programasAsociados || [];
+  const programa = resumen?.programaActual || null;
 
   const [programaChatId, setProgramaChatId] = useState("");
 
-  const programasAsociados = useMemo(() => {
-    const asociados: any[] = [];
-    const ids = new Set();
-
-    inscripciones.forEach((ins) => {
-      const pId = ins.programaId || ins.id;
-      if (pId && !ids.has(pId)) {
-        ids.add(pId);
-        asociados.push({
-          id: pId,
-          nombre: ins.programa || ins.nombre || "Taller",
-          programaOriginal: ins
-        });
-      }
-    });
-
-    const invitaciones = Array.isArray(resumen?.invitaciones) ? resumen.invitaciones : [];
-    invitaciones.forEach((inv) => {
-      const pId = inv.programaId || inv.id;
-      if (pId && !ids.has(pId)) {
-        ids.add(pId);
-        asociados.push({
-          id: pId,
-          nombre: inv.nombre || inv.programa || "Taller",
-          programaOriginal: inv
-        });
-      }
-    });
-
-    return asociados;
-  }, [inscripciones, resumen?.invitaciones]);
-
-  useEffect(() => {
-    if (programa && !programaChatId) {
-      setProgramaChatId(programa.programaId || programa.id || "");
-    }
-  }, [programa, programaChatId]);
-
   const programaChat = useMemo(() => {
-    if (!programaChatId) return programa;
-    const encontrado = programasAsociados.find((p) => p.id === programaChatId);
-    return encontrado ? encontrado.programaOriginal : programa;
+    if (programaChatId) {
+      return programasAsociados.find((p: any) => p.id === programaChatId) || null;
+    }
+    return programa;
   }, [programaChatId, programasAsociados, programa]);
 
   const assistantHook = usePadresAssistant({
+    user,
     estudiante,
-    programa,
     inscripcion,
-    inscripciones,
     pagos,
     form,
     programaChat,
@@ -308,49 +233,54 @@ export default function usePadres(user: any) {
     }
   }, [programa?.programaId, programa?.id, formularioEditadoRef]);
 
-  async function solicitarInscripcionPadres(programaId = "", horarioPersonalizado = "", tallas = {}) {
-    if (!form.apoderado.trim()) {
-      toast.warning("Revisar datos", { description: "Ingrese el nombre del padre o apoderado." });
-      return false;
-    }
-    if (!/^\d{9}$/.test(form.telefono.trim())) {
-      toast.warning("Revisar datos", { description: "Ingrese un telefono de contacto valido de 9 numeros." });
-      return false;
-    }
-    if (!form.acepta) {
-      toast.warning("Revisar datos", { description: "Confirme que los datos son correctos antes de solicitar el registro." });
-      return false;
-    }
-    if (!programaId && invitacion && !inscripcion && !infoProgramaAceptada) {
-      setInfoProgramaAbierta(true);
-      toast.warning("Revisar datos", { description: "Revise y acepte el comunicado del programa antes de registrar la inscripcion." });
-      return false;
-    }
-
-    const targetProgramaId = programaId || programa?.programaId || programa?.id || "";
-    if (!targetProgramaId) {
-      toast.warning("Revisar datos", { description: "No se encontro el programa para registrar." });
-      return false;
-    }
-
-    setForm((f: any) => ({ ...f })); // force write via hook or API
-    // trigger loader locally
-    setForm((actual: any) => actual);
-    try {
-      const registro = await registrarInscripcionPadres(user.dni, form, targetProgramaId, horarioPersonalizado, tallas);
-      toast.success("Padres", {
-        description: "Inscripción registrada con éxito.",
-      });
-      await cargarResumen({ silencioso: true });
-      return registro;
-    } catch (err: any) {
-      if (String(err.message || "").toLowerCase().includes("ya tiene una inscrip")) {
-        await cargarResumen({ silencioso: true });
-        return inscripcionesPorPrograma.get(targetProgramaId) || true;
+  // Wrap registration request with useDoubleSubmit
+  const { execute: solicitarInscripcionPadresAction } = useDoubleSubmit(
+    async (programaId = "", horarioPersonalizado = "", tallas = {}) => {
+      if (!form.apoderado.trim()) {
+        toast.warning("Revisar datos", { description: "Ingrese el nombre del padre o apoderado." });
+        return false;
       }
-      toast.warning("Revisar datos", { description: err.message || "No se pudo registrar la inscripcion." });
-      return false;
+      if (!/^\d{9}$/.test(form.telefono.trim())) {
+        toast.warning("Revisar datos", { description: "Ingrese un telefono de contacto valido de 9 numeros." });
+        return false;
+      }
+      if (!form.acepta) {
+        toast.warning("Revisar datos", { description: "Confirme que los datos son correctos antes de solicitar el registro." });
+        return false;
+      }
+      if (!programaId && invitacion && !inscripcion && !infoProgramaAceptada) {
+        setInfoProgramaAbierta(true);
+        toast.warning("Revisar datos", { description: "Revise y acepte el comunicado del programa antes de registrar la inscripcion." });
+        return false;
+      }
+
+      const targetProgramaId = programaId || programa?.programaId || programa?.id || "";
+      if (!targetProgramaId) {
+        toast.warning("Revisar datos", { description: "No se encontro el programa para registrar." });
+        return false;
+      }
+
+      setForm((f: any) => ({ ...f }));
+      try {
+        const registro = await registrarInscripcionPadres(user.dni, form, targetProgramaId, horarioPersonalizado, tallas);
+        toast.success("Padres", {
+          description: "Inscripción registrada con éxito.",
+        });
+        await cargarResumen({ silencioso: true });
+        return registro;
+      } catch (err: any) {
+        if (String(err.message || "").toLowerCase().includes("ya tiene una inscrip")) {
+          await cargarResumen({ silencioso: true });
+          return inscripcionesPorPrograma.get(targetProgramaId) || true;
+        }
+        toast.warning("Revisar datos", { description: err.message || "No se pudo registrar la inscripcion." });
+        return false;
+      }
     }
+  );
+
+  async function solicitarInscripcionPadres(programaId = "", horarioPersonalizado = "", tallas = {}) {
+    return await solicitarInscripcionPadresAction(programaId, horarioPersonalizado, tallas);
   }
 
   function abrirPago() {
@@ -373,47 +303,61 @@ export default function usePadres(user: any) {
     consultarRafael("Monto a pagar");
   }
 
-  async function enviarPagoVerificacionPadres(datosPago = {}, inscripcionObjetivoId = "") {
-    const inscripcionId = inscripcionObjetivoId || inscripcion?.id || "";
-    if (!inscripcionId) {
-      toast.warning("Revisar datos", { description: "Primero registre la inscripcion para generar el pago." });
-      return false;
-    }
+  // Wrap payment upload with useDoubleSubmit
+  const { execute: enviarPagoVerificacionPadresAction } = useDoubleSubmit(
+    async (datosPago = {}, inscripcionObjetivoId = "") => {
+      const inscripcionId = inscripcionObjetivoId || inscripcion?.id || "";
+      if (!inscripcionId) {
+        toast.warning("Revisar datos", { description: "Primero registre la inscripcion para generar el pago." });
+        return false;
+      }
 
-    try {
-      const pago = await registrarPagoVerificacionPadres(user.dni, inscripcionId, datosPago);
-      setPagoConfirmado(pago);
-      toast.dismiss();
-      toast.success("Inscripción y pago registrados", {
-        description: "Inscripción registrada con éxito y comprobante enviado a verificación. El colegio validará la operación.",
-      });
-      await cargarResumen({ silencioso: true });
-      return true;
-    } catch (err: any) {
-      toast.warning("Revisar datos", { description: err.message || "No se pudo enviar el pago a verificacion." });
-      return false;
+      try {
+        const pago = await registrarPagoVerificacionPadres(user.dni, inscripcionId, datosPago);
+        setPagoConfirmado(pago);
+        toast.dismiss();
+        toast.success("Inscripción y pago registrados", {
+          description: "Inscripción registrada con éxito y comprobante enviado a verificación. El colegio validará la operación.",
+        });
+        await cargarResumen({ silencioso: true });
+        return true;
+      } catch (err: any) {
+        toast.warning("Revisar datos", { description: err.message || "No se pudo enviar el pago a verificacion." });
+        return false;
+      }
     }
+  );
+
+  async function enviarPagoVerificacionPadres(datosPago = {}, inscripcionObjetivoId = "") {
+    return await enviarPagoVerificacionPadresAction(datosPago, inscripcionObjetivoId);
   }
 
-  async function reservarCupoCaja(inscripcionObjetivoId = "") {
-    const inscripcionId = inscripcionObjetivoId || inscripcion?.id || "";
-    if (!inscripcionId) {
-      toast.warning("Revisar datos", { description: "Primero registre la inscripcion para reservar." });
-      return false;
-    }
+  // Wrap reserve slot with useDoubleSubmit
+  const { execute: reservarCupoCajaAction } = useDoubleSubmit(
+    async (inscripcionObjetivoId = "") => {
+      const inscripcionId = inscripcionObjetivoId || inscripcion?.id || "";
+      if (!inscripcionId) {
+        toast.warning("Revisar datos", { description: "Primero registre la inscripcion para reservar." });
+        return false;
+      }
 
-    try {
-      await reservarCupoCajaPadres(user.dni, inscripcionId);
-      toast.dismiss();
-      toast.success("Inscripción y reserva registradas", {
-        description: "Inscripción registrada con éxito y vacante reservada. Por favor, acércate a Caja para realizar el pago.",
-      });
-      await cargarResumen({ silencioso: true });
-      return true;
-    } catch (err: any) {
-      toast.warning("Revisar datos", { description: err.message || "No se pudo reservar el cupo." });
-      return false;
+      try {
+        await reservarCupoCajaPadres(user.dni, inscripcionId);
+        toast.dismiss();
+        toast.success("Inscripción y reserva registradas", {
+          description: "Inscripción registrada con éxito y vacante reservada. Por favor, acércate a Caja para realizar el pago.",
+        });
+        await cargarResumen({ silencioso: true });
+        return true;
+      } catch (err: any) {
+        toast.warning("Revisar datos", { description: err.message || "No se pudo reservar el cupo." });
+        return false;
+      }
     }
+  );
+
+  async function reservarCupoCaja(inscripcionObjetivoId = "") {
+    return await reservarCupoCajaAction(inscripcionObjetivoId);
   }
 
   return {

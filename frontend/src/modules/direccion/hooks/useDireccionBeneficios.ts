@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import {
   buscarInscripcionesParaDescuento,
@@ -8,6 +8,7 @@ import {
   guardarCorrelativos,
 } from "../direccionService";
 import { obtenerMetodosPago, guardarMetodosPago, buscarEstudiantesCajaQuery, obtenerEstudiantePorDni } from "../../caja/cajaService";
+import { useDoubleSubmit } from "../../../hooks/useDoubleSubmit";
 
 export function useDireccionBeneficios({ initialView }: { initialView: string }) {
   const [busquedaDescuento, setBusquedaDescuento] = useState("");
@@ -65,7 +66,8 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
     }
   }, [initialView]);
 
-  const handleGuardarCorrelativos = async (formToSave = correlativosForm) => {
+  // Wrap correlative saving with useDoubleSubmit
+  const { execute: saveCorrelativosAction } = useDoubleSubmit(async (formToSave: any) => {
     setGuardandoCorrelativos(true);
     try {
       await guardarCorrelativos(formToSave);
@@ -77,9 +79,14 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
     } finally {
       setGuardandoCorrelativos(false);
     }
+  });
+
+  const handleGuardarCorrelativos = async (formToSave = correlativosForm) => {
+    return await saveCorrelativosAction(formToSave);
   };
 
-  const handleActualizarMetodosPago = async (nuevosMetodos: string[]) => {
+  // Wrap payment methods update with useDoubleSubmit
+  const { execute: updateMetodosPagoAction } = useDoubleSubmit(async (nuevosMetodos: string[]) => {
     try {
       const res = await guardarMetodosPago(nuevosMetodos);
       setMetodosPago(res);
@@ -89,6 +96,10 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
       toast.error("Error", { description: err.message || "No se pudieron guardar los métodos de pago." });
       return false;
     }
+  });
+
+  const handleActualizarMetodosPago = async (nuevosMetodos: string[]) => {
+    return await updateMetodosPagoAction(nuevosMetodos);
   };
 
   const refrescarBusquedaDescuento = useCallback(async () => {
@@ -159,7 +170,8 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
     });
   };
 
-  const guardarBeneficio = async () => {
+  // Wrap benefit submission with useDoubleSubmit
+  const { execute: guardarBeneficioAction } = useDoubleSubmit(async () => {
     if (!inscripcionSeleccionada) return;
     if (!datosBeneficio.justificacion.trim()) {
       toast.error("Validación", { description: "Debe ingresar una justificación o motivo para el descuento." });
@@ -185,9 +197,14 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
     } finally {
       setBuscandoDescuento(false);
     }
+  });
+
+  const guardarBeneficio = async () => {
+    await guardarBeneficioAction();
   };
 
-  const removerBeneficio = async () => {
+  // Wrap benefit removal with useDoubleSubmit
+  const { execute: removerBeneficioAction } = useDoubleSubmit(async () => {
     if (!inscripcionSeleccionada) return;
     setBuscandoDescuento(true);
     try {
@@ -200,6 +217,10 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
     } finally {
       setBuscandoDescuento(false);
     }
+  });
+
+  const removerBeneficio = async () => {
+    await removerBeneficioAction();
   };
 
   return {
