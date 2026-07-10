@@ -1,5 +1,5 @@
 import { IconBook as BookOpen, IconPlus as Plus, IconTrash as Trash2 } from "@tabler/icons-react";
-import { normalizarPeriodoVista } from "../../utils/coordinacionProgramUtils";
+import { normalizarPeriodoVista } from "../../../utils/coordinacionProgramUtils";
 
 function SeccionDatosGenerales({
   form,

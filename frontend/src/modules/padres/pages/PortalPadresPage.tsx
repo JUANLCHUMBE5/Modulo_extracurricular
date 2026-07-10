@@ -313,45 +313,6 @@ export default function Padres({ user, onLogout }) {
               </div>
 
               <div className="padres-comunicado-box">
-                <div className="padres-comunicado-letter">
-                  <span>Mensaje del colegio</span>
-                  {comunicadoPadres.fecha ? <p>{comunicadoPadres.fecha}</p> : null}
-                  {(() => {
-                    const segmentos: any[] = [];
-                    let grupoActual: any = null;
-
-                    comunicadoPadres.parrafos.forEach((parrafo: string) => {
-                      const match = parrafo.match(/^([^:]+):\s*(.*)$/);
-                      const esKeyValue = match && match[1].length < 35;
-
-                      if (esKeyValue) {
-                        if (!grupoActual) {
-                          grupoActual = { type: "grid", items: [] };
-                          segmentos.push(grupoActual);
-                        }
-                        grupoActual.items.push({
-                          label: match[1].trim(),
-                          value: match[2].trim(),
-                        });
-                      } else {
-                        grupoActual = null;
-                        segmentos.push({ type: "text", content: parrafo });
-                      }
-                    });
-
-                    return segmentos.map((segmento, idx) => {
-                      if (segmento.type === "grid") {
-                        return null;
-                      }
-                      return (
-                        <p key={`text-${idx}`} style={{ margin: "12px 0", fontSize: "14.5px", lineHeight: "1.6", color: "#334155", textAlign: "justify", textJustify: "inter-word", wordBreak: "break-word" }}>
-                          {segmento.content}
-                        </p>
-                      );
-                    });
-                  })()}
-                </div>
-
                 {(comunicadoPadres.indicaciones || []).length ? (
                   <div className="padres-comunicado-section is-family">
                     <div className="padres-comunicado-section-title">

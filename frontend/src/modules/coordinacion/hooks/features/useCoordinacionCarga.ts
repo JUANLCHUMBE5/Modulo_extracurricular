@@ -5,8 +5,8 @@ import {
   previsualizarCargaAlumnosMasiva,
   confirmarCargaAlumnos,
   eliminarCargaAlumnos,
-} from "../services/coordinacionService";
-import { isApiMode } from "../../../services/apiClient";
+} from "../../services/coordinacionService";
+import { isApiMode } from "../../../../services/apiClient";
 
 export default function useCoordinacionCarga({
   puedeCargarAlumnos,
@@ -107,7 +107,7 @@ export default function useCoordinacionCarga({
       setBuscandoAlumnos(true);
       try {
         const queryLimpia = query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-        const { buscarEstudiantesPorNombre } = await import("../../secretaria/services/secretariaService");
+        const { buscarEstudiantesPorNombre } = await import("../../../secretaria/services/secretariaService");
         const results = await buscarEstudiantesPorNombre(queryLimpia, cargaPeriodo);
         const alumnosEncontrados = results.map((r: any) => r.estudiante || r);
 

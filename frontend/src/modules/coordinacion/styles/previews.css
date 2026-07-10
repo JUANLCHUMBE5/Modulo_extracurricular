@@ -1,0 +1,1733 @@
+.coord-search-card .coord-filtros-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  max-width: none;
+  width: 100%;
+}
+
+.coord-search-card .coord-filter-search {
+  flex: 2 1 240px;
+}
+
+.coord-search-card .coord-filter-category,
+.coord-search-card .coord-filter-status,
+.coord-search-card .coord-filter-period {
+  flex: 1 1 150px;
+}
+
+.coord-search-card .coord-filter-search,
+.coord-search-card .coord-filter-category,
+.coord-search-card .coord-filter-status,
+.coord-search-card .coord-filter-period {
+  min-width: 0;
+}
+
+.coord-search-card .coord-filtros-row .coord-register-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ── UPLOAD TABS FOR CARGA EXCEL ─────────────────────── */
+.coord-upload-tabs {
+  display: flex !important;
+  gap: 12px !important;
+  border-bottom: 2px solid #e2ece9 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 20px !important;
+  width: 100% !important;
+}
+
+.coord-upload-tabs button {
+  background: none !important;
+  border: none !important;
+  border-bottom: 3px solid transparent !important;
+  color: #475467 !important;
+  font-weight: 700 !important;
+  padding: 8px 16px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all 0.15s ease !important;
+  box-shadow: none !important;
+  min-height: auto !important;
+  height: auto !important;
+  text-transform: none !important;
+  border-radius: 6px 6px 0 0 !important;
+}
+
+.coord-upload-tabs button:hover {
+  color: #006b5b !important;
+  background: rgba(0, 107, 91, 0.05) !important;
+}
+
+.coord-upload-tabs button.is-active {
+  border-bottom-color: #006b5b !important;
+  color: #006b5b !important;
+  background: transparent !important;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-form {
+  grid-template-columns: 140px minmax(280px, 1fr) 170px auto;
+  align-items: end;
+  gap: 10px 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-grid {
+  display: contents;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-grid .coord-field-full {
+  grid-column: 1 / -1;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-grid .coord-field {
+  gap: 3px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-grid label {
+  font-size: 11px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-grid input,
+.coord-workspace-upload .coord-upload-card .coord-individual-grid select {
+  height: 34px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #bfd9d1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #172331;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-grid input:focus,
+.coord-workspace-upload .coord-upload-card .coord-individual-grid select:focus {
+  border-color: #009879;
+  box-shadow: 0 0 0 3px rgba(0, 152, 121, 0.12);
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-grid small {
+  min-height: 16px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-actions {
+  grid-column: 4;
+  align-self: end;
+  margin: 0;
+  min-width: 0;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-actions .coord-register-button {
+  height: 34px;
+  min-height: 34px;
+  padding-inline: 12px;
+  width: max-content;
+}
+
+@media (max-width: 900px) {
+  .coord-workspace-upload .coord-upload-card .coord-individual-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .coord-workspace-upload .coord-upload-card .coord-individual-grid .coord-field-full,
+  .coord-workspace-upload .coord-upload-card .coord-individual-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .coord-workspace-upload .coord-upload-card .coord-individual-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid #cfe5dd;
+  border-radius: 8px;
+  background: #fbfefd;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-program {
+  max-width: 100%;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-row {
+  display: grid;
+  grid-template-columns: 140px minmax(280px, 1fr) 170px max-content;
+  align-items: end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-row .coord-field {
+  min-width: 0;
+  gap: 3px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-form label {
+  color: #163f52;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-form input,
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-form select {
+  width: 100%;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #bfd9d1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #172331;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-form input:focus,
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-form select:focus {
+  border-color: #009879;
+  box-shadow: 0 0 0 3px rgba(0, 152, 121, 0.12);
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-submit {
+  width: auto;
+  height: 34px;
+  min-height: 34px;
+  padding-inline: 12px;
+  align-self: end;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-status {
+  margin: 0;
+  min-height: 16px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-status.is-success {
+  color: #176c60;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-status.is-warning {
+  color: #8a4b00;
+}
+
+@media (max-width: 920px) {
+  .coord-workspace-upload .coord-upload-card .coord-individual-clean-row {
+    grid-template-columns: 140px minmax(220px, 1fr) 160px;
+  }
+
+  .coord-workspace-upload .coord-upload-card .coord-individual-clean-submit {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 680px) {
+  .coord-workspace-upload .coord-upload-card .coord-individual-clean-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid #cfe5dd;
+  border-radius: 8px;
+  background: #fbfefd;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-row {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) max-content;
+  align-items: end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-file {
+  min-width: 0;
+  gap: 3px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-form label {
+  color: #163f52;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-form select {
+  width: 100%;
+  height: 34px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #bfd9d1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #172331;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-form select:focus {
+  border-color: #009879;
+  box-shadow: 0 0 0 3px rgba(0, 152, 121, 0.12);
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-picker {
+  min-height: 34px;
+  height: 34px;
+  padding: 3px 7px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-picker input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-picker label {
+  min-height: 26px;
+  height: 26px;
+  padding: 0 10px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-picker span {
+  font-size: 12px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-actions {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-actions button {
+  width: auto;
+  height: 34px;
+  min-height: 34px;
+  padding-inline: 12px;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-hint {
+  margin: 0;
+  color: #526777;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+@media (max-width: 920px) {
+  .coord-workspace-upload .coord-upload-card .coord-massive-clean-row {
+    grid-template-columns: 1fr;
+  }
+
+  .coord-workspace-upload .coord-upload-card .coord-massive-clean-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 680px) {
+  .coord-workspace-upload .coord-upload-card .coord-massive-clean-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .coord-workspace-upload .coord-upload-card .coord-massive-clean-actions button {
+    width: 100%;
+  }
+}
+
+.coord-search-card .coord-programs-clean-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.coord-search-card .coord-programs-clean-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.coord-search-card .coord-programs-clean-heading h2 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.coord-search-card .coord-programs-clean-heading p {
+  display: none;
+}
+
+.coord-search-card .coord-programs-clean-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.coord-search-card .coord-programs-clean-filters {
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border: 1px solid #d8e4ec;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.coord-search-card .coord-programs-clean-filter-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.35fr) minmax(130px, 0.72fr) minmax(130px, 0.72fr) minmax(150px, 0.8fr) max-content;
+  align-items: end;
+  gap: 10px;
+}
+
+.coord-search-card .coord-programs-clean-filter-row > div {
+  min-width: 0;
+}
+
+.coord-search-card .coord-programs-clean-filter-row .mantine-Input-input {
+  height: 34px;
+  min-height: 34px;
+  font-size: 13px;
+}
+
+.coord-search-card .coord-programs-clean-filter-row .mantine-Input-wrapper,
+.coord-search-card .coord-programs-clean-filter-row .mantine-TextInput-root,
+.coord-search-card .coord-programs-clean-filter-row .mantine-Select-root {
+  width: 100%;
+}
+
+.coord-search-card .coord-programs-clean-filter-row .mantine-InputWrapper-label {
+  margin-bottom: 4px;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.coord-search-card .coord-programs-clean-action {
+  display: flex;
+  align-items: end;
+  min-width: 0;
+}
+
+.coord-search-card .coord-programs-clean-action button {
+  height: 34px;
+  min-height: 34px;
+  padding-inline: 14px;
+}
+
+@media (max-width: 980px) {
+  .coord-search-card .coord-programs-clean-filter-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .coord-search-card .coord-programs-clean-action {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .coord-search-card .coord-programs-clean-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .coord-search-card .coord-programs-clean-action button {
+    width: 100%;
+  }
+}
+
+/* ── Nueva Barra Lateral Moderna y Limpia (Estilo Premium con Fondo Verde) ── */
+.coord-layout {
+  --coord-sidebar: #197f10 !important; /* Fondo verde para la barra lateral */
+  --coord-sidebar-soft: rgba(255, 255, 255, 0.1) !important;
+  --coord-sidebar-width: 270px !important; /* Unified 270px width */
+  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.coord-sidebar {
+  background: #197f10 !important; /* Fondo verde sólido */
+  border-right: none !important; /* Removido borde gris */
+  padding: 24px 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.08) !important; /* Sombra sutil de separación */
+  overflow: hidden !important;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Encabezado / Logo */
+.coord-sidebar-brand-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-bottom: 24px !important;
+  padding-bottom: 16px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important; /* Borde sutil blanco translúcido */
+}
+
+/* Contenedor del Logo en color blanco para contraste */
+.coord-brand {
+  border: none !important;
+  background: #ffffff !important; /* Caja blanca para el logo */
+  border-radius: 8px !important;
+  padding: 6px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: auto !important;
+  margin: 0 !important;
+}
+
+.coord-brand-logo {
+  max-height: 38px !important;
+  width: auto !important;
+  object-fit: contain !important;
+  border-radius: 0 !important;
+}
+
+.coord-menu-toggle-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important; /* Color blanco para contraste */
+  cursor: pointer !important;
+  padding: 6px !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.coord-menu-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+.coord-module-label {
+  color: #a7f3d0 !important; /* Verde claro suave para el label de módulo */
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  padding-left: 0 !important;
+  margin: 0 0 16px !important;
+}
+
+/* Contenedor de Navegación */
+.coord-nav {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+}
+
+/* Ítems de la Navegación */
+.coord-nav-item,
+.coord-logout {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  padding: 12px 16px !important; /* Relleno vertical elegante */
+  border: none !important;
+  border-radius: 10px !important; /* Bordes suaves redondeados */
+  background: transparent !important;
+  color: #e2e8f0 !important; /* Texto blanco grisáceo para buen contraste */
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+  min-height: auto !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+.coord-nav-item svg,
+.coord-logout svg {
+  color: #cbd5e1 !important; /* Iconos blanco grisáceos */
+  stroke: #cbd5e1 !important;
+  width: 20px !important;
+  height: 20px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.coord-nav-item span,
+.coord-logout span {
+  color: #e2e8f0 !important; /* Texto blanco grisáceo inactivo */
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Hover de Ítems inactivos */
+.coord-nav-item:hover,
+.coord-logout:hover {
+  background: rgba(255, 255, 255, 0.12) !important; /* Blanco translúcido */
+  color: #ffffff !important;
+}
+
+.coord-nav-item:hover span,
+.coord-logout:hover span {
+  color: #ffffff !important;
+}
+
+.coord-nav-item:hover svg,
+.coord-logout:hover svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  transform: translateY(-1px); /* Micro-animación al pasar el mouse */
+}
+
+/* Ítem Activo (Fondo blanco y letras negras como solicitado) */
+.coord-nav-item-active,
+.coord-layout-profesor .coord-nav-item-active {
+  background: #ffffff !important; /* Fondo blanco */
+  color: #000000 !important; /* Letras negras */
+  border-color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important; /* Sombra sutil para profundidad */
+}
+
+.coord-nav-item-active svg {
+  color: #000000 !important; /* Icono negro */
+  stroke: #000000 !important;
+}
+
+.coord-nav-item-active span {
+  color: #000000 !important; /* Forzar texto negro puro en el span */
+}
+
+/* Hover en Ítem Activo (Mantener blanco/negro) */
+.coord-nav-item-active:hover {
+  background: #f8fafc !important; /* Blanco sutilmente grisáceo */
+  color: #000000 !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18) !important;
+}
+
+.coord-nav-item-active:hover span {
+  color: #000000 !important;
+}
+
+.coord-nav-item-active:hover svg {
+  color: #000000 !important;
+  stroke: #000000 !important;
+  transform: none !important;
+}
+
+/* Quitar la flechita derecha */
+.coord-nav-arrow {
+  display: none !important;
+}
+
+/* Botón de Cerrar Sesión al final */
+.coord-sidebar > .coord-logout {
+  margin-top: auto !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important; /* Separador sutil */
+  border-radius: 0 !important;
+  padding-top: 16px !important;
+}
+
+.coord-sidebar > .coord-logout span {
+  color: #e2e8f0 !important;
+}
+
+.coord-sidebar > .coord-logout:hover {
+  background: #fee2e2 !important; /* Hover rojo suave */
+  color: #ef4444 !important; /* Letras rojas */
+  border-radius: 10px !important;
+}
+
+.coord-sidebar > .coord-logout:hover span {
+  color: #ef4444 !important;
+}
+
+.coord-sidebar > .coord-logout:hover svg {
+  color: #ef4444 !important;
+  stroke: #ef4444 !important;
+  transform: translateY(-1px);
+}
+
+/* Ocultar barra lateral por completo cuando está colapsada */
+.coord-layout-collapsed .coord-sidebar {
+  width: 0px !important;
+  padding: 0px !important;
+  border-right: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ── PREMIUM SOLID WHITE LAYOUT ── */
+.coord-layout {
+  background: #ffffff !important;
+}
+
+.coord-main {
+  background: #ffffff !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+.coord-card {
+  border: none !important;
+  box-shadow: none !important;
+  background: #ffffff !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.coord-search-card {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+
+/* ── WIDER WORKSPACE AND TOPBAR LAYOUT ── */
+.coord-topbar {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+.coord-workspace {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.coord-workspace-single {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.coord-card,
+.coord-search-card,
+.coord-program-card-list,
+.coord-program-card-item {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.coord-program-form-card {
+  max-width: 1400px !important;
+}
+
+/* ── UNIFICACIÓN DE ALTURAS EN FORMULARIOS Y BOTONES (34px) ── */
+.coord-workspace-upload select,
+.coord-workspace-upload input,
+.coord-workspace-upload .coord-massive-clean-picker,
+.coord-workspace-upload .coord-massive-clean-actions button,
+.coord-workspace-upload .coord-individual-clean-submit,
+.coord-documents-upload-row input,
+.coord-documents-upload-row select,
+.coord-documents-upload-row .coord-template-file-row,
+.coord-documents-upload-row .coord-register-button {
+  height: 34px !important;
+  min-height: 34px !important;
+  box-sizing: border-box !important;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-picker label {
+  height: 26px !important;
+  min-height: 26px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-picker span {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 26px !important;
+}
+
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-form,
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-form {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+  margin-bottom: 8px !important;
+  gap: 8px !important;
+}
+
+.coord-documents-upload-row .coord-template-file-button {
+  height: 28px !important;
+  min-height: 28px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.coord-documents-upload-row .coord-template-file-name {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 28px !important;
+}
+
+/* ==========================================================================
+   VISUAL CLEANUP & OVERRIDES FOR COORDINACIÓN MODULE (SAN RAFAEL)
+   ========================================================================== */
+
+/* 1. Remoción de Marcos (Bordes), Fondos y Sombras en Contenedores */
+.coord-workspace-upload .coord-upload-card .coord-individual-clean-form,
+.coord-workspace-upload .coord-upload-card .coord-massive-clean-form,
+.coord-search-card .coord-programs-clean-filters,
+.coord-template-workspace .coord-documents-saved-state,
+.coord-template-workspace .coord-documents-validation,
+.coord-template-workspace .coord-documents-simple-panel,
+.coord-load-box {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.coord-empty,
+.coord-upload-empty,
+.coord-empty-clean {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 16px 0 !important;
+}
+
+.coord-message {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Rediseño de las Tarjetas de Programas (Sin marco, solo línea divisoria) */
+.coord-program-card-item {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+  background: #ffffff !important;
+  padding: 12px 16px !important;
+  margin-bottom: 12px !important;
+  transition: all 0.2s ease !important;
+}
+.coord-program-card-item:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* 2. Color de Letras en Negro Sólido (#000000) y Peso Regular (500) */
+.coord-workspace-upload label,
+.coord-field label,
+.coord-individual-clean-form label,
+.coord-massive-clean-form label,
+.coord-programs-clean-filter-row label,
+.coord-programs-clean-filter-row .mantine-InputWrapper-label,
+.coord-documents-upload-row label {
+  color: #000000 !important;
+  font-weight: 500 !important;
+  font-size: 12px !important;
+}
+
+.coord-workspace-upload p,
+.coord-workspace-upload span,
+.coord-workspace-upload small,
+.coord-massive-clean-hint,
+.coord-upload-history-header p,
+.coord-empty p,
+.coord-upload-empty p,
+.coord-empty-clean p,
+.coord-programs-clean-heading p,
+.coord-documents-title p,
+.coord-template-history-main span,
+.coord-documents-saved-state span,
+.coord-document-read-head span {
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+.coord-workspace-upload select,
+.coord-workspace-upload input,
+.coord-individual-clean-form input,
+.coord-individual-clean-form select,
+.coord-massive-clean-form select,
+.coord-documents-upload-row input,
+.coord-documents-upload-row select {
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+/* Estilos de las Pestañas de Selección */
+.coord-upload-tabs {
+  border-bottom: 2px solid #e2ece9 !important;
+  margin-bottom: 12px !important;
+}
+
+.coord-upload-tabs button {
+  color: #000000 !important;
+  font-weight: 500 !important;
+  border-bottom: 3px solid transparent !important;
+  background: transparent !important;
+  transition: all 0.2s ease !important;
+}
+
+.coord-upload-tabs button svg {
+  color: #000000 !important;
+  transition: color 0.2s ease !important;
+}
+
+/* Carga Masiva - Verde */
+/* Carga Masiva - Verde */
+.coord-upload-tabs button.coord-upload-tab-masiva.is-active {
+  border-bottom-color: #006b5b !important;
+  color: #006b5b !important;
+  font-weight: 600 !important;
+}
+.coord-upload-tabs button.coord-upload-tab-masiva.is-active svg {
+  color: #006b5b !important;
+}
+.coord-upload-tabs button.coord-upload-tab-masiva:hover {
+  background: rgba(0, 107, 91, 0.05) !important;
+  color: #006b5b !important;
+}
+.coord-upload-tabs button.coord-upload-tab-masiva:hover svg {
+  color: #006b5b !important;
+}
+
+/* Registro Individual - Verde */
+.coord-upload-tabs button.coord-upload-tab-individual.is-active {
+  border-bottom-color: #006b5b !important;
+  color: #006b5b !important;
+  font-weight: 600 !important;
+}
+.coord-upload-tabs button.coord-upload-tab-individual.is-active svg {
+  color: #006b5b !important;
+}
+.coord-upload-tabs button.coord-upload-tab-individual:hover {
+  background: rgba(0, 107, 91, 0.05) !important;
+  color: #006b5b !important;
+}
+.coord-upload-tabs button.coord-upload-tab-individual:hover svg {
+  color: #006b5b !important;
+}
+
+/* Exportar - Verde */
+.coord-upload-tabs button.coord-upload-tab-exportar.is-active {
+  border-bottom-color: #006b5b !important;
+  color: #006b5b !important;
+  font-weight: 600 !important;
+}
+.coord-upload-tabs button.coord-upload-tab-exportar.is-active svg {
+  color: #006b5b !important;
+}
+.coord-upload-tabs button.coord-upload-tab-exportar:hover {
+  background: rgba(0, 107, 91, 0.05) !important;
+  color: #006b5b !important;
+}
+.coord-upload-tabs button.coord-upload-tab-exportar:hover svg {
+  color: #006b5b !important;
+}
+
+/* 3. Estilo Unificado de Botones (Fondo Verde Claro Premium) */
+.coord-primary-button,
+.coord-register-button,
+.coord-empty-clean-btn {
+  background: #e6fcf5 !important;
+  color: #0c8569 !important;
+  border: 1px solid #c3fae8 !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.coord-primary-button:hover,
+.coord-register-button:hover,
+.coord-empty-clean-btn:hover {
+  background: #c3fae8 !important;
+  color: #09634e !important;
+  border-color: #a3f5d8 !important;
+}
+
+.coord-secondary-button {
+  background: transparent !important;
+  color: #000000 !important;
+  border: 1px solid #cbd5e1 !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease !important;
+}
+
+.coord-secondary-button:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  color: #000000 !important;
+}
+
+/* 4. Estilo de Tablas Limpias */
+.coord-table-wrap {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.coord-table th {
+  background: #f8fafc !important;
+  color: #000000 !important;
+  font-weight: 600 !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  padding: 8px 10px !important;
+}
+
+.coord-table td {
+  color: #000000 !important;
+  font-weight: 500 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding: 6px 10px !important;
+}
+
+/* 5. Historial de Cargas e Items del Historial */
+.coord-template-history-item {
+  border: none !important;
+  border-bottom: 1px solid #eef3f6 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 12px 0 !important;
+}
+
+/* 6. Compactación e Integración de Alturas en Coordinación (34px) */
+.coord-main {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  padding-left: 24px !important;
+  padding-right: 24px !important;
+  background: #e8f5e9 !important;
+}
+
+.coord-form select,
+.coord-form input,
+.coord-filtros-row select,
+.coord-filtros-row input,
+.coord-search-card select,
+.coord-search-card input,
+.coord-upload-grid select,
+.coord-upload-grid input,
+.coord-template-upload-row select,
+.coord-template-upload-row input,
+.coord-documents-upload-row select,
+.coord-documents-upload-row input {
+  height: 34px !important;
+  min-height: 34px !important;
+  box-sizing: border-box !important;
+}
+
+.coord-primary-button,
+.coord-register-button,
+.coord-empty-clean-btn,
+.coord-secondary-button,
+.coord-mini-btn,
+.coord-menu-toggle-btn {
+  height: 34px !important;
+  min-height: 34px !important;
+  line-height: 1 !important;
+  padding: 0 14px !important;
+}
+
+.coord-card, .coord-search-card {
+  padding: 12px 18px !important;
+  margin-bottom: 12px !important;
+}
+
+.coord-card-title {
+  margin-bottom: 8px !important;
+}
+
+.coord-card-title h2 {
+  font-size: 16px !important;
+}
+
+.coord-upload-tabs {
+  margin-bottom: 12px !important;
+  gap: 8px !important;
+}
+
+.coord-upload-tabs button {
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+  min-height: 32px !important;
+}
+
+.coord-table-responsive .mantine-Table-th {
+  padding: 6px 8px !important;
+  font-size: 12px !important;
+}
+
+.coord-table-responsive .mantine-Table-td {
+  padding: 4px 8px !important;
+  font-size: 12px !important;
+}
+
+.coord-file-picker {
+  min-height: 34px !important;
+  padding: 2px 6px !important;
+}
+
+.coord-file-picker label {
+  min-height: 26px !important;
+  height: 26px !important;
+  padding: 0 8px !important;
+  font-size: 11px !important;
+}
+
+.coord-file-picker span {
+  font-size: 12px !important;
+}
+
+.coord-template-file-row {
+  min-height: 34px !important;
+  padding: 3px 5px !important;
+}
+
+.coord-template-file-button {
+  min-height: 26px !important;
+  height: 26px !important;
+  padding: 0 8px !important;
+  font-size: 11px !important;
+}
+
+/* 7. Diferenciación de Talleres por Categoría (Tarjetas Rectangulares Coloreadas) */
+.coord-cat-academico {
+  background-color: #f4f9ff !important;
+  border: 1px solid #d2e4ff !important;
+}
+.coord-cat-academico:hover {
+  background-color: #ebf5ff !important;
+  border-color: #baccf9 !important;
+}
+
+.coord-cat-deportivo {
+  background-color: #fffaf5 !important;
+  border: 1px solid #ffeedd !important;
+}
+.coord-cat-deportivo:hover {
+  background-color: #fff5eb !important;
+  border-color: #fcd5b8 !important;
+}
+
+.coord-cat-ingles {
+  background-color: #faf5ff !important;
+  border: 1px solid #f3e8ff !important;
+}
+.coord-cat-ingles:hover {
+  background-color: #f3e8ff !important;
+  border-color: #e9d5ff !important;
+}
+
+.coord-cat-verano {
+  background-color: #fffbeb !important;
+  border: 1px solid #fef3c7 !important;
+}
+.coord-cat-verano:hover {
+  background-color: #fef9c3 !important;
+  border-color: #fde047 !important;
+}
+
+.coord-cat-general {
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.coord-cat-general:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.coord-badge-period {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.coord-badge-period-verano {
+  background: #fff3e0 !important;
+  color: #e65100 !important;
+  border: 1px solid #ffe0b2 !important;
+}
+
+.coord-badge-period-escolar {
+  background: #e3f2fd !important;
+  color: #0d47a1 !important;
+  border: 1px solid #bbdefb !important;
+}
+
+/* Segmented Control Tabs for Carga Excel — Re-styled to match Direccion's clean tab style */
+html body .coord-upload-tabs {
+  display: flex !important;
+  gap: 8px !important;
+  margin-bottom: 10px !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  border-radius: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  width: 100% !important;
+}
+
+html body .coord-upload-tabs button {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 16px !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  cursor: pointer !important;
+  color: #000000 !important;
+  transition: all 0.2s ease !important;
+  margin-bottom: -2px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important; /* Medium weight matching Direccion */
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  height: auto !important;
+  min-height: auto !important;
+  text-transform: none !important;
+}
+
+html body .coord-upload-tabs button svg {
+  color: #000000 !important;
+  transition: all 0.2s ease !important;
+  flex-shrink: 0 !important;
+}
+
+/* Hover State */
+html body .coord-upload-tabs button:hover,
+html body .coord-upload-tabs button.coord-upload-tab-masiva:hover,
+html body .coord-upload-tabs button.coord-upload-tab-individual:hover,
+html body .coord-upload-tabs button.coord-upload-tab-exportar:hover,
+html body .coord-upload-tabs button.coord-upload-tab-plantillas:hover {
+  background: rgba(0, 0, 0, 0.04) !important;
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  color: #000000 !important;
+}
+
+html body .coord-upload-tabs button:hover svg,
+html body .coord-upload-tabs button.coord-upload-tab-masiva:hover svg,
+html body .coord-upload-tabs button.coord-upload-tab-individual:hover svg,
+html body .coord-upload-tabs button.coord-upload-tab-exportar:hover svg,
+html body .coord-upload-tabs button.coord-upload-tab-plantillas:hover svg {
+  color: #000000 !important;
+}
+
+/* Active State - Unificado para todos */
+html body .coord-upload-tabs button.is-active,
+html body .coord-upload-tabs button.coord-upload-tab-masiva.is-active,
+html body .coord-upload-tabs button.coord-upload-tab-individual.is-active,
+html body .coord-upload-tabs button.coord-upload-tab-exportar.is-active,
+html body .coord-upload-tabs button.coord-upload-tab-plantillas.is-active {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #000000 !important;
+  font-weight: 600 !important; /* Semi-bold weight matching Direccion */
+  border-bottom: 2px solid #0c8569 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+html body .coord-upload-tabs button.is-active svg,
+html body .coord-upload-tabs button.coord-upload-tab-masiva.is-active svg,
+html body .coord-upload-tabs button.coord-upload-tab-individual.is-active svg,
+html body .coord-upload-tabs button.coord-upload-tab-exportar.is-active svg,
+html body .coord-upload-tabs button.coord-upload-tab-plantillas.is-active svg {
+  color: #0c8569 !important;
+}
+
+/* ==========================================================================
+   REDISEÑO VISUAL — CARGAR INVITADOS (Drag & Drop, Chips, Counters)
+   ========================================================================== */
+
+/* ── Zona de Drag & Drop para archivos ── */
+.coord-file-drop {
+  border: 2px dashed #a5d6a7 !important;
+  border-radius: 14px !important;
+  cursor: pointer;
+  padding: 10px 16px;
+  background: #f1f8e9;
+  transition: all 0.25s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.coord-file-drop:hover,
+.coord-file-drop.dragover {
+  border-color: #43a047 !important;
+  background: #e8f5e9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(76, 175, 80, 0.08);
+}
+
+.coord-file-drop .coord-drop-icon {
+  font-size: 20px;
+  color: #66bb6a;
+  display: inline-block;
+  margin-bottom: 0;
+}
+
+.coord-file-drop .coord-drop-text-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 1px;
+}
+
+.coord-file-drop .coord-drop-text {
+  font-size: 13px;
+  color: #2e7d32;
+  font-weight: 500;
+  margin: 0;
+}
+
+.coord-file-drop .coord-drop-highlight {
+  color: #1b5e20;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-color: #a5d6a7;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+
+.coord-file-drop .coord-drop-sub {
+  font-size: 11px;
+  color: #558b2f;
+  margin-top: 1px;
+  font-weight: 500;
+}
+
+.coord-file-drop input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Info del archivo seleccionado ── */
+.coord-file-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin-top: 10px;
+  color: #1b5e20;
+  font-weight: 600;
+  font-size: 13px;
+  animation: coord-fade-in 0.2s ease;
+}
+
+.coord-file-info-bar svg {
+  color: #43a047;
+  flex-shrink: 0;
+}
+
+.coord-file-info-bar .coord-file-size {
+  font-weight: 400;
+  color: #33691e;
+  margin-left: 4px;
+}
+
+.coord-file-info-bar .coord-file-remove {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid #ef9a9a;
+  color: #c62828;
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: auto !important;
+  min-height: auto !important;
+}
+
+.coord-file-info-bar .coord-file-remove:hover {
+  background: #ffebee;
+}
+
+/* ── Chips de columnas requeridas ── */
+.coord-chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0 4px;
+}
+
+.coord-chip {
+  background: #e8f5e9;
+  padding: 3px 12px;
+  border-radius: 30px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #1b5e20;
+  border: 1px solid #c8e6c9;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.coord-chip.coord-chip-optional {
+  background: #fffde7;
+  color: #f57f17;
+  border-color: #fff9c4;
+}
+
+.coord-chip-hint {
+  font-size: 12px;
+  color: #2e7d32;
+  margin-top: 4px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Botón de ancho completo ── */
+.coord-btn-full {
+  width: 100%;
+  padding: 11px 22px !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: auto !important;
+  min-height: 42px !important;
+}
+
+.coord-btn-full span,
+.coord-btn-full svg {
+  color: inherit !important;
+}
+
+.coord-btn-full:disabled {
+  background: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  border: none !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.coord-btn-full.coord-btn-validate {
+  background: #388e3c !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.coord-btn-full.coord-btn-validate:hover {
+  background: #2e7d32 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+
+.coord-btn-full.coord-btn-save {
+  background: #43a047 !important;
+  color: #ffffff !important;
+  border: none !important;
+  margin-top: 12px;
+}
+
+.coord-btn-full.coord-btn-save:hover {
+  background: #2e7d32 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+
+.coord-btn-full.coord-btn-cancel {
+  background: transparent !important;
+  color: #c62828 !important;
+  border: 1px solid #ef9a9a !important;
+  margin-top: 8px;
+}
+
+.coord-btn-full.coord-btn-cancel:hover {
+  background: #ffebee !important;
+}
+
+/* ── Preview table mejorada ── */
+.coord-preview-wrap {
+  margin-top: 16px;
+  border: 1px solid #c8e6c9;
+  border-radius: 14px;
+  overflow: hidden;
+  animation: coord-fade-in 0.25s ease;
+}
+
+.coord-preview-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.coord-preview-wrap th {
+  background: #f1f8e9 !important;
+  text-align: left;
+  padding: 10px 14px !important;
+  font-weight: 700 !important;
+  color: #1b5e20 !important;
+  border-bottom: 1px solid #c8e6c9 !important;
+  font-size: 12px !important;
+}
+
+.coord-preview-wrap td {
+  padding: 8px 14px !important;
+  border-bottom: 1px solid #e8f5e9 !important;
+  color: #1e3a2a !important;
+  font-size: 13px !important;
+}
+
+.coord-preview-footer {
+  padding: 10px 14px;
+  background: #f1f8e9;
+  font-size: 13px;
+  font-weight: 600;
+  border-top: 1px solid #c8e6c9;
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #1b5e20;
+}
+
+.coord-preview-footer .coord-preview-error {
+  color: #c62828;
+}
+
+/* ── Exportar Box ── */
+.coord-export-box {
+  background: #f1f8e9;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #c8e6c9;
+}
+
+.coord-export-box-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.coord-export-box-header svg {
+  color: #388e3c;
+}
+
+.coord-export-box-header span {
+  font-weight: 700;
+  font-size: 16px;
+  color: #1b5e20;
+}
+
+/* ── Counter Grid (3 columnas) ── */
+.coord-counter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.coord-counter-item {
+  background: #ffffff;
+  padding: 14px 8px;
+  border-radius: 12px;
+  border: 1px solid #c8e6c9;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.coord-counter-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.coord-counter-num {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1b5e20;
+  line-height: 1.2;
+}
+
+.coord-counter-item.coord-counter-green .coord-counter-num {
+  color: #2e7d32;
+}
+
+.coord-counter-item.coord-counter-warning .coord-counter-num {
+  color: #f57f17;
+}
+
+.coord-counter-label {
+  font-size: 12px;
+  color: #2e7d32;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+/* ── Nota informativa ── */
+.coord-note-box {
+  font-size: 13px;
+  color: #2e7d32;
+  background: #e8f5e9;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border-left: 4px solid #66bb6a;
+  margin-top: 14px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.coord-note-box strong {
+  color: #1b5e20;
+}
+
+/* ── Export action buttons row ── */
+.coord-export-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.coord-export-actions .coord-btn-full {
+  flex: 1;
+  margin-top: 0 !important;
+}
+
+/* ── Sección de formulario con label verde ── */
+.coord-form-group-green {
+  margin-bottom: 16px;
+}
+
+.coord-form-group-green > label {
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #2e7d32 !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.coord-form-group-green > label svg {
+  color: #388e3c;
+}
+
+.coord-form-group-green select {
+  width: 100%;
+  padding: 10px 14px !important;
+  border-radius: 12px !important;
+  border: 1px solid #c8e6c9 !important;
+  background: white !important;
+  font-size: 14px !important;
+  color: #1e3a2a !important;
+  transition: all 0.2s ease;
+  height: auto !important;
+  min-height: 40px !important;
+}
+
+.coord-form-group-green select:focus {
+  outline: none;
+  border-color: #43a047 !important;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15) !important;
+}
+
+/* ── Animación de entrada ── */
+@keyframes coord-fade-in {
+  from { opacity: 0.4; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Responsive para counter grid ── */
+@media (max-width: 700px) {
+  .coord-counter-grid {
+    grid-template-columns: 1fr;
+  }
+  .coord-export-actions {
+    flex-direction: column;
+  }
+}
+
+/* ── Botón Guardar en Modales ── */
+.coord-modal-actions .coord-register-button {
+  background: #388e3c !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 600 !important;
+  transition: all 0.2s ease !important;
+}
+
+.coord-modal-actions .coord-register-button:hover {
+  background: #2e7d32 !important;
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.25) !important;
+}
+
+.coord-modal-actions .coord-register-button span,
+.coord-modal-actions .coord-register-button svg {
+  color: #ffffff !important;
+}
+
+.coord-modal-actions .coord-register-button:disabled,
+.coord-modal-actions .coord-register-button:disabled span,
+.coord-modal-actions .coord-register-button:disabled svg {
+  background: #cbd5e1 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+}

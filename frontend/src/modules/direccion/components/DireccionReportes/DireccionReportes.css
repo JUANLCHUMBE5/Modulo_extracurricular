@@ -312,6 +312,28 @@
   border: 1px solid #e2e8f0;
 }
 
+.dir-builder-input-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.dir-builder-date-input {
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  height: 30px;
+  font-size: 12px;
+  min-height: 30px;
+  padding: 0 8px;
+  color: #1e293b;
+  outline: none;
+  font-family: 'Inter', sans-serif !important;
+}
+
 .dir-report-type-select {
   grid-column: 1 / -1;
 }
@@ -620,6 +642,7 @@
   letter-spacing: 0.5px !important;
   border-bottom: 2px solid #ccfbf1 !important;
   padding: 6px 10px !important;
+  font-family: 'Inter', sans-serif !important;
 }
 
 .dir-preview-table td,
@@ -627,6 +650,7 @@
   padding: 6px 10px !important;
   font-size: 12px !important;
   color: #1e293b !important;
+  font-family: 'Inter', sans-serif !important;
 }
 
 .dir-columns-select-container {

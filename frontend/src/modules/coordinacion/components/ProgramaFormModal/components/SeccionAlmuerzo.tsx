@@ -6,7 +6,7 @@ import {
   IconCheckbox as CheckboxIcon,
   IconInfoCircle as InfoCircle,
 } from "@tabler/icons-react";
-import { formatearHora12 } from "../../utils/coordinacionFormatters";
+import { formatearHora12 } from "../../../utils/coordinacionFormatters";
 
 function parseLines(text) {
   if (!text) return [];
@@ -195,16 +195,10 @@ function SeccionAlmuerzo({ form, esMostrarSeccionAlmuerzo, actualizarForm }) {
                 actualizarForm("incluyeAlmuerzo", val);
                 if (val) {
                   if (!form.detalleAlmuerzo) {
-                    actualizarForm(
-                      "detalleAlmuerzo",
-                      "Contamos con un área para la recepción de los almuerzos, donde se deberá dejar bajo el siguiente horario: De 01:20 a 01:45 p.m.\nIndicando claramente una etiqueta grande en la lonchera, con NOMBRE DEL ALUMNO, GRADO Y SECCIÓN."
-                    );
+                    actualizarForm("detalleAlmuerzo", "");
                   }
                   if (!form.concesionarios) {
-                    actualizarForm(
-                      "concesionarios",
-                      "Si deseara coordinar el servicio de Delivery le indicamos los siguientes contactos de nuestros 2 concesionarios para desayunos, loncheras, almuerzos:\nCafetín Los Amigos del recreo (Sra. Rocío) - 976280197\nCafetín Edith (Sra. Deysli) - 960897529\nque son concesionarias autorizadas de nuestra Institución y que cumplen con todo el protocolo que corresponde de acuerdo a las disposiciones del MINSA."
-                    );
+                    actualizarForm("concesionarios", "");
                   }
                 }
               }}

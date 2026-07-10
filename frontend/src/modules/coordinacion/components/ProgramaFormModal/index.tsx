@@ -9,14 +9,14 @@ import {
   IconEdit as Edit3,
 } from "@tabler/icons-react";
 
-import SeccionDatosGenerales from "./ProgramaFormModal/SeccionDatosGenerales";
-import SeccionDocumentoOficial from "./ProgramaFormModal/SeccionDocumentoOficial";
-import SeccionFechasHorarios from "./ProgramaFormModal/SeccionFechasHorarios";
-import SeccionPago from "./ProgramaFormModal/SeccionPago";
-import SeccionCambridge from "./ProgramaFormModal/SeccionCambridge";
-import SeccionComunicadoPadres from "./ProgramaFormModal/SeccionComunicadoPadres";
-import SeccionRequisitosMateriales from "./ProgramaFormModal/SeccionRequisitosMateriales";
-import SeccionAlmuerzo from "./ProgramaFormModal/SeccionAlmuerzo";
+import SeccionDatosGenerales from "./components/SeccionDatosGenerales";
+import SeccionDocumentoOficial from "./components/SeccionDocumentoOficial";
+import SeccionFechasHorarios from "./components/SeccionFechasHorarios";
+import SeccionPago from "./components/SeccionPago";
+import SeccionCambridge from "./components/SeccionCambridge";
+import SeccionComunicadoPadres from "./components/SeccionComunicadoPadres";
+import SeccionRequisitosMateriales from "./components/SeccionRequisitosMateriales";
+import SeccionAlmuerzo from "./components/SeccionAlmuerzo";
 
 function ProgramaFormModal({
   isInline = false,
@@ -138,10 +138,10 @@ function ProgramaFormModal({
     if (!form.montoPrimerPago) defaults.montoPrimerPago = form.costo || "150";
     if (!form.modalidadCobro) defaults.modalidadCobro = "Unico";
     if (!form.detalleCosto) {
-      defaults.detalleCosto = "Opcion A: Inscripcion presencial. Acercarse al area de Caja del colegio con esta invitacion y realizar el primer pago de S/ 150. Presentar nombres y apellidos del alumno, grado, seccion y nivel, nombres completos del apoderado, DNI del apoderado y numero de celular del apoderado.\n\nOpcion B: Inscripcion virtual por Yape. Realizar el primer pago de S/ 150 al numero 970 836 322 y enviar la captura del pago junto con los mismos datos al numero de la institucion 970 836 322.";
+      defaults.detalleCosto = "";
     }
-    if (!form.requisitos || /auriculares|listening|libro de prepar/i.test(String(form.requisitos))) {
-      defaults.requisitos = "Libros de preparacion. Simulacros del examen oficial Cambridge en todos los niveles. Material adicional requerido.";
+    if (!form.requisitos) {
+      defaults.requisitos = "";
     }
     if (Object.keys(defaults).length) {
       actualizarForm(defaults);

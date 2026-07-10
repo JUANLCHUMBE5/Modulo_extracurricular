@@ -320,15 +320,43 @@ export default function SecretariaDefaultStudentPanel({
 
       {!modoBusquedaAsistencia && (
         !inscripcion ? (
-          <button
-            className="secretaria-register-button"
-            type="button"
-            onClick={abrirRegistro}
-            disabled={invitacionSinHorario && !inscripcion}
-          >
-            <ClipboardCheck size={17} />
-            <span>{invitacionSinHorario ? "Falta horario en Coordinación Académica" : "Registrar inscripcion"}</span>
-          </button>
+          <>
+            {!tieneInvitacionOperativa && (
+              <div style={{
+                marginTop: "16px",
+                background: "#fff5f5",
+                border: "1px solid #feb2b2",
+                borderLeft: "4px solid #e53e3e",
+                padding: "12px 16px",
+                borderRadius: "8px",
+                color: "#c53030",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                gridColumn: "1 / -1",
+                marginBottom: "12px"
+              }}>
+                <AlertTriangle size={20} style={{ color: "#e53e3e", flexShrink: 0 }} />
+                <div>
+                  <strong style={{ fontSize: "13.5px", display: "block", marginBottom: "2px", color: "#9b2c2c" }}>Estudiante no invitado / Sin habilitación</strong>
+                  <span style={{ fontSize: "12px", color: "#c53030" }}>Este alumno no figura en la lista de invitados para este período. Solicite la habilitación manual al Módulo de Coordinación Académica.</span>
+                </div>
+              </div>
+            )}
+            <button
+              className="secretaria-register-button"
+              type="button"
+              onClick={abrirRegistro}
+              disabled={(invitacionSinHorario || !tieneInvitacionOperativa) && !inscripcion}
+            >
+              <ClipboardCheck size={17} />
+              <span>
+                {!tieneInvitacionOperativa 
+                  ? "No invitado - Requiere Habilitación" 
+                  : (invitacionSinHorario ? "Falta horario en Coordinación Académica" : "Registrar inscripcion")}
+              </span>
+            </button>
+          </>
         ) : (
           <div className="secretaria-final-actions">
             <button

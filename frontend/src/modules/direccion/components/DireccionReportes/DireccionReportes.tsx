@@ -52,6 +52,17 @@ export default function DireccionReportes({
   const columnasOptions = columnasDisponibles.map((col) => ({ value: col.key, label: col.label }));
   const reporteActual = opcionesReportesSimplificados.find((item) => item.value === reporteSeleccionado);
 
+  const selectStyles = {
+    label: { fontSize: "10px", fontWeight: 700, color: "#475569", marginBottom: "2px", textTransform: "uppercase" as const, letterSpacing: "0.03em" },
+    input: { borderRadius: "6px", borderColor: "#e2e8f0", height: "30px", fontSize: "12px", minHeight: "30px" }
+  };
+
+  const multiSelectStyles = {
+    label: { fontSize: "10px", fontWeight: 700, color: "#475569", marginBottom: "2px", textTransform: "uppercase" as const, letterSpacing: "0.03em" },
+    input: { borderRadius: "6px", borderColor: "#e2e8f0", minHeight: "30px", fontSize: "12px" },
+    pill: { fontSize: "10px", fontWeight: 600, height: "22px" }
+  };
+
   return (
     <section className="dir-reports-view">
       {/* ── GENERADOR DE REPORTES A LA MEDIDA (PERSONALIZADO POR MÓDULO) ── */}
@@ -92,6 +103,7 @@ export default function DireccionReportes({
                   allowDeselect={false}
                   size="xs"
                   className="dir-report-type-select"
+                  styles={selectStyles}
                 />
                 <Select
                   label="Año"
@@ -100,6 +112,7 @@ export default function DireccionReportes({
                   onChange={(val) => setAnio(val || "todos")}
                   allowDeselect={false}
                   size="xs"
+                  styles={selectStyles}
                 />
                 <Select
                   label="Periodo"
@@ -112,6 +125,7 @@ export default function DireccionReportes({
                   onChange={(val) => setPeriodo(val || "todos")}
                   allowDeselect={false}
                   size="xs"
+                  styles={selectStyles}
                 />
                 <Select
                   label="Categoría de Taller"
@@ -120,6 +134,7 @@ export default function DireccionReportes({
                   onChange={(val) => setCustomFiltroCategoria(val || "todos")}
                   allowDeselect={false}
                   size="xs"
+                  styles={selectStyles}
                 />
                 {(customTipo === "inscripciones" ||
                   customTipo === "pagos" ||
@@ -132,6 +147,7 @@ export default function DireccionReportes({
                       onChange={(val) => setCustomFiltroPrograma(val || "todos")}
                       allowDeselect={false}
                       size="xs"
+                      styles={selectStyles}
                     />
                   )}
                 {(customTipo === "inscripciones" ||
@@ -146,9 +162,7 @@ export default function DireccionReportes({
                       clearable
                       searchable
                       size="xs"
-                      styles={{
-                        pill: { fontSize: "11px", fontWeight: 600 },
-                      }}
+                      styles={multiSelectStyles}
                     />
                   )}
                 {customTipo === "inscripciones" && (
@@ -163,6 +177,7 @@ export default function DireccionReportes({
                     onChange={(val) => setCustomFiltroOrigen(val || "todos")}
                     allowDeselect={false}
                     size="xs"
+                    styles={selectStyles}
                   />
                 )}
                 {(customTipo === "inscripciones" ||
@@ -179,6 +194,7 @@ export default function DireccionReportes({
                       onChange={(val) => setCustomFiltroPago(val || "todos")}
                       allowDeselect={false}
                       size="xs"
+                      styles={selectStyles}
                     />
                   )}
 
@@ -200,6 +216,7 @@ export default function DireccionReportes({
                       onChange={(val) => cambiarRangoRapido(val || "todos")}
                       allowDeselect={false}
                       size="xs"
+                      styles={selectStyles}
                     />
                   )}
 
@@ -236,6 +253,7 @@ export default function DireccionReportes({
                     onChange={(val) => setConsolidacionAsistencia(val || "dia")}
                     allowDeselect={false}
                     size="xs"
+                    styles={selectStyles}
                   />
                 )}
 
@@ -288,6 +306,7 @@ export default function DireccionReportes({
                 maxDropdownHeight={260}
                 nothingFoundMessage="Sin columnas"
                 size="xs"
+                styles={multiSelectStyles}
               />
             </div>
           </div>

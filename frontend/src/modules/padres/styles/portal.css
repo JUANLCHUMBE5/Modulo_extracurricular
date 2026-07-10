@@ -1208,17 +1208,16 @@
   }
 }
 
-/* Nuevo bloque de detalles organizados del programa en el portal de padres */
 .padres-comunicado-details-grid {
   display: grid !important;
   grid-template-columns: minmax(250px, 1.4fr) repeat(3, minmax(140px, 0.7fr)) !important;
   gap: 16px !important;
-  margin: 20px 0 !important;
-  background: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 16px !important;
-  padding: 16px 20px !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02), 0 8px 10px -6px rgba(0, 0, 0, 0.02) !important;
+  margin: 16px 0 !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
 }
 
 .padres-comunicado-detail-item {

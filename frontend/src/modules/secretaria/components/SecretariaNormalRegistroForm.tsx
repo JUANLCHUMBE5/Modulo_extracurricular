@@ -26,8 +26,22 @@ export default function SecretariaNormalRegistroForm({
   esCambridge,
   ingresoCambridge,
   nivelCambridge,
-  esCicloVerano,
 }) {
+  if (programasParaSelector.length === 0) {
+    return (
+      <MantineAlert
+        className="secretaria-message secretaria-modal-message secretaria-field-full"
+        color="orange"
+        radius="md"
+        icon={<AlertCircle size={18} />}
+      >
+        {esCicloVerano
+          ? "Coordinación Académica debe registrar y habilitar un programa de ciclo verano disponible para el estudiante."
+          : "Coordinación Académica debe registrar y habilitar un programa disponible para el grado del estudiante."}
+      </MantineAlert>
+    );
+  }
+
   return (
     <>
       {estudiante.esExterno ? (
@@ -168,18 +182,7 @@ export default function SecretariaNormalRegistroForm({
         </div>
       </div>
 
-      {programasParaSelector.length === 0 && (esCicloVerano || !estudiante.tieneInvitacion) ? (
-        <MantineAlert
-          className="secretaria-message secretaria-modal-message secretaria-field-full"
-          color="orange"
-          radius="md"
-          icon={<AlertCircle size={18} />}
-        >
-          {esCicloVerano
-            ? "Coordinación Académica debe registrar and habilitar un programa de ciclo verano disponible para el estudiante."
-            : "Coordinación Académica debe registrar and habilitar un programa disponible para el grado del estudiante."}
-        </MantineAlert>
-      ) : null}
+
 
       {mostrarDetallePrograma && programaRegistroVista ? (
         <div className="secretaria-add-course-summary secretaria-field-full" style={{
@@ -190,10 +193,9 @@ export default function SecretariaNormalRegistroForm({
           padding: "10px 14px",
           margin: "10px 0"
         }}>
-          {/* Header of summary */}
           <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#1b5e20", marginBottom: "2px", display: "flex", alignContent: "center", alignItems: "center", gap: "6px" }}>
             <Bookmark size={15} style={{ color: "#388e3c" }} />
-            Taller asignado
+            {estudiante.tieneInvitacion ? "Taller asignado" : "Taller seleccionado"}
           </div>
           <div style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", marginBottom: "8px" }}>
             {programaRegistroVista.nombre}

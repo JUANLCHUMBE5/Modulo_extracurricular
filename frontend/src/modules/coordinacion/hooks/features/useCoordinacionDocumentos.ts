@@ -3,10 +3,10 @@ import {
   editarPrograma,
   crearProgramaDesdeDocumento,
   obtenerActividadPrograma,
-} from "../services/coordinacionService";
-import { fechaActualIso } from "../../../services/dateService";
-import { formInicial } from "../constants/coordinacionFormDefaults";
-import { normalizarComparacion } from "../utils/coordinacionFormatters";
+} from "../../services/coordinacionService";
+import { fechaActualIso } from "../../../../services/dateService";
+import { formInicial } from "../../constants/coordinacionFormDefaults";
+import { normalizarComparacion } from "../../utils/coordinacionFormatters";
 import {
   contarDatosDetectados,
   extraerDatosProgramaDesdeWord,
@@ -14,11 +14,11 @@ import {
   leerArchivoBase64,
   leerDocumentoWordDesdeBase64,
   leerPlantillaWord,
-} from "../utils/wordTemplateUtils";
+} from "../../utils/wordTemplateUtils";
 import {
   nombreProgramaDesdeArchivo,
   esProgramaCambridge,
-} from "../utils/coordinacionProgramUtils";
+} from "../../utils/coordinacionProgramUtils";
 
 export default function useCoordinacionDocumentos({
   puedeCrearProgramas,

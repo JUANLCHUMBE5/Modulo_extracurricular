@@ -48,9 +48,7 @@ export async function buscarEstudiantePorDniMock(dni: string, periodo = "escolar
   await syncApiDb();
   const periodoNormalizado = normalizarPeriodo(periodo);
   const estudiante = (apiDb as any).estudiantes?.[dni];
-  const invitacionPeriodo = periodoNormalizado === "verano"
-    ? null
-    : await buscarInvitacionPorDniPeriodo(dni, periodoNormalizado);
+  const invitacionPeriodo = await buscarInvitacionPorDniPeriodo(dni, periodoNormalizado);
 
   if (!estudiante && invitacionPeriodo) {
     return adaptarInvitadoComoEstudiante(invitacionPeriodo, periodoNormalizado);
@@ -93,9 +91,7 @@ export async function buscarEstudiantesPorNombreMock(nombre: string, periodo = "
     if (!textoBusqueda.includes(termino)) return;
 
     vistos.add(claveAlumno(estudiante));
-    const invitacion = periodoNormalizado === "verano"
-      ? null
-      : buscarInvitacionEnMemoria(estudiante.dni, periodoNormalizado, estudiante.grado);
+    const invitacion = buscarInvitacionEnMemoria(estudiante.dni, periodoNormalizado, estudiante.grado);
     if (invitacion) {
       resultados.push(adaptarEstudianteBase(estudiante, periodoNormalizado, invitacion));
     } else {

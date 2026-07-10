@@ -153,8 +153,8 @@
     "tallaShort": "",
     "seleccion": "",
     "nivelCambridge": "",
-    "estadoInscripcion": "pendiente_pago",
-    "estadoPago": "pendiente",
+    "estadoInscripcion": "confirmada",
+    "estadoPago": "validado",
     "origenRegistro": "presencial",
     "fechaRegistro": "2026-07-06T07:23:26.166Z",
     "tipoComunicado": "Reforzamiento (Circular)",
@@ -170,10 +170,10 @@
     "modalidadesCambridge": [],
     "costoCiclo": "80.00",
     "montoPrimerPago": "",
-    "pagoId": "PAG-722020",
+    "pagoId": "PAG-373169",
     "costoOriginal": 80,
     "descuentoAprobado": false,
-    "fechaPago": "2026-07-07T17:02:02.020Z",
+    "fechaPago": "2026-07-10T04:22:53.169Z",
     "pagoObservacionCaja": "sdfsdgfgf dfgdf"
   },
   {

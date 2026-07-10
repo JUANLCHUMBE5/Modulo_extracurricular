@@ -3,9 +3,9 @@ import {
   listarInvitados,
   listarMatriculados,
   listarAsistenciasPrograma,
-} from "../services/coordinacionService";
-import { descargarListaAlumnosPdf } from "../utils/pdfUtils";
-import { descargarListaAlumnosExcel } from "../utils/excelUtils";
+} from "../../services/coordinacionService";
+import { descargarListaAlumnosPdf } from "../../utils/pdfUtils";
+import { descargarListaAlumnosExcel } from "../../utils/excelUtils";
 
 export default function useCoordinacionInvitados({
   puedeVerAlumnos,

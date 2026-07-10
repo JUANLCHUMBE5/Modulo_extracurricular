@@ -243,6 +243,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                       onVerAsistencia={(ins) => setAsistenciaModal({ open: true, inscripcion: ins })}
                       modoBusquedaAsistencia={vistaActiva === "asistencias"}
                       modoRegistro={modoRegistro}
+                      noProgramasDisponibles={programasParaSelector.length === 0}
                     />
 
                     {(modoRegistro || vistaActiva === "inscripcion") && (

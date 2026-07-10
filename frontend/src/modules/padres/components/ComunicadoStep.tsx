@@ -119,6 +119,21 @@ export default function ComunicadoStep({
         <>
           <div className="padres-flow-letter">
             {comunicadoPadres.fecha ? <p>{comunicadoPadres.fecha}</p> : null}
+
+            {/* Mensaje principal del colegio visible directamente en la tarjeta principal */}
+            {(() => {
+              const parrafosTexto = (comunicadoPadres.parrafos || []).filter((p: string) => {
+                const match = p.match(/^([^:]+):\s*(.*)$/);
+                const esKeyValue = match && match[1].length < 35;
+                return !esKeyValue;
+              });
+              return parrafosTexto.map((para: string, idx: number) => (
+                <p key={`main-msg-${idx}`} style={{ margin: "4px 0 16px 0", fontSize: "14px", lineHeight: "1.6", color: "#1e293b", fontWeight: 500, textAlign: "left" }}>
+                  {para}
+                </p>
+              ));
+            })()}
+
             {(() => {
               const parrafosRender = comunicadoPadres.resumenParrafos || comunicadoPadres.parrafos;
               const segmentos = [];
@@ -145,29 +160,7 @@ export default function ComunicadoStep({
 
               return segmentos.map((segmento, idx) => {
                 if (segmento.type === "grid") {
-                  const hasResponsable = Array.isArray(segmento.items) && segmento.items.some((item) => obtenerTipoCampo(item.label) === "responsable");
-                  const gridStyle = {
-                    gridTemplateColumns: hasResponsable
-                      ? "minmax(250px, 1.4fr) repeat(3, minmax(140px, 0.7fr))"
-                      : "minmax(250px, 1.4fr) repeat(2, minmax(140px, 0.7fr))"
-                  };
-                  return (
-                    <div key={`grid-${idx}`} className="padres-comunicado-details-grid" style={gridStyle}>
-                      {segmento.items.map((item, itemIdx) => {
-                        const tipo = obtenerTipoCampo(item.label);
-                        const Icono = obtenerIconoPorTipo(tipo);
-                        const clase = obtenerClasePorTipo(tipo);
-                        return (
-                          <div key={itemIdx} className={`padres-comunicado-detail-item ${clase}`}>
-                            <div className="padres-comunicado-detail-info">
-                              <span className="padres-comunicado-detail-label">{item.label}</span>
-                              <span className="padres-comunicado-detail-value">{item.value}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
+                  return null;
                 }
                 return (
                   <p key={`text-${idx}`} style={{ margin: "12px 0", fontSize: "14.5px", lineHeight: "1.6", color: "#334155", textAlign: "justify", textJustify: "inter-word", wordBreak: "break-word" }}>

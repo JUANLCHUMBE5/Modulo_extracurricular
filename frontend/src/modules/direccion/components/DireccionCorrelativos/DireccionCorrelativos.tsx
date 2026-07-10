@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, TextInput, Switch } from "@mantine/core";
+import { Button, TextInput, Switch, Loader } from "@mantine/core";
 import { IconEdit as Edit, IconCheck as Check, IconX as Cancel } from "@tabler/icons-react";
 
 export default function DireccionCorrelativos({
@@ -10,6 +10,14 @@ export default function DireccionCorrelativos({
 }) {
   const [editando, setEditando] = useState(false);
   const [backupForm, setBackupForm] = useState(null);
+
+  if (!correlativosForm) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", padding: "40px" }}>
+        <Loader size="md" color="teal" />
+      </div>
+    );
+  }
 
   const incrementarCorrelativo = (value) => {
     if (!value) return "";

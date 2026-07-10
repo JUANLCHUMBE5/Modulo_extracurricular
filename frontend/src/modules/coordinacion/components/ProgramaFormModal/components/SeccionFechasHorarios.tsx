@@ -5,11 +5,11 @@ import {
   IconEdit as Edit3,
   IconCopy as CopyIcon,
 } from "@tabler/icons-react";
-import ProgramaGrupoHorarioModal from "../ProgramaGrupoHorarioModal";
-import GradeSelector from "../GradeSelector";
-import { formatearHora12 } from "../../utils/coordinacionFormatters";
-import { resumenGrados } from "../../utils/coordinacionProgramUtils";
-import useSeccionFechasHorarios from "../../hooks/useSeccionFechasHorarios";
+import ProgramaGrupoHorarioModal from "../../ProgramaGrupoHorarioModal";
+import GradeSelector from "../../GradeSelector";
+import { formatearHora12 } from "../../../utils/coordinacionFormatters";
+import { resumenGrados } from "../../../utils/coordinacionProgramUtils";
+import useSeccionFechasHorarios from "../../../hooks/useSeccionFechasHorarios";
 import GrupoHorariosList from "./GrupoHorariosList";
 
 export default function SeccionFechasHorarios({

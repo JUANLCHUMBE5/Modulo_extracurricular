@@ -3,8 +3,8 @@ import {
   IconEdit as Edit3,
   IconCopy as CopyIcon,
 } from "@tabler/icons-react";
-import { formatearHora12 } from "../../utils/coordinacionFormatters";
-import { resumenGrados } from "../../utils/coordinacionProgramUtils";
+import { formatearHora12 } from "../../../utils/coordinacionFormatters";
+import { resumenGrados } from "../../../utils/coordinacionProgramUtils";
 
 interface GrupoHorariosListProps {
   formHorariosPorGrupo: any[];

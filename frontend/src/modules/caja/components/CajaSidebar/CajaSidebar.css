@@ -222,7 +222,8 @@
   align-items: center !important;
   gap: 10px !important;
   width: 100% !important;
-  margin: 12px 0 !important;
+  margin-top: auto !important;
+  margin-bottom: 0 !important;
   padding: 10px 14px !important;
   background: #f0fbf7 !important;
   border: 2.5px solid #0f5b49 !important;

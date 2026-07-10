@@ -73,8 +73,8 @@ export default function ReporteFiltros({
   ];
 
   const selectStyles = {
-    label: { fontSize: "11px", fontWeight: 700, color: "#475569", marginBottom: "4px", textTransform: "uppercase" as const, letterSpacing: "0.03em" },
-    input: { borderRadius: "6px", borderColor: "#e2e8f0", height: "36px", fontSize: "13px" }
+    label: { fontSize: "10px", fontWeight: 700, color: "#475569", marginBottom: "2px", textTransform: "uppercase" as const, letterSpacing: "0.03em" },
+    input: { borderRadius: "6px", borderColor: "#e2e8f0", height: "30px", fontSize: "12px", minHeight: "30px" }
   };
 
   return (

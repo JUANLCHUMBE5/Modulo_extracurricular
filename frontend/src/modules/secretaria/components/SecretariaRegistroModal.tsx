@@ -287,55 +287,70 @@ export default function SecretariaRegistroModal({
                 </MantineAlert>
               ) : null}
 
-              {esCicloVerano ? (
-                <SecretariaSummerRegistroForm
-                  estudiante={estudiante}
-                  formulario={formulario}
-                  actualizarFormulario={actualizarFormulario}
-                  programasParaSelector={programasParaSelector}
-                  obtenerEtiquetaPrograma={obtenerEtiquetaPrograma}
-                  programaRegistroVista={programaRegistroVista}
-                  mostrarDetallePrograma={mostrarDetallePrograma}
-                  horarioResumenRegistro={horarioResumenRegistro}
-                />
+              {programasParaSelector.length === 0 ? (
+                <MantineAlert
+                  className="secretaria-message secretaria-modal-message secretaria-field-full"
+                  color="orange"
+                  radius="md"
+                  icon={<AlertCircle size={18} />}
+                >
+                  {esCicloVerano
+                    ? "Coordinación Académica debe registrar y habilitar un programa de ciclo verano disponible para el estudiante."
+                    : "Coordinación Académica debe registrar y habilitar un programa disponible para el grado del estudiante."}
+                </MantineAlert>
               ) : (
-                <SecretariaNormalRegistroForm
-                  estudiante={estudiante}
-                  formulario={formulario}
-                  actualizarFormulario={actualizarFormulario}
-                  programasParaSelector={programasParaSelector}
-                  programaRegistroVista={programaRegistroVista}
-                  mostrarDetallePrograma={mostrarDetallePrograma}
-                  horarioResumenRegistro={horarioResumenRegistro}
-                  esCambridge={esCambridge}
-                  ingresoCambridge={ingresoCambridge}
-                  nivelCambridge={nivelCambridge}
-                  esCicloVerano={esCicloVerano}
-                />
-              )}
+                <>
+                  {esCicloVerano ? (
+                    <SecretariaSummerRegistroForm
+                      estudiante={estudiante}
+                      formulario={formulario}
+                      actualizarFormulario={actualizarFormulario}
+                      programasParaSelector={programasParaSelector}
+                      obtenerEtiquetaPrograma={obtenerEtiquetaPrograma}
+                      programaRegistroVista={programaRegistroVista}
+                      mostrarDetallePrograma={mostrarDetallePrograma}
+                      horarioResumenRegistro={horarioResumenRegistro}
+                    />
+                  ) : (
+                    <SecretariaNormalRegistroForm
+                      estudiante={estudiante}
+                      formulario={formulario}
+                      actualizarFormulario={actualizarFormulario}
+                      programasParaSelector={programasParaSelector}
+                      programaRegistroVista={programaRegistroVista}
+                      mostrarDetallePrograma={mostrarDetallePrograma}
+                      horarioResumenRegistro={horarioResumenRegistro}
+                      esCambridge={esCambridge}
+                      ingresoCambridge={ingresoCambridge}
+                      nivelCambridge={nivelCambridge}
+                      esCicloVerano={esCicloVerano}
+                    />
+                  )}
 
-              {/* Términos y condiciones */}
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                margin: "8px 0 10px",
-                background: "#f1f8e9",
-                padding: "8px 12px",
-                borderRadius: "12px",
-                border: "1px solid #c8e6c9"
-              }}>
-                <input
-                  type="checkbox"
-                  id="termsCheck"
-                  checked={formulario.aceptaCondiciones}
-                  onChange={(event) => actualizarFormulario("aceptaCondiciones", event.target.checked)}
-                  style={{ width: "18px", height: "18px", accentColor: "#388e3c", cursor: "pointer" }}
-                />
-                <label htmlFor="termsCheck" style={{ fontSize: "12.5px", fontWeight: "600", color: "#1b5e20", cursor: "pointer" }}>
-                  <strong>El padre/apoderado acepta las condiciones del programa.</strong>
-                </label>
-              </div>
+                  {/* Términos y condiciones */}
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    margin: "8px 0 10px",
+                    background: "#f1f8e9",
+                    padding: "8px 12px",
+                    borderRadius: "12px",
+                    border: "1px solid #c8e6c9"
+                  }}>
+                    <input
+                      type="checkbox"
+                      id="termsCheck"
+                      checked={formulario.aceptaCondiciones}
+                      onChange={(event) => actualizarFormulario("aceptaCondiciones", event.target.checked)}
+                      style={{ width: "18px", height: "18px", accentColor: "#388e3c", cursor: "pointer" }}
+                    />
+                    <label htmlFor="termsCheck" style={{ fontSize: "12.5px", fontWeight: "600", color: "#1b5e20", cursor: "pointer" }}>
+                      <strong>El padre/apoderado acepta las condiciones del programa.</strong>
+                    </label>
+                  </div>
+                </>
+              )}
 
               {/* Acciones */}
               <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
@@ -352,25 +367,27 @@ export default function SecretariaRegistroModal({
                 >
                   Cancelar
                 </button>
-                {(() => {
-                  const tieneProgramaValido = requiereSeleccionPrograma
-                    ? Boolean(formulario.programa)
-                    : Boolean(programaRegistroVista);
-                  return (
-                    <button
-                      className="secretaria-btn-primary-fused"
-                      type="submit"
-                      disabled={guardando || !tieneProgramaValido || !formulario.aceptaCondiciones}
-                    >
-                      {guardando ? (
-                        <Loader2 className="secretaria-spin" size={17} />
-                      ) : (
-                        <ClipboardCheck size={17} />
-                      )}
-                      <span>{guardando ? "Guardando..." : "Confirmar Inscripción"}</span>
-                    </button>
-                  );
-                })()}
+                {programasParaSelector.length > 0 && (
+                  (() => {
+                    const tieneProgramaValido = requiereSeleccionPrograma
+                      ? Boolean(formulario.programa)
+                      : Boolean(programaRegistroVista);
+                    return (
+                      <button
+                        className="secretaria-btn-primary-fused"
+                        type="submit"
+                        disabled={guardando || !tieneProgramaValido || !formulario.aceptaCondiciones}
+                      >
+                        {guardando ? (
+                          <Loader2 className="secretaria-spin" size={17} />
+                        ) : (
+                          <ClipboardCheck size={17} />
+                        )}
+                        <span>{guardando ? "Guardando..." : "Confirmar Inscripción"}</span>
+                      </button>
+                    );
+                  })()
+                )}
               </div>
             </form>
           </section>

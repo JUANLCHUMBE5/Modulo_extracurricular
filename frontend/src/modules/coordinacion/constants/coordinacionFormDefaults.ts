@@ -47,7 +47,7 @@ export const horarioGrupoInicial = {
 export const TEMPLATES_POR_TIPO = {
   "Club de Tareas": {
     comunicado: "Club de Tareas está diseñado para brindar a nuestros estudiantes un espacio guiado y estructurado para la resolución y presentación oportuna de sus tareas escolares, fortaleciendo sus hábitos de estudio, autonomía y organización bajo el acompañamiento de docentes especialistas.",
-    requisitos: "Cuaderno de apuntes, cartuchera completa (lápiz, borrador, tajador, regla, colores), agenda escolar física, y los textos/cuadernos de trabajo del colegio correspondientes a las tareas pendientes del día."
+    requisitos: ""
   },
   "Reforzamiento (Circular)": {
     comunicado: `                         Carabayllo, {{FECHA_CARTA}}
@@ -106,11 +106,7 @@ ACEPTO:
 
 NOMBRES Y APELLIDOS DEL ALUMNO: {{ALUMNO}} GRADO/SECCIÓN: {{GR_SEC}}
 DATOS DEL APODERADO: {{APOD}}     CEL: {{CEL}}   FIRMA: _________________`,
-    requisitos: `•	01 cuaderno Triple Kids – forrado de color MARRÓN con etiqueta TALLER DE COMUNICACIÓN (4 años)
-•	01 cuaderno triple renglón A4 – forrado de color MARRÓN con etiqueta TALLER DE COMUNICACIÓN (5 años, 1°, 2° y 3° grado)
-•	01 cuaderno Cuadrimax de 1 x 1 – forrado de color NEGRO con etiqueta TALLER DE MATEMÁTICA (4 años)
-•	01 cuaderno cuadriculado A4 – forrado de color NEGRO con etiqueta TALLER DE MATEMÁTICA (5 años, 1°, 2° y 3° grado)
-•	Todos los grados – 01 cartuchera completa (lápiz negro, chequeo rojo, borrador, tajador con depósito, colores, regla de 30 cm. (solo primaria)`
+    requisitos: ""
   },
   "Certificación Cambridge": {
     comunicado: `Carabayllo, Abril del 2026
@@ -147,29 +143,13 @@ Incluye:	•	Libros de preparación
 •	Simulacros del examen oficial Cambridge en todos los niveles.
 •	Material adicional requerido
 
-MODALIDADES DE INSCRIPCIÓN AL PROGRAMA DE CERTIFICACIÓN CAMBRIDGE 2026
-Los padres de familia podrán inscribir a sus hijos por dos vías:
-📝 Opción A: Inscripción presencial
-Acercarse al área de Caja del colegio con esta invitación y realizar el primer pago de S/ 150
-Además, deberán presentar los siguientes datos:
-•	Nombres y apellidos del alumno 
-•	Grado, sección y nivel
-•	Nombres completos del apoderado
-•	DNI del apoderado
-•	Número de celular del apoderado
-📲 Opción B: Inscripción virtual (por Yape)
-Realizar el primer pago de S/ 150 al número 970 836 322 (Yape a nombre de la institución matemática San Rafael).
-Luego, enviar la captura del pago junto con los mismos datos mencionados anteriormente al mismo número de la institución 970 836 322.
-
 
 
 Atentamente,  
 
                                  ____________________                           _______________________
                           COORDINACIÓN			          DIRECTOR GENERAL`,
-    requisitos: `•	Libros de preparación
-•	Simulacros del examen oficial Cambridge en todos los niveles.
-•	Material adicional requerido`
+    requisitos: ""
   },
   "Cambridge": {
     comunicado: `Carabayllo, Abril del 2026
@@ -206,29 +186,13 @@ Incluye:	•	Libros de preparación
 •	Simulacros del examen oficial Cambridge en todos los niveles.
 •	Material adicional requerido
 
-MODALIDADES DE INSCRIPCIÓN AL PROGRAMA DE CERTIFICACIÓN CAMBRIDGE 2026
-Los padres de familia podrán inscribir a sus hijos por dos vías:
-📝 Opción A: Inscripción presencial
-Acercarse al área de Caja del colegio con esta invitación y realizar el primer pago de S/ 150
-Además, deberán presentar los siguientes datos:
-•	Nombres y apellidos del alumno 
-•	Grado, sección y nivel
-•	Nombres completos del apoderado
-•	DNI del apoderado
-•	Número de celular del apoderado
-📲 Opción B: Inscripción virtual (por Yape)
-Realizar el primer pago de S/ 150 al número 970 836 322 (Yape a nombre de la institución matemática San Rafael).
-Luego, enviar la captura del pago junto con los mismos datos mencionados anteriormente al mismo número de la institución 970 836 322.
-
 
 
 Atentamente,  
 
                                  ____________________                           _______________________
                           COORDINACIÓN			          DIRECTOR GENERAL`,
-    requisitos: `•	Libros de preparación
-•	Simulacros del examen oficial Cambridge en todos los niveles.
-•	Material adicional requerido`
+    requisitos: ""
   },
   "Selección (Circular)": {
     comunicado: `                         Carabayllo, {{FECHA}}
@@ -313,10 +277,7 @@ NOMBRES Y APELLIDOS DEL ALUMNO: {{ALUMNO}}
 GRADO Y SECCIÓN DONDE CULMINÓ: {{GR_SEC}}
 NOMBRES Y APELLIDOS DEL APODERADO: {{APOD}}                   
 CEL: {{CEL}}   					FIRMA:_              ________________`,
-    requisitos: `•	Deberá estar entre los 3 primeros en el cuadro de mérito dentro del aula.
-•	El alumno deberá mantener buena conducta, mínimo nota 16.
-•	Deberá participar en un 90% como mínimo, de las Olimpiadas matemáticas programadas por el colegio.
-•	Deberá asistir como mínimo al 90% de las Maratones Académicas o Simulacros que se realizan previo a los concursos y/o exámenes. Costo simbólico (incluye pago al profesor y separata adicional).`
+    requisitos: ""
   },
   "Otro genérico": {
     comunicado: "",

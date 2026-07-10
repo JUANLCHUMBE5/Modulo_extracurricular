@@ -475,13 +475,12 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
         <table className="coord-table">
           <thead>
             <tr>
-              <th>Hora</th>
               <th>DNI</th>
               <th>Estudiante</th>
               <th>Grado</th>
               <th>Nivel</th>
-              <th>Horario del taller</th>
               <th>Acceso</th>
+              <th>Hora</th>
               <th>Observacion</th>
             </tr>
           </thead>
@@ -499,17 +498,16 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
               const toneAcceso = String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "warning" : "error";
               return (
                 <tr key={`${asistencia.id || dni || obtenerNombreAsistencia(asistencia)}-${index}`}>
-                  <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asistencia))}</td>
                   <td>{dni || "Sin DNI"}</td>
                   <td><strong>{obtenerNombreAsistencia(asistencia) || "-"}</strong></td>
                   <td>{grado}</td>
                   <td>{nivel}</td>
-                  <td>{obtenerHorarioAsistencia(asistencia) || "-"}</td>
                   <td>
                     <span style={badgeStyle(esAccesoPermitido, toneAcceso)}>
                       {textoAcceso}
                     </span>
                   </td>
+                  <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asistencia))}</td>
                   <td>{asistencia.observacion || "-"}</td>
                 </tr>
               );

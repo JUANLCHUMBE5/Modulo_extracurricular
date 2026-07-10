@@ -311,3 +311,126 @@ function normalizarEncabezado(valor) {
     .replace(/[\s/.-]+/g, "_")
     .replace(/_+/g, "_");
 }
+
+export function prepararProgramasParaPreview(programas = []) {
+  return programas.map((programa) => ({
+    id: programa.id,
+    nombre: programa.nombre,
+    categoria: programa.categoria,
+    periodo: programa.periodo,
+    estado: programa.estado,
+    plantilla: programa.plantilla,
+    plantillaVariables: programa.plantillaVariables || [],
+    gradosAplicables: programa.gradosAplicables || [],
+    horariosPorGrupo: programa.horariosPorGrupo || [],
+  }));
+}
+
+export function claveRegistroPreview(registro) {
+  if (!registro.programaId) return "";
+  if (registro.dni) return `${registro.programaId}:dni:${registro.dni}`;
+  const nombre = `${registro.nombres || ""} ${registro.apellidos || ""}`.trim().toLowerCase();
+  return nombre ? `${registro.programaId}:nombre:${nombre}:${registro.grado}` : "";
+}
+
+export function combinarPreviewsCarga({ periodo, previews }) {
+  const claves = new Set();
+  const registros = [];
+
+  previews.forEach((preview, archivoIndex) => {
+    const archivoNombre = preview.archivoNombre || `Archivo ${archivoIndex + 1}`;
+    preview.registros.forEach((registro) => {
+      const item = {
+        ...registro,
+        archivoNombre,
+        fila: `${archivoIndex + 1}.${registro.fila}`,
+      };
+
+      const clave = claveRegistroPreview(item);
+      if (item.estado === "Valido" && clave && claves.has(clave)) {
+        item.estado = "Duplicado";
+        item.errores = [...(item.errores || []), "Alumno duplicado entre archivos de la misma carga."];
+      }
+
+      if (item.estado === "Valido" && clave) claves.add(clave);
+      registros.push(item);
+    });
+  });
+
+  return {
+    id: `PREVIEW-MASIVO-${Date.now()}`,
+    periodo,
+    archivoNombre: previews.map((preview) => preview.archivoNombre).join(", "),
+    archivos: previews.map((preview) => preview.archivoNombre),
+    registros,
+    resumen: {
+      total: registros.length,
+      validos: registros.filter((item) => item.estado === "Valido").length,
+      errores: registros.filter((item) => item.estado === "Error").length,
+      duplicados: registros.filter((item) => item.estado === "Duplicado").length,
+    },
+  };
+}
+
+export function normalizarTextoSimple(valor = "") {
+  return String(valor || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+export function esCategoriaAcademica(programa = {}) {
+  const norm = normalizarTextoSimple(programa.categoria);
+  return norm.includes("academ") || norm.includes("vacaciones utiles");
+}
+
+export function gradoCorrespondeAlPrograma(programa = {}, gradoAlumno = "") {
+  const gradoNormalizado = descomponerGradoCarga(gradoAlumno);
+  if (!gradoNormalizado.numero) return false;
+
+  const gradosConfigurados = obtenerGradosConfiguradosPrograma(programa);
+  if (!gradosConfigurados.length) return true;
+
+  return gradosConfigurados.some((grado) =>
+    gradosCoincidenCarga(descomponerGradoCarga(grado), gradoNormalizado)
+  );
+}
+
+export function obtenerGradosConfiguradosPrograma(programa = {}) {
+  const grados = [];
+  if (Array.isArray(programa.gradosAplicables)) {
+    grados.push(...programa.gradosAplicables);
+  }
+  if (Array.isArray(programa.horariosPorGrupo)) {
+    programa.horariosPorGrupo.forEach((grupo) => {
+      if (Array.isArray(grupo.grados)) grados.push(...grupo.grados);
+    });
+  }
+  return grados.filter(Boolean);
+}
+
+export function descomponerGradoCarga(valor = "") {
+  const texto = normalizarTextoSimple(valor).replace(":", " ");
+  const nivel = ["inicial", "primaria", "secundaria"].find((item) => texto.includes(item)) || "";
+  const numero = texto.match(/\d+/)?.[0] || "";
+  return { nivel, numero };
+}
+
+export function gradosCoincidenCarga(gradoPrograma, gradoAlumno) {
+  if (!gradoPrograma.numero || !gradoAlumno.numero) return false;
+  if (gradoPrograma.numero !== gradoAlumno.numero) return false;
+  return !gradoPrograma.nivel || !gradoAlumno.nivel || gradoPrograma.nivel === gradoAlumno.nivel;
+}
+
+export function normalizarAlumnoCarga(estudiante = {}) {
+  const nombres = limpiarTexto(estudiante.nombres);
+  const apellidos = limpiarTexto(estudiante.apellidos);
+  const nombreCompleto = [nombres, apellidos].filter(Boolean).join(" ").trim() || nombres;
+
+  return {
+    dni: limpiarTexto(estudiante.dni).replace(/\D/g, ""),
+    nombre: nombreCompleto,
+    grado: limpiarTexto(estudiante.grado || estudiante.gradoNombre || estudiante.grado_nombre),
+  };
+}

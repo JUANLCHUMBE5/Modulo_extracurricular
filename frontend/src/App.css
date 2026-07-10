@@ -881,3 +881,15 @@ html body .coord-upload-tabs {
   transition: padding-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+/* Fix double background color / white bottom area in Coordinación */
+html body .coord-layout,
+html body .coord-main {
+  min-height: 100vh !important;
+  height: auto !important;
+  background: #e8f5e9 !important;
+  background-color: #e8f5e9 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+

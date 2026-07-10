@@ -3,6 +3,8 @@ import multer from "multer";
 import { CoordinacionController } from "../controllers/coordinacion.controller.js";
 import { requireAuth, requireRole } from "../../../common/middlewares/auth.js";
 import { MAX_FILE_SIZE } from "../../../infrastructure/files/file.service.js";
+import { validateBody } from "../../../common/middlewares/validation.js";
+import { ProgramaSchema } from "../dtos/programa.dto.js";
 
 const router = express.Router();
 const controller = new CoordinacionController();
@@ -28,8 +30,8 @@ router.put("/api/v1/extracurricular/coordinacion/configuracion-institucional", r
 // --- PROGRAMAS / TALLERES ---
 router.get("/api/v1/extracurricular/programas", (req, res) => controller.getProgramas(req, res));
 router.get("/api/v1/extracurricular/programas/:id", (req, res) => controller.getProgramaById(req, res));
-router.post("/api/v1/extracurricular/programas", requireAuth, requireRole(["coordinacion"]), (req, res) => controller.crearPrograma(req, res));
-router.put("/api/v1/extracurricular/programas/:id", requireAuth, requireRole(["coordinacion"]), (req, res) => controller.updatePrograma(req, res));
+router.post("/api/v1/extracurricular/programas", requireAuth, requireRole(["coordinacion"]), validateBody(ProgramaSchema), (req, res) => controller.crearPrograma(req, res));
+router.put("/api/v1/extracurricular/programas/:id", requireAuth, requireRole(["coordinacion"]), validateBody(ProgramaSchema), (req, res) => controller.updatePrograma(req, res));
 router.put("/api/v1/extracurricular/programas/:id/estado", requireAuth, requireRole(["coordinacion"]), (req, res) => controller.updateProgramaEstado(req, res));
 router.delete("/api/v1/extracurricular/programas/:id", requireAuth, requireRole(["coordinacion"]), (req, res) => controller.deletePrograma(req, res));
 

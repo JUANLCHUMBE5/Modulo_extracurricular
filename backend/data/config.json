@@ -4,8 +4,7 @@
     "Deportivo",
     "Verano",
     "Arte",
-    "Otro",
-    "NATACION"
+    "Otro"
   ],
   "configuracionInstitucional": {
     "logoInstitucion": null,
@@ -18,7 +17,7 @@
     "recibo": "",
     "egreso": "",
     "reciboInicio": "REC-0500",
-    "reciboActual": "REC-0510",
+    "reciboActual": "REC-0511",
     "reciboActive": true,
     "reciboVirtualInicio": "V-1000",
     "reciboVirtualActual": "V-1000",

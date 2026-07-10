@@ -218,5 +218,26 @@
     "origenRegistro": "Caja",
     "validadoPor": "Cajera",
     "validadoEn": "2026-07-08T13:54:04.282Z"
+  },
+  {
+    "id": "PAG-373169",
+    "inscripcionId": "INS-606165",
+    "dniEstudiante": "60000035",
+    "nombresEstudiante": "Sofia Paredes Leon",
+    "programa": "Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo",
+    "programaId": "PRG-102",
+    "periodo": "escolar",
+    "monto": 80,
+    "formaPago": "Yape",
+    "numeroOperacion": "",
+    "telefonoOperacion": "",
+    "nroRecibo": "REC-0510",
+    "capturaPagoBase64": "",
+    "estado": "validado",
+    "fecha": "2026-07-10T04:22:53.169Z",
+    "fechaPago": "2026-07-10T04:22:53.169Z",
+    "origenRegistro": "Caja",
+    "validadoPor": "Cajera",
+    "validadoEn": "2026-07-10T04:22:53.169Z"
   }
 ]

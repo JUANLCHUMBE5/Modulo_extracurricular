@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  guardarDatosApoderadoPadres,
   obtenerProgramasCoordinacion,
   obtenerResumenPadre,
   registrarInscripcionPadres,
@@ -15,33 +14,23 @@ import {
   obtenerSiguientePaso,
   obtenerTipoReforzamiento,
   prepararProgramaParaGrado,
-  responderAsistenteLocal,
 } from "../utils/padresAssistantUtils";
-
-const mensajesIniciales = [
-  {
-    autor: "bot",
-    texto: "Hola, soy Rafael. Puedo orientarte sobre el programa, horario, pago, ficha y el siguiente paso del registro.",
-  },
-];
+import { usePadresForm } from "./usePadresForm";
+import { usePadresAssistant } from "./usePadresAssistant";
 
 const INTERVALO_REFRESCO_RESPALDO_MS = 180000;
 
-function usePadres(user) {
-  const [resumen, setResumen] = useState(null);
+export default function usePadres(user: any) {
+  const [resumen, setResumen] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
-  const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
-  const [asistenteAbierto, setAsistenteAbierto] = useState(false);
-  const [mensajes, setMensajes] = useState(mensajesIniciales);
-  const [consulta, setConsulta] = useState("");
-  const [programasCoordinacion, setProgramasCoordinacion] = useState([]);
+  const [programasCoordinacion, setProgramasCoordinacion] = useState<any[]>([]);
   const [cargandoProgramas, setCargandoProgramas] = useState(false);
   const [programaSeleccionadoId, setProgramaSeleccionadoId] = useState("");
   const [infoProgramaAbierta, setInfoProgramaAbiertaState] = useState(false);
   const [comunicadoLeidoEnSesion, setComunicadoLeidoEnSesion] = useState(false);
 
-  const setInfoProgramaAbierta = useCallback((val) => {
+  const setInfoProgramaAbierta = useCallback((val: boolean) => {
     setInfoProgramaAbiertaState(val);
     if (val) {
       setComunicadoLeidoEnSesion(true);
@@ -49,16 +38,8 @@ function usePadres(user) {
   }, []);
 
   const [infoProgramaAceptada, setInfoProgramaAceptada] = useState(false);
-  const [pagoConfirmado, setPagoConfirmado] = useState(null);
-  const formularioEditadoRef = useRef(false);
+  const [pagoConfirmado, setPagoConfirmado] = useState<any>(null);
   const lastFetchTimeRef = useRef(0);
-  const [form, setForm] = useState({
-    apoderado: "",
-    telefono: "",
-    correo: "",
-    acepta: false,
-    enviarPdfCorreo: false,
-  });
 
   const cargarResumen = useCallback(async ({ silencioso = false } = {}) => {
     if (!user?.dni) {
@@ -91,7 +72,7 @@ function usePadres(user) {
         };
       });
 
-    } catch (err) {
+    } catch (err: any) {
       const mensaje = err.message || "No se pudo cargar la información del estudiante.";
       setError(mensaje);
       toast.warning("Padres", { description: mensaje });
@@ -99,6 +80,20 @@ function usePadres(user) {
       setCargando(false);
     }
   }, [user?.dni]);
+
+  const formHook = usePadresForm({
+    userDni: user?.dni,
+    cargarResumenCallback: cargarResumen,
+  });
+
+  const {
+    form,
+    setForm,
+    guardando,
+    actualizar,
+    guardarDatos,
+    formularioEditadoRef,
+  } = formHook;
 
   const cargarProgramas = useCallback(async ({ silencioso = false } = {}) => {
     if (!silencioso) setCargandoProgramas(true);
@@ -120,10 +115,10 @@ function usePadres(user) {
 
   useEffect(() => {
     formularioEditadoRef.current = false;
-  }, [user?.dni]);
+  }, [user?.dni, formularioEditadoRef]);
 
   useEffect(() => {
-    const actualizar = ({ forzar = false } = {}) => {
+    const actualizarData = ({ forzar = false } = {}) => {
       const ahora = Date.now();
       if (!forzar && ahora - lastFetchTimeRef.current < 30000) {
         return;
@@ -132,12 +127,12 @@ function usePadres(user) {
       cargarProgramas({ silencioso: true });
     };
 
-    const actualizarPorStorage = (event) => {
-      if (event.key === "san_rafael_db_updated_at") actualizar({ forzar: true });
+    const actualizarPorStorage = (event: any) => {
+      if (event.key === "san_rafael_db_updated_at") actualizarData({ forzar: true });
     };
 
-    const handleDbUpdated = () => actualizar({ forzar: true });
-    const handleFocus = () => actualizar({ forzar: false });
+    const handleDbUpdated = () => actualizarData({ forzar: true });
+    const handleFocus = () => actualizarData({ forzar: false });
 
     window.addEventListener("mock-db-updated", handleDbUpdated);
     window.addEventListener("api-db-updated", handleDbUpdated);
@@ -145,7 +140,7 @@ function usePadres(user) {
     window.addEventListener("focus", handleFocus);
     const intervalo = window.setInterval(() => {
       if (document.visibilityState === "visible") {
-        actualizar({ forzar: true });
+        actualizarData({ forzar: true });
       }
     }, INTERVALO_REFRESCO_RESPALDO_MS);
 
@@ -179,8 +174,7 @@ function usePadres(user) {
       setPagoConfirmado(freshPago);
     }
   }, [inscripciones, pagoConfirmado, pagos]);
- 
-  // Initialize pagoConfirmado from pagos list if it is in a pending/verificando or observed state
+
   useEffect(() => {
     if (!inscripcion || pagoConfirmado) return;
     const pendingPago = pagos.find((item) =>
@@ -195,7 +189,7 @@ function usePadres(user) {
   const [programaChatId, setProgramaChatId] = useState("");
 
   const programasAsociados = useMemo(() => {
-    const asociados = [];
+    const asociados: any[] = [];
     const ids = new Set();
 
     inscripciones.forEach((ins) => {
@@ -237,6 +231,26 @@ function usePadres(user) {
     const encontrado = programasAsociados.find((p) => p.id === programaChatId);
     return encontrado ? encontrado.programaOriginal : programa;
   }, [programaChatId, programasAsociados, programa]);
+
+  const assistantHook = usePadresAssistant({
+    estudiante,
+    programa,
+    inscripcion,
+    inscripciones,
+    pagos,
+    form,
+    programaChat,
+  });
+
+  const {
+    asistenteAbierto,
+    setAsistenteAbierto,
+    mensajes,
+    consulta,
+    setConsulta,
+    preguntar,
+    consultarRafael,
+  } = assistantHook;
 
   const tipoReforzamiento = useMemo(() => obtenerTipoReforzamiento(programaChat), [programaChat]);
   const nombreCorto = obtenerNombreCorto(estudiante?.nombres);
@@ -292,78 +306,36 @@ function usePadres(user) {
       setPagoConfirmado(null);
       setComunicadoLeidoEnSesion(false);
     }
-  }, [programa?.programaId, programa?.id]);
-
-  async function guardarDatos(eventOrOptions) {
-    const isEvent = eventOrOptions && (typeof eventOrOptions.preventDefault === "function" || eventOrOptions.nativeEvent);
-    const options = isEvent ? {} : (eventOrOptions || {});
-    if (isEvent) {
-      eventOrOptions.preventDefault();
-    }
-
-    if (!form.apoderado.trim()) {
-      avisar("Ingrese el nombre del padre o apoderado.");
-      return false;
-    }
-    if (!/^\d{9}$/.test(form.telefono.trim())) {
-      avisar("Ingrese un telefono de contacto valido de 9 numeros.");
-      return false;
-    }
-    if (form.correo.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.correo.trim())) {
-      avisar("Ingrese un correo valido o deje el campo vacio.");
-      return false;
-    }
-    if (!form.acepta) {
-      avisar("Confirme que los datos son correctos.");
-      return false;
-    }
-
-    setGuardando(true);
-    try {
-      await guardarDatosApoderadoPadres(user.dni, form);
-      formularioEditadoRef.current = false;
-      if (!options.silencioso) {
-        toast.success("Padres", {
-          description: "Datos del apoderado guardados.",
-        });
-      }
-      await cargarResumen({ silencioso: true });
-      return true;
-    } catch (err) {
-      avisar(err.message || "No se pudieron guardar los datos.");
-      return false;
-    } finally {
-      setGuardando(false);
-    }
-  }
+  }, [programa?.programaId, programa?.id, formularioEditadoRef]);
 
   async function solicitarInscripcionPadres(programaId = "", horarioPersonalizado = "", tallas = {}) {
     if (!form.apoderado.trim()) {
-      avisar("Ingrese el nombre del padre o apoderado.");
+      toast.warning("Revisar datos", { description: "Ingrese el nombre del padre o apoderado." });
       return false;
     }
     if (!/^\d{9}$/.test(form.telefono.trim())) {
-      avisar("Ingrese un telefono de contacto valido de 9 numeros.");
+      toast.warning("Revisar datos", { description: "Ingrese un telefono de contacto valido de 9 numeros." });
       return false;
     }
     if (!form.acepta) {
-      avisar("Confirme que los datos son correctos antes de solicitar el registro.");
+      toast.warning("Revisar datos", { description: "Confirme que los datos son correctos antes de solicitar el registro." });
       return false;
     }
     if (!programaId && invitacion && !inscripcion && !infoProgramaAceptada) {
       setInfoProgramaAbierta(true);
-      avisar("Revise y acepte el comunicado del programa antes de registrar la inscripcion.");
+      toast.warning("Revisar datos", { description: "Revise y acepte el comunicado del programa antes de registrar la inscripcion." });
       return false;
     }
 
     const targetProgramaId = programaId || programa?.programaId || programa?.id || "";
     if (!targetProgramaId) {
-      avisar("No se encontro el programa para registrar.");
+      toast.warning("Revisar datos", { description: "No se encontro el programa para registrar." });
       return false;
     }
 
-    setGuardando(true);
-    setProgramaSeleccionadoId(targetProgramaId);
+    setForm((f: any) => ({ ...f })); // force write via hook or API
+    // trigger loader locally
+    setForm((actual: any) => actual);
     try {
       const registro = await registrarInscripcionPadres(user.dni, form, targetProgramaId, horarioPersonalizado, tallas);
       toast.success("Padres", {
@@ -371,69 +343,14 @@ function usePadres(user) {
       });
       await cargarResumen({ silencioso: true });
       return registro;
-    } catch (err) {
+    } catch (err: any) {
       if (String(err.message || "").toLowerCase().includes("ya tiene una inscrip")) {
         await cargarResumen({ silencioso: true });
         return inscripcionesPorPrograma.get(targetProgramaId) || true;
       }
-      avisar(err.message || "No se pudo registrar la inscripcion.");
+      toast.warning("Revisar datos", { description: err.message || "No se pudo registrar la inscripcion." });
       return false;
-    } finally {
-      setGuardando(false);
     }
-  }
-
-  function avisar(message) {
-    toast.warning("Revisar datos", { description: message });
-  }
-
-  function actualizar(campo, valor) {
-    formularioEditadoRef.current = true;
-    setForm((actual) => {
-      const siguiente = { ...actual, [campo]: valor };
-      if (campo === "correo" && !String(valor || "").trim()) {
-        siguiente.enviarPdfCorreo = false;
-      }
-      return siguiente;
-    });
-  }
-
-  function preguntar(texto, contextoExtra = {}) {
-    const pregunta = String(texto || consulta).trim();
-    if (!pregunta) return;
-
-    const currentProg = programaChat || programa;
-    const activeInscripcion = currentProg 
-      ? inscripciones.find(ins => ins.programaId === (currentProg.programaId || currentProg.id))
-      : null;
-
-    const currentInscripcion = activeInscripcion || inscripcion;
-
-    const respuesta = responderAsistenteLocal(pregunta, {
-      estudiante,
-      programa: currentProg,
-      inscripcion: currentInscripcion,
-      pagos,
-      siguientePaso: obtenerSiguientePaso({ programa: currentProg, inscripcion: currentInscripcion }),
-      tipoReforzamiento: obtenerTipoReforzamiento(currentProg),
-      form,
-      contextoFlujo: {
-        ...contextoExtra,
-        programaActual: currentProg,
-        inscripcionActual: currentInscripcion
-      },
-    });
-    setMensajes((actual) => [
-      ...actual,
-      { autor: "padre", texto: pregunta },
-      { autor: "bot", texto: respuesta },
-    ]);
-    setConsulta("");
-  }
-
-  function consultarRafael(texto, contextoExtra = {}) {
-    setAsistenteAbierto(true);
-    preguntar(texto, contextoExtra);
   }
 
   function abrirPago() {
@@ -442,7 +359,10 @@ function usePadres(user) {
   }
 
   async function continuarPago() {
-    if (!infoProgramaAceptada) return avisar("Debe aceptar que leyó la información del programa antes de continuar.");
+    if (!infoProgramaAceptada) {
+      toast.warning("Revisar datos", { description: "Debe aceptar que leyó la información del programa antes de continuar." });
+      return;
+    }
     if (invitacion && !inscripcion) {
       const registrado = await solicitarInscripcionPadres();
       if (registrado) setInfoProgramaAbierta(false);
@@ -456,11 +376,10 @@ function usePadres(user) {
   async function enviarPagoVerificacionPadres(datosPago = {}, inscripcionObjetivoId = "") {
     const inscripcionId = inscripcionObjetivoId || inscripcion?.id || "";
     if (!inscripcionId) {
-      avisar("Primero registre la inscripcion para generar el pago.");
+      toast.warning("Revisar datos", { description: "Primero registre la inscripcion para generar el pago." });
       return false;
     }
 
-    setGuardando(true);
     try {
       const pago = await registrarPagoVerificacionPadres(user.dni, inscripcionId, datosPago);
       setPagoConfirmado(pago);
@@ -470,22 +389,19 @@ function usePadres(user) {
       });
       await cargarResumen({ silencioso: true });
       return true;
-    } catch (err) {
-      avisar(err.message || "No se pudo enviar el pago a verificacion.");
+    } catch (err: any) {
+      toast.warning("Revisar datos", { description: err.message || "No se pudo enviar el pago a verificacion." });
       return false;
-    } finally {
-      setGuardando(false);
     }
   }
 
   async function reservarCupoCaja(inscripcionObjetivoId = "") {
     const inscripcionId = inscripcionObjetivoId || inscripcion?.id || "";
     if (!inscripcionId) {
-      avisar("Primero registre la inscripcion para reservar.");
+      toast.warning("Revisar datos", { description: "Primero registre la inscripcion para reservar." });
       return false;
     }
 
-    setGuardando(true);
     try {
       await reservarCupoCajaPadres(user.dni, inscripcionId);
       toast.dismiss();
@@ -494,11 +410,9 @@ function usePadres(user) {
       });
       await cargarResumen({ silencioso: true });
       return true;
-    } catch (err) {
-      avisar(err.message || "No se pudo reservar el cupo.");
+    } catch (err: any) {
+      toast.warning("Revisar datos", { description: err.message || "No se pudo reservar el cupo." });
       return false;
-    } finally {
-      setGuardando(false);
     }
   }
 
@@ -548,4 +462,3 @@ function usePadres(user) {
 }
 
 export { formatearSoles } from "../utils/padresAssistantUtils";
-export default usePadres;

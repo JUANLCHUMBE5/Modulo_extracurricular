@@ -98,7 +98,7 @@ export default function AuxiliarAlertViews({
               <span className="label">HORARIO</span>
               <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3", wordBreak: "break-word" }}>
                 {(() => {
-                  const infoHorario = parsearHorario(estudiante.horario);
+                  const infoHorario = parsearHorario(estudiante.horario, estudiante.grado);
                   return (
                     <>
                       {infoHorario.nivel && <div style={{ fontWeight: 800 }}>{infoHorario.nivel}</div>}
@@ -150,7 +150,7 @@ export default function AuxiliarAlertViews({
               <span className="label">HORARIO</span>
               <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3", wordBreak: "break-word" }}>
                 {(() => {
-                  const infoHorario = parsearHorario(estudiante.horario);
+                  const infoHorario = parsearHorario(estudiante.horario, estudiante.grado);
                   return (
                     <>
                       {infoHorario.nivel && <div style={{ fontWeight: 800 }}>{infoHorario.nivel}</div>}
@@ -202,7 +202,7 @@ export default function AuxiliarAlertViews({
               <span className="label">HORARIO</span>
               <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3", wordBreak: "break-word" }}>
                 {(() => {
-                  const infoHorario = parsearHorario(estudiante.horario);
+                  const infoHorario = parsearHorario(estudiante.horario, estudiante.grado);
                   return (
                     <>
                       {infoHorario.nivel && <div style={{ fontWeight: 800 }}>{infoHorario.nivel}</div>}
@@ -257,7 +257,7 @@ export default function AuxiliarAlertViews({
               <span className="label">HORARIO</span>
               <strong className="value text-center" style={{ fontSize: "0.82rem", lineHeight: "1.3", wordBreak: "break-word" }}>
                 {(() => {
-                  const infoHorario = parsearHorario(estudiante.horario);
+                  const infoHorario = parsearHorario(estudiante.horario, estudiante.grado);
                   return (
                     <>
                       {infoHorario.nivel && <div style={{ fontWeight: 800 }}>{infoHorario.nivel}</div>}

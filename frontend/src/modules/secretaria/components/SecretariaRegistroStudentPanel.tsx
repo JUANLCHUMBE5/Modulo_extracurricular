@@ -20,6 +20,7 @@ export default function SecretariaRegistroStudentPanel({
   invitacionSinHorario,
   tieneInvitacionOperativa,
   tipoAlumnoMostrado,
+  noProgramasDisponibles = false,
 }) {
   if (!estudiante) return null;
 
@@ -238,7 +239,13 @@ export default function SecretariaRegistroStudentPanel({
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
           <strong style={{ fontWeight: "700", color: esPagoCompletado ? "#1b5e20" : "#4e342e" }}>
-            {esPagoCompletado ? "Matrícula completada" : tieneInvitacionOperativa ? "Invitación individual" : "Invitación masiva"}
+            {esPagoCompletado
+              ? "Matrícula completada"
+              : tieneInvitacionOperativa
+                ? "Invitación individual"
+                : noProgramasDisponibles
+                  ? "Sin taller disponible"
+                  : "Invitación masiva"}
           </strong>
           <span style={{ fontSize: "11.5px", lineHeight: "1.3" }}>
             {esPagoCompletado ? (
@@ -247,6 +254,8 @@ export default function SecretariaRegistroStudentPanel({
               `Derivado exitosamente a Cajera: ${inscripcion.programa || "taller seleccionado"}. Este mismo taller ya no se puede derivar otra vez.`
             ) : tieneInvitacionOperativa ? (
               "El estudiante tiene invitación registrada. Asistente solo podrá inscribirlo en el programa asignado por Coordinación Académica."
+            ) : noProgramasDisponibles ? (
+              "No cuenta con taller disponible."
             ) : (
               "No tiene invitación individual. Asistente puede registrarlo en los programas marcados por Coordinación Académica como invitación masiva."
             )}

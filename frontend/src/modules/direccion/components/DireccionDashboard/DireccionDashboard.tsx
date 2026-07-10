@@ -31,10 +31,10 @@ export default function DireccionDashboard({
     return texto.length > 20 ? `${texto.slice(0, 19)}...` : texto;
   };
   return (
-    <>
+    <div className="dir-dashboard-workspace-card">
 
       {/* SELECCION DE MODULOS DEL DASHBOARD */}
-      <div className="dir-module-tabs-row" role="tablist">
+      <div className="dir-module-tabs-row" role="tablist" style={{ marginTop: "-8px", marginBottom: "8px" }}>
         <button
           type="button"
           role="tab"
@@ -89,8 +89,7 @@ export default function DireccionDashboard({
       </div>
 
       {/* SECCION SEGMENTADA POR PESTANA ACTIVA */}
-      <div className="dir-dashboard-workspace-card">
-        {dashboardTab === "caja" && (
+      {dashboardTab === "caja" && (
         <>
           <section className="dir-stats" aria-label="Indicadores principales financiero">
             <StatCard
@@ -294,7 +293,29 @@ export default function DireccionDashboard({
               {chartOrigen.length ? (
                 <DonutChart
                   h={180}
-                  data={chartOrigen}
+                  data={(() => {
+                    const conteoAgrupado = {};
+                    chartOrigen.forEach((item) => {
+                      const nameLower = String(item.name || "").toLowerCase();
+                      let key = "Otro";
+                      let color = "blue.6";
+                      if (nameLower.includes("portal") || nameLower.includes("web") || nameLower.includes("padre")) {
+                        key = "Vía Web / Padres";
+                        color = "teal.6";
+                      } else if (nameLower.includes("presencial") || nameLower.includes("asistente") || nameLower.includes("carga") || nameLower.includes("excel") || nameLower === "") {
+                        key = "Vía Asistente";
+                        color = "orange.6";
+                      } else {
+                        key = item.name || "Otro";
+                        color = item.color;
+                      }
+                      if (!conteoAgrupado[key]) {
+                        conteoAgrupado[key] = { name: key, value: 0, color };
+                      }
+                      conteoAgrupado[key].value += item.value;
+                    });
+                    return Object.values(conteoAgrupado);
+                  })()}
                   thickness={12}
                   paddingAngle={5}
                   size={135}
@@ -321,7 +342,7 @@ export default function DireccionDashboard({
                     </strong>
                   </div>
                   <div className="dir-analysis-stat-item">
-                    <span className="dir-stat-label"><Building size={14} /> Asistente</span>
+                    <span className="dir-stat-label"><Building size={14} /> Vía Asistente</span>
                     <strong className="dir-stat-value">
                       {metricasAnalisis.secCount} <span className="dir-stat-sub">({metricasAnalisis.secPct}%)</span>
                     </strong>
@@ -331,12 +352,12 @@ export default function DireccionDashboard({
                   <div
                     className="dir-progress-bar-web"
                     style={{ width: `${metricasAnalisis.webPct}%` }}
-                    title={`Web: ${metricasAnalisis.webPct}%`}
+                    title={`Vía Web / Padres: ${metricasAnalisis.webPct}%`}
                   />
                   <div
                     className="dir-progress-bar-sec"
                     style={{ width: `${metricasAnalisis.secPct}%` }}
-                    title={`Asistente: ${metricasAnalisis.secPct}%`}
+                    title={`Vía Asistente: ${metricasAnalisis.secPct}%`}
                   />
                 </div>
               </div>
@@ -447,7 +468,6 @@ export default function DireccionDashboard({
           </section>
         </>
       )}
-      </div>
-    </>
+    </div>
   );
 }

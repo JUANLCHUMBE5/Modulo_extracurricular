@@ -3,19 +3,10 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import {
   listarProgramas,
-  cambiarEstadoPrograma,
-  eliminarPrograma,
   listarCategorias,
-  crearCategoria,
-  eliminarCategoria,
-  obtenerConfiguracionInstitucional,
-  guardarConfiguracionInstitucional,
   listarHistorialCargas,
-  listarAsistenciasPrograma,
-  listarMatriculados,
+  obtenerConfiguracionInstitucional,
 } from "../services/coordinacionService";
-import { normalizarDuracionAvisoDias, fechaActualInput, calcularDuracionTexto } from "../../../services/dateService";
-import { formInicial } from "../constants/coordinacionFormDefaults";
 import { tienePermisoAsignado, puedeVerVista } from "../utils/coordinacionPermissions";
 import {
   esProgramaCambridge,
@@ -25,19 +16,16 @@ import {
   normalizarPeriodoVista,
   calcularTextoCiclosCambridge,
 } from "../utils/coordinacionProgramUtils";
-import {
-  sugerirNumeroDocumento,
-  tallerDepFormInicial,
-  datosProgramaAFormulario,
-  parseRangeTimes,
-} from "../utils/coordinacionFormHelpers";
+import { datosProgramaAFormulario } from "../utils/coordinacionFormHelpers";
+import { calcularDuracionTexto } from "../../../services/dateService";
 
-import useCoordinacionCarga from "./useCoordinacionCarga";
-import useCoordinacionDocumentos from "./useCoordinacionDocumentos";
-import useCoordinacionInvitados from "./useCoordinacionInvitados";
-import useCoordinacionForm from "./useCoordinacionForm";
-
-export { parseRangeTimes };
+import useCoordinacionCarga from "./features/useCoordinacionCarga";
+import useCoordinacionDocumentos from "./features/useCoordinacionDocumentos";
+import useCoordinacionInvitados from "./features/useCoordinacionInvitados";
+import useCoordinacionForm from "./forms/useCoordinacionForm";
+import useCoordinacionCategorias from "./features/useCoordinacionCategorias";
+import useCoordinacionConfig from "./features/useCoordinacionConfig";
+import useCoordinacionAccionesPrograma from "./features/useCoordinacionAccionesPrograma";
 
 export default function useCoordinacion({
   delegatedContent,
@@ -81,8 +69,6 @@ export default function useCoordinacion({
 
   const [showModal, setShowModal] = useState(false);
   const [modoEditar, setModoEditar] = useState(false);
-  const [nuevaCat, setNuevaCat] = useState("");
-  const [catAEliminar, setCatAEliminar] = useState("");
   const [mostrarGestorCategorias, setMostrarGestorCategorias] = useState(false);
 
   const [ultimoLoteId, setUltimoLoteId] = useState("");
@@ -90,9 +76,6 @@ export default function useCoordinacion({
   const [historialCargas, setHistorialCargas] = useState<any[]>([]);
   const [configInstitucional, setConfigInstitucional] = useState<any>({});
   const [cargandoConfigInstitucional, setCargandoConfigInstitucional] = useState(false);
-  const [guardandoConfigInstitucional, setGuardandoConfigInstitucional] = useState(false);
-  const [programaAFinalizar, setProgramaAFinalizar] = useState<any>(null);
-  const [programaAArchivar, setProgramaAArchivar] = useState<any>(null);
 
   const [sidebarAbierta, setSidebarAbierta] = useState(() => {
     try {
@@ -171,6 +154,62 @@ export default function useCoordinacion({
     coordinacionForm.actualizarForm("alertaConfiguracion", val);
   };
 
+  const {
+    nuevaCat,
+    setNuevaCat,
+    catAEliminar,
+    setCatAEliminar,
+    agregarCategoria,
+    quitarCategoria,
+  } = useCoordinacionCategorias({
+    categorias,
+    setCategorias,
+    puedeEditarProgramas,
+    mostrarMsg,
+    setForm: coordinacionForm.setForm,
+  });
+
+  const {
+    guardandoConfigInstitucional,
+    actualizarConfigInstitucionalImagen,
+    quitarConfigInstitucionalImagen,
+    guardarConfigInstitucional,
+  } = useCoordinacionConfig({
+    configInstitucional,
+    setConfigInstitucional,
+    mostrarMsg,
+  });
+
+  const {
+    programaAFinalizar,
+    setProgramaAFinalizar,
+    programaAArchivar,
+    setProgramaAArchivar,
+    abrirCrear,
+    abrirCrearDesdeDocumento,
+    abrirEditar,
+    toggleEstado,
+    finalizarPrograma,
+    confirmarFinalizar,
+    eliminarCurso,
+    confirmarArchivar,
+    restaurarPrograma,
+    clonarPrograma,
+  } = useCoordinacionAccionesPrograma({
+    programas,
+    puedeCrearProgramas,
+    puedeEditarProgramas,
+    mostrarMsg,
+    coordinacionForm,
+    setModoEditar,
+    documentos,
+    setAlertaConfiguracion,
+    navigate,
+    embedded,
+    setShowModal,
+    cargarDatos,
+  });
+
   useEffect(() => {
     if (vista === "registrar-programa" && queryProgId && programas.length > 0) {
       const prog = programas.find((p) => String(p.id) === String(queryProgId));
@@ -224,35 +263,6 @@ export default function useCoordinacion({
     return mostrarMsg(texto);
   }
 
-  function actualizarConfigInstitucionalImagen(campo: string, imagen: any) {
-    setConfigInstitucional((actual: any) => ({
-      ...(actual || {}),
-      [campo]: imagen,
-    }));
-  }
-
-  function quitarConfigInstitucionalImagen(campo: string) {
-    setConfigInstitucional((actual: any) => ({
-      ...(actual || {}),
-      [campo]: null,
-    }));
-  }
-
-  async function guardarConfigInstitucional() {
-    setGuardandoConfigInstitucional(true);
-    try {
-      const guardada = await guardarConfiguracionInstitucional(configInstitucional);
-      setConfigInstitucional(guardada);
-      mostrarMsg("Recursos institucionales guardados correctamente.", "success");
-      return true;
-    } catch (err: any) {
-      mostrarMsg(err.message || "No se pudo guardar la configuración institucional.");
-      return false;
-    } finally {
-      setGuardandoConfigInstitucional(false);
-    }
-  }
-
   const programasFiltrados = programas.filter((p) => {
     if (p.estado === "Archivado") return false;
     const textoBusqueda = busqueda.trim().toLowerCase();
@@ -286,208 +296,10 @@ export default function useCoordinacion({
 
   const programaDocs = programas.find((item) => item.id === documentos.programaDocsId);
   const historialPlantillas = programas.filter(
-    (programa) => programa.plantilla && (programa.plantillaBase64 || (window as any).apiDb?.plantillasPorPrograma?.[programa.id]?.plantillaBase64)
+    (programa) =>
+      programa.plantilla &&
+      (programa.plantillaBase64 || (window as any).apiDb?.plantillasPorPrograma?.[programa.id]?.plantillaBase64)
   );
-
-  function abrirCrear() {
-    if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas.");
-    const numSugerido = sugerirNumeroDocumento("Comunicado", programas);
-    coordinacionForm.setForm({
-      ...formInicial,
-      numeroDocumento: numSugerido
-    });
-    setModoEditar(false);
-    coordinacionForm.setIndiceTallerEditando(null);
-    coordinacionForm.setTallerDepForm(tallerDepFormInicial);
-    documentos.setProgramaDocsId("");
-    documentos.setLecturaDocumento(null);
-    documentos.setPlantillaInputKey((actual) => actual + 1);
-    setAlertaConfiguracion("");
-    setMensaje("");
-    if (!embedded) {
-      navigate("/coordinacion/registrar-programa");
-    } else {
-      setShowModal(true);
-    }
-  }
-
-  function abrirCrearDesdeDocumento() {
-    if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas.");
-    const numSugerido = sugerirNumeroDocumento("Comunicado", programas);
-    coordinacionForm.setForm((actual) => ({
-      ...actual,
-      id: "",
-      numeroDocumento: actual.numeroDocumento || numSugerido
-    }));
-    setModoEditar(false);
-    coordinacionForm.setIndiceTallerEditando(null);
-    coordinacionForm.setTallerDepForm(tallerDepFormInicial);
-    setAlertaConfiguracion("");
-    setMensaje("");
-    if (!embedded) {
-      navigate("/coordinacion/registrar-programa");
-    } else {
-      setShowModal(true);
-    }
-  }
-
-  function abrirEditar(prog: any) {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar programas.");
-    coordinacionForm.setForm(datosProgramaAFormulario(prog));
-    setModoEditar(true);
-    coordinacionForm.setIndiceTallerEditando(null);
-    const esVerano = normalizarPeriodoVista(prog.periodo) === "verano";
-    coordinacionForm.setTallerDepForm({
-      ...tallerDepFormInicial,
-      deporte: esVerano
-        ? (prog.categoria === "Talleres Deportivos" ? "Fútbol" : "Danza")
-        : "Vóley"
-    });
-    documentos.setProgramaDocsId("");
-    documentos.setLecturaDocumento(null);
-    documentos.setPlantillaInputKey((actual) => actual + 1);
-    setAlertaConfiguracion("");
-    setMensaje("");
-    if (!embedded) {
-      navigate(`/coordinacion/registrar-programa?id=${prog.id}`);
-    } else {
-      setShowModal(true);
-    }
-  }
-
-  async function toggleEstado(prog: any) {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para cambiar el estado de programas.");
-    const nuevo = prog.estado === "Habilitado" ? "Deshabilitado" : "Habilitado";
-    try {
-      await cambiarEstadoPrograma(prog.id, nuevo);
-      mostrarMsg(`Programa ${nuevo.toLowerCase()}.`, "success");
-      await cargarDatos();
-    } catch (err: any) {
-      mostrarMsg(err.message || "No se pudo cambiar el estado del programa.");
-    }
-  }
-
-  async function finalizarPrograma(prog: any) {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para finalizar programas.");
-    setProgramaAFinalizar(prog);
-  }
-
-  async function confirmarFinalizar() {
-    if (!programaAFinalizar) return;
-    const prog = programaAFinalizar;
-    setProgramaAFinalizar(null);
-    try {
-      await cambiarEstadoPrograma(prog.id, "Finalizado");
-      mostrarMsg(`Programa "${prog.nombre}" finalizado. La inscripción se ha cerrado. Puede clonarlo para un nuevo ciclo.`, "success");
-      await cargarDatos();
-    } catch (err: any) {
-      mostrarMsg(err.message || "No se pudo finalizar el programa.");
-    }
-  }
-
-  async function eliminarCurso(prog: any) {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para archivar programas.");
-    setProgramaAArchivar(prog);
-  }
-
-  async function confirmarArchivar() {
-    if (!programaAArchivar) return;
-    const prog = programaAArchivar;
-    setProgramaAArchivar(null);
-    try {
-      await eliminarPrograma(prog.id);
-      mostrarMsg("Programa archivado correctamente.", "success");
-      await cargarDatos();
-    } catch (err: any) {
-      mostrarMsg(err.message);
-    }
-  }
-
-  async function restaurarPrograma(prog: any) {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para restaurar programas.");
-    try {
-      await cambiarEstadoPrograma(prog.id, "Deshabilitado");
-      mostrarMsg(`Programa "${prog.nombre}" restaurado como Deshabilitado.`, "success");
-      await cargarDatos();
-    } catch (err: any) {
-      mostrarMsg(err.message || "No se pudo restaurar el programa.");
-    }
-  }
-
-  function clonarPrograma(prog: any) {
-    if (!puedeCrearProgramas) return mostrarMsg("No tiene permiso para crear programas.");
-    const numSugerido = sugerirNumeroDocumento(prog.tipoDocumento || "Comunicado", programas);
-    const datos = datosProgramaAFormulario(prog);
-
-    if (Array.isArray(datos.talleresDeportivos)) {
-      datos.talleresDeportivos = datos.talleresDeportivos.map((t, idx) => ({
-        ...t,
-        id: `taller-clon-${Date.now()}-${idx}-${Math.random().toString(16).slice(2, 6)}`,
-        cuposOcupados: 0,
-      }));
-    }
-
-    if (Array.isArray(datos.horariosPorGrupo)) {
-      datos.horariosPorGrupo = datos.horariosPorGrupo.map((g, idx) => ({
-        ...g,
-        id: `grupo-clon-${Date.now()}-${idx}-${Math.random().toString(16).slice(2, 6)}`,
-        cuposOcupados: 0,
-      }));
-    }
-
-    coordinacionForm.setForm({
-      ...datos,
-      id: "",
-      fechaInicio: fechaActualInput(),
-      fechaFin: fechaActualInput(),
-      cuposOcupados: 0,
-      estado: "Deshabilitado",
-      numeroDocumento: numSugerido
-    });
-    setModoEditar(false);
-    documentos.setProgramaDocsId("");
-    documentos.setLecturaDocumento(null);
-    documentos.setPlantillaInputKey((actual) => actual + 1);
-    setAlertaConfiguracion("");
-    setMensaje("");
-    mostrarMsg(`Datos del taller "${prog.nombre}" clonados. Asigne las nuevas fechas y guarde.`, "success");
-    if (!embedded) {
-      navigate("/coordinacion/registrar-programa");
-    } else {
-      setShowModal(true);
-    }
-  }
-
-  async function agregarCategoria() {
-    if (!nuevaCat.trim()) return;
-    try {
-      await crearCategoria(nuevaCat.trim());
-      const cats = await listarCategorias();
-      setCategorias(cats);
-      coordinacionForm.setForm((f: any) => ({ ...f, categoria: nuevaCat.trim() }));
-      setNuevaCat("");
-    } catch (err: any) {
-      mostrarMsg(err.message);
-    }
-  }
-
-  async function quitarCategoria() {
-    if (!puedeEditarProgramas) return mostrarMsg("No tiene permiso para editar categorías.");
-    if (!catAEliminar) return mostrarMsg("Seleccione una categoría para quitar.");
-    const confirmado = window.confirm(`¿Quitar la categoría "${catAEliminar}"?`);
-    if (!confirmado) return;
-
-    try {
-      await eliminarCategoria(catAEliminar);
-      const cats = await listarCategorias();
-      setCategorias(cats);
-      coordinacionForm.setForm((f: any) => ({ ...f, categoria: f.categoria === catAEliminar ? "" : f.categoria }));
-      setCatAEliminar("");
-      mostrarMsg("Categoría quitada correctamente.", "success");
-    } catch (err: any) {
-      mostrarMsg(err.message);
-    }
-  }
 
   useEffect(() => {
     cargarDatos();
@@ -497,13 +309,15 @@ export default function useCoordinacion({
     if (window.apiDb) {
       const interval = setInterval(() => {
         if (Date.now() - lastFetchTimeRef.current > 4000) {
-          listarProgramas().then((list) => {
-            const currentCount = list?.length || 0;
-            const prevCount = programas?.length || 0;
-            if (currentCount !== prevCount) {
-              setProgramas(list);
-            }
-          }).catch(console.error);
+          listarProgramas()
+            .then((list) => {
+              const currentCount = list?.length || 0;
+              const prevCount = programas?.length || 0;
+              if (currentCount !== prevCount) {
+                setProgramas(list);
+              }
+            })
+            .catch(console.error);
         }
       }, 5000);
       return () => clearInterval(interval);
@@ -519,18 +333,31 @@ export default function useCoordinacion({
 
   const formGradosAplicables = normalizarListaGrados(coordinacionForm.form.gradosAplicables);
   const formDias = normalizarListaTexto(coordinacionForm.form.dias);
-  const formHorariosPorGrupo = Array.isArray(coordinacionForm.form.horariosPorGrupo) ? coordinacionForm.form.horariosPorGrupo : [];
+  const formHorariosPorGrupo = Array.isArray(coordinacionForm.form.horariosPorGrupo)
+    ? coordinacionForm.form.horariosPorGrupo
+    : [];
   const esFormularioVerano = normalizarPeriodoVista(coordinacionForm.form.periodo) === "verano";
   const esDeportivoForm =
-    String(coordinacionForm.form.categoria || "").toLowerCase() === "deportivo" || String(coordinacionForm.form.categoria || "").toLowerCase() === "talleres deportivos" || esProgramaDeportivo(coordinacionForm.form.nombre, coordinacionForm.form.categoria);
+    String(coordinacionForm.form.categoria || "").toLowerCase() === "deportivo" ||
+    String(coordinacionForm.form.categoria || "").toLowerCase() === "talleres deportivos" ||
+    esProgramaDeportivo(coordinacionForm.form.nombre, coordinacionForm.form.categoria);
   const esCambridgeForm = esProgramaCambridge(coordinacionForm.form);
 
-  const ciclosCambridgeFormulario = calcularTextoCiclosCambridge(coordinacionForm.form.fechaInicio, coordinacionForm.form.fechaFin);
+  const ciclosCambridgeFormulario = calcularTextoCiclosCambridge(
+    coordinacionForm.form.fechaInicio,
+    coordinacionForm.form.fechaFin
+  );
   const catLower = String(coordinacionForm.form.categoria || "").toLowerCase();
   const usaTalleresPorEdad = esFormularioVerano
-    ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
+    ? catLower !== "academico" &&
+      catLower !== "académico" &&
+      catLower !== "vacaciones utiles" &&
+      catLower !== "vacaciones útiles"
     : esDeportivoForm;
-  const duracionTallerFormulario = calcularDuracionTexto(coordinacionForm.form.fechaInicio, coordinacionForm.form.fechaFin);
+  const duracionTallerFormulario = calcularDuracionTexto(
+    coordinacionForm.form.fechaInicio,
+    coordinacionForm.form.fechaFin
+  );
   const mostrarIndumentariaDeportiva = esDeportivoForm;
 
   return {
@@ -677,8 +504,6 @@ export default function useCoordinacion({
     toggleGradoGrupo: coordinacionForm.toggleGradoGrupo,
     restaurarPrograma,
     clonarPrograma,
-    listarAsistenciasPrograma,
-    listarMatriculados,
 
     puedeCrearProgramas,
     puedeEditarProgramas,
