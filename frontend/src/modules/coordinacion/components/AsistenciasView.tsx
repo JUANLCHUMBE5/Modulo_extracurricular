@@ -77,13 +77,13 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
         </div>
       </header>
 
-      <section className="coord-workspace coord-workspace-single">
+      <section className="coord-workspace coord-workspace-single asistencias-view-container">
         <article className="coord-card coord-search-card">
           <div className="coord-card-title" style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
             <span className="coord-title-icon" style={{ width: "32px", height: "32px" }}><UserCheck size={18} /></span>
             <div>
-              <h2 style={{ fontSize: "15px" }}>Control Central de Asistencias</h2>
-              <p style={{ fontSize: "12px", marginTop: "1px" }}>Consulte y descargue reportes diarios de asistencia por cada programa.</p>
+              <h2 style={{ fontSize: "14px" }}>Control Central de Asistencias</h2>
+              <p style={{ fontSize: "11.5px", marginTop: "1px" }}>Consulte y descargue reportes diarios de asistencia por cada programa.</p>
             </div>
           </div>
 
@@ -93,7 +93,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
               <div style={{ flex: "2 1 280px" }}>
                 <Select
                   label={
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 500, color: "#000000" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11.5px", fontWeight: 500, color: "#000000" }}>
                       <UserCheck size={13} style={{ color: "#176c60" }} /> Seleccionar Taller
                     </span>
                   }
@@ -101,7 +101,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                   value={tallerId}
                   onChange={(value) => setTallerId(value || "")}
                   data={selectProgramasData}
-                  size="sm"
+                  size="xs"
                   searchable
                   clearable
                   style={{ width: "100%" }}
@@ -113,7 +113,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 <div style={{ flex: "1 1 200px" }}>
                   <Select
                     label={
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 500, color: "#000000" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11.5px", fontWeight: 500, color: "#000000" }}>
                         <School size={13} style={{ color: "#176c60" }} /> Seleccionar Grado
                       </span>
                     }
@@ -121,7 +121,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                     value={gradoSeleccionado}
                     onChange={(value) => setGradoSeleccionado(value || "TODOS")}
                     data={selectGradosData}
-                    size="sm"
+                    size="xs"
                     searchable
                     clearable
                     style={{ width: "100%" }}
@@ -134,7 +134,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 <div style={{ flex: "1 1 240px" }}>
                   <Select
                     label={
-                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 500, color: "#000000" }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "11.5px", fontWeight: 500, color: "#000000" }}>
                         <CalendarDays size={13} style={{ color: "#176c60" }} /> Fecha
                       </span>
                     }
@@ -150,7 +150,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                     value={fechaSeleccionada}
                     onChange={(value) => setFechaSeleccionada(value || "")}
                     data={selectFechasData}
-                    size="sm"
+                    size="xs"
                     disabled={!tallerId || (selectGradosData.length > 0 && !gradoSeleccionado) || !selectFechasData.length}
                     style={{ width: "100%" }}
                     allowDeselect={false}
@@ -160,15 +160,15 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
 
               {/* Export Buttons */}
               {tallerId && hasMatriculados && (!selectGradosData.length || gradoSeleccionado) && (
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", flexShrink: 0 }}>
+                <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", flexShrink: 0 }}>
                   {vistaTipo === "diario" && (
                     <>
                       <Button
                         color="sanrafael"
                         onClick={handleExportPdfDaily}
-                        leftSection={<FileDown size={15} />}
-                        size="sm"
-                        style={{ height: "34px" }}
+                        leftSection={<FileDown size={14} />}
+                        size="xs"
+                        style={{ height: "30px", fontSize: "11px" }}
                       >
                         PDF
                       </Button>
@@ -176,9 +176,9 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                         variant="outline"
                         color="teal"
                         onClick={handleExportExcelDaily}
-                        leftSection={<FileDown size={15} />}
-                        size="sm"
-                        style={{ height: "34px", background: "#f0fdf4" }}
+                        leftSection={<FileDown size={14} />}
+                        size="xs"
+                        style={{ height: "30px", fontSize: "11px", background: "#f0fdf4" }}
                       >
                         Excel
                       </Button>
@@ -189,9 +189,9 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                       <Button
                         color="sanrafael"
                         onClick={handleExportPdfMonthly}
-                        leftSection={<FileDown size={15} />}
-                        size="sm"
-                        style={{ height: "34px" }}
+                        leftSection={<FileDown size={14} />}
+                        size="xs"
+                        style={{ height: "30px", fontSize: "11px" }}
                       >
                         PDF
                       </Button>
@@ -199,9 +199,9 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                         variant="outline"
                         color="teal"
                         onClick={handleExportExcelMonthly}
-                        leftSection={<FileDown size={15} />}
-                        size="sm"
-                        style={{ height: "34px", background: "#f0fdf4" }}
+                        leftSection={<FileDown size={14} />}
+                        size="xs"
+                        style={{ height: "30px", fontSize: "11px", background: "#f0fdf4" }}
                       >
                         Excel
                       </Button>
@@ -277,7 +277,7 @@ function AsistenciasView({ programas = [], listarAsistenciasPrograma, listarMatr
                 value={busqueda}
                 onChange={(event) => setBusqueda(event.currentTarget.value)}
                 style={{ width: "260px" }}
-                size="sm"
+                size="xs"
               />
             </div>
           )}

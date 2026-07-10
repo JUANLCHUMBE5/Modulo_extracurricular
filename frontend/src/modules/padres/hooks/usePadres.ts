@@ -284,7 +284,7 @@ export default function usePadres(user: any) {
           }
         }
 
-        return (item.registrable || tieneInvitacion) && item.disponibleParaGrado;
+        return (item.registrable || tieneInvitacion) && (item.estado || "Habilitado") === "Habilitado" && item.disponibleParaGrado;
       })
       .map((item) => ({
         ...item,

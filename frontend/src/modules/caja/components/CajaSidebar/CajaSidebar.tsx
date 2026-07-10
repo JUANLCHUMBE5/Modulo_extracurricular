@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   IconChartBar as ChartBar,
   IconLogout as LogOut,
@@ -24,7 +24,15 @@ export default function CajaSidebar({
   onLogout,
   delegatedContent,
 }) {
-  const [menuAbierto, setMenuAbierto] = useState(true);
+  const [menuAbierto, setMenuAbierto] = useState(() => !delegatedContent);
+
+  useEffect(() => {
+    const handleCollapse = () => setMenuAbierto(false);
+    window.addEventListener("collapse-current-sidebar-group", handleCollapse);
+    return () => {
+      window.removeEventListener("collapse-current-sidebar-group", handleCollapse);
+    };
+  }, []);
 
   return (
     <aside className={`caja-sidebar ${sidebarExpanded ? "expanded" : "collapsed"}`}>
@@ -47,7 +55,13 @@ export default function CajaSidebar({
       {sidebarExpanded ? (
         <div className="module-switcher-group caja-sidebar-menu-card">
           <button
-            onClick={() => setMenuAbierto(!menuAbierto)}
+            onClick={() => {
+              const nextVal = !menuAbierto;
+              setMenuAbierto(nextVal);
+              if (nextVal) {
+                window.dispatchEvent(new CustomEvent("collapse-all-module-switcher-groups"));
+              }
+            }}
             className="module-switcher-header"
             type="button"
           >
@@ -96,17 +110,7 @@ export default function CajaSidebar({
               >
                 <span>Anulación de Correlativo</span>
               </button>
-              <button
-                className={`coord-nav-item ${!delegatedContent && vista === "metodos_pago" ? "coord-nav-item-active" : ""}`}
-                onClick={() => {
-                  onClearDelegatedModule?.();
-                  setVista("metodos_pago");
-                }}
-                type="button"
-                title="Métodos de Pago"
-              >
-                <span>Métodos de Pago</span>
-              </button>
+
             </nav>
           )}
         </div>
@@ -145,17 +149,7 @@ export default function CajaSidebar({
           >
             <ReceiptOff size={17} />
           </button>
-          <button
-            className={!delegatedContent && vista === "metodos_pago" ? "is-active" : ""}
-            onClick={() => {
-              onClearDelegatedModule?.();
-              setVista("metodos_pago");
-            }}
-            type="button"
-            title="Métodos de Pago"
-          >
-            <CreditCard size={17} />
-          </button>
+
         </nav>
       )}
 

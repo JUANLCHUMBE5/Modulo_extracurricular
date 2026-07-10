@@ -53,10 +53,10 @@ function TemplateUploadField({
               }
             }}
           >
-            <FileText size={22} className="coord-drop-icon" style={{ color: "#2b6cb0" }} />
+            <FileText size={18} className="coord-drop-icon" />
             <div className="coord-drop-text-group">
               <p className="coord-drop-text">
-                Arrastra tu archivo Word o <span className="coord-drop-highlight" style={{ color: "#2b6cb0", textDecorationColor: "#bee3f8" }}>haz clic para elegir</span>
+                Arrastra tu archivo Word o <span className="coord-drop-highlight">haz clic para elegir</span>
               </p>
               <div className="coord-drop-sub">.docx — máx 5 MB</div>
             </div>
@@ -66,7 +66,6 @@ function TemplateUploadField({
               type="file"
               accept=".docx"
               onChange={onSelect}
-              style={{ display: "none" }}
             />
           </div>
 

@@ -505,7 +505,7 @@ export default function useAsistencias({
 
   const selectProgramasData = useMemo(() => {
     const list = programas
-      .filter((p) => p.state !== "Archivado" && p.estado !== "Archivado")
+      .filter((p) => (p.estado || "Habilitado") === "Habilitado")
       .map((prog) => ({
         value: prog.id,
         label: `${prog.id} - ${prog.nombre}`,

@@ -17,3 +17,211 @@
 @import "./styles/embedded.css";
 @import "./styles/announcements.css";
 @import "./styles/previews.css";
+
+/* ==========================================================================
+   REDISEÑO COMPACTO Y ESTANDARIZADO DE BOTONES Y CARGAS MASIVAS
+   ========================================================================== */
+
+/* Botones principales de confirmación/carga */
+.coord-btn-full {
+  width: 100% !important;
+  padding: 6px 16px !important;
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+  font-size: 11.5px !important;
+  height: 32px !important;
+  min-height: 32px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  box-sizing: border-box !important;
+}
+
+.coord-btn-full.coord-btn-save,
+.coord-btn-full.coord-btn-validate {
+  margin-top: 8px !important;
+}
+
+.coord-btn-full.coord-btn-cancel {
+  margin-top: 4px !important;
+}
+
+/* Área de Carga de Archivos (Drag & Drop) */
+.coord-file-drop {
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  gap: 10px !important;
+}
+
+.coord-file-drop .coord-drop-icon {
+  width: 18px !important;
+  height: 18px !important;
+  font-size: 18px !important;
+}
+
+.coord-file-drop .coord-drop-text {
+  font-size: 11.5px !important;
+}
+
+.coord-file-drop .coord-drop-highlight {
+  font-weight: 600 !important;
+}
+
+.coord-file-drop .coord-drop-sub {
+  font-size: 9.5px !important;
+}
+
+/* Barra de información de archivo seleccionado */
+.coord-file-info-bar {
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  margin-top: 8px !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+}
+
+.coord-file-info-bar svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Lista de Plantillas / Historial */
+.coord-template-history-item {
+  padding: 8px 0 !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+.coord-template-history-main svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+.coord-template-history-main strong {
+  font-size: 11.5px !important;
+  font-weight: 600 !important;
+  color: #0f172a !important;
+}
+
+.coord-template-history-main span {
+  font-size: 10.5px !important;
+  color: #64748b !important;
+}
+
+/* Pill de estado validado */
+.coord-pill {
+  font-size: 9.5px !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+}
+
+/* Botón Eliminar del Historial */
+.coord-danger-button.coord-template-history-delete {
+  padding: 4px 8px !important;
+  font-size: 10.5px !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  border-radius: 4px !important;
+  gap: 4px !important;
+  width: auto !important;
+}
+
+.coord-danger-button.coord-template-history-delete svg {
+  width: 13px !important;
+  height: 13px !important;
+}
+
+/* ==========================================================================
+   REDISEÑO COMPACTO Y ESTANDARIZADO DE ASISTENCIA Y CONTROL
+   ========================================================================== */
+
+.asistencias-view-container .coord-card-title h2 {
+  font-size: 13.5px !important;
+}
+
+.asistencias-view-container .coord-card-title p {
+  font-size: 11px !important;
+}
+
+/* Mantine Select y Inputs en Asistencia */
+.asistencias-view-container .mantine-Select-root,
+.asistencias-view-container .mantine-TextInput-root {
+  font-size: 11px !important;
+}
+
+.asistencias-view-container .mantine-Select-input,
+.asistencias-view-container .mantine-TextInput-input {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  color: #000000 !important;
+  height: 30px !important;
+  min-height: 30px !important;
+}
+
+.asistencias-view-container .mantine-Select-label {
+  font-size: 11.5px !important;
+  font-weight: 500 !important;
+  color: #000000 !important;
+  margin-bottom: 3px !important;
+}
+
+/* Compactación de la tabla de asistencia */
+.asistencias-view-container .coord-table th {
+  font-size: 11px !important;
+  padding: 5px 8px !important;
+}
+
+.asistencias-view-container .coord-table td {
+  font-size: 11px !important;
+  padding: 5px 8px !important;
+}
+
+.asistencias-view-container .coord-table td span {
+  font-size: 11px !important;
+}
+
+/* Reducir el tamaño de los botones de reporte individual en la tabla */
+.asistencias-view-container .coord-table td button {
+  height: 24px !important;
+  min-height: 24px !important;
+  padding: 0 4px !important;
+  font-size: 10px !important;
+}
+
+.asistencias-view-container .coord-table td button svg {
+  width: 13px !important;
+  height: 13px !important;
+}
+
+/* Badge de acceso */
+.asistencias-view-container .coord-table td span[style*="border-radius"] {
+  font-size: 9px !important;
+  padding: 1.5px 5px !important;
+}
+
+/* Barra de horario de grado resuelto (azul) */
+.asistencias-view-container .coord-card > div[style*="background: rgb(239, 246, 255)"],
+.asistencias-view-container .coord-card > div[style*="background: #eff6ff"] {
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+}
+
+.asistencias-view-container .coord-card > div[style*="background: rgb(239, 246, 255)"] h3,
+.asistencias-view-container .coord-card > div[style*="background: #eff6ff"] h3 {
+  font-size: 12.5px !important;
+}
+
+.asistencias-view-container .coord-card > div[style*="background: rgb(239, 246, 255)"] span,
+.asistencias-view-container .coord-card > div[style*="background: #eff6ff"] span {
+  font-size: 10.5px !important;
+}
+
+.asistencias-view-container .coord-card > div[style*="background: rgb(239, 246, 255)"] span[style*="font-size: 9px"],
+.asistencias-view-container .coord-card > div[style*="background: #eff6ff"] span[style*="font-size: 9px"] {
+  font-size: 9px !important;
+}
+

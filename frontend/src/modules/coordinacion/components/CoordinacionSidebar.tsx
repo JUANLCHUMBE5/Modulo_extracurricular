@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   IconBook as BookOpen,
   IconFileText as FileText,
@@ -36,7 +36,15 @@ export default function CoordinacionSidebar({
   vista,
   vistasDisponibles,
 }) {
-  const [menuAbierto, setMenuAbierto] = useState(true);
+  const [menuAbierto, setMenuAbierto] = useState(() => !delegatedContent);
+
+  useEffect(() => {
+    const handleCollapse = () => setMenuAbierto(false);
+    window.addEventListener("collapse-current-sidebar-group", handleCollapse);
+    return () => {
+      window.removeEventListener("collapse-current-sidebar-group", handleCollapse);
+    };
+  }, []);
 
   return (
     <aside className="coord-sidebar">
@@ -59,7 +67,13 @@ export default function CoordinacionSidebar({
       {sidebarAbierta ? (
         <div className="module-switcher-group coord-sidebar-menu-card">
           <button
-            onClick={() => setMenuAbierto(!menuAbierto)}
+            onClick={() => {
+              const nextVal = !menuAbierto;
+              setMenuAbierto(nextVal);
+              if (nextVal) {
+                window.dispatchEvent(new CustomEvent("collapse-all-module-switcher-groups"));
+              }
+            }}
             className="module-switcher-header"
             type="button"
           >

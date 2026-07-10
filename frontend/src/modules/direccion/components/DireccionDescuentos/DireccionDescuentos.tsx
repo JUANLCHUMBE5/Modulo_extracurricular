@@ -1,18 +1,59 @@
-import { TextInput, Button, Table, Badge, Modal, Select, Textarea, Divider } from "@mantine/core";
+import { useState } from "react";
+import { TextInput, Button, Table, Badge, Modal, Select, Textarea, Divider, Drawer, Text, Alert } from "@mantine/core";
 import {
   IconSearch as Search,
   IconRosetteDiscount as RosetteDiscount,
   IconEdit as Edit,
   IconAlertCircle as AlertCircle,
   IconTrash as Trash,
+  IconEye as Eye,
+  IconReceipt as Receipt,
+  IconHistory as History,
+  IconInfoCircle as InfoCircle,
 } from "@tabler/icons-react";
 import { formatearSoles } from "../../utils/direccionFormatters";
+import { obtenerHistorialAlumnoCaja } from "../../../caja/cajaService";
+import { formatearFechaPeru } from "../../../../services/dateService";
 import "./DireccionDescuentos.css";
+import "../../../caja/components/CajaReportes/CajaReportes.css";
+
+function obtenerEstadoVisual(fila: any = {}) {
+  if (fila.formaPago === "Egreso") return { color: "red", texto: "Egreso" };
+  if (fila.estadoPago === "pagado" || fila.estado === "completado" || fila.estado === "validado") {
+    return { color: "green", texto: "Pagado" };
+  }
+  if (fila.estadoPago === "verificando") {
+    return { color: "orange", texto: "Pago en Proceso" };
+  }
+  if (fila.estadoPago === "observado" || fila.estado === "observado") return { color: "red", texto: "Observado" };
+  if (fila.estadoPago === "anulado" || fila.estado === "anulado") return { color: "red", texto: "Anulado" };
+  return { color: "yellow", texto: "Pendiente" };
+}
+
+function CampoDetalle({ label, value, strong = false }: { label: string; value: any; strong?: boolean }) {
+  return (
+    <div className="caja-history-field">
+      <span>{label}</span>
+      <strong className={strong ? "is-strong" : ""}>{value || "-"}</strong>
+    </div>
+  );
+}
+
+const formatGradoSeccion = (grado: string, seccion: string, nivel: string) => {
+  let cleanGrado = String(grado || "").trim();
+  if (nivel) {
+    cleanGrado = cleanGrado.replace(new RegExp(nivel, "gi"), "").trim();
+  }
+  cleanGrado = cleanGrado.replace(/inicial|primaria|secundaria/gi, "").trim();
+  const displaySeccion = seccion ? ` "${seccion}"` : "";
+  return `${cleanGrado}${displaySeccion}`;
+};
 
 export default function DireccionDescuentos({
   busquedaDescuento,
   setBusquedaDescuento,
   resultadosDescuento,
+  infoPadron,
   buscandoDescuento,
   buscarEstudiantesDescuento,
   modalDescuentoAbierto,
@@ -24,6 +65,40 @@ export default function DireccionDescuentos({
   guardarBeneficio,
   removerBeneficio,
 }) {
+  const [historialAbierto, setHistorialAbierto] = useState(false);
+  const [historialCargando, setHistorialCargando] = useState(false);
+  const [historialRegistro, setHistorialRegistro] = useState<any>(null);
+  const [historialPagos, setHistorialPagos] = useState<any[]>([]);
+
+  const handleAbrirHistorial = async (ins: any) => {
+    const dni = ins.dni || ins.dniEstudiante;
+    if (!dni) return;
+    setHistorialRegistro(ins);
+    setHistorialPagos([]);
+    setHistorialAbierto(true);
+    setHistorialCargando(true);
+    try {
+      const pagos = await obtenerHistorialAlumnoCaja(dni);
+      setHistorialPagos(pagos);
+    } catch (err) {
+      console.error("Error al obtener historial:", err);
+    } finally {
+      setHistorialCargando(false);
+    }
+  };
+
+  const handleCerrarHistorial = () => {
+    setHistorialAbierto(false);
+    setHistorialRegistro(null);
+    setHistorialPagos([]);
+    setHistorialCargando(false);
+  };
+
+  const checkEsPagoCompletado = (item: any) => {
+    if (!item) return false;
+    return ["pagado", "pago validado", "completado"].includes(String(item.estadoPago || "").toLowerCase().trim());
+  };
+
   const obtenerIniciales = (nombre) => {
     const clean = String(nombre || "").trim().toUpperCase();
     if (!clean) return "?";
@@ -175,29 +250,53 @@ export default function DireccionDescuentos({
                             {esPagoCompletado ? "Pagado" : "Pendiente"}
                           </Badge>
                         </Table.Td>
-                        <Table.Td style={{ textAlign: "center" }}>
-                          {esPagoCompletado ? (
-                            <Button size="xs" variant="subtle" color="gray" disabled styles={{ root: { fontWeight: 500 } }}>
-                              Ya pagado
-                            </Button>
-                          ) : (
+                        <Table.Td>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
                             <Button
                               size="xs"
-                              variant={tieneDescuento ? "light" : "outline"}
-                              className="dir-action-btn-descuento"
-                              leftSection={tieneDescuento ? <Edit size={13} color="#000000" /> : <RosetteDiscount size={13} color="#000000" />}
-                              onClick={() => abrirModalBeneficio(ins)}
+                              variant="subtle"
+                              color="teal"
+                              onClick={() => handleAbrirHistorial(ins)}
+                              title="Ver historial del alumno"
                               styles={{
                                 root: {
-                                  borderColor: "#000000",
-                                  color: "#000000",
-                                  backgroundColor: tieneDescuento ? "#f1f5f9" : "transparent"
+                                  padding: "0 6px",
+                                  height: "28px",
+                                  minWidth: "auto",
+                                  borderRadius: "4px"
                                 }
                               }}
                             >
-                              {tieneDescuento ? "Editar" : "Aplicar"}
+                              <Eye size={16} color="#0c8569" />
                             </Button>
-                          )}
+                            
+                            {esPagoCompletado ? (
+                              <Button size="xs" variant="subtle" color="gray" disabled styles={{ root: { fontWeight: 500 } }}>
+                                Ya pagado
+                              </Button>
+                            ) : (
+                              <Button
+                                size="xs"
+                                variant={tieneDescuento ? "light" : "outline"}
+                                className="dir-action-btn-descuento"
+                                leftSection={tieneDescuento ? <Edit size={13} color="#000000" /> : <RosetteDiscount size={13} color="#000000" />}
+                                onClick={() => abrirModalBeneficio(ins)}
+                                styles={{
+                                  root: {
+                                    borderColor: "#000000",
+                                    color: "#000000",
+                                    backgroundColor: tieneDescuento ? "#f1f5f9" : "transparent",
+                                    height: "28px",
+                                    fontSize: "12px",
+                                    fontWeight: 600,
+                                    borderRadius: "6px"
+                                  }
+                                }}
+                              >
+                                {tieneDescuento ? "Editar" : "Aplicar"}
+                              </Button>
+                            )}
+                          </div>
                         </Table.Td>
                       </Table.Tr>
                     );
@@ -207,6 +306,77 @@ export default function DireccionDescuentos({
             </div>
           </div>
         ) : null}
+
+        {infoPadron && infoPadron.length > 0 && (
+          <div style={{ marginTop: "10px", borderTop: "1px solid #f1f5f9", paddingTop: "15px" }}>
+            <Alert
+              icon={<InfoCircle size={18} />}
+              title="Resultado del Padrón Institucional (Sin Taller Extracurricular)"
+              color="orange"
+              variant="light"
+              styles={{
+                title: { fontWeight: 700, fontSize: "13px", color: "#b45309" },
+                message: { fontSize: "12px", color: "#78350f" },
+                root: {
+                  backgroundColor: "#fffbeb",
+                  border: "1px solid #fef3c7",
+                  borderRadius: "8px",
+                  padding: "16px"
+                }
+              }}
+            >
+              <Text size="xs" style={{ color: "#78350f", marginBottom: "12px", lineHeight: 1.4 }}>
+                El estudiante está registrado oficialmente en el padrón del colegio, pero <strong>no tiene pre-inscripciones ni matrículas iniciadas</strong> en talleres extracurriculares durante este periodo.
+              </Text>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                {infoPadron.map((alumno: any) => (
+                  <div 
+                    key={alumno.dni} 
+                    style={{ 
+                      backgroundColor: "#ffffff", 
+                      borderRadius: "6px", 
+                      padding: "12px", 
+                      border: "1px solid #fde68a",
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: "10px"
+                    }}
+                  >
+                    <div>
+                      <Text size="xs" style={{ color: "#6b7280", fontWeight: 600 }}>Nombres y Apellidos</Text>
+                      <Text size="xs" style={{ fontWeight: 700, color: "#1f2937" }}>{alumno.nombres} {alumno.apellidos || ""}</Text>
+                    </div>
+                    <div>
+                      <Text size="xs" style={{ color: "#6b7280", fontWeight: 600 }}>DNI / Código de Estudiante</Text>
+                      <Text size="xs" style={{ fontWeight: 700, color: "#1f2937" }}>{alumno.dni} / {alumno.codigoEstudiante || "Sin Código"}</Text>
+                    </div>
+                    <div>
+                      <Text size="xs" style={{ color: "#6b7280", fontWeight: 600 }}>Nivel de Educación</Text>
+                      <Text size="xs" style={{ fontWeight: 700, color: "#1f2937" }}>{alumno.nivel || "No registrado"}</Text>
+                    </div>
+                    <div>
+                      <Text size="xs" style={{ color: "#6b7280", fontWeight: 600 }}>Grado / Sección</Text>
+                      <Text size="xs" style={{ fontWeight: 700, color: "#1f2937" }}>
+                        {formatGradoSeccion(alumno.grado, alumno.seccion, alumno.nivel) || "No asignado"}
+                      </Text>
+                    </div>
+                    {alumno.apoderado && (
+                      <div style={{ gridColumn: "span 2" }}>
+                        <Text size="xs" style={{ color: "#6b7280", fontWeight: 600 }}>Apoderado Registrado</Text>
+                        <Text size="xs" style={{ color: "#1f2937", fontWeight: 650 }}>{alumno.apoderado} {alumno.telefonoApoderado ? `(Telf: ${alumno.telefonoApoderado})` : ""}</Text>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              <Text size="xs" style={{ marginTop: "12px", fontStyle: "italic", color: "#b45309" }}>
+                💡 Para poder aplicar un beneficio, primero debe registrar una pre-inscripción en el Módulo de Secretaría o Asistente.
+              </Text>
+            </Alert>
+          </div>
+        )}
       </article>
 
       {/* Modal para aplicar beneficio */}
@@ -408,6 +578,140 @@ export default function DireccionDescuentos({
           </div>
         </div>
       </Modal>
+
+      {/* Drawer para ver el Historial del Alumno */}
+      <Drawer
+        classNames={{ body: "caja-history-modal-body", header: "caja-modal-header", title: "caja-modal-title" }}
+        onClose={handleCerrarHistorial}
+        opened={historialAbierto}
+        position="right"
+        size="xl"
+        title="Historial del alumno"
+      >
+        {historialRegistro ? (
+          <div className="caja-history-panel">
+            {/* Card 1: Datos del Alumno */}
+            <div className="caja-history-card">
+              <div className="caja-history-summary-banner-inner">
+                <div className="caja-summary-left">
+                  <div className="caja-summary-avatar">
+                    {(historialRegistro.estudiante || historialRegistro.nombresEstudiante || "S").trim().charAt(0).toUpperCase()}
+                  </div>
+                  <div className="caja-summary-info">
+                    <span className="caja-summary-label">Estudiante</span>
+                    <h3 className="caja-summary-name">{historialRegistro.estudiante || historialRegistro.nombresEstudiante || "Sin nombre"}</h3>
+                    <span className="caja-summary-sub">DNI: {historialRegistro.dni || historialRegistro.dniEstudiante || "Sin DNI"}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="caja-history-card-body caja-details-grid">
+                <CampoDetalle label="Grado / sección" value={[historialRegistro.grado || historialRegistro.gradoEstudiante, historialRegistro.seccion].filter(Boolean).join(" ")} />
+                <CampoDetalle label="Apoderado" value={historialRegistro.apoderado || "-"} />
+                <div className="caja-details-grid-span-2">
+                  <CampoDetalle label="Teléfono de contacto" value={historialRegistro.telefono || "-"} />
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Taller Disponible para el Alumno */}
+            <div className="caja-history-card">
+              <div className="caja-history-card-header">
+                <Receipt size={16} className="caja-card-icon" />
+                <span>Taller Disponible para el Alumno</span>
+              </div>
+              <div className="caja-history-card-body caja-details-grid">
+                <div className="caja-details-grid-span-2">
+                  <CampoDetalle label="Programa" value={historialRegistro.programa || "Sin programa"} strong />
+                </div>
+                <CampoDetalle label="Categoría" value={historialRegistro.categoria || "Extracurricular"} />
+                <CampoDetalle label="Costo del Taller" value={formatearSoles(historialRegistro.costoOriginal || historialRegistro.costo)} strong />
+                
+                <CampoDetalle label="Estado de Pago" value={checkEsPagoCompletado(historialRegistro) ? "Pagado" : "Pendiente"} />
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gridColumn: "span 2", marginTop: "12px" }}>
+                  {checkEsPagoCompletado(historialRegistro) ? (
+                    <Button size="xs" variant="subtle" color="gray" disabled styles={{ root: { fontWeight: 500 } }}>
+                      Ya pagado
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant={historialRegistro.descuentoAprobado ? "light" : "outline"}
+                      className="dir-action-btn-descuento"
+                      leftSection={historialRegistro.descuentoAprobado ? <Edit size={14} color="#000000" /> : <RosetteDiscount size={14} color="#000000" />}
+                      onClick={() => {
+                        handleCerrarHistorial();
+                        abrirModalBeneficio(historialRegistro);
+                      }}
+                      styles={{
+                        root: {
+                          borderColor: "#000000",
+                          color: "#000000",
+                          backgroundColor: historialRegistro.descuentoAprobado ? "#f1f5f9" : "transparent",
+                          height: "36px",
+                          borderRadius: "6px"
+                        }
+                      }}
+                    >
+                      {historialRegistro.descuentoAprobado ? "Editar Descuento" : "Aplicar Descuento / Beca"}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Payments History List */}
+            <div className="caja-history-list-section">
+              <div className="caja-history-list-header">
+                <div className="caja-history-list-title">
+                  <History size={18} className="caja-card-icon" />
+                  <span>Historial de Pagos</span>
+                </div>
+                <Badge color="gray" variant="light">
+                  {historialCargando ? "..." : `${historialPagos.length} ${historialPagos.length === 1 ? "registro" : "registros"}`}
+                </Badge>
+              </div>
+
+              {historialCargando ? (
+                <div className="caja-history-empty">Cargando historial...</div>
+              ) : historialPagos.length ? (
+                <div className="caja-history-table-wrap">
+                  <Table className="caja-history-table" highlightOnHover>
+                    <Table.Thead>
+                      <Table.Tr>
+                        <Table.Th>Fecha</Table.Th>
+                        <Table.Th>Programa</Table.Th>
+                        <Table.Th className="text-right">Monto</Table.Th>
+                        <Table.Th>Comprobante</Table.Th>
+                        <Table.Th>Medio</Table.Th>
+                        <Table.Th>Estado</Table.Th>
+                      </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                      {historialPagos.map((item, index) => {
+                        const estado = obtenerEstadoVisual(item);
+                        return (
+                          <Table.Tr key={item.id || item.pagoId || `${item.dniEstudiante}-${index}`}>
+                            <Table.Td>{formatearFechaPeru(item.fecha || item.fechaPago || item.fechaRegistro)}</Table.Td>
+                            <Table.Td>{item.programa || item.programaNombre || "Sin programa"}</Table.Td>
+                            <Table.Td className="caja-amount text-right">{formatearSoles(item.monto)}</Table.Td>
+                            <Table.Td>{item.nroRecibo || item.nro_recibo || "-"}</Table.Td>
+                            <Table.Td>{item.formaPago || item.metodo || item.medioPago || "-"}</Table.Td>
+                            <Table.Td>
+                              <Badge color={estado.color} variant="light">{estado.texto}</Badge>
+                            </Table.Td>
+                          </Table.Tr>
+                        );
+                      })}
+                    </Table.Tbody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="caja-history-empty">No se encontraron pagos previos para este alumno.</div>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </Drawer>
     </section>
   );
 }

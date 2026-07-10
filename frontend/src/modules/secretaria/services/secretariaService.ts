@@ -1,4 +1,4 @@
-import { isApiMode, apiClient } from "../../../services/apiClient";
+import { apiClient } from "../../../services/apiClient";
 import {
   adaptarEstudiante,
   adaptarInscripcion,
@@ -16,19 +16,8 @@ import {
   calcularCuposDisponibles,
   tieneHorariosPorGrupo,
 } from "./secretariaServiceUtils";
-import {
-  buscarEstudiantePorDniMock,
-  buscarEstudiantesPorNombreMock,
-  listarProgramasPorPeriodoMock,
-  obtenerProgramaPorIdMock,
-  registrarInscripcionMock,
-  registrarDocumentoGeneradoMock,
-  derivarInscripcionCajaMock,
-  buscarInscripcionEstudianteMock,
-  listarInscripcionesEstudianteMock,
-} from "../utils/secretariaServiceMock";
 
-function adaptarEstudianteConInvitacion(data, periodo) {
+function adaptarEstudianteConInvitacion(data: any, periodo: string) {
   if (!data) return null;
 
   // Si viene en formato plano de mock (o ya adaptado)
@@ -110,85 +99,70 @@ function adaptarEstudianteConInvitacion(data, periodo) {
   return student;
 }
 
-export async function buscarEstudiantePorDni(dni, periodo = "escolar") {
-  if (isApiMode()) {
-    const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes/${dni}`, {
-      params: { periodo }
-    });
-    if (!res.success) return null;
-    if (res.data) {
-      return adaptarEstudianteConInvitacion(res.data, periodo);
-    }
-    return null;
+export async function buscarEstudiantePorDni(dni: string, periodo = "escolar") {
+  const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes/${dni}`, {
+    params: { periodo }
+  });
+  if (!res.success) return null;
+  if (res.data) {
+    return adaptarEstudianteConInvitacion(res.data, periodo);
   }
-  return buscarEstudiantePorDniMock(dni, periodo);
+  return null;
 }
 
-export async function buscarEstudiantesPorNombre(nombre, periodo = "escolar") {
-  if (isApiMode()) {
-    const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes`, {
-      params: { nombre, periodo }
-    });
-    if (!res.success || !Array.isArray(res.data)) return [];
-    return res.data.map((item) => adaptarEstudianteConInvitacion(item, periodo));
-  }
-  return buscarEstudiantesPorNombreMock(nombre, periodo);
+export async function buscarEstudiantesPorNombre(nombre: string, periodo = "escolar") {
+  const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes`, {
+    params: { nombre, periodo }
+  });
+  if (!res.success || !Array.isArray(res.data)) return [];
+  return res.data.map((item) => adaptarEstudianteConInvitacion(item, periodo));
 }
 
-export async function listarProgramasPorPeriodo(periodo, gradoAlumno = "", edadAlumno = "") {
-  if (isApiMode()) {
-    const programas = await listarProgramas();
-    const periodoNormalizado = normalizarPeriodo(periodo);
-    return programas
-      .filter((programa) =>
-        normalizarPeriodo(programa.periodo) === periodoNormalizado &&
-        programa.estado === "Habilitado" &&
-        Number(programa.cuposDisponibles ?? 0) > 0 &&
-        (periodoNormalizado === "verano"
-          ? programaDisponibleParaEdad(programa, edadAlumno)
-          : (!gradoAlumno || programaDisponibleParaGrado(programa, gradoAlumno)))
-      );
-  }
-  return listarProgramasPorPeriodoMock(periodo, gradoAlumno, edadAlumno);
+export async function listarProgramasPorPeriodo(periodo: string, gradoAlumno = "", edadAlumno = "") {
+  const programas = await listarProgramas();
+  const periodoNormalizado = normalizarPeriodo(periodo);
+  return programas
+    .filter((programa) =>
+      normalizarPeriodo(programa.periodo) === periodoNormalizado &&
+      programa.estado === "Habilitado" &&
+      Number(programa.cuposDisponibles ?? 0) > 0 &&
+      (periodoNormalizado === "verano"
+        ? programaDisponibleParaEdad(programa, edadAlumno)
+        : (!gradoAlumno || programaDisponibleParaGrado(programa, gradoAlumno)))
+    );
 }
 
-export async function obtenerProgramaPorId(programaId, periodo) {
-  if (isApiMode()) {
-    const res = await apiClient.get(`/api/v1/extracurricular/programas/${programaId}`);
-    if (!res.success) return null;
-    return adaptarPrograma(res.data);
-  }
-  return obtenerProgramaPorIdMock(programaId, periodo);
+export async function obtenerProgramaPorId(programaId: string, periodo?: string) {
+  const res = await apiClient.get(`/api/v1/extracurricular/programas/${programaId}`);
+  if (!res.success) return null;
+  return adaptarPrograma(res.data);
 }
 
-export async function registrarInscripcion(payload) {
-  if (isApiMode()) {
-    const apiPayload = {
-      estudiante_id: payload.dniEstudiante,
-      programa_id: payload.programaId,
-      origen_inscripcion: "presencial",
-      usuario_registro: payload.usuarioRegistro || "Asistente",
-      seccion: payload.seccionEstudiante || payload.seccion || "",
-      grado: payload.gradoEstudiante || payload.grado || "",
-      apoderado: payload.apoderado || "",
-      telefono_apoderado: payload.telefono || "",
-      correo_apoderado: payload.correo || "",
-      talla_uniforme: payload.tallaUniforme || "",
-      talla_polo: payload.tallaPolo || "",
-      talla_short: payload.tShort || payload.tallaShort || "",
-      seleccion: payload.seleccion || "",
-      nivel_cambridge: payload.nivelCambridge || "",
-      es_externo: Boolean(payload.esExterno),
-      nombres_estudiante: payload.nombresEstudiante || "",
-      edad_estudiante: payload.edadEstudiante || "",
-      domicilio_estudiante: payload.domicilioEstudiante || "",
-      sexo_estudiante: payload.sexoEstudiante || ""
-    };
-    const res = await apiClient.post("/api/v1/extracurricular/inscripciones", apiPayload);
-    if (!res.success) throw new Error(res.message || "Error al registrar inscripción");
-    return adaptarInscripcion(res.data);
-  }
-  return registrarInscripcionMock(payload);
+export async function registrarInscripcion(payload: any) {
+  const apiPayload = {
+    estudiante_id: payload.dniEstudiante,
+    programa_id: payload.programaId,
+    origen_inscripcion: "presencial",
+    usuario_registro: payload.usuarioRegistro || "Asistente",
+    seccion: payload.seccionEstudiante || payload.seccion || "",
+    grado: payload.gradoEstudiante || payload.grado || "",
+    apoderado: payload.apoderado || "",
+    telefono_apoderado: payload.telefono || "",
+    correo_apoderado: payload.correo || "",
+    talla_uniforme: payload.tallaUniforme || "",
+    talla_polo: payload.tallaPolo || "",
+    talla_short: payload.tShort || payload.tallaShort || "",
+    seleccion: payload.seleccion || "",
+    nivel_cambridge: payload.nivelCambridge || "",
+    es_externo: Boolean(payload.esExterno),
+    nombres_estudiante: payload.nombresEstudiante || "",
+    edad_estudiante: payload.edadEstudiante || "",
+    domicilio_estudiante: payload.domicilioEstudiante || "",
+    sexo_estudiante: payload.sexoEstudiante || ""
+  };
+  const res = await apiClient.post("/api/v1/extracurricular/inscripciones", apiPayload);
+  if (!res.success) throw new Error(res.message || "Error al registrar inscripción");
+  return adaptarInscripcion(res.data);
 }
 
 export async function registrarDocumentoGenerado({
@@ -196,47 +170,35 @@ export async function registrarDocumentoGenerado({
   inscripcion,
   usuario = "Secretaría",
   tipoDocumento = "Comunicado personalizado",
-}) {
-  if (isApiMode()) {
-    const res = await apiClient.post(`/api/v1/extracurricular/inscripciones/${inscripcion.id}/documento`, {
-      estudiante_id: estudiante?.id || estudiante?.dni || inscripcion.dniEstudiante,
-      usuario,
-      tipo_documento: tipoDocumento,
-      plantilla: inscripcion.plantilla || ""
-    });
-    if (!res.success) throw new Error(res.message || "Error al registrar documento");
-    return res.data;
-  }
-  return registrarDocumentoGeneradoMock({ estudiante, inscripcion, usuario, tipoDocumento });
+}: any) {
+  const res = await apiClient.post(`/api/v1/extracurricular/inscripciones/${inscripcion.id}/documento`, {
+    estudiante_id: estudiante?.id || estudiante?.dni || inscripcion.dniEstudiante,
+    usuario,
+    tipo_documento: tipoDocumento,
+    plantilla: inscripcion.plantilla || ""
+  });
+  if (!res.success) throw new Error(res.message || "Error al registrar documento");
+  return res.data;
 }
 
-export async function derivarInscripcionCaja(inscripcionId, datos = {}) {
-  if (isApiMode()) {
-    const res = await apiClient.put(`/api/v1/extracurricular/inscripciones/${inscripcionId}/derivar-caja`, datos);
-    if (!res.success) throw new Error(res.message || "Error al derivar inscripción a Cajera");
-    return adaptarInscripcion(res.data);
-  }
-  return derivarInscripcionCajaMock(inscripcionId, datos);
+export async function derivarInscripcionCaja(inscripcionId: string, datos = {}) {
+  const res = await apiClient.put(`/api/v1/extracurricular/inscripciones/${inscripcionId}/derivar-caja`, datos);
+  if (!res.success) throw new Error(res.message || "Error al derivar inscripción a Cajera");
+  return adaptarInscripcion(res.data);
 }
 
-export async function buscarInscripcionEstudiante(estudiante, periodo = "escolar") {
-  if (isApiMode()) {
-    const res = await apiClient.get(`/api/v1/extracurricular/secretaria/inscripciones/buscar`, {
-      params: { dni: estudiante?.dni || estudiante?.dniEstudiante, periodo }
-    });
-    if (!res.success || !res.data) return null;
-    return adaptarInscripcion(res.data);
-  }
-  return buscarInscripcionEstudianteMock(estudiante, periodo);
+export async function buscarInscripcionEstudiante(estudiante: any, periodo = "escolar") {
+  const res = await apiClient.get(`/api/v1/extracurricular/secretaria/inscripciones/buscar`, {
+    params: { dni: estudiante?.dni || estudiante?.dniEstudiante, periodo }
+  });
+  if (!res.success || !res.data) return null;
+  return adaptarInscripcion(res.data);
 }
 
-export async function listarInscripcionesEstudiante(estudiante, periodo = "escolar") {
-  if (isApiMode()) {
-    const res = await apiClient.get(`/api/v1/extracurricular/secretaria/inscripciones`, {
-      params: { dni: estudiante?.dni || estudiante?.dniEstudiante, periodo }
-    });
-    if (!res.success || !Array.isArray(res.data)) return [];
-    return res.data.map(adaptarInscripcion);
-  }
-  return listarInscripcionesEstudianteMock(estudiante, periodo);
+export async function listarInscripcionesEstudiante(estudiante: any, periodo = "escolar") {
+  const res = await apiClient.get(`/api/v1/extracurricular/secretaria/inscripciones`, {
+    params: { dni: estudiante?.dni || estudiante?.dniEstudiante, periodo }
+  });
+  if (!res.success || !Array.isArray(res.data)) return [];
+  return res.data.map(adaptarInscripcion);
 }

@@ -4,8 +4,9 @@ import {
   IconFileDownload as FileDown,
   IconX as X,
 } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { limpiarHorarioSinAlmuerzo } from "../utils/asistenciasFormatters";
+import { exportPdfDaily, exportExcelDaily, exportPdfAllDays, exportExcelAllDays } from "../utils/asistenciaExports";
 
 const tabStyle = (activo) => ({
   background: "none",
@@ -145,6 +146,7 @@ function AlumnosProgramaModal({
               asistencias={asistencias}
               matriculados={matriculados}
               invitados={invitados}
+              programa={programa}
             />
           ) : (
             <TablaMatriculados alumnos={matriculados} />
@@ -282,13 +284,15 @@ function formatearFechaAsistencia(valor) {
   if (!valor) return "Sin fecha";
   const fecha = new Date(valor);
   if (Number.isNaN(fecha.getTime())) return "Sin fecha";
-  const texto = fecha.toLocaleDateString("es-PE", {
-    weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
+  
+  const diaSemana = fecha.toLocaleDateString("es-PE", { weekday: "long" });
+  const diaNum = String(fecha.getDate()).padStart(2, "0");
+  const mesNombre = fecha.toLocaleDateString("es-PE", { month: "long" });
+  
+  const capDiaSemana = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
+  const capMesNombre = mesNombre.charAt(0).toUpperCase() + mesNombre.slice(1);
+  
+  return `${capDiaSemana} ${diaNum} de ${capMesNombre}`;
 }
 
 function obtenerFechaAsistencia(asistencia = {}) {
@@ -353,8 +357,9 @@ function agruparAsistenciasPorFecha(asistencias) {
   }, {});
 }
 
-function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
+function TablaAsistencias({ asistencias, matriculados = [], invitados = [], programa }: { asistencias: any[]; matriculados: any[]; invitados: any[]; programa: any }) {
   const [fechaSeleccionada, setFechaSeleccionada] = useState("");
+  const [profesorSeleccionado, setProfesorSeleccionado] = useState("todos");
 
   const grupos = useMemo(
     () => Object.values(agruparAsistenciasPorFecha(asistencias))
@@ -364,6 +369,175 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
 
   const grupoActivo = grupos.find((grupo) => grupo.clave === fechaSeleccionada) || grupos[0];
   const indiceActivo = grupos.findIndex((grupo) => grupo.clave === grupoActivo?.clave);
+
+  // Extraer todos los docentes únicos del programa (del docente principal o los docentes por grupo)
+  const profesores = useMemo(() => {
+    if (!programa) return [];
+    const setDocentes = new Set<string>();
+    
+    if (Array.isArray(programa.talleresDeportivos) && programa.talleresDeportivos.length > 0) {
+      programa.talleresDeportivos.forEach((t: any) => {
+        const doc = t.docente || t.responsable;
+        if (doc) {
+          setDocentes.add(doc);
+        }
+      });
+    } else {
+      if (programa.responsable) {
+        setDocentes.add(programa.responsable);
+      }
+      
+      if (Array.isArray(programa.horariosPorGrupo)) {
+        programa.horariosPorGrupo.forEach((g: any) => {
+          if (g.responsable) {
+            setDocentes.add(g.responsable);
+          }
+        });
+      }
+    }
+    
+    return Array.from(setDocentes).filter(Boolean).sort();
+  }, [programa]);
+
+  // Resolver el profesor/docente asignado a un alumno según su grado y nivel
+  const obtenerDocenteResponsable = useCallback((dni: string) => {
+    const alumnoMatriculado = matriculados.find(m => m.dni === dni || m.dniEstudiante === dni);
+    const alumnoInvitado = invitados.find(i => i.dni === dni);
+    const alumnoRef = alumnoMatriculado || alumnoInvitado || {};
+    
+    if (!programa) return "";
+
+    // Si es un taller deportivo con bloques por edad
+    if (Array.isArray(programa.talleresDeportivos) && programa.talleresDeportivos.length > 0) {
+      const { grado, nivel } = descomponerGradoYNivel(alumnoRef);
+      if (!grado || grado === "—") return programa.responsable || "Sin asignar";
+      
+      const num = parseInt(grado, 10);
+      let edad = isNaN(num) ? 6 : num;
+      const lowerNivel = String(nivel || "").toLowerCase();
+      if (lowerNivel.includes("primaria")) {
+        edad = num + 5;
+      } else if (lowerNivel.includes("secundaria")) {
+        edad = num + 11;
+      } else if (lowerNivel.includes("inicial")) {
+        edad = num;
+      }
+      if (edad < 6) edad = 6;
+
+      const matchedBlock = programa.talleresDeportivos.find((t: any) => 
+        edad >= Number(t.edadMinima || t.edad_minima || 0) && edad <= Number(t.edadMaxima || t.edad_maxima || 99)
+      );
+      
+      return matchedBlock?.docente || matchedBlock?.responsable || programa.responsable || "Sin asignar";
+    }
+    
+    if (!Array.isArray(programa.horariosPorGrupo) || programa.horariosPorGrupo.length === 0) {
+      return programa.responsable || "Sin asignar";
+    }
+    
+    const { grado, nivel } = descomponerGradoYNivel(alumnoRef);
+    if (!grado || grado === "—") return programa.responsable || "Sin asignar";
+    
+    const searchKey = `${nivel}:${grado}`.trim().toLowerCase();
+    const grupo = programa.horariosPorGrupo.find((g: any) => 
+      Array.isArray(g.grados) && g.grados.some((gk: string) => 
+        String(gk).trim().toLowerCase() === searchKey
+      )
+    );
+    
+    return grupo?.responsable || programa.responsable || "Sin asignar";
+  }, [programa, matriculados, invitados]);
+
+  // Filtrar las filas del grupo activo según el profesor seleccionado
+  const filasFiltradas = useMemo(() => {
+    const filas = grupoActivo?.filas || [];
+    if (profesorSeleccionado === "todos") return filas;
+    return filas.filter((asistencia: any) => {
+      const dni = obtenerDniAsistencia(asistencia);
+      const prof = obtenerDocenteResponsable(dni);
+      return String(prof).trim().toLowerCase() === profesorSeleccionado.trim().toLowerCase();
+    });
+  }, [grupoActivo, profesorSeleccionado, obtenerDocenteResponsable]);
+
+  // Helper para contar la asistencia filtrada por profesor en la lista de opciones
+  const obtenerConteoFiltrado = (grupoFilas: any[]) => {
+    if (profesorSeleccionado === "todos") return grupoFilas.length;
+    return grupoFilas.filter((asistencia: any) => {
+      const dni = obtenerDniAsistencia(asistencia);
+      const prof = obtenerDocenteResponsable(dni);
+      return String(prof).trim().toLowerCase() === profesorSeleccionado.trim().toLowerCase();
+    }).length;
+  };
+
+  const ejecutarExportarPdf = async () => {
+    if (!programa || !grupoActivo) return;
+    
+    const matriculadosFilt = profesorSeleccionado === "todos" 
+      ? matriculados 
+      : matriculados.filter(m => obtenerDocenteResponsable(m.dni || m.dniEstudiante) === profesorSeleccionado);
+      
+    const customGrupoActivo = {
+      ...grupoActivo,
+      filas: filasFiltradas
+    };
+    
+    await exportPdfDaily({
+      programaSeleccionado: {
+        ...programa,
+        responsable: profesorSeleccionado === "todos" ? programa.responsable : profesorSeleccionado
+      },
+      grupoActivo: customGrupoActivo,
+      matriculados: matriculadosFilt,
+      matriculadosOrdenados: matriculadosFilt,
+      hasMatriculados: matriculadosFilt.length > 0,
+      asistencias: asistencias,
+    });
+  };
+
+  const ejecutarExportarExcel = async () => {
+    if (!programa || !grupoActivo) return;
+    
+    const matriculadosFilt = profesorSeleccionado === "todos" 
+      ? matriculados 
+      : matriculados.filter(m => obtenerDocenteResponsable(m.dni || m.dniEstudiante) === profesorSeleccionado);
+      
+    const customGrupoActivo = {
+      ...grupoActivo,
+      filas: filasFiltradas
+    };
+    
+    await exportExcelDaily({
+      programaSeleccionado: {
+        ...programa,
+        responsable: profesorSeleccionado === "todos" ? programa.responsable : profesorSeleccionado
+      },
+      grupoActivo: customGrupoActivo,
+      matriculados: matriculadosFilt,
+      matriculadosOrdenados: matriculadosFilt,
+      hasMatriculados: matriculadosFilt.length > 0,
+      asistencias: asistencias,
+    });
+  };
+
+  const ejecutarExportarHistorialPdf = async () => {
+    if (!programa || !grupos || grupos.length === 0) return;
+    await exportPdfAllDays({
+      programaSeleccionado: programa,
+      grupos: grupos,
+      matriculados: matriculados,
+      invitados: invitados,
+    });
+  };
+
+  const ejecutarExportarHistorialExcel = async () => {
+    if (!programa || !grupos || grupos.length === 0) return;
+    await exportExcelAllDays({
+      programaSeleccionado: programa,
+      grupos: grupos,
+      matriculados: matriculados,
+      invitados: invitados,
+    });
+  };
 
   const irAnterior = () => {
     if (indiceActivo < grupos.length - 1) {
@@ -383,9 +557,10 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
 
   return (
     <div style={{ display: "grid", gap: "14px" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "6px" }}>
-        <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Fecha de asistencia:</span>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "6px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Fecha:</span>
           <button
             type="button"
             onClick={irAnterior}
@@ -433,11 +608,14 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
                 backgroundSize: "16px",
               }}
             >
-              {grupos.map((grupo) => (
-                <option key={grupo.clave} value={grupo.clave}>
-                  {grupo.titulo} ({grupo.filas.length} {grupo.filas.length === 1 ? "asistencia" : "asistencias"})
-                </option>
-              ))}
+              {grupos.map((grupo) => {
+                const conteo = obtenerConteoFiltrado(grupo.filas);
+                return (
+                  <option key={grupo.clave} value={grupo.clave}>
+                    {grupo.titulo} ({conteo} {conteo === 1 ? "asistencia" : "asistencias"})
+                  </option>
+                );
+              })}
             </select>
           </div>
           <button
@@ -463,13 +641,140 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
             <ChevronRight size={18} />
           </button>
         </div>
+
+        {profesores.length > 1 && (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "10px" }}>
+            <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Profesor:</span>
+            <select
+              value={profesorSeleccionado}
+              onChange={(e) => setProfesorSeleccionado(e.target.value)}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid #d0d5dd",
+                background: "#ffffff",
+                color: "#1d2939",
+                fontSize: "14px",
+                fontWeight: "600",
+                height: "36px",
+                cursor: "pointer",
+                outline: "none",
+                minWidth: "180px",
+                boxShadow: "0 1px 2px rgba(16, 24, 40, 0.05)",
+              }}
+            >
+              <option value="todos">Todos los profesores</option>
+              {profesores.map((prof) => (
+                <option key={prof} value={prof}>
+                  {prof}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        </div>
+
+        <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={ejecutarExportarPdf}
+            title="Exportar la asistencia del día seleccionado a PDF"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 12px",
+              height: "36px",
+              borderRadius: "8px",
+              border: "1px solid #d0d5dd",
+              background: "#ffffff",
+              color: "#344054",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            <FileDown size={14} />
+            <span>PDF (Día)</span>
+          </button>
+          <button
+            type="button"
+            onClick={ejecutarExportarExcel}
+            title="Exportar la asistencia del día seleccionado a Excel"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 12px",
+              height: "36px",
+              borderRadius: "8px",
+              border: "1px solid #bbf7d0",
+              background: "#f0fdf4",
+              color: "#166534",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            <FileDown size={14} />
+            <span>Excel (Día)</span>
+          </button>
+          <button
+            type="button"
+            onClick={ejecutarExportarHistorialPdf}
+            title="Descargar todos los días registrados en un solo PDF (cada día en una página)"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 12px",
+              height: "36px",
+              borderRadius: "8px",
+              border: "1px solid #d1e9ff",
+              background: "#f0f9ff",
+              color: "#00539c",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            <FileDown size={14} />
+            <span>PDF (Historial)</span>
+          </button>
+          <button
+            type="button"
+            onClick={ejecutarExportarHistorialExcel}
+            title="Exportar todos los días registrados en un solo Excel (cada día en una pestaña distinta)"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+              padding: "6px 12px",
+              height: "36px",
+              borderRadius: "8px",
+              border: "1px solid #86efac",
+              background: "#ecfdf5",
+              color: "#047857",
+              fontSize: "13px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+          >
+            <FileDown size={14} />
+            <span>Excel (Historial)</span>
+          </button>
+        </div>
       </div>
 
       <div className="coord-table-wrap">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
           <strong style={{ color: "#0f172a" }}>{grupoActivo?.titulo}</strong>
           <span style={{ fontSize: "12px", fontWeight: 700, color: "#475467" }}>
-            {grupoActivo?.filas.length || 0} alumno{grupoActivo?.filas.length === 1 ? "" : "s"} asistieron
+            {filasFiltradas.length} alumno{filasFiltradas.length === 1 ? "" : "s"} asistieron
           </span>
         </div>
         <table className="coord-table">
@@ -485,7 +790,7 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [] }) {
             </tr>
           </thead>
           <tbody>
-            {(grupoActivo?.filas || []).map((asistencia, index) => {
+            {filasFiltradas.map((asistencia, index) => {
               const dni = obtenerDniAsistencia(asistencia);
               const alumnoMatriculado = matriculados.find(m => m.dni === dni || m.dniEstudiante === dni);
               const alumnoInvitado = invitados.find(i => i.dni === dni);

@@ -21,16 +21,22 @@ export function useSecretariaOptions({
     : null;
   const programaSeleccionado = programas.find((programa: any) => programa.id === formulario.programa);
 
-  const tieneInvitacionOperativa = Boolean(estudiante?.tieneInvitacion);
+  const tieneInvitacionOperativa = Boolean(estudiante?.tieneInvitacion) && Boolean(programaAsignado);
+
+  const baseCompatibles = useMemo(() => {
+    return esCicloVerano
+      ? programas
+          .filter((programa) => (programa.estado || "Habilitado") === "Habilitado")
+          .filter((programa) => programaDisponibleParaEdadSecretaria(programa, String(edadAlumnoFormulario)))
+      : programas
+          .filter((programa) => (programa.estado || "Habilitado") === "Habilitado")
+          .filter((programa) => {
+            if (!estudiante) return true;
+            return programaDisponibleParaGrado(programa, gradoEstudiante || "");
+          });
+  }, [esCicloVerano, programas, edadAlumnoFormulario, estudiante, gradoEstudiante]);
 
   const programasCompatiblesFormulario = useMemo(() => {
-    const baseCompatibles = esCicloVerano
-      ? programas.filter((programa) => programaDisponibleParaEdadSecretaria(programa, String(edadAlumnoFormulario)))
-      : programas.filter((programa) => {
-          if (!estudiante) return true;
-          return programaDisponibleParaGrado(programa, gradoEstudiante || "");
-        });
-
     if (!tieneInvitacionOperativa) {
       return baseCompatibles.filter((p) => {
         if (!p.invitacionMasiva) return false;
@@ -44,7 +50,7 @@ export function useSecretariaOptions({
       });
     }
     return baseCompatibles;
-  }, [esCicloVerano, programas, edadAlumnoFormulario, estudiante, gradoEstudiante, tieneInvitacionOperativa]);
+  }, [baseCompatibles, tieneInvitacionOperativa, estudiante]);
 
   const programaAsignadoInvitacion = useMemo(() => {
     return tieneInvitacionOperativa ? {
@@ -120,5 +126,6 @@ export function useSecretariaOptions({
     programaUnicoDisponible,
     mostrarSelectorPrograma,
     programaParaRegistro,
+    tieneTalleresGradoBase: baseCompatibles.length > 0,
   };
 }

@@ -187,3 +187,62 @@
     display: none !important;
   }
 }
+
+/* Tabs de modulos (Diseno Burbuja Horizontal) */
+.dir-module-tabs-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.dir-module-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: #000000 !important;
+  transition: all 0.2s ease;
+  margin-bottom: -2px;
+}
+
+.dir-module-tab:hover {
+  color: #000000 !important;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.dir-module-tab.is-active {
+  background: transparent;
+  color: #000000 !important;
+  border-bottom-color: #0c8569 !important;
+  box-shadow: none;
+}
+
+.dir-module-tab svg {
+  color: #000000 !important;
+  transition: all 0.2s ease;
+}
+
+.dir-module-tab.is-active svg {
+  color: #0c8569 !important;
+}
+
+.dir-module-tab strong {
+  display: inline-block;
+  font-size: 14px;
+  color: inherit;
+  font-weight: 500 !important;
+}
+
+.dir-module-tab.is-active strong {
+  font-weight: 600 !important;
+}

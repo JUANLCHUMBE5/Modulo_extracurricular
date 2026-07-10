@@ -158,7 +158,7 @@ export default function useCoordinacionAccionesPrograma({
     const prog = programaAArchivar;
     setProgramaAArchivar(null);
     try {
-      await eliminarPrograma(prog.id);
+      await cambiarEstadoPrograma(prog.id, "Archivado");
       mostrarMsg("Programa archivado correctamente.", "success");
       await cargarDatos();
     } catch (err: any) {

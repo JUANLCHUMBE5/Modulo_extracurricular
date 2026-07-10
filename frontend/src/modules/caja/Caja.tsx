@@ -103,13 +103,6 @@ export default function Caja({
                   caja.cargarCorrelativos();
                 }}
               />
-            ) : caja.vista === "metodos_pago" ? (
-              <CajaMetodosPago
-                sidebarExpanded={sidebarExpanded}
-                toggleSidebar={toggleSidebar}
-                metodosPago={caja.metodosPago}
-                actualizarMetodosPago={caja.actualizarMetodosPago}
-              />
             ) : (
               <CajaCobros
                 pagoConfirmado={caja.pagoConfirmado}

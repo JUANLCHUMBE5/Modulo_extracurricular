@@ -1,5 +1,29 @@
 [
   {
+    "id": "AUD-371645-27f0",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-10T15:29:31.646Z",
+    "accion": "PROGRAMA_ELIMINAR",
+    "detalles": "{\"programaId\":\"PRG-101\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-160143-5141",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-10T15:26:00.146Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-102\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Deshabilitado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-311535-9e9a",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-10T13:15:11.535Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
     "id": "AUD-805412-c9a7",
     "usuario": "admin",
     "rol": "caja",

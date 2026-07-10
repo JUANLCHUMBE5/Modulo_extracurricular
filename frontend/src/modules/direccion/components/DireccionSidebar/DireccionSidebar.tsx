@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   IconMenu2 as Menu,
   IconChartBar as ChartBar,
@@ -22,7 +22,15 @@ export default function DireccionSidebar({
   moduleSwitcher,
   delegatedContent = null,
 }) {
-  const [menuAbierto, setMenuAbierto] = useState(true);
+  const [menuAbierto, setMenuAbierto] = useState(() => !delegatedContent);
+
+  useEffect(() => {
+    const handleCollapse = () => setMenuAbierto(false);
+    window.addEventListener("collapse-current-sidebar-group", handleCollapse);
+    return () => {
+      window.removeEventListener("collapse-current-sidebar-group", handleCollapse);
+    };
+  }, []);
 
   return (
     <aside className="dir-sidebar">
@@ -49,7 +57,13 @@ export default function DireccionSidebar({
       {sidebarExpanded ? (
         <div className="module-switcher-group dir-sidebar-menu-card">
           <button
-            onClick={() => setMenuAbierto(!menuAbierto)}
+            onClick={() => {
+              const nextVal = !menuAbierto;
+              setMenuAbierto(nextVal);
+              if (nextVal) {
+                window.dispatchEvent(new CustomEvent("collapse-all-module-switcher-groups"));
+              }
+            }}
             className="module-switcher-header"
             type="button"
           >
@@ -93,9 +107,9 @@ export default function DireccionSidebar({
                 className={`coord-nav-item ${!delegatedContent && vista === "correlativos" ? "coord-nav-item-active" : ""}`}
                 type="button"
                 onClick={() => setVista("correlativos")}
-                title="Correlativos"
+                title="Ajustes de Caja"
               >
-                <span>Correlativos</span>
+                <span>Ajustes de Caja</span>
               </button>
             </nav>
           )}
@@ -130,7 +144,7 @@ export default function DireccionSidebar({
             className={!delegatedContent && vista === "correlativos" ? "is-active" : ""}
             type="button"
             onClick={() => setVista("correlativos")}
-            title="Correlativos"
+            title="Ajustes de Caja"
           >
             <Adjustments size={18} />
           </button>

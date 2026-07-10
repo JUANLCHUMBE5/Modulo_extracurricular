@@ -1,4 +1,4 @@
-﻿import {
+import {
   normalizarPeriodoApi,
   normalizarTextoApi
 } from "../../../common/shared/mappers.js";
@@ -56,11 +56,13 @@ export class CajaStudentService {
 
     if (activeInscrip) {
       return {
+        dni: student.dni,
         nombres: student.nombres,
         apellidos: student.apellidos || "",
         codigoEstudiante: student.codigoEstudiante || "",
         grado: student.grado,
         seccion: student.seccion,
+        nivel: student.nivel,
         tipoAlumno: student.tipoAlumno || "Alumno interno",
         programaAsignado: activeInscrip.programaId,
         programaNombre: activeInscrip.programa,
@@ -73,11 +75,13 @@ export class CajaStudentService {
       };
     } else {
       return {
+        dni: student.dni,
         nombres: student.nombres,
         apellidos: student.apellidos || "",
         codigoEstudiante: student.codigoEstudiante || "",
         grado: student.grado,
         seccion: student.seccion,
+        nivel: student.nivel,
         tipoAlumno: student.tipoAlumno || "Alumno interno",
         sinInscripcionCaja: true,
         requiereDerivacionCaja: inscripciones.length > 0

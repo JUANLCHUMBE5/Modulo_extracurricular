@@ -154,6 +154,7 @@ export async function exportPdfDaily({
 
     let hora, dni, nombre, pago, acceso, obs;
     let gLabel = "";
+    let codLabel = "";
 
     if (grupoActivo) {
       hora = formatearHoraAsistencia(obtenerFechaAsistencia(item));
@@ -162,11 +163,16 @@ export async function exportPdfDaily({
       pago = item.estadoPago || "Pendiente";
       const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(item);
       const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
-      acceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
+      acceso = esAccesoPermitido 
+        ? "Permitido" 
+        : (String(estadoAccesoRaw).toLowerCase() === "pendiente" 
+          ? "Pendiente" 
+          : (estadoAccesoRaw ? (estadoAccesoRaw.charAt(0).toUpperCase() + estadoAccesoRaw.slice(1).toLowerCase()) : "Sin validar"));
       obs = item.observacion || "—";
 
       const matchedAlumno = alumnoPorDni[dni];
       if (matchedAlumno) {
+        codLabel = matchedAlumno.codigoEstudiante || matchedAlumno.codigo_estudiante || "";
         const gradeStr = formatGradoLabel(matchedAlumno.grado || matchedAlumno.gradoEstudiante);
         if (programaSeleccionado.id === "TODOS_TALLERES") {
           const tallerNameObj = programas.find((p: any) => p.id === matchedAlumno.tallerId);
@@ -182,8 +188,13 @@ export async function exportPdfDaily({
       nombre = item.nombres || item.nombresEstudiante || "—";
       pago = item.estadoPago || "Pendiente";
       const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(item.estadoPago).toLowerCase());
-      acceso = esAccesoPermitido ? "Permitido" : (String(item.estadoPago).toLowerCase() === "pendiente" ? "Pendiente" : "Sin validar");
+      acceso = esAccesoPermitido 
+        ? "Permitido" 
+        : (String(item.estadoPago).toLowerCase() === "pendiente" 
+          ? "Pendiente" 
+          : (item.estadoPago ? (String(item.estadoPago).charAt(0).toUpperCase() + String(item.estadoPago).slice(1).toLowerCase()) : "Sin validar"));
       obs = "_________________";
+      codLabel = item.codigoEstudiante || item.codigo_estudiante || "";
       
       const gradeStr = formatGradoLabel(item.grado || item.gradoEstudiante);
       if (programaSeleccionado.id === "TODOS_TALLERES") {
@@ -205,6 +216,16 @@ export async function exportPdfDaily({
     doc.text(hora, margen + 8, y + 3);
     doc.text(dni, margen + 22, y + 3);
 
+    if (codLabel) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7.2);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Cod: ${codLabel}`, margen + 22, y + 6.8);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(24, 33, 47);
+    }
+
     const nameLines = doc.splitTextToSize(nombre, 85);
     doc.text(nameLines, margen + 45, y + 3);
 
@@ -223,7 +244,7 @@ export async function exportPdfDaily({
     doc.text(doc.splitTextToSize(obs, 32), margen + 160, y + 3);
 
     const nameLinesCount = nameLines.length;
-    const altoFila = gLabel
+    const altoFila = (gLabel || codLabel)
       ? Math.max(11, nameLinesCount * 4.2 + 7.5)
       : Math.max(8, nameLinesCount * 4.2 + 4);
     y += altoFila;
@@ -238,4 +259,201 @@ export async function exportPdfDaily({
   doc.text(countLabel, margen, altoPagina - 10);
   const fileSuffix = isTemplate ? "plantilla" : grupoActivo.clave;
   doc.save(`asistencia_${normalizarNombreArchivoPdf(cleanName)}_${fileSuffix}.pdf`);
+}
+
+export async function exportPdfAllDays({
+  programaSeleccionado,
+  grupos,
+  matriculados,
+  invitados = [],
+  programas = [],
+}: any) {
+  const { jsPDF } = await import("jspdf");
+  if (!programaSeleccionado || !grupos || grupos.length === 0) return;
+
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const margen = 14;
+  const anchoPagina = doc.internal.pageSize.getWidth();
+  const altoPagina = doc.internal.pageSize.getHeight();
+
+  const alumnoPorDni: any = {};
+  const allStudents = [...matriculados, ...invitados];
+  allStudents.forEach((m: any) => {
+    const dni = String(m.dni || m.dniEstudiante || "").trim();
+    if (dni) {
+      alumnoPorDni[dni] = m;
+    }
+  });
+
+  const cleanName = (programaSeleccionado.nombre || "").split(" - Todos")[0];
+
+  grupos.forEach((grupo: any, grupoIdx: number) => {
+    if (grupoIdx > 0) {
+      doc.addPage();
+    }
+
+    let y = 16;
+
+    // Draw Document Title / Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(23, 108, 96);
+    doc.text("COLEGIO SAN RAFAEL", margen, y);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("SISTEMA DE CONTROL DE ASISTENCIA HISTÓRICA", margen, y + 4.5);
+
+    y += 10;
+
+    // Draw Metadata Box for this day
+    const cardContentHeightDaily = 26;
+    doc.setDrawColor(216, 229, 226);
+    doc.setFillColor(248, 252, 251);
+    doc.roundedRect(margen, y, anchoPagina - margen * 2, cardContentHeightDaily, 3, 3, "FD");
+
+    // Taller / Programa
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(82, 97, 115);
+    doc.text("TALLER", margen + 5, y + 5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(24, 33, 47);
+    doc.setFontSize(9);
+    doc.text(cleanName, margen + 5, y + 9);
+
+    // Horario
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(82, 97, 115);
+    doc.text("HORARIO", margen + 5, y + 16);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(24, 33, 47);
+    doc.setFontSize(9);
+    doc.text(limpiarHorarioSinAlmuerzo(programaSeleccionado.horario) || "Por definir", margen + 5, y + 20);
+
+    // Fecha
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(82, 97, 115);
+    doc.text("FECHA REPORTE", margen + 110, y + 5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(24, 33, 47);
+    doc.setFontSize(9);
+    doc.text(grupo.titulo, margen + 110, y + 9);
+
+    // Total Asistencias
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(82, 97, 115);
+    doc.text("REGISTRADOS", margen + 110, y + 16);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(24, 33, 47);
+    doc.setFontSize(9);
+    doc.text(`${grupo.filas.length} alumnos asistieron`, margen + 110, y + 20);
+
+    y += cardContentHeightDaily + 6;
+
+    // Table Header Drawing Function
+    const dibujarCabeceraTabla = (yy: number) => {
+      doc.setFillColor(234, 246, 242);
+      doc.setDrawColor(216, 229, 226);
+      doc.roundedRect(margen, yy, anchoPagina - margen * 2, 8, 2, 2, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(23, 108, 96);
+      doc.text("#", margen + 2, yy + 5.3);
+      doc.text("HORA", margen + 8, yy + 5.3);
+      doc.text("DNI / CÓDIGO", margen + 22, yy + 5.3);
+      doc.text("ESTUDIANTE / GRADO / DOCENTE", margen + 52, yy + 5.3);
+      doc.text("ACCESO", margen + 135, yy + 5.3);
+      doc.text("OBSERVACIÓN", margen + 160, yy + 5.3);
+    };
+
+    dibujarCabeceraTabla(y);
+    y += 12;
+
+    grupo.filas.forEach((item: any, idx: number) => {
+      if (y > altoPagina - 18) {
+        doc.addPage();
+        y = 16;
+        dibujarCabeceraTabla(y);
+        y += 12;
+      }
+
+      const hora = formatearHoraAsistencia(obtenerFechaAsistencia(item));
+      const dni = obtenerDniAsistencia(item) || "Sin DNI";
+      const nombre = obtenerNombreAsistencia(item) || "—";
+      const obs = item.observacion || "—";
+
+      const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(item);
+      const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
+      const acceso = esAccesoPermitido 
+        ? "Permitido" 
+        : (String(estadoAccesoRaw).toLowerCase() === "pendiente" 
+          ? "Pendiente" 
+          : (estadoAccesoRaw ? (estadoAccesoRaw.charAt(0).toUpperCase() + estadoAccesoRaw.slice(1).toLowerCase()) : "Sin validar"));
+
+      const matchedAlumno = alumnoPorDni[dni] || {};
+      const codLabel = matchedAlumno.codigoEstudiante || matchedAlumno.codigo_estudiante || item.codigoEstudiante || "";
+      const gradeStr = formatGradoLabel(matchedAlumno.grado || matchedAlumno.gradoEstudiante || item.grado || "");
+      
+      const docAsignado = resolverDocentePorGrado(programaSeleccionado, matchedAlumno.grado || matchedAlumno.gradoEstudiante) 
+        || programaSeleccionado.responsable 
+        || "No asignado";
+        
+      const detailLabel = `${gradeStr} · Prof: ${docAsignado}`;
+
+      doc.setDrawColor(237, 242, 245);
+      doc.line(margen, y - 2, anchoPagina - margen, y - 2);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(24, 33, 47);
+
+      doc.text(String(idx + 1), margen + 2, y + 3);
+      doc.text(hora, margen + 8, y + 3);
+      
+      // DNI and Code
+      doc.text(dni, margen + 22, y + 3);
+      if (codLabel) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7.2);
+        doc.setTextColor(100, 116, 139);
+        doc.text(`Cod: ${codLabel}`, margen + 22, y + 6.8);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(24, 33, 47);
+      }
+
+      // Name and Grade/Teacher
+      const nameLines = doc.splitTextToSize(nombre, 78);
+      doc.text(nameLines, margen + 52, y + 3);
+
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(7.5);
+      doc.setTextColor(100, 116, 139);
+      const gradeY = y + 3 + (nameLines.length * 4.2);
+      doc.text(detailLabel, margen + 52, gradeY);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(24, 33, 47);
+
+      // Access status and Observation
+      doc.text(acceso, margen + 135, y + 3);
+      doc.text(doc.splitTextToSize(obs, 32), margen + 160, y + 3);
+
+      const nameLinesCount = nameLines.length;
+      const altoFila = Math.max(11, nameLinesCount * 4.2 + 7.5);
+      y += altoFila;
+    });
+
+    // Footer page number for this day sheet
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(82, 97, 115);
+    doc.text(`Historial de asistencia - Página ${grupoIdx + 1} de ${grupos.length}`, margen, altoPagina - 10);
+  });
+
+  doc.save(`Historial_Asistencias_${normalizarNombreArchivoPdf(cleanName)}.pdf`);
 }

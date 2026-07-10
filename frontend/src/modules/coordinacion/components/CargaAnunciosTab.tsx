@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   IconCloudUpload as CloudUpload,
@@ -25,6 +25,42 @@ export default function CargaAnunciosTab() {
       return [];
     }
   });
+
+  useEffect(() => {
+    let listChanged = false;
+    const cleanedList = anunciosList
+      .map((item) => {
+        const expirationTime = new Date(item.fechaHasta).getTime();
+        const isExpired = Date.now() > expirationTime;
+        
+        // Strip image payload if expired to save space
+        if (isExpired && item.imagen) {
+          listChanged = true;
+          return {
+            ...item,
+            imagen: "",
+          };
+        }
+        return item;
+      })
+      .filter((item) => {
+        const expirationTime = new Date(item.fechaHasta).getTime();
+        const timeSinceExpiration = Date.now() - expirationTime;
+        
+        // Delete completely after 1 hour of expiration
+        if (timeSinceExpiration > 3600 * 1000) {
+          listChanged = true;
+          return false;
+        }
+        return true;
+      });
+
+    if (listChanged) {
+      localStorage.setItem("san_rafael_anuncios_list", JSON.stringify(cleanedList));
+      setAnunciosList(cleanedList);
+    }
+  }, [anunciosList]);
+
   const [tituloAnuncio, setTituloAnuncio] = useState("");
   const [imagenAnuncio, setImagenAnuncio] = useState<string | null>(null);
   const [fechaHasta, setFechaHasta] = useState("");
@@ -321,19 +357,36 @@ export default function CargaAnunciosTab() {
                       alignItems: "center",
                     }}
                   >
-                    <img
-                      src={item.imagen}
-                      alt={item.nombre}
-                      style={{
-                        width: "64px",
-                        height: "64px",
-                        objectFit: "contain",
-                        borderRadius: "4px",
-                        background: "#ffffff",
-                        border: "1px solid #cbd5e1",
-                        padding: "2px",
-                      }}
-                    />
+                    {item.imagen ? (
+                      <img
+                        src={item.imagen}
+                        alt={item.nombre}
+                        style={{
+                          width: "64px",
+                          height: "64px",
+                          objectFit: "contain",
+                          borderRadius: "4px",
+                          background: "#ffffff",
+                          border: "1px solid #cbd5e1",
+                          padding: "2px",
+                        }}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          width: "64px",
+                          height: "64px",
+                          display: "grid",
+                          placeItems: "center",
+                          borderRadius: "4px",
+                          background: "#f1f5f9",
+                          border: "1px solid #cbd5e1",
+                          color: "#94a3b8",
+                        }}
+                      >
+                        <Megaphone size={20} />
+                      </div>
+                    )}
 
                     <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "4px" }}>
                       <span

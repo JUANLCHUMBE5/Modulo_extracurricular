@@ -1,3 +1,4 @@
+import { useState, useMemo, useCallback } from "react";
 import { Badge, Table, Loader } from "@mantine/core";
 import { BarChart, DonutChart } from "@mantine/charts";
 import {
@@ -8,7 +9,9 @@ import {
   IconChartBar as ChartBar,
   IconDeviceLaptop as Laptop,
   IconBuildingArch as Building,
+  IconDownload as Download,
 } from "@tabler/icons-react";
+import { exportExcelControlPagos, exportPdfControlPagos } from "../../utils/direccionControlPagosExports";
 import { StatCard, EmptyChart } from "../DireccionCards";
 import "./DireccionDashboard.css";
 
@@ -26,6 +29,190 @@ export default function DireccionDashboard({
   panel,
   formatearSoles,
 }) {
+  const [fechaFiltroDocentes, setFechaFiltroDocentes] = useState("");
+
+  const allAsistencias = useMemo(() => panel?.reportes?.asistencias || [], [panel]);
+  const allInscripciones = useMemo(() => panel?.reportes?.inscripciones || [], [panel]);
+  const allProgramas = useMemo(() => panel?.reportes?.programas || [], [panel]);
+
+  // Obtener fechas en que se registraron asistencias
+  const fechasAsistencia = useMemo(() => {
+    const setFechas = new Set<string>();
+    allAsistencias.forEach((asistencia: any) => {
+      const fecha = asistencia.fecha_asistencia || asistencia.fechaRegistro || asistencia.fecha || asistencia.createdAt || asistencia.fechaAsistencia || "";
+      if (fecha) {
+        try {
+          const clave = new Date(fecha).toLocaleDateString("sv-SE");
+          if (clave && clave !== "Invalid Date") {
+            setFechas.add(clave);
+          }
+        } catch (e) {}
+      }
+    });
+    return Array.from(setFechas).sort((a, b) => b.localeCompare(a));
+  }, [allAsistencias]);
+
+  const fechaActiva = fechaFiltroDocentes || fechasAsistencia[0] || "";
+
+  // Helper para descomponer grado y nivel del alumno
+  const resolverGradoYNivel = (alumno: any) => {
+    const textoGrado = String(alumno.grado || "").trim();
+    const nivelExistente = alumno.nivel || alumno.nivel_nombre || alumno.nivelEducativo || "";
+    if (!textoGrado) {
+      return { grado: "", nivel: nivelExistente };
+    }
+    const lower = textoGrado.toLowerCase();
+    let nivel = "";
+    let grado = textoGrado;
+    if (lower.includes("inicial")) {
+      nivel = "Inicial";
+      grado = textoGrado.replace(/inicial/i, "").trim();
+    } else if (lower.includes("primaria")) {
+      nivel = "Primaria";
+      grado = textoGrado.replace(/primaria/i, "").trim();
+    } else if (lower.includes("secundaria")) {
+      nivel = "Secundaria";
+      grado = textoGrado.replace(/secundaria/i, "").trim();
+    }
+    if (!nivel && nivelExistente) {
+      nivel = nivelExistente;
+    }
+    return { grado, nivel };
+  };
+
+  // Helper para determinar qué docente enseña a un alumno en un programa
+  const obtenerDocenteAlumno = useCallback((alumno: any, prog: any) => {
+    if (!prog) return "Sin asignar";
+    
+    const grupos = prog.horarios_por_grupo || prog.horariosPorGrupo || [];
+    if (!Array.isArray(grupos) || grupos.length === 0) {
+      return prog.responsable || "Sin asignar";
+    }
+    
+    const { grado, nivel } = resolverGradoYNivel(alumno);
+    if (!grado) return prog.responsable || "Sin asignar";
+    
+    const searchKey = `${nivel}:${grado}`.trim().toLowerCase();
+    const grupoEncontrado = grupos.find((g: any) => 
+      Array.isArray(g.grados) && g.grados.some((gk: string) => 
+        String(gk).trim().toLowerCase() === searchKey
+      )
+    );
+    
+    return grupoEncontrado?.responsable || prog.responsable || "Sin asignar";
+  }, []);
+
+  // Calcular las estadísticas de asistencia consolidadas por docente y programa
+  const estadisticasDocentes = useMemo(() => {
+    if (!fechaActiva) return [];
+    
+    const asistenciasDia = allAsistencias.filter((a: any) => {
+      const fecha = a.fecha_asistencia || a.fechaRegistro || a.fecha || a.createdAt || a.fechaAsistencia || "";
+      if (!fecha) return false;
+      try {
+        return new Date(fecha).toLocaleDateString("sv-SE") === fechaActiva;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    const mapaDocentes: { [key: string]: {
+      docente: string;
+      programa: string;
+      aula: string;
+      matriculados: number;
+      asistieron: number;
+    }} = {};
+
+    // 1. Registrar todos los docentes y bloques posibles en el mapa
+    allProgramas.forEach((prog: any) => {
+      const grupos = prog.horarios_por_grupo || prog.horariosPorGrupo || [];
+      if (Array.isArray(grupos) && grupos.length > 0) {
+        grupos.forEach((g: any) => {
+          const docente = g.responsable || "Sin asignar";
+          const aula = g.aula || prog.aula || "Sin aula";
+          const clave = `${docente}-${prog.id}-${aula}`;
+          
+          if (!mapaDocentes[clave]) {
+            mapaDocentes[clave] = {
+              docente,
+              programa: prog.nombre_programa || prog.nombre || "Sin programa",
+              aula,
+              matriculados: 0,
+              asistieron: 0,
+            };
+          }
+        });
+      } else {
+        const docente = prog.responsable || "Sin asignar";
+        const aula = prog.aula || "Sin aula";
+        const clave = `${docente}-${prog.id}-${aula}`;
+        
+        if (!mapaDocentes[clave]) {
+          mapaDocentes[clave] = {
+            docente,
+            programa: prog.nombre_programa || prog.nombre || "Sin programa",
+            aula,
+            matriculados: 0,
+            asistieron: 0,
+          };
+        }
+      }
+    });
+
+    // 2. Contar matriculados
+    allInscripciones.forEach((ins: any) => {
+      const prog = allProgramas.find((p: any) => String(p.id) === String(ins.programaId));
+      if (!prog) return;
+
+      const docente = obtenerDocenteAlumno(ins, prog);
+      const grupos = prog.horarios_por_grupo || prog.horariosPorGrupo || [];
+      let aula = prog.aula || "Sin aula";
+      if (Array.isArray(grupos) && grupos.length > 0) {
+        const { grado, nivel } = resolverGradoYNivel(ins);
+        const searchKey = `${nivel}:${grado}`.trim().toLowerCase();
+        const g = grupos.find((item: any) => 
+          Array.isArray(item.grados) && item.grados.some((gk: string) => String(gk).trim().toLowerCase() === searchKey)
+        );
+        if (g) aula = g.aula || aula;
+      }
+
+      const clave = `${docente}-${prog.id}-${aula}`;
+      if (mapaDocentes[clave]) {
+        mapaDocentes[clave].matriculados += 1;
+      }
+    });
+
+    // 3. Contar asistidos
+    asistenciasDia.forEach((a: any) => {
+      const dni = a.dni_estudiante || a.dniEstudiante || a.dni || "";
+      const progId = a.programa_id || a.programaId || "";
+      const ins = allInscripciones.find((i: any) => String(i.dniEstudiante || i.dni || i.dni_estudiante) === String(dni) && String(i.programaId) === String(progId));
+      if (!ins) return;
+
+      const prog = allProgramas.find((p: any) => String(p.id) === String(progId));
+      if (!prog) return;
+
+      const docente = obtenerDocenteAlumno(ins, prog);
+      const grupos = prog.horarios_por_grupo || prog.horariosPorGrupo || [];
+      let aula = prog.aula || "Sin aula";
+      if (Array.isArray(grupos) && grupos.length > 0) {
+        const { grado, nivel } = resolverGradoYNivel(ins);
+        const searchKey = `${nivel}:${grado}`.trim().toLowerCase();
+        const g = grupos.find((item: any) => 
+          Array.isArray(item.grados) && item.grados.some((gk: string) => String(gk).trim().toLowerCase() === searchKey)
+        );
+        if (g) aula = g.aula || aula;
+      }
+
+      const clave = `${docente}-${prog.id}-${aula}`;
+      if (mapaDocentes[clave]) {
+        mapaDocentes[clave].asistieron += 1;
+      }
+    });
+
+    return Object.values(mapaDocentes).filter(item => item.matriculados > 0);
+  }, [fechaActiva, allAsistencias, allInscripciones, allProgramas, obtenerDocenteAlumno]);
   const abreviar = (valor) => {
     const texto = String(valor || "Sin nombre").trim();
     return texto.length > 20 ? `${texto.slice(0, 19)}...` : texto;
@@ -206,56 +393,7 @@ export default function DireccionDashboard({
             </article>
           </section>
 
-          <section className="dir-panel dir-table-panel">
-            <header>
-              <div>
-                <h2>Programas registrados</h2>
-                <p>{filasProgramas.length} registros visibles</p>
-              </div>
-            </header>
-            <div className="dir-table-wrap">
-              <Table striped highlightOnHover verticalSpacing="sm">
-                <Table.Thead>
-                  <Table.Tr>
-                    <Table.Th>Programa</Table.Th>
-                    <Table.Th>Estado</Table.Th>
-                    <Table.Th>Responsable</Table.Th>
-                    <Table.Th>Inscritos</Table.Th>
-                    <Table.Th>Cupos</Table.Th>
-                    <Table.Th>Proyectado</Table.Th>
-                    <Table.Th>Recaudado</Table.Th>
-                  </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                  {filasProgramas.map((item) => (
-                    <Table.Tr key={item.id || item.nombre}>
-                      <Table.Td>
-                        <span style={{ fontWeight: 500 }}>{item.nombre}</span>
-                        <span className="dir-muted">{item.categoria} · {item.periodo}</span>
-                      </Table.Td>
-                      <Table.Td>
-                        <Badge color={item.estado === "Habilitado" ? "teal" : "gray"} variant="light">
-                          {item.estado}
-                        </Badge>
-                      </Table.Td>
-                      <Table.Td>{item.responsable}</Table.Td>
-                      <Table.Td>{item.inscritos}</Table.Td>
-                      <Table.Td>{item.ocupados}/{item.cupos || "-"}</Table.Td>
-                      <Table.Td>{formatearSoles(item.proyectado)}</Table.Td>
-                      <Table.Td>{formatearSoles(item.recaudado)}</Table.Td>
-                    </Table.Tr>
-                  ))}
-                  {!filasProgramas.length ? (
-                    <Table.Tr>
-                      <Table.Td colSpan={7}>
-                        <div className="dir-empty-table">No hay programas para el periodo seleccionado.</div>
-                      </Table.Td>
-                    </Table.Tr>
-                  ) : null}
-                </Table.Tbody>
-              </Table>
-            </div>
-          </section>
+
         </>
       )}
 
@@ -392,7 +530,7 @@ export default function DireccionDashboard({
             />
           </section>
 
-          <section className="dir-charts">
+          <section className="dir-charts-single">
             <article className="dir-panel">
               <header>
                 <h2>Asistencia por taller hoy</h2>
@@ -417,54 +555,174 @@ export default function DireccionDashboard({
                 <EmptyChart text="Aun no hay asistencias hoy." />
               )}
             </article>
+          </section>
 
-            <article className="dir-panel dir-table-panel" style={{ display: "flex", flexDirection: "column" }}>
-              <header style={{ padding: "8px 12px" }}>
-                <h2>Bitácora de Ingresos (En Vivo)</h2>
-                <p>Últimos accesos registrados por el auxiliar</p>
-              </header>
-              <div className="dir-table-wrap" style={{ flexGrow: 1, maxHeight: "180px", overflowY: "auto" }}>
-                <Table striped highlightOnHover verticalSpacing="xs">
-                  <Table.Thead>
-                    <Table.Tr>
-                      <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Hora</Table.Th>
-                      <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Estudiante</Table.Th>
-                      <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Taller</Table.Th>
-                      <Table.Th style={{ position: "sticky", top: 0, background: "#f8fafc", zIndex: 1 }}>Acceso</Table.Th>
-                    </Table.Tr>
-                  </Table.Thead>
-                  <Table.Tbody>
-                    {panel?.ultimosIngresos?.map((item, index) => (
-                      <Table.Tr key={item.id || index}>
-                        <Table.Td style={{ fontWeight: 500, color: "var(--ui-primary-dark)" }}>{item.hora}</Table.Td>
-                        <Table.Td>
-                          <span style={{ fontWeight: 500 }}>{item.estudiante}</span>
-                          <span className="dir-muted" style={{ fontSize: "11px" }}>DNI: {item.dni || "—"}</span>
+          <section className="dir-panel dir-table-panel" style={{ marginTop: "16px" }}>
+            <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px", padding: "12px 16px" }}>
+              <div>
+                <h2>Control de Pagos a Docentes por Asistencia</h2>
+                <p>Resumen de asistencia de alumnos matriculados y cálculo de cumplimiento para pago del profesor</p>
+              </div>
+              
+              {fechasAsistencia.length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#475569" }}>Revisión de Fecha:</span>
+                    <select
+                      value={fechaActiva}
+                      onChange={(e) => setFechaFiltroDocentes(e.target.value)}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "6px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        color: "#1e293b",
+                        background: "#ffffff",
+                        outline: "none",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {fechasAsistencia.map((f) => (
+                        <option key={f} value={f}>
+                          {f.split("-").reverse().join("/")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={() => exportPdfControlPagos({ fecha: fechaActiva, estadisticas: estadisticasDocentes })}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#b91c1c",
+                      background: "#fef2f2",
+                      border: "1px solid #fee2e2",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease"
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = "#fee2e2";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = "#fef2f2";
+                    }}
+                  >
+                    <Download size={14} /> PDF
+                  </button>
+
+                  <button
+                    onClick={() => exportExcelControlPagos({ fecha: fechaActiva, estadisticas: estadisticasDocentes })}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      padding: "6px 12px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      color: "#15803d",
+                      background: "#f0fdf4",
+                      border: "1px solid #dcfce7",
+                      borderRadius: "6px",
+                      cursor: "pointer",
+                      transition: "all 0.15s ease"
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.background = "#dcfce7";
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.background = "#f0fdf4";
+                    }}
+                  >
+                    <Download size={14} /> Excel
+                  </button>
+                </div>
+              )}
+            </header>
+
+            <div className="dir-table-wrap">
+              <Table striped highlightOnHover verticalSpacing="xs">
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th style={{ fontSize: "11px", padding: "10px 14px" }}>Profesor / Docente</Table.Th>
+                    <Table.Th style={{ fontSize: "11px", padding: "10px 14px" }}>Taller / Programa</Table.Th>
+                    <Table.Th style={{ fontSize: "11px", padding: "10px 14px" }}>Aula / Bloque</Table.Th>
+                    <Table.Th style={{ fontSize: "11px", padding: "10px 14px", textAlign: "center" }}>Matriculados</Table.Th>
+                    <Table.Th style={{ fontSize: "11px", padding: "10px 14px", textAlign: "center" }}>Asistieron</Table.Th>
+                    <Table.Th style={{ fontSize: "11px", padding: "10px 14px", textAlign: "center" }}>Tasa de Asistencia</Table.Th>
+                    <Table.Th style={{ fontSize: "11px", padding: "10px 14px", textAlign: "center" }}>Sugerencia de Pago</Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {estadisticasDocentes.map((item, idx) => {
+                    const tasa = item.matriculados > 0 ? Math.round((item.asistieron / item.matriculados) * 100) : 0;
+                    return (
+                      <Table.Tr key={`${item.docente}-${idx}`}>
+                        <Table.Td style={{ padding: "8px 14px" }}>
+                          {item.docente.includes(" · ") ? (
+                            <div style={{ display: "grid", gap: "2px" }}>
+                              {item.docente.split(" · ").map((doc: string, dIdx: number) => (
+                                <span key={dIdx} style={{ color: "#0f766e", fontSize: "11px", fontWeight: 600, display: "block" }}>
+                                  {doc}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <strong style={{ color: "#0f766e", fontSize: "12px", fontWeight: 600 }}>{item.docente}</strong>
+                          )}
                         </Table.Td>
-                        <Table.Td>{item.programa}</Table.Td>
-                        <Table.Td>
+                        <Table.Td style={{ fontSize: "11.5px", fontWeight: 500, color: "#334155", maxWidth: "220px", whiteSpace: "normal", padding: "8px 14px" }}>
+                          {item.programa}
+                        </Table.Td>
+                        <Table.Td style={{ fontSize: "11.5px", color: "#475569", padding: "8px 14px" }}>{item.aula}</Table.Td>
+                        <Table.Td style={{ textAlign: "center", fontWeight: 600, fontSize: "12px", padding: "8px 14px" }}>{item.matriculados}</Table.Td>
+                        <Table.Td style={{ textAlign: "center", fontWeight: 600, fontSize: "12px", color: item.asistieron === item.matriculados ? "#0f766e" : "#b45309", padding: "8px 14px" }}>
+                          {item.asistieron}
+                        </Table.Td>
+                        <Table.Td style={{ textAlign: "center", padding: "8px 14px" }}>
+                          <span style={{ 
+                            fontWeight: 700, 
+                            fontSize: "12px",
+                            color: tasa === 100 ? "#0f766e" : tasa >= 50 ? "#d97706" : "#dc2626"
+                          }}>
+                            {tasa}%
+                          </span>
+                        </Table.Td>
+                        <Table.Td style={{ textAlign: "center", padding: "8px 14px" }}>
                           <Badge
-                            color={item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "teal" : "red"}
+                            color={tasa === 100 ? "teal" : tasa > 0 ? "orange" : "red"}
                             variant="light"
+                            size="xs"
+                            styles={{ label: { fontSize: "10px", fontWeight: 700 } }}
                           >
-                            {item.estadoAcceso === "pagado" || item.estadoAcceso === "permitido" ? "Permitido" : "Rechazado"}
+                            {tasa === 100 
+                              ? "Pago Completo" 
+                              : tasa > 0 
+                                ? `Pago Parcial (${tasa}%)` 
+                                : "Sin Pago"}
                           </Badge>
                         </Table.Td>
                       </Table.Tr>
-                    ))}
-                    {!panel?.ultimosIngresos?.length ? (
-                      <Table.Tr>
-                        <Table.Td colSpan={4}>
-                          <div className="dir-empty-table" style={{ minHeight: "120px" }}>
-                            No hay registros de ingreso en la base de datos.
-                          </div>
-                        </Table.Td>
-                      </Table.Tr>
-                    ) : null}
-                  </Table.Tbody>
-                </Table>
-              </div>
-            </article>
+                    );
+                  })}
+                  {estadisticasDocentes.length === 0 ? (
+                    <Table.Tr>
+                      <Table.Td colSpan={7}>
+                        <div className="dir-empty-table" style={{ minHeight: "100px", color: "#64748b" }}>
+                          No hay registros de asistencia para la fecha seleccionada.
+                        </div>
+                      </Table.Td>
+                    </Table.Tr>
+                  ) : null}
+                </Table.Tbody>
+              </Table>
+            </div>
           </section>
         </>
       )}

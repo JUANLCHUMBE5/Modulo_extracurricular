@@ -151,8 +151,6 @@ export const localDbApi = {
   resetDatabase: () => apiClient.post("/api/db/reset"),
 };
 
-export const VITE_API_MODE = String(
-  import.meta.env?.VITE_API_MODE || "mock"
-).toLowerCase();
+export const VITE_API_MODE = "api";
 
-export const isApiMode = () => VITE_API_MODE === "api";
+export const isApiMode = () => true;

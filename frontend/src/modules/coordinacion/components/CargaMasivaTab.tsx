@@ -128,6 +128,8 @@ export default function CargaMasivaTab({
             <span>{obtenerResumenArchivos(archivosExcel)}</span>
             <span className="coord-file-size">
               ({(archivosExcel.reduce((acc, f) => acc + f.size, 0) / 1024).toFixed(1)} KB)
+            </span>
+          </div>
         )}
 
         {/* Botón Guardar (aparece solo con preview) */}

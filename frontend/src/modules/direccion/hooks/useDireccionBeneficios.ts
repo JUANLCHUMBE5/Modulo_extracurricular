@@ -7,10 +7,12 @@ import {
   obtenerCorrelativos,
   guardarCorrelativos,
 } from "../direccionService";
+import { obtenerMetodosPago, guardarMetodosPago, buscarEstudiantesCajaQuery, obtenerEstudiantePorDni } from "../../caja/cajaService";
 
 export function useDireccionBeneficios({ initialView }: { initialView: string }) {
   const [busquedaDescuento, setBusquedaDescuento] = useState("");
   const [resultadosDescuento, setResultadosDescuento] = useState<any[]>([]);
+  const [infoPadron, setInfoPadron] = useState<any[] | null>(null);
   const [buscandoDescuento, setBuscandoDescuento] = useState(false);
   const [modalDescuentoAbierto, setModalDescuentoAbierto] = useState(false);
   const [inscripcionSeleccionada, setInscripcionSeleccionada] = useState<any>(null);
@@ -29,6 +31,7 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
     egresoActual: ""
   });
   const [guardandoCorrelativos, setGuardandoCorrelativos] = useState(false);
+  const [metodosPago, setMetodosPago] = useState<string[]>([]);
 
   useEffect(() => {
     if (initialView === "correlativos") {
@@ -47,7 +50,18 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
           toast.error("Error", { description: "No se pudieron cargar los correlativos." });
         }
       };
+
+      const cargarMetodos = async () => {
+        try {
+          const metodos = await obtenerMetodosPago();
+          setMetodosPago(metodos || []);
+        } catch {
+          // Fallback silencioso si no carga
+        }
+      };
+
       cargarCorrelativos();
+      cargarMetodos();
     }
   }, [initialView]);
 
@@ -62,6 +76,18 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
       return false;
     } finally {
       setGuardandoCorrelativos(false);
+    }
+  };
+
+  const handleActualizarMetodosPago = async (nuevosMetodos: string[]) => {
+    try {
+      const res = await guardarMetodosPago(nuevosMetodos);
+      setMetodosPago(res);
+      toast.success("Éxito", { description: "Los métodos de pago se han guardado correctamente." });
+      return true;
+    } catch (err: any) {
+      toast.error("Error", { description: err.message || "No se pudieron guardar los métodos de pago." });
+      return false;
     }
   };
 
@@ -84,11 +110,27 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
       return;
     }
     setBuscandoDescuento(true);
+    setInfoPadron(null);
     try {
       const res = await buscarInscripcionesParaDescuento(term);
       setResultadosDescuento(res);
       if (res.length === 0) {
-        toast.info("Sin resultados", { description: "No se encontraron estudiantes para esa búsqueda." });
+        // Verificar si el estudiante existe en el padrón/lista principal de la institución
+        const mainStudents = await buscarEstudiantesCajaQuery(term);
+        if (mainStudents && mainStudents.length > 0) {
+          // Cargar detalles completos de los estudiantes encontrados
+          const fullDetails = await Promise.all(
+            mainStudents.slice(0, 3).map((s: any) => obtenerEstudiantePorDni(s.dni))
+          );
+          const validDetails = fullDetails.filter(Boolean);
+          setInfoPadron(validDetails);
+        } else {
+          setInfoPadron(null);
+          toast.info("Sin resultados", {
+            description: "No se encontró ningún alumno con ese DNI o nombre en el padrón principal ni en inscripciones activas.",
+            duration: 5000
+          });
+        }
       }
     } catch (err: any) {
       toast.error("Error en búsqueda", { description: err.message || "No se pudo completar la búsqueda." });
@@ -164,6 +206,8 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
     busquedaDescuento,
     setBusquedaDescuento,
     resultadosDescuento,
+    infoPadron,
+    setInfoPadron,
     buscandoDescuento,
     modalDescuentoAbierto,
     inscripcionSeleccionada,
@@ -179,5 +223,7 @@ export function useDireccionBeneficios({ initialView }: { initialView: string })
     cerrarModalBeneficio,
     guardarBeneficio,
     removerBeneficio,
+    metodosPago,
+    handleActualizarMetodosPago,
   };
 }

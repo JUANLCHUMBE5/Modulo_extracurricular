@@ -196,12 +196,15 @@ function DireccionInner({
             setCorrelativosForm={d.setCorrelativosForm}
             handleGuardarCorrelativos={d.handleGuardarCorrelativos}
             guardandoCorrelativos={d.guardandoCorrelativos}
+            metodosPago={d.metodosPago}
+            actualizarMetodosPago={d.handleActualizarMetodosPago}
           />
         ) : (
           <DireccionDescuentos
             busquedaDescuento={d.busquedaDescuento}
             setBusquedaDescuento={d.setBusquedaDescuento}
             resultadosDescuento={d.resultadosDescuento}
+            infoPadron={d.infoPadron}
             buscandoDescuento={d.buscandoDescuento}
             buscarEstudiantesDescuento={d.buscarEstudiantesDescuento}
             modalDescuentoAbierto={d.modalDescuentoAbierto}

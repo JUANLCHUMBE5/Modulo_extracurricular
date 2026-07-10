@@ -13,6 +13,22 @@ interface GrupoHorariosListProps {
   quitarGrupoHorario: (index: number) => void;
 }
 
+function obtenerNiveles(grados: any[]) {
+  if (!grados || !grados.length) return "—";
+  const niveles = Array.from(new Set(grados.map(g => String(g).split(":")[0]))).filter(Boolean);
+  return niveles.join(", ");
+}
+
+function obtenerGradosSolo(grados: any[]) {
+  if (!grados || !grados.length) return "—";
+  const items = grados.map(g => {
+    const parts = String(g).split(":");
+    const grade = parts[1] || "";
+    return grade.replace(/\s*años?/i, "").trim();
+  });
+  return Array.from(new Set(items)).join(", ");
+}
+
 export default function GrupoHorariosList({
   formHorariosPorGrupo,
   agregarGrupoHorario,
@@ -30,8 +46,12 @@ export default function GrupoHorariosList({
             <div className="coord-group-schedule coord-group-schedule-compact" key={grupo.id || index}>
               <strong className="coord-group-schedule-badge">Grupo {index + 1}</strong>
               <div className="coord-group-schedule-cell">
+                <span>Nivel</span>
+                <p>{obtenerNiveles(grupo.grados || [])}</p>
+              </div>
+              <div className="coord-group-schedule-cell">
                 <span>Grados</span>
-                <p>{resumenGrados(grupo.grados || []) || "Sin grados"}</p>
+                <p>{obtenerGradosSolo(grupo.grados || [])}</p>
               </div>
               <div className="coord-group-schedule-cell">
                 <span>Días</span>

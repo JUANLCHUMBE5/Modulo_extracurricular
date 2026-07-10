@@ -50,7 +50,6 @@ export const moduleShortcutGroups = [
       { id: "caja-pagos", label: "Registrar Cobro", module: "caja", view: "pagos", permissions: ["caja.cobro"], icon: Receipt },
       { id: "caja-reportes", label: "Control y Exportacion", module: "caja", view: "reportes", permissions: ["caja.control"], icon: ChartBar },
       { id: "caja-correlativo", label: "Anulación de Correlativo", module: "caja", view: "cancelar_correlativo", permissions: ["caja.correlativo"], icon: ReceiptOff },
-      { id: "caja-metodos-pago", label: "Métodos de Pago", module: "caja", view: "metodos_pago", permissions: ["caja.cobro"], icon: CreditCard },
     ],
   },
   {
@@ -61,7 +60,7 @@ export const moduleShortcutGroups = [
       { id: "direccion-resumen", label: "Resumen General", module: "direccion", view: "resumen", permissions: ["direccion.resumen"], icon: ChartBar },
       { id: "direccion-reportes", label: "Reportes", module: "direccion", view: "reportes", permissions: ["direccion.reportes"], icon: FileText },
       { id: "direccion-descuentos", label: "Descuentos y Becas", module: "direccion", view: "descuentos", permissions: ["direccion.descuentos"], icon: RosetteDiscount },
-      { id: "direccion-correlativos", label: "Correlativos", module: "direccion", view: "correlativos", permissions: ["direccion.correlativos"], icon: Adjustments },
+      { id: "direccion-correlativos", label: "Ajustes de Caja", module: "direccion", view: "correlativos", permissions: ["direccion.correlativos"], icon: Adjustments },
     ],
   },
   {
@@ -129,6 +128,17 @@ export default function ModuleSwitcher({ activeShortcutId, availableModules, cur
     return initial;
   });
 
+  // Listen for external collapse requests (e.g. from the current module's sidebar)
+  useEffect(() => {
+    const handleCollapseAll = () => {
+      setExpanded({});
+    };
+    window.addEventListener("collapse-all-module-switcher-groups", handleCollapseAll);
+    return () => {
+      window.removeEventListener("collapse-all-module-switcher-groups", handleCollapseAll);
+    };
+  }, []);
+
   // Auto-expand group if a nested item is activated
   useEffect(() => {
     groups.forEach((group) => {
@@ -136,17 +146,37 @@ export default function ModuleSwitcher({ activeShortcutId, availableModules, cur
       if (hasActive) {
         setExpanded((prev) => {
           if (prev[group.id]) return prev;
-          return { ...prev, [group.id]: true };
+          
+          // Collapse the active module's local menu group
+          window.dispatchEvent(new CustomEvent("collapse-current-sidebar-group"));
+          
+          const nextExpanded = {};
+          groups.forEach((g) => {
+            nextExpanded[g.id] = g.id === group.id;
+          });
+          return nextExpanded;
         });
       }
     });
   }, [activeShortcutId]);
 
   const toggleGroup = (groupId) => {
-    setExpanded((prev) => ({
-      ...prev,
-      [groupId]: !prev[groupId],
-    }));
+    setExpanded((prev) => {
+      const isCurrentlyOpen = !!prev[groupId];
+      const nextExpanded = {};
+      
+      // Accordion behavior: close all groups, only open the toggled one if it was closed
+      groups.forEach((g) => {
+        nextExpanded[g.id] = (g.id === groupId) ? !isCurrentlyOpen : false;
+      });
+
+      // If we are opening a delegated group, collapse the active module's local menu group
+      if (!isCurrentlyOpen) {
+        window.dispatchEvent(new CustomEvent("collapse-current-sidebar-group"));
+      }
+
+      return nextExpanded;
+    });
   };
 
   return (

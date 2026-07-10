@@ -563,7 +563,7 @@
 }
 
 .coord-group-schedule-compact {
-  grid-template-columns: 86px minmax(130px, 1fr) minmax(100px, 0.7fr) minmax(130px, 0.9fr) minmax(130px, 0.9fr) minmax(150px, 1fr) 60px 72px;
+  grid-template-columns: 80px minmax(100px, 0.8fr) minmax(70px, 0.5fr) minmax(100px, 0.7fr) minmax(110px, 0.8fr) minmax(110px, 0.8fr) minmax(150px, 1.1fr) 50px 72px;
   align-items: center;
   gap: 10px !important;
   padding: 9px 10px !important;

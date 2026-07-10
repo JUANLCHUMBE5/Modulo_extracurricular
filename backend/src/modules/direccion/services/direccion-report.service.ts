@@ -66,7 +66,7 @@ export class DireccionReportService {
         normalizarTextoApi(item.programa || item.programaNombre || item.nombrePrograma || item.nombre_programa || item.nombre) === filtro;
     };
 
-    let programas = filtrarPorPeriodo(db.programas || []);
+    let programas = filtrarPorPeriodo(db.programas || []).filter(p => p.estado !== "Archivado");
     let inscripciones = filtrarPorPeriodo(db.inscripciones || [])
       .filter((item) => item.estadoInscripcion !== "Anulada" && item.estadoInscripcion !== "anulada");
     let pagos = filtrarPorPeriodo(db.pagos || []);

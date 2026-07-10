@@ -32,6 +32,7 @@ export default function SecretariaRegistroModal({
   programaParaRegistro,
   programas,
   programasParaSelector,
+  tieneTalleresGradoBase,
   setModoRegistro,
   // Added props
   inscripcion,
@@ -293,10 +294,17 @@ export default function SecretariaRegistroModal({
                   color="orange"
                   radius="md"
                   icon={<AlertCircle size={18} />}
+                  styles={{
+                    root: { border: "1px solid #ffe3e3", background: "#fff5f5" },
+                    title: { color: "#c92a2a", fontWeight: 700 }
+                  }}
+                  title={tieneTalleresGradoBase ? "TALLERES DISPONIBLES, PERO EL ALUMNO NO TIENE INVITACIÓN" : "NO HAY TALLERES DISPONIBLES"}
                 >
-                  {esCicloVerano
-                    ? "Coordinación Académica debe registrar y habilitar un programa de ciclo verano disponible para el estudiante."
-                    : "Coordinación Académica debe registrar y habilitar un programa disponible para el grado del estudiante."}
+                  {tieneTalleresGradoBase
+                    ? "El estudiante no cuenta con una invitación activa para los talleres disponibles de su grado. Favor consultar con Coordinación Académica para poder habilitar o enviarle una invitación."
+                    : esCicloVerano
+                      ? "Coordinación Académica debe registrar o habilitar un programa de ciclo verano disponible para el grado del estudiante."
+                      : "Coordinación Académica debe crear o habilitar un taller compatible para el grado del alumno."}
                 </MantineAlert>
               ) : (
                 <>

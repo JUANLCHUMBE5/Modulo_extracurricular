@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   IconLogout as LogOut,
   IconSearch as Search,
@@ -60,6 +60,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     programaParaRegistro,
     horarioResumenRegistro,
     programasParaSelector,
+    tieneTalleresGradoBase,
     buscarEstudiante,
     abrirRegistroAlumnoExterno,
     aplicarEstudianteEncontrado,
@@ -73,6 +74,20 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
   } = useSecretariaState({ onClearDelegatedModule });
 
   const mostrarVistaDelegada = Boolean(delegatedContent);
+
+  useEffect(() => {
+    if (mostrarVistaDelegada) {
+      setMenuAbierto(false);
+    }
+  }, [mostrarVistaDelegada, setMenuAbierto]);
+
+  useEffect(() => {
+    const handleCollapse = () => setMenuAbierto(false);
+    window.addEventListener("collapse-current-sidebar-group", handleCollapse);
+    return () => {
+      window.removeEventListener("collapse-current-sidebar-group", handleCollapse);
+    };
+  }, [setMenuAbierto]);
 
   return (
     <div className={`secretaria-layout ${sidebarExpanded ? "sidebar-expanded" : "sidebar-collapsed"}`}>
@@ -101,7 +116,13 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
         {sidebarExpanded ? (
           <div className="module-switcher-group sec-sidebar-menu-card">
             <button
-              onClick={() => setMenuAbierto(!menuAbierto)}
+              onClick={() => {
+                const nextVal = !menuAbierto;
+                setMenuAbierto(nextVal);
+                if (nextVal) {
+                  window.dispatchEvent(new CustomEvent("collapse-all-module-switcher-groups"));
+                }
+              }}
               className="module-switcher-header"
               type="button"
             >
@@ -263,6 +284,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                         programaParaRegistro={programaParaRegistro}
                         programas={programas}
                         programasParaSelector={programasParaSelector}
+                        tieneTalleresGradoBase={tieneTalleresGradoBase}
                         setModoRegistro={(valor) => {
                           setModoRegistro(valor);
                           if (!valor) {

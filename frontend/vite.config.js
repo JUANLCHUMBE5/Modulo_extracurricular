@@ -41,7 +41,15 @@ export default defineConfig({
       "@tabler/icons-react",
       "exceljs",
       "jspdf",
-      "docx-preview"
+      "docx-preview",
+      "@mantine/charts",
+      "pdf-lib",
+      "jszip",
+      "docxtemplater",
+      "pizzip",
+      "date-fns",
+      "sonner",
+      "bcryptjs"
     ],
   },
 });

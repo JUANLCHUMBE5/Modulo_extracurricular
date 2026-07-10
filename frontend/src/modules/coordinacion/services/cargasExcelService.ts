@@ -1,4 +1,4 @@
-import { isApiMode, apiClient, API_BASE_URL } from "../../../services/apiClient";
+import { apiClient, API_BASE_URL } from "../../../services/apiClient";
 import { apiDb, syncApiDb } from "../../../services/dbApi";
 import { adaptarEstudiante } from "../../../services/adapters";
 import {
@@ -11,12 +11,6 @@ import {
   gradoCorrespondeAlPrograma,
   normalizarAlumnoCarga,
 } from "./coordinacionServiceUtils";
-import {
-  buscarAlumnoCargaPorDniMock,
-  confirmarCargaAlumnosMock,
-  listarHistorialCargasMock,
-  eliminarCargaAlumnosMock,
-} from "../utils/coordinacionServiceMock";
 
 const obtenerApiBase = () => API_BASE_URL;
 
@@ -133,7 +127,7 @@ export async function registrarAlumnoIndividualCarga({
 }) {
   await syncApiDb();
 
-  const programa = (apiDb.programas || []).find((item) => String(item.id) === String(programaId));
+  const programa = (apiDb.programas || []).find((item: any) => String(item.id) === String(programaId));
   if (!programa) throw new Error("Seleccione un programa o curso.");
 
   const dniLimpio = limpiarTexto(dni).replace(/\D/g, "");
@@ -154,7 +148,7 @@ export async function registrarAlumnoIndividualCarga({
   }
 
   const existente = (apiDb.invitadosPorPrograma?.[programa.id] || []).find(
-    (item) => String(item.dni || "").replace(/\D/g, "") === dniLimpio
+    (item: any) => String(item.dni || "").replace(/\D/g, "") === dniLimpio
   );
   if (existente) errores.push("El alumno ya existe en este programa.");
   if (
@@ -212,39 +206,27 @@ export async function buscarAlumnoCargaPorDni(dni: string, periodo = "escolar") 
   const dniLimpio = limpiarTexto(dni).replace(/\D/g, "");
   if (!/^\d{8}$/.test(dniLimpio)) return null;
 
-  if (isApiMode()) {
-    const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes/${dniLimpio}`, {
-      params: { periodo: normalizarPeriodo(periodo) },
-    });
-    if (!res.success || !res.data) return null;
-    return normalizarAlumnoCarga(adaptarEstudiante(res.data.estudiante));
-  }
-  return buscarAlumnoCargaPorDniMock(dniLimpio);
+  const res = await apiClient.get(`/api/v1/extracurricular/secretaria/estudiantes/${dniLimpio}`, {
+    params: { periodo: normalizarPeriodo(periodo) },
+  });
+  if (!res.success || !res.data) return null;
+  return normalizarAlumnoCarga(adaptarEstudiante(res.data.estudiante));
 }
 
 export async function confirmarCargaAlumnos(preview: any) {
-  if (isApiMode()) {
-    const res = await apiClient.post(`/api/v1/extracurricular/coordinacion/cargas/confirmar`, preview);
-    if (!res.success) throw new Error(res.message || "Error al confirmar carga de alumnos");
-    return res.data;
-  }
-  return confirmarCargaAlumnosMock(preview);
+  const res = await apiClient.post(`/api/v1/extracurricular/coordinacion/cargas/confirmar`, preview);
+  if (!res.success) throw new Error(res.message || "Error al confirmar carga de alumnos");
+  return res.data;
 }
 
 export async function listarHistorialCargas() {
-  if (isApiMode()) {
-    const res = await apiClient.get("/api/v1/extracurricular/coordinacion/cargas");
-    if (!res.success) throw new Error(res.message || "Error al listar historial de cargas");
-    return Array.isArray(res.data) ? res.data : [];
-  }
-  return listarHistorialCargasMock();
+  const res = await apiClient.get("/api/v1/extracurricular/coordinacion/cargas");
+  if (!res.success) throw new Error(res.message || "Error al listar historial de cargas");
+  return Array.isArray(res.data) ? res.data : [];
 }
 
 export async function eliminarCargaAlumnos(cargaId: string | number) {
-  if (isApiMode()) {
-    const res = await apiClient.delete(`/api/v1/extracurricular/coordinacion/cargas/${cargaId}`);
-    if (!res.success) throw new Error(res.message || "Error al eliminar carga");
-    return res.data;
-  }
-  return eliminarCargaAlumnosMock(cargaId);
+  const res = await apiClient.delete(`/api/v1/extracurricular/coordinacion/cargas/${cargaId}`);
+  if (!res.success) throw new Error(res.message || "Error al eliminar carga");
+  return res.data;
 }
