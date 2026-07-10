@@ -1,5 +1,13 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
+
+// Desactivar todos los logs de consola en producción (Garantía de limpieza)
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+  console.warn = () => {};
+}
 import { MantineProvider } from "@mantine/core";
 import { Toaster } from "sonner";
 import { HashRouter } from "react-router-dom";
