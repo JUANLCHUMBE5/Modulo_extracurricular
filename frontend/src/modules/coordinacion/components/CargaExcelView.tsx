@@ -78,6 +78,7 @@ function CargaExcelView({
   usarPlantillaExistente,
   variablesPlantillaAceptadas,
   variablesPlantillaRequeridas,
+  cambiarTipoPlantilla,
   categorias = [],
   configInstitucional = {},
   cargandoConfigInstitucional = false,
@@ -407,6 +408,7 @@ function CargaExcelView({
                 usarPlantillaExistente={usarPlantillaExistente}
                 variablesPlantillaAceptadas={variablesPlantillaAceptadas}
                 variablesPlantillaRequeridas={variablesPlantillaRequeridas}
+                cambiarTipoPlantilla={cambiarTipoPlantilla}
                 categorias={categorias}
                 configInstitucional={configInstitucional}
                 cargandoConfigInstitucional={cargandoConfigInstitucional}

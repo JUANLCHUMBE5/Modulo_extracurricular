@@ -3,6 +3,7 @@ import {
   formatearFechaLargaPeru,
   formatearFechaPeru,
   normalizarFecha,
+  formatearFechaBonitaEsp,
 } from "../../../services/dateService";
 import {
   cleanFallbackText,
@@ -166,6 +167,22 @@ export function crearResumenInvitacion(ficha: any) {
   return resumen;
 }
 
+function obtenerCuotasCalculadas(precio: any, numCuotas: number) {
+  const p = Math.round(Number(precio || 0) * 100) / 100;
+  if (isNaN(p) || p <= 0) return ["0.00", "0.00", "0.00"];
+
+  if (numCuotas === 3) {
+    const c1 = Math.floor(p / 3);
+    const c2 = Math.floor(p / 3);
+    const c3 = Math.round((p - c1 - c2) * 100) / 100;
+    return [c1.toFixed(2), c2.toFixed(2), c3.toFixed(2)];
+  } else {
+    const c1 = Math.floor((p / 2) * 100) / 100;
+    const c2 = Math.round((p - c1) * 100) / 100;
+    return [c1.toFixed(2), c2.toFixed(2), "0.00"];
+  }
+}
+
 export function crearMapaVariablesDocumento(estudiante: any, inscripcion: any) {
   const costo = Number(inscripcion.costo || 0).toFixed(2);
   const fechaInicio = formatearFechaInicioRango(inscripcion.fechaInicio, inscripcion.fechaFin);
@@ -197,6 +214,14 @@ export function crearMapaVariablesDocumento(estudiante: any, inscripcion: any) {
   const anioActual = String(new Date().getFullYear());
   const seleccionCambridge = normalizarSeleccionCambridge(inscripcion.seleccion || estudiante?.seleccion);
   const marcaSeleccion = "X";
+
+  // Cálculos de cuotas para Exámenes Internacionales
+  const numCuotas = Number(inscripcion.numeroCuotas || 3);
+  const startersC = obtenerCuotasCalculadas(inscripcion.precioStarters, numCuotas);
+  const moversC = obtenerCuotasCalculadas(inscripcion.precioMovers, numCuotas);
+  const flyersC = obtenerCuotasCalculadas(inscripcion.precioFlyers, numCuotas);
+  const ketC = obtenerCuotasCalculadas(inscripcion.precioKet, numCuotas);
+  const petC = obtenerCuotasCalculadas(inscripcion.precioPet, numCuotas);
 
   return {
     N_COM: inscripcion.numeroDocumento || inscripcion.numero_documento || inscripcion.id || "",
@@ -254,6 +279,34 @@ export function crearMapaVariablesDocumento(estudiante: any, inscripcion: any) {
     SELECCION: describirSeleccionCambridgeFicha(seleccionCambridge),
     FECHA_LOTE: fechaActualLarga,
     MES_EVAL: mesEvaluacion || "",
+
+    // Variables de Exámenes Internacionales
+    FECHA_EXAMEN: formatearFechaBonitaEsp(inscripcion.fechaExamen || ""),
+    LUGAR_EXAMEN: cleanFallbackText(inscripcion.lugarExamen || "Colegio Matemático San Rafael"),
+    FECHA_LIMITE: formatearFechaBonitaEsp(inscripcion.fechaLimitePago || ""),
+    VENC_CUOTA_1: formatearFechaBonitaEsp(inscripcion.fechaVencCuota1 || ""),
+    VENC_CUOTA_2: formatearFechaBonitaEsp(inscripcion.fechaVencCuota2 || ""),
+    VENC_CUOTA_3: formatearFechaBonitaEsp(inscripcion.fechaVencCuota3 || ""),
+    PRECIO_STARTERS: Number(inscripcion.precioStarters || 0).toFixed(2),
+    PRECIO_MOVERS: Number(inscripcion.precioMovers || 0).toFixed(2),
+    PRECIO_FLYERS: Number(inscripcion.precioFlyers || 0).toFixed(2),
+    PRECIO_KET: Number(inscripcion.precioKet || 0).toFixed(2),
+    PRECIO_PET: Number(inscripcion.precioPet || 0).toFixed(2),
+    STARTERS_C1: startersC[0],
+    STARTERS_C2: startersC[1],
+    STARTERS_C3: startersC[2],
+    MOVERS_C1: moversC[0],
+    MOVERS_C2: moversC[1],
+    MOVERS_C3: moversC[2],
+    FLYERS_C1: flyersC[0],
+    FLYERS_C2: flyersC[1],
+    FLYERS_C3: flyersC[2],
+    KET_C1: ketC[0],
+    KET_C2: ketC[1],
+    KET_C3: ketC[2],
+    PET_C1: petC[0],
+    PET_C2: petC[1],
+    PET_C3: petC[2],
   };
 }
 

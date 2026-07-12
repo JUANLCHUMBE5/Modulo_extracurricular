@@ -14,6 +14,7 @@ import SeccionDocumentoOficial from "./components/SeccionDocumentoOficial";
 import SeccionFechasHorarios from "./components/SeccionFechasHorarios";
 import SeccionPago from "./components/SeccionPago";
 import SeccionCambridge from "./components/SeccionCambridge";
+import SeccionInscripcionExamenes from "./components/SeccionInscripcionExamenes";
 import SeccionComunicadoPadres from "./components/SeccionComunicadoPadres";
 import SeccionRequisitosMateriales from "./components/SeccionRequisitosMateriales";
 import SeccionAlmuerzo from "./components/SeccionAlmuerzo";
@@ -257,9 +258,16 @@ function ProgramaFormModal({
               actualizarForm={actualizarForm}
             />
 
+            {/* Si es de Exámenes Internacionales, se oculta la sección de Cambridge regular y se muestra la específica */}
             <SeccionCambridge
               form={form}
-              esCambridgeForm={esCambridgeForm}
+              esCambridgeForm={esCambridgeForm && form.tipoComunicado !== "Inscripción Exámenes Internacionales"}
+              actualizarForm={actualizarForm}
+            />
+
+            <SeccionInscripcionExamenes
+              form={form}
+              esExamenesForm={form.tipoComunicado === "Inscripción Exámenes Internacionales"}
               actualizarForm={actualizarForm}
             />
 

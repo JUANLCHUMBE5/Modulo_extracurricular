@@ -147,7 +147,8 @@ export default function usePadres(user: any) {
   const inscripciones = resumen?.inscripciones || [];
   const pagos = resumen?.pagos || [];
   const programasAsociados = resumen?.programasAsociados || [];
-  const programa = resumen?.programaActual || null;
+  const invitacion = resumen?.invitacionActual || null;
+  const programa = inscripcion || invitacion || null;
 
   const [programaChatId, setProgramaChatId] = useState("");
 

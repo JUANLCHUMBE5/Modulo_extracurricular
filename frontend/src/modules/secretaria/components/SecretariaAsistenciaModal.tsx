@@ -28,13 +28,23 @@ export default function SecretariaAsistenciaModal({
   onClose,
   inscripcion,
   estudiante,
+  inscripcionesEstudiante = [],
 }) {
+  const [activeInscripcion, setActiveInscripcion] = useState(null);
   const [asistencias, setAsistencias] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState("");
 
   useEffect(() => {
-    if (!open || !inscripcion?.programaId) {
+    if (open) {
+      setActiveInscripcion(inscripcion || (inscripcionesEstudiante && inscripcionesEstudiante[0]) || null);
+    } else {
+      setActiveInscripcion(null);
+    }
+  }, [open, inscripcion, inscripcionesEstudiante]);
+
+  useEffect(() => {
+    if (!open || !activeInscripcion?.programaId) {
       setAsistencias([]);
       setMensaje("");
       return;
@@ -44,7 +54,7 @@ export default function SecretariaAsistenciaModal({
       setCargando(true);
       setMensaje("");
       try {
-        const result = await listarAsistenciasPrograma(inscripcion.programaId);
+        const result = await listarAsistenciasPrograma(activeInscripcion.programaId);
         setAsistencias(result || []);
       } catch (err) {
         setAsistencias([]);
@@ -55,7 +65,7 @@ export default function SecretariaAsistenciaModal({
     };
 
     cargarAsistencias();
-  }, [open, inscripcion]);
+  }, [open, activeInscripcion]);
 
   // Group fetched attendance data by date (chronological order)
   const gruposFecha = useMemo(() => {
@@ -96,30 +106,30 @@ export default function SecretariaAsistenciaModal({
     let total = fechasColumnas.length;
     let asistio = 0;
     fechasColumnas.forEach((fechaCol) => {
-      const studentDni = estudiante?.dni || inscripcion?.dniEstudiante || "";
+      const studentDni = estudiante?.dni || activeInscripcion?.dniEstudiante || "";
       if (studentDni && checkMap.has(`${studentDni}:${fechaCol.clave}`)) {
         asistio++;
       }
     });
     const porcentaje = Math.round((asistio / total) * 100);
     return { total, asistio, porcentaje };
-  }, [fechasColumnas, checkMap, estudiante, inscripcion]);
+  }, [fechasColumnas, checkMap, estudiante, activeInscripcion]);
 
   const handleExportPdf = () => {
-    if (!inscripcion || !estudiante) return;
+    if (!activeInscripcion || !estudiante) return;
     try {
       exportPdfIndividual({
         programaSeleccionado: {
-          id: inscripcion.programaId,
-          nombre: inscripcion.programa,
-          horario: inscripcion.horario,
-          responsable: inscripcion.docente,
+          id: activeInscripcion.programaId,
+          nombre: activeInscripcion.programa,
+          horario: activeInscripcion.horario,
+          responsable: activeInscripcion.docente,
         },
         alumno: {
           nombres: estudiante.nombres,
           dni: estudiante.dni,
           codigoEstudiante: estudiante.codigoEstudiante || "",
-          telefono: inscripcion.telefono || estudiante.telefonoApoderado || "",
+          telefono: activeInscripcion.telefono || estudiante.telefonoApoderado || "",
         },
         fechasColumnas,
         checkMap,
@@ -143,6 +153,38 @@ export default function SecretariaAsistenciaModal({
       radius="md"
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        
+        {/* Selector if student has multiple workshops */}
+        {inscripcionesEstudiante && inscripcionesEstudiante.length > 1 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Taller / Curso Matriculado</span>
+            <select
+              value={activeInscripcion?.programaId || ""}
+              onChange={(e) => {
+                const selected = inscripcionesEstudiante.find(x => x.programaId === e.target.value);
+                if (selected) setActiveInscripcion(selected);
+              }}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: "6px",
+                border: "1px solid #cbd5e1",
+                fontSize: "13.5px",
+                color: "#1e293b",
+                background: "#ffffff",
+                fontWeight: 500,
+                outline: "none"
+              }}
+            >
+              {inscripcionesEstudiante.map((ins, idx) => (
+                <option key={ins.programaId || idx} value={ins.programaId}>
+                  {ins.programa} — {ins.horario}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Info card of student and program */}
         <div style={{
           padding: "14px",
@@ -160,8 +202,8 @@ export default function SecretariaAsistenciaModal({
           </div>
           <div>
             <span style={{ display: "block", fontSize: "11px", color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Taller / Programa</span>
-            <strong style={{ fontSize: "14px", color: "#0f172a" }}>{inscripcion?.programa}</strong>
-            <span style={{ display: "block", fontSize: "12px", color: "#475569" }}>Horario: {inscripcion?.horario}</span>
+            <strong style={{ fontSize: "14px", color: "#0f172a" }}>{activeInscripcion?.programa || "Ninguno"}</strong>
+            <span style={{ display: "block", fontSize: "12px", color: "#475569" }}>Horario: {activeInscripcion?.horario || "—"}</span>
           </div>
         </div>
 
@@ -216,7 +258,7 @@ export default function SecretariaAsistenciaModal({
                     </thead>
                     <tbody>
                       {fechasColumnas.map((fechaCol, idx) => {
-                        const studentDni = estudiante?.dni || inscripcion?.dniEstudiante || "";
+                        const studentDni = estudiante?.dni || activeInscripcion?.dniEstudiante || "";
                         const asistio = studentDni && checkMap.has(`${studentDni}:${fechaCol.clave}`);
 
                         // Find attendance observation if any

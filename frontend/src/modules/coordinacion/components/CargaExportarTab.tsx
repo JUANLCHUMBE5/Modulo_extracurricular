@@ -1,9 +1,12 @@
+import React, { useState } from "react";
 import {
   IconDownload as Download,
   IconFileSpreadsheet as FileSpreadsheet,
   IconLoader2 as Loader2,
   IconInfoCircle as InfoCircle,
+  IconUpload as Upload,
 } from "@tabler/icons-react";
+import { leerPlantillaWord, extraerDatosProgramaDesdeWord } from "../utils/wordTemplateUtils";
 
 interface Programa {
   id: string;
@@ -35,8 +38,95 @@ export default function CargaExportarTab({
   descargarFichasExportarTab,
   exportando,
 }: CargaExportarTabProps) {
+  const [arrastrando, setArrastrando] = useState(false);
+  const [cargandoFile, setCargandoFile] = useState(false);
+
+  const procesarArchivoWord = async (archivo: File) => {
+    if (!archivo) return;
+    setCargandoFile(true);
+    try {
+      const lectura = await leerPlantillaWord(archivo, { validarVariables: false });
+      const { textoPlano } = lectura;
+      const datos = extraerDatosProgramaDesdeWord(textoPlano, archivo.name);
+      
+      if (datos.nombre) {
+        const nombreBuscado = String(datos.nombre).toLowerCase().trim();
+        
+        let match = programasCarga.find((p) => {
+          const nombreProg = String(p.nombre).toLowerCase().trim();
+          return nombreProg === nombreBuscado || nombreProg.includes(nombreBuscado) || nombreBuscado.includes(nombreProg);
+        });
+
+        if (match) {
+          setSeleccionExportarId(match.id);
+        } else {
+          alert(`No se encontró un taller registrado con el nombre detectado: "${datos.nombre}"`);
+        }
+      } else {
+        alert("No se pudo detectar el nombre del taller en el documento.");
+      }
+    } catch (e: any) {
+      alert(`Error al leer el archivo: ${e.message || e}`);
+    } finally {
+      setCargandoFile(false);
+    }
+  };
+
   return (
     <div style={{ animation: "coord-fade-in 0.25s ease" }}>
+      {/* Zona de Arrastre para Autodetectar Taller */}
+      <div 
+        className={`coord-dropzone-export ${arrastrando ? "drag-over" : ""}`}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setArrastrando(true);
+        }}
+        onDragLeave={() => setArrastrando(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setArrastrando(false);
+          if (e.dataTransfer.files?.[0]) {
+            procesarArchivoWord(e.dataTransfer.files[0]);
+          }
+        }}
+        style={{
+          border: "2.5px dashed #cbd5df",
+          borderRadius: "10px",
+          padding: "24px 16px",
+          textAlign: "center",
+          background: arrastrando ? "#f1f8e9" : "#f8fafc",
+          borderColor: arrastrando ? "#4caf50" : "#cbd5df",
+          cursor: "pointer",
+          marginBottom: "20px",
+          transition: "all 0.25s ease",
+          boxShadow: arrastrando ? "0 4px 12px rgba(76, 175, 80, 0.12)" : "none",
+        }}
+        onClick={() => {
+          const input = document.createElement("input");
+          input.type = "file";
+          input.accept = ".docx";
+          input.onchange = (e: any) => {
+            if (e.target.files?.[0]) {
+              procesarArchivoWord(e.target.files[0]);
+            }
+          };
+          input.click();
+        }}
+      >
+        {cargandoFile ? (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px", color: "#2e7d32" }}>
+            <Loader2 className="coord-spin" size={26} />
+            <strong style={{ fontSize: "14px", fontWeight: "600" }}>Analizando documento...</strong>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+            <Upload size={26} style={{ color: arrastrando ? "#4caf50" : "#7b8794", transition: "color 0.2s" }} />
+            <strong style={{ fontSize: "14px", color: "#334155" }}>Arrastra aquí el Word del Taller</strong>
+            <span style={{ fontSize: "12px", color: "#64748b" }}>o haz clic para seleccionar tu archivo (.docx) para auto-seleccionar</span>
+          </div>
+        )}
+      </div>
+
       <div className="coord-form-group-green">
         <label htmlFor="coord-exportar-programa">
           <FileSpreadsheet size={16} />

@@ -325,6 +325,7 @@ function CoordinacionInner({
                 setForm={state.setForm}
                 usarPlantillaExistente={state.usarPlantillaExistente}
                 variablesPlantillaAceptadas={variablesPlantillaAceptadas}
+                cambiarTipoPlantilla={state.cambiarTipoPlantilla}
                 variablesPlantillaRequeridas={variablesPlantillaRequeridas}
                 categorias={state.categorias}
                 configInstitucional={state.configInstitucional}

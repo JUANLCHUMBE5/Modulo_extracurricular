@@ -9,7 +9,7 @@ import ProgramaGrupoHorarioModal from "../../ProgramaGrupoHorarioModal";
 import GradeSelector from "../../GradeSelector";
 import { formatearHora12 } from "../../../utils/coordinacionFormatters";
 import { resumenGrados } from "../../../utils/coordinacionProgramUtils";
-import useSeccionFechasHorarios from "../../../hooks/useSeccionFechasHorarios";
+import useSeccionFechasHorarios from "../../../hooks/forms/useSeccionFechasHorarios";
 import GrupoHorariosList from "./GrupoHorariosList";
 
 export default function SeccionFechasHorarios({

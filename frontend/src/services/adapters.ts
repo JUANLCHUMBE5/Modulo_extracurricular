@@ -84,6 +84,18 @@ export function adaptarPrograma(apiPrograma) {
     costoCiclo: apiPrograma.costo_ciclo !== undefined ? String(apiPrograma.costo_ciclo) : (apiPrograma.costoCiclo !== undefined ? String(apiPrograma.costoCiclo) : (apiPrograma.costo !== undefined ? String(apiPrograma.costo) : (apiPrograma.monto !== undefined ? String(apiPrograma.monto) : ""))),
     montoPrimerPago: apiPrograma.monto_primer_pago !== undefined ? String(apiPrograma.monto_primer_pago) : (apiPrograma.montoPrimerPago !== undefined ? String(apiPrograma.montoPrimerPago) : ""),
     dias: apiPrograma.dias || [],
+    fechaExamen: apiPrograma.fecha_examen || apiPrograma.fechaExamen || "",
+    lugarExamen: apiPrograma.lugar_examen || apiPrograma.lugarExamen || "Colegio Matemático San Rafael",
+    precioStarters: apiPrograma.precio_starters || apiPrograma.precioStarters || "315.00",
+    precioMovers: apiPrograma.precio_movers || apiPrograma.precioMovers || "345.00",
+    precioFlyers: apiPrograma.precio_flyers || apiPrograma.precioFlyers || "360.00",
+    precioKet: apiPrograma.precio_ket || apiPrograma.precioKet || "475.00",
+    precioPet: apiPrograma.precio_pet || apiPrograma.precioPet || "490.00",
+    numeroCuotas: apiPrograma.numero_cuotas || apiPrograma.numeroCuotas || "3",
+    fechaVencCuota1: apiPrograma.fecha_venc_cuota_1 || apiPrograma.fechaVencCuota1 || "",
+    fechaVencCuota2: apiPrograma.fecha_venc_cuota_2 || apiPrograma.fechaVencCuota2 || "",
+    fechaVencCuota3: apiPrograma.fecha_venc_cuota_3 || apiPrograma.fechaVencCuota3 || "",
+    fechaLimitePago: apiPrograma.fecha_limite_pago || apiPrograma.fechaLimitePago || "",
   };
 }
 

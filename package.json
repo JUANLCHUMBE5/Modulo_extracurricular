@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter backend start & pnpm --filter frontend dev",
+    "start": "iniciar-sistema.cmd",
     "build": "pnpm --filter frontend build",
     "install:all": "pnpm install",
     "test": "playwright test",

@@ -9,7 +9,7 @@ function SeccionCambridge({ form, esCambridgeForm, actualizarForm }) {
       <div className="coord-section-heading">
         <Certificate size={18} />
         <div>
-          <h3>Datos Cambridge para la carta</h3>
+          <h3>Cambridge (Clases)</h3>
         </div>
       </div>
 

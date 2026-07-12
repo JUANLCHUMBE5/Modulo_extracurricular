@@ -174,3 +174,24 @@ export function normalizarFecha(valor) {
   const fecha = new Date(texto);
   return isValid(fecha) ? fecha : null;
 }
+
+export function formatearFechaBonitaEsp(valor: any, respaldo = "") {
+  if (!valor) return respaldo;
+  // Si ya es un formato bonito en texto (ej: tiene letras y no es formato ISO YYYY-MM-DD), lo retornamos tal cual
+  const texto = String(valor).trim();
+  if (/[a-zA-Záéíóúüñ]/i.test(texto) && !/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+    return texto;
+  }
+
+  const fecha = normalizarFecha(valor);
+  if (!fecha) return texto;
+  
+  const nombreDia = format(fecha, "EEEE", { locale: es });
+  const diaNum = format(fecha, "dd");
+  const nombreMes = format(fecha, "MMMM", { locale: es });
+  
+  const diaCap = nombreDia.charAt(0).toUpperCase() + nombreDia.slice(1);
+  const mesCap = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+  
+  return `${diaCap} ${diaNum} de ${mesCap}`;
+}

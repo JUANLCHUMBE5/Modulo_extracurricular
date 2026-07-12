@@ -14,11 +14,20 @@ import {
   leerArchivoBase64,
   leerDocumentoWordDesdeBase64,
   leerPlantillaWord,
+  leerPlantillaWordDesdeBase64,
 } from "../../utils/wordTemplateUtils";
 import {
   nombreProgramaDesdeArchivo,
   esProgramaCambridge,
 } from "../../utils/coordinacionProgramUtils";
+
+function obtenerTipoPlantillaId(tipoComunicado) {
+  const norm = String(tipoComunicado || "").toLowerCase();
+  if (norm.includes("cambridge")) return "cambridge";
+  if (norm.includes("reforzamiento")) return "reforzamiento";
+  if (norm.includes("club") || norm.includes("tareas")) return "club_tareas";
+  return "general";
+}
 
 export default function useCoordinacionDocumentos({
   puedeCrearProgramas,
@@ -115,9 +124,9 @@ export default function useCoordinacionDocumentos({
     }
 
     try {
-      const lectura = await leerPlantillaWord(archivo);
-      const { variablesDetectadas, textoPlano } = lectura;
-      const plantillaBase64 = await leerArchivoBase64(archivo);
+      const tipoPlantilla = obtenerTipoPlantillaId(form.tipoComunicado);
+      const lectura = await leerPlantillaWord(archivo, { tipoPlantilla });
+      const { variablesDetectadas, textoPlano, plantillaBase64 } = lectura;
       const datosDetectados = extraerDatosProgramaDesdeWord(textoPlano, archivo.name, categorias);
       const datosAplicables = form.tipoComunicado ? filtrarDatosDocumento(datosDetectados) : datosDetectados; // approximate context or pass it
       if (textoPlano) datosAplicables.comunicadoCompleto = textoPlano;
@@ -379,6 +388,38 @@ export default function useCoordinacionDocumentos({
     return Boolean(form.id);
   }
 
+  async function cambiarTipoPlantilla(nuevoTipo) {
+    if (actualizarForm) {
+      actualizarForm("tipoComunicado", nuevoTipo);
+    } else {
+      setForm((actual) => ({ ...actual, tipoComunicado: nuevoTipo }));
+    }
+    if (!form.plantillaBase64) return;
+    
+    try {
+      const tipoPlantilla = obtenerTipoPlantillaId(nuevoTipo);
+      const lectura = await leerPlantillaWordDesdeBase64(form.plantillaBase64, { tipoPlantilla });
+      const { variablesDetectadas } = lectura;
+      
+      setLecturaDocumento((actual) => actual ? {
+        ...actual,
+        variables: variablesDetectadas,
+        variablesListasModelo: lectura.variablesListasModelo,
+        variablesRequeridasModelo: lectura.variablesRequeridasModelo,
+        variablesFaltantes: lectura.variablesFaltantes,
+        plantillaModelo: lectura.plantillaModelo,
+      } : null);
+
+      setForm((actual) => ({
+        ...actual,
+        plantillaVariables: variablesDetectadas,
+        plantillaValidada: lectura.plantillaValida,
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
   return {
     programaDocsId,
     setProgramaDocsId,
@@ -394,5 +435,6 @@ export default function useCoordinacionDocumentos({
     quitarPlantilla,
     eliminarPlantillaHistorial,
     usarPlantillaExistente,
+    cambiarTipoPlantilla,
   };
 }

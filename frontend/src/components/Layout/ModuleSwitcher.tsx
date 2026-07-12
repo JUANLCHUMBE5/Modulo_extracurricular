@@ -27,7 +27,6 @@ export const moduleShortcutGroups = [
     icon: ClipboardList,
     items: [
       { id: "secretaria-inscripcion", label: "Inscripción presencial", module: "secretaria", view: "inscripcion", permissions: ["secretaria.inscripcion"], icon: Search },
-      { id: "secretaria-asistencias", label: "Ver Asistencias", module: "secretaria", view: "asistencias", permissions: ["secretaria.asistencias"], icon: UserCheck },
     ],
   },
   {

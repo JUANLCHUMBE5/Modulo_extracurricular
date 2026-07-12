@@ -91,7 +91,6 @@ export const PERMISSION_GROUPS = [
     label: "Asistente (Secretaría)",
     permissions: [
       { id: "secretaria.inscripcion", label: "Inscripción presencial" },
-      { id: "secretaria.asistencias", label: "Ver Asistencias" },
     ],
   },
   {

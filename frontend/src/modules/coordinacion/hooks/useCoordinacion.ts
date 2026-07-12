@@ -120,12 +120,6 @@ export default function useCoordinacion({
     vista,
   });
 
-  const documentos = useCoordinacionDocumentos({
-    puedeCrearProgramas,
-    programas,
-    mostrarMsg,
-  });
-
   const invitadosState = useCoordinacionInvitados({
     puedeVerAlumnos,
     mostrarMsg,
@@ -147,7 +141,20 @@ export default function useCoordinacion({
     mostrarAlertaConfiguracion,
     setAlertaConfiguracion: (val: string) => setAlertaConfiguracion(val),
     setMensaje,
-    documentos,
+  });
+
+  const documentos = useCoordinacionDocumentos({
+    puedeCrearProgramas,
+    puedeEditarProgramas,
+    form: coordinacionForm.form,
+    setForm: coordinacionForm.setForm,
+    actualizarForm: coordinacionForm.actualizarForm,
+    programas,
+    categorias,
+    mostrarMsg,
+    cargarDatos,
+    datosProgramaAFormulario,
+    setGuardando: coordinacionForm.setGuardando,
   });
 
   setAlertaConfiguracion = (val: string) => {

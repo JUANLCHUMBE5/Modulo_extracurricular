@@ -169,5 +169,55 @@ export function normalizeIncomingProgram(body: any = {}): any {
     delete result.plantilla_validada;
   }
 
+  // Mapeos para Inscripción Exámenes Internacionales
+  if (body.fecha_examen !== undefined) {
+    result.fechaExamen = body.fecha_examen;
+    delete result.fecha_examen;
+  }
+  if (body.lugar_examen !== undefined) {
+    result.lugarExamen = body.lugar_examen;
+    delete result.lugar_examen;
+  }
+  if (body.precio_starters !== undefined) {
+    result.precioStarters = body.precio_starters;
+    delete result.precio_starters;
+  }
+  if (body.precio_movers !== undefined) {
+    result.precioMovers = body.precio_movers;
+    delete result.precio_movers;
+  }
+  if (body.precio_flyers !== undefined) {
+    result.precioFlyers = body.precio_flyers;
+    delete result.precio_flyers;
+  }
+  if (body.precio_ket !== undefined) {
+    result.precioKet = body.precio_ket;
+    delete result.precio_ket;
+  }
+  if (body.precio_pet !== undefined) {
+    result.precioPet = body.precio_pet;
+    delete result.precio_pet;
+  }
+  if (body.numero_cuotas !== undefined) {
+    result.numeroCuotas = body.numero_cuotas;
+    delete result.numero_cuotas;
+  }
+  if (body.fecha_venc_cuota_1 !== undefined) {
+    result.fechaVencCuota1 = body.fecha_venc_cuota_1;
+    delete result.fecha_venc_cuota_1;
+  }
+  if (body.fecha_venc_cuota_2 !== undefined) {
+    result.fechaVencCuota2 = body.fecha_venc_cuota_2;
+    delete result.fecha_venc_cuota_2;
+  }
+  if (body.fecha_venc_cuota_3 !== undefined) {
+    result.fechaVencCuota3 = body.fecha_venc_cuota_3;
+    delete result.fecha_venc_cuota_3;
+  }
+  if (body.fecha_limite_pago !== undefined) {
+    result.fechaLimitePago = body.fecha_limite_pago;
+    delete result.fecha_limite_pago;
+  }
+
   return result;
 }

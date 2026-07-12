@@ -52,6 +52,7 @@ function DocumentosView({
   guardarConfigInstitucional,
   toggleSidebarButton,
   embedded = false,
+  cambiarTipoPlantilla,
 }) {
   const variablesRequeridasDocumento = lecturaDocumento?.variablesRequeridasModelo || variablesPlantillaRequeridas.map((item) => item.id);
   const variablesListasDocumento = lecturaDocumento?.variablesListasModelo ||

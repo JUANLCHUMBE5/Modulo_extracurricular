@@ -66,16 +66,78 @@ export const variablesPlantillaReforzamiento = [
   { id: "cel", label: "CEL", aliases: ["CEL", "CELULAR", "TELEFONO", "TELÉFONO"] },
 ];
 
+export const variablesPlantillaClubTareas = [
+  { id: "fecha_carta", label: "FECHA_CARTA", aliases: ["FECHA_CARTA"] },
+  { id: "alumno", label: "ALUMNO", aliases: ["ALUMNO", "NOMBRE_ALUMNO", "NOMBRE DEL ALUMNO", "ESTUDIANTE"] },
+  { id: "gr_sec", label: "GR_SEC", aliases: ["GR_SEC", "GRADO_SECCION", "GRADO SECCION"] },
+  { id: "horario", label: "HORARIO", aliases: ["HORARIO"] },
+  { id: "costo", label: "COSTO", aliases: ["COSTO"] },
+  { id: "pago", label: "PAGO", aliases: ["PAGO"] },
+  { id: "apod", label: "APOD", aliases: ["APOD", "APODERADO", "NOMBRE_APODERADO"] },
+  { id: "cel", label: "CEL", aliases: ["CEL", "CELULAR", "TELEFONO", "TELÉFONO"] },
+  { id: "ciclo", label: "CICLO", aliases: ["CICLO"] },
+  { id: "dur", label: "DUR", aliases: ["DUR", "DURACION", "DURACIÓN"] },
+  { id: "rango", label: "RANGO", aliases: ["RANGO", "VIGENCIA"] },
+  { id: "fecha_limite", label: "FECHA_LIMITE", aliases: ["FECHA_LIMITE"] },
+];
+
+export const variablesPlantillaSeleccion = [
+  { id: "fecha_carta", label: "FECHA_CARTA", aliases: ["FECHA_CARTA"] },
+  { id: "ciclo", label: "CICLO", aliases: ["CICLO"] },
+  { id: "alumno", label: "ALUMNO", aliases: ["ALUMNO", "NOMBRE_ALUMNO", "NOMBRE DEL ALUMNO", "ESTUDIANTE"] },
+  { id: "gr_sec", label: "GR_SEC", aliases: ["GR_SEC", "GRADO_SECCION", "GRADO SECCION"] },
+  { id: "apod", label: "APOD", aliases: ["APOD", "APODERADO", "NOMBRE_APODERADO"] },
+  { id: "cel", label: "CEL", aliases: ["CEL", "CELULAR", "TELEFONO", "TELÉFONO"] },
+];
+
+export const variablesPlantillaInscripcionExamenes = [
+  { id: "fecha_examen", label: "FECHA_EXAMEN", aliases: ["FECHA_EXAMEN"] },
+  { id: "lugar_examen", label: "LUGAR_EXAMEN", aliases: ["LUGAR_EXAMEN"] },
+  { id: "fecha_limite", label: "FECHA_LIMITE", aliases: ["FECHA_LIMITE"] },
+  { id: "venc_cuota_1", label: "VENC_CUOTA_1", aliases: ["VENC_CUOTA_1"] },
+  { id: "venc_cuota_2", label: "VENC_CUOTA_2", aliases: ["VENC_CUOTA_2"] },
+  { id: "venc_cuota_3", label: "VENC_CUOTA_3", aliases: ["VENC_CUOTA_3"] },
+  { id: "alumno", label: "ALUMNO", aliases: ["ALUMNO", "NOMBRE_ALUMNO", "NOMBRE DEL ALUMNO", "ESTUDIANTE", "ALU"] },
+  { id: "gr_sec", label: "GR_SEC", aliases: ["GR_SEC", "GRADO_SECCION", "GRADO SECCION", "AUL"] },
+  { id: "niv", label: "NIV", aliases: ["NIV", "NIVEL"] },
+  { id: "precio_starters", label: "PRECIO_STARTERS", aliases: ["PRECIO_STARTERS"] },
+  { id: "precio_movers", label: "PRECIO_MOVERS", aliases: ["PRECIO_MOVERS"] },
+  { id: "precio_flyers", label: "PRECIO_FLYERS", aliases: ["PRECIO_FLYERS"] },
+  { id: "precio_ket", label: "PRECIO_KET", aliases: ["PRECIO_KET"] },
+  { id: "precio_pet", label: "PRECIO_PET", aliases: ["PRECIO_PET"] },
+  { id: "starters_c1", label: "STARTERS_C1", aliases: ["STARTERS_C1"] },
+  { id: "starters_c2", label: "STARTERS_C2", aliases: ["STARTERS_C2"] },
+  { id: "starters_c3", label: "STARTERS_C3", aliases: ["STARTERS_C3"] },
+  { id: "movers_c1", label: "MOVERS_C1", aliases: ["MOVERS_C1"] },
+  { id: "movers_c2", label: "MOVERS_C2", aliases: ["MOVERS_C2"] },
+  { id: "movers_c3", label: "MOVERS_C3", aliases: ["MOVERS_C3"] },
+  { id: "flyers_c1", label: "FLYERS_C1", aliases: ["FLYERS_C1"] },
+  { id: "flyers_c2", label: "FLYERS_C2", aliases: ["FLYERS_C2"] },
+  { id: "flyers_c3", label: "FLYERS_C3", aliases: ["FLYERS_C3"] },
+  { id: "ket_c1", label: "KET_C1", aliases: ["KET_C1"] },
+  { id: "ket_c2", label: "KET_C2", aliases: ["KET_C2"] },
+  { id: "ket_c3", label: "KET_C3", aliases: ["KET_C3"] },
+  { id: "pet_c1", label: "PET_C1", aliases: ["PET_C1"] },
+  { id: "pet_c2", label: "PET_C2", aliases: ["PET_C2"] },
+  { id: "pet_c3", label: "PET_C3", aliases: ["PET_C3"] },
+];
+
 export const modelosPlantilla = [
   { id: "general", label: "Formato general", variables: variablesPlantillaRequeridas },
   { id: "cambridge", label: "Formato Cambridge", variables: variablesPlantillaCambridge },
   { id: "reforzamiento", label: "Formato reforzamiento", variables: variablesPlantillaReforzamiento },
+  { id: "club_tareas", label: "Formato Club de Tareas", variables: variablesPlantillaClubTareas },
+  { id: "seleccion", label: "Formato Selección", variables: variablesPlantillaSeleccion },
+  { id: "inscripcion_examenes", label: "Formato Inscripción Exámenes Internacionales", variables: variablesPlantillaInscripcionExamenes },
 ];
 
 export const variablesPlantillaAceptadas = unirVariablesPlantilla([
   ...variablesPlantillaRequeridas,
   ...variablesPlantillaCambridge,
   ...variablesPlantillaReforzamiento,
+  ...variablesPlantillaClubTareas,
+  ...variablesPlantillaSeleccion,
+  ...variablesPlantillaInscripcionExamenes,
 ]);
 
 export const nivelesGrados = [

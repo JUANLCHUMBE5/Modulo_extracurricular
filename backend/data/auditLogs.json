@@ -1,5 +1,189 @@
 [
   {
+    "id": "AUD-419266-7919",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-12T04:26:59.266Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-571546-24d6",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-12T00:36:11.546Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000044\",\"nombres\":\"Thiago Huaman Leon\",\"_usuario_original\":\"60000044\"}"
+  },
+  {
+    "id": "AUD-556252-0afa",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-12T00:35:56.253Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-426910-a071",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-12T00:33:46.910Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-104\",\"nombre\":\"Test\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-426092-23cc",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-12T00:33:46.092Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-417782-4fff",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-12T00:33:37.782Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-323486-9373",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-12T00:32:03.486Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-162608-2949",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-12T00:29:22.609Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-156193-70c8",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-12T00:29:16.193Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"10101111\",\"nombres\":\"Fabian Cruz Salazar\",\"_usuario_original\":\"10101111\"}"
+  },
+  {
+    "id": "AUD-154686-f3e1",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-12T00:29:14.686Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-153139-ba5e",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-12T00:29:13.139Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-151669-d69f",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-12T00:29:11.669Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-150656-388d",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-12T00:29:10.657Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\",\"_usuario_original\":\"mauricio\"}"
+  },
+  {
+    "id": "AUD-133042-d6dd",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-12T00:28:53.042Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-265748-c6e3",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-11T21:44:25.748Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-725087-e60f",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-11T05:28:45.087Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-719355-eea8",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-11T05:28:39.355Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"CARLOS\"}"
+  },
+  {
+    "id": "AUD-714305-ea13",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-11T05:28:34.305Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"CARLOS\"}"
+  },
+  {
+    "id": "AUD-868291-6ab5",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-11T01:04:28.291Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-863965-583c",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-11T01:04:23.965Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-211715-779a",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-10T21:16:51.715Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000037\",\"nombres\":\"Alejandro Leon Paredes\",\"_usuario_original\":\"60000037\"}"
+  },
+  {
+    "id": "AUD-200738-a391",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-10T21:16:40.738Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-102\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Habilitado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-125214-4ffc",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-10T21:15:25.215Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
     "id": "AUD-624743-78e1",
     "usuario": "admin",
     "rol": "padres",

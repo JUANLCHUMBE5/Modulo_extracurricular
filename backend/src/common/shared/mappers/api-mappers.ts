@@ -95,7 +95,19 @@ export function mapDbProgramToApi(p: any, db: any = null): any {
     modalidades_cambridge: p.modalidadesCambridge || [],
     costo_ciclo: p.costoCiclo ? String(parseMonto(p.costoCiclo)) : (p.costo ? String(parseMonto(p.costo)) : ""),
     monto_primer_pago: p.montoPrimerPago ? parseMonto(p.montoPrimerPago) : "",
-    dias: Array.isArray(p.dias) ? p.dias : []
+    dias: Array.isArray(p.dias) ? p.dias : [],
+    fecha_examen: p.fechaExamen || "",
+    lugar_examen: p.lugarExamen || "Colegio Matemático San Rafael",
+    precio_starters: p.precioStarters || "315.00",
+    precio_movers: p.precioMovers || "345.00",
+    precio_flyers: p.precioFlyers || "360.00",
+    precio_ket: p.precioKet || "475.00",
+    precio_pet: p.precioPet || "490.00",
+    numero_cuotas: p.numeroCuotas || "3",
+    fecha_venc_cuota_1: p.fechaVencCuota1 || "",
+    fecha_venc_cuota_2: p.fechaVencCuota2 || "",
+    fecha_venc_cuota_3: p.fechaVencCuota3 || "",
+    fecha_limite_pago: p.fechaLimitePago || "",
   };
 }
 

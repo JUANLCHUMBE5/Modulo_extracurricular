@@ -150,18 +150,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                 >
                   <span>Inscripción presencial</span>
                 </button>
-                <button
-                  className={`coord-nav-item ${!mostrarVistaDelegada && vistaActiva === "asistencias" ? "coord-nav-item-active" : ""}`}
-                  type="button"
-                  onClick={() => {
-                    onClearDelegatedModule?.();
-                    setVistaActiva("asistencias");
-                    limpiarBusquedaEstudiante();
-                  }}
-                  title="Ver Asistencias"
-                >
-                  <span>Ver Asistencias</span>
-                </button>
               </nav>
             )}
           </div>
@@ -178,18 +166,6 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
               title="Inscripción presencial"
             >
               <Search size={18} />
-            </button>
-            <button
-              className={`secretaria-nav-item ${!mostrarVistaDelegada && vistaActiva === "asistencias" ? "secretaria-nav-item-active" : ""}`}
-              type="button"
-              onClick={() => {
-                onClearDelegatedModule?.();
-                setVistaActiva("asistencias");
-                limpiarBusquedaEstudiante();
-              }}
-              title="Ver Asistencias"
-            >
-              <UserCheck size={18} />
             </button>
           </nav>
         )}
@@ -323,6 +299,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
               onClose={() => setAsistenciaModal({ open: false, inscripcion: null })}
               inscripcion={asistenciaModal.inscripcion}
               estudiante={estudiante}
+              inscripcionesEstudiante={inscripcionesEstudiante}
             />
           </>
         )}

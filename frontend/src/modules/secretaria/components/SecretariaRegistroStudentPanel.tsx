@@ -7,6 +7,7 @@ import {
   IconCreditCard as CreditCard,
   IconId as IdCard,
   IconUserCheck as UserCheck,
+  IconEye as Eye,
 } from "@tabler/icons-react";
 import {
   obtenerInfoBoxConfig,
@@ -21,6 +22,8 @@ export default function SecretariaRegistroStudentPanel({
   tieneInvitacionOperativa,
   tipoAlumnoMostrado,
   noProgramasDisponibles = false,
+  inscripcionesEstudiante = [],
+  onVerAsistencia,
 }) {
   if (!estudiante) return null;
 
@@ -69,7 +72,6 @@ export default function SecretariaRegistroStudentPanel({
         <span>DATOS DEL ESTUDIANTE</span>
       </div>
 
-      {/* Student Banner */}
       <div style={{
         background: "linear-gradient(135deg, #e8f5e9, #c8e6c9)",
         borderRadius: "12px",
@@ -77,37 +79,74 @@ export default function SecretariaRegistroStudentPanel({
         marginBottom: "12px",
         display: "flex",
         alignItems: "center",
+        justifyContent: "space-between",
         gap: "10px",
         border: "1px solid #a5d6a7"
       }}>
-        <div style={{
-          width: "36px",
-          height: "36px",
-          background: "#388e3c",
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          color: "white",
-          fontSize: "15px",
-          fontWeight: "700",
-          flexShrink: 0
-        }}>
-          {estudiante.nombres
-            .split(" ")
-            .slice(0, 2)
-            .map((name: string) => name[0])
-            .join("")}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{
+            width: "36px",
+            height: "36px",
+            background: "#388e3c",
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "white",
+            fontSize: "15px",
+            fontWeight: "700",
+            flexShrink: 0
+          }}>
+            {estudiante.nombres
+              .split(" ")
+              .slice(0, 2)
+              .map((name: string) => name[0])
+              .join("")}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+            <h3 style={{ fontSize: "14.5px", fontWeight: "800", color: "#1b5e20", margin: 0, padding: 0 }}>
+              {estudiante.nombres}
+            </h3>
+            <span style={{ fontSize: "11px", color: "#2e7d32", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
+              <CheckCircle2 size={12} style={{ color: "#43a047" }} />
+              DNI {estudiante.dni || "No registrado"} &middot; {estudiante.codigoEstudiante || "Sin código"}
+            </span>
+          </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-          <h3 style={{ fontSize: "14.5px", fontWeight: "800", color: "#1b5e20", margin: 0, padding: 0 }}>
-            {estudiante.nombres}
-          </h3>
-          <span style={{ fontSize: "11px", color: "#2e7d32", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
-            <CheckCircle2 size={12} style={{ color: "#43a047" }} />
-            DNI {estudiante.dni || "No registrado"} &middot; {estudiante.codigoEstudiante || "Sin código"}
-          </span>
-        </div>
+
+        {/* Eye icon / button for viewing attendance history */}
+        {inscripcionesEstudiante && inscripcionesEstudiante.length > 0 && (
+          <button
+            type="button"
+            onClick={() => onVerAsistencia?.(inscripcionesEstudiante[0])}
+            title="Ver Historial de Asistencia"
+            style={{
+              background: "#ffffff",
+              border: "1px solid #a5d6a7",
+              borderRadius: "50%",
+              width: "34px",
+              height: "34px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "#2e7d32",
+              boxShadow: "0 2px 4px rgba(0, 0, 0, 0.08)",
+              transition: "all 0.2s ease",
+              flexShrink: 0,
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = "#e8f5e9";
+              e.currentTarget.style.transform = "scale(1.08)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = "#ffffff";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+          >
+            <Eye size={18} />
+          </button>
+        )}
       </div>
 
       {/* Details Grid */}

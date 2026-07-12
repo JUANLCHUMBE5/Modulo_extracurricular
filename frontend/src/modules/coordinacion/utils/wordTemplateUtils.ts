@@ -8,9 +8,9 @@ import {
 } from "../constants/coordinacionConstants";
 import { escaparRegExp, formatearHora12, normalizarComparacion } from "./coordinacionFormatters";
 
-export async function leerPlantillaWord(archivo) {
+export async function leerPlantillaWord(archivo, opciones = {}) {
   const zip = await JSZip.loadAsync(archivo);
-  return analizarZipPlantilla(zip);
+  return analizarZipPlantilla(zip, { ...opciones, nombreArchivo: archivo.name });
 }
 
 export async function leerDocumentoWord(archivo) {
@@ -18,9 +18,9 @@ export async function leerDocumentoWord(archivo) {
   return analizarZipPlantilla(zip, { validarVariables: false });
 }
 
-export async function leerPlantillaWordDesdeBase64(base64) {
+export async function leerPlantillaWordDesdeBase64(base64, opciones = {}) {
   const zip = await JSZip.loadAsync(base64ToArrayBuffer(base64));
-  return analizarZipPlantilla(zip);
+  return analizarZipPlantilla(zip, opciones);
 }
 
 export async function leerDocumentoWordDesdeBase64(base64) {
@@ -91,6 +91,13 @@ export function extraerDatosProgramaDesdeWord(textoPlano, nombreArchivo, categor
     textoLower.includes("aula especial selección")
   ) {
     tipoComunicadoSugerido = "Selección (Circular)";
+  } else if (
+    nombreArchivoLower.includes("maraton") || 
+    nombreArchivoLower.includes("maratón") || 
+    textoLower.includes("maraton") || 
+    textoLower.includes("maratón")
+  ) {
+    tipoComunicadoSugerido = "Maratón (Circular)";
   }
 
   let areaTematicaSugerida = "";
@@ -142,11 +149,182 @@ export function extraerDatosProgramaDesdeWord(textoPlano, nombreArchivo, categor
   const uniforme = extraerUniforme(texto);
   if (uniforme !== null) datos.requiereUniforme = uniforme;
 
-  if (datos.dias?.length && datos.horaInicio && datos.horaFin) {
+   if (datos.dias?.length && datos.horaInicio && datos.horaFin) {
     datos.horario = `${datos.dias.join(", ")} ${datos.horaInicio} - ${datos.horaFin}`;
   }
   if (datos.gradosAplicables?.length) {
     datos.grupo = resumenGradosDesdeValores(datos.gradosAplicables);
+  }
+
+  // Extraer grupos desde la tabla de horarios
+  const lineas = texto.split("\n");
+  const horariosPorGrupo = [];
+
+  const diasGlobales = extraerDias(texto);
+  const diaGlobal = diasGlobales.length === 1 ? diasGlobales[0] : "";
+
+  function extraerDiasDeLinea(lineaDeTexto: string) {
+    const normal = normalizarComparacion(lineaDeTexto);
+    if (normal.includes("lu-mi-vi")) return ["Lunes", "Miércoles", "Viernes"];
+    if (normal.includes("lu-mi")) return ["Lunes", "Miércoles"];
+    if (normal.includes("ma-ju")) return ["Martes", "Jueves"];
+    
+    const diasEncontrados: string[] = [];
+    const mapeo: Record<string, string> = {
+      lunes: "Lunes", lu: "Lunes",
+      martes: "Martes", ma: "Martes",
+      miercoles: "Miércoles", mié: "Miércoles", mi: "Miércoles",
+      jueves: "Jueves", ju: "Jueves",
+      viernes: "Viernes", vi: "Viernes",
+      sabado: "Sábado", sá: "Sábado", sa: "Sábado",
+      domingo: "Domingo", dom: "Domingo"
+    };
+    
+    const palabras = normal.split(/[^a-záéíóúüñ]+/);
+    palabras.forEach(p => {
+      if (mapeo[p]) {
+        diasEncontrados.push(mapeo[p]);
+      }
+    });
+    
+    return [...new Set(diasEncontrados)];
+  }
+
+  for (const linea of lineas) {
+    const regexHoras = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:[-–]|a)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/gi;
+    const matchHoras = [...linea.matchAll(regexHoras)];
+    
+    if (matchHoras.length >= 1) {
+      const diasEnLinea = extraerDiasDeLinea(linea);
+      const diasTexto = diasEnLinea.length > 0 ? diasEnLinea.join(", ") : diaGlobal;
+      
+      if (!diasTexto) continue;
+
+      // Caso 1: Fila estándar con 2 columnas de hora (Almuerzo y Clases)
+      if (matchHoras.length === 2 && (linea.toLowerCase().includes("almuerzo") || linea.toLowerCase().includes("alm"))) {
+        const realAlm = matchHoras[0];
+        const realClases = matchHoras[1];
+        
+        const clInicio = formatearHoraDetectada(realClases[1], realClases[2], realClases[3] || realClases[6] || "");
+        const clFin = formatearHoraDetectada(realClases[4], realClases[5], realClases[6] || "");
+        
+        const alInicio = formatearHoraDetectada(realAlm[1], realAlm[2], realAlm[3] || realAlm[6] || "");
+        const alFin = formatearHoraDetectada(realAlm[4], realAlm[5], realAlm[6] || "");
+
+        let gradosGrupo: string[] = [];
+        const lineaLower = linea.toLowerCase();
+        if (lineaLower.includes("inicial") || lineaLower.includes("4 y 5")) {
+          gradosGrupo = ["Inicial:4 años", "Inicial:5 años"];
+        } else if (lineaLower.includes("prim. men") || lineaLower.includes("1°, 2°, 3°") || lineaLower.includes("prim.men")) {
+          gradosGrupo = ["Primaria:1", "Primaria:2", "Primaria:3"];
+        } else if (lineaLower.includes("prim.may") || lineaLower.includes("prim. may") || lineaLower.includes("4°, 5°, 6°")) {
+          gradosGrupo = ["Primaria:4", "Primaria:5", "Primaria:6"];
+        } else {
+          // Buscar grados individuales
+          nivelesGrados.forEach(({ nivel, grados }) => {
+            grados.forEach((grado) => {
+              const gradoLower = grado.toLowerCase();
+              const num = grado.match(/\d+/)?.[0];
+              if (num) {
+                const reg = new RegExp(`\\b${num}\\s*(?:°|o|er|do|to|to|grade|grado|sec|secundaria|primaria)?\\b`, "i");
+                if (reg.test(lineaLower)) {
+                  const isSec = lineaLower.includes("sec") || lineaLower.includes("secundaria");
+                  const isPrim = lineaLower.includes("prim") || lineaLower.includes("primaria") || (!isSec && nivel === "Primaria");
+                  if (isSec && nivel === "Secundaria") {
+                    gradosGrupo.push(`${nivel}:${grado}`);
+                  } else if (isPrim && nivel === "Primaria") {
+                    gradosGrupo.push(`${nivel}:${grado}`);
+                  }
+                }
+              } else {
+                if (lineaLower.includes(gradoLower)) {
+                  gradosGrupo.push(`${nivel}:${grado}`);
+                }
+              }
+            });
+          });
+        }
+
+        if (gradosGrupo.length > 0) {
+          horariosPorGrupo.push({
+            grados: gradosGrupo,
+            dia: diasTexto,
+            horaInicio: clInicio,
+            horaFin: clFin,
+            almuerzoInicio: alInicio,
+            almuerzoFin: alFin,
+            responsable: "",
+            tutora: "",
+            aula: ""
+          });
+        }
+        continue;
+      }
+
+      // Caso 2: Múltiples columnas con clases independientes en la misma línea
+      for (let mIdx = 0; mIdx < matchHoras.length; mIdx++) {
+        const clasesHoras = matchHoras[mIdx];
+        
+        const start = mIdx === 0 ? 0 : matchHoras[mIdx - 1].index + matchHoras[mIdx - 1][0].length;
+        const end = clasesHoras.index;
+        const subTexto = linea.slice(start, end).toLowerCase();
+
+        const horaInicio = formatearHoraDetectada(clasesHoras[1], clasesHoras[2], clasesHoras[3] || clasesHoras[6] || "");
+        const horaFin = formatearHoraDetectada(clasesHoras[4], clasesHoras[5], clasesHoras[6] || "");
+        
+        let gradosGrupo: string[] = [];
+        if (subTexto.includes("inicial") || subTexto.includes("4 y 5")) {
+          gradosGrupo = ["Inicial:4 años", "Inicial:5 años"];
+        } else if (subTexto.includes("prim. men") || subTexto.includes("1°, 2°, 3°") || subTexto.includes("prim.men")) {
+          gradosGrupo = ["Primaria:1", "Primaria:2", "Primaria:3"];
+        } else if (subTexto.includes("prim.may") || subTexto.includes("prim. may") || subTexto.includes("4°, 5°, 6°")) {
+          gradosGrupo = ["Primaria:4", "Primaria:5", "Primaria:6"];
+        } else {
+          // Buscar grados individuales
+          nivelesGrados.forEach(({ nivel, grados }) => {
+            grados.forEach((grado) => {
+              const gradoLower = grado.toLowerCase();
+              const num = grado.match(/\d+/)?.[0];
+              if (num) {
+                const reg = new RegExp(`\\b${num}\\s*(?:°|o|er|do|to|to|grade|grado|sec|secundaria|primaria)?\\b`, "i");
+                if (reg.test(subTexto)) {
+                  const isSec = subTexto.includes("sec") || subTexto.includes("secundaria");
+                  const isPrim = subTexto.includes("prim") || subTexto.includes("primaria") || (!isSec && nivel === "Primaria");
+                  if (isSec && nivel === "Secundaria") {
+                    gradosGrupo.push(`${nivel}:${grado}`);
+                  } else if (isPrim && nivel === "Primaria") {
+                    gradosGrupo.push(`${nivel}:${grado}`);
+                  }
+                }
+              } else {
+                if (subTexto.includes(gradoLower)) {
+                  gradosGrupo.push(`${nivel}:${grado}`);
+                }
+              }
+            });
+          });
+        }
+
+        if (gradosGrupo.length > 0) {
+          horariosPorGrupo.push({
+            grados: gradosGrupo,
+            dia: diasTexto,
+            horaInicio,
+            horaFin,
+            almuerzoInicio: "",
+            almuerzoFin: "",
+            responsable: "",
+            tutora: "",
+            aula: ""
+          });
+        }
+      }
+    }
+  }
+  
+  if (horariosPorGrupo.length > 0) {
+    datos.horariosPorGrupo = horariosPorGrupo;
+    datos.usaHorariosPorBloque = true;
   }
 
   return limpiarDatosVacios(datos);
@@ -189,22 +367,98 @@ async function analizarZipPlantilla(zip, opciones = {}) {
     throw new Error("La plantilla no parece ser un documento Word válido.");
   }
 
+  // 1. Convert blank lines to variables dynamically
+  for (const file of archivosXml) {
+    let xmlContent = await file.async("text");
+    let modified = false;
+
+    const mappings = [
+      { regex: /(alumno|estudiante)[^:_]*[:：]\s*_{3,}/gi, replacement: "$1: {{ALUMNO}}" },
+      { regex: /(grado|secci[oó]n)[^:_]*[:：]\s*_{3,}/gi, replacement: "$1: {{GR_SEC}}" },
+      { regex: /(aula)[^:_]*[:：]\s*_{3,}/gi, replacement: "$1: {{AUL}}" },
+      { regex: /(nivel)[^:_]*[:：]\s*_{3,}/gi, replacement: "$1: {{NIV}}" },
+      { regex: /(apoderado|padre|madre)[^:_]*[:：]\s*_{3,}/gi, replacement: "$1: {{APOD}}" },
+      { regex: /(celular|tel[eé]fono|cel|telf)[^:_]*[:：]\s*_{3,}/gi, replacement: "$1: {{CEL}}" },
+      { regex: /(fecha)[^:_]*[:：]\s*_{3,}/gi, replacement: "$1: {{FECHA_CARTA}}" },
+      { regex: /(costo|precio|monto|inversi[oó]n)[^:_]*[:：]\s*_{3,}/gi, replacement: "$1: {{COSTO}}" },
+      { regex: /(pago)[^:_]*[:：]\s*_{3,}/gi, replacement: "$1: {{PAGO}}" },
+      { regex: /(horario)[^:_]*[:：]\s*_{3,}/gi, replacement: "$1: {{HORARIO}}" },
+      // Nuevos reemplazos automáticos de textos fijos a variables del formulario
+      { regex: /(Carabayllo|Lima|Ciudad|Fecha)\s*,\s*(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|setiembre|septiembre|octubre|noviembre|diciembre)\s+de\s+\d{4}/gi, replacement: "$1, {{FECHA_CARTA}}" },
+      { regex: /(del\s+periodo\s+)\d{4}/gi, replacement: "$1{{ANIO_CARTA}}" },
+      { regex: /(año\s+de\s+preparaci[oó]n\s+)\d{4}/gi, replacement: "$1{{ANIO_CARTA}}" }
+    ];
+
+    for (const map of mappings) {
+      if (map.regex.test(xmlContent)) {
+        xmlContent = xmlContent.replace(map.regex, map.replacement);
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      zip.file(file.name, xmlContent);
+    }
+  }
+
+  // 2. Parse from the updated ZIP contents
   const contenidos = await Promise.all(archivosXml.map((file) => file.async("text")));
   const contenido = contenidos.join(" ");
   const textoPlano = contenidos.map(extraerTextoPlanoXml).join("\n");
   const presentes = detectarVariablesPlantilla(contenido, variablesPlantillaAceptadas);
-  const modeloCompleto = modelosPlantilla.find((modelo) =>
-    modelo.variables.every((variable) => presentes.includes(variable.id))
-  );
-  const modeloBase = modeloCompleto || obtenerModeloMasCercano(presentes);
+  let tipoPlantilla = opciones.tipoPlantilla;
+  if (!tipoPlantilla) {
+    const textoPlanoLower = textoPlano.toLowerCase();
+    const nombreArchivoLower = String(opciones.nombreArchivo || "").toLowerCase();
+    
+    if (nombreArchivoLower.includes("cambridge") || textoPlanoLower.includes("cambridge")) {
+      tipoPlantilla = "cambridge";
+    } else if (
+      nombreArchivoLower.includes("club de tareas") || 
+      nombreArchivoLower.includes("club tareas") || 
+      textoPlanoLower.includes("club de tareas") || 
+      textoPlanoLower.includes("club tareas")
+    ) {
+      tipoPlantilla = "club_tareas";
+    } else if (
+      nombreArchivoLower.includes("reforzamiento") || 
+      textoPlanoLower.includes("reforzamiento")
+    ) {
+      tipoPlantilla = "reforzamiento";
+    } else if (
+      nombreArchivoLower.includes("seleccion") || 
+      nombreArchivoLower.includes("selección") || 
+      textoPlanoLower.includes("aula especial seleccion") || 
+      textoPlanoLower.includes("aula especial selección")
+    ) {
+      tipoPlantilla = "seleccion";
+    } else if (
+      nombreArchivoLower.includes("maraton") || 
+      nombreArchivoLower.includes("maratón") || 
+      textoPlanoLower.includes("maraton") || 
+      textoPlanoLower.includes("maratón")
+    ) {
+      tipoPlantilla = "maraton";
+    }
+  }
+
+  let modeloBase = tipoPlantilla ? modelosPlantilla.find((m) => m.id === tipoPlantilla) : null;
+  if (!modeloBase) {
+    const modeloCompleto = modelosPlantilla.find((modelo) =>
+      modelo.variables.every((variable) => presentes.includes(variable.id))
+    );
+    modeloBase = modeloCompleto || obtenerModeloMasCercano(presentes);
+  }
   const variablesBase = modeloBase?.variables || variablesPlantillaRequeridas;
   const faltantes = variablesBase.filter((variable) => !presentes.includes(variable.id));
   const variablesListasModelo = variablesBase.filter((variable) => presentes.includes(variable.id));
-  const flexibleValida = !modeloCompleto && esPlantillaDigitalUtil(presentes);
+  const flexibleValida = modeloBase?.id === "general" ? esPlantillaDigitalUtil(presentes) : false;
 
   if (validarVariables && presentes.length === 0) {
     throw new Error("La plantilla no contiene ninguna variable válida (ej: {{ALUMNO}}, {{FECHA}}, etc.).");
   }
+
+  const plantillaBase64 = await zip.generateAsync({ type: "base64" });
 
   return {
     variablesDetectadas: presentes,
@@ -214,6 +468,7 @@ async function analizarZipPlantilla(zip, opciones = {}) {
     plantillaValida: true,
     plantillaModelo: modeloBase?.id || "general",
     textoPlano,
+    plantillaBase64,
   };
 }
 
