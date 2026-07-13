@@ -2,8 +2,8 @@
   "name": "modulo-extracurricular",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter backend start & pnpm --filter frontend dev",
-    "start": "iniciar-sistema.cmd",
+    "dev": "pnpm -r --parallel dev",
+    "start": "pnpm -r --parallel dev",
     "build": "pnpm --filter frontend build",
     "install:all": "pnpm install",
     "test": "playwright test",

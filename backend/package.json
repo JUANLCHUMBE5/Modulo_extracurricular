@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "dev": "tsx --watch src/server.ts",
     "start": "tsx --watch src/server.ts",
     "api": "tsx --watch src/server.ts",
     "build": "tsc"
