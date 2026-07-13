@@ -12,6 +12,7 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "bcryptjs": "^3.0.3",
+    "docx": "^9.7.1",
     "pizzip": "^3.2.0"
   }
 }
