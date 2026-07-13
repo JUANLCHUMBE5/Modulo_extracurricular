@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm -r --parallel dev",
-    "start": "pnpm -r --parallel dev",
+    "start": "start.cmd",
     "build": "pnpm --filter frontend build",
     "install:all": "pnpm install",
     "test": "playwright test",

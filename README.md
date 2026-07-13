@@ -287,7 +287,7 @@ CREATE TABLE IF NOT EXISTS configuracion (
 
 ## 3. Verificación de Funcionamiento
 
-Una vez que guardes los cambios en el archivo `.env`, inicia el sistema ejecutando [`iniciar-sistema.cmd`](../iniciar-sistema.cmd).
+Una vez que guardes los cambios en el archivo `.env`, inicia el sistema ejecutando [`start.cmd`](./start.cmd) o con el comando `pnpm start`.
 
 Para confirmar que está operando sobre PostgreSQL, puedes abrir el endpoint de salud de la API en tu navegador:
 👉 **[http://127.0.0.1:5175/api/health](http://127.0.0.1:5175/api/health)**
