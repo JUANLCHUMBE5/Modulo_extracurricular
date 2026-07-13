@@ -20,7 +20,7 @@
     "recibo": "",
     "egreso": "",
     "reciboInicio": "REC-0500",
-    "reciboActual": "REC-0511",
+    "reciboActual": "REC-0515",
     "reciboActive": true,
     "reciboVirtualInicio": "V-1000",
     "reciboVirtualActual": "V-1000",
@@ -30,7 +30,7 @@
     "egresoActive": true
   },
   "syncEvents": [],
-  "nextProgramaId": 106,
-  "nextCargaId": 3,
+  "nextProgramaId": 107,
+  "nextCargaId": 6,
   "nextDocumentoId": 1
 }

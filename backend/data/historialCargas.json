@@ -1,5 +1,399 @@
 [
   {
+    "id": "5",
+    "fecha": "2026-07-13T15:19:23.654Z",
+    "periodo": "escolar",
+    "usuario": "carlos",
+    "resumen": {
+      "importados": 1,
+      "duplicados": 0,
+      "total": 1
+    },
+    "registros": [
+      {
+        "dni": "60000015",
+        "nombres": "Valentina Castillo Ramos",
+        "programaId": "PRG-105"
+      }
+    ]
+  },
+  {
+    "id": "4",
+    "fecha": "2026-07-13T13:58:32.363Z",
+    "periodo": "escolar",
+    "usuario": "carlos",
+    "resumen": {
+      "importados": 35,
+      "duplicados": 0,
+      "total": 35
+    },
+    "registros": [
+      {
+        "dni": "60000031",
+        "nombres": "Daniel Garcia Paredes",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000032",
+        "nombres": "Mariana Garcia Ortiz",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000033",
+        "nombres": "Diego Mendoza Ortiz",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000034",
+        "nombres": "Sara Silva Flores",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000035",
+        "nombres": "Sofia Paredes Leon",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000036",
+        "nombres": "Martin Ortiz Huaman",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000037",
+        "nombres": "Alejandro Leon Paredes",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000038",
+        "nombres": "Valentina Salazar Aquino",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000039",
+        "nombres": "Gabriel Gutierrez Ramos",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000040",
+        "nombres": "Thiago Leon Garcia",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000041",
+        "nombres": "Lucas Vargas Huaman",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000042",
+        "nombres": "Paula Ortiz Quispe",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000043",
+        "nombres": "Daniel Ramos Herrera",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000044",
+        "nombres": "Thiago Huaman Leon",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000045",
+        "nombres": "Sara Herrera Flores",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000046",
+        "nombres": "Martin Vargas Castro",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000047",
+        "nombres": "Lucas Paredes Leon",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000048",
+        "nombres": "Diego Aquino Huaman",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000049",
+        "nombres": "Paula Gutierrez Herrera",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000050",
+        "nombres": "Alejandro Leon Ramos",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000051",
+        "nombres": "Daniel Leon Castillo",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000052",
+        "nombres": "Valentina Torres Quispe",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000053",
+        "nombres": "Sebastian Paredes Herrera",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000054",
+        "nombres": "Daniel Huaman Castillo",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000055",
+        "nombres": "Nicolas Gutierrez Ortiz",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000056",
+        "nombres": "Sara Lopez Quispe",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000057",
+        "nombres": "Lucas Castillo Huaman",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000058",
+        "nombres": "Sofia Vargas Ortiz",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000059",
+        "nombres": "Gabriel Gutierrez Rojas",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000060",
+        "nombres": "Camila Garcia Quispe",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000061",
+        "nombres": "Valentina Ortiz Lopez",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000062",
+        "nombres": "Mariana Ramos Torres",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000063",
+        "nombres": "Lucia Lopez Vargas",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000064",
+        "nombres": "Thiago Torres Huaman",
+        "programaId": "PRG-106"
+      },
+      {
+        "dni": "60000065",
+        "nombres": "Alejandro Castro Paredes",
+        "programaId": "PRG-106"
+      }
+    ]
+  },
+  {
+    "id": "3",
+    "fecha": "2026-07-13T13:37:22.946Z",
+    "periodo": "escolar",
+    "usuario": "carlos",
+    "resumen": {
+      "importados": 35,
+      "duplicados": 0,
+      "total": 35
+    },
+    "registros": [
+      {
+        "dni": "60000031",
+        "nombres": "Daniel Garcia Paredes",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000032",
+        "nombres": "Mariana Garcia Ortiz",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000033",
+        "nombres": "Diego Mendoza Ortiz",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000034",
+        "nombres": "Sara Silva Flores",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000035",
+        "nombres": "Sofia Paredes Leon",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000036",
+        "nombres": "Martin Ortiz Huaman",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000037",
+        "nombres": "Alejandro Leon Paredes",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000038",
+        "nombres": "Valentina Salazar Aquino",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000039",
+        "nombres": "Gabriel Gutierrez Ramos",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000040",
+        "nombres": "Thiago Leon Garcia",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000041",
+        "nombres": "Lucas Vargas Huaman",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000042",
+        "nombres": "Paula Ortiz Quispe",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000043",
+        "nombres": "Daniel Ramos Herrera",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000044",
+        "nombres": "Thiago Huaman Leon",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000045",
+        "nombres": "Sara Herrera Flores",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000046",
+        "nombres": "Martin Vargas Castro",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000047",
+        "nombres": "Lucas Paredes Leon",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000048",
+        "nombres": "Diego Aquino Huaman",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000049",
+        "nombres": "Paula Gutierrez Herrera",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000050",
+        "nombres": "Alejandro Leon Ramos",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000051",
+        "nombres": "Daniel Leon Castillo",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000052",
+        "nombres": "Valentina Torres Quispe",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000053",
+        "nombres": "Sebastian Paredes Herrera",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000054",
+        "nombres": "Daniel Huaman Castillo",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000055",
+        "nombres": "Nicolas Gutierrez Ortiz",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000056",
+        "nombres": "Sara Lopez Quispe",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000057",
+        "nombres": "Lucas Castillo Huaman",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000058",
+        "nombres": "Sofia Vargas Ortiz",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000059",
+        "nombres": "Gabriel Gutierrez Rojas",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000060",
+        "nombres": "Camila Garcia Quispe",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000061",
+        "nombres": "Valentina Ortiz Lopez",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000062",
+        "nombres": "Mariana Ramos Torres",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000063",
+        "nombres": "Lucia Lopez Vargas",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000064",
+        "nombres": "Thiago Torres Huaman",
+        "programaId": "PRG-105"
+      },
+      {
+        "dni": "60000065",
+        "nombres": "Alejandro Castro Paredes",
+        "programaId": "PRG-105"
+      }
+    ]
+  },
+  {
     "id": "2",
     "fecha": "2026-07-07T16:34:22.911Z",
     "periodo": "escolar",

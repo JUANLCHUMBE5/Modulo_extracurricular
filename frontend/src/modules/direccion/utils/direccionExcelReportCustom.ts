@@ -71,16 +71,51 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
       };
     });
   } else if (tipoDatos === "direccion_alumnos_asistencias") {
-    rawData = (panel.reportes.inscripciones || []).map((ins: any) => ({
-      dni: ins.dni || "",
-      estudiante: ins.estudiante || "",
-      grado: ins.grado || "",
-      seccion: ins.seccion || "",
-      programa: ins.programa || "",
-      programaId: ins.programaId || ins.programa_id || "",
-      telefono: ins.telefono || "",
-      fechaRegistro: ins.fechaRegistro || "",
-    }));
+    const list = panel.reportes.programas || [];
+    const allInscripciones = panel.reportes.inscripciones || [];
+    const groupedRows: any[] = [];
+
+    list.forEach((prog: any) => {
+      const inscripcionesPrograma = allInscripciones.filter((ins: any) =>
+        String(ins.programaId) === String(prog.id)
+      );
+
+      if (inscripcionesPrograma.length === 0) {
+        groupedRows.push({
+          id: prog.id,
+          nombre: prog.nombre || prog.nombre_programa || "Programa sin nombre",
+          responsable: prog.responsable || prog.docente || prog.tutora || "Sin responsable",
+          categoria: prog.categoria || "Sin categoria",
+          periodo: prog.periodo || "escolar",
+          inscritos: 0,
+          studentDnis: [],
+        });
+      } else {
+        const docenteGroups: Record<string, any[]> = {};
+        inscripcionesPrograma.forEach((ins: any) => {
+          const docName = String(ins.docente || ins.profesor || prog.responsable || "Sin responsable").trim();
+          if (!docenteGroups[docName]) {
+            docenteGroups[docName] = [];
+          }
+          docenteGroups[docName].push(ins);
+        });
+
+        Object.entries(docenteGroups).forEach(([docName, insList]) => {
+          const studentDnis = insList.map((ins: any) => String(ins.dni || ins.dniEstudiante || "").trim()).filter(Boolean);
+          groupedRows.push({
+            id: prog.id,
+            nombre: prog.nombre || prog.nombre_programa || "Programa sin nombre",
+            responsable: docName,
+            categoria: prog.categoria || "Sin categoria",
+            periodo: prog.periodo || "escolar",
+            inscritos: insList.length,
+            studentDnis,
+          });
+        });
+      }
+    });
+
+    rawData = groupedRows;
   }
 
   let filteredData = [...rawData];
@@ -91,16 +126,16 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
     const nameOrId = String(progNameOrId).toLowerCase().trim();
     return listProgramas.find((p: any) =>
       String(p.id).toLowerCase() === nameOrId ||
-      String(p.nombre).toLowerCase().trim() === nameOrId
+      String(p.nombre || p.nombre_programa || "").toLowerCase().trim() === nameOrId
     );
   };
 
   if (filtros.categoria && filtros.categoria !== "todos") {
     filteredData = filteredData.filter((item) => {
-      if (tipoDatos === "programas") {
+      if (tipoDatos === "programas" || tipoDatos === "direccion_alumnos_asistencias") {
         return String(item.categoria || "").toLowerCase() === String(filtros.categoria).toLowerCase();
       }
-      if (tipoDatos === "inscripciones" || tipoDatos === "direccion_alumnos_pagos" || tipoDatos === "direccion_alumnos_asistencias") {
+      if (tipoDatos === "inscripciones" || tipoDatos === "direccion_alumnos_pagos") {
         if (item.categoria) {
           return String(item.categoria).toLowerCase() === String(filtros.categoria).toLowerCase();
         }
@@ -121,11 +156,11 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
     const progIdFiltrado = progObj ? String(progObj.id).toLowerCase().trim() : String(filtros.programa).toLowerCase().trim();
 
     filteredData = filteredData.filter((item) => {
-      if (tipoDatos === "programas") {
+      if (tipoDatos === "programas" || tipoDatos === "direccion_alumnos_asistencias") {
         return String(item.id).toLowerCase() === progIdFiltrado ||
                String(item.nombre).toLowerCase().trim() === progNombreFiltrado;
       }
-      if (tipoDatos === "inscripciones" || tipoDatos === "pagos" || tipoDatos === "direccion_alumnos_pagos" || tipoDatos === "direccion_alumnos_asistencias") {
+      if (tipoDatos === "inscripciones" || tipoDatos === "pagos" || tipoDatos === "direccion_alumnos_pagos") {
         const itemProgId = String(item.programaId || "").toLowerCase().trim();
         const itemProgNombre = String(item.programa || "").toLowerCase().trim();
         return (itemProgId && itemProgId === progIdFiltrado) ||
@@ -398,7 +433,7 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
   let finalRows: any[] = [];
 
   if (tipoDatos === "direccion_alumnos_asistencias") {
-    const baseColumns = columnas.length > 0 ? columnas : ["dni", "estudiante", "grado", "programa", "telefono"];
+    const baseColumns = columnas.length > 0 ? columnas : ["id", "nombre", "responsable", "categoria", "inscritos"];
     sheetColumns = baseColumns.map((colKey) => {
       const colInfo = headersMap[colKey];
       return {
@@ -408,44 +443,10 @@ export async function descargarReportePersonalizadoExcel({ panel, tipoDatos, fil
       };
     });
 
-    columnasTiempo.forEach((col) => {
-      sheetColumns.push({
-        header: col.label,
-        key: col.key,
-        width: 18,
-      });
-    });
-
-    const rawAsistencias = panel.reportes.asistencias || apiDb.asistencias || [];
-    const asistencias = rawAsistencias.map((a: any) => a.asistencia_id ? adaptarAsistencia(a) : a);
-
-    finalRows = filteredData.map((ins) => {
-      const rowData = { ...ins };
-
-      const studentAsistencias = asistencias.filter((a: any) => {
-        const aDni = String(a.dniEstudiante || a.codigoEstudiante || "").trim();
-        const insDni = String(ins.dni || "").trim();
-        const dniMatch = aDni && insDni && aDni === insDni;
-        const progMatch = String(a.programaId) === String(ins.programaId) ||
-          normalizarTexto(a.programa) === normalizarTexto(ins.programa);
-        return dniMatch && progMatch;
-      });
-
-      columnasTiempo.forEach((col) => {
-        const count = studentAsistencias.filter((a: any) => {
-          const date = normalizarFecha(a.fechaRegistro || a.fecha);
-          return date && date >= col.start && date <= col.end;
-        }).length;
-
-        if (filtros.consolidacionAsistencia === "dia") {
-          rowData[col.key] = count > 0 ? "✓" : "—";
-        } else {
-          rowData[col.key] = count > 0 ? count : "—";
-        }
-      });
-
-      return rowData;
-    });
+    finalRows = filteredData.map((prog, idx) => ({
+      ...prog,
+      index: idx + 1,
+    }));
   } else {
     sheetColumns = columnas.map((colKey) => {
       const colInfo = headersMap[colKey];

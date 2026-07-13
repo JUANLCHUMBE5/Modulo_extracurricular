@@ -78,12 +78,12 @@ export const columnasDisponiblesMap = {
   ],
   direccion_alumnos_asistencias: [
     { key: "index", label: "N°" },
-    { key: "estudiante", label: "Nombres y Apellidos" },
-    { key: "grado", label: "Grado" },
-    { key: "seccion", label: "Sección" },
-    { key: "dni", label: "DNI Estudiante" },
-    { key: "programa", label: "Programa / Taller" },
-    { key: "telefono", label: "Teléfono Apoderado" },
+    { key: "id", label: "Código de Taller" },
+    { key: "nombre", label: "Taller / Programa" },
+    { key: "responsable", label: "Profesor Responsable" },
+    { key: "categoria", label: "Categoría" },
+    { key: "periodo", label: "Periodo" },
+    { key: "inscritos", label: "Matriculados" },
   ],
 };
 

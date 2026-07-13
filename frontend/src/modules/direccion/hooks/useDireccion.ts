@@ -127,7 +127,7 @@ export default function useDireccion({
       ];
     } else if (reporteSeleccionado === "direccion_alumnos_asistencias") {
       tipo = "direccion_alumnos_asistencias";
-      defaultCols = ["index", "estudiante", "grado", "seccion", "programa"];
+      defaultCols = ["index", "id", "nombre", "responsable", "categoria", "inscritos"];
     } else if (reporteSeleccionado === "programas_catalogo") {
       tipo = "programas";
       defaultCols = [
@@ -330,6 +330,7 @@ export default function useDireccion({
     gradosOptions,
     registrosFiltrados,
     ejecutarDescargaCustom,
+    exportarHabilitado,
     ...filters,
     ...beneficios,
   };

@@ -174,15 +174,51 @@ export function filtrarRegistrosReporte({
       };
     });
   } else if (customTipo === "direccion_alumnos_asistencias") {
-    raw = (panel.reportes.inscripciones || []).map(ins => ({
-      dni: ins.dni || "",
-      estudiante: ins.estudiante || "",
-      grado: ins.grado || "",
-      programa: ins.programa || "",
-      programaId: ins.programaId || ins.programa_id || "",
-      telefono: ins.telefono || "",
-      fechaRegistro: ins.fechaRegistro || "",
-    }));
+    const list = panel.reportes.programas || [];
+    const allInscripciones = panel.reportes.inscripciones || [];
+    const groupedRows: any[] = [];
+
+    list.forEach((prog: any) => {
+      const inscripcionesPrograma = allInscripciones.filter((ins: any) =>
+        String(ins.programaId) === String(prog.id)
+      );
+
+      if (inscripcionesPrograma.length === 0) {
+        groupedRows.push({
+          id: prog.id,
+          nombre: prog.nombre || prog.nombre_programa || "Programa sin nombre",
+          responsable: prog.responsable || prog.docente || prog.tutora || "Sin responsable",
+          categoria: prog.categoria || "Sin categoria",
+          periodo: prog.periodo || "escolar",
+          inscritos: 0,
+          studentDnis: [],
+        });
+      } else {
+        const docenteGroups: Record<string, any[]> = {};
+        inscripcionesPrograma.forEach((ins: any) => {
+          const docName = String(ins.docente || ins.profesor || prog.responsable || "Sin responsable").trim();
+          if (!docenteGroups[docName]) {
+            docenteGroups[docName] = [];
+          }
+          docenteGroups[docName].push(ins);
+        });
+
+        Object.entries(docenteGroups).forEach(([docName, insList]) => {
+          const studentDnis = insList.map((ins: any) => String(ins.dni || ins.dniEstudiante || "").trim()).filter(Boolean);
+          groupedRows.push({
+            id: prog.id,
+            nombre: prog.nombre || prog.nombre_programa || "Programa sin nombre",
+            responsable: docName,
+            categoria: prog.categoria || "Sin categoria",
+            periodo: prog.periodo || "escolar",
+            inscritos: insList.length,
+            studentDnis,
+          });
+        });
+      }
+    });
+
+    raw = groupedRows;
   }
 
   let filtered = [...raw];
@@ -194,17 +230,17 @@ export function filtrarRegistrosReporte({
     const nameOrId = String(progNameOrId).toLowerCase().trim();
     return listProgramas.find(p =>
       String(p.id).toLowerCase() === nameOrId ||
-      String(p.nombre).toLowerCase().trim() === nameOrId
+      String(p.nombre || p.nombre_programa || "").toLowerCase().trim() === nameOrId
     );
   };
 
   // 1. Filtrar por Categoría
   if (customFiltroCategoria && customFiltroCategoria !== "todos") {
     filtered = filtered.filter((item) => {
-      if (customTipo === "programas") {
+      if (customTipo === "programas" || customTipo === "direccion_alumnos_asistencias") {
         return String(item.categoria || "").toLowerCase() === String(customFiltroCategoria).toLowerCase();
       }
-      if (customTipo === "inscripciones" || customTipo === "direccion_alumnos_pagos" || customTipo === "direccion_alumnos_asistencias") {
+      if (customTipo === "inscripciones" || customTipo === "direccion_alumnos_pagos") {
         if (item.categoria) {
           return String(item.categoria).toLowerCase() === String(customFiltroCategoria).toLowerCase();
         }
@@ -226,11 +262,11 @@ export function filtrarRegistrosReporte({
     const progIdFiltrado = progObj ? String(progObj.id).toLowerCase().trim() : String(customFiltroPrograma).toLowerCase().trim();
 
     filtered = filtered.filter((item) => {
-      if (customTipo === "programas") {
+      if (customTipo === "programas" || customTipo === "direccion_alumnos_asistencias") {
         return String(item.id).toLowerCase() === progIdFiltrado ||
                String(item.nombre).toLowerCase().trim() === progNombreFiltrado;
       }
-      if (customTipo === "inscripciones" || customTipo === "pagos" || customTipo === "direccion_alumnos_pagos" || customTipo === "direccion_alumnos_asistencias") {
+      if (customTipo === "inscripciones" || customTipo === "pagos" || customTipo === "direccion_alumnos_pagos") {
         const itemProgId = String(item.programaId || "").toLowerCase().trim();
         const itemProgNombre = String(item.programa || "").toLowerCase().trim();
         return (itemProgId && itemProgId === progIdFiltrado) ||

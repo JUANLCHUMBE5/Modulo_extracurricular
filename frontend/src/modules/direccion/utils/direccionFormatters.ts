@@ -1,7 +1,8 @@
 const permisosExportar = ["direccion.reportes"];
 
 export function puedeExportar(user) {
-  if (user?.role === "administrador") return true;
+  const rol = String(user?.role || user?.rol || "").toLowerCase();
+  if (rol === "administrador" || rol === "direccion") return true;
   const permisos = Array.isArray(user?.permisos)
     ? user.permisos
     : Array.isArray(user?.permissions)

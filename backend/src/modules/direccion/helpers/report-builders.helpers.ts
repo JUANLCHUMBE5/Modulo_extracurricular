@@ -11,6 +11,7 @@ export function crearFilaInscripcionReporte(item: any, estudiantes: any = {}) {
     seccion: item.seccion || "",
     programa: item.programa || "",
     programaId: item.programaId || item.programa_id || "",
+    docente: item.docente || item.profesor || "",
     estadoInscripcion: item.estadoInscripcion || "",
     estadoPago: normalizarEstadoPago(item.estadoPago),
     costo: parseMonto(item.costo || 0),

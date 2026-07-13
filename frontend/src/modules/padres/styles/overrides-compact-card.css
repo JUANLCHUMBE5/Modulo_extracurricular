@@ -1,0 +1,131 @@
+/* ── Rediseño Compacto del Catálogo de Cursos Adicionales ── */
+.padres-flow-course-card.custom-compact-card {
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  padding: 16px 20px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  transition: all 0.2s ease !important;
+  max-width: 380px !important;
+  width: 100% !important;
+}
+
+.padres-flow-course-card.custom-compact-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05) !important;
+  border-color: #cbd5e1 !important;
+}
+
+.custom-compact-head {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.custom-compact-title {
+  font-size: 17.5px !important;
+  font-weight: 850 !important;
+  color: #068003 !important;
+  margin: 0 !important;
+  letter-spacing: -0.01em !important;
+}
+
+.custom-compact-badge {
+  font-size: 9.5px !important;
+  font-weight: 850 !important;
+  color: #047857 !important;
+  background: #ecfdf5 !important;
+  border: 1px solid #a7f3d0 !important;
+  padding: 3px 8px !important;
+  border-radius: 6px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  display: inline-block !important;
+}
+
+.custom-compact-dates-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 14px !important;
+  color: #475569 !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding-bottom: 10px !important;
+  width: 100% !important;
+}
+
+.custom-compact-date-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.custom-compact-date-item svg {
+  color: #068003 !important;
+}
+
+.custom-compact-footer {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  gap: 8px !important;
+}
+
+.custom-compact-price {
+  font-size: 19px !important;
+  font-weight: 950 !important;
+  color: #0f172a !important;
+  white-space: nowrap !important;
+}
+
+.custom-compact-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  background: #068003 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  font-weight: 850 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  width: auto !important;
+  min-height: unset !important;
+}
+
+.custom-compact-btn:hover {
+  background: #045e02 !important;
+}
+
+.custom-compact-btn:disabled {
+  background: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  cursor: not-allowed !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.custom-compact-btn svg {
+  flex-shrink: 0 !important;
+}
+
+/* Estilo premium para la fecha al inicio de la carta de comunicado */
+.padres-flow-letter > p:first-child {
+  text-align: right !important;
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #64748b !important;
+  margin-bottom: 16px !important;
+  letter-spacing: -0.01em !important;
+}

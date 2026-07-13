@@ -1,0 +1,320 @@
+.padres-enrollment {
+  grid-template-columns: minmax(0, 1.55fr) minmax(330px, 0.75fr);
+  gap: 18px;
+}
+
+.padres-hero {
+  min-height: 172px;
+  padding: 28px 0 26px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #ffffff;
+}
+
+.padres-hero-with-banner {
+  min-height: 172px;
+  background:
+    var(--padres-banner) right center / contain no-repeat,
+    #ffffff;
+}
+
+.padres-hero-copy {
+  width: min(520px, 52%);
+}
+
+.padres-eyebrow,
+.padres-hero-with-banner .padres-eyebrow {
+  color: #008000;
+}
+
+.padres-hero h2,
+.padres-hero-with-banner h2 {
+  margin: 8px 0 10px;
+  color: #172331;
+  font-size: clamp(28px, 3vw, 34px);
+}
+
+.padres-hero-copy p,
+.padres-hero-with-banner .padres-hero-copy p {
+  color: #667085;
+  font-size: 15px;
+}
+
+.padres-hero-actions {
+  display: none;
+}
+
+.padres-payment-panel {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) minmax(180px, 0.46fr);
+  align-items: center;
+  gap: 20px;
+  min-height: 178px;
+  border-color: #ffd8aa;
+  background: #fffaf2;
+  box-shadow: 0 18px 42px #f4eadb;
+}
+
+.padres-announcement-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.34);
+}
+
+.padres-announcement-modal {
+  width: min(450px, calc(100vw - 28px));
+  max-height: min(92vh, 720px);
+  overflow: hidden;
+  border-radius: 8px;
+  background: #20345f;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.38);
+}
+
+.padres-announcement-head {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px 0 14px;
+  color: #ffffff;
+  background: #20345f;
+}
+
+.padres-announcement-head strong {
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.padres-announcement-head button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: #ffffff;
+  background: transparent;
+  cursor: pointer;
+}
+
+.padres-announcement-head button:hover {
+  background: rgba(255, 255, 255, 0.13);
+}
+
+.padres-announcement-body {
+  position: relative;
+  background: #243ea5;
+}
+
+.padres-announcement-body img {
+  display: block;
+  width: 100%;
+  max-height: calc(min(92vh, 720px) - 42px);
+  object-fit: contain;
+  background: #243ea5;
+}
+
+.padres-announcement-arrow {
+  position: absolute;
+  top: 50%;
+  width: 42px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  color: #27a3ff;
+  background: transparent;
+  cursor: default;
+  transform: translateY(-50%);
+}
+
+.padres-announcement-arrow.is-left {
+  left: 4px;
+}
+
+.padres-announcement-arrow.is-right {
+  right: 4px;
+}
+
+.padres-announcement-dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.padres-announcement-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.23);
+}
+
+.padres-announcement-dots span.is-active {
+  background: #2db4ff;
+}
+
+/* Container for the course announcement image */
+.padres-flow-course-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 170px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 10px;
+}
+
+.padres-flow-course-image-wrapper:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+}
+
+.padres-flow-course-image-wrapper .padres-flow-course-announcement {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  margin-bottom: 0;
+  border-radius: 0;
+  background: transparent;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.padres-flow-course-image-wrapper:hover .padres-flow-course-announcement {
+  transform: scale(1.04);
+}
+
+/* Hover overlay on course image */
+.padres-flow-course-image-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.padres-flow-course-image-wrapper:hover .padres-flow-course-image-overlay {
+  opacity: 1;
+}
+
+.padres-flow-course-image-overlay svg {
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+.padres-flow-course-image-overlay span {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Lightbox Modal styles for viewing course posters */
+.padres-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  padding: 20px;
+  animation: padresFadeIn 0.2s ease-out;
+}
+
+.padres-lightbox-container {
+  position: relative;
+  width: min(520px, 100%);
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: padresScaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.padres-lightbox-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(15, 23, 42, 0.1);
+  color: #1e293b;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s, color 0.2s, transform 0.2s;
+}
+
+.padres-lightbox-close:hover {
+  background: rgba(15, 23, 42, 0.2);
+  color: #0f172a;
+  transform: rotate(90deg);
+}
+
+.padres-lightbox-body {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  overflow-y: auto;
+}
+
+.padres-lightbox-img {
+  max-width: 100%;
+  max-height: 65vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.padres-lightbox-caption {
+  padding: 14px 20px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  text-align: center;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+@keyframes padresFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes padresScaleUp {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}

@@ -4,13 +4,10 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "start": "start.cmd",
-    "build": "pnpm --filter frontend build",
-    "install:all": "pnpm install",
-    "test": "playwright test",
-    "test:ui": "playwright test --ui"
+    "build": "pnpm -r build",
+    "install:all": "pnpm install"
   },
   "devDependencies": {
-    "@playwright/test": "^1.61.1",
     "bcryptjs": "^3.0.3",
     "docx": "^9.7.1",
     "pizzip": "^3.2.0"

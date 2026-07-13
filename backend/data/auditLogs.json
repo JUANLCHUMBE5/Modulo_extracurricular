@@ -1,5 +1,245 @@
 [
   {
+    "id": "AUD-925890-ac91",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-13T15:52:05.890Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-920520-bd79",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-13T15:52:00.521Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-963795-0a78",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T15:19:23.796Z",
+    "accion": "CARGA_EXCEL_CONFIRMAR",
+    "detalles": "{\"cargaId\":5,\"importados\":1,\"duplicados\":0,\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-574013-0bda",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-13T14:22:54.013Z",
+    "accion": "PAGO_REGISTRAR",
+    "detalles": "{\"pagoId\":\"PAG-573860\",\"inscripcionId\":\"INS-659075\",\"monto\":50,\"_usuario_original\":\"Cajera\"}"
+  },
+  {
+    "id": "AUD-072063-699f",
+    "usuario": "admin",
+    "rol": "auxiliar",
+    "fecha": "2026-07-13T14:14:32.064Z",
+    "accion": "ASISTENCIA_REGISTRAR",
+    "detalles": "{\"alumno\":\"Sara Silva Flores\",\"taller\":\"Club De Tareas (3)\",\"fecha\":\"2026-07-13T14:14:31.922Z\",\"estado\":\"pagado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-064712-fbaf",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-13T14:14:24.712Z",
+    "accion": "PAGO_REGISTRAR",
+    "detalles": "{\"pagoId\":\"PAG-064573\",\"inscripcionId\":\"INS-836424\",\"monto\":50,\"_usuario_original\":\"Cajera\"}"
+  },
+  {
+    "id": "AUD-984207-9686",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-13T14:13:04.207Z",
+    "accion": "PAGO_VALIDAR",
+    "detalles": "{\"pagoId\":\"PAG-329012\",\"observaciones\":\"\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-945376-39d6",
+    "usuario": "admin",
+    "rol": "caja",
+    "fecha": "2026-07-13T14:12:25.376Z",
+    "accion": "PAGO_REGISTRAR",
+    "detalles": "{\"pagoId\":\"PAG-945259\",\"inscripcionId\":\"INS-932132\",\"monto\":80,\"_usuario_original\":\"Cajera\"}"
+  },
+  {
+    "id": "AUD-932504-bfcb",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-13T14:12:12.504Z",
+    "accion": "INSCRIPCION_ESTADO",
+    "detalles": "{\"inscripcionId\":\"INS-932132\",\"alumno\":\"Daniel Garcia Paredes\",\"taller\":\"Club De Tareas (3)\",\"estadoAnterior\":\"pendiente_pago\",\"estadoNuevo\":\"pendiente_pago\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-932235-5e1a",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-13T14:12:12.235Z",
+    "accion": "INSCRIPCION_CREAR",
+    "detalles": "{\"inscripcionId\":\"INS-932132\",\"estudianteId\":\"60000031\",\"programaId\":\"PRG-105\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-894525-a97d",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-13T14:11:34.525Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000031\",\"nombres\":\"Daniel Garcia Paredes\",\"_usuario_original\":\"60000031\"}"
+  },
+  {
+    "id": "AUD-874347-591d",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T14:11:14.347Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-105\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-774895-5f8b",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T14:09:34.895Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-105\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-730694-880f",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T14:08:50.694Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-632831-2be9",
+    "usuario": "admin",
+    "rol": "auxiliar",
+    "fecha": "2026-07-13T14:07:12.831Z",
+    "accion": "ASISTENCIA_REGISTRAR",
+    "detalles": "{\"alumno\":\"Lucas Castillo Huaman\",\"taller\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo\",\"fecha\":\"2026-07-13T14:07:12.721Z\",\"estado\":\"tardanza\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-614451-f87e",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T14:06:54.451Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-585661-e06c",
+    "usuario": "admin",
+    "rol": "auxiliar",
+    "fecha": "2026-07-13T14:06:25.661Z",
+    "accion": "ASISTENCIA_REGISTRAR",
+    "detalles": "{\"alumno\":\"Sofia Paredes Leon\",\"taller\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo\",\"fecha\":\"2026-07-13T14:06:25.547Z\",\"estado\":\"pagado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-556410-e34b",
+    "usuario": "admin",
+    "rol": "auxiliar",
+    "fecha": "2026-07-13T14:05:56.410Z",
+    "accion": "ASISTENCIA_REGISTRAR",
+    "detalles": "{\"alumno\":\"Daniel Garcia Paredes\",\"taller\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo\",\"fecha\":\"2026-07-13T14:05:56.286Z\",\"estado\":\"pagado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-541665-b4b2",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T14:05:41.665Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-496300-822e",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T14:04:56.300Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-105\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-401132-cf1d",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T14:03:21.132Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-340379-4464",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T14:02:20.382Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-106\",\"estadoAnterior\":\"Habilitado\",\"estadoNuevo\":\"Archivado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-112475-d221",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T13:58:32.475Z",
+    "accion": "CARGA_EXCEL_CONFIRMAR",
+    "detalles": "{\"cargaId\":4,\"importados\":35,\"duplicados\":0,\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-085143-4025",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T13:58:05.143Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-106\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-018359-4878",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T13:56:58.361Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-106\",\"nombre\":\"Reforzamiento Circular 2026 Inicial Y Primaria Ii Ciclo\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-104257-e229",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-13T13:41:44.257Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000032\",\"nombres\":\"Mariana Garcia Ortiz\",\"_usuario_original\":\"60000032\"}"
+  },
+  {
+    "id": "AUD-095730-758a",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T13:41:35.730Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-105\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-063288-3763",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T13:41:03.288Z",
+    "accion": "PROGRAMA_ESTADO",
+    "detalles": "{\"programaId\":\"PRG-104\",\"estadoAnterior\":\"Deshabilitado\",\"estadoNuevo\":\"Archivado\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-843079-8cac",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-13T13:37:23.080Z",
+    "accion": "CARGA_EXCEL_CONFIRMAR",
+    "detalles": "{\"cargaId\":3,\"importados\":35,\"duplicados\":0,\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-766016-ff5e",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-13T13:19:26.017Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
     "id": "AUD-306156-893c",
     "usuario": "admin",
     "rol": "coordinacion",

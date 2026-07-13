@@ -630,7 +630,8 @@
     "apoderado": "Juan Garcia Lopez",
     "telefonoApoderado": "999888777",
     "correoApoderado": "",
-    "estadoInscripcion": "confirmada"
+    "estadoInscripcion": "confirmada",
+    "estadoCaja": "derivado_caja"
   },
   "60000032": {
     "dni": "60000032",
@@ -679,7 +680,7 @@
     "apoderado": "Apoderado Flores",
     "telefonoApoderado": "947812982",
     "correoApoderado": "",
-    "estadoInscripcion": "pendiente_pago"
+    "estadoInscripcion": "confirmada"
   },
   "60000035": {
     "dni": "60000035",
@@ -835,7 +836,7 @@
     "apoderado": "Apoderado Leon",
     "telefonoApoderado": "969983707",
     "correoApoderado": "",
-    "estadoInscripcion": "pendiente_pago"
+    "estadoInscripcion": "Pago exitoso"
   },
   "60000045": {
     "dni": "60000045",
@@ -851,7 +852,7 @@
     "apoderado": "Apoderado Flores SGSGS",
     "telefonoApoderado": "991811736",
     "correoApoderado": "",
-    "estadoInscripcion": "pendiente_pago",
+    "estadoInscripcion": "confirmada",
     "estadoCaja": "derivado_caja"
   },
   "60000046": {

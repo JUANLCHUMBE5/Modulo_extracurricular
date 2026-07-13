@@ -89,6 +89,9 @@ export async function generarYDescargarPdfFichasLote({
       };
 
       if (!programa.plantillaBase64) {
+        if (programa.plantilla) {
+          programasSinPlantilla.add(programa.nombre);
+        }
         try {
           const documentoFallback = await crearDocumentoInvitacion(mockEstudiante, mockInscripcion);
           const pdfBlob = (await crearPdfInvitacionDocumento(documentoFallback)).output("blob");
@@ -146,9 +149,9 @@ export async function generarYDescargarPdfFichasLote({
 
     if (programasSinPlantilla.size > 0) {
       alert(
-        `Se descargaron ${archivosAgregados} fichas en un único PDF. Sin embargo, no se generaron fichas para los siguientes programas por falta de plantilla:\n\n${Array.from(
+        `Se descargaron ${archivosAgregados} fichas en un único PDF. Sin embargo, para los siguientes talleres se usó una plantilla genérica porque no tienen su archivo Word cargado o no se arrastró el archivo correcto:\n\n${Array.from(
           programasSinPlantilla
-        ).join("\n")}`
+        ).join("\n")}\n\nPara descargar las fichas con su diseño de Word, asegúrese de arrastrar el archivo Word del taller o cargarlo de forma permanente.`
       );
     }
   } catch (error) {

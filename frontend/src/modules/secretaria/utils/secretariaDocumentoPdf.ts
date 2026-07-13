@@ -81,20 +81,12 @@ export async function crearUrlPdfInvitacion(documento: any): Promise<string> {
 }
 
 export async function convertirWordOriginalAPdf(wordBlob: Blob) {
-  const docxContainer = document.createElement("div");
-  docxContainer.style.display = "none";
-  document.body.appendChild(docxContainer);
+  const formData = new FormData();
+  formData.append("archivo", wordBlob, "documento.docx");
 
-  await renderAsync(wordBlob, docxContainer);
-  prepararVistaDocxParaImpresion(docxContainer);
-
-  const html = docxContainer.innerHTML;
-  document.body.removeChild(docxContainer);
-
-  const response = await fetch("/api/docx-to-pdf", {
+  const response = await fetch("/api/secretaria/documentos/pdf", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ html }),
+    body: formData,
   });
 
   if (!response.ok) throw new Error("Fallo en la conversión de documento DOCX a PDF.");
