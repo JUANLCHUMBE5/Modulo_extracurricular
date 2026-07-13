@@ -58,10 +58,6 @@ export default function GrupoHorariosList({
                 <p>{grupo.dia || "Sin día"}</p>
               </div>
               <div className="coord-group-schedule-cell">
-                <span>Almuerzo</span>
-                <p>{grupo.almuerzoInicio && grupo.almuerzoFin ? `${formatearHora12(grupo.almuerzoInicio)} a ${formatearHora12(grupo.almuerzoFin)}` : "No incluye"}</p>
-              </div>
-              <div className="coord-group-schedule-cell">
                 <span>Clase</span>
                 <p>{formatearHora12(grupo.horaInicio || "15:20")} a {formatearHora12(grupo.horaFin || "17:20")}</p>
               </div>

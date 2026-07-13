@@ -82,7 +82,7 @@ function ProgramasView({
     }
   };
 
-  const listadoVerano = ["Vacaciones Útiles", "Talleres Recreativos", "Talleres Deportivos"];
+  const listadoVerano = ["Vacaciones Útiles", "Talleres Recreativos", "Talleres Deportivos", "Arte"];
   const listadoEscolar = (categorias || []).filter(c => {
     const normCat = String(c || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     return ![
@@ -92,7 +92,7 @@ function ProgramasView({
       "deportivos",
       "taller recreativo",
       "vacaciones"
-    ].includes(normCat);
+    ].includes(normCat) && !c.startsWith("TALLER_VERANO:") && !c.startsWith("DELETED_TALLER_VERANO:");
   });
 
   const categoriasFiltradasOptions = (() => {
@@ -105,7 +105,10 @@ function ProgramasView({
       });
     }
     if (filtroPeriodo === "verano") {
-      return listadoVerano.map(c => ({ value: c, label: c }));
+      return listadoVerano.map(c => ({
+        value: c,
+        label: c === "Arte" ? "Otro taller (Añadir)" : c
+      }));
     }
     // "todos"
     const unicos = new Set([...listadoEscolar, ...listadoVerano]);

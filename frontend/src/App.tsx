@@ -161,6 +161,48 @@ function App() {
     writeStorageJson(SESSION_STORAGE_KEY, user);
   }, [user]);
 
+  // Control de sesión por inactividad (Idle Session Timeout)
+  useEffect(() => {
+    if (!user) return undefined;
+
+    const timeoutMs = user.role === "padres" 
+      ? 20 * 60 * 1000 // 20 minutos
+      : 2 * 60 * 60 * 1000; // 2 horas
+
+    let timerId: any = null;
+
+    const logoutInactivo = () => {
+      handleLogout();
+    };
+
+    const resetTimer = () => {
+      if (timerId) clearTimeout(timerId);
+      timerId = setTimeout(logoutInactivo, timeoutMs);
+    };
+
+    const eventos = ["mousedown", "mousemove", "keypress", "scroll", "touchstart"];
+    eventos.forEach(evt => window.addEventListener(evt, resetTimer, { passive: true }));
+
+    // Iniciar temporizador
+    resetTimer();
+
+    return () => {
+      if (timerId) clearTimeout(timerId);
+      eventos.forEach(evt => window.removeEventListener(evt, resetTimer));
+    };
+  }, [user?.username, user?.role]);
+
+  // Redireccionar al login silenciosamente cuando el API retorne no autorizado (401)
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      handleLogout();
+    };
+    window.addEventListener("api-unauthorized", handleUnauthorized);
+    return () => {
+      window.removeEventListener("api-unauthorized", handleUnauthorized);
+    };
+  }, []);
+
   useEffect(() => {
     if (!user) return undefined;
     return startSyncEventsClient({

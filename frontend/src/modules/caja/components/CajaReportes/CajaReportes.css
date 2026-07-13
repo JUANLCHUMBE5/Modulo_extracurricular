@@ -180,7 +180,7 @@
 .caja-row-muted {
   color: #8a98a8;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 500;
 }
 
 .caja-operation-code {
@@ -188,15 +188,15 @@
   min-width: 72px;
   color: #0f172a;
   font-family: var(--font-body);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.02em;
 }
 
 .caja-phone-channel {
   color: #101828;
-  font-size: 13px;
-  font-weight: 850;
+  font-size: 12px;
+  font-weight: 600;
   white-space: nowrap;
 }
 

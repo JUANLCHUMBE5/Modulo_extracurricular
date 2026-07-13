@@ -69,6 +69,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
     abrirRegistro,
     abrirCursoAdicional,
     abrirFichaGenerada,
+    imprimirFichaDesdeFormulario,
     derivarACaja,
     actualizarFormulario,
   } = useSecretariaState({ onClearDelegatedModule });
@@ -255,12 +256,13 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                         etiquetaPrograma={etiquetaProgramaSecretaria}
                         mensaje={mensaje}
                         modoCursoAdicional={modoCursoAdicional}
-                        modoRegistro={modoRegistro || vistaActiva === "inscripcion"}
+                        modoRegistro={modoRegistro}
                         mostrarSelectorPrograma={mostrarSelectorPrograma}
                         programaParaRegistro={programaParaRegistro}
                         programas={programas}
                         programasParaSelector={programasParaSelector}
                         tieneTalleresGradoBase={tieneTalleresGradoBase}
+                        inscripcionesEstudiante={inscripcionesEstudiante}
                         setModoRegistro={(valor) => {
                           setModoRegistro(valor);
                           if (!valor) {
@@ -280,6 +282,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
                         abrirCursoAdicional={abrirCursoAdicional}
                         setModoCursoAdicional={setModoCursoAdicional}
                         limpiarBusquedaEstudiante={limpiarBusquedaEstudiante}
+                        imprimirFichaDesdeFormulario={imprimirFichaDesdeFormulario}
                       />
                     )}
                   </div>
@@ -300,6 +303,7 @@ function Secretaria({ delegatedContent, moduleSwitcher, onClearDelegatedModule, 
               inscripcion={asistenciaModal.inscripcion}
               estudiante={estudiante}
               inscripcionesEstudiante={inscripcionesEstudiante}
+              programas={programas}
             />
           </>
         )}

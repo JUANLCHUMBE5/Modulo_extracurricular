@@ -36,6 +36,7 @@ export default function SecretariaRegistroModal({
   setModoRegistro,
   // Added props
   inscripcion,
+  inscripcionesEstudiante = [],
   abrirFichaGenerada,
   imprimiendoFichaRegistro,
   derivarACaja,
@@ -44,6 +45,7 @@ export default function SecretariaRegistroModal({
   abrirCursoAdicional,
   setModoCursoAdicional,
   limpiarBusquedaEstudiante,
+  imprimirFichaDesdeFormulario,
 }) {
   const modalRef = useRef<HTMLElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -81,213 +83,49 @@ export default function SecretariaRegistroModal({
     return () => window.cancelAnimationFrame(frameId);
   }, [modoRegistro, estudiante?.dni, estudiante?.codigoEstudiante, estudiante?.nombres]);
 
+  const esSoloLectura = Boolean(inscripcion && !modoCursoAdicional);
+
   return (
     <>
       {modoRegistro && estudiante ? (
-        inscripcion && !modoCursoAdicional ? (
-          <section
-            ref={modalRef}
-            className="secretaria-card secretaria-registration-card secretaria-registration-modal-fused is-inline"
-            role="region"
-            aria-labelledby="secretaria-registration-title"
-          >
+        <section
+          ref={modalRef}
+          className={`secretaria-card secretaria-registration-card secretaria-registration-modal-fused is-inline${esCicloVerano ? " is-summer-registration" : ""}${estudiante.esExterno ? " is-external-registration" : ""}`}
+          role="region"
+          aria-labelledby="secretaria-registration-title"
+        >
+          <form ref={formRef} className="secretaria-registration-form-fused" onSubmit={guardarInscripción}>
+            
             {/* Title */}
             <div style={{
               fontSize: "12px",
               fontWeight: "750",
-              color: "#0f766e",
+              color: "#558b2f",
               textTransform: "uppercase",
               letterSpacing: "0.5px",
-              marginBottom: "12px",
+              marginBottom: "8px",
               display: "flex",
               alignItems: "center",
               gap: "8px"
             }}>
-              <span style={{ color: "#0d9488", display: "flex", alignItems: "center" }}>✅</span>
-              <span>INSCRIPCIÓN REGISTRADA</span>
+              <span style={{ color: "#66bb6a", display: "flex", alignItems: "center" }}>📚</span>
+              <span>PROGRAMA Y TALLER</span>
             </div>
 
-            {/* Info Grid */}
-            <div style={{
-              background: "#f0fdf4",
-              border: "1px solid #bbf7d0",
-              borderRadius: "12px",
-              padding: "16px",
-              marginBottom: "20px"
-            }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                <div>
-                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#166534", textTransform: "uppercase" }}>Programa / Taller</span>
-                  <div style={{ fontSize: "14.5px", fontWeight: "750", color: "#14532d", marginTop: "2px" }}>
-                    {inscripcion.programa}
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div>
-                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#166534", textTransform: "uppercase" }}>Horario</span>
-                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#14532d", marginTop: "2px" }}>
-                      {resumirClaseSecretaria(inscripcion.horario)}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#166534", textTransform: "uppercase" }}>Costo</span>
-                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#14532d", marginTop: "2px" }}>
-                      S/ {Number(inscripcion.costo || 0).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div>
-                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#166534", textTransform: "uppercase" }}>Apoderado</span>
-                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#14532d", marginTop: "2px" }}>
-                      {inscripcion.apoderado}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#166534", textTransform: "uppercase" }}>Teléfono</span>
-                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#14532d", marginTop: "2px" }}>
-                      {inscripcion.telefono}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                  <div>
-                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#166534", textTransform: "uppercase" }}>Estado Pago</span>
-                    <div style={{ fontSize: "13px", fontWeight: "750", color: esPagoCompletado ? "#15803d" : "#c2410c", marginTop: "2px" }}>
-                      {inscripcion.estadoPago || "Pendiente"}
-                    </div>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "11px", fontWeight: "700", color: "#166534", textTransform: "uppercase" }}>Uniforme</span>
-                    <div style={{ fontSize: "13px", fontWeight: "600", color: "#14532d", marginTop: "2px" }}>
-                      {inscripcion.requiereUniforme ? "Sí" : "No"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button
-                  className="secretaria-btn-primary-fused"
-                  type="button"
-                  onClick={abrirFichaGenerada}
-                  disabled={imprimiendoFichaRegistro}
-                  style={{ flex: 1, height: "42px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
-                >
-                  {imprimiendoFichaRegistro ? <Loader2 className="secretaria-spin" size={17} /> : <Printer size={17} />}
-                  <span>{imprimiendoFichaRegistro ? "Preparando ficha" : "Imprimir ficha de registro"}</span>
-                </button>
 
-                <button
-                  className="secretaria-btn-primary-fused"
-                  type="button"
-                  onClick={derivarACaja}
-                  disabled={derivandoCaja || inscripcion.derivadoCaja || esPagoCompletado}
-                  style={{
-                    flex: 1,
-                    height: "42px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "8px",
-                    background: (inscripcion.derivadoCaja || esPagoCompletado) ? "#e2e8f0" : "#0d9488",
-                    border: (inscripcion.derivadoCaja || esPagoCompletado) ? "1px solid #cbd5e1" : "none",
-                    color: (inscripcion.derivadoCaja || esPagoCompletado) ? "#64748b" : "#ffffff",
-                    cursor: (inscripcion.derivadoCaja || esPagoCompletado) ? "not-allowed" : "pointer"
-                  }}
-                >
-                  {derivandoCaja ? (
-                    <Loader2 className="secretaria-spin" size={17} />
-                  ) : esPagoCompletado ? (
-                    <CheckCircle2 size={17} />
-                  ) : (
-                    <Send size={17} />
-                  )}
-                  <span>
-                    {inscripcion.derivadoCaja
-                      ? "Derivado exitosamente"
-                      : esPagoCompletado
-                        ? "Pago completado"
-                        : derivandoCaja
-                          ? "Derivando"
-                          : "Derivar a caja"}
-                  </span>
-                </button>
-              </div>
+            {mensaje && !mensaje.toLowerCase().includes("exito") && !mensaje.toLowerCase().includes("éxito") ? (
+              <MantineAlert
+                className="secretaria-message secretaria-modal-message secretaria-field-full"
+                color="orange"
+                radius="md"
+                icon={<AlertCircle size={18} />}
+              >
+                {mensaje}
+              </MantineAlert>
+            ) : null}
 
-              <div style={{ display: "flex", gap: "10px", marginTop: "4px" }}>
-                <button
-                  className="secretaria-btn-secondary-fused"
-                  type="button"
-                  onClick={limpiarBusquedaEstudiante}
-                  style={{ flex: 1, height: "38px" }}
-                >
-                  Buscar otro estudiante
-                </button>
-
-                {cursosAdicionalesDisponibles > 0 && (
-                  <button
-                    className="secretaria-btn-secondary-fused"
-                    type="button"
-                    onClick={abrirCursoAdicional}
-                    style={{
-                      flex: 1,
-                      height: "38px",
-                      borderColor: "#a5d6a7",
-                      background: "#e8f5e9",
-                      color: "#2e7d32",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: "6px"
-                    }}
-                  >
-                    <ClipboardCheck size={16} />
-                    <span>Registrar curso adicional</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          </section>
-        ) : (
-          <section
-            ref={modalRef}
-            className={`secretaria-card secretaria-registration-card secretaria-registration-modal-fused is-inline${esCicloVerano ? " is-summer-registration" : ""}${estudiante.esExterno ? " is-external-registration" : ""}`}
-            role="region"
-            aria-labelledby="secretaria-registration-title"
-          >
-            <form ref={formRef} className="secretaria-registration-form-fused" onSubmit={guardarInscripción}>
-              
-              {/* Title */}
-              <div style={{
-                fontSize: "12px",
-                fontWeight: "750",
-                color: "#558b2f",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-                marginBottom: "8px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px"
-              }}>
-                <span style={{ color: "#66bb6a", display: "flex", alignItems: "center" }}>📚</span>
-                <span>PROGRAMA Y TALLER</span>
-              </div>
-
-              {mensaje ? (
-                <MantineAlert
-                  className="secretaria-message secretaria-modal-message secretaria-field-full"
-                  color="orange"
-                  radius="md"
-                  icon={<AlertCircle size={18} />}
-                >
-                  {mensaje}
-                </MantineAlert>
-              ) : null}
-
+            <fieldset disabled={esSoloLectura} style={{ border: "none", padding: 0, margin: 0, display: "contents" }}>
               {programasParaSelector.length === 0 ? (
                 <MantineAlert
                   className="secretaria-message secretaria-modal-message secretaria-field-full"
@@ -318,6 +156,7 @@ export default function SecretariaRegistroModal({
                       programaRegistroVista={programaRegistroVista}
                       mostrarDetallePrograma={mostrarDetallePrograma}
                       horarioResumenRegistro={horarioResumenRegistro}
+                      inscripcionesEstudiante={inscripcionesEstudiante}
                     />
                   ) : (
                     <SecretariaNormalRegistroForm
@@ -332,6 +171,7 @@ export default function SecretariaRegistroModal({
                       ingresoCambridge={ingresoCambridge}
                       nivelCambridge={nivelCambridge}
                       esCicloVerano={esCicloVerano}
+                      inscripcionesEstudiante={inscripcionesEstudiante}
                     />
                   )}
 
@@ -341,65 +181,153 @@ export default function SecretariaRegistroModal({
                     alignItems: "center",
                     gap: "10px",
                     margin: "8px 0 10px",
-                    background: "#f1f8e9",
+                    background: "#f8fafc",
                     padding: "8px 12px",
                     borderRadius: "12px",
-                    border: "1px solid #c8e6c9"
+                    border: "1px solid #e2e8f0"
                   }}>
                     <input
                       type="checkbox"
                       id="termsCheck"
-                      checked={formulario.aceptaCondiciones}
+                      checked={formulario.aceptaCondiciones || esSoloLectura}
                       onChange={(event) => actualizarFormulario("aceptaCondiciones", event.target.checked)}
-                      style={{ width: "18px", height: "18px", accentColor: "#388e3c", cursor: "pointer" }}
+                      style={{ width: "18px", height: "18px", accentColor: "#64748b", cursor: "pointer" }}
                     />
-                    <label htmlFor="termsCheck" style={{ fontSize: "12.5px", fontWeight: "600", color: "#1b5e20", cursor: "pointer" }}>
-                      <strong>El padre/apoderado acepta las condiciones del programa.</strong>
+                    <label htmlFor="termsCheck" style={{ fontSize: "12.5px", fontWeight: "500", color: "#334155", cursor: "pointer" }}>
+                      El padre/apoderado acepta las condiciones del programa.
                     </label>
                   </div>
                 </>
               )}
+            </fieldset>
 
-              {/* Acciones */}
-              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
-                <button
-                  className="secretaria-btn-secondary-fused"
-                  type="button"
-                  onClick={() => {
-                    if (modoCursoAdicional) {
-                      setModoCursoAdicional?.(false);
-                    } else {
-                      limpiarBusquedaEstudiante?.();
-                    }
-                  }}
-                >
-                  Cancelar
-                </button>
-                {programasParaSelector.length > 0 && (
-                  (() => {
-                    const tieneProgramaValido = requiereSeleccionPrograma
-                      ? Boolean(formulario.programa)
-                      : Boolean(programaRegistroVista);
-                    return (
-                      <button
-                        className="secretaria-btn-primary-fused"
-                        type="submit"
-                        disabled={guardando || !tieneProgramaValido || !formulario.aceptaCondiciones}
-                      >
-                        {guardando ? (
-                          <Loader2 className="secretaria-spin" size={17} />
-                        ) : (
-                          <ClipboardCheck size={17} />
-                        )}
-                        <span>{guardando ? "Guardando..." : "Confirmar Inscripción"}</span>
-                      </button>
-                    );
-                  })()
-                )}
-              </div>
-            </form>
-          </section>
-        )
+            {/* Acciones */}
+            <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "8px" }}>
+              {esSoloLectura ? (
+                <>
+                  <button
+                    className="secretaria-btn-secondary-fused"
+                    type="button"
+                    onClick={limpiarBusquedaEstudiante}
+                  >
+                    Buscar otro estudiante
+                  </button>
+
+                  {cursosAdicionalesDisponibles > 0 && (
+                    <button
+                      className="secretaria-btn-secondary-fused"
+                      type="button"
+                      onClick={abrirCursoAdicional}
+                      style={{
+                        borderColor: "#a5d6a7",
+                        background: "#e8f5e9",
+                        color: "#2e7d32",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px"
+                      }}
+                    >
+                      <ClipboardCheck size={16} />
+                      <span>Registrar curso adicional</span>
+                    </button>
+                  )}
+
+                  <button
+                    className="secretaria-btn-primary-fused"
+                    type="button"
+                    disabled={imprimiendoFichaRegistro}
+                    onClick={abrirFichaGenerada}
+                    style={{
+                      background: "#0d9488",
+                      border: "none",
+                      color: "#ffffff",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "8px"
+                    }}
+                  >
+                    {imprimiendoFichaRegistro ? (
+                      <Loader2 className="secretaria-spin" size={17} />
+                    ) : (
+                      <Printer size={17} />
+                    )}
+                    <span>Imprimir Ficha</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="secretaria-btn-secondary-fused"
+                    type="button"
+                    onClick={() => {
+                      if (modoCursoAdicional) {
+                        setModoCursoAdicional?.(false);
+                      } else {
+                        limpiarBusquedaEstudiante?.();
+                      }
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  {programasParaSelector.length > 0 && (
+                    (() => {
+                      const tieneProgramaValido = requiereSeleccionPrograma
+                        ? Boolean(formulario.programa)
+                        : Boolean(programaRegistroVista);
+                      return (
+                        <>
+                          <button
+                            className="secretaria-btn-primary-fused"
+                            type="button"
+                            disabled={imprimiendoFichaRegistro || !tieneProgramaValido}
+                            onClick={imprimirFichaDesdeFormulario}
+                            style={{
+                              background: "#0d9488",
+                              border: "none",
+                              color: "#ffffff",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "8px"
+                            }}
+                          >
+                            {imprimiendoFichaRegistro ? (
+                              <Loader2 className="secretaria-spin" size={17} />
+                            ) : (
+                              <Printer size={17} />
+                            )}
+                            <span>Imprimir Ficha</span>
+                          </button>
+
+                          <button
+                            className="secretaria-btn-primary-fused"
+                            type="submit"
+                            disabled={guardando || !tieneProgramaValido || !formulario.aceptaCondiciones}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: "8px"
+                            }}
+                          >
+                            {guardando ? (
+                              <Loader2 className="secretaria-spin" size={17} />
+                            ) : (
+                              <ClipboardCheck size={17} />
+                            )}
+                            <span>{guardando ? "Guardando..." : "Confirmar Inscripción"}</span>
+                          </button>
+                        </>
+                      );
+                    })()
+                  )}
+                </>
+              )}
+            </div>
+          </form>
+        </section>
       ) : null}
     </>
   );

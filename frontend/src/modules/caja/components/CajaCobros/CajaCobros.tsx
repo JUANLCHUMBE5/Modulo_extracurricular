@@ -64,46 +64,47 @@ export default function CajaCobros({
           onSeleccionarEstudiante={onSeleccionarEstudiante}
           onVerHistorialAlumno={onVerHistorialAlumno}
           metodosPago={metodosPago}
-        />
-        {formulario.inscripcionId ? (
-          formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar" ? (
-            <Group className="caja-payment-actions" justify="flex-end">
-              <Button onClick={limpiarPagoActual} variant="default">
-                Limpiar
-              </Button>
-              <Button
-                color="red"
-                leftSection={<X size={15} />}
-                onClick={() => abrirRechazarModal(formulario)}
-              >
-                Rechazar Pago
-              </Button>
-              <Button
-                color="orange"
-                leftSection={<AlertTriangle size={15} />}
-                onClick={() => abrirObservarModal(formulario)}
-              >
-                Observar Pago
-              </Button>
-              <Button
-                color="green"
-                leftSection={<Check size={15} />}
-                onClick={() => aprobarPagoWebDirecto(formulario)}
-              >
-                Aprobar Pago
-              </Button>
-            </Group>
-          ) : (
-            <Group className="caja-payment-actions" justify="flex-end">
-              <Button onClick={limpiarPagoActual} variant="default">
-                Limpiar
-              </Button>
-              <Button leftSection={<Check size={17} />} loading={guardando} onClick={guardarPago}>
-                Registrar pago
-              </Button>
-            </Group>
-          )
-        ) : null}
+        >
+          {formulario.inscripcionId ? (
+            formulario.estadoPago === "verificando" || formulario.estadoPago === "Por Verificar" ? (
+              <Group className="caja-payment-actions" justify="flex-end">
+                <Button onClick={limpiarPagoActual} variant="default">
+                  Limpiar
+                </Button>
+                <Button
+                  color="red"
+                  leftSection={<X size={15} />}
+                  onClick={() => abrirRechazarModal(formulario)}
+                >
+                  Rechazar Pago
+                </Button>
+                <Button
+                  color="orange"
+                  leftSection={<AlertTriangle size={15} />}
+                  onClick={() => abrirObservarModal(formulario)}
+                >
+                  Observar Pago
+                </Button>
+                <Button
+                  color="green"
+                  leftSection={<Check size={15} />}
+                  onClick={() => aprobarPagoWebDirecto(formulario)}
+                >
+                  Aprobar Pago
+                </Button>
+              </Group>
+            ) : (
+              <Group className="caja-payment-actions" justify="flex-end">
+                <Button onClick={limpiarPagoActual} variant="default">
+                  Limpiar
+                </Button>
+                <Button leftSection={<Check size={17} />} loading={guardando} onClick={guardarPago}>
+                  Registrar pago
+                </Button>
+              </Group>
+            )
+          ) : null}
+        </CajaFields>
       </section>
     </>
   );

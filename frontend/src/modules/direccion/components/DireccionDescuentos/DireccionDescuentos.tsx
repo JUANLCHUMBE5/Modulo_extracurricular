@@ -409,126 +409,133 @@ export default function DireccionDescuentos({
           }
         }}
       >
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {inscripcionSeleccionada && (
-            <div className="dir-modal-student-card">
-              <div className="dir-modal-student-avatar">
-                {obtenerIniciales(inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante)}
-              </div>
-              <div className="dir-modal-student-details">
-                <span className="label" style={{ color: "#000000" }}>Estudiante</span>
-                <span className="name" style={{ color: "#000000" }}>{inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante}</span>
-                <span className="sub" style={{ color: "#000000" }}>DNI: {inscripcionSeleccionada.dni || inscripcionSeleccionada.dniEstudiante}</span>
-                <span className="sub" style={{ fontWeight: 500, color: "#000000", marginTop: "2px" }}>
-                  Taller: {inscripcionSeleccionada.programa}
-                </span>
-                <span className="sub" style={{ fontWeight: 500, color: "#000000", display: "flex", gap: "6px" }}>
-                  Costo Original: <span style={{ color: "#000000" }}>{formatearSoles(inscripcionSeleccionada.costoOriginal || inscripcionSeleccionada.costo)}</span>
-                </span>
-              </div>
-            </div>
-          )}
-
-          <Select
-            label="Tipo de Beneficio"
-            data={[
-              { value: "beca", label: "Beca Completa (100% descuento)" },
-              { value: "monto", label: "Descuento de monto fijo (S/.)" },
-              { value: "porcentaje", label: "Descuento porcentual (%)" },
-            ]}
-            value={datosBeneficio.tipo}
-            onChange={(val) => setDatosBeneficio({ ...datosBeneficio, tipo: val || "beca", valor: "" })}
-            allowDeselect={false}
-            size="xs"
-            styles={{
-              label: { fontSize: "11px", fontWeight: 700, color: "#000000", marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.03em" },
-              input: { borderRadius: "6px", borderColor: "#cbd5e1", height: "28px" }
-            }}
-          />
-
-          {datosBeneficio.tipo !== "beca" && (
-            <TextInput
-              label={datosBeneficio.tipo === "porcentaje" ? "Porcentaje de descuento (%)" : "Monto a descontar (S/.)"}
-              placeholder={datosBeneficio.tipo === "porcentaje" ? "Ej. 50" : "Ej. 25"}
-              value={datosBeneficio.valor}
-              onChange={(e) => setDatosBeneficio({ ...datosBeneficio, valor: e.target.value })}
-              type="number"
-              min="0"
-              required
-              size="xs"
-              styles={{
-                label: { fontSize: "11px", fontWeight: 700, color: "#000000", marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.03em" },
-                input: { borderRadius: "6px", borderColor: "#cbd5e1", height: "28px" }
-              }}
-            />
-          )}
-
-          {/* Resumen de cálculo en tiempo real */}
-          {inscripcionSeleccionada && (
-            <div style={{
-              backgroundColor: "#f8fafc",
-              border: "1px solid #e2e8f0",
-              borderRadius: "8px",
-              padding: "10px 12px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-              marginTop: "4px"
-            }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#475569" }}>
-                <span>Costo original:</span>
-                <span style={{ fontWeight: 600, color: "#1f2937" }}>{formatearSoles(costoOriginal)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#475569" }}>
-                <span>Descuento aplicado:</span>
-                <span style={{ fontWeight: 600, color: "#b91c1c" }}>
-                  {descuentoCalculado > 0 ? `- ${formatearSoles(descuentoCalculado)}` : "S/ 0.00"}
-                </span>
-              </div>
-              <Divider style={{ margin: "2px 0" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: 700, color: "#1e293b" }}>
-                <span>Costo final a pagar:</span>
-                <span style={{ color: "#166534" }}>{formatearSoles(costoFinalCalculado)}</span>
-              </div>
-
-              {esValorInvalido && (
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  backgroundColor: "#fef2f2",
-                  border: "1px solid #fecdd3",
-                  color: "#9f1239",
-                  padding: "6px 8px",
-                  borderRadius: "6px",
-                  fontSize: "11px",
-                  fontWeight: 600,
-                  marginTop: "4px"
-                }}>
-                  <AlertCircle size={14} />
-                  <span>
-                    {datosBeneficio.tipo === "porcentaje"
-                      ? "El porcentaje de descuento no puede ser mayor al 100%."
-                      : `El descuento no puede superar el costo original (${formatearSoles(costoOriginal)}).`}
-                  </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div className="dir-modal-fused-layout">
+            {/* Columna Izquierda: Información del Alumno y Tipo de Beneficio */}
+            <div className="dir-modal-left-column">
+              {inscripcionSeleccionada && (
+                <div className="dir-modal-student-card">
+                  <div className="dir-modal-student-avatar">
+                    {obtenerIniciales(inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante)}
+                  </div>
+                  <div className="dir-modal-student-details">
+                    <span className="label" style={{ color: "#000000" }}>Estudiante</span>
+                    <span className="name" style={{ color: "#000000" }}>{inscripcionSeleccionada.estudiante || inscripcionSeleccionada.nombresEstudiante}</span>
+                    <span className="sub" style={{ color: "#000000" }}>DNI: {inscripcionSeleccionada.dni || inscripcionSeleccionada.dniEstudiante}</span>
+                    <span className="sub" style={{ fontWeight: 500, color: "#000000", marginTop: "2px" }}>
+                      Taller: {inscripcionSeleccionada.programa}
+                    </span>
+                    <span className="sub" style={{ fontWeight: 500, color: "#000000", display: "flex", gap: "6px" }}>
+                      Costo Original: <span style={{ color: "#000000" }}>{formatearSoles(inscripcionSeleccionada.costoOriginal || inscripcionSeleccionada.costo)}</span>
+                    </span>
+                  </div>
                 </div>
               )}
-            </div>
-          )}
 
-          <Textarea
-            label="Justificación / Motivo de Aprobación"
-            placeholder="Ej. Convenio institucional, familiar directo de docente, beca socioeconómica..."
-            value={datosBeneficio.justificacion}
-            onChange={(e) => setDatosBeneficio({ ...datosBeneficio, justificacion: e.target.value })}
-            rows={2}
-            required
-            size="xs"
-            styles={{
-              label: { fontSize: "11px", fontWeight: 700, color: "#000000", marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.03em" },
-              input: { borderRadius: "6px", borderColor: "#cbd5e1" }
-            }}
-          />
+              <Select
+                label="Tipo de Beneficio"
+                data={[
+                  { value: "beca", label: "Beca Completa (100% descuento)" },
+                  { value: "monto", label: "Descuento de monto (S/.)" },
+                  { value: "porcentaje", label: "Descuento porcentual (%)" },
+                ]}
+                value={datosBeneficio.tipo}
+                onChange={(val) => setDatosBeneficio({ ...datosBeneficio, tipo: val || "beca", valor: "" })}
+                allowDeselect={false}
+                size="xs"
+                styles={{
+                  label: { fontSize: "11px", fontWeight: 700, color: "#000000", marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.03em" },
+                  input: { borderRadius: "6px", borderColor: "#cbd5e1", height: "28px" }
+                }}
+              />
+
+              {datosBeneficio.tipo !== "beca" && (
+                <TextInput
+                  label={datosBeneficio.tipo === "porcentaje" ? "Porcentaje de descuento (%)" : "Monto a descontar (S/.)"}
+                  placeholder={datosBeneficio.tipo === "porcentaje" ? "Ej. 50" : "Ej. 25"}
+                  value={datosBeneficio.valor}
+                  onChange={(e) => setDatosBeneficio({ ...datosBeneficio, valor: e.target.value })}
+                  type="number"
+                  min="0"
+                  required
+                  size="xs"
+                  styles={{
+                    label: { fontSize: "11px", fontWeight: 700, color: "#000000", marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.03em" },
+                    input: { borderRadius: "6px", borderColor: "#cbd5e1", height: "28px" }
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Columna Derecha: Resumen de Costo y Justificación */}
+            <div className="dir-modal-right-column">
+              {/* Resumen de cálculo en tiempo real */}
+              {inscripcionSeleccionada && (
+                <div style={{
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                  padding: "10px 12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#475569" }}>
+                    <span>Costo original:</span>
+                    <span style={{ fontWeight: 600, color: "#1f2937" }}>{formatearSoles(costoOriginal)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "12px", color: "#475569" }}>
+                    <span>Descuento aplicado:</span>
+                    <span style={{ fontWeight: 600, color: "#b91c1c" }}>
+                      {descuentoCalculado > 0 ? `- ${formatearSoles(descuentoCalculado)}` : "S/ 0.00"}
+                    </span>
+                  </div>
+                  <Divider style={{ margin: "2px 0" }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", fontWeight: 700, color: "#1e293b" }}>
+                    <span>Costo final a pagar:</span>
+                    <span style={{ color: "#166534" }}>{formatearSoles(costoFinalCalculado)}</span>
+                  </div>
+
+                  {esValorInvalido && (
+                    <div style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      backgroundColor: "#fef2f2",
+                      border: "1px solid #fecdd3",
+                      color: "#9f1239",
+                      padding: "6px 8px",
+                      borderRadius: "6px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      marginTop: "4px"
+                    }}>
+                      <AlertCircle size={14} />
+                      <span>
+                        {datosBeneficio.tipo === "porcentaje"
+                          ? "El porcentaje de descuento no puede ser mayor al 100%."
+                          : `El descuento no puede superar el costo original (${formatearSoles(costoOriginal)}).`}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <Textarea
+                label="Justificación / Motivo de Aprobación"
+                placeholder="Ej. Convenio institucional, familiar directo de docente, beca socioeconómica..."
+                value={datosBeneficio.justificacion}
+                onChange={(e) => setDatosBeneficio({ ...datosBeneficio, justificacion: e.target.value })}
+                rows={2}
+                required
+                size="xs"
+                styles={{
+                  label: { fontSize: "11px", fontWeight: 700, color: "#000000", marginBottom: "2px", textTransform: "uppercase", letterSpacing: "0.03em" },
+                  input: { borderRadius: "6px", borderColor: "#cbd5e1" }
+                }}
+              />
+            </div>
+          </div>
 
           <Divider style={{ margin: "6px 0" }} />
 

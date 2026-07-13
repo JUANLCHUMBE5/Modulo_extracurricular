@@ -16,13 +16,13 @@ export default function SecretariaApoderadoForm({
 }: SecretariaApoderadoFormProps) {
   return (
     <div style={{ marginTop: "10px" }}>
-      <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#1b5e20", marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
-        <BookOpen size={16} style={{ color: "#388e3c" }} />
+      <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#1e293b", marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
+        <BookOpen size={16} style={{ color: "#64748b" }} />
         Padre / Apoderado
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 12px", margin: "4px 0 6px" }}>
         <div style={{ gridColumn: "1 / -1" }}>
-          <label style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Nombre del padre / apoderado</label>
+          <label style={{ fontSize: "11px", fontWeight: "500", color: "#475569", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Nombre del padre / apoderado</label>
           <input
             className="secretaria-input-fused"
             type="text"
@@ -32,7 +32,7 @@ export default function SecretariaApoderadoForm({
           />
         </div>
         <div>
-          <label style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Teléfono del padre</label>
+          <label style={{ fontSize: "11px", fontWeight: "500", color: "#475569", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Teléfono del padre</label>
           <input
             className="secretaria-input-fused"
             type="text"
@@ -43,7 +43,7 @@ export default function SecretariaApoderadoForm({
           />
         </div>
         <div>
-          <label style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Observación (opcional)</label>
+          <label style={{ fontSize: "11px", fontWeight: "500", color: "#475569", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Observación (opcional)</label>
           <input
             className="secretaria-input-fused"
             type="text"

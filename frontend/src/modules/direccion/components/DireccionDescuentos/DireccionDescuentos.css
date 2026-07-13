@@ -278,3 +278,17 @@
   font-weight: 500;
   color: #000000;
 }
+
+/* Stacked Layout (Vertical) inside Aprobación de Beca Modal */
+.dir-modal-fused-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dir-modal-left-column,
+.dir-modal-right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

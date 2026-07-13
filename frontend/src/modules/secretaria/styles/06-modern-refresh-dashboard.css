@@ -132,8 +132,8 @@
   margin-top: 10px !important;
   border-radius: 8px !important;
   padding: 10px 14px !important;
-  border: 1px dashed #d1d9e0 !important;
-  background: #fafbfc !important;
+  border: 1px dashed #b6d5cf !important;
+  background: #f4fbf9 !important;
 }
 
 .secretaria-search-empty-icon {
@@ -146,12 +146,12 @@
 
 .secretaria-search-empty strong {
   font-size: 13px !important;
-  color: #0f172a !important;
+  color: #0c5747 !important;
 }
 
 .secretaria-search-empty span {
   font-size: 11.5px !important;
-  color: #64748b !important;
+  color: #3b5c56 !important;
 }
 
 /* ── 11. Message alert ──────────────────────────────────────────────────── */
@@ -331,16 +331,16 @@
   display: grid !important;
   grid-template-columns: 2fr 1.2fr 1fr 0.8fr 0.8fr 1.5fr 150px !important;
   gap: 12px !important;
-  padding: 10px 16px !important;
-  background: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
+  padding: 12px 16px !important;
+  background: #edf7f5 !important;
+  border: 1px solid #b6d5cf !important;
   border-bottom: none !important;
-  border-radius: 10px 10px 0 0 !important;
+  border-radius: 12px 12px 0 0 !important;
   font-size: 11px !important;
   font-weight: 700 !important;
-  color: #475569 !important;
+  color: #0c5747 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
+  letter-spacing: 0.06em !important;
   width: 100% !important;
   box-sizing: border-box !important;
 }
@@ -350,11 +350,12 @@
   flex-direction: column !important;
   gap: 0 !important;
   width: 100% !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 0 0 10px 10px !important;
+  border: 1px solid #b6d5cf !important;
+  border-radius: 0 0 12px 12px !important;
   background: #ffffff !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
+  box-shadow: 0 4px 20px rgba(15, 91, 73, 0.05) !important;
 }
 
 .secretaria-student-result-card {
@@ -362,13 +363,13 @@
   grid-template-columns: 2fr 1.2fr 1fr 0.8fr 0.8fr 1.5fr 150px !important;
   gap: 12px !important;
   align-items: center !important;
-  padding: 12px 16px !important;
+  padding: 14px 16px !important;
   background: #ffffff !important;
   border: none !important;
-  border-bottom: 1px solid #f1f5f9 !important;
+  border-bottom: 1px solid #e2f0ed !important;
   border-radius: 0 !important;
   box-shadow: none !important;
-  transition: background 0.15s ease !important;
+  transition: all 0.15s ease !important;
   box-sizing: border-box !important;
   text-align: left !important;
 }
@@ -378,14 +379,14 @@
 }
 
 .secretaria-student-result-card:hover {
-  background: #f8fafc !important;
+  background: #f4fbf9 !important;
   transform: none !important;
   box-shadow: none !important;
   border-color: transparent !important;
 }
 
 .table-cell-name strong {
-  font-size: 14px !important;
+  font-size: 14.5px !important;
   color: #0f172a !important;
   font-weight: 700 !important;
   line-height: 1.3 !important;
@@ -398,35 +399,38 @@
 }
 
 .table-cell-stacked span {
-  font-size: 12.5px !important;
-  color: #64748b !important;
+  font-size: 12px !important;
+  color: #3b5c56 !important;
   font-weight: 500 !important;
 }
 
 .col-grado span {
-  font-size: 13px !important;
-  color: #334155 !important;
+  font-size: 13.5px !important;
+  color: #0c5747 !important;
   font-weight: 600 !important;
 }
 
 .badge-programa {
   display: inline-flex !important;
   align-items: center !important;
-  padding: 4px 8px !important;
-  border-radius: 6px !important;
-  font-size: 11.5px !important;
-  font-weight: 600 !important;
+  padding: 4px 10px !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
   width: fit-content !important;
+  letter-spacing: 0.02em !important;
 }
 
 .badge-programa.has-program {
   background: #e0f2fe !important;
   color: #0369a1 !important;
+  border: 1px solid #bae6fd !important;
 }
 
 .badge-programa.no-program {
-  background: #f1f5f9 !important;
-  color: #64748b !important;
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border: 1px solid #fde68a !important;
 }
 
 .secretaria-result-card-actions {

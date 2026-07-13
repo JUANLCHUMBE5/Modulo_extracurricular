@@ -62,9 +62,9 @@ export function datosProgramaAFormulario(prog: any) {
   const esVerano = normalizarPeriodoVista(prog.periodo) === "verano";
   const catLower = String(prog.categoria || "").toLowerCase();
   const esDeportivo = catLower === "deportivo" || catLower === "talleres deportivos" || esProgramaDeportivo(nombrePrograma, prog.categoria);
-  const usaTalleresPorEdad = esVerano
+  const usaTalleresPorEdad = (esVerano
     ? catLower !== "academico" && catLower !== "académico" && catLower !== "vacaciones utiles" && catLower !== "vacaciones útiles"
-    : esDeportivo;
+    : esDeportivo) && !prog.usaBloquesHorario && !prog.usa_bloques_horario;
 
   let cuposCalculados = prog.cupos;
   if (usaTalleresPorEdad && talleres.length > 0) {
@@ -160,8 +160,8 @@ export function datosProgramaAFormulario(prog: any) {
     comunicado: prog.comunicado || "",
     comunicadoCompleto: prog.comunicadoCompleto || prog.comunicado_completo || "",
     detalleCosto: prog.detalleCosto || prog.detalle_costo || "",
-    detalleAlmuerzo: "",
-    concesionarios: "",
+    detalleAlmuerzo: prog.detalleAlmuerzo || prog.detalle_almuerzo || "",
+    concesionarios: prog.concesionarios || "",
     requiereUniforme: Boolean(prog.requiereUniforme ?? prog.requiere_uniforme),
     requiereIndumentaria: Boolean(prog.requiereIndumentaria ?? prog.requiere_indumentaria),
     invitacionMasiva: Boolean(prog.invitacionMasiva ?? prog.invitacion_masiva),
@@ -189,5 +189,18 @@ export function datosProgramaAFormulario(prog: any) {
     modalidadesCambridge: prog.modalidadesCambridge || prog.modalidades_cambridge || [],
     costoCiclo: prog.costoCiclo !== undefined ? String(prog.costoCiclo) : (prog.costo_ciclo !== undefined ? String(prog.costo_ciclo) : (prog.costo !== undefined ? String(prog.costo) : (prog.monto !== undefined ? String(prog.monto) : ""))),
     montoPrimerPago: prog.montoPrimerPago !== undefined ? String(prog.montoPrimerPago) : (prog.monto_primer_pago !== undefined ? String(prog.monto_primer_pago) : ""),
+    usaBloquesHorario: Boolean(prog.usaBloquesHorario ?? prog.usa_bloques_horario),
+    fechaExamen: prog.fechaExamen || prog.fecha_examen || "",
+    lugarExamen: prog.lugarExamen || prog.lugar_examen || "Colegio Matemático San Rafael",
+    precioStarters: prog.precioStarters || prog.precio_starters || "315.00",
+    precioMovers: prog.precioMovers || prog.precio_movers || "345.00",
+    precioFlyers: prog.precioFlyers || prog.precio_flyers || "360.00",
+    precioKet: prog.precioKet || prog.precio_ket || "475.00",
+    precioPet: prog.precioPet || prog.precio_pet || "490.00",
+    numeroCuotas: prog.numeroCuotas || prog.numero_cuotas || "3",
+    fechaVencCuota1: prog.fechaVencCuota1 || prog.fecha_venc_cuota_1 || "",
+    fechaVencCuota2: prog.fechaVencCuota2 || prog.fecha_venc_cuota_2 || "",
+    fechaVencCuota3: prog.fechaVencCuota3 || prog.fecha_venc_cuota_3 || "",
+    fechaLimitePago: prog.fechaLimitePago || prog.fecha_limite_pago || "",
   };
 }

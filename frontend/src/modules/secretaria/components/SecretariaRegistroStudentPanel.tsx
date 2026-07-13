@@ -12,6 +12,7 @@ import {
 import {
   obtenerInfoBoxConfig,
 } from "./SecretariaStudentPanelHelpers";
+import { resumirClaseSecretaria } from "./SecretariaFields";
 
 export default function SecretariaRegistroStudentPanel({
   estudiante,
@@ -46,13 +47,27 @@ export default function SecretariaRegistroStudentPanel({
       ? { class: 'warning', text: 'FALTA HORARIO', icon: AlertTriangle }
       : { class: 'secondary', text: 'SIN INVITACIÓN', icon: Mail };
 
-  const inscripcionBadge = estudiante.estadoInscripción === "Inscrito"
+  const estaInscrito = Array.isArray(inscripcionesEstudiante) && inscripcionesEstudiante.length > 0;
+
+  const inscripcionBadge = estaInscrito
     ? { class: 'success', text: 'INSCRITO', icon: CheckCircle2 }
     : { class: 'danger', text: 'NO INSCRITO', icon: CircleX };
 
-  const pagoBadge = esPagoCompletado || estudiante.estadoPago === "Pagado"
+  const tienePagoCompletado = Array.isArray(inscripcionesEstudiante) && inscripcionesEstudiante.some((ins: any) =>
+    ["pagado", "completado", "validado", "pago validado", "pago exitoso", "exitoso"].some(
+      (est) => String(ins.estadoPago || "").toLowerCase().includes(est) || String(ins.estadoInscripcion || "").toLowerCase().includes(est)
+    )
+  );
+
+  const tieneDerivado = Array.isArray(inscripcionesEstudiante) && inscripcionesEstudiante.some((ins: any) =>
+    ins.derivadoCaja || String(ins.estadoPago || "").toLowerCase().includes("derivado")
+  );
+
+  const pagoBadge = tienePagoCompletado
     ? { class: 'success', text: 'Pagado', icon: CheckCircle2 }
-    : { class: 'warning', text: 'Sin pago', icon: CreditCard };
+    : tieneDerivado
+      ? { class: 'warning', text: 'Derivado a caja', icon: CreditCard }
+      : { class: 'warning', text: 'Sin pago', icon: CreditCard };
 
   return (
     <section className="secretaria-student-panel">
@@ -60,7 +75,7 @@ export default function SecretariaRegistroStudentPanel({
       <div style={{
         fontSize: "12px",
         fontWeight: "750",
-        color: "#558b2f",
+        color: "#1e293b",
         textTransform: "uppercase",
         letterSpacing: "0.5px",
         marginBottom: "12px",
@@ -68,12 +83,12 @@ export default function SecretariaRegistroStudentPanel({
         alignItems: "center",
         gap: "8px"
       }}>
-        <IdCard size={16} style={{ color: "#43a047" }} />
+        <IdCard size={16} style={{ color: "#64748b" }} />
         <span>DATOS DEL ESTUDIANTE</span>
       </div>
 
       <div style={{
-        background: "linear-gradient(135deg, #e8f5e9, #c8e6c9)",
+        background: "#f8fafc",
         borderRadius: "12px",
         padding: "10px 14px",
         marginBottom: "12px",
@@ -81,13 +96,13 @@ export default function SecretariaRegistroStudentPanel({
         alignItems: "center",
         justifyContent: "space-between",
         gap: "10px",
-        border: "1px solid #a5d6a7"
+        border: "1px solid #e2e8f0"
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{
             width: "36px",
             height: "36px",
-            background: "#388e3c",
+            background: "#64748b",
             borderRadius: "50%",
             display: "flex",
             alignItems: "center",
@@ -104,11 +119,11 @@ export default function SecretariaRegistroStudentPanel({
               .join("")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
-            <h3 style={{ fontSize: "14.5px", fontWeight: "800", color: "#1b5e20", margin: 0, padding: 0 }}>
+            <h3 style={{ fontSize: "14.5px", fontWeight: "800", color: "#1e293b", margin: 0, padding: 0 }}>
               {estudiante.nombres}
             </h3>
-            <span style={{ fontSize: "11px", color: "#2e7d32", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
-              <CheckCircle2 size={12} style={{ color: "#43a047" }} />
+            <span style={{ fontSize: "11px", color: "#475569", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
+              <CheckCircle2 size={12} style={{ color: "#64748b" }} />
               DNI {estudiante.dni || "No registrado"} &middot; {estudiante.codigoEstudiante || "Sin código"}
             </span>
           </div>
@@ -122,7 +137,7 @@ export default function SecretariaRegistroStudentPanel({
             title="Ver Historial de Asistencia"
             style={{
               background: "#ffffff",
-              border: "1px solid #a5d6a7",
+              border: "1px solid #cbd5e1",
               borderRadius: "50%",
               width: "34px",
               height: "34px",
@@ -130,13 +145,13 @@ export default function SecretariaRegistroStudentPanel({
               alignItems: "center",
               justifyContent: "center",
               cursor: "pointer",
-              color: "#2e7d32",
+              color: "#475569",
               boxShadow: "0 2px 4px rgba(0, 0, 0, 0.08)",
               transition: "all 0.2s ease",
               flexShrink: 0,
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = "#e8f5e9";
+              e.currentTarget.style.backgroundColor = "#f1f5f9";
               e.currentTarget.style.transform = "scale(1.08)";
             }}
             onMouseOut={(e) => {
@@ -157,26 +172,26 @@ export default function SecretariaRegistroStudentPanel({
         marginBottom: "12px"
       }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: "10.5px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", letterSpacing: "0.4px" }}>Código</span>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a2a", marginTop: "1px" }}>
-            <span style={{ background: "#e8f5e9", padding: "2px 8px", borderRadius: "30px", fontSize: "11px", fontWeight: "700", color: "#1b5e20" }}>
+          <span style={{ fontSize: "10.5px", fontWeight: "500", color: "#475569", textTransform: "uppercase", letterSpacing: "0.4px" }}>Código</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e293b", marginTop: "1px" }}>
+            <span style={{ background: "#f1f5f9", padding: "2px 8px", borderRadius: "30px", fontSize: "11px", fontWeight: "700", color: "#475569" }}>
               {estudiante.codigoEstudiante || "--"}
             </span>
           </span>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: "10.5px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", letterSpacing: "0.4px" }}>Grado</span>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a2a", marginTop: "1px" }}>{estudiante.grado}</span>
+          <span style={{ fontSize: "10.5px", fontWeight: "500", color: "#475569", textTransform: "uppercase", letterSpacing: "0.4px" }}>Grado</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e293b", marginTop: "1px" }}>{estudiante.grado}</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: "10.5px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", letterSpacing: "0.4px" }}>Periodo</span>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a2a", marginTop: "1px" }}>
+          <span style={{ fontSize: "10.5px", fontWeight: "500", color: "#475569", textTransform: "uppercase", letterSpacing: "0.4px" }}>Periodo</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e293b", marginTop: "1px" }}>
             {esCicloVerano ? "Ciclo Verano" : "Año Escolar"}
           </span>
         </div>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: "10.5px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", letterSpacing: "0.4px" }}>Sección / Aula</span>
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a2a", marginTop: "1px" }}>{estudiante.seccion || "--"}</span>
+          <span style={{ fontSize: "10.5px", fontWeight: "500", color: "#475569", textTransform: "uppercase", letterSpacing: "0.4px" }}>Sección / Aula</span>
+          <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e293b", marginTop: "1px" }}>{estudiante.seccion || "--"}</span>
         </div>
       </div>
 
@@ -301,6 +316,61 @@ export default function SecretariaRegistroStudentPanel({
           </span>
         </div>
       </div>
+      {/* Registered Enrollments Box */}
+      {inscripcionesEstudiante && inscripcionesEstudiante.length > 0 ? (
+        <div style={{
+          background: "#e8f5e9",
+          borderLeft: "4px solid #388e3c",
+          padding: "10px 12px",
+          borderRadius: "8px",
+          fontSize: "12px",
+          color: "#1b5e20",
+          marginTop: "10px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: "750" }}>
+            <span style={{ color: "#388e3c" }}>✓</span>
+            <span>INSCRIPCIONES REGISTRADAS ({inscripcionesEstudiante.length})</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            {inscripcionesEstudiante.map((ins: any) => (
+              <div
+                key={ins.id}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #c8e6c9",
+                  borderRadius: "6px",
+                  padding: "6px 10px",
+                  fontSize: "11.5px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center"
+                }}
+              >
+                <div>
+                  <strong style={{ display: "block", color: "#2e7d32" }}>{ins.programa}</strong>
+                  <span style={{ color: "#4e342e", fontSize: "10.5px" }}>{ins.horario ? resumirClaseSecretaria(ins.horario) : "Sin horario"}</span>
+                </div>
+                <span style={{
+                  fontSize: "9px",
+                  fontWeight: "750",
+                  padding: "2px 6px",
+                  borderRadius: "4px",
+                  background: ["pagado", "completado", "validado"].some(st => String(ins.estadoPago || "").toLowerCase().includes(st)) ? "#e8f5e9" : "#fff8e1",
+                  color: ["pagado", "completado", "validado"].some(st => String(ins.estadoPago || "").toLowerCase().includes(st)) ? "#2e7d32" : "#b45309",
+                  border: "1px solid",
+                  borderColor: ["pagado", "completado", "validado"].some(st => String(ins.estadoPago || "").toLowerCase().includes(st)) ? "#c8e6c9" : "#fde68a"
+                }}>
+                  {ins.estadoPago || "Pendiente"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

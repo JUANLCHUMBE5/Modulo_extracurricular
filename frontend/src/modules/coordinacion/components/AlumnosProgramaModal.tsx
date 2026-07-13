@@ -84,57 +84,59 @@ function AlumnosProgramaModal({
           <button className="coord-modal-close" type="button" onClick={onClose}><X size={20} /></button>
         </div>
         <div className="coord-modal-body">
-          <div className="coord-tabs-header" style={{ display: "flex", gap: "10px", borderBottom: "2px solid #e2ece9", paddingBottom: "10px", marginBottom: "16px" }}>
-            <button
-              type="button"
-              className={`coord-tab-btn ${subVistaAlumnos === "preinscritos" ? "is-active" : ""}`}
-              onClick={() => setSubVistaAlumnos("preinscritos")}
-              style={tabStyle(subVistaAlumnos === "preinscritos")}
-            >
-              Pre-inscritos (Excel) ({invitados.length})
-            </button>
-            <button
-              type="button"
-              className={`coord-tab-btn ${subVistaAlumnos === "matriculados" ? "is-active" : ""}`}
-              onClick={() => setSubVistaAlumnos("matriculados")}
-              style={tabStyle(subVistaAlumnos === "matriculados")}
-            >
-              Matriculados (Cajera / Padres) ({matriculados.length})
-            </button>
-            <button
-              type="button"
-              className={`coord-tab-btn ${subVistaAlumnos === "asistencias" ? "is-active" : ""}`}
-              onClick={() => setSubVistaAlumnos("asistencias")}
-              style={tabStyle(subVistaAlumnos === "asistencias")}
-            >
-              Asistencia (Auxiliar) ({asistencias.length})
-            </button>
-          </div>
-
-          {puedeDescargar ? (
-            <div className="coord-invitados-actions" style={{ display: "flex", gap: "10px", marginBottom: "16px" }}>
+          <div className="coord-tabs-header" style={{ display: "flex", gap: "10px", borderBottom: "2px solid #e2ece9", paddingBottom: "10px", marginBottom: "16px", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", gap: "10px" }}>
               <button
-                className="coord-primary-button"
                 type="button"
-                onClick={() => descargarPdfAlumnos(subVistaAlumnos)}
-                disabled={!listaActual.length}
-                style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", minHeight: "38px" }}
+                className={`coord-tab-btn ${subVistaAlumnos === "preinscritos" ? "is-active" : ""}`}
+                onClick={() => setSubVistaAlumnos("preinscritos")}
+                style={tabStyle(subVistaAlumnos === "preinscritos")}
               >
-                <FileDown size={15} />
-                <span>Descargar PDF</span>
+                Pre-inscritos (Excel) ({invitados.length})
               </button>
               <button
-                className="coord-template-autofill"
                 type="button"
-                onClick={() => exportarAExcel(subVistaAlumnos)}
-                disabled={!listaActual.length}
-                style={{ display: "flex", alignItems: "center", gap: "6px", height: "38px", minHeight: "38px", background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" }}
+                className={`coord-tab-btn ${subVistaAlumnos === "matriculados" ? "is-active" : ""}`}
+                onClick={() => setSubVistaAlumnos("matriculados")}
+                style={tabStyle(subVistaAlumnos === "matriculados")}
               >
-                <FileDown size={15} />
-                <span>Exportar Excel</span>
+                Matriculados (Cajera / Padres) ({matriculados.length})
+              </button>
+              <button
+                type="button"
+                className={`coord-tab-btn ${subVistaAlumnos === "asistencias" ? "is-active" : ""}`}
+                onClick={() => setSubVistaAlumnos("asistencias")}
+                style={tabStyle(subVistaAlumnos === "asistencias")}
+              >
+                Asistencia (Auxiliar) ({asistencias.length})
               </button>
             </div>
-          ) : null}
+
+            {puedeDescargar && (
+              <div className="coord-invitados-actions" style={{ display: "flex", gap: "10px", margin: 0 }}>
+                <button
+                  className="coord-primary-button"
+                  type="button"
+                  onClick={() => descargarPdfAlumnos(subVistaAlumnos)}
+                  disabled={!listaActual.length}
+                  style={{ display: "flex", alignItems: "center", gap: "6px", height: "34px", minHeight: "34px" }}
+                >
+                  <FileDown size={15} />
+                  <span>Descargar PDF</span>
+                </button>
+                <button
+                  className="coord-template-autofill"
+                  type="button"
+                  onClick={() => exportarAExcel(subVistaAlumnos)}
+                  disabled={!listaActual.length}
+                  style={{ display: "flex", alignItems: "center", gap: "6px", height: "34px", minHeight: "34px", background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0" }}
+                >
+                  <FileDown size={15} />
+                  <span>Exportar Excel</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {subVistaAlumnos === "preinscritos" ? (
             <TablaPreinscritos
@@ -282,7 +284,13 @@ function TablaMatriculados({ alumnos }) {
 
 function formatearFechaAsistencia(valor) {
   if (!valor) return "Sin fecha";
-  const fecha = new Date(valor);
+  let fecha;
+  if (typeof valor === "string" && valor.length === 10 && valor.includes("-")) {
+    const [y, m, d] = valor.split("-").map(Number);
+    fecha = new Date(y, m - 1, d);
+  } else {
+    fecha = new Date(valor);
+  }
   if (Number.isNaN(fecha.getTime())) return "Sin fecha";
   
   const diaSemana = fecha.toLocaleDateString("es-PE", { weekday: "long" });
@@ -331,6 +339,22 @@ function formatearHoraAsistencia(valor) {
   });
 }
 
+function formatearHoraYFechaAsistencia(valor, esRango) {
+  if (!valor) return "-";
+  const fecha = new Date(valor);
+  if (Number.isNaN(fecha.getTime())) return "-";
+  const horaText = fecha.toLocaleTimeString("es-PE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  if (esRango) {
+    const dia = String(fecha.getDate()).padStart(2, "0");
+    const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+    return `${dia}/${mes} ${horaText}`;
+  }
+  return horaText;
+}
+
 function claveFechaAsistencia(valor) {
   if (!valor) return "sin-fecha";
   const fecha = new Date(valor);
@@ -358,8 +382,11 @@ function agruparAsistenciasPorFecha(asistencias) {
 }
 
 function TablaAsistencias({ asistencias, matriculados = [], invitados = [], programa }: { asistencias: any[]; matriculados: any[]; invitados: any[]; programa: any }) {
-  const [fechaSeleccionada, setFechaSeleccionada] = useState("");
+  const [fechaInicioSeleccionada, setFechaInicioSeleccionada] = useState("");
+  const [fechaFinSeleccionada, setFechaFinSeleccionada] = useState("");
   const [profesorSeleccionado, setProfesorSeleccionado] = useState("todos");
+  const [tallerSeleccionado, setTallerSeleccionado] = useState("todos");
+  const [rangoExportar, setRangoExportar] = useState("dia");
 
   const grupos = useMemo(
     () => Object.values(agruparAsistenciasPorFecha(asistencias))
@@ -367,8 +394,45 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [], prog
     [asistencias]
   );
 
-  const grupoActivo = grupos.find((grupo) => grupo.clave === fechaSeleccionada) || grupos[0];
+  useEffect(() => {
+    if (grupos.length > 0 && !fechaInicioSeleccionada) {
+      setFechaInicioSeleccionada(grupos[0].clave);
+      setFechaFinSeleccionada(grupos[0].clave);
+    }
+  }, [grupos, fechaInicioSeleccionada]);
+
+  const esUnicoDia = fechaInicioSeleccionada === fechaFinSeleccionada;
+
+  const grupoActivo = useMemo(() => {
+    const found = grupos.find((grupo) => grupo.clave === fechaInicioSeleccionada);
+    if (found) return found;
+    if (fechaInicioSeleccionada) {
+      return {
+        clave: fechaInicioSeleccionada,
+        titulo: formatearFechaAsistencia(fechaInicioSeleccionada),
+        filas: [],
+      };
+    }
+    return grupos[0] || { clave: "", titulo: "", filas: [] };
+  }, [grupos, fechaInicioSeleccionada]);
+
   const indiceActivo = grupos.findIndex((grupo) => grupo.clave === grupoActivo?.clave);
+
+  const filasEnRango = useMemo(() => {
+    if (!fechaInicioSeleccionada || !fechaFinSeleccionada) return [];
+    return asistencias.filter((asistencia) => {
+      const fechaClave = claveFechaAsistencia(obtenerFechaAsistencia(asistencia));
+      return fechaClave >= fechaInicioSeleccionada && fechaClave <= fechaFinSeleccionada;
+    });
+  }, [asistencias, fechaInicioSeleccionada, fechaFinSeleccionada]);
+
+  const tituloRango = useMemo(() => {
+    if (!fechaInicioSeleccionada || !fechaFinSeleccionada) return "Asistencia";
+    if (fechaInicioSeleccionada === fechaFinSeleccionada) {
+      return formatearFechaAsistencia(fechaInicioSeleccionada);
+    }
+    return `Rango: Del ${formatearFechaAsistencia(fechaInicioSeleccionada)} al ${formatearFechaAsistencia(fechaFinSeleccionada)}`;
+  }, [fechaInicioSeleccionada, fechaFinSeleccionada]);
 
   // Extraer todos los docentes únicos del programa (del docente principal o los docentes por grupo)
   const profesores = useMemo(() => {
@@ -377,27 +441,49 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [], prog
     
     if (Array.isArray(programa.talleresDeportivos) && programa.talleresDeportivos.length > 0) {
       programa.talleresDeportivos.forEach((t: any) => {
+        if (tallerSeleccionado !== "todos" && String(t.deporte).trim().toLowerCase() !== tallerSeleccionado.trim().toLowerCase()) {
+          return;
+        }
         const doc = t.docente || t.responsable;
         if (doc) {
-          setDocentes.add(doc);
+          const parts = String(doc).split(/[,/]+|\s+y\s+/i);
+          parts.forEach(part => {
+            const trimmed = part.trim();
+            if (trimmed) setDocentes.add(trimmed);
+          });
         }
       });
     } else {
       if (programa.responsable) {
-        setDocentes.add(programa.responsable);
+        const parts = String(programa.responsable).split(/[,/]+|\s+y\s+/i);
+        parts.forEach(part => {
+          const trimmed = part.trim();
+          if (trimmed) setDocentes.add(trimmed);
+        });
       }
       
       if (Array.isArray(programa.horariosPorGrupo)) {
         programa.horariosPorGrupo.forEach((g: any) => {
           if (g.responsable) {
-            setDocentes.add(g.responsable);
+            const parts = String(g.responsable).split(/[,/]+|\s+y\s+/i);
+            parts.forEach(part => {
+              const trimmed = part.trim();
+              if (trimmed) setDocentes.add(trimmed);
+            });
           }
         });
       }
     }
     
     return Array.from(setDocentes).filter(Boolean).sort();
-  }, [programa]);
+  }, [programa, tallerSeleccionado]);
+
+  // Resetear la selección de profesor si el taller seleccionado cambia y el profesor ya no está en la lista filtrada
+  useEffect(() => {
+    if (profesorSeleccionado !== "todos" && !profesores.includes(profesorSeleccionado)) {
+      setProfesorSeleccionado("todos");
+    }
+  }, [profesores, profesorSeleccionado]);
 
   // Resolver el profesor/docente asignado a un alumno según su grado y nivel
   const obtenerDocenteResponsable = useCallback((dni: string) => {
@@ -448,36 +534,77 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [], prog
     return grupo?.responsable || programa.responsable || "Sin asignar";
   }, [programa, matriculados, invitados]);
 
-  // Filtrar las filas del grupo activo según el profesor seleccionado
-  const filasFiltradas = useMemo(() => {
-    const filas = grupoActivo?.filas || [];
-    if (profesorSeleccionado === "todos") return filas;
-    return filas.filter((asistencia: any) => {
-      const dni = obtenerDniAsistencia(asistencia);
-      const prof = obtenerDocenteResponsable(dni);
-      return String(prof).trim().toLowerCase() === profesorSeleccionado.trim().toLowerCase();
+  const talleresList = useMemo(() => {
+    if (!programa || !Array.isArray(programa.talleresDeportivos)) return [];
+    const setTalleres = new Set<string>();
+    programa.talleresDeportivos.forEach((t: any) => {
+      if (t.deporte) setTalleres.add(t.deporte);
     });
-  }, [grupoActivo, profesorSeleccionado, obtenerDocenteResponsable]);
+    return Array.from(setTalleres).sort();
+  }, [programa]);
 
-  // Helper para contar la asistencia filtrada por profesor en la lista de opciones
+  const normalizarString = (txt: string) => 
+    String(txt || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+  // Filtrar las filas del grupo activo según el profesor y taller seleccionados
+  const filasFiltradas = useMemo(() => {
+    let filas = filasEnRango;
+    
+    if (profesorSeleccionado !== "todos") {
+      filas = filas.filter((asistencia: any) => {
+        const dni = obtenerDniAsistencia(asistencia);
+        const prof = obtenerDocenteResponsable(dni);
+        return String(prof).toLowerCase().includes(profesorSeleccionado.toLowerCase());
+      });
+    }
+
+    if (tallerSeleccionado !== "todos") {
+      filas = filas.filter((asistencia: any) => {
+        const horarioText = obtenerHorarioAsistencia(asistencia) || asistencia.horario || "";
+        return normalizarString(horarioText).includes(normalizarString(tallerSeleccionado));
+      });
+    }
+
+    // Ordenar de más reciente a más antiguo
+    return [...filas].sort((a, b) => {
+      const valA = obtenerFechaAsistencia(a);
+      const valB = obtenerFechaAsistencia(b);
+      return String(valB).localeCompare(String(valA));
+    });
+  }, [filasEnRango, profesorSeleccionado, tallerSeleccionado, obtenerDocenteResponsable]);
+
+  // Helper para contar la asistencia filtrada por profesor y taller en la lista de opciones
   const obtenerConteoFiltrado = (grupoFilas: any[]) => {
-    if (profesorSeleccionado === "todos") return grupoFilas.length;
-    return grupoFilas.filter((asistencia: any) => {
-      const dni = obtenerDniAsistencia(asistencia);
-      const prof = obtenerDocenteResponsable(dni);
-      return String(prof).trim().toLowerCase() === profesorSeleccionado.trim().toLowerCase();
-    }).length;
+    let filas = grupoFilas || [];
+    
+    if (profesorSeleccionado !== "todos") {
+      filas = filas.filter((asistencia: any) => {
+        const dni = obtenerDniAsistencia(asistencia);
+        const prof = obtenerDocenteResponsable(dni);
+        return String(prof).toLowerCase().includes(profesorSeleccionado.toLowerCase());
+      });
+    }
+
+    if (tallerSeleccionado !== "todos") {
+      filas = filas.filter((asistencia: any) => {
+        const horarioText = obtenerHorarioAsistencia(asistencia) || asistencia.horario || "";
+        return normalizarString(horarioText).includes(normalizarString(tallerSeleccionado));
+      });
+    }
+
+    return filas.length;
   };
 
   const ejecutarExportarPdf = async () => {
-    if (!programa || !grupoActivo) return;
+    if (!programa || !fechaInicioSeleccionada) return;
     
     const matriculadosFilt = profesorSeleccionado === "todos" 
       ? matriculados 
-      : matriculados.filter(m => obtenerDocenteResponsable(m.dni || m.dniEstudiante) === profesorSeleccionado);
+      : matriculados.filter(m => String(obtenerDocenteResponsable(m.dni || m.dniEstudiante)).toLowerCase().includes(profesorSeleccionado.toLowerCase()));
       
     const customGrupoActivo = {
-      ...grupoActivo,
+      clave: `${fechaInicioSeleccionada}_${fechaFinSeleccionada}`,
+      titulo: tituloRango,
       filas: filasFiltradas
     };
     
@@ -495,14 +622,15 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [], prog
   };
 
   const ejecutarExportarExcel = async () => {
-    if (!programa || !grupoActivo) return;
+    if (!programa || !fechaInicioSeleccionada) return;
     
     const matriculadosFilt = profesorSeleccionado === "todos" 
       ? matriculados 
-      : matriculados.filter(m => obtenerDocenteResponsable(m.dni || m.dniEstudiante) === profesorSeleccionado);
+      : matriculados.filter(m => String(obtenerDocenteResponsable(m.dni || m.dniEstudiante)).toLowerCase().includes(profesorSeleccionado.toLowerCase()));
       
     const customGrupoActivo = {
-      ...grupoActivo,
+      clave: `${fechaInicioSeleccionada}_${fechaFinSeleccionada}`,
+      titulo: tituloRango,
       filas: filasFiltradas
     };
     
@@ -541,13 +669,17 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [], prog
 
   const irAnterior = () => {
     if (indiceActivo < grupos.length - 1) {
-      setFechaSeleccionada(grupos[indiceActivo + 1].clave);
+      const nuevaFecha = grupos[indiceActivo + 1].clave;
+      setFechaInicioSeleccionada(nuevaFecha);
+      setFechaFinSeleccionada(nuevaFecha);
     }
   };
 
   const irSiguiente = () => {
     if (indiceActivo > 0) {
-      setFechaSeleccionada(grupos[indiceActivo - 1].clave);
+      const nuevaFecha = grupos[indiceActivo - 1].clave;
+      setFechaInicioSeleccionada(nuevaFecha);
+      setFechaFinSeleccionada(nuevaFecha);
     }
   };
 
@@ -557,14 +689,26 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [], prog
 
   return (
     <div style={{ display: "grid", gap: "14px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "12px 16px", background: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "6px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      {/* Barra de Filtros: Solo para Fecha, Taller y Profesor */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "16px",
+        padding: "10px 16px",
+        background: "#f8fafc",
+        borderRadius: "12px",
+        border: "1px solid #e2e8f0",
+        marginBottom: "2px",
+        flexWrap: "wrap"
+      }}>
+        {/* Navegación y Rango de Fechas */}
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
           <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Fecha:</span>
           <button
             type="button"
             onClick={irAnterior}
-            disabled={indiceActivo >= grupos.length - 1}
+            disabled={!esUnicoDia || indiceActivo >= grupos.length - 1}
             title="Día anterior"
             style={{
               display: "flex",
@@ -576,21 +720,21 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [], prog
               border: "1px solid #d0d5dd",
               background: "#ffffff",
               color: "#344054",
-              cursor: indiceActivo >= grupos.length - 1 ? "not-allowed" : "pointer",
-              opacity: indiceActivo >= grupos.length - 1 ? 0.5 : 1,
+              cursor: (!esUnicoDia || indiceActivo >= grupos.length - 1) ? "not-allowed" : "pointer",
+              opacity: (!esUnicoDia || indiceActivo >= grupos.length - 1) ? 0.5 : 1,
               transition: "all 0.2s ease",
             }}
           >
             <ChevronLeft size={18} />
           </button>
-          <div style={{ position: "relative" }}>
-            <select
-              value={grupoActivo?.clave || ""}
-              onChange={(e) => setFechaSeleccionada(e.target.value)}
+          
+          <div>
+            <input
+              type="date"
+              value={fechaInicioSeleccionada}
+              onChange={(e) => setFechaInicioSeleccionada(e.target.value)}
               style={{
-                appearance: "none",
-                WebkitAppearance: "none",
-                padding: "8px 36px 8px 12px",
+                padding: "8px 10px",
                 borderRadius: "8px",
                 border: "1px solid #d0d5dd",
                 background: "#ffffff",
@@ -600,28 +744,42 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [], prog
                 height: "36px",
                 cursor: "pointer",
                 outline: "none",
-                minWidth: "240px",
+                width: "140px",
                 boxShadow: "0 1px 2px rgba(16, 24, 40, 0.05)",
-                backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23344054' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                backgroundRepeat: "no-repeat",
-                backgroundPosition: "right 12px center",
-                backgroundSize: "16px",
+                fontFamily: "inherit",
               }}
-            >
-              {grupos.map((grupo) => {
-                const conteo = obtenerConteoFiltrado(grupo.filas);
-                return (
-                  <option key={grupo.clave} value={grupo.clave}>
-                    {grupo.titulo} ({conteo} {conteo === 1 ? "asistencia" : "asistencias"})
-                  </option>
-                );
-              })}
-            </select>
+            />
           </div>
+
+          <span style={{ fontSize: "14px", fontWeight: "600", color: "#667085" }}>al</span>
+
+          <div>
+            <input
+              type="date"
+              value={fechaFinSeleccionada}
+              onChange={(e) => setFechaFinSeleccionada(e.target.value)}
+              style={{
+                padding: "8px 10px",
+                borderRadius: "8px",
+                border: "1px solid #d0d5dd",
+                background: "#ffffff",
+                color: "#1d2939",
+                fontSize: "14px",
+                fontWeight: "600",
+                height: "36px",
+                cursor: "pointer",
+                outline: "none",
+                width: "140px",
+                boxShadow: "0 1px 2px rgba(16, 24, 40, 0.05)",
+                fontFamily: "inherit",
+              }}
+            />
+          </div>
+
           <button
             type="button"
             onClick={irSiguiente}
-            disabled={indiceActivo <= 0}
+            disabled={!esUnicoDia || indiceActivo <= 0}
             title="Día siguiente"
             style={{
               display: "flex",
@@ -633,8 +791,8 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [], prog
               border: "1px solid #d0d5dd",
               background: "#ffffff",
               color: "#344054",
-              cursor: indiceActivo <= 0 ? "not-allowed" : "pointer",
-              opacity: indiceActivo <= 0 ? 0.5 : 1,
+              cursor: (!esUnicoDia || indiceActivo <= 0) ? "not-allowed" : "pointer",
+              opacity: (!esUnicoDia || indiceActivo <= 0) ? 0.5 : 1,
               transition: "all 0.2s ease",
             }}
           >
@@ -642,181 +800,216 @@ function TablaAsistencias({ asistencias, matriculados = [], invitados = [], prog
           </button>
         </div>
 
-        {profesores.length > 1 && (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "10px" }}>
-            <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Profesor:</span>
-            <select
-              value={profesorSeleccionado}
-              onChange={(e) => setProfesorSeleccionado(e.target.value)}
-              style={{
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "1px solid #d0d5dd",
-                background: "#ffffff",
-                color: "#1d2939",
-                fontSize: "14px",
-                fontWeight: "600",
-                height: "36px",
-                cursor: "pointer",
-                outline: "none",
-                minWidth: "180px",
-                boxShadow: "0 1px 2px rgba(16, 24, 40, 0.05)",
-              }}
-            >
-              <option value="todos">Todos los profesores</option>
-              {profesores.map((prof) => (
-                <option key={prof} value={prof}>
-                  {prof}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-        </div>
+        {/* selectores de Filtros */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          {talleresList.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Taller:</span>
+              <select
+                value={tallerSeleccionado}
+                onChange={(e) => setTallerSeleccionado(e.target.value)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d0d5dd",
+                  background: "#ffffff",
+                  color: "#1d2939",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  height: "36px",
+                  cursor: "pointer",
+                  outline: "none",
+                  minWidth: "150px",
+                  boxShadow: "0 1px 2px rgba(16, 24, 40, 0.05)",
+                }}
+              >
+                <option value="todos">Todos los talleres</option>
+                {talleresList.map((taller) => (
+                  <option key={taller} value={taller}>
+                    {taller}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-        <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={ejecutarExportarPdf}
-            title="Exportar la asistencia del día seleccionado a PDF"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              height: "36px",
-              borderRadius: "8px",
-              border: "1px solid #d0d5dd",
-              background: "#ffffff",
-              color: "#344054",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.2s"
-            }}
-          >
-            <FileDown size={14} />
-            <span>PDF (Día)</span>
-          </button>
-          <button
-            type="button"
-            onClick={ejecutarExportarExcel}
-            title="Exportar la asistencia del día seleccionado a Excel"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              height: "36px",
-              borderRadius: "8px",
-              border: "1px solid #bbf7d0",
-              background: "#f0fdf4",
-              color: "#166534",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.2s"
-            }}
-          >
-            <FileDown size={14} />
-            <span>Excel (Día)</span>
-          </button>
-          <button
-            type="button"
-            onClick={ejecutarExportarHistorialPdf}
-            title="Descargar todos los días registrados en un solo PDF (cada día en una página)"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              height: "36px",
-              borderRadius: "8px",
-              border: "1px solid #d1e9ff",
-              background: "#f0f9ff",
-              color: "#00539c",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.2s"
-            }}
-          >
-            <FileDown size={14} />
-            <span>PDF (Historial)</span>
-          </button>
-          <button
-            type="button"
-            onClick={ejecutarExportarHistorialExcel}
-            title="Exportar todos los días registrados en un solo Excel (cada día en una pestaña distinta)"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              height: "36px",
-              borderRadius: "8px",
-              border: "1px solid #86efac",
-              background: "#ecfdf5",
-              color: "#047857",
-              fontSize: "13px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.2s"
-            }}
-          >
-            <FileDown size={14} />
-            <span>Excel (Historial)</span>
-          </button>
+          {profesores.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "14px", fontWeight: "700", color: "#344054" }}>Profesor:</span>
+              <select
+                value={profesorSeleccionado}
+                onChange={(e) => setProfesorSeleccionado(e.target.value)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #d0d5dd",
+                  background: "#ffffff",
+                  color: "#1d2939",
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  height: "36px",
+                  cursor: "pointer",
+                  outline: "none",
+                  minWidth: "180px",
+                  boxShadow: "0 1px 2px rgba(16, 24, 40, 0.05)",
+                }}
+              >
+                <option value="todos">Todos los profesores</option>
+                {profesores.map((prof) => (
+                  <option key={prof} value={prof}>
+                    {prof}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Contenedor de la Tabla */}
       <div className="coord-table-wrap">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
-          <strong style={{ color: "#0f172a" }}>{grupoActivo?.titulo}</strong>
-          <span style={{ fontSize: "12px", fontWeight: 700, color: "#475467" }}>
-            {filasFiltradas.length} alumno{filasFiltradas.length === 1 ? "" : "s"} asistieron
-          </span>
+        {/* Cabecera de la Tabla: Título, Contador y Herramientas de Exportación */}
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "10px 14px",
+          background: "#f1f5f9",
+          borderBottom: "1px solid #cbd5e1",
+          flexWrap: "wrap",
+          gap: "10px"
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <strong style={{ color: "#0f172a", fontSize: "15px" }}>{tituloRango}</strong>
+            <span style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              background: "#e2e8f0",
+              color: "#475467",
+              padding: "2px 8px",
+              borderRadius: "12px"
+            }}>
+              {filasFiltradas.length} alumno{filasFiltradas.length === 1 ? "" : "s"} {filasFiltradas.length === 1 ? "asistió" : "asistieron"}
+            </span>
+          </div>
+
+          {/* Selector de rango y descarga de reportes */}
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <select
+              value={rangoExportar}
+              onChange={(e) => setRangoExportar(e.target.value)}
+              style={{
+                padding: "4px 8px",
+                borderRadius: "6px",
+                border: "1px solid #cbd5e1",
+                background: "#ffffff",
+                color: "#334155",
+                fontSize: "12px",
+                fontWeight: "600",
+                height: "28px",
+                cursor: "pointer",
+                outline: "none",
+              }}
+            >
+              <option value="dia">Solo este día</option>
+              <option value="historial">Historial completo</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={rangoExportar === "dia" ? ejecutarExportarPdf : ejecutarExportarHistorialPdf}
+              title={rangoExportar === "dia" ? "Exportar PDF del día" : "Descargar PDF de todo el historial"}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "4px 10px",
+                height: "28px",
+                borderRadius: "6px",
+                border: "1px solid #cbd5e1",
+                background: "#ffffff",
+                color: "#334155",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <FileDown size={12} />
+              <span>PDF</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={rangoExportar === "dia" ? ejecutarExportarExcel : ejecutarExportarHistorialExcel}
+              title={rangoExportar === "dia" ? "Exportar Excel del día" : "Exportar Excel de todo el historial"}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                padding: "4px 10px",
+                height: "28px",
+                borderRadius: "6px",
+                border: "1px solid #86efac",
+                background: "#ecfdf5",
+                color: "#047857",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <FileDown size={12} />
+              <span>Excel</span>
+            </button>
+          </div>
         </div>
-        <table className="coord-table">
+        <table className="coord-table" style={{ tableLayout: "fixed", width: "100%" }}>
           <thead>
             <tr>
-              <th>DNI</th>
-              <th>Estudiante</th>
-              <th>Grado</th>
-              <th>Nivel</th>
-              <th>Acceso</th>
-              <th>Hora</th>
-              <th>Observacion</th>
+              <th style={{ width: "12%" }}>DNI</th>
+              <th style={{ width: "28%" }}>Estudiante</th>
+              <th style={{ width: "8%" }}>Grado</th>
+              <th style={{ width: "12%" }}>Nivel</th>
+              <th style={{ width: "12%" }}>Acceso</th>
+              <th style={{ width: "12%" }}>Hora</th>
+              <th style={{ width: "16%" }}>Observación</th>
             </tr>
           </thead>
           <tbody>
-            {filasFiltradas.map((asistencia, index) => {
-              const dni = obtenerDniAsistencia(asistencia);
-              const alumnoMatriculado = matriculados.find(m => m.dni === dni || m.dniEstudiante === dni);
-              const alumnoInvitado = invitados.find(i => i.dni === dni);
-              const alumnoRef = alumnoMatriculado || alumnoInvitado || {};
-              const { grado, nivel } = descomponerGradoYNivel(alumnoRef);
+            {filasFiltradas.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ textAlign: "center", color: "#64748b", padding: "24px", fontSize: "14px" }}>
+                  No hay asistencias registradas para esta fecha.
+                </td>
+              </tr>
+            ) : (
+              filasFiltradas.map((asistencia, index) => {
+                const dni = obtenerDniAsistencia(asistencia);
+                const alumnoMatriculado = matriculados.find(m => m.dni === dni || m.dniEstudiante === dni);
+                const alumnoInvitado = invitados.find(i => i.dni === dni);
+                const alumnoRef = alumnoMatriculado || alumnoInvitado || {};
+                const { grado, nivel } = descomponerGradoYNivel(alumnoRef);
 
-              const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asistencia);
-              const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
-              const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
-              const toneAcceso = String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "warning" : "error";
-              return (
-                <tr key={`${asistencia.id || dni || obtenerNombreAsistencia(asistencia)}-${index}`}>
-                  <td>{dni || "Sin DNI"}</td>
-                  <td><strong>{obtenerNombreAsistencia(asistencia) || "-"}</strong></td>
-                  <td>{grado}</td>
-                  <td>{nivel}</td>
-                  <td>
-                    <span style={badgeStyle(esAccesoPermitido, toneAcceso)}>
-                      {textoAcceso}
-                    </span>
-                  </td>
-                  <td>{formatearHoraAsistencia(obtenerFechaAsistencia(asistencia))}</td>
-                  <td>{asistencia.observacion || "-"}</td>
-                </tr>
-              );
-            })}
+                const estadoAccesoRaw = obtenerEstadoAccesoAsistencia(asistencia);
+                const esAccesoPermitido = ["permitido", "pagado", "presente"].includes(String(estadoAccesoRaw).toLowerCase());
+                const textoAcceso = esAccesoPermitido ? "Permitido" : (String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "Pendiente" : (estadoAccesoRaw || "Sin validar"));
+                const toneAcceso = String(estadoAccesoRaw).toLowerCase() === "pendiente" ? "warning" : "error";
+                return (
+                  <tr key={`${asistencia.id || dni || obtenerNombreAsistencia(asistencia)}-${index}`}>
+                    <td>{dni || "Sin DNI"}</td>
+                    <td><strong>{obtenerNombreAsistencia(asistencia) || "-"}</strong></td>
+                    <td>{grado}</td>
+                    <td>{nivel}</td>
+                    <td>
+                      <span style={badgeStyle(esAccesoPermitido, toneAcceso)}>
+                        {textoAcceso}
+                      </span>
+                    </td>
+                    <td>{formatearHoraYFechaAsistencia(obtenerFechaAsistencia(asistencia), !esUnicoDia)}</td>
+                    <td>{asistencia.observacion || "-"}</td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

@@ -80,14 +80,21 @@
 }
 
 .coord-register-button,
-.coord-mini-btn {
+.coord-mini-btn,
+.coord-add-taller-btn,
+.coord-add-option-btn,
+.coord-add-block-btn {
   border-color: #2f8f7a;
   background: #2f8f7a;
 }
 
 .coord-register-button:hover,
-.coord-mini-btn:hover {
+.coord-mini-btn:hover,
+.coord-add-taller-btn:hover,
+.coord-add-option-btn:hover,
+.coord-add-block-btn:hover {
   background: #277c69;
+  border-color: #277c69;
 }
 
 .coord-primary-button {
@@ -219,14 +226,21 @@
 
 .coord-layout-profesor .coord-nav-item-active,
 .coord-layout-profesor .coord-register-button,
-.coord-layout-profesor .coord-mini-btn {
+.coord-layout-profesor .coord-mini-btn,
+.coord-layout-profesor .coord-add-taller-btn,
+.coord-layout-profesor .coord-add-option-btn,
+.coord-layout-profesor .coord-add-block-btn {
   border-color: #449d44;
   background: #449d44;
 }
 
 .coord-layout-profesor .coord-register-button:hover,
-.coord-layout-profesor .coord-mini-btn:hover {
+.coord-layout-profesor .coord-mini-btn:hover,
+.coord-layout-profesor .coord-add-taller-btn:hover,
+.coord-layout-profesor .coord-add-option-btn:hover,
+.coord-layout-profesor .coord-add-block-btn:hover {
   background: #367f36;
+  border-color: #367f36;
 }
 
 .coord-layout-profesor .coord-title-icon,

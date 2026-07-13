@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Alert as MantineAlert } from "@mantine/core";
 import {
   IconAlertCircle as AlertCircle,
+  IconCircleCheck as CheckCircle2,
   IconCalendar as CalendarDays,
   IconId as IdCard,
   IconLoader2 as Loader2,
@@ -67,14 +68,14 @@ function SecretariaSearchCard({
               className="secretaria-back-arrow-btn"
               onClick={limpiarBusquedaEstudiante}
               style={{
-                background: "#e8f5e9",
-                border: "1px solid #a5d6a7",
+                background: "#f1f5f9",
+                border: "1px solid #cbd5e1",
                 cursor: "pointer",
                 padding: "6px",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#1b5e20",
+                color: "#475569",
                 borderRadius: "50%",
                 width: "36px",
                 height: "36px",
@@ -84,11 +85,11 @@ function SecretariaSearchCard({
             >
               <ChevronLeft size={20} />
             </button>
-            <span className="secretaria-title-icon" style={{ color: "#388e3c", display: "flex", alignItems: "center" }}>
+            <span className="secretaria-title-icon" style={{ color: "#64748b", display: "flex", alignItems: "center" }}>
               <UserPlus size={22} />
             </span>
             <div>
-              <h2 style={{ color: "#1b5e20", margin: 0, fontSize: "18px", fontWeight: "800" }}>Registrar inscripción</h2>
+              <h2 style={{ color: "#1e293b", margin: 0, fontSize: "18px", fontWeight: "800" }}>Registrar inscripción</h2>
             </div>
             <div className="secretaria-gestion-alumnos-btn">
               <UserCheck size={16} />
@@ -103,14 +104,14 @@ function SecretariaSearchCard({
                 className="secretaria-back-arrow-btn"
                 onClick={limpiarBusquedaEstudiante}
                 style={{
-                  background: "#e6fcf5",
-                  border: "1px solid #c3fae8",
+                  background: "#f1f5f9",
+                  border: "1px solid #cbd5e1",
                   cursor: "pointer",
                   padding: "6px",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  color: "#0c8569",
+                  color: "#475569",
                   borderRadius: "50%",
                   width: "36px",
                   height: "36px",
@@ -244,7 +245,29 @@ function SecretariaSearchCard({
                     <span className="doc-cod">{item.codigoEstudiante ? `Cód: ${item.codigoEstudiante}` : "Sin código"}</span>
                   </div>
                   <div className="col-nivel">
-                    <span>{item.nivel || "—"}</span>
+                    {item.nivel ? (
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "2px 8px",
+                        borderRadius: "12px",
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        background: item.nivel.toLowerCase().includes("inicial") ? "#ecfeff" :
+                                    item.nivel.toLowerCase().includes("primaria") ? "#f0fdf4" : "#f5f3ff",
+                        color: item.nivel.toLowerCase().includes("inicial") ? "#0891b2" :
+                               item.nivel.toLowerCase().includes("primaria") ? "#16a34a" : "#7c3aed",
+                        border: `1px solid ${
+                          item.nivel.toLowerCase().includes("inicial") ? "#c5f6fa" :
+                          item.nivel.toLowerCase().includes("primaria") ? "#dcfce7" : "#ddd6fe"
+                        }`
+                      }}>
+                        {item.nivel}
+                      </span>
+                    ) : (
+                      <span style={{ color: "#94a3b8" }}>—</span>
+                    )}
                   </div>
                   <div className="col-grado">
                     <span>{gradoLimpio || "—"}</span>
@@ -298,8 +321,13 @@ function SecretariaSearchCard({
         </div>
       ) : null}
 
-      {mensaje ? (
-        <MantineAlert className="secretaria-message" color="orange" radius="md" icon={<AlertCircle size={18} />}>
+      {mensaje && !mensaje.toLowerCase().includes("exito") && !mensaje.toLowerCase().includes("éxito") ? (
+        <MantineAlert
+          className="secretaria-message"
+          color="orange"
+          radius="md"
+          icon={<AlertCircle size={18} />}
+        >
           {mensaje}
         </MantineAlert>
       ) : null}

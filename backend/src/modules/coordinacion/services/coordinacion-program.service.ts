@@ -98,7 +98,11 @@ export class CoordinacionProgramService {
   }
 
   async subirDocumentoPrograma(operatorUsername: string, body: any) {
-    const { id, plantillaBase64, plantillaVariables, plantillaNombre, plantilla } = body;
+    const id = body.id;
+    const plantillaBase64 = body.plantillaBase64 || body.plantilla_base64 || "";
+    const plantillaVariables = body.plantillaVariables || body.plantilla_variables || [];
+    const plantillaNombre = body.plantillaNombre || body.plantilla || "";
+    const plantilla = body.plantilla || "";
     const db = await coordinacionRepository.getDb();
 
     if (!id) {

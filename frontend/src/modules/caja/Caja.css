@@ -1,3 +1,14 @@
+.caja-page,
+.caja-page *,
+.caja-page button,
+.caja-page input,
+.caja-page select,
+.caja-page textarea,
+.caja-page-embedded,
+.caja-page-embedded * {
+  font-family: var(--font-body) !important;
+}
+
 .caja-page {
   --caja-sidebar: 270px;
   min-height: 100dvh;
@@ -5,7 +16,6 @@
   grid-template-columns: var(--caja-sidebar) minmax(0, 1fr);
   color: #101828;
   background: #ffffff;
-  font-family: var(--font-body);
   transition: grid-template-columns 0.3s ease;
 }
 
@@ -106,23 +116,48 @@
 .caja-report-filters input,
 .caja-report-filters select,
 .caja-search input,
-.caja-search {
+.caja-search,
+.caja-report-filters-card select,
+.caja-report-filters-card input {
   height: 38px !important;
   min-height: 38px !important;
   box-sizing: border-box !important;
+  font-size: 12px !important;
 }
 
 .caja-search-form button,
 .caja-payment-actions button,
-.caja-header-actions button {
+.caja-header-actions button,
+.caja-report-filters-card button {
   height: 38px !important;
   min-height: 38px !important;
+  font-size: 12px !important;
 }
 
 .caja-payment-workspace .caja-readonly-field span,
-.caja-payment-workspace .caja-payment-method > span {
-  font-size: var(--text-sm) !important;
-  font-weight: 600 !important;
+.caja-payment-workspace .caja-payment-method > span,
+.caja-payment-workspace .mantine-InputWrapper-label,
+.caja-payment-workspace .caja-readonly-field strong,
+.caja-payment-workspace input,
+.caja-payment-workspace select,
+.caja-payment-workspace button,
+.caja-payment-workspace textarea,
+.caja-payment-workspace .mantine-TextInput-input,
+.caja-payment-workspace .mantine-Select-input,
+.caja-payment-workspace .mantine-Textarea-input,
+.caja-payment-workspace .mantine-Button-root,
+.caja-payment-workspace .caja-search-results-title,
+.caja-payment-workspace .caja-search-result-name,
+.caja-payment-workspace .caja-search-result-dni,
+.caja-payment-workspace .caja-discount-applied-card span,
+.caja-payment-workspace .caja-yape-details-card span,
+.caja-payment-workspace .caja-payment-approved span,
+.caja-payment-workspace .caja-payment-approved strong,
+.caja-payment-workspace .caja-readonly-field.field-monto strong,
+.caja-payment-workspace .caja-readonly-field.status-pagado strong,
+.caja-payment-workspace .caja-readonly-field.status-pendiente strong,
+.caja-payment-workspace .caja-readonly-field.status-verificando strong {
+  font-size: 12px !important;
   line-height: 1.25 !important;
 }
 
@@ -137,7 +172,7 @@
 .caja-page .caja-report-header h1,
 .caja-page .caja-panel-header h2,
 .caja-page .caja-correlativo-workspace h2 {
-  font-size: var(--text-lg) !important;
+  font-size: 16px !important;
   font-weight: 600 !important;
   line-height: var(--leading-tight) !important;
 }
@@ -151,7 +186,7 @@
 .caja-page .caja-filter-label,
 .caja-page .caja-table th,
 .caja-page .caja-history-table th {
-  font-size: var(--text-sm) !important;
+  font-size: 12px !important;
   font-weight: 600 !important;
   line-height: var(--leading-tight) !important;
 }
@@ -211,7 +246,7 @@
   font-weight: 500 !important;
   border-bottom: 1px solid #f1f5f9 !important;
   padding: 12px 14px !important;
-  font-size: var(--text-sm) !important;
+  font-size: 12px !important;
   line-height: var(--leading-normal) !important;
 }
 
@@ -330,25 +365,25 @@
   }
 }
 
-/* Anulacion / egresos: vista compacta */
+/* Anulacion / egresos: unificacion de tamaños con modulo Caja principal */
 .caja-correlativo-workspace {
-  gap: 10px !important;
+  gap: 16px !important;
 }
 
 .caja-correlativo-workspace > div[style*="border-bottom"] {
-  gap: 14px !important;
-  margin-bottom: 2px !important;
+  gap: 24px !important;
+  margin-bottom: 16px !important;
 }
 
 .caja-correlativo-workspace > div[style*="border-bottom"] button {
-  gap: 6px !important;
-  padding: 5px 2px 8px !important;
-  font-size: 14px !important;
+  gap: 8px !important;
+  padding: 8px 4px 12px 4px !important;
+  font-size: 13px !important;
 }
 
 .caja-correlativo-workspace h2 {
-  font-size: 17px !important;
-  line-height: 1.15 !important;
+  font-size: 16px !important;
+  line-height: var(--leading-tight) !important;
 }
 
 .caja-correlativo-workspace svg {
@@ -356,66 +391,66 @@
 }
 
 .caja-correlativo-workspace .mantine-Paper-root {
-  padding: 10px 12px !important;
-  border-radius: 8px !important;
+  padding: 16px !important;
+  border-radius: 12px !important;
 }
 
 .caja-correlativo-workspace .mantine-Text-root {
-  line-height: 1.25 !important;
+  line-height: 1.4 !important;
 }
 
 .caja-correlativo-workspace .mantine-InputWrapper-label {
-  margin-bottom: 3px !important;
-  font-size: 11px !important;
-  line-height: 1.15 !important;
+  margin-bottom: 6px !important;
+  font-size: 12px !important;
+  line-height: var(--leading-tight) !important;
 }
 
 .caja-correlativo-workspace .mantine-TextInput-input,
 .caja-correlativo-workspace .mantine-Select-input {
-  height: 32px !important;
-  min-height: 32px !important;
+  height: 38px !important;
+  min-height: 38px !important;
   font-size: 12px !important;
 }
 
 .caja-correlativo-workspace .mantine-Textarea-input {
-  min-height: 72px !important;
-  padding-top: 7px !important;
-  padding-bottom: 7px !important;
+  min-height: 80px !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
   font-size: 12px !important;
 }
 
 .caja-correlativo-workspace .mantine-Button-root {
-  min-height: 32px !important;
-  height: 32px !important;
-  padding: 0 12px !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 0 16px !important;
   font-size: 12px !important;
 }
 
 .caja-correlativo-workspace form,
 .caja-correlativo-workspace .caja-search-form-responsive {
-  gap: 8px !important;
+  gap: 12px !important;
 }
 
 .caja-correlativo-workspace div[style*="flex-direction: column"] {
-  gap: 8px !important;
+  gap: 12px !important;
 }
 
 .caja-correlativo-workspace div[style*="padding: 12px 16px"],
 .caja-correlativo-workspace div[style*="padding: 16px"] {
-  padding: 8px 10px !important;
+  padding: 16px !important;
 }
 
 .caja-correlativo-workspace div[style*="max-height: 150px"] {
-  max-height: 120px !important;
+  max-height: 150px !important;
 }
 
 .caja-correlativo-workspace button[style*="padding: 10px 12px"],
 .caja-correlativo-workspace button[style*="padding: 8px 12px"] {
-  padding: 7px 10px !important;
+  padding: 10px 12px !important;
 }
 
 .caja-correlativo-workspace strong[style*="font-size: 18px"] {
-  font-size: 15px !important;
+  font-size: 16px !important;
 }
 
 .caja-anulacion-selector {

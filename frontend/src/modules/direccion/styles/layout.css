@@ -17,11 +17,16 @@
   --dir-sidebar: 0px;
 }
 
+.dir-page,
 .dir-page *,
 .dir-page button,
-.dir-page input {
+.dir-page input,
+.dir-page select,
+.dir-page textarea,
+.dir-page-embedded,
+.dir-page-embedded * {
   box-sizing: border-box;
-  font-family: var(--font-body, system-ui, -apple-system, sans-serif);
+  font-family: var(--font-body) !important;
 }
 
 /* Header Toggle Button when sidebar is hidden */
@@ -245,4 +250,84 @@
 
 .dir-module-tab.is-active strong {
   font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   UNIFICACIÓN GLOBAL DE FUENTES A TAMAÑO 12PX - MÓDULO DIRECCIÓN
+   ========================================================================== */
+
+/* Títulos principales y cabeceras de sección */
+.dir-page h1,
+.dir-page .dir-header h1 {
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  line-height: var(--leading-tight) !important;
+  letter-spacing: -0.5px !important;
+}
+
+.dir-page h2,
+.dir-page h3,
+.dir-page .dir-panel h2,
+.dir-page .dir-panel-header h2,
+.dir-page .dir-table-panel > header h2 {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  line-height: var(--leading-tight) !important;
+}
+
+/* Todos los textos principales, tablas, campos, filtros y botones en 12px */
+.dir-page p,
+.dir-page span,
+.dir-page label,
+.dir-page strong,
+.dir-page small,
+.dir-page td,
+.dir-page th,
+.dir-page input,
+.dir-page select,
+.dir-page button,
+.dir-page textarea,
+.dir-page .dir-stat span,
+.dir-page .dir-stat strong,
+.dir-page .dir-stat p,
+.dir-page .dir-panel p,
+.dir-page .dir-table-wrap .mantine-Table-th,
+.dir-page .dir-table-wrap .mantine-Table-td,
+.dir-page .dir-table-wrap .mantine-Table-td strong,
+.dir-page .dir-muted,
+.dir-page .mantine-Badge-root,
+.dir-page .mantine-TextInput-input,
+.dir-page .mantine-Select-input,
+.dir-page .mantine-Textarea-input,
+.dir-page .mantine-Button-root,
+.dir-page .mantine-InputWrapper-label,
+.dir-page .dir-empty-chart,
+.dir-page .dir-empty-table,
+.dir-page .caja-readonly-field span,
+.dir-page .caja-readonly-field strong,
+.dir-page .caja-payment-method > span,
+.dir-page .caja-payment-approved span,
+.dir-page .caja-payment-approved strong {
+  font-size: 12px !important;
+  line-height: 1.25 !important;
+}
+
+/* Estandarizar pesos de fuente para evitar grosores extremos */
+.dir-page strong,
+.dir-page b,
+.dir-page .dir-stat strong,
+.dir-page .dir-panel h2,
+.dir-page .dir-table-wrap .mantine-Table-th,
+.dir-page .mantine-Button-root {
+  font-weight: 600 !important;
+}
+
+.dir-page p,
+.dir-page span,
+.dir-page label,
+.dir-page td,
+.dir-page input,
+.dir-page select,
+.dir-page textarea {
+  font-weight: 500 !important;
 }

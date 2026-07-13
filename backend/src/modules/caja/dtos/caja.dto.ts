@@ -25,7 +25,7 @@ export const RegistrarPagoSchema = z.object({
   programa: z.string().optional(),
   programaNombre: z.string().optional(),
   periodo: z.string().optional(),
-});
+}).passthrough();
 
 // --- Registro de egreso (matches caja-correlativo.service.ts) ---
 export const RegistrarEgresoSchema = z.object({
@@ -35,12 +35,12 @@ export const RegistrarEgresoSchema = z.object({
   dni: z.string().optional(),
   periodo: z.string().optional(),
   fecha: z.string().optional(),
-});
+}).passthrough();
 
 // --- Acción sobre pago (validar, observar, rechazar, anular) ---
 export const AccionPagoSchema = z.object({
   observaciones: z.string().optional(),
-});
+}).passthrough();
 
 // --- Cancelar correlativo (matches caja-correlativo.service.ts) ---
 export const CancelarCorrelativoSchema = z.object({
@@ -49,7 +49,7 @@ export const CancelarCorrelativoSchema = z.object({
   nroRecibo: z.string().optional(),
   dniEstudiante: z.string().optional(),
   nombresEstudiante: z.string().optional(),
-});
+}).passthrough();
 
 export type RegistrarPagoDto = z.infer<typeof RegistrarPagoSchema>;
 export type RegistrarEgresoDto = z.infer<typeof RegistrarEgresoSchema>;

@@ -24,7 +24,7 @@ export const CreateUserSchema = z.object({
   roles: z.array(z.string()).optional(),
   estado: z.string().optional(),
   permisos: z.array(z.string()).optional(),
-});
+}).passthrough();
 
 export type LoginDto = z.infer<typeof LoginSchema>;
 export type ValidatePadreDto = z.infer<typeof ValidatePadreSchema>;

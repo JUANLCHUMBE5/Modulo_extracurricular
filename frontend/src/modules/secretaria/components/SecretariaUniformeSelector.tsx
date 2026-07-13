@@ -23,7 +23,7 @@ export default function SecretariaUniformeSelector({
     <>
       {requiereUniforme ? (
         <div className="secretaria-field" style={{ marginBottom: "16px" }}>
-          <label htmlFor="talla" style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de uniforme</label>
+          <label htmlFor="talla" style={{ fontSize: "11px", fontWeight: "500", color: "#475569", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de uniforme</label>
           <select
             id="talla"
             className="secretaria-input-fused"
@@ -42,7 +42,7 @@ export default function SecretariaUniformeSelector({
       {requiereIndumentaria ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 18px", marginBottom: "16px" }}>
           <div>
-            <label htmlFor="tallaPolo" style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de polo</label>
+            <label htmlFor="tallaPolo" style={{ fontSize: "11px", fontWeight: "500", color: "#475569", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de polo</label>
             <select
               id="tallaPolo"
               className="secretaria-input-fused"
@@ -62,7 +62,7 @@ export default function SecretariaUniformeSelector({
             </select>
           </div>
           <div>
-            <label htmlFor="tallaShort" style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de short</label>
+            <label htmlFor="tallaShort" style={{ fontSize: "11px", fontWeight: "500", color: "#475569", textTransform: "uppercase", display: "block", marginBottom: "4px" }}>Talla de short</label>
             <select
               id="tallaShort"
               className="secretaria-input-fused"

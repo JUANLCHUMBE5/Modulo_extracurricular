@@ -124,25 +124,73 @@ function DocumentosView({
         </div>
 
         {lecturaDocumento ? (
-          <div className="coord-document-read-details coord-documents-preview">
-            <div className="coord-document-read-head">
-              <CheckCircle2 size={18} />
-              <span>Word apto para completar datos</span>
+          <div className="coord-document-read-details coord-documents-preview" style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "20px", background: "#ffffff", border: "1px solid #e2e8f0", borderRadius: "12px", marginTop: "16px" }}>
+            <div className="coord-document-read-head" style={{ display: "flex", alignItems: "center", gap: "8px", color: "#16a34a", fontWeight: 700 }}>
+              <CheckCircle2 size={18} style={{ color: "#16a34a" }} />
+              <span style={{ fontSize: "14px" }}>Word apto para completar datos</span>
             </div>
-            <div className="coord-document-detected">
+            
+            <div className="coord-document-detected" style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
               <SummaryBox label="Datos interpretados" value={Object.keys(lecturaDocumento.datos || {}).length} />
               <SummaryBox
-                label="Variables del formato"
+                label="Variables encontradas"
                 value={`${variablesListasDocumento.length}/${variablesRequeridasDocumento.length}`}
                 tone={variablesFaltantesDocumento.length ? "warning" : "success"}
               />
-              <SummaryBox
-                label={lecturaDocumento.plantillaModelo ? `Modelo ${lecturaDocumento.plantillaModelo}` : "Estado"}
-                value={variablesPendientesTexto}
-                tone={variablesFaltantesDocumento.length ? "warning" : "success"}
-              />
             </div>
-            <p className="coord-process-note">El archivo Word se ha interpretado correctamente y está listo para ser asignado al programa.</p>
+
+            {variablesFaltantesDocumento.length > 0 ? (
+              <div style={{
+                background: "#fffbeb",
+                border: "1px solid #fde68a",
+                borderRadius: "10px",
+                padding: "14px"
+              }}>
+                <span style={{ display: "block", fontSize: "12.5px", color: "#b45309", fontWeight: 700, marginBottom: "8px" }}>
+                  Variables no encontradas en el documento ({variablesFaltantesDocumento.length}):
+                </span>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {variablesFaltantesDocumento.map((variable) => (
+                    <span
+                      key={variable}
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: 700,
+                        background: "#ffffff",
+                        color: "#b45309",
+                        border: "1px solid #fde68a",
+                        padding: "2px 8px",
+                        borderRadius: "6px"
+                      }}
+                    >
+                      {variable.toUpperCase()}
+                    </span>
+                  ))}
+                </div>
+                <span style={{ display: "block", fontSize: "11px", color: "#78350f", marginTop: "8px", lineHeight: "1.4" }}>
+                  Nota: Estas variables son opcionales. El documento puede utilizarse, pero no se completarán automáticamente en las fichas.
+                </span>
+              </div>
+            ) : (
+              <div style={{
+                background: "#f0fdf4",
+                border: "1px solid #bbf7d0",
+                borderRadius: "10px",
+                padding: "14px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px"
+              }}>
+                <CheckCircle2 size={16} style={{ color: "#16a34a" }} />
+                <span style={{ fontSize: "12.5px", color: "#16a34a", fontWeight: 700 }}>
+                  ¡Formato completo! Todas las variables requeridas están presentes en el Word.
+                </span>
+              </div>
+            )}
+
+            <p className="coord-process-note" style={{ margin: 0, fontSize: "13px", color: "#475569", borderTop: "1px solid #f1f5f9", paddingTop: "12px" }}>
+              El archivo Word se ha interpretado correctamente y está listo para ser asignado al programa.
+            </p>
           </div>
         ) : null}
 

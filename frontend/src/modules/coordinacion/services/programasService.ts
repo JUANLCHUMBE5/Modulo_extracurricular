@@ -104,6 +104,18 @@ export async function crearPrograma(datos: any) {
     plantilla_variables: datos.plantillaVariables || [],
     plantilla_validada: Boolean(datos.plantillaValidada),
     dias: datos.dias || [],
+    fecha_examen: datos.fechaExamen || "",
+    lugar_examen: datos.lugarExamen || "",
+    precio_starters: datos.precioStarters || "",
+    precio_movers: datos.precioMovers || "",
+    precio_flyers: datos.precioFlyers || "",
+    precio_ket: datos.precioKet || "",
+    precio_pet: datos.precioPet || "",
+    numero_cuotas: datos.numeroCuotas || "",
+    fecha_venc_cuota_1: datos.fechaVencCuota1 || "",
+    fecha_venc_cuota_2: datos.fechaVencCuota2 || "",
+    fecha_venc_cuota_3: datos.fechaVencCuota3 || "",
+    fecha_limite_pago: datos.fechaLimitePago || "",
   };
   const res = await apiClient.post("/api/v1/extracurricular/programas", payload);
   if (!res.success) throw new Error(res.message || "Error al crear programa");
@@ -167,6 +179,18 @@ export async function editarPrograma(id: string | number, datos: any) {
     plantilla_variables: datos.plantillaVariables || [],
     plantilla_validada: Boolean(datos.plantillaValidada),
     dias: datos.dias || [],
+    fecha_examen: datos.fechaExamen || "",
+    lugar_examen: datos.lugarExamen || "",
+    precio_starters: datos.precioStarters || "",
+    precio_movers: datos.precioMovers || "",
+    precio_flyers: datos.precioFlyers || "",
+    precio_ket: datos.precioKet || "",
+    precio_pet: datos.precioPet || "",
+    numero_cuotas: datos.numeroCuotas || "",
+    fecha_venc_cuota_1: datos.fechaVencCuota1 || "",
+    fecha_venc_cuota_2: datos.fechaVencCuota2 || "",
+    fecha_venc_cuota_3: datos.fechaVencCuota3 || "",
+    fecha_limite_pago: datos.fechaLimitePago || "",
   };
   const res = await apiClient.put(`/api/v1/extracurricular/programas/${id}`, payload);
   if (!res.success) throw new Error(res.message || "Error al editar programa");

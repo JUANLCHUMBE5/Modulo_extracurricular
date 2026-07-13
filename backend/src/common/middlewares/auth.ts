@@ -33,8 +33,23 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
       return;
     }
     // 4. Decodifica y verifica la autenticidad del token usando jwt.verify
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as any;
     req.user = decoded; // Adjunta los datos decodificados al objeto de la petición
+
+    // Renovar token si le queda menos de la mitad del tiempo de vida (sliding expiration)
+    if (decoded && decoded.exp && decoded.iat) {
+      const now = Math.floor(Date.now() / 1000);
+      const total = decoded.exp - decoded.iat;
+      const remaining = decoded.exp - now;
+      if (remaining > 0 && remaining < total / 2) {
+        const { iat, exp, nbf, ...payload } = decoded;
+        const tokenExpires = decoded.role === "padres" ? "20m" : "2h";
+        const newToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: tokenExpires });
+        res.setHeader("X-Renewed-Token", newToken);
+        res.setHeader("Access-Control-Expose-Headers", "X-Renewed-Token");
+      }
+    }
+
     next(); // Permite continuar con el siguiente middleware o controlador
   } catch {
     // 5. Retorna error en caso de expiración o alteración del token

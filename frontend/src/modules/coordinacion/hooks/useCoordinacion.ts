@@ -355,12 +355,12 @@ export default function useCoordinacion({
     coordinacionForm.form.fechaFin
   );
   const catLower = String(coordinacionForm.form.categoria || "").toLowerCase();
-  const usaTalleresPorEdad = esFormularioVerano
+  const usaTalleresPorEdad = (esFormularioVerano
     ? catLower !== "academico" &&
       catLower !== "académico" &&
       catLower !== "vacaciones utiles" &&
       catLower !== "vacaciones útiles"
-    : esDeportivoForm;
+    : esDeportivoForm) && !coordinacionForm.form.usaBloquesHorario;
   const duracionTallerFormulario = calcularDuracionTexto(
     coordinacionForm.form.fechaInicio,
     coordinacionForm.form.fechaFin
@@ -511,6 +511,8 @@ export default function useCoordinacion({
     toggleGradoGrupo: coordinacionForm.toggleGradoGrupo,
     restaurarPrograma,
     clonarPrograma,
+    esGuardarYClonar: coordinacionForm.esGuardarYClonar,
+    setEsGuardarYClonar: coordinacionForm.setEsGuardarYClonar,
 
     puedeCrearProgramas,
     puedeEditarProgramas,

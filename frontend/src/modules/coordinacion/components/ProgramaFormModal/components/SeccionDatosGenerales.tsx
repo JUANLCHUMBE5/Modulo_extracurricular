@@ -23,6 +23,28 @@ function SeccionDatosGenerales({
   categorias,
   usaTalleresPorEdad,
 }) {
+  const defaultSummerCatsNormalized = [
+    "vacaciones utiles",
+    "vacaciones útiles",
+    "talleres recreativos",
+    "talleres deportivos",
+    "deportivos",
+    "taller recreativo",
+    "vacaciones",
+    "verano",
+    "academico",
+    "académico",
+    "deportivo",
+    "maraton",
+    "maratón",
+    "reforzamiento"
+  ];
+
+  const customSummerCategories = (categorias || []).filter(c => {
+    const norm = String(c || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return !defaultSummerCatsNormalized.includes(norm);
+  });
+
   return (
     <section className="coord-form-section">
       <div className="coord-section-heading">
@@ -52,24 +74,27 @@ function SeccionDatosGenerales({
         <div className="coord-field coord-category-field">
           <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", gap: "4px" }}>
             <span style={{ whiteSpace: "nowrap" }}>Categoría</span>
-            <button
-              type="button"
-              className="coord-category-toggle-btn"
-              onClick={() => setMostrarGestorCategorias(!mostrarGestorCategorias)}
-              style={{ whiteSpace: "nowrap" }}
-            >
-              {mostrarGestorCategorias ? "Ocultar" : "Gestionar"}
-            </button>
+            {mostrarGestorCategorias && (
+              <button
+                type="button"
+                className="coord-category-toggle-btn"
+                onClick={() => setMostrarGestorCategorias(false)}
+                style={{ whiteSpace: "nowrap" }}
+              >
+                Ocultar
+              </button>
+            )}
           </label>
           <select
             value={form.categoria}
             disabled={esCircularEspecial}
             onChange={e => {
               const val = e.target.value;
-              actualizarCategoriaPrograma(val);
-              if (val === "Otro") {
+              if (val === "Otro taller (Añadir)" || val === "Otro") {
                 setMostrarGestorCategorias(true);
+                actualizarCategoriaPrograma("");
               } else {
+                actualizarCategoriaPrograma(val);
                 setMostrarGestorCategorias(false);
               }
             }}
@@ -86,14 +111,18 @@ function SeccionDatosGenerales({
                 <option value="Vacaciones Útiles">Vacaciones Útiles</option>
                 <option value="Talleres Recreativos">Talleres Recreativos</option>
                 <option value="Talleres Deportivos">Talleres Deportivos</option>
+                <option value="Arte">Otro taller (Añadir)</option>
               </>
             ) : (
-              categoriasEscolar.map(c => {
-                let label = c;
-                if (c === "Academico") label = "Académico";
-                if (c === "Maraton") label = "Maratón";
-                return <option key={c} value={c}>{label}</option>;
-              })
+              <>
+                {categoriasEscolar.map(c => {
+                  let label = c;
+                  if (c === "Academico") label = "Académico";
+                  if (c === "Maraton") label = "Maratón";
+                  return <option key={c} value={c}>{label}</option>;
+                })}
+                <option value="Otro taller (Añadir)">Otro taller (Añadir)</option>
+              </>
             )}
           </select>
         </div>
@@ -119,12 +148,16 @@ function SeccionDatosGenerales({
                 <div className="coord-inline-field">
                   <select value={catAEliminar} onChange={e => setCatAEliminar(e.target.value)}>
                     <option value="">Seleccione</option>
-                    {categoriasEscolar.map(c => {
-                      let label = c;
-                      if (c === "Academico") label = "Académico";
-                      if (c === "Maraton") label = "Maratón";
-                      return <option key={c} value={c}>{label}</option>;
-                    })}
+                    {esFormularioVerano ? (
+                      null
+                    ) : (
+                      categoriasEscolar.map(c => {
+                        let label = c;
+                        if (c === "Academico") label = "Académico";
+                        if (c === "Maraton") label = "Maratón";
+                        return <option key={c} value={c}>{label}</option>;
+                      })
+                    )}
                   </select>
                   <button type="button" className="coord-mini-btn coord-mini-danger-btn" onClick={quitarCategoria}>
                     <Trash2 size={14} />

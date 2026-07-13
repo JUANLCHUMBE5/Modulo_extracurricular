@@ -16,14 +16,14 @@ export const CrearInscripcionSchema = z.object({
   seleccion: z.string().optional(),
   nivel_cambridge: z.string().optional(),
   horario: z.string().optional(),
-});
+}).passthrough();
 
 // --- Registrar documento de inscripción (matches inscripcion-workflow.service.ts) ---
 export const RegistrarDocumentoSchema = z.object({
   usuario: z.string().optional(),
   tipo_documento: z.string().optional(),
   plantilla: z.string().optional(),
-});
+}).passthrough();
 
 // --- Derivar a caja / Reservar caja (matches inscripcion-workflow.service.ts) ---
 // derivarCaja hace spread de body completo, reservarCaja usa body.dni_estudiante
@@ -33,7 +33,7 @@ export const DerivarCajaSchema = z.object({
   observaciones: z.string().optional(),
   costo: z.union([z.number(), z.string()]).optional(),
   costoOriginal: z.union([z.number(), z.string()]).optional(),
-});
+}).passthrough();
 
 // --- Actualizar apoderado (matches inscripcion-portal.service.ts) ---
 export const UpdateApoderadoSchema = z.object({
@@ -42,7 +42,7 @@ export const UpdateApoderadoSchema = z.object({
   telefono_apoderado: z.string().optional(),
   correo: z.string().optional(),
   correo_apoderado: z.string().optional(),
-});
+}).passthrough();
 
 export type CrearInscripcionDto = z.infer<typeof CrearInscripcionSchema>;
 export type RegistrarDocumentoDto = z.infer<typeof RegistrarDocumentoSchema>;

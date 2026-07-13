@@ -23,6 +23,7 @@ export default function SecretariaSummerRegistroForm({
   programaRegistroVista,
   mostrarDetallePrograma,
   horarioResumenRegistro,
+  inscripcionesEstudiante = [],
 }) {
   return (
     <div className="secretaria-summer-flow secretaria-field-full">
@@ -120,11 +121,14 @@ export default function SecretariaSummerRegistroForm({
               <option value="">
                 {programasParaSelector.length ? "Seleccione programa" : "No hay programas de ciclo verano disponibles"}
               </option>
-              {programasParaSelector.map((programa: any) => (
-                <option key={programa.id} value={programa.id}>
-                  {obtenerEtiquetaPrograma(programa)}
-                </option>
-              ))}
+              {programasParaSelector.map((programa: any) => {
+                const estaRegistrado = Array.isArray(inscripcionesEstudiante) && inscripcionesEstudiante.some((ins: any) => ins.programaId === programa.id);
+                return (
+                  <option key={programa.id} value={programa.id} disabled={estaRegistrado}>
+                    {obtenerEtiquetaPrograma(programa)} {estaRegistrado ? "(YA MATRICULADO)" : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
         ) : (

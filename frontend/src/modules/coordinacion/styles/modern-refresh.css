@@ -563,7 +563,7 @@
 }
 
 .coord-group-schedule-compact {
-  grid-template-columns: 80px minmax(100px, 0.8fr) minmax(70px, 0.5fr) minmax(100px, 0.7fr) minmax(110px, 0.8fr) minmax(110px, 0.8fr) minmax(150px, 1.1fr) 50px 72px;
+  grid-template-columns: 80px minmax(100px, 0.8fr) minmax(70px, 0.5fr) minmax(100px, 0.7fr) minmax(110px, 0.8fr) minmax(150px, 1.1fr) 50px 72px;
   align-items: center;
   gap: 10px !important;
   padding: 9px 10px !important;
@@ -751,6 +751,32 @@
   flex: 0 0 auto;
 }
 
+.coord-add-option-btn {
+  height: 38px;
+  width: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1f8f73;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.coord-add-option-btn:hover {
+  background: #167a61;
+}
+
+.coord-add-block-btn {
+  background: #1f8f73;
+}
+
+.coord-add-block-btn:hover {
+  background: #167a61;
+}
+
 .coord-add-taller-btn {
   width: 100%;
   height: 38px;
@@ -759,19 +785,19 @@
   justify-content: center;
   gap: 6px;
   font-weight: 750;
-  background: #eefaf5;
-  color: #1f8f73;
-  border: 1px solid #b8d4c8;
+  background: #1f8f73;
+  color: #ffffff;
+  border: 1px solid #1f8f73;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .coord-add-taller-btn:hover {
-  background: #e1f7ed;
-  border-color: #92c4b1;
-  color: #167a61;
-  box-shadow: 0 4px 10px rgba(31, 143, 115, 0.12);
+  background: #167a61;
+  border-color: #167a61;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(31, 143, 115, 0.25);
 }
 
 .coord-cancel-taller-btn {

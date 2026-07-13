@@ -41,14 +41,14 @@
 
 .caja-payment-approved strong {
   font-size: 15px;
-  font-weight: 950;
+  font-weight: 700;
 }
 
 .caja-payment-approved span {
   margin-top: 2px;
   color: #344054;
   font-size: 13px;
-  font-weight: 750;
+  font-weight: 600;
 }
 
 .caja-menu-toggle-btn-header {
@@ -118,14 +118,14 @@
   margin: 0;
   color: #101828;
   font-size: 15px;
-  font-weight: 950;
+  font-weight: 700;
 }
 
 .caja-form-title p {
   margin: 2px 0 0;
   color: #667085;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .caja-search-form {
@@ -145,7 +145,7 @@
   color: #0f172a;
   background: #ffffff;
   font-size: 14px;
-  font-weight: 750;
+  font-weight: 500;
   outline: none;
   transition: all 0.2s ease;
 }
@@ -367,19 +367,28 @@
   opacity: 0.8;
 }
 
+.caja-readonly-field,
+.caja-readonly-field strong,
+.caja-readonly-field span,
+.caja-payment-method,
+.caja-payment-method span,
+.caja-payment-method select,
+.caja-payment-method input {
+  font-family: var(--font-body) !important;
+}
+
 .caja-readonly-field span {
   font-size: 11px;
-  font-weight: 850;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: #64748b;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  color: #475569;
 }
 
 .caja-readonly-field strong {
   min-width: 0;
-  color: #0f172a;
-  font-size: 14px;
-  font-weight: 900;
+  color: #1e293b !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
   line-height: 1.25;
   overflow-wrap: anywhere;
   margin-top: 4px;
@@ -407,7 +416,7 @@
 .caja-readonly-field.field-monto strong {
   color: #0f766e;
   font-size: 19px;
-  font-weight: 950;
+  font-weight: 700;
 }
 
 .caja-readonly-field.field-concepto,
@@ -423,7 +432,7 @@
   border-radius: 6px;
   padding: 3px 8px;
   font-size: 11px;
-  font-weight: 850;
+  font-weight: 700;
   text-transform: uppercase;
   margin-top: 4px;
   border: 1px solid transparent;
@@ -468,11 +477,10 @@
 }
 
 .caja-payment-method > span {
-  color: #64748b !important;
+  color: #475569 !important;
   font-size: 11px !important;
-  font-weight: 850;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
+  font-weight: 500 !important;
+  letter-spacing: 0.3px;
 }
 
 .caja-form-block.is-disabled {
@@ -535,3 +543,64 @@
     grid-column: 1;
   }
 }
+
+/* Fused Layout (Split Panel) for Caja */
+.caja-fused-layout {
+  display: grid;
+  grid-template-columns: 310px 1fr;
+  gap: 16px;
+  align-items: start;
+  width: 100%;
+}
+
+.caja-student-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.caja-student-fields .caja-readonly-field {
+  grid-column: span 1 !important;
+  width: 100% !important;
+}
+
+.caja-payment-summary-right {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+.caja-payment-summary-right .caja-readonly-field,
+.caja-payment-summary-right .caja-payment-method {
+  grid-column: span 4;
+}
+
+.caja-payment-summary-right .caja-readonly-field.field-programa {
+  grid-column: span 6;
+}
+
+.caja-payment-summary-right .caja-readonly-field.field-monto {
+  grid-column: span 3;
+}
+
+.caja-payment-summary-right .caja-readonly-field.field-concepto,
+.caja-payment-summary-right .caja-readonly-field.field-estado,
+.caja-payment-summary-right .caja-readonly-field.field-fecha {
+  grid-column: span 3;
+}
+
+.caja-payment-summary-right .caja-payment-method.field-payment-method {
+  grid-column: span 6;
+}
+
+.caja-payment-summary-right .caja-payment-method.field-receipt {
+  grid-column: span 6;
+}
+
+@media (max-width: 1024px) {
+  .caja-fused-layout {
+    grid-template-columns: 1fr;
+  }
+}
+

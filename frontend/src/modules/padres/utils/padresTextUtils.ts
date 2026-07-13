@@ -62,7 +62,14 @@ export function prepararComunicadoPadres(programa: any, estudiante: any) {
     { area, programa: titulo, alumno, datos: datosComunicado }
   );
   const comunicadoYaIncluyeDetalle = Boolean(textoCompletoWord && textoIncluyeSeccionesDePrograma(textoCompletoWord));
-  const textoMensajeWord = comunicadoYaIncluyeDetalle ? extraerMensajePrincipalWord(textoCompletoWord) : textoCompletoWord;
+  const cleanComunicadoBody = programa?.comunicado && programa.comunicado.trim()
+    ? programa.comunicado
+    : (comunicadoYaIncluyeDetalle ? extraerMensajePrincipalWord(textoCompletoWord) : String(textoCompletoWord).split(/\n+Requisitos:/i)[0]);
+
+  const textoMensajeWord = limpiarComunicadoWord(
+    cleanComunicadoBody || "",
+    { area, programa: titulo, alumno, datos: datosComunicado }
+  );
   const detalleWord = comunicadoYaIncluyeDetalle ? obtenerDetalleFormatoDesdeWord(textoCompletoWord) : [];
   const parrafosFallback = esCambridge
     ? crearComunicadoCambridgePadres(programa, estudiante, titulo)
@@ -91,6 +98,30 @@ export function prepararComunicadoPadres(programa: any, estudiante: any) {
     );
   }
   const detalleFormato = obtenerDetalleFormatoPadres(programa);
+
+  // Agrupar secciones que no sean Costo o Almuerzo dentro de Indicaciones
+  const detalleFormatoRestante: any[] = [];
+  const itemsRequisitos: string[] = [];
+  const costoFormateado = Number(programa?.costo || 0) > 0 ? `S/. ${Number(programa.costo).toFixed(2)}` : "";
+
+  detalleFormato.forEach(sec => {
+    const norm = normalizarTextoPadres(sec.titulo);
+    if (norm.includes("costo") || norm.includes("precio")) {
+      const itemsProcesados = sec.items.map((item: string) => {
+        if (costoFormateado && /S\/\.?\s*(?![\d,]+)/i.test(item)) {
+          return item.replace(/S\/\.?\s*(?![\d,]+)/gi, `${costoFormateado} `);
+        }
+        return item;
+      });
+      detalleFormatoRestante.push({ ...sec, items: itemsProcesados });
+    } else if (norm.includes("almuerzo") || norm.includes("concesionario")) {
+      detalleFormatoRestante.push(sec);
+    } else {
+      itemsRequisitos.push(...sec.items);
+    }
+  });
+
+  const indicacionesFinales = [...indicaciones, ...itemsRequisitos];
   const resumenParrafos = resumirComunicadoPadres(parrafosResumenBase, programa, detalleFormato);
   const datosCambridge = esCambridge ? obtenerDatosCambridgePadres(programa, estudiante) : null;
 
@@ -99,11 +130,11 @@ export function prepararComunicadoPadres(programa: any, estudiante: any) {
     fecha,
     parrafos,
     resumenParrafos,
-    indicaciones,
-    indicacionesResumen: indicaciones.slice(0, 3),
-    detalleFormato,
+    indicaciones: indicacionesFinales,
+    indicacionesResumen: indicacionesFinales.slice(0, 3),
+    detalleFormato: detalleFormatoRestante,
     datosCambridge,
-    tieneAlmuerzoFormato: detalleFormato.some((seccion) =>
+    tieneAlmuerzoFormato: detalleFormatoRestante.some((seccion) =>
       ["almuerzo", "concesionarios"].includes(normalizarTextoPadres(seccion.titulo))
     ),
     ocultarAlmuerzo: comunicadoYaIncluyeDetalle || (!programa?.detalleAlmuerzo && !programa?.concesionarios),

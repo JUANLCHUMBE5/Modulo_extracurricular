@@ -29,7 +29,7 @@ export function useDireccionOptions({
 
   const metricasAnalisis = useMemo(() => calcularMetricasAnalisis(panel), [panel]);
 
-  const listadoVerano = ["Vacaciones Útiles", "Talleres Recreativos", "Talleres Deportivos"];
+  const listadoVerano = ["Vacaciones Útiles", "Talleres Recreativos", "Talleres Deportivos", "Arte"];
   const listadoEscolar = useMemo(() => {
     const dbCats = panel?.categorias || ["Academico", "Deportivo", "Maraton", "Reforzamiento"];
     return dbCats.filter((c: any) => {
@@ -41,7 +41,7 @@ export function useDireccionOptions({
         "deportivos",
         "taller recreativo",
         "vacaciones"
-      ].includes(normCat);
+      ].includes(normCat) && !String(c).startsWith("TALLER_VERANO:") && !String(c).startsWith("DELETED_TALLER_VERANO:");
     });
   }, [panel?.categorias]);
 
@@ -61,6 +61,9 @@ export function useDireccionOptions({
         let label = c;
         if (c === "Academico") label = "Académico";
         if (c === "Maraton") label = "Maratón";
+        if (c === "Arte" && (periodo === "verano" || !listadoEscolar.includes("Arte"))) {
+          label = "Otro taller (Añadir)";
+        }
         return { value: c, label };
       })
     ];

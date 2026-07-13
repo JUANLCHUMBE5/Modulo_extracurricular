@@ -32,6 +32,7 @@ export default function CajaFields({
   onSeleccionarEstudiante,
   onVerHistorialAlumno,
   metodosPago = [],
+  children,
 }) {
   const pagoHabilitado = modoEdicion || Boolean(formulario.inscripcionId);
   const mostrarSelectorTallerCaja = !pagoHabilitado && !modoEdicion && inscripcionesCaja.length > 0;
@@ -187,143 +188,176 @@ export default function CajaFields({
       ) : null}
 
       {pagoHabilitado ? (
-        <section className="caja-form-block">
-          <div className="caja-form-title">
-            <div>
-              <h3>Datos del pago</h3>
-              <p>Informacion cargada desde la inscripcion.</p>
-            </div>
-          </div>
-
-          <div className="caja-payment-summary">
-            {formulario.descuentoAprobado && (
-              <div className="caja-discount-applied-card" style={{
-                gridColumn: "1 / -1",
-                background: "#f0fdf4",
-                border: "1px solid #bbf7d0",
-                borderRadius: "8px",
-                padding: "12px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-                marginBottom: "8px"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span style={{
-                    background: "#dcfce7",
-                    color: "#15803d",
-                    fontSize: "10px",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    padding: "2px 8px",
-                    borderRadius: "12px",
-                  }}>
-                    {formulario.descuentoTipo === "beca" ? "Beca 100% Aprobada" : "Descuento Aprobado"}
-                  </span>
-                  <span style={{ fontSize: "11px", color: "#16a34a", fontWeight: 700 }}>por Dirección</span>
-                </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginTop: "4px" }}>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#475569", display: "block" }}>Costo Original:</span>
-                    <span style={{ fontSize: "14px", fontWeight: 700, color: "#64748b", textDecoration: "line-through" }}>
-                      {formatearSoles(formulario.costoOriginal)}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#475569", display: "block" }}>Descuento:</span>
-                    <span style={{ fontSize: "14px", fontWeight: 700, color: "#16a34a" }}>
-                      -{formatearSoles(formulario.descuentoMonto)}
-                    </span>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#475569", display: "block" }}>Monto Final:</span>
-                    <span style={{ fontSize: "14px", fontWeight: 800, color: "#15803d" }}>
-                      {formatearSoles(formulario.monto)}
-                    </span>
-                  </div>
-                </div>
-                {formulario.descuentoJustificacion && (
-                  <div style={{ fontSize: "12px", color: "#166534", borderTop: "1px dashed #bbf7d0", paddingTop: "6px", marginTop: "4px" }}>
-                    <strong>Motivo:</strong> {formulario.descuentoJustificacion}
-                  </div>
-                )}
+        <div className="caja-fused-layout">
+          {/* Columna Izquierda: Datos del Alumno */}
+          <section className="caja-form-block caja-student-block">
+            <div className="caja-form-title">
+              <ClipboardList size={18} style={{ color: "#0f766e" }} />
+              <div>
+                <h3>Datos del alumno</h3>
+                <p>Información del estudiante.</p>
               </div>
-            )}
-            {datosLectura.map(({ label, value, icon, classKey }) => {
-              const classNames = [];
-              if (classKey) classNames.push(`field-${classKey}`);
-              if (label === "Estado") {
-                if (value === "Pagado") classNames.push("status-pagado");
-                else if (value === "Por Verificar") classNames.push("status-verificando");
-                else classNames.push("status-pendiente");
-              }
-              return (
-                <div className={`caja-readonly-field ${classNames.join(" ")}`} key={label}>
+            </div>
+            <div className="caja-student-fields">
+              {datosLectura.slice(0, 3).map(({ label, value, icon, classKey }) => (
+                <div className={`caja-readonly-field field-${classKey}`} key={label}>
                   <div className="caja-field-header">
+                    {icon}
                     <span>{label}</span>
                   </div>
                   <strong>{value}</strong>
                 </div>
-              );
-            })}
-            <Select
-              allowDeselect={false}
-              className="caja-payment-method field-payment-method caja-payment-select"
-              comboboxProps={{ withinPortal: false }}
-              data={opcionesFormaPago}
-              disabled={esPorVerificar}
-              label="Forma de pago"
-              onChange={(value) => actualizar("formaPago", value || "Efectivo")}
-              value={formulario.formaPago}
-            />
-            <label className="caja-payment-method field-receipt">
-              <span>N° de comprobante</span>
-              <input
-                type="text"
-                placeholder="Pendiente de configurar"
-                value={comprobanteVistaPrevia}
-                readOnly
-                disabled={true}
-              />
-            </label>
-            {esPorVerificar ? (
-              <div className="caja-yape-details-card" style={{
-                gridColumn: "1 / -1",
-                background: "#fef3c7",
-                border: "1px solid #fde68a",
-                borderRadius: "6px",
-                padding: "12px",
-                marginTop: "10px",
-              }}>
-                <h4 style={{ margin: "0 0 8px 0", color: "#b45309", fontSize: "13px" }}>
-                  Detalles del Yape (Web)
-                </h4>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "8px" }}>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#6b7280", display: "block" }}>Celular de Operacion:</span>
-                    <strong style={{ fontSize: "13px", color: "#1f2937" }}>{formulario.telefonoOperacion || "No ingresado"}</strong>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: "11px", color: "#6b7280", display: "block" }}>Codigo de Operacion:</span>
-                    <strong style={{ fontSize: "13px", color: "#1f2937" }}>{formulario.numeroOperacion || "No ingresado"}</strong>
-                  </div>
-                </div>
-                {formulario.capturaPagoBase64 ? (
-                  <div style={{ textAlign: "center" }}>
-                    <span style={{ fontSize: "11px", color: "#b45309", display: "block", marginBottom: "4px" }}>Captura de pantalla:</span>
-                    <img
-                      src={formulario.capturaPagoBase64}
-                      alt="Captura Yape"
-                      style={{ maxWidth: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "4px", border: "1px solid #eaeaea" }}
-                    />
-                  </div>
-                ) : (
-                  <span style={{ fontSize: "11px", color: "#9ca3af", fontStyle: "italic" }}>No se adjunto captura de pantalla.</span>
-                )}
+              ))}
+            </div>
+          </section>
+
+          {/* Columna Derecha: Datos del Pago */}
+          <section className="caja-form-block caja-payment-block">
+            <div className="caja-form-title">
+              <Coin size={18} style={{ color: "#0f766e" }} />
+              <div>
+                <h3>Datos del taller y pagos</h3>
+                <p>Configure el cobro y la forma de pago.</p>
               </div>
-            ) : null}
-          </div>
-        </section>
+            </div>
+
+            <div className="caja-payment-summary-right">
+              {formulario.descuentoAprobado && (
+                <div className="caja-discount-applied-card" style={{
+                  gridColumn: "1 / -1",
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: "8px",
+                  padding: "12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                  marginBottom: "8px"
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <span style={{
+                      background: "#dcfce7",
+                      color: "#15803d",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      padding: "2px 8px",
+                      borderRadius: "12px",
+                    }}>
+                      {formulario.descuentoTipo === "beca" ? "Beca 100% Aprobada" : "Descuento Aprobado"}
+                    </span>
+                    <span style={{ fontSize: "11px", color: "#16a34a", fontWeight: 700 }}>por Dirección</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginTop: "4px" }}>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#475569", display: "block" }}>Costo Original:</span>
+                      <span style={{ fontSize: "14px", fontWeight: 700, color: "#64748b", textDecoration: "line-through" }}>
+                        {formatearSoles(formulario.costoOriginal)}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#475569", display: "block" }}>Descuento:</span>
+                      <span style={{ fontSize: "14px", fontWeight: 700, color: "#16a34a" }}>
+                        -{formatearSoles(formulario.descuentoMonto)}
+                      </span>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#475569", display: "block" }}>Monto Final:</span>
+                      <span style={{ fontSize: "14px", fontWeight: 800, color: "#15803d" }}>
+                        {formatearSoles(formulario.monto)}
+                      </span>
+                    </div>
+                  </div>
+                  {formulario.descuentoJustificacion && (
+                    <div style={{ fontSize: "12px", color: "#166534", borderTop: "1px dashed #bbf7d0", paddingTop: "6px", marginTop: "4px" }}>
+                      <strong>Motivo:</strong> {formulario.descuentoJustificacion}
+                    </div>
+                  )}
+                </div>
+              )}
+              {datosLectura.slice(3).map(({ label, value, icon, classKey }) => {
+                const classNames = [];
+                if (classKey) classNames.push(`field-${classKey}`);
+                if (label === "Estado") {
+                  if (value === "Pagado") classNames.push("status-pagado");
+                  else if (value === "Por Verificar") classNames.push("status-verificando");
+                  else classNames.push("status-pendiente");
+                }
+                return (
+                  <div className={`caja-readonly-field ${classNames.join(" ")}`} key={label}>
+                    <div className="caja-field-header">
+                      {icon}
+                      <span>{label}</span>
+                    </div>
+                    <strong>{value}</strong>
+                  </div>
+                );
+              })}
+              <Select
+                allowDeselect={false}
+                className="caja-payment-method field-payment-method caja-payment-select"
+                comboboxProps={{ withinPortal: false }}
+                data={opcionesFormaPago}
+                disabled={esPorVerificar}
+                label="Forma de pago"
+                onChange={(value) => actualizar("formaPago", value || "Efectivo")}
+                value={formulario.formaPago}
+              />
+              <label className="caja-payment-method field-receipt">
+                <span>N° de comprobante</span>
+                <input
+                  type="text"
+                  placeholder="Pendiente de configurar"
+                  value={comprobanteVistaPrevia}
+                  readOnly
+                  disabled={true}
+                />
+              </label>
+              {esPorVerificar ? (
+                <div className="caja-yape-details-card" style={{
+                  gridColumn: "1 / -1",
+                  background: "#fef3c7",
+                  border: "1px solid #fde68a",
+                  borderRadius: "6px",
+                  padding: "12px",
+                  marginTop: "10px",
+                }}>
+                  <h4 style={{ margin: "0 0 8px 0", color: "#b45309", fontSize: "13px" }}>
+                    Detalles del Yape (Web)
+                  </h4>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", marginBottom: "8px" }}>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#6b7280", display: "block" }}>Celular de Operacion:</span>
+                      <strong style={{ fontSize: "13px", color: "#1f2937" }}>{formulario.telefonoOperacion || "No ingresado"}</strong>
+                    </div>
+                    <div>
+                      <span style={{ fontSize: "11px", color: "#6b7280", display: "block" }}>Codigo de Operacion:</span>
+                      <strong style={{ fontSize: "13px", color: "#1f2937" }}>{formulario.numeroOperacion || "No ingresado"}</strong>
+                    </div>
+                  </div>
+                  {formulario.capturaPagoBase64 ? (
+                    <div style={{ textAlign: "center" }}>
+                      <span style={{ fontSize: "11px", color: "#b45309", display: "block", marginBottom: "4px" }}>Captura de pantalla:</span>
+                      <img
+                        src={formulario.capturaPagoBase64}
+                        alt="Captura Yape"
+                        style={{ maxWidth: "100%", maxHeight: "150px", objectFit: "contain", borderRadius: "4px", border: "1px solid #eaeaea" }}
+                      />
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: "11px", color: "#9ca3af", fontStyle: "italic" }}>No se adjunto captura de pantalla.</span>
+                  )}
+                </div>
+              ) : null}
+
+              {children && (
+                <div style={{ gridColumn: "1 / -1", marginTop: "12px" }}>
+                  {children}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       ) : null}
     </div>
   );

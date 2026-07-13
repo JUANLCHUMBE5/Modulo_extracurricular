@@ -175,6 +175,9 @@
 .padres-flow-letter {
   border: 1px solid #c2ecc0 !important;
   background: #fbfdfb !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  overflow: hidden !important;
 }
 
 /* ── Custom Padres Program Card (SaaS Mockup layout) ───────────────────── */

@@ -148,7 +148,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.currentTarget.value)}
                     styles={{
-                      label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
+                      label: { fontSize: "11px", fontWeight: 600, color: "#475569", marginBottom: "6px" },
                       input: { borderRadius: "8px", height: "38px" }
                     }}
                     style={{ flex: 1 }}
@@ -205,9 +205,9 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
             ) : (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                 <div>
-                  <Text size="xs" color="dimmed">Estudiante Seleccionado:</Text>
+                  <Text size="sm" color="dimmed">Estudiante Seleccionado:</Text>
                   <Text fw={700} size="sm" color="#1e293b">{estudianteSeleccionado.nombres}</Text>
-                  <Text size="xs" color="dimmed">DNI: {estudianteSeleccionado.dni}</Text>
+                  <Text size="sm" color="dimmed">DNI: {estudianteSeleccionado.dni}</Text>
                 </div>
                 <Button size="xs" variant="outline" color="red" onClick={handleQuitarEstudiante}>
                   Cambiar estudiante
@@ -218,7 +218,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
             {/* SELECCIÓN DE RECIBO/COMPROBANTE VINCULADO */}
             {estudianteSeleccionado && (
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <Text size="sm" fw={700} color="#374151">Seleccionar Recibo a Anular</Text>
+                <span className="mantine-InputWrapper-label" style={{ fontSize: "11px", fontWeight: 600, color: "#475569", marginBottom: "4px" }}>Seleccionar Recibo a Anular</span>
                 {cargandoPagos ? (
                   <Group justify="center" p="md">
                     <Loader size="sm" />
@@ -248,33 +248,34 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
             {pagoSeleccionado && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", background: "#f8fafc", padding: "14px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                 <div>
-                  <Text size="xs" color="dimmed">Taller/Curso:</Text>
+                  <Text size="sm" color="dimmed">Taller/Curso:</Text>
                   <Text size="sm" fw={700}>{pagoSeleccionado.programa || "-"}</Text>
                 </div>
                 <div>
-                  <Text size="xs" color="dimmed">Monto pagado:</Text>
+                  <Text size="sm" color="dimmed">Monto pagado:</Text>
                   <Text size="sm" fw={700} color="red">{formatearSoles(pagoSeleccionado.monto)}</Text>
                 </div>
                 <div>
-                  <Text size="xs" color="dimmed">N° de recibo/operación:</Text>
+                  <Text size="sm" color="dimmed">N° de recibo/operación:</Text>
                   <Text size="sm" fw={700}>{pagoSeleccionado.nroRecibo || "-"}</Text>
                 </div>
                 <div>
-                  <Text size="xs" color="dimmed">Fecha de pago:</Text>
+                  <Text size="sm" color="dimmed">Fecha de pago:</Text>
                   <Text size="sm" fw={700}>{String(pagoSeleccionado.fecha || pagoSeleccionado.fechaPago || "").slice(0, 10)}</Text>
                 </div>
               </div>
             )}
 
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <Text size="sm" fw={700} color="#374151">Justificación o Motivo de la Anulación *</Text>
               <Textarea
+                label="Justificación o Motivo de la Anulación *"
                 placeholder="Indique brevemente el motivo de la anulación física o del cobro..."
                 value={motivo}
                 onChange={(e) => setMotivo(e.currentTarget.value)}
                 required
                 rows={4}
                 styles={{
+                  label: { fontSize: "11px", fontWeight: 600, color: "#475569", marginBottom: "6px" },
                   input: { borderRadius: "8px" }
                 }}
               />
@@ -420,9 +421,9 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
                 ) : (
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
                     <div>
-                      <Text size="xs" color="dimmed">Estudiante Seleccionado:</Text>
+                      <Text size="sm" color="dimmed">Estudiante Seleccionado:</Text>
                       <Text fw={700} size="sm" color="#1e293b">{estudianteEgreso.nombres}</Text>
-                      <Text size="xs" color="dimmed">DNI: {estudianteEgreso.dni}</Text>
+                      <Text size="sm" color="dimmed">DNI: {estudianteEgreso.dni}</Text>
                     </div>
                     <Button size="xs" variant="outline" color="red" onClick={handleQuitarEstudianteEgreso}>
                       Cambiar estudiante
@@ -433,7 +434,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
                 {/* SELECTOR DE PAGO PARA DEVOLVER */}
                 {estudianteEgreso && (
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <Text size="sm" fw={700} color="#374151">Seleccionar Pago a Devolver</Text>
+                    <span className="mantine-InputWrapper-label" style={{ fontSize: "11px", fontWeight: 600, color: "#475569", marginBottom: "4px" }}>Seleccionar Pago a Devolver</span>
                     {cargandoPagosEgreso ? (
                       <Group justify="center" p="md">
                         <Loader size="sm" />
@@ -472,7 +473,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
                 disabled={tipoEgreso === "estudiante" && Boolean(estudianteEgreso)}
                 required
                 styles={{
-                  label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
+                  label: { fontSize: "11px", fontWeight: 600, color: "#475569", marginBottom: "6px" },
                   input: { borderRadius: "8px", height: "38px" }
                 }}
               />
@@ -484,7 +485,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
                 disabled={tipoEgreso === "estudiante" && Boolean(estudianteEgreso)}
                 maxLength={8}
                 styles={{
-                  label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
+                  label: { fontSize: "11px", fontWeight: 600, color: "#475569", marginBottom: "6px" },
                   input: { borderRadius: "8px", height: "38px" }
                 }}
               />
@@ -498,7 +499,7 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
                 onChange={(e) => setMontoEgreso(e.currentTarget.value)}
                 required
                 styles={{
-                  label: { fontSize: "13px", fontWeight: 700, color: "#374151", marginBottom: "6px" },
+                  label: { fontSize: "11px", fontWeight: 600, color: "#475569", marginBottom: "6px" },
                   input: { borderRadius: "8px", height: "38px" }
                 }}
               />
@@ -510,14 +511,15 @@ export default function CajaCancelarCorrelativo({ sidebarExpanded, toggleSidebar
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <Text size="sm" fw={700} color="#374151">Concepto o Justificación del Egreso *</Text>
               <Textarea
+                label="Concepto o Justificación del Egreso *"
                 placeholder="Ej. Devolución de pago por concepto de taller de robótica..."
                 value={conceptoEgreso}
                 onChange={(e) => setConceptoEgreso(e.currentTarget.value)}
                 required
                 rows={3}
                 styles={{
+                  label: { fontSize: "11px", fontWeight: 600, color: "#475569", marginBottom: "6px" },
                   input: { borderRadius: "8px" }
                 }}
               />

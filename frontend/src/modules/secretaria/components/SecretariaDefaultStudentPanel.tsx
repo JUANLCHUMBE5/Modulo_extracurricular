@@ -343,19 +343,51 @@ export default function SecretariaDefaultStudentPanel({
                 </div>
               </div>
             )}
-            <button
-              className="secretaria-register-button"
-              type="button"
-              onClick={abrirRegistro}
-              disabled={(invitacionSinHorario || !tieneInvitacionOperativa) && !inscripcion}
-            >
-              <ClipboardCheck size={17} />
-              <span>
-                {!tieneInvitacionOperativa 
-                  ? "No invitado - Requiere Habilitación" 
-                  : (invitacionSinHorario ? "Falta horario en Coordinación Académica" : "Registrar inscripcion")}
-              </span>
-            </button>
+            {inscripcionesEstudiante && inscripcionesEstudiante.length > 0 ? (
+              cursosAdicionalesDisponibles > 0 ? (
+                <button
+                  className="secretaria-register-button"
+                  type="button"
+                  onClick={abrirCursoAdicional}
+                  style={{
+                    background: "#0d9488",
+                    borderColor: "#0d9488",
+                  }}
+                >
+                  <ClipboardCheck size={17} />
+                  <span>Registrar curso adicional</span>
+                </button>
+              ) : (
+                <button
+                  className="secretaria-register-button"
+                  type="button"
+                  disabled={true}
+                  style={{
+                    background: "#cbd5e1",
+                    borderColor: "#cbd5e1",
+                    color: "#64748b",
+                    cursor: "not-allowed"
+                  }}
+                >
+                  <ClipboardCheck size={17} />
+                  <span>No hay más cursos disponibles</span>
+                </button>
+              )
+            ) : (
+              <button
+                className="secretaria-register-button"
+                type="button"
+                onClick={abrirRegistro}
+                disabled={(invitacionSinHorario || !tieneInvitacionOperativa) && !inscripcion}
+              >
+                <ClipboardCheck size={17} />
+                <span>
+                  {!tieneInvitacionOperativa 
+                    ? "No invitado - Requiere Habilitación" 
+                    : (invitacionSinHorario ? "Falta horario en Coordinación Académica" : "Registrar inscripcion")}
+                </span>
+              </button>
+            )}
           </>
         ) : (
           <div className="secretaria-final-actions">
@@ -368,29 +400,7 @@ export default function SecretariaDefaultStudentPanel({
               {imprimiendoFichaRegistro ? <Loader2 className="secretaria-spin" size={17} /> : <Printer size={17} />}
               <span>{imprimiendoFichaRegistro ? "Preparando ficha" : "Imprimir ficha de registro"}</span>
             </button>
-            <button
-              className="secretaria-register-button"
-              type="button"
-              onClick={derivarACaja}
-              disabled={derivandoCaja || inscripcion.derivadoCaja || esPagoCompletado}
-            >
-              {derivandoCaja ? (
-                <Loader2 className="secretaria-spin" size={17} />
-              ) : esPagoCompletado ? (
-                <CheckCircle2 size={17} />
-              ) : (
-                <Send size={17} />
-              )}
-              <span>
-                {inscripcion.derivadoCaja
-                  ? "Derivado exitosamente"
-                  : esPagoCompletado
-                    ? "Pago completado"
-                    : derivandoCaja
-                      ? "Derivando"
-                    : `Derivar: ${inscripcion.programa || "Cajera"}`}
-              </span>
-            </button>
+
             {cursosAdicionalesDisponibles > 0 ? (
               <button
                 className="secretaria-secondary-button"

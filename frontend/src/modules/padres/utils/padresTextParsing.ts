@@ -260,9 +260,9 @@ export function formatearHorarioDetalle(texto: string) {
   }
 
   let formatted = texto;
-  formatted = formatted.replace(/\s*almuerzo\s*/gi, "\nAlmuerzo: ");
-  formatted = formatted.replace(/\s*clase\s*/gi, "\nClase: ");
-  formatted = formatted.replace(/\s*·\s*(aula\s*\d+)/gi, "\n$1");
+  formatted = formatted.replace(/\s*almuerzo\s*/gi, "\nALMUERZO: ");
+  formatted = formatted.replace(/\s*clase\s*/gi, "\nCLASE: ");
+  formatted = formatted.replace(/\s*·\s*aula\s*/gi, "\nAULA: ");
   formatted = formatted.replace(/\s*·\s*/gi, "\n");
   formatted = formatted.replace(/:\s*:/g, ":");
   formatted = formatted.split("\n").map(function (line) { return line.trim(); }).filter(Boolean).join("\n");

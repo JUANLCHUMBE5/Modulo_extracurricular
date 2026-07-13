@@ -67,6 +67,12 @@ const procesarRespuesta = async (response) => {
     throw new ApiError("No tiene permisos suficientes para realizar esta acción.", 403);
   }
 
+  const renewedToken = response.headers.get("X-Renewed-Token") || response.headers.get("x-renewed-token");
+  if (renewedToken && typeof window !== "undefined") {
+    sessionStorage.setItem(CONFIG_CONEXION.tokenKey, renewedToken);
+    localStorage.setItem(CONFIG_CONEXION.tokenKey, renewedToken);
+  }
+
   const contentType = response.headers.get("content-type") || "";
   const data = contentType.includes("application/json")
     ? await response.json().catch(() => null)

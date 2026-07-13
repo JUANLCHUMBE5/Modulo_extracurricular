@@ -68,7 +68,28 @@ export function resolverDocentePorGrado(programa, gradoAlumno = "") {
   return programa.responsable || programa.docente || "No definido";
 }
 
+export function programaDisponibleParaAlcanceMasivo(programa, gradoAlumno = "") {
+  const alcance = normalizarTexto(programa?.alcanceInvitacionMasiva || "colegio");
+  if (!alcance || alcance === "colegio" || alcance === "todos") return true;
+
+  const gradoNormalizado = descomponerGrado(gradoAlumno);
+  if (!gradoNormalizado.nivel) return false;
+
+  if (alcance === "primaria" || alcance === "secundaria" || alcance === "inicial") {
+    return gradoNormalizado.nivel === alcance;
+  }
+
+  if (alcance === "grados" || alcance === "seleccionados") {
+    const gradosAplicables = Array.isArray(programa?.gradosAplicables) ? programa.gradosAplicables : [];
+    if (!gradosAplicables.length || !gradoNormalizado.numero) return false;
+    return gradosAplicables.some((grado) => coincideGrado(grado, gradoNormalizado));
+  }
+
+  return true;
+}
+
 export function programaDisponibleParaGrado(programa, gradoAlumno = "") {
+  if (programa?.invitacionMasiva) return programaDisponibleParaAlcanceMasivo(programa, gradoAlumno);
   if (normalizarPeriodo(programa?.periodo) === "verano") return true;
   if (tieneHorariosPorGrupo(programa)) {
     return Boolean(resolverHorarioPorGrado(programa, gradoAlumno));

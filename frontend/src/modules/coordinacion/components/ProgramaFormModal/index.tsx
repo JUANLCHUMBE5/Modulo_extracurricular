@@ -35,6 +35,7 @@ function ProgramaFormModal({
   cambiarPeriodoFormulario,
   catAEliminar,
   categorias,
+  setCategorias,
   ciclosCambridgeFormulario,
   diasSemana,
   duracionTallerFormulario,
@@ -42,6 +43,8 @@ function ProgramaFormModal({
   esCambridgeForm,
   esFormularioVerano,
   usaTalleresPorEdad,
+  esGuardarYClonar,
+  setEsGuardarYClonar,
   form,
   formDias,
   formGradosAplicables,
@@ -170,7 +173,9 @@ function ProgramaFormModal({
       norm === "deportivos" ||
       norm === "taller recreativo" ||
       norm === "vacaciones" ||
-      norm === "verano"
+      norm === "verano" ||
+      c.startsWith("TALLER_VERANO:") ||
+      c.startsWith("DELETED_TALLER_VERANO:")
     );
   });
 
@@ -222,6 +227,8 @@ function ProgramaFormModal({
 
             <SeccionFechasHorarios
               form={form}
+              categorias={categorias}
+              setCategorias={setCategorias}
               esFormularioVerano={esFormularioVerano}
               esMaratonForm={esMaratonForm}
               esCambridgeForm={esCambridgeForm}
@@ -263,6 +270,8 @@ function ProgramaFormModal({
               form={form}
               esCambridgeForm={esCambridgeForm && form.tipoComunicado !== "Inscripción Exámenes Internacionales"}
               actualizarForm={actualizarForm}
+              categorias={categorias}
+              setCategorias={setCategorias}
             />
 
             <SeccionInscripcionExamenes
@@ -302,9 +311,37 @@ function ProgramaFormModal({
       <button type="button" className="coord-secondary-button" onClick={() => setShowModal(false)}>
         Cancelar
       </button>
-      <button type="submit" form="form-programa" className="coord-register-button" disabled={guardando}>
-        {guardando ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
-        <span>{guardando ? "Guardando" : modoEditar ? "Actualizar" : "Crear programa"}</span>
+      
+      {esCambridgeForm && !modoEditar && (
+        <button
+          type="submit"
+          form="form-programa"
+          className="coord-secondary-button"
+          style={{
+            borderColor: "#449d44",
+            color: "#449d44",
+            background: "#f0fdf4",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px"
+          }}
+          onClick={() => setEsGuardarYClonar(true)}
+          disabled={guardando}
+        >
+          {guardando && esGuardarYClonar ? <Loader2 className="coord-spin" size={17} /> : null}
+          <span>Guardar y crear otro nivel</span>
+        </button>
+      )}
+
+      <button
+        type="submit"
+        form="form-programa"
+        className="coord-register-button"
+        onClick={() => setEsGuardarYClonar(false)}
+        disabled={guardando}
+      >
+        {guardando && !esGuardarYClonar ? <Loader2 className="coord-spin" size={17} /> : <CheckCircle2 size={17} />}
+        <span>{guardando && !esGuardarYClonar ? "Guardando" : modoEditar ? "Actualizar" : "Crear programa"}</span>
       </button>
     </div>
   );

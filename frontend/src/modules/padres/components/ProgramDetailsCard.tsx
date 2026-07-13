@@ -17,6 +17,7 @@ import {
   repararTexto,
   formatearHorarioDetalle,
 } from "../utils/padresTextUtils";
+import { obtenerVentanaInscripcion } from "../../../services/dateService";
 
 export function obtenerEstadoPagoPadres(inscripcion: any = {}) {
   const registro = inscripcion || {};
@@ -54,6 +55,33 @@ export function formatearInicioTaller(fechaStr: string) {
   const mesStr = String(mm + 1).padStart(2, "0");
   
   return `${diaNombre}, ${diaStr}/${mesStr}/${yyyy}`;
+}
+
+export function formatearFechaLimiteEnPalabras(fechaStr: string) {
+  if (!fechaStr) return "";
+  const partes = String(fechaStr).split("-");
+  if (partes.length !== 3) return fechaStr;
+  const yyyy = parseInt(partes[0], 10);
+  const mm = parseInt(partes[1], 10) - 1;
+  const dd = parseInt(partes[2], 10);
+  const fecha = new Date(yyyy, mm, dd);
+  if (Number.isNaN(fecha.getTime())) return fechaStr;
+
+  const meses = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre",
+  ];
+  return `${dd} de ${meses[mm]} de ${yyyy}`;
 }
 
 export function calcularPrimerDiaClase(fechaInicioStr: string, horarioStr: string) {
@@ -250,14 +278,20 @@ export default function ProgramDetailsCard({
                 <div className="info-tile-text-container">
                   {datosHorario ? (
                     <div className="custom-schedule-stack">
-                      <span className="custom-schedule-label">Horario</span>
-                      <strong className="custom-schedule-day">{datosHorario.grados}: {datosHorario.dia}</strong>
+                      <span className="custom-schedule-label">HORARIO - {String(datosHorario.grados || "").toUpperCase()}</span>
+                      <strong className="custom-schedule-day">DIAS: {datosHorario.dia}</strong>
+                      <span className="custom-schedule-class">CLASE: {convertirHorasAMPM(datosHorario.clase.replace(/\s*·.*$/, ""))}</span>
                       {datosHorario.almuerzo ? (
-                        <span className="custom-schedule-class">Almuerzo: {convertirHorasAMPM(datosHorario.almuerzo)}</span>
+                        <span className="custom-schedule-class">ALMUERZO: {convertirHorasAMPM(datosHorario.almuerzo)}</span>
                       ) : null}
-                      <span className="custom-schedule-class">Clase: {convertirHorasAMPM(datosHorario.clase.replace(/\s*·.*$/, ""))}</span>
                       {datosHorario.clase.includes("·") ? (
-                        <span className="custom-schedule-class">{datosHorario.clase.replace(/^.*·\s*/, "")}</span>
+                        <span className="custom-schedule-class">
+                          {(() => {
+                            const rawAula = datosHorario.clase.replace(/^.*·\s*/, "");
+                            const numeroAula = rawAula.replace(/aula\s*/i, "").trim();
+                            return `AULA: ${numeroAula}`;
+                          })()}
+                        </span>
                       ) : null}
                     </div>
                   ) : (
@@ -277,19 +311,28 @@ export default function ProgramDetailsCard({
                   <span>Vigencia</span>
                   <strong className="detail-value text-bold">
                     {(() => {
-                      const txt = formatearRangoFechasPadres(programa.fechaInicio, programme => programa.fechaFin);
-                      const finalTxt = typeof txt === "string" ? txt : formatearRangoFechasPadres(programa.fechaInicio, programa.fechaFin);
-                      if (finalTxt.includes(" al ")) {
-                        const partes = finalTxt.split(" al ");
-                        return (
-                          <>
-                            {partes[0]} al
-                            <br />
-                            {partes[1]}
-                          </>
-                        );
+                      if (programa.usarFechaLimiteInscripcion && programa.fechaLimiteInscripcion) {
+                        return `Hasta el ${formatearFechaLimiteEnPalabras(programa.fechaLimiteInscripcion)}`;
                       }
-                      return finalTxt;
+                      
+                      const ventana = obtenerVentanaInscripcion(
+                        programa.fechaInicio,
+                        new Date(),
+                        programa.duracionAvisoDias,
+                        programa.horaLimiteAviso,
+                        programa
+                      );
+                      if (ventana.fechaLimite) {
+                        const partes = ventana.fechaLimite.split("/");
+                        if (partes.length === 3) {
+                          const meses = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+                          const mIdx = parseInt(partes[1], 10) - 1;
+                          return `Hasta el ${parseInt(partes[0], 10)} de ${meses[mIdx]} de ${partes[2]}`;
+                        }
+                        return `Hasta el ${ventana.fechaLimite}`;
+                      }
+
+                      return "Por confirmar";
                     })()}
                   </strong>
                 </div>

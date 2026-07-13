@@ -35,7 +35,7 @@
   background: #e6fcf5;
   color: #0b6f60;
   font-size: 9px;
-  font-weight: 900;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
   border: 1px solid rgba(11, 111, 96, 0.2);
@@ -527,17 +527,17 @@
 .dir-builder-filters .mantine-MultiSelect-input,
 .dir-builder-filters .mantine-Input-input,
 .dir-builder-date-input {
-  height: 28px !important;
-  min-height: 28px !important;
-  line-height: 26px !important;
-  font-size: 11px !important;
-  padding: 0 8px !important;
-  border-radius: 6px !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  line-height: 36px !important;
+  font-size: 12px !important;
+  padding: 0 12px !important;
+  border-radius: 8px !important;
 }
 
 .dir-builder-filters .mantine-Select-wrapper,
 .dir-builder-filters .mantine-MultiSelect-wrapper {
-  min-height: 28px !important;
+  min-height: 38px !important;
 }
 
 .dir-custom-report-builder .mantine-Checkbox-root {
@@ -598,12 +598,12 @@
   padding: 6px 12px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 12px;
   background-color: #ffffff;
   color: #1e293b;
-  height: 34px;
+  height: 38px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
   transition: all 0.2s ease;
 }
 
@@ -637,7 +637,7 @@
   background: #f0fdfa !important; /* Soft teal highlight to give life and matching school theme */
   color: #0f766e !important;
   font-size: 10px !important;
-  font-weight: 900 !important;
+  font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
   border-bottom: 2px solid #ccfbf1 !important;

@@ -1,8 +1,110 @@
-import { IconCertificate as Certificate } from "@tabler/icons-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import {
+  IconCertificate as Certificate,
+  IconPlus as Plus,
+  IconX as X,
+} from "@tabler/icons-react";
 import { diasSemana } from "../../../constants/coordinacionConstants";
+import { crearCategoria, eliminarCategoria, listarCategorias } from "../../../services/coordinacionService";
 
-function SeccionCambridge({ form, esCambridgeForm, actualizarForm }) {
+function SeccionCambridge({ form, esCambridgeForm, actualizarForm, categorias, setCategorias }) {
   if (!esCambridgeForm) return null;
+
+  const [esOtro, setEsOtro] = useState(
+    Boolean(form.nivelCambridge && !["A1", "A2", "B1", "B2", "C1", "C2", "KET", "PET", "FCE", "CAE"].includes(form.nivelCambridge))
+  );
+
+  const [modalDialog, setModalDialog] = useState<{
+    show: boolean;
+    type: "prompt" | "confirm";
+    title: string;
+    message: string;
+    value?: string;
+    onConfirm: (val?: string) => void;
+  } | null>(null);
+
+  const defaultCambridgeLevels = ["A1", "A2", "B1", "B2", "C1", "C2", "KET", "PET", "FCE", "CAE"];
+
+  const dbCambridgeLevels = (categorias || [])
+    .filter((c: any) => String(c).startsWith("NIVEL_CAMBRIDGE:"))
+    .map((c: any) => String(c).substring("NIVEL_CAMBRIDGE:".length));
+
+  const deletedCambridgeLevels = (categorias || [])
+    .filter((c: any) => String(c).startsWith("DELETED_NIVEL_CAMBRIDGE:"))
+    .map((c: any) => String(c).substring("DELETED_NIVEL_CAMBRIDGE:".length));
+
+  const customCambridgeLevels = dbCambridgeLevels.filter((c: any) => !defaultCambridgeLevels.includes(c));
+
+  const listadoCambridgeLevels = [
+    ...defaultCambridgeLevels.filter(lvl => !deletedCambridgeLevels.includes(lvl)),
+    ...customCambridgeLevels.filter(lvl => !deletedCambridgeLevels.includes(lvl)),
+  ];
+
+  const handleAgregarNivelPrompt = () => {
+    setModalDialog({
+      show: true,
+      type: "prompt",
+      title: "Agregar Nuevo Nivel",
+      message: "Escriba el nombre del nuevo nivel de Cambridge (ej: Starters, Flyers, C2 Proficiency):",
+      value: "",
+      onConfirm: async (nombre) => {
+        if (!nombre || !nombre.trim()) return;
+        const nombreNormal = nombre.trim();
+        const wasDeletedDefault = deletedCambridgeLevels.includes(nombreNormal);
+        const nameWithPrefix = wasDeletedDefault
+          ? "DELETED_NIVEL_CAMBRIDGE:" + nombreNormal
+          : "NIVEL_CAMBRIDGE:" + nombreNormal;
+
+        try {
+          if (wasDeletedDefault) {
+            await eliminarCategoria(nameWithPrefix);
+          } else {
+            await crearCategoria(nameWithPrefix);
+          }
+          const cats = await listarCategorias();
+          setCategorias(cats);
+          actualizarForm("nivelCambridge", nombreNormal);
+          setEsOtro(false);
+          toast.success("Nivel agregado", { description: `"${nombreNormal}" se agregó a las opciones.` });
+        } catch (err: any) {
+          toast.error("Error", { description: err.message || "No se pudo agregar el nivel." });
+        }
+      }
+    });
+  };
+
+  const handleQuitarNivelSelect = () => {
+    const seleccionado = form.nivelCambridge;
+    if (!seleccionado || seleccionado === "Otro") return;
+
+    setModalDialog({
+      show: true,
+      type: "confirm",
+      title: "Eliminar Opción",
+      message: `¿Eliminar la opción "${seleccionado}" de la lista de opciones?`,
+      onConfirm: async () => {
+        try {
+          const isDefault = defaultCambridgeLevels.includes(seleccionado);
+          if (isDefault) {
+            await crearCategoria("DELETED_NIVEL_CAMBRIDGE:" + seleccionado);
+          } else {
+            await eliminarCategoria("NIVEL_CAMBRIDGE:" + seleccionado);
+          }
+          
+          const cats = await listarCategorias();
+          setCategorias(cats);
+          
+          const remaining = listadoCambridgeLevels.filter(lvl => lvl !== seleccionado);
+          actualizarForm("nivelCambridge", remaining[0] || "");
+          setEsOtro(false);
+          toast.success("Nivel eliminado", { description: `"${seleccionado}" se eliminó de las opciones.` });
+        } catch (err: any) {
+          toast.error("Error", { description: err.message || "No se pudo quitar el nivel." });
+        }
+      }
+    });
+  };
 
   return (
     <section className="coord-form-section">
@@ -36,11 +138,69 @@ function SeccionCambridge({ form, esCambridgeForm, actualizarForm }) {
 
         <div className="coord-field">
           <label>Nivel Cambridge</label>
-          <input
-            value={form.nivelCambridge || ""}
-            onChange={(event) => actualizarForm("nivelCambridge", event.target.value)}
-            placeholder="Ej. A2 Key, B1 Preliminary"
-          />
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <select
+              value={esOtro ? "Otro" : (form.nivelCambridge || "")}
+              onChange={(event) => {
+                const val = event.target.value;
+                if (val === "Otro") {
+                  setEsOtro(true);
+                  actualizarForm("nivelCambridge", "");
+                } else {
+                  setEsOtro(false);
+                  actualizarForm("nivelCambridge", val);
+                }
+              }}
+              style={{ flex: 1 }}
+            >
+              <option value="">— Seleccionar nivel —</option>
+              {listadoCambridgeLevels.map((lvl) => (
+                <option key={lvl} value={lvl}>{lvl}</option>
+              ))}
+              <option value="Otro">Otro (Especificar...)</option>
+            </select>
+
+            <button
+              type="button"
+              className="coord-add-option-btn"
+              onClick={handleAgregarNivelPrompt}
+              title="Agregar nuevo nivel"
+            >
+              <Plus size={18} />
+            </button>
+
+            {form.nivelCambridge && form.nivelCambridge !== "Otro" && (
+              <button
+                type="button"
+                onClick={handleQuitarNivelSelect}
+                title="Eliminar nivel seleccionado"
+                style={{
+                  height: "38px",
+                  width: "38px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "#fee2e2",
+                  color: "#ef4444",
+                  border: "none",
+                  borderRadius: "6px",
+                  cursor: "pointer",
+                }}
+              >
+                <X size={18} />
+              </button>
+            )}
+
+            {esOtro && (
+              <input
+                type="text"
+                value={form.nivelCambridge || ""}
+                onChange={(event) => actualizarForm("nivelCambridge", event.target.value)}
+                placeholder="Escriba nivel..."
+                style={{ width: "140px" }}
+              />
+            )}
+          </div>
         </div>
 
         <div className="coord-field">
@@ -155,6 +315,99 @@ function SeccionCambridge({ form, esCambridgeForm, actualizarForm }) {
           </p>
         </div>
       </div>
+
+      {modalDialog && modalDialog.show && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0, 0, 0, 0.4)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 9999,
+        }}>
+          <div style={{
+            background: "#ffffff",
+            padding: "24px",
+            borderRadius: "12px",
+            width: "100%",
+            maxWidth: "400px",
+            boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
+            border: "1px solid #e2ece9"
+          }}>
+            <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "700", color: "#102035" }}>
+              {modalDialog.title}
+            </h3>
+            <p style={{ margin: "0 0 16px 0", fontSize: "13.5px", color: "#475467", lineHeight: "1.5" }}>
+              {modalDialog.message}
+            </p>
+            {modalDialog.type === "prompt" && (
+              <input
+                type="text"
+                value={modalDialog.value || ""}
+                onChange={(e) => setModalDialog(prev => prev ? { ...prev, value: e.target.value } : null)}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "8px",
+                  fontSize: "13.5px",
+                  marginBottom: "20px",
+                  outline: "none"
+                }}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    modalDialog.onConfirm(modalDialog.value);
+                    setModalDialog(null);
+                  }
+                }}
+              />
+            )}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button
+                type="button"
+                onClick={() => setModalDialog(null)}
+                style={{
+                  padding: "8px 16px",
+                  background: "#f3f4f6",
+                  color: "#374151",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  modalDialog.onConfirm(modalDialog.value);
+                  setModalDialog(null);
+                }}
+                style={{
+                  padding: "8px 16px",
+                  background: modalDialog.type === "confirm" ? "#ef4444" : "#449d44",
+                  color: "#ffffff",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: "pointer"
+                }}
+              >
+                Aceptar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

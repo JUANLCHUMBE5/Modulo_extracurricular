@@ -20,7 +20,7 @@ export const InvitarEstudianteSchema = z.object({
   telefono: z.string().optional(),
   seleccion: z.string().optional(),
   nivelCambridge: z.string().optional(),
-});
+}).passthrough();
 
 // --- Registrar asistencia (matches coordinacion-attendance.service.ts) ---
 export const RegistrarAsistenciaSchema = z.object({
@@ -30,13 +30,14 @@ export const RegistrarAsistenciaSchema = z.object({
   estado_acceso: z.string().optional(),
   observacion: z.string().optional(),
   origen: z.string().optional(),
-});
+}).passthrough();
 
-// --- Subir documento de programa (matches coordinacion-program.service.ts) ---
 export const SubirDocumentoProgramaSchema = z.object({
   id: z.string().optional(),
   plantillaBase64: z.string().optional(),
+  plantilla_base64: z.string().optional(),
   plantillaVariables: z.array(z.string()).optional(),
+  plantilla_variables: z.array(z.any()).optional(),
   plantillaNombre: z.string().optional(),
   plantilla: z.string().optional(),
   nombre_programa: z.string().optional(),
@@ -64,7 +65,7 @@ export const SubirDocumentoProgramaSchema = z.object({
   tipoComunicado: z.string().optional(),
   tipo_documento: z.string().optional(),
   tipoDocumento: z.string().optional(),
-});
+}).passthrough();
 
 export type CrearCategoriaDto = z.infer<typeof CrearCategoriaSchema>;
 export type UpdateEstadoProgramaDto = z.infer<typeof UpdateEstadoProgramaSchema>;

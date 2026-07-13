@@ -228,6 +228,11 @@ export async function saveDatabaseToPg(db: LocalDatabase, changes: string[] = []
               docente: pr.docente || pr.responsable || "",
               responsable: pr.responsable || "",
               estado: pr.estado || "",
+              usarFechaLimiteInscripcion: pr.usarFechaLimiteInscripcion || false,
+              fechaAperturaInscripcion: pr.fechaAperturaInscripcion || "",
+              horaAperturaInscripcion: pr.horaAperturaInscripcion || "",
+              fechaLimiteInscripcion: pr.fechaLimiteInscripcion || "",
+              horaLimiteInscripcion: pr.horaLimiteInscripcion || "",
             });
 
             horarios.push({
@@ -253,6 +258,18 @@ export async function saveDatabaseToPg(db: LocalDatabase, changes: string[] = []
               cicloI: pr.cicloI || {},
               cicloII: pr.cicloII || {},
               nombreCiclo: pr.nombreCiclo || "",
+              fechaExamen: pr.fechaExamen || "",
+              lugarExamen: pr.lugarExamen || "",
+              precioStarters: pr.precioStarters || "",
+              precioMovers: pr.precioMovers || "",
+              precioFlyers: pr.precioFlyers || "",
+              precioKet: pr.precioKet || "",
+              precioPet: pr.precioPet || "",
+              numeroCuotas: pr.numeroCuotas || "",
+              fechaVencCuota1: pr.fechaVencCuota1 || "",
+              fechaVencCuota2: pr.fechaVencCuota2 || "",
+              fechaVencCuota3: pr.fechaVencCuota3 || "",
+              fechaLimitePago: pr.fechaLimitePago || "",
             });
 
             documentos.push({

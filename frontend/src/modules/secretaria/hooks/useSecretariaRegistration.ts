@@ -227,6 +227,7 @@ export function useSecretariaRegistration({
         tipoAlumnoVerano: periodo === "verano" ? "Alumno interno" : formularioInicial.tipoAlumnoVerano,
         colegioProcedencia: periodo === "verano" ? (registroExistente?.colegioProcedencia || "Colegio San Rafael") : "",
       });
+      setModoRegistro(true);
     }
 
     setMensaje("");
@@ -280,13 +281,26 @@ export function useSecretariaRegistration({
 
       const registro = await registrarInscripcion(payloadInscripcion);
 
-      setInscripción(registro);
-      setInscripcionesEstudiante(await listarInscripcionesEstudiante({
+      let derivadoExito = false;
+      try {
+        await derivarInscripcionCaja(registro.id || registro.inscripcionId, {
+          estudiante_id: estudiante?.id || estudiante?.dni || payloadInscripcion.dniEstudiante,
+          usuario: payloadInscripcion.usuarioRegistro || "Asistente",
+          tipo_documento: registro.tipoDocumento || "Comunicado",
+          plantilla: registro.plantilla || ""
+        });
+        derivadoExito = true;
+      } catch (errDerivar) {
+        console.warn("No se pudo derivar a caja de manera automatica:", errDerivar);
+      }
+
+      const inscripcionesActualizadas = await listarInscripcionesEstudiante({
         ...estudiante,
         dni: payloadInscripcion.dniEstudiante,
         nombres: payloadInscripcion.nombresEstudiante,
         grado: payloadInscripcion.gradoEstudiante,
-      }, periodo));
+      }, periodo);
+      setInscripcionesEstudiante(inscripcionesActualizadas);
 
       setEstudiante((actual: any) =>
         actual ? {
@@ -297,16 +311,16 @@ export function useSecretariaRegistration({
           seccion: estudiante.esExterno ? "" : actual.seccion,
           tipoAlumno: registro.tipoAlumno,
           estadoInscripción: registro.estadoInscripción,
-          estadoPago: registro.estadoPago,
+          estadoPago: derivadoExito ? "Derivado a caja" : (registro.estadoPago || "Pendiente"),
+          derivadoCaja: derivadoExito,
         } : actual
       );
 
-      if (vistaActiva !== "inscripcion") {
-        setModoRegistro(false);
-      }
+      setInscripción(registro);
       setModoCursoAdicional(false);
-      setModalExito(true);
+      setModalExito(false);
       setMensaje("");
+      mostrarMensaje(`Inscripción de ${payloadInscripcion.nombresEstudiante} en ${registro.programa || ""} registrada y derivada a caja con éxito.`, "success");
     } catch (err: any) {
       mostrarMensaje(err.message || "No se pudo registrar la inscripcion. Intente actualizar y vuelva a confirmar.");
     } finally {
@@ -425,6 +439,52 @@ export function useSecretariaRegistration({
     }
   }
 
+  async function imprimirFichaDesdeFormulario() {
+    const seleccionoProgramaDistinto = Boolean(formulario.programa && formulario.programa !== estudiante?.programaAsignado);
+    const requiereSeleccionPrograma = periodo === "verano" || !estudiante?.tieneInvitacion || registroAdicional || seleccionoProgramaDistinto;
+    const programaUnicoRegistro = programasParaSelector.length === 1 ? programasParaSelector[0] : null;
+    const programaIdRegistro = requiereSeleccionPrograma
+      ? (formulario.programa || programaUnicoRegistro?.id || "")
+      : estudiante?.programaAsignado;
+
+    const programaActualizado = programaIdRegistro
+      ? await obtenerProgramaPorId(programaIdRegistro, periodo).catch(() => null)
+      : null;
+
+    if (!programaActualizado) {
+      mostrarMensaje("Seleccione un taller o programa antes de imprimir.");
+      return;
+    }
+
+    setImprimiendoFichaRegistro(true);
+    setMensaje("");
+    try {
+      const payloadInscripcion = construirPayloadInscripcion({
+        estudiante,
+        formulario,
+        programaActualizado,
+        programaParaRegistro: programaActualizado,
+        periodo,
+        registroAdicional,
+        esCicloVerano,
+      });
+
+      const fichaGenerada = await completarInscripcionConProgramaActual({
+        registro: payloadInscripcion,
+        estudiante,
+        programaParaRegistro: programaActualizado,
+        periodo,
+        programas,
+      });
+
+      await imprimirInscripcionDirecta(estudiante, fichaGenerada);
+    } catch (err: any) {
+      mostrarMensaje(err.message || "No se pudo preparar la ficha para imprimir.");
+    } finally {
+      setImprimiendoFichaRegistro(false);
+    }
+  }
+
   const { execute: derivarACajaAction } = useDoubleSubmit(async () => {
     if (!inscripcion || derivandoCaja) return;
     if (inscripcion.derivadoCaja) {
@@ -512,6 +572,7 @@ export function useSecretariaRegistration({
     abrirRegistro,
     abrirCursoAdicional,
     abrirFichaGenerada,
+    imprimirFichaDesdeFormulario,
     derivarACaja,
     aplicarEstudianteEncontradoCallback,
   };

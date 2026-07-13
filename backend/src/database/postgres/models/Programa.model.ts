@@ -61,6 +61,11 @@ export class ProgramaConfiguracionModel extends Model {
   public docente!: string;
   public responsable!: string;
   public estado!: string;
+  public usarFechaLimiteInscripcion!: boolean;
+  public fechaAperturaInscripcion!: string;
+  public horaAperturaInscripcion!: string;
+  public fechaLimiteInscripcion!: string;
+  public horaLimiteInscripcion!: string;
 }
 ProgramaConfiguracionModel.init(
   {
@@ -83,6 +88,11 @@ ProgramaConfiguracionModel.init(
     docente: { type: DataTypes.TEXT },
     responsable: { type: DataTypes.TEXT },
     estado: { type: DataTypes.TEXT },
+    usarFechaLimiteInscripcion: { type: DataTypes.BOOLEAN, defaultValue: false },
+    fechaAperturaInscripcion: { type: DataTypes.TEXT },
+    horaAperturaInscripcion: { type: DataTypes.TEXT },
+    fechaLimiteInscripcion: { type: DataTypes.TEXT },
+    horaLimiteInscripcion: { type: DataTypes.TEXT },
   },
   { sequelize, tableName: "programas_configuraciones", timestamps: false }
 );
@@ -126,6 +136,18 @@ export class ProgramaServicioModel extends Model {
   public cicloI!: any;
   public cicloII!: any;
   public nombreCiclo!: string;
+  public fechaExamen!: string;
+  public lugarExamen!: string;
+  public precioStarters!: string;
+  public precioMovers!: string;
+  public precioFlyers!: string;
+  public precioKet!: string;
+  public precioPet!: string;
+  public numeroCuotas!: string;
+  public fechaVencCuota1!: string;
+  public fechaVencCuota2!: string;
+  public fechaVencCuota3!: string;
+  public fechaLimitePago!: string;
 }
 ProgramaServicioModel.init(
   {
@@ -143,6 +165,18 @@ ProgramaServicioModel.init(
     cicloI: { type: DataTypes.JSONB },
     cicloII: { type: DataTypes.JSONB },
     nombreCiclo: { type: DataTypes.TEXT },
+    fechaExamen: { type: DataTypes.TEXT },
+    lugarExamen: { type: DataTypes.TEXT },
+    precioStarters: { type: DataTypes.TEXT },
+    precioMovers: { type: DataTypes.TEXT },
+    precioFlyers: { type: DataTypes.TEXT },
+    precioKet: { type: DataTypes.TEXT },
+    precioPet: { type: DataTypes.TEXT },
+    numeroCuotas: { type: DataTypes.TEXT },
+    fechaVencCuota1: { type: DataTypes.TEXT },
+    fechaVencCuota2: { type: DataTypes.TEXT },
+    fechaVencCuota3: { type: DataTypes.TEXT },
+    fechaLimitePago: { type: DataTypes.TEXT },
   },
   { sequelize, tableName: "programas_servicios", timestamps: false }
 );

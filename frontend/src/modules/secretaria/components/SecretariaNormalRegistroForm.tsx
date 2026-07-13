@@ -26,6 +26,7 @@ export default function SecretariaNormalRegistroForm({
   esCambridge,
   ingresoCambridge,
   nivelCambridge,
+  inscripcionesEstudiante = [],
 }) {
   if (programasParaSelector.length === 0) {
     return (
@@ -107,12 +108,14 @@ export default function SecretariaNormalRegistroForm({
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "8px" }}>
             {programasParaSelector.map((programa: any) => {
-              const isSelected = formulario.programa === programa.id || (programasParaSelector.length === 1 && !formulario.programa);
+              const estaRegistrado = Array.isArray(inscripcionesEstudiante) && inscripcionesEstudiante.some((ins: any) => ins.programaId === programa.id);
+              const isSelected = !estaRegistrado && (formulario.programa === programa.id || (programasParaSelector.length === 1 && !formulario.programa));
               const cupos = formatearCuposSecretaria(programa);
               return (
                 <div
                   key={programa.id}
                   onClick={() => {
+                    if (estaRegistrado) return;
                     if (formulario.programa === programa.id) {
                       actualizarFormulario("programa", "");
                     } else {
@@ -121,17 +124,18 @@ export default function SecretariaNormalRegistroForm({
                   }}
                   style={{
                     border: isSelected ? "2px solid #0c8569" : "1.5px solid #cbd5e1",
-                    background: isSelected ? "#e6fcf5" : "#ffffff",
+                    background: isSelected ? "#e6fcf5" : estaRegistrado ? "#f8fafc" : "#ffffff",
                     borderRadius: "10px",
                     padding: "8px 12px",
-                    cursor: "pointer",
+                    cursor: estaRegistrado ? "not-allowed" : "pointer",
                     transition: "all 0.2s ease-in-out",
                     boxShadow: isSelected ? "0 4px 12px rgba(12, 133, 105, 0.08)" : "none",
                     position: "relative",
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
-                    gap: "4px"
+                    gap: "4px",
+                    opacity: estaRegistrado ? 0.6 : 1,
                   }}
                   className={`secretaria-program-option-card ${isSelected ? "is-active" : ""}`}
                 >
@@ -141,8 +145,8 @@ export default function SecretariaNormalRegistroForm({
                         fontSize: "9px",
                         fontWeight: "700",
                         textTransform: "uppercase",
-                        color: isSelected ? "#0c8569" : "#4b5563",
-                        background: isSelected ? "#c3fae8" : "#f3f4f6",
+                        color: isSelected ? "#0c8569" : estaRegistrado ? "#475569" : "#4b5563",
+                        background: isSelected ? "#c3fae8" : estaRegistrado ? "#e2e8f0" : "#f3f4f6",
                         padding: "2px 8px",
                         borderRadius: "4px"
                       }}>
@@ -162,6 +166,20 @@ export default function SecretariaNormalRegistroForm({
                           fontWeight: "bold"
                         }}>
                           ✓
+                        </span>
+                      )}
+                      {estaRegistrado && (
+                        <span style={{
+                          color: "#b45309",
+                          fontSize: "9px",
+                          fontWeight: "800",
+                          textTransform: "uppercase",
+                          background: "#fef3c7",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          border: "1px solid #fde68a"
+                        }}>
+                          YA MATRICULADO
                         </span>
                       )}
                     </div>
@@ -187,37 +205,37 @@ export default function SecretariaNormalRegistroForm({
       {mostrarDetallePrograma && programaRegistroVista ? (
         <div className="secretaria-add-course-summary secretaria-field-full" style={{
           display: "block",
-          background: "#f1f8e9",
-          border: "1px solid #c8e6c9",
+          background: "#f8fafc",
+          border: "1px solid #e2e8f0",
           borderRadius: "12px",
           padding: "10px 14px",
           margin: "10px 0"
         }}>
-          <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#1b5e20", marginBottom: "2px", display: "flex", alignContent: "center", alignItems: "center", gap: "6px" }}>
-            <Bookmark size={15} style={{ color: "#388e3c" }} />
+          <div style={{ fontSize: "12.5px", fontWeight: "700", color: "#1e293b", marginBottom: "2px", display: "flex", alignContent: "center", alignItems: "center", gap: "6px" }}>
+            <Bookmark size={15} style={{ color: "#64748b" }} />
             {estudiante.tieneInvitacion ? "Taller asignado" : "Taller seleccionado"}
           </div>
-          <div style={{ fontSize: "11px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", marginBottom: "8px" }}>
+          <div style={{ fontSize: "11px", fontWeight: "700", color: "#475569", textTransform: "uppercase", marginBottom: "8px" }}>
             {programaRegistroVista.nombre}
           </div>
 
           {/* White dashboard cards grid */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-            <div style={{ background: "#ffffff", border: "1px solid #c8e6c9", padding: "6px 10px", borderRadius: "10px" }}>
-              <span style={{ fontSize: "9.5px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>Costo Referencial</span>
-              <strong style={{ fontSize: "13.5px", color: "#1b5e20", fontWeight: "800" }}>S/ {Number(programaRegistroVista.costo || 0).toFixed(2)}</strong>
+            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: "6px 10px", borderRadius: "10px" }}>
+              <span style={{ fontSize: "9.5px", fontWeight: "500", color: "#475569", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>Costo Referencial</span>
+              <strong style={{ fontSize: "13.5px", color: "#1e293b", fontWeight: "800" }}>S/ {Number(programaRegistroVista.costo || 0).toFixed(2)}</strong>
             </div>
-            <div style={{ background: "#ffffff", border: "1px solid #c8e6c9", padding: "6px 10px", borderRadius: "10px" }}>
-              <span style={{ fontSize: "9.5px", fontWeight: "700", color: "#558b2f", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>Cupos Disponibles</span>
-              <strong style={{ fontSize: "13.5px", color: "#2e7d32", fontWeight: "800", display: "flex", alignItems: "center", gap: "5px" }}>
-                <Users size={15} style={{ color: "#388e3c" }} />
+            <div style={{ background: "#ffffff", border: "1px solid #e2e8f0", padding: "6px 10px", borderRadius: "10px" }}>
+              <span style={{ fontSize: "9.5px", fontWeight: "500", color: "#475569", textTransform: "uppercase", display: "block", marginBottom: "2px" }}>Cupos Disponibles</span>
+              <strong style={{ fontSize: "13.5px", color: "#1e293b", fontWeight: "800", display: "flex", alignItems: "center", gap: "5px" }}>
+                <Users size={15} style={{ color: "#64748b" }} />
                 {formatearCuposSecretaria(programaRegistroVista)}
               </strong>
             </div>
           </div>
 
           {/* Dashed divider */}
-          <div style={{ borderTop: "1px dashed #c8e6c9", margin: "8px 0 6px" }} />
+          <div style={{ borderTop: "1px dashed #e2e8f0", margin: "8px 0 6px" }} />
 
           {/* Bottom horizontal pills */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 8px" }}>
@@ -226,14 +244,14 @@ export default function SecretariaNormalRegistroForm({
               alignItems: "center",
               gap: "6px",
               background: "#ffffff",
-              border: "1px solid #c8e6c9",
+              border: "1px solid #e2e8f0",
               borderRadius: "20px",
               padding: "3px 10px",
               fontSize: "11.5px",
               fontWeight: "600",
-              color: "#1b5e20"
+              color: "#334155"
             }}>
-              <Clock size={13} style={{ color: "#388e3c" }} />
+              <Clock size={13} style={{ color: "#64748b" }} />
               <span>{horarioResumenRegistro.clase || "—"}</span>
             </div>
 
@@ -243,14 +261,14 @@ export default function SecretariaNormalRegistroForm({
                 alignItems: "center",
                 gap: "6px",
                 background: "#ffffff",
-                border: "1px solid #c8e6c9",
+                border: "1px solid #e2e8f0",
                 borderRadius: "20px",
                 padding: "3px 10px",
                 fontSize: "11.5px",
                 fontWeight: "600",
-                color: "#1b5e20"
+                color: "#334155"
               }}>
-                <Coffee size={13} style={{ color: "#388e3c" }} />
+                <Coffee size={13} style={{ color: "#64748b" }} />
                 <span>Almuerzo: {horarioResumenRegistro.almuerzo || "—"}</span>
               </div>
             )}
@@ -260,14 +278,14 @@ export default function SecretariaNormalRegistroForm({
               alignItems: "center",
               gap: "6px",
               background: "#ffffff",
-              border: "1px solid #c8e6c9",
+              border: "1px solid #e2e8f0",
               borderRadius: "20px",
               padding: "3px 10px",
               fontSize: "11.5px",
               fontWeight: "600",
-              color: "#1b5e20"
+              color: "#334155"
             }}>
-              <Calendar size={13} style={{ color: "#388e3c" }} />
+              <Calendar size={13} style={{ color: "#64748b" }} />
               <span>{horarioResumenRegistro.dia || "—"}</span>
             </div>
           </div>

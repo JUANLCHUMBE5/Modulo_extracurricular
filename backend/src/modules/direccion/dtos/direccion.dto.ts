@@ -6,7 +6,7 @@ export const AplicarDescuentoSchema = z.object({
   tipo: z.string().optional(),
   valor: z.union([z.number(), z.string()]).optional(),
   justificacion: z.string({ message: "La justificación del descuento es requerida" }).min(1, "La justificación no puede estar vacía"),
-});
+}).passthrough();
 
 // --- Actualizar correlativos (matches direccion-correlativos.service.ts) ---
 export const UpdateCorrelativosSchema = z.object({
@@ -19,7 +19,7 @@ export const UpdateCorrelativosSchema = z.object({
   egresoInicio: z.string().optional(),
   egresoActual: z.string().optional(),
   egresoActive: z.boolean().optional(),
-});
+}).passthrough();
 
 export type AplicarDescuentoDto = z.infer<typeof AplicarDescuentoSchema>;
 export type UpdateCorrelativosDto = z.infer<typeof UpdateCorrelativosSchema>;

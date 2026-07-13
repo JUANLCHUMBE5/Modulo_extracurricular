@@ -132,6 +132,20 @@ export default function CargaMasivaTab({
           </div>
         )}
 
+        {/* Botón Procesar / Generar Vista Previa */}
+        {archivosExcel.length > 0 && !previewCarga && (
+          <button
+            className="coord-btn-full coord-btn-save"
+            type="button"
+            onClick={generarPreviewExcel}
+            disabled={cargandoPreview || !programaCargaId}
+            style={{ marginBottom: "8px" }}
+          >
+            {cargandoPreview ? <Loader2 className="coord-spin" size={17} /> : <CloudUpload size={17} />}
+            <span>{cargandoPreview ? "Procesando archivo..." : "Procesar y ver Vista Previa"}</span>
+          </button>
+        )}
+
         {/* Botón Guardar (aparece solo con preview) */}
         {previewCarga && (
           <button

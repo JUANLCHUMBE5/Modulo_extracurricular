@@ -158,6 +158,7 @@ function CoordinacionInner({
                 cambiarPeriodoFormulario={state.cambiarPeriodoFormulario}
                 catAEliminar={state.catAEliminar}
                 categorias={state.categorias}
+                setCategorias={state.setCategorias}
                 ciclosCambridgeFormulario={state.ciclosCambridgeFormulario}
                 diasSemana={diasSemana}
                 duracionTallerFormulario={state.duracionTallerFormulario}
@@ -165,6 +166,8 @@ function CoordinacionInner({
                 esCambridgeForm={state.esCambridgeForm}
                 esFormularioVerano={state.esFormularioVerano}
                 usaTalleresPorEdad={state.usaTalleresPorEdad}
+                esGuardarYClonar={state.esGuardarYClonar}
+                setEsGuardarYClonar={state.setEsGuardarYClonar}
                 form={state.form}
                 formHorariosPorGrupo={state.formHorariosPorGrupo}
                 formatearCostoFormulario={state.formatearCostoFormulario}
@@ -434,6 +437,7 @@ function CoordinacionInner({
               cambiarPeriodoFormulario={state.cambiarPeriodoFormulario}
               catAEliminar={state.catAEliminar}
               categorias={state.categorias}
+              setCategorias={state.setCategorias}
               ciclosCambridgeFormulario={state.ciclosCambridgeFormulario}
               diasSemana={diasSemana}
               duracionTallerFormulario={state.duracionTallerFormulario}
@@ -441,6 +445,8 @@ function CoordinacionInner({
               esCambridgeForm={state.esCambridgeForm}
               esFormularioVerano={state.esFormularioVerano}
               usaTalleresPorEdad={state.usaTalleresPorEdad}
+              esGuardarYClonar={state.esGuardarYClonar}
+              setEsGuardarYClonar={state.setEsGuardarYClonar}
               form={state.form}
               formHorariosPorGrupo={state.formHorariosPorGrupo}
               formatearCostoFormulario={state.formatearCostoFormulario}

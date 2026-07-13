@@ -29,19 +29,53 @@ export default function SecretariaAsistenciaModal({
   inscripcion,
   estudiante,
   inscripcionesEstudiante = [],
+  programas = [],
 }) {
   const [activeInscripcion, setActiveInscripcion] = useState(null);
   const [asistencias, setAsistencias] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState("");
+  const [mostrarTodos, setMostrarTodos] = useState(false);
+
+  const esInactivo = (ins: any) => {
+    if (!ins) return false;
+    const hoyStr = new Date().toISOString().split("T")[0];
+    const terminado = ins.fechaFin && hoyStr > ins.fechaFin;
+    
+    // Si el programa no está en la lista de programas activos/habilitados, es inactivo/deshabilitado
+    const prog = (programas || []).find(p => p.id === ins.programaId);
+    const deshabilitado = !prog || prog.estado === "Deshabilitado" || prog.estado === "Archivado";
+    
+    return terminado || deshabilitado;
+  };
+
+  const { filtradas, tieneOcultos } = useMemo(() => {
+    const activas = (inscripcionesEstudiante || []).filter(ins => !esInactivo(ins));
+    const inactivos = (inscripcionesEstudiante || []).filter(ins => esInactivo(ins));
+
+    if (activas.length === 0) {
+      return {
+        filtradas: [],
+        tieneOcultos: inactivos.length > 0
+      };
+    }
+
+    return {
+      filtradas: mostrarTodos ? (inscripcionesEstudiante || []) : activas,
+      tieneOcultos: inactivos.length > 0
+    };
+  }, [inscripcionesEstudiante, programas, mostrarTodos]);
 
   useEffect(() => {
     if (open) {
-      setActiveInscripcion(inscripcion || (inscripcionesEstudiante && inscripcionesEstudiante[0]) || null);
+      const activas = (inscripcionesEstudiante || []).filter(ins => !esInactivo(ins));
+      const preseleccionada = inscripcion || activas[0] || null;
+      setActiveInscripcion(preseleccionada);
+      setMostrarTodos(false);
     } else {
       setActiveInscripcion(null);
     }
-  }, [open, inscripcion, inscripcionesEstudiante]);
+  }, [open, inscripcion, inscripcionesEstudiante, programas]);
 
   useEffect(() => {
     if (!open || !activeInscripcion?.programaId) {
@@ -156,8 +190,21 @@ export default function SecretariaAsistenciaModal({
         
         {/* Selector if student has multiple workshops */}
         {inscripcionesEstudiante && inscripcionesEstudiante.length > 1 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Taller / Curso Matriculado</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "#64748b", fontWeight: 700, textTransform: "uppercase" }}>Taller / Curso Matriculado</span>
+              {tieneOcultos && (
+                <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "#475569", cursor: "pointer", fontWeight: 500 }}>
+                  <input
+                    type="checkbox"
+                    checked={mostrarTodos}
+                    onChange={(e) => setMostrarTodos(e.target.checked)}
+                    style={{ cursor: "pointer" }}
+                  />
+                  Mostrar talleres finalizados
+                </label>
+              )}
+            </div>
             <select
               value={activeInscripcion?.programaId || ""}
               onChange={(e) => {
@@ -176,9 +223,9 @@ export default function SecretariaAsistenciaModal({
                 outline: "none"
               }}
             >
-              {inscripcionesEstudiante.map((ins, idx) => (
+              {filtradas.map((ins, idx) => (
                 <option key={ins.programaId || idx} value={ins.programaId}>
-                  {ins.programa} — {ins.horario}
+                  {ins.programa} {esInactivo(ins) ? " (Taller no disponible por el momento)" : ""} — {ins.horario}
                 </option>
               ))}
             </select>
@@ -201,9 +248,24 @@ export default function SecretariaAsistenciaModal({
             <span style={{ display: "block", fontSize: "12px", color: "#475569" }}>DNI: {estudiante?.dni}</span>
           </div>
           <div>
-            <span style={{ display: "block", fontSize: "11px", color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>Taller / Programa</span>
-            <strong style={{ fontSize: "14px", color: "#0f172a" }}>{activeInscripcion?.programa || "Ninguno"}</strong>
-            <span style={{ display: "block", fontSize: "12px", color: "#475569" }}>Horario: {activeInscripcion?.horario || "—"}</span>
+            <span style={{ display: "block", fontSize: "11px", color: "#64748b", fontWeight: 600, textTransform: "uppercase" }}>
+              Taller / Programa
+            </span>
+            {activeInscripcion && esInactivo(activeInscripcion) ? (
+              <div style={{ marginTop: "4px" }}>
+                <span style={{ display: "block", fontSize: "13px", color: "#b42318", fontWeight: 700 }}>
+                  Taller no disponible por el momento
+                </span>
+                <span style={{ display: "block", fontSize: "12px", color: "#64748b", marginTop: "2px" }}>
+                  Historial de: {activeInscripcion.programa} (Finalizado)
+                </span>
+              </div>
+            ) : (
+              <>
+                <strong style={{ fontSize: "14px", color: "#0f172a" }}>{activeInscripcion?.programa || "Ninguno"}</strong>
+                <span style={{ display: "block", fontSize: "12px", color: "#475569" }}>Horario: {activeInscripcion?.horario || "—"}</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -220,7 +282,7 @@ export default function SecretariaAsistenciaModal({
           </div>
         ) : (
           <>
-            {fechasColumnas.length > 0 ? (
+            {fechasColumnas.length > 0 && activeInscripcion && (!esInactivo(activeInscripcion) || mostrarTodos) ? (
               <>
                 {/* Attendance statistics block */}
                 <div style={{
@@ -314,17 +376,36 @@ export default function SecretariaAsistenciaModal({
                 </div>
               </>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "30px 20px", textAlign: "center" }}>
-                <CalendarDays size={40} style={{ color: "#94a3b8", marginBottom: "10px" }} />
-                <h4 style={{ color: "#475569", margin: 0 }}>Sin registros de asistencia</h4>
-                <p style={{ color: "#64748b", fontSize: "13px", marginTop: "4px", maxWidth: "320px" }}>
-                  Aún no se han registrado asistencias para este taller en el sistema.
-                </p>
-                <div style={{ marginTop: "16px" }}>
-                  <Button variant="outline" color="gray" onClick={onClose}>
-                    Cerrar
-                  </Button>
-                </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 20px", textAlign: "center" }}>
+                {!activeInscripcion || (esInactivo(activeInscripcion) && !mostrarTodos) ? (
+                  <>
+                    <AlertCircle size={40} style={{ color: "#b42318", marginBottom: "10px" }} />
+                    <h4 style={{ color: "#b42318", margin: 0, fontWeight: 700 }}>Talleres no disponible por el momento</h4>
+                    <p style={{ color: "#64748b", fontSize: "13px", marginTop: "4px", maxWidth: "340px" }}>
+                      El estudiante no se encuentra matriculado en ningún taller activo o habilitado en este periodo.
+                    </p>
+                    {tieneOcultos && (
+                      <div style={{ marginTop: "16px" }}>
+                        <Button variant="subtle" color="teal" onClick={() => setMostrarTodos(true)}>
+                          Ver historial de talleres finalizados / deshabilitados
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <CalendarDays size={40} style={{ color: "#94a3b8", marginBottom: "10px" }} />
+                    <h4 style={{ color: "#475569", margin: 0 }}>Sin registros de asistencia</h4>
+                    <p style={{ color: "#64748b", fontSize: "13px", marginTop: "4px", maxWidth: "320px" }}>
+                      Aún no se han registrado asistencias para este taller en el sistema.
+                    </p>
+                    <div style={{ marginTop: "16px" }}>
+                      <Button variant="outline" color="gray" onClick={onClose}>
+                        Cerrar
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </>

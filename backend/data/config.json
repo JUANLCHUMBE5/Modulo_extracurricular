@@ -4,7 +4,10 @@
     "Deportivo",
     "Verano",
     "Arte",
-    "Otro"
+    "Otro",
+    "DELETED_TALLER_VERANO:Artes plásticas",
+    "DELETED_TALLER_VERANO:Zancos",
+    "DELETED_TALLER_VERANO:Pintura"
   ],
   "configuracionInstitucional": {
     "logoInstitucion": null,
@@ -27,7 +30,7 @@
     "egresoActive": true
   },
   "syncEvents": [],
-  "nextProgramaId": 105,
+  "nextProgramaId": 106,
   "nextCargaId": 3,
   "nextDocumentoId": 1
 }

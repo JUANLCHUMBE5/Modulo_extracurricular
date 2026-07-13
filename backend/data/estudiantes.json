@@ -678,7 +678,8 @@
     "estadoMatricula": "Activo",
     "apoderado": "Apoderado Flores",
     "telefonoApoderado": "947812982",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "pendiente_pago"
   },
   "60000035": {
     "dni": "60000035",
@@ -833,7 +834,8 @@
     "estadoMatricula": "Activo",
     "apoderado": "Apoderado Leon",
     "telefonoApoderado": "969983707",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "pendiente_pago"
   },
   "60000045": {
     "dni": "60000045",
@@ -846,9 +848,11 @@
     "fechaNacimiento": "2010-01-01",
     "tipoAlumno": "Alumno interno",
     "estadoMatricula": "Activo",
-    "apoderado": "Apoderado Flores",
+    "apoderado": "Apoderado Flores SGSGS",
     "telefonoApoderado": "991811736",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "pendiente_pago",
+    "estadoCaja": "derivado_caja"
   },
   "60000046": {
     "dni": "60000046",
