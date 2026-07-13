@@ -18,6 +18,40 @@ graph TD
     Aux[Módulo Auxiliar] -->|Consulta de Estados| DB
 ```
 
+### 1.1. Diagrama de Flujo General: Matrícula y Cobro en Caja
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Apoderado as Apoderado / Alumno
+    actor Sec as Secretaria (Frontend)
+    participant API as Backend (Express)
+    database DB as Base de Datos (Postgres)
+    actor Cajera as Cajera (Caja)
+
+    Apoderado->>Sec: Presenta DNI y solicita Taller
+    Sec->>API: GET /api/secretaria/estudiante/:dni
+    API->>DB: Consultar padrón regular
+    DB-->>API: Datos del Alumno (Grado/Sección)
+    API-->>Sec: Datos del Alumno
+    Sec->>Sec: Valida campos y selecciona Uniformes
+    Sec->>API: POST /api/secretaria/registrar-regular (CrearInscripcionSchema)
+    API->>DB: Crear Inscripción con estado "Pendiente"
+    DB-->>API: Confirmación
+    API-->>Sec: Inscripción derivando a Caja
+    Sec-->>Apoderado: Indica pasar a Caja
+    Apoderado->>Cajera: Solicita pagar taller
+    Cajera->>API: GET /api/caja/pendientes
+    API->>DB: Consultar inscripciones con estado "Pendiente"
+    DB-->>API: Lista de pendientes
+    API-->>Cajera: Muestra ficha del estudiante y monto
+    Cajera->>API: POST /api/caja/registrar-pago (RegistrarPagoSchema)
+    API->>DB: Transacción: Actualiza a "Pagado", reduce cupo, incrementa correlativo
+    DB-->>API: Transacción completada con éxito
+    API-->>Cajera: Recibo generado (REC-XXXX)
+    Cajera-->>Apoderado: Entrega comprobante de pago
+```
+
 ---
 
 ## 2. Detalle Funcional por Módulo y Sub-Módulo
@@ -119,6 +153,20 @@ Gestiona el catálogo de talleres, la carga masiva y los templates de documentos
     *   **Endpoint**: `POST /api/coordinacion/cargar-estudiantes`.
     *   **Base de Datos**: Recibe el JSON parseado y ejecuta un `bulkCreate` transaccional sobre la tabla `estudiantes`. Ignora registros que ya existen o actualiza sus secciones, y crea un log de auditoría en `historial_cargas`.
 
+```mermaid
+flowchart TD
+    Start([Inicio: Carga de Excel]) --> DragDrop[Arrastrar archivo .xlsx en CargaMasivaTab.tsx]
+    DragDrop --> ClientParse[Lectura client-side vía xlsx JS]
+    ClientParse --> PreviewGrid[Mostrar lista previsualizada en Grid]
+    PreviewGrid --> CheckErrors{¿Tiene errores de DNI o duplicados?}
+    CheckErrors -- Sí --> RedWarning[Resaltar filas en rojo en Frontend] --> FixFile[Corregir y volver a cargar] --> DragDrop
+    CheckErrors -- No --> ClickUpload[Click en 'Confirmar Importación']
+    ClickUpload --> API_Request[POST /api/coordinacion/cargar-estudiantes]
+    API_Request --> DB_Transaction{Transacción SQL: bulkCreate estudiantes}
+    DB_Transaction -->|Éxito| SaveAudit[Registrar en tabla historial_cargas]
+    SaveAudit --> ShowSuccess[Mensaje: Carga masiva exitosa en Frontend] --> End([Fin])
+```
+
 ---
 
 ### 2.4. Módulo de Cajera (Caja)
@@ -184,6 +232,22 @@ Supervisa la rentabilidad y aprueba las rebajas o exoneraciones de pago.
     *   **Endpoint**: `POST /api/direccion/aplicar-descuento`.
     *   **Validación de Datos (Zod DTO)**: `AplicarDescuentoSchema` valida `inscripcionId`, `tipo`, `valor` y `justificacion` (longitud mínima 1).
     *   **Base de Datos**: Valida que la inscripción esté activa. Modifica el registro en la tabla `inscripciones` agregando el monto del descuento y la justificación y reduciendo el costo final a cobrar.
+
+```mermaid
+flowchart TD
+    Start([Inicio: Solicitud de Descuento]) --> OpenModal[Director abre modal de Descuentos]
+    OpenModal --> SelectBenefit[Selecciona Beca 100%, Monto S/. o Porcentaje %]
+    SelectBenefit --> InputVal[Ingresa valor de descuento]
+    InputVal --> FE_Validate{¿Descuento <= Costo Original?}
+    FE_Validate -- No --> BlockSubmit[Mensaje: Descuento excede costo] --> InputVal
+    FE_Validate -- Sí --> InputJust[Ingresa justificación de aprobación]
+    InputJust --> ClickApprove[Click en 'Aprobar Beneficio']
+    ClickApprove --> API_Post[POST /api/direccion/aplicar-descuento]
+    API_Post --> BE_Zod{¿Valida AplicarDescuentoSchema?}
+    BE_Zod -- No --> FE_Err[Mostrar error de campos en Frontend]
+    BE_Zod -- Sí --> DB_Update[Actualizar tabla inscripciones: descuento, justificacion, costo final]
+    DB_Update --> ShowSuccess[Mensaje: Beneficio aplicado con éxito] --> End([Fin])
+```
 
 #### Sub-módulo 2.5.3: Ajustes de Contadores
 *   **Responsabilidades del Frontend**:
