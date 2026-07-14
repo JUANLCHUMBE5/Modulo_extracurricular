@@ -57,8 +57,30 @@ function AlumnosProgramaModal({
   setSubVistaAlumnos,
   subVistaAlumnos,
 }) {
+  const invitadosFiltrados = useMemo(() => {
+    const dnisMatriculados = new Set(
+      matriculados
+        .map((m) => String(m.dni || m.dniEstudiante || "").trim().toLowerCase())
+        .filter(Boolean)
+    );
+    const codigosMatriculados = new Set(
+      matriculados
+        .map((m) => String(m.codigoEstudiante || "").trim().toLowerCase())
+        .filter(Boolean)
+    );
+    return invitados.filter((inv) => {
+      const dni = String(inv.dni || "").trim().toLowerCase();
+      const codigo = String(inv.codigoEstudiante || "").trim().toLowerCase();
+      
+      const yaMatriculadoDni = dni && dnisMatriculados.has(dni);
+      const yaMatriculadoCodigo = codigo && codigosMatriculados.has(codigo);
+
+      return !yaMatriculadoDni && !yaMatriculadoCodigo;
+    });
+  }, [invitados, matriculados]);
+
   const listaActual = subVistaAlumnos === "preinscritos"
-    ? invitados
+    ? invitadosFiltrados
     : subVistaAlumnos === "asistencias"
       ? asistencias
       : matriculados;
@@ -92,7 +114,7 @@ function AlumnosProgramaModal({
                 onClick={() => setSubVistaAlumnos("preinscritos")}
                 style={tabStyle(subVistaAlumnos === "preinscritos")}
               >
-                Pre-inscritos (Excel) ({invitados.length})
+                Pre-inscritos (Excel) ({invitadosFiltrados.length})
               </button>
               <button
                 type="button"
@@ -140,7 +162,7 @@ function AlumnosProgramaModal({
 
           {subVistaAlumnos === "preinscritos" ? (
             <TablaPreinscritos
-              alumnos={invitados}
+              alumnos={invitadosFiltrados}
               esCambridge={String(programa?.nombre || "").toLowerCase().includes("cambridge")}
             />
           ) : subVistaAlumnos === "asistencias" ? (

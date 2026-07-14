@@ -756,9 +756,10 @@
     "fechaNacimiento": "2010-01-01",
     "tipoAlumno": "Alumno interno",
     "estadoMatricula": "Activo",
-    "apoderado": "Apoderado Ramos",
+    "apoderado": "ApodeCGNCrado Ramos",
     "telefonoApoderado": "981661942",
-    "correoApoderado": ""
+    "correoApoderado": "",
+    "estadoInscripcion": "Pago exitoso"
   },
   "60000040": {
     "dni": "60000040",

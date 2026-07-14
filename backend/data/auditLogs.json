@@ -1,5 +1,109 @@
 [
   {
+    "id": "AUD-391592-50d6",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-14T16:43:11.593Z",
+    "accion": "PAGO_VALIDAR",
+    "detalles": "{\"pagoId\":\"PAG-958201\",\"observaciones\":\"\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-958338-6aac",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-14T16:35:58.338Z",
+    "accion": "PAGO_COMPROBANTE_SUBIR",
+    "detalles": "{\"pagoId\":\"PAG-958201\",\"inscripcionId\":\"INS-957736\",\"monto\":50,\"_usuario_original\":\"padre\"}"
+  },
+  {
+    "id": "AUD-957880-7f03",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-14T16:35:57.880Z",
+    "accion": "INSCRIPCION_CREAR",
+    "detalles": "{\"inscripcionId\":\"INS-957736\",\"estudianteId\":\"60000039\",\"programaId\":\"PRG-102\",\"_usuario_original\":\"60000039\"}"
+  },
+  {
+    "id": "AUD-156328-9e39",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-14T16:22:36.328Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-139609-cb9a",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-14T16:22:19.610Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000039\",\"nombres\":\"Gabriel Gutierrez Ramos\",\"_usuario_original\":\"60000039\"}"
+  },
+  {
+    "id": "AUD-886794-ee70",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-14T16:18:06.794Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000035\",\"nombres\":\"Sofia Paredes Leon\",\"_usuario_original\":\"60000035\"}"
+  },
+  {
+    "id": "AUD-851715-a5db",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-14T16:17:31.715Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000045\",\"nombres\":\"Sara Herrera Flores\",\"_usuario_original\":\"60000045\"}"
+  },
+  {
+    "id": "AUD-835580-56f6",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-14T16:17:15.580Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000036\",\"nombres\":\"Martin Ortiz Huaman\",\"_usuario_original\":\"60000036\"}"
+  },
+  {
+    "id": "AUD-171798-433a",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-14T14:59:31.798Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-164902-5795",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-14T14:59:24.902Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-160404-cf7d",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-14T14:59:20.404Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-153801-0980",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-14T14:59:13.801Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"Usuario inactivo o no existe\",\"_usuario_original\":\"COORD\"}"
+  },
+  {
+    "id": "AUD-870984-9361",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-14T14:54:30.985Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
     "id": "AUD-925890-ac91",
     "usuario": "admin",
     "rol": "secretaria",

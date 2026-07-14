@@ -131,43 +131,51 @@ export function agregarHoja(workbook: any, nombre: string, filas: any[], columna
     startRow = 4;
   }
 
-  // Setup columns and headers manually at startRow
-  const headerRow = hoja.getRow(startRow);
+  // Setup keys and widths on sheet columns first
   columnas.forEach((col, idx) => {
-    const cell = headerRow.getCell(idx + 1);
-    cell.value = col.header;
     hoja.getColumn(idx + 1).key = col.key;
     if (col.width) {
       hoja.getColumn(idx + 1).width = col.width;
     }
   });
 
-  headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
-  headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF176C60" } };
-  headerRow.alignment = { vertical: "middle", horizontal: "left" };
-  headerRow.height = 24;
+  // Add the official structured Excel Table
+  const safeTableName = nombre
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "_");
 
-  // Add the rows
-  filas.forEach((fila, fIdx) => {
-    const row = hoja.getRow(startRow + 1 + fIdx);
-    columnas.forEach((col, cIdx) => {
-      const cell = row.getCell(cIdx + 1);
-      cell.value = fila[col.key];
+  if (filas.length > 0) {
+    hoja.addTable({
+      name: safeTableName,
+      ref: `A${startRow}`,
+      headerRow: true,
+      totalsRow: false,
+      style: {
+        theme: 'TableStyleMedium9', // Professional green theme to match the system
+        showRowStripes: true,
+      },
+      columns: columnas.map((col) => ({ name: col.header, filterButton: true })),
+      rows: filas.map((fila) => columnas.map((col) => fila[col.key] ?? "")),
     });
-  });
-
-  // Enable AutoFilter on the table header row
-  hoja.autoFilter = {
-    from: { row: startRow, column: 1 },
-    to: { row: startRow, column: columnas.length }
-  };
+  } else {
+    // Fallback if empty to avoid crash
+    const headerRow = hoja.getRow(startRow);
+    columnas.forEach((col, idx) => {
+      headerRow.getCell(idx + 1).value = col.header;
+    });
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF176C60" } };
+    headerRow.alignment = { vertical: "middle", horizontal: "left" };
+    headerRow.height = 24;
+  }
 
   // Freeze the header row and rows above it
   hoja.views = [{ state: "frozen", ySplit: startRow }];
 
   // Border formatting and cell formatting
   hoja.eachRow((row, rowNum) => {
-    if (rowNum < startRow) return; // skip header title and filter description rows
+    if (rowNum < startRow) return; // skip title and filters description
 
     row.eachCell((cell, colNum) => {
       cell.border = {
