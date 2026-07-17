@@ -60,25 +60,26 @@ graph TD
 
 ## 📸 Vista de la Aplicación (Capturas de Pantalla)
 
-A continuación, se presentan las capturas de pantalla de la interfaz de usuario para los diferentes módulos y formularios del sistema:
+A continuación, se presentan las capturas de pantalla de la interfaz de usuario correspondientes a los diferentes módulos y funcionalidades del sistema en su orden correcto:
 
-### 1. Panel de Administración y Control General
-![Panel de Administración](./imagenes/image.png)
+### 1. Portal de Autenticación (Acceso al Sistema)
+![Portal de Autenticación](./imagenes/image.png)
 
-### 2. Gestión de Caja, Validación de Váuchers y Conciliación Bancaria
-![Gestión de Caja](./imagenes/image%20copy.png)
+### 2. Panel de Administrador (Creación y Gestión de Usuarios y Permisos)
+![Panel de Administrador](./imagenes/image%20copy.png)
 
-### 3. Portal de Auto-Matrícula de Padres de Familia
-![Portal de Padres](./imagenes/image%20copy%202.png)
+### 3. Módulo de Secretaría (Búsqueda y Gestión de Alumnos para Atención Presencial)
+![Módulo de Secretaría](./imagenes/image%20copy%202.png)
 
-### 4. Formulario de Selección de Talleres y Datos del Estudiante
-![Selección de Talleres](./imagenes/image%20copy%203.png)
+### 4. Portal de Padres (Catálogo de Talleres Disponibles)
+![Portal de Padres](./imagenes/image%20copy%203.png)
 
-### 5. Configuración de Programas y Talleres por Grado y Horario
-![Configuración de Programas](./imagenes/image%20copy%204.png)
+### 5. Módulo de Dirección (Dashboard Analítico e Indicadores del Sistema)
+![Módulo de Dirección](./imagenes/image%20copy%204.png)
 
-### 6. Matriz de Control de Asistencia y Reportes Consolidados
-![Matriz de Asistencia](./imagenes/image%20copy%205.png)
+### 6. Módulo Auxiliar (Escaneo de Asistencia con Alerta de Semáforo: Verde = Ingresa, Amarillo = Espera, Rojo = Denegado / No Registrado)
+![Módulo Auxiliar](./imagenes/image%20copy%205.png)
+
 
 ---
 
