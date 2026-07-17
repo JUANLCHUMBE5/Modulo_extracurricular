@@ -16,4 +16,16 @@ plim.png
 brain/
 temp_emails/
 
-
+# =========================================================================
+# Exclusiones de Portafolio: Mantener el código localmente sin subirlo a GitHub
+# =========================================================================
+backend/
+frontend/
+diagramas/
+package.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+requirements.txt
+start.cmd
+.npmrc
+Manual_Despliegue_y_Requerimientos_Funcionales.docx
