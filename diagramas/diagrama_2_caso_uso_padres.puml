@@ -1,0 +1,25 @@
+@startuml
+left to right direction
+skinparam defaultFontName "Calibri"
+
+title Diagrama 2: Diagrama de Casos de Uso - Matrícula del Padre
+
+actor "Apoderado / Padre de Familia" as apoderado
+
+rectangle "Portal Auto-Matrícula de Padres" {
+    usecase "Autenticar con DNI de Alumno" as UC_login
+    usecase "Listar Talleres Disponibles" as UC_list
+    usecase "Inscribir en Programa" as UC_enroll
+    usecase "Seleccionar Cambridge / Indumentaria" as UC_extra
+    usecase "Adjuntar Váucher de Pago" as UC_upload
+    usecase "Descargar Compromiso Firmado (PDF)" as UC_pdf
+    
+    UC_enroll ..> UC_extra : <<extend>>
+    UC_enroll ..> UC_upload : <<include>>
+    UC_upload ..> UC_pdf : <<include>>
+}
+
+apoderado --> UC_login
+apoderado --> UC_list
+apoderado --> UC_enroll
+@endum

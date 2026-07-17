@@ -1,5 +1,93 @@
 [
   {
+    "id": "AUD-497151-155f",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-17T03:04:57.151Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-492707-0bff",
+    "usuario": "admin",
+    "rol": "desconocido",
+    "fecha": "2026-07-17T03:04:52.707Z",
+    "accion": "LOGIN_FALLIDO",
+    "detalles": "{\"ip\":\"127.0.0.1\",\"motivo\":\"ContraseÃ±a incorrecta\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-900314-b15f",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-16T23:35:00.314Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-107\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-842451-7020",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-16T23:34:02.451Z",
+    "accion": "PROGRAMA_CREAR",
+    "detalles": "{\"programaId\":\"PRG-107\",\"nombre\":\"VERANO DEPORTIVO\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-040280-1014",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-16T23:04:00.280Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-105\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-030662-6a13",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-16T23:03:50.663Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-102\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-313035-e0f4",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-16T22:51:53.035Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-921065-485c",
+    "usuario": "admin",
+    "rol": "administrador",
+    "fecha": "2026-07-14T21:02:01.065Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Administrador\"}"
+  },
+  {
+    "id": "AUD-534708-95be",
+    "usuario": "admin",
+    "rol": "coordinacion",
+    "fecha": "2026-07-14T20:55:34.708Z",
+    "accion": "PROGRAMA_EDITAR",
+    "detalles": "{\"programaId\":\"PRG-105\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
+    "id": "AUD-524665-43cc",
+    "usuario": "admin",
+    "rol": "padres",
+    "fecha": "2026-07-14T20:55:24.666Z",
+    "accion": "PADRES_VALIDAR_EXITOSO",
+    "detalles": "{\"dni\":\"60000036\",\"nombres\":\"Martin Ortiz Huaman\",\"_usuario_original\":\"60000036\"}"
+  },
+  {
+    "id": "AUD-278478-e3b0",
+    "usuario": "admin",
+    "rol": "secretaria",
+    "fecha": "2026-07-14T20:51:18.478Z",
+    "accion": "INICIO_SESION",
+    "detalles": "{\"modulo\":\"Asistente\",\"_usuario_original\":\"carlos\"}"
+  },
+  {
     "id": "AUD-391592-50d6",
     "usuario": "admin",
     "rol": "secretaria",

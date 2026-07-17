@@ -1,13 +1,11 @@
-# Módulo Extracurricular - Requerimientos del Sistema
-# Proyecto basado en Node.js (Vite + Express + Supabase)
+# Proyecto basado en Node.js (Vite + Express + PostgreSQL)
 
 ## Tecnologías Principales
 Node.js >= 18.0.0
 pnpm >= 8.0.0 (o npm >= 9.0.0)
-Supabase (Base de datos PostgreSQL administrada)
+PostgreSQL (Base de datos relacional)
 
 ## Dependencias del Backend (Express API)
-@supabase/supabase-js == 2.108.1
 bcryptjs == 3.0.3
 cors == 2.8.6
 dotenv == 17.4.2

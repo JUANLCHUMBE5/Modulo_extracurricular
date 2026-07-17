@@ -563,9 +563,6 @@ export default function useCoordinacionForm({
     if (!form.fechaInicio || !form.fechaFin) return mostrarAlertaConfiguracion("Revise: fechas de inicio y fin.");
     if (form.fechaInicio > form.fechaFin) return mostrarMsg("La fecha de inicio no puede ser mayor a la de fin.");
     const duracionAvisoDiasVal = normalizarDuracionAvisoDias(form.duracionAvisoDias, 7);
-    if (String(duracionAvisoDiasVal) !== String(form.duracionAvisoDias)) {
-      return mostrarMsg("El aviso de inscripción puede durar de 1 a 7 días como máximo.");
-    }
     if (!form.cupos || Number(form.cupos) <= 0) return mostrarAlertaConfiguracion("Revise: cupos.");
     if (!esCostoValido(form.costo)) return mostrarMsg("Ingrese un costo válido en soles, con máximo dos decimales.");
     if (!form.modalidadCobro) return mostrarAlertaConfiguracion("Revise: modalidad de cobro.");

@@ -25,7 +25,7 @@ DATABASE_SSL=false
 ### Parámetros de conexión:
 *   **`DATA_MODE`**: Indica al backend que use el motor PostgreSQL (`postgres`) en lugar de archivos JSON locales (`local`).
 *   **`DATABASE_URL`**: La URL estándar de conexión de Postgres (`postgresql://[user]:[password]@[host]:[port]/[database]`).
-*   **`DATABASE_SSL`**: Setea en `true` si tu base de datos requiere conexión SSL segura (por ejemplo, al usar AWS RDS, Supabase, Azure, etc.).
+*   **`DATABASE_SSL`**: Setea en `true` si tu base de datos requiere conexión SSL segura (por ejemplo, al usar AWS RDS, Azure, etc.).
 
 ---
 

@@ -881,9 +881,22 @@ html body .coord-upload-tabs {
   transition: padding-left 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* Fix double background color / white bottom area in Coordinación */
+/* Fix double background color / white bottom area in all modules */
 html body .coord-layout,
-html body .coord-main {
+html body .coord-main,
+html body .dir-page,
+html body .dir-main,
+html body .caja-page,
+html body .caja-main,
+html body .secretaria-layout,
+html body .secretaria-main,
+html body .adm-root,
+html body .adm-main,
+html body .admin-main,
+html body .admin-page,
+html body .aux-root,
+html body .aux-main,
+html body .auxiliar-main {
   min-height: 100vh !important;
   height: auto !important;
   background: #e8f5e9 !important;

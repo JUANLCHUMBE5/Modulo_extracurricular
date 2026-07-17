@@ -1,0 +1,27 @@
+@startuml
+left to right direction
+skinparam defaultFontName "Calibri"
+
+title Diagrama 3: Diagrama de Casos de Uso - Conciliación de Caja
+
+actor "Cajero (Finanzas)" as cajero
+
+rectangle "Módulo de Caja" {
+    usecase "Listar Váuchers Pendientes" as UC_list_vouchers
+    usecase "Ver Detalle de Pago y Alumno" as UC_detail
+    usecase "Conciliar Transferencia Bancaria" as UC_match
+    usecase "Aprobar Váucher (Activar Matrícula)" as UC_approve
+    usecase "Rechazar Váucher (Observar Pago)" as UC_reject
+    usecase "Emitir Recibo de Caja (Correlativo)" as UC_receipt
+    usecase "Exportar Libro de Caja (Excel)" as UC_excel
+    
+    UC_approve ..> UC_receipt : <<include>>
+    UC_reject ..> UC_detail : <<include>>
+}
+
+cajero --> UC_list_vouchers
+cajero --> UC_match
+cajero --> UC_approve
+cajero --> UC_reject
+cajero --> UC_excel
+@endum
