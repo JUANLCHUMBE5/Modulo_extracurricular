@@ -58,6 +58,30 @@ graph TD
 
 ---
 
+## 📸 Vista de la Aplicación (Capturas de Pantalla)
+
+A continuación, se presentan las capturas de pantalla de la interfaz de usuario para los diferentes módulos y formularios del sistema:
+
+### 1. Panel de Administración y Control General
+![Panel de Administración](./imagenes/image.png)
+
+### 2. Gestión de Caja, Validación de Váuchers y Conciliación Bancaria
+![Gestión de Caja](./imagenes/image%20copy.png)
+
+### 3. Portal de Auto-Matrícula de Padres de Familia
+![Portal de Padres](./imagenes/image%20copy%202.png)
+
+### 4. Formulario de Selección de Talleres y Datos del Estudiante
+![Selección de Talleres](./imagenes/image%20copy%203.png)
+
+### 5. Configuración de Programas y Talleres por Grado y Horario
+![Configuración de Programas](./imagenes/image%20copy%204.png)
+
+### 6. Matriz de Control de Asistencia y Reportes Consolidados
+![Matriz de Asistencia](./imagenes/image%20copy%205.png)
+
+---
+
 ## 🛠️ Arquitectura de Software y Tecnologías
 
 El sistema está estructurado bajo una arquitectura cliente-servidor robusta, moderna y desacoplada:
