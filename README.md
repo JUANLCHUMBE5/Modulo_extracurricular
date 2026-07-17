@@ -85,28 +85,20 @@ El sistema está estructurado bajo una arquitectura cliente-servidor robusta, mo
 
 ---
 
-## 🧪 Estrategia de Aseguramiento de Calidad (QA)
+## 🧪 Estrategia de Pruebas y Validación Funcional (QA)
 
-Para este proyecto, el control de calidad es un pilar fundamental. Se definió un plan de pruebas estructurado para garantizar la confiabilidad financiera, el correcto control de accesos y la integridad de los datos en picos de alta demanda.
+Debido a que el proyecto no incluye suites de pruebas automatizadas (como Jest, Cypress o Vitest), toda la verificación y el aseguramiento de la calidad se realizaron mediante **pruebas funcionales manuales exhaustivas** ciclo por ciclo, asegurando la robustez de las reglas de negocio y el flujo de información de extremo a extremo:
 
-### 1. Pruebas Unitarias (Unit Testing)
-*   **Objetivo**: Validar el correcto funcionamiento de la lógica de negocio pura y utilidades del sistema.
-*   **Ejemplos de Validaciones**:
-    *   Normalización y parseo de horarios estructurados (ej. conversión de `"Lunes, Miércoles: 15:00 - 16:30"` a variables de impresión).
-    *   Algoritmos de cálculo de costos netos aplicando becas y descuentos específicos (ej. descuento del 25%, 50%, 100% y becas especiales).
-    *   Validación lógica de aforos disponibles basados en `cupos - cuposOcupados`.
+### 1. Pruebas Funcionales Módulo por Módulo (Manuales)
+Se validó cada módulo de forma individual para confirmar que los datos se guarden correctamente en la persistencia y que la interfaz de usuario responda de manera adecuada a las acciones de los usuarios:
+*   **Portal de Padres**: Ingreso del DNI, visualización filtrada del catálogo de talleres, adjuntar el váucher de pago en formato de imagen/PDF, y descarga de la ficha de compromiso generada en formato PDF.
+*   **Módulo de Caja**: Bandeja de aprobación de váuchers en tiempo real. Validación de que al hacer clic en "Aprobar", el estado de la matrícula cambie a `Matriculado` en la base de datos y se le asigne un número de recibo correlativo único.
+*   **Módulo de Secretaría**: Verificación de la carga masiva de alumnos desde archivos Excel, comprobando que las celdas y columnas se mapeen de forma precisa a las propiedades de la base de datos y que la matriz de asistencia muestre a todos los alumnos correctamente.
+*   **Módulo de Coordinación**: Creación y edición de talleres, verificando la asignación de horarios múltiples por grados y el control manual de cupos.
 
-### 2. Pruebas de Integración (API & Schema Testing)
-*   **Objetivo**: Garantizar que el flujo de datos entre el cliente y el servidor cumple estrictamente con el contrato de la API.
-*   **Ejemplos de Validaciones**:
-    *   **Validación de payloads con Zod**: Pruebas automáticas donde payloads mal formateados (ej. campos de texto en lugar de números en costos, formatos de correo inválidos, DNI con longitud incorrecta) reciben un código `400 Bad Request` con mensajes legibles.
-    *   Verificación de respuestas ante credenciales JWT inválidas, expiradas o ausentes (`401 Unauthorized` / `403 Forbidden`).
-    *   Asegurar el correcto flujo de migración de datos masivos mediante pruebas de carga de archivos Excel simulados en el endpoint de Secretaría.
+### 2. Flujo Completo E2E (Simulado Manualmente)
+Se verificó manualmente el recorrido completo del usuario de inicio a fin:
 
-### 3. Pruebas Funcionales de Extremo a Extremo (E2E Testing)
-*   **Objetivo**: Simular el comportamiento real del usuario cubriendo flujos completos que atraviesan múltiples módulos del sistema.
-
-#### 🔄 Escenario Crítico de Prueba: Flujo Completo de Inscripción y Conciliación
 ```mermaid
 sequenceDiagram
     autonumber
@@ -117,7 +109,7 @@ sequenceDiagram
 
     Apoderado->>Portal: Ingresa DNI y selecciona Taller de Fútbol
     Portal->>BD: Verifica cupos disponibles
-    BD-->>Portal: Cupos OK (disminuye cupo temporal)
+    BD-->>Portal: Cupos OK
     Apoderado->>Portal: Sube váucher de pago de S/ 150.00
     Portal->>BD: Guarda estado: Pago Pendiente
     Portal->>Caja: Envía váucher a bandeja del cajero
@@ -126,31 +118,26 @@ sequenceDiagram
     Cajero->>Caja: Clic en "Aprobar Pago"
     Caja->>BD: Actualiza estado a: Matriculado
     Caja->>BD: Genera correlativo del recibo y PDF de Ficha
-    Caja-->>Apoderado: Envía correo electrónico con Ficha en PDF adjunta
+    Caja-->>Apoderado: Simula o envía correo electrónico con Ficha en PDF adjunta
 ```
 
-*   **Puntos de control (Checkpoints) del escenario**:
+*   **Puntos de control (Checkpoints) manuales**:
     1.  El DNI ingresado debe existir en el semillero de alumnos.
     2.  El cupo del taller seleccionado debe incrementarse en ocupados al finalizar el flujo.
     3.  El váucher cargado debe aparecer inmediatamente en la cola de Caja con estado `Pendiente`.
     4.  Tras la aprobación en Caja, el estado del pago debe cambiar a `Aprobado` y el estudiante a `Matriculado`.
     5.  El sistema debe generar un código de recibo secuencial único (ej. `REC-000105`) que no se duplique ante solicitudes paralelas.
-    6.  El apoderado debe recibir el PDF del compromiso firmado digitalmente en su correo electrónico de contacto.
+    6.  El apoderado recibe el PDF del compromiso firmado en su correo electrónico de contacto (o se imprime en la consola del servidor en desarrollo si no se configuran credenciales SMTP).
 
-### 4. Pruebas de Carga y Control de Concurrencia
-*   **Objetivo**: Validar el comportamiento del sistema ante múltiples usuarios tratando de matricularse simultáneamente en un taller con cupos limitados (Race Conditions).
-*   **Estrategia de Mitigación Probada**:
-    *   **Control transaccional**: Se implementó lógica de base de datos a nivel de Sequelize con transacciones administradas y bloqueos optimistas.
-    *   **Validación de cupo de última milla**: El cupo disponible se valida dos veces: al renderizar el catálogo y justo antes de guardar la inscripción en la base de datos. Si el cupo se agotó durante el proceso de llenado del formulario, el backend aborta la operación de forma segura y notifica al usuario sin guardar datos huérfanos.
-
-### 5. Pruebas de Seguridad y Validación de Archivos (Vulnerabilidades)
-*   **Validación de Váuchers**: Pruebas de penetración simuladas mediante la carga de archivos no permitidos (ej. ejecutables `.exe`, scripts `.js`, PDFs falsos) en el portal de padres. El middleware de subida restringe y valida estrictamente el tipo MIME del archivo (aceptando únicamente imágenes `.png`, `.jpg`, `.jpeg` y documentos `.pdf`) para prevenir ataques de ejecución remota.
-*   **Doble Envío (Double Submit)**: Mecanismos en el frontend (deshabilitar botones al enviar) y validación en backend de solicitudes repetidas en un rango menor a 3 segundos para evitar cargos o registros duplicados.
+### 3. Pruebas de Diseño, Usabilidad y Comportamiento Visual
+*   **Manejo de Formularios**: Deshabilitado preventivo de botones tras dar clic para evitar el envío doble de formularios (Double Submit) y evitar cobros o matrículas duplicadas.
+*   **Visualización de Horarios**: Validación visual de la alineación y el wrapping de textos largos de horarios en formularios de edición y plantillas impresas.
+*   **Validación de Archivos (MIME types)**: Comprobación de que la carga de archivos filtre correctamente y solo admita extensiones autorizadas (`.pdf`, `.png`, `.jpg`, `.jpeg`), rechazando formatos inválidos o potencialmente peligrosos.
 
 ---
 
 ## 📈 Resultados del Proyecto
-El sistema ha demostrado un rendimiento excelente en pruebas simuladas de carga de datos, permitiendo:
+El sistema ha demostrado un rendimiento excelente en las pruebas funcionales manuales, permitiendo:
 *   Reducir el tiempo de matrícula de un alumno de **15 minutos presenciales a menos de 2 minutos online**.
 *   Eliminar el **100% de los errores humanos** por asignación manual de cupos o traslape de horarios.
 *   Lograr la conciliación bancaria instantánea y unificada con emisión automática de recibos contables.
